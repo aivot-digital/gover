@@ -1,0 +1,12 @@
+### Jetbrains ###
+/.idea/
+
+### macOS ###
+.DS_Store
+
+### Build ###
+/out/
+
+### Dependencies ###
+/gover-frontend/
+/gover-backend/
