@@ -210,8 +210,8 @@ This file contains a list of custom themes, which will be compiled into the Gove
   {
     "name": "Candy",
     "primary": "#FF8DC7",
-    "primaryDark": "#BF6B9C";
-    "accent": "#FFDDD2;
+    "primaryDark": "#BF6B9C",
+    "accent": "#FFDDD2",
   }
 ]
 ```
