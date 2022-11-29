@@ -50,10 +50,17 @@ Gover depends on a few other services to fully function:
 * [MinIO](https://min.io/)
 
 
-## Clone Dependencies
-Clone the denpendend repositories:
+## Download
+Clone this repository via 
 
+```bash
+git clone --branch v1.0.1 https://github.com/aivot-digital/gover.git ./gover
 ```
+
+Change into the cloned repository.
+Clone the dependent repositories with:
+
+```bash
 git clone --branch v1.0.1 https://github.com/aivot-digital/gover-frontend.git ./gover-frontend
 git clone --branch v1.0.0 https://github.com/aivot-digital/gover-backend.git ./gover-backend
 ```
@@ -89,7 +96,7 @@ gover.reportMail=<YOUR_ADMIN_MAIL>
 If you want to use the mail feature, insert the credentials to your smtp server into the `application.properties`.
 
 ### Running Gover
-If you have docker-compose installed, simply clone this repository with `git clone --recurse-submodules git@github.com:aivot-digital/gover.git` and copy the contents of a docker-compose file below into `docker-compose.yml` and get started by running `docker-compose up`.
+If you have docker-compose installed get started by running `docker-compose up`.
 Gover is now available at <http://localhost:8080>.
 
 ```yaml
@@ -211,7 +218,7 @@ This file contains a list of custom themes, which will be compiled into the Gove
     "name": "Candy",
     "primary": "#FF8DC7",
     "primaryDark": "#BF6B9C",
-    "accent": "#FFDDD2",
+    "accent": "#FFDDD2"
   }
 ]
 ```
