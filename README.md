@@ -69,15 +69,17 @@ git clone --branch v1.0.0 https://github.com/aivot-digital/gover-backend.git ./g
 ## Docker Setup
 
 ### Prerequisites
-For configuration, create a folder named `./config` in your current working directory and a file `./config/application.properties`.
+For configuration, edit the file `./config/application.properties` inside the folger `config`.
 The `application.properties` contains all configs for the Gover application.
 
-Copy and paste the following content into the `application.properties`.
+The config `application.properties` should contain the following data.
 
 ```
 spring.datasource.url=jdbc:postgresql://db:5432/gover
 spring.datasource.username=gover
 spring.datasource.password=gover
+
+server.servlet.context-path=/api
 
 minio.url=http://minio:9000
 minio.access=gover
@@ -98,6 +100,8 @@ If you want to use the mail feature, insert the credentials to your smtp server 
 ### Running Gover
 If you have docker-compose installed get started by running `docker-compose up`.
 Gover is now available at <http://localhost:8080>.
+
+Alternatively you can use the `docker-compose.yml` below:
 
 ```yaml
 # docker-compose.yml
