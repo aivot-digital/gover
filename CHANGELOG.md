@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.2](https://github.com/aivot-digital/gover/compare/v1.0.1...v1.0.2) (2022-12-05)
+
+
+### Features
+
+* Upgrade version in readme ([20b62ae](https://github.com/aivot-digital/gover/commits/20b62aeca40320bf36b9ba17f2ce320bd62f2c41))
+
 ### [1.0.1](https://github.com/aivot-digital/gover/compare/v1.0.0...v1.0.1) (2022-11-19)
 
 
