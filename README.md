@@ -101,6 +101,8 @@ If you want to use the mail feature, insert the credentials to your smtp server 
 If you have docker-compose installed get started by running `docker-compose up`.
 Gover is now available at <http://localhost:8080>.
 
+**Please note, that the gover application prints initial login data for a admin user to the console. Use these credentials for your first login.**
+
 Alternatively you can use the `docker-compose.yml` below:
 
 ```yaml
