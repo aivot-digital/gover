@@ -69,7 +69,7 @@ git clone --branch v1.0.0 https://github.com/aivot-digital/gover-backend.git ./g
 ## Docker Setup
 
 ### Prerequisites
-For configuration, edit the file `./config/application.properties` inside the folger `config`.
+For configuration, edit the file `./config/application.properties` inside the folder `config`.
 The `application.properties` contains all configs for the Gover application.
 
 The config `application.properties` should contain the following data.
