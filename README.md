@@ -49,27 +49,39 @@ Gover depends on a few other services to fully function:
 * [PostgreSQL](https://www.postgresql.org/)
 * [MinIO](https://min.io/)
 
+## Prerequisites
+
+**Attention:** This projects requires [FontawesomePro](https://fontawesome.com/) Version 5 or higher.
 
 ## Download
-Clone this repository via 
+Clone this repository and the dependencies via 
 
 ```bash
-git clone --branch v1.0.2 https://github.com/aivot-digital/gover.git ./gover
-```
-
-Change into the cloned repository.
-Clone the dependent repositories with:
-
-```bash
+git clone --branch v1.0.3 https://github.com/aivot-digital/gover.git ./gover
+cd ./gover
 git clone --branch v1.0.1 https://github.com/aivot-digital/gover-frontend.git ./gover-frontend
 git clone --branch v1.0.0 https://github.com/aivot-digital/gover-backend.git ./gover-backend
 ```
 
+## Authenticate FontawesomePro
+
+To pull the required FontawesomPro packages, edit the file `gover-frontend/.npmrc` and insert your FontawesomePro Key.
+
+The file should look like this:
+
+```
+@fortawesome:registry=https://npm.fontawesome.com/
+//npm.fontawesome.com/:_authToken=<YOUR_FONT_AWESOME_KEY>
+```
+
+More information about the FontawesomePro setup, can be found here: <https://fontawesome.com/docs/web/setup/packages>.
 
 ## Docker Setup
 
+**This is one of two options. For the native setup, refer to the native setup guide below.**
+
 ### Prerequisites
-For configuration, edit the file `./config/application.properties` inside the folder `config`.
+If you want to configure the gover installation, edit the file `./config/application.properties` inside the folder `config`.
 The `application.properties` contains all configs for the Gover application.
 
 The config `application.properties` should contain the following data.
@@ -78,8 +90,6 @@ The config `application.properties` should contain the following data.
 spring.datasource.url=jdbc:postgresql://db:5432/gover
 spring.datasource.username=gover
 spring.datasource.password=gover
-
-server.servlet.context-path=/api
 
 minio.url=http://minio:9000
 minio.access=gover
@@ -99,11 +109,11 @@ If you want to use the mail feature, insert the credentials to your smtp server 
 
 ### Running Gover
 If you have docker-compose installed get started by running `docker-compose up`.
-Gover is now available at <http://localhost:8080>.
+Gover is now available at <http://localhost:8080/admin>.
 
 **Please note, that the gover application prints initial login data for a admin user to the console. Use these credentials for your first login.**
 
-Alternatively you can use the `docker-compose.yml` below:
+Alternatively, if you want to configure the gover instance further, you can use the `docker-compose.yml` below:
 
 ```yaml
 # docker-compose.yml
@@ -150,9 +160,12 @@ services:
 Please note, that you might need to adjust the path to the `config` folder for the Gover service in the `docker-compose.yml`.
 
 ## Native Setup
+
 **The native setup guide was made for unix platforms only.**
 
-### Preqrequisites
+**This is one of two options. For the docker setup, refer to the docker setup guide above.**
+
+### Prerequisites
 
 * Working [PostgreSQL](https://www.postgresql.org/)
 * Working [MinIO](https://min.io/)
@@ -201,7 +214,7 @@ server {
 }
 ```
 
-You may setup your nginx to https. Please refere to [this guide](http://nginx.org/en/docs/http/configuring_https_servers.html).
+You may setup your nginx to https. Please refer to [this guide](http://nginx.org/en/docs/http/configuring_https_servers.html).
 
 ### Run Gover
 After everything is set up, you can now run the Gover instance.

@@ -29,7 +29,13 @@ FROM nginx:alpine
 
 WORKDIR /app
 
-RUN apk add openjdk17
+RUN apk add openjdk17 \
+            wkhtmltopdf \
+            xvfb \
+            ttf-dejavu ttf-droid ttf-freefont ttf-liberation
+
+RUN ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf;
+RUN chmod +x /usr/local/bin/wkhtmltopdf;
 
 COPY ./gover-backend/.mvn/ ./.mvn/
 COPY ./gover-backend/mvnw ./
