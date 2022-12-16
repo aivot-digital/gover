@@ -25,14 +25,12 @@ RUN mv ./build ./admin
 ##
 ## Build Master
 ##
-FROM nginx:alpine
+FROM nginx:mainline
 
 WORKDIR /app
 
-RUN apk add openjdk17 \
-            wkhtmltopdf \
-            xvfb \
-            ttf-dejavu ttf-droid ttf-freefont ttf-liberation
+RUN apt-get update
+RUN apt-get -y install openjdk-17-jdk wkhtmltopdf
 
 RUN ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf;
 RUN chmod +x /usr/local/bin/wkhtmltopdf;
