@@ -60,7 +60,7 @@ Clone this repository and the dependencies via
 git clone --branch v1.0.4 https://github.com/aivot-digital/gover.git ./gover
 cd ./gover
 git clone --branch v1.0.1 https://github.com/aivot-digital/gover-frontend.git ./gover-frontend
-git clone --branch v1.0.0 https://github.com/aivot-digital/gover-backend.git ./gover-backend
+git clone --branch v1.0.1 https://github.com/aivot-digital/gover-backend.git ./gover-backend
 ```
 
 ## Authenticate FontawesomePro
