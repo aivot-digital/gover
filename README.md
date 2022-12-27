@@ -57,7 +57,7 @@ Gover depends on a few other services to fully function:
 Clone this repository and the dependencies via 
 
 ```bash
-git clone --branch v1.0.4 https://github.com/aivot-digital/gover.git ./gover
+git clone --branch v1.0.6 https://github.com/aivot-digital/gover.git ./gover
 cd ./gover
 git clone --branch v1.0.1 https://github.com/aivot-digital/gover-frontend.git ./gover-frontend
 git clone --branch v1.0.1 https://github.com/aivot-digital/gover-backend.git ./gover-backend
