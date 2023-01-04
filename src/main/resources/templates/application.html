@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .value-field {
+            width: 100%;
+            padding: 0.5em 0;
+        }
+
+        .value-field .label {
+            display: inline-block;
+            width: 45%;
+            font-weight: bold;
+            text-align: right;
+            padding-right: 0.5em;
+        }
+
+        .value-field .value {
+            display: inline-block;
+            width: 45%;
+            padding-left: 0.5em;
+        }
+
+        table {
+            width: 100%;
+            table-layout:fixed;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.5em 0.25em 0.5em 0;
+        }
+
+        td {
+            padding: 0.5em 0 0.5em 0.25em;
+        }
+
+    </style>
+</head>
+<body>
+<h1 th:text="${data.title}"></h1>
+<div th:each="field: ${data.fields}">
+    <h2 th:if="${#strings.equals(field.type, 'headline') && field.size == 2}" th:text="${field.text}"></h2>
+    <h3 th:if="${#strings.equals(field.type, 'headline') && field.size == 3}" th:text="${field.text}"></h3>
+    <h4 th:if="${#strings.equals(field.type, 'headline') && field.size == 4}" th:text="${field.text}"></h4>
+    <h5 th:if="${#strings.equals(field.type, 'headline') && field.size == 5}" th:text="${field.text}"></h5>
+    <h6 th:if="${#strings.equals(field.type, 'headline') && field.size == 6}" th:text="${field.text}"></h6>
+
+    <div class="value-field" th:if="${#strings.equals(field.type, 'value')}">
+        <div class="label" th:text="${field.label}"></div>
+        <div class="value" th:text="${field.value}"></div>
+    </div>
+
+    <table class="value-field" th:if="${#strings.equals(field.type, 'table')}">
+        <thead>
+        <tr>
+            <th th:each="header: ${field.columnHeaders}" th:text="${header}"></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="row: ${field.columnValues}">
+            <td th:each="value: ${row}" th:text="${value}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

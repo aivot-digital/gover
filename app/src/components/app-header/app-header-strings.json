@@ -1,0 +1,14 @@
+{
+    "en": {
+        "goverAppTitle": "Online-Application-Management",
+        "tooltipAccessibility": "Accessibility",
+        "tooltipHelp": "Help & FAQs",
+        "tooltipSettings": "Settings"
+    },
+    "de": {
+        "goverAppTitle": "Online-Antrags-Management",
+        "tooltipAccessibility": "Barrierefreiheit",
+        "tooltipHelp": "Hilfe & FAQs",
+        "tooltipSettings": "Eistellungen"
+    }
+}

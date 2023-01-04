@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Unterlagen für: <th:block th:text="${title}"></th:block></title>
+</head>
+<body>
+<p>
+    Hallo, <br/>
+    wie von Ihnen gewünscht finden Sie anbei die von Ihnen eingereichten Unterlagen für: <b th:text="${title}"></b>.
+</p>
+<p>
+    Mit freundlichen Grüßen <br/>
+    <b th:text="${department}"></b>
+</p>
+<p>
+    Diese E-Mail ist automatisch generiert.
+    Bitte nicht antworten.
+</p>
+</body>
+</html>

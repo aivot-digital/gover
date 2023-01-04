@@ -1,0 +1,44 @@
+{
+    "en": {
+        "addTitle": "Add user",
+        "editTitle": "Edit user",
+
+        "generalInformationTitle": "General information",
+        "nameLabel": "Name",
+        "namePlaceholder": "John Doe",
+        "emailLabel": "Email",
+        "emailPlaceholder": "john.doe@gover.aivot.de",
+        "roleLabel": "Role",
+
+        "passwordTitle": "Password",
+        "passwordChangeTitle": "Password Overwrite",
+        "passwordLabel": "Password",
+        "retypePasswordLabel": "Retype password",
+        "passwordLengthError": "The password must at least contain 6 characters.",
+        "passwordMatchError": "The passwords do not match.",
+
+        "saveLabel": "Save",
+        "cancelLabel": "Cancel"
+    },
+    "de": {
+        "addTitle": "Benutzer anlegen",
+        "editTitle": "Benutzer ändern",
+
+        "generalInformationTitle": "Allgemeine Informationen",
+        "nameLabel": "Name",
+        "namePlaceholder": "Max Mustermann",
+        "emailLabel": "E-Mail-Adresse",
+        "emailPlaceholder": "max.muster@gover.aivot.de",
+        "roleLabel": "Rolle",
+
+        "passwordTitle": "Passwort",
+        "passwordChangeTitle": "Passwort Überschreiben",
+        "passwordLabel": "Passwort",
+        "retypePasswordLabel": "Passwort erneug eingeben",
+        "passwordLengthError": "Das Passwort muss mindestens 6 Zeichen haben.",
+        "passwordMatchError": "Die Passwörter stimmen nicht überein.",
+
+        "saveLabel": "Speichern",
+        "cancelLabel": "Abbrechen"
+    }
+}

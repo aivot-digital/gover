@@ -1,0 +1,6 @@
+Neuer Antrag: <th:block th:text="${title}"></th:block>
+
+Hallo,
+ein neuer Antrag ist eingegangen. Antrag: <th:block th:text="${title}"></th:block>.
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

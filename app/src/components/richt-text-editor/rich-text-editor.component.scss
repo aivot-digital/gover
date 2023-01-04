@@ -1,0 +1,23 @@
+.editorWrapper {
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  cursor: text;
+
+  &:hover {
+    border: 1px solid rgba(0, 0, 0, 0.87);
+  }
+
+  &:focus-within {
+    border-color: var(--hw-primary);
+  }
+
+  .ProseMirror-focused {
+    outline: none !important;
+  }
+
+  .ProseMirror {
+    max-height: 50vh;
+    overflow-y: scroll;
+  }
+
+  font-family: 'Noto Sans', sans-serif;
+}

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Fehler</title>
+</head>
+<body>
+<h4>Es ist ein Fehler im Betrieb aufgetreten</h4>
+<h5>Fehler</h5>
+<b th:text="${message}"></b>
+<h5>StackTrace</h5>
+<pre><code th:text="${stackTrace}"></code></pre>
+</body>
+</html>

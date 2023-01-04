@@ -1,0 +1,12 @@
+{
+  "de": {
+    "editTitle": "{name} bearbeiten",
+    "closeTooltip": "Schließen",
+    "saveLabel": "Speichern",
+    "cancelLabel": "Abbrechen",
+    "missingRequiredFieldsTitle": "Fehlende Pflichtangabe",
+    "missingRequiredFieldsText": "Bitte füllen Sie alle Pflichtfelder (*) aus.",
+    "maxedOutFieldsTitle": "Texte überschreiten Maximum",
+    "maxedOutFieldsText": "Bitte befüllen Sie die fehlerhaften Felder mit maximal 255 Zeichen."
+  }
+}

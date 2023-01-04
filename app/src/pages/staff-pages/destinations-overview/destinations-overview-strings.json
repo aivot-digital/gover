@@ -1,0 +1,35 @@
+{
+  "de": {
+    "title": "Schnittstellen",
+    "addLabel": "Neue Schnittstelle",
+    "emptySearchHelperText": "Es gibt keine Schnittstellen, die Ihrer Suche entsprechen...",
+    "noItemsHelperText": "Sie haben aktuell keine Schnittstellen angelegt. Starten Sie jetzt mit Ihrem ersten Schnittstelle!",
+    "searchPlaceholder": "Schnittstelle suchen...",
+
+    "aboutTitle": "Allgemeine Informationen",
+    "nameLabel": "Name",
+    "namePlaceholder": "Neue Schnittstelle",
+    "nameHelper": "Der Name wird in der Antragsentwicklung angezeigt und identifiziert diese Schnittstelle.",
+    "typeLabel": "Schnittstellen-Typ",
+    "typeHelper": "Der Typ bestimmt die Übertragungsart für diese Schnittstelle.",
+
+    "destinationSettingsTitle": "Schnittstellen-Einstellungen",
+
+    "mailToLabel": "Mail-To-Adressen",
+    "mailToPlaceholder": "destination@gover.aivot.de",
+    "mailToHelper": "Die primäre Adresse, an die der ausgefüllte Antrag geschickt wird. Mehrere Adressen werden durch ein Komma getrennt.",
+    "mailCcLabel": "Mail CC-Adressen",
+    "mailCcPlaceholder": "other-destination@gover.aivot.de",
+    "mailCcHelper": "Die CC-Adresse, an die der ausgefüllte Antrag geschickt wird. Mehrere Adressen werden durch ein Komma getrennt.",
+    "mailBccLabel": "Mail BCC-Adressen",
+    "mailBccPlaceholder": "yet-other-destination@gover.aivot.de",
+    "mailBccHelper": "Die BCC-Adresse, an die der ausgefüllte Antrag geschickt wird. Mehrere Adressen werden durch ein Komma getrennt.",
+
+    "apiAddressLabel": "API Adresse",
+    "apiAddressPlaceholder": "https://my-api-hostname.com:9000/v1/gover-hook",
+    "apiAddressHelper": "Die API Adresse, an die die Daten des Antragstellenden via POST-Anfrage übermittelt werden.",
+    "apiKeyLabel": "API Schlüssel",
+    "apiKeyPlaceholder": "my-super-secret-api-key",
+    "apiKeyHelper": "Der API Schlüssel, der über den Authorization-Header beim Übertragen der Daten mitgesendet wird."
+  }
+}

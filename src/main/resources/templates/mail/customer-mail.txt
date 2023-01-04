@@ -1,0 +1,9 @@
+Unterlagen für: <th:block th:text="${title}"></th:block>
+
+Hallo,
+wie von Ihnen gewünscht finden Sie anbei die von Ihnen eingereichten Unterlagen für: <th:block th:text="${title}"></th:block>.
+
+Mit freundlichen Grüßen <br/>
+<th:block th:text="${department}"></th:block>
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
