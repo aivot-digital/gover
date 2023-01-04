@@ -13,23 +13,26 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 @Component
 public class PdfService {
+    private final BlobService blobService;
+
     @Autowired
-    BlobService blobService;
+    public PdfService(BlobService blobService) {
+        this.blobService = blobService;
+    }
+
 
     public String generatePdf(Application application, ApplicationDto applicationDto) throws IOException, InterruptedException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        String template = loadTemplate(application, applicationDto);
-
         String uuid = UUID.randomUUID().toString();
-        Path pathHtml = Paths.get("/tmp/" + uuid + ".html");
-        Path pathPdf = Paths.get("/tmp/" + uuid + ".pdf");
+        Path pathHtml = blobService.getPrintHtmlPath(uuid);
+        Path pathPdf = blobService.getPrintPdfPath(uuid);
 
+        String template = loadTemplate(applicationDto);
         Files.writeString(pathHtml, template);
 
         Process generateToPdf = new ProcessBuilder(
@@ -55,15 +58,12 @@ public class PdfService {
         ).start();
         generateToPdf.waitFor();
 
-        String blobUrl = blobService.storeData("prints", uuid + ".pdf", pathPdf.toString());
-
         Files.delete(pathHtml);
-        Files.delete(pathPdf);
 
-        return blobUrl;
+        return uuid;
     }
 
-    private String loadTemplate(Application application, ApplicationDto applicationDto) {
+    private String loadTemplate(ApplicationDto applicationDto) {
         ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
         templateResolver.setPrefix("templates/");
         templateResolver.setTemplateMode(TemplateMode.HTML);

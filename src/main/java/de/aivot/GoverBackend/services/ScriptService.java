@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.dtos.ApplicationDto;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
 import de.aivot.GoverBackend.models.Application;
@@ -12,15 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
-import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -30,8 +27,12 @@ public class ScriptService {
 
     private final static String GLOBAL_DATA_FIELD = "$$global";
 
+    private final BlobService blobService;
+
     @Autowired
-    BlobService blobService;
+    public ScriptService(BlobService blobService) {
+        this.blobService = blobService;
+    }
 
     @Nullable
     public String validateApplication(Application application, Map<String, Object> customerData) throws ScriptRequiredException, ScriptException, JsonProcessingException {
@@ -46,11 +47,9 @@ public class ScriptService {
     }
 
     private ScriptEngine prepareEngine(Application application, Map<String, Object> customerData) throws IOException, ScriptException {
-        String codeLink = blobService.getCodeLink(application.getId());
+        Path codePath = blobService.getCodePath(application);
 
-        URL codeUrl = new URL(codeLink);
-        URLConnection yc = codeUrl.openConnection();
-        BufferedReader in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
+        BufferedReader in = Files.newBufferedReader(codePath);
 
         System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
         ScriptEngineManager manager = new ScriptEngineManager();

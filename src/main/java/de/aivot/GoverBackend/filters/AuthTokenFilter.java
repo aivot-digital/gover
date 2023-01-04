@@ -3,6 +3,10 @@ package de.aivot.GoverBackend.filters;
 import de.aivot.GoverBackend.models.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
 import de.aivot.GoverBackend.services.JwtService;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,25 +17,27 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.annotation.Nullable;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Optional;
 
 @Component
 public class AuthTokenFilter extends OncePerRequestFilter {
-    @Autowired
-    JwtService jwtService;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
 
     @Autowired
-    UserRepository userRepository;
+    public AuthTokenFilter(JwtService jwtService, UserRepository userRepository) {
+        this.jwtService = jwtService;
+        this.userRepository = userRepository;
+    }
 
     @Override
-    protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
         String jwt = parseJwt(request);
 
         if (jwt != null) {

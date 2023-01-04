@@ -1,13 +1,12 @@
 package de.aivot.GoverBackend.models;
 
 import de.aivot.GoverBackend.converters.ElementConverter;
+import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.simpleframework.xml.Default;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.Map;
 

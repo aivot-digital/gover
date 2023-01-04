@@ -1,53 +1,47 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.models.SmtpConfig;
+import javax.activation.DataHandler;
+import javax.annotation.Nullable;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.Part;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
-import javax.activation.DataHandler;
-import javax.annotation.Nullable;
-import javax.mail.*;
-import javax.mail.internet.*;
-import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
-import java.util.Properties;
 
 @Component
 public class MailService {
-    @Autowired
-    SmtpConfig smtpConfig;
+    private final JavaMailSender mailSender;
 
-    public void sendMail(String to, String subject, String textMessage, String htmlMessage, URL... attachmentURLs) throws MessagingException {
+    @Autowired
+    public MailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    public void sendMail(String to, String subject, String textMessage, String htmlMessage, URL... attachmentURLs) throws MessagingException, MailException {
         sendMail(to, null, null, subject, textMessage, htmlMessage, attachmentURLs);
     }
 
-    public void sendMail(String to, @Nullable String cc, @Nullable String bcc, String subject, String textMessage, String htmlMessage, URL... attachmentURLs) throws MessagingException {
-        Properties prop = new Properties();
-        prop.put("mail.smtp.auth", "true");
-        prop.put("mail.smtp.starttls.enable", String.valueOf(smtpConfig.getUseTls()));
-        prop.put("mail.smtp.host", smtpConfig.getHost());
-        prop.put("mail.smtp.port", smtpConfig.getPort());
-        prop.put("mail.smtp.ssl.trust", smtpConfig.getHost());
-        prop.put("mail.smtp.ssl.protocols", "TLSv1.2");
-        prop.put("mail.smtp.timeout", "1000");
-
-        Session session = Session.getInstance(prop, new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(smtpConfig.getUsername(), smtpConfig.getPassword());
-            }
-        });
+    public void sendMail(String to, @Nullable String cc, @Nullable String bcc, String subject, String textMessage, String htmlMessage, URL... attachmentURLs) throws MessagingException, MailException {
 
         InternetAddress[] mailToList = InternetAddress.parse(to);
         InternetAddress[] mailCcList = cc != null ? InternetAddress.parse(cc) : null;
         InternetAddress[] mailBccList = bcc != null ? InternetAddress.parse(bcc) : null;
 
-        Message message = new MimeMessage(session);
+        MimeMessage message = mailSender.createMimeMessage();
 
         message.setRecipients(
                 Message.RecipientType.TO,
@@ -69,6 +63,7 @@ public class MailService {
 
         message.setSubject(subject);
         message.setText(textMessage);
+
         MimeBodyPart mimeBodyPart = new MimeBodyPart();
         mimeBodyPart.setContent(htmlMessage, "text/html;charset=utf-8");
 
@@ -85,7 +80,7 @@ public class MailService {
 
         message.setContent(multipart);
 
-        Transport.send(message);
+        mailSender.send(message);
     }
 
     public String loadTemplate(String templateName, Map<String, Object> data) {

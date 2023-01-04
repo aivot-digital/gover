@@ -1,16 +1,13 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.models.GoverConfig;
-import de.aivot.GoverBackend.models.User;
-import de.aivot.GoverBackend.repositories.UserRepository;
+import javax.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 
-import javax.mail.*;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -19,10 +16,14 @@ import java.util.Map;
 @Component
 public class SystemMailService {
     private static final Logger logger = LoggerFactory.getLogger(SystemMailService.class);
+    private final MailService mailService;
+    private final GoverConfig goverConfig;
+
     @Autowired
-    MailService mailService;
-    @Autowired
-    GoverConfig goverConfig;
+    public SystemMailService(MailService mailService, GoverConfig goverConfig) {
+        this.mailService = mailService;
+        this.goverConfig = goverConfig;
+    }
 
     public void sendInfoMail(String title, String message) {
         sendInfoMail(title, message, goverConfig.getReportMail());
@@ -38,7 +39,7 @@ public class SystemMailService {
 
         try {
             mailService.sendMail(to, "[Gover] Informationen", text, html);
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
             logger.error("Failed to send info admin mail", e);
         }
     }
@@ -58,7 +59,7 @@ public class SystemMailService {
 
         try {
             mailService.sendMail(goverConfig.getReportMail(), "[Gover] Fehler im Betrieb", text, html);
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
             logger.error("Failed to send exception admin mail", e);
         }
     }

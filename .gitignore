@@ -9,10 +9,15 @@
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+/media/
+
+### Docker ###
+/data/
 
 ### Frontend ###
 /app/node_modules/
 /app/build/
+/src/main/resources/static
 
 ### macOS ###
 .DS_Store

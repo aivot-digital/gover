@@ -10,7 +10,7 @@ class _UserService extends CrudService<User, 'users', number> {
     async login(email: string, password: string): Promise<{
         jwtToken: string;
     }> {
-        const response = await axios.post(this.basePath + 'auth/login/', {
+        const response = await axios.post(this.basePath + 'login', {
             email,
             password,
         });
@@ -18,14 +18,14 @@ class _UserService extends CrudService<User, 'users', number> {
     }
 
     async setPassword(password: string, userId?: number): Promise<void> {
-        await axios.post(this.basePath + 'profile/set-password/', {
+        await axios.post(this.basePath + 'profile/set-password', {
             userId,
             password,
         }, CrudService.getConfig());
     }
 
     async getProfile(): Promise<User> {
-        return await axios.get(this.basePath + 'profile/', CrudService.getConfig()).then(resp => resp.data);
+        return await axios.get(this.basePath + 'profile', CrudService.getConfig()).then(resp => resp.data);
     }
 }
 

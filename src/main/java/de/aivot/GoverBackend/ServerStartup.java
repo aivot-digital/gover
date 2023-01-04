@@ -4,6 +4,7 @@ import com.oracle.truffle.js.runtime.Strings;
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.models.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
+import de.aivot.GoverBackend.services.BlobService;
 import de.aivot.GoverBackend.services.SystemMailService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -15,19 +16,33 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+
 @Component
 public class ServerStartup implements ApplicationListener<ApplicationReadyEvent> {
     private static final Logger logger = LoggerFactory.getLogger(SystemMailService.class);
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    SystemMailService systemMailService;
+    private final UserRepository userRepository;
+    private final SystemMailService systemMailService;
+    private final BlobService blobService;
 
     private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Autowired
+    public ServerStartup(UserRepository userRepository, SystemMailService systemMailService, BlobService blobService) {
+        this.userRepository = userRepository;
+        this.systemMailService = systemMailService;
+        this.blobService = blobService;
+    }
 
     @Override
     public void onApplicationEvent(@NotNull final ApplicationReadyEvent event) {
         createInitialAdminUser();
+        try {
+            blobService.init();
+        } catch (IOException e) {
+            logger.error("Failed to prepare storage", e);
+            systemMailService.sendExceptionMail(e);
+        }
     }
 
     private void createInitialAdminUser() {

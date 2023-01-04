@@ -2,39 +2,61 @@ package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.services.BlobService;
 import de.aivot.GoverBackend.services.SystemMailService;
-import io.minio.errors.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
 
 @RestController
 @CrossOrigin
 public class CodeController {
-    @Autowired
-    BlobService blobService;
-    @Autowired
-    SystemMailService systemMailService;
+    private final SystemMailService systemMailService;
+    private final BlobService blobService;
 
-    @GetMapping("/public/code/{id}")
-    public RedirectView getCode(@PathVariable Long id) {
-        String link = blobService.getCodeLink(id);
-        return new RedirectView(link);
+    @Autowired
+    public CodeController(SystemMailService systemMailService, BlobService blobService) {
+        this.systemMailService = systemMailService;
+        this.blobService = blobService;
     }
 
-    @PostMapping("/code/{id}")
-    public String postCode(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    @GetMapping("/api/public/code/{id}")
+    public ResponseEntity<Resource> getCode(@PathVariable Long id) {
+        Path path = blobService.getCodePath(id);
         try {
-            return blobService.storeData("code" ,id + ".js", file.getBytes());
-        } catch (ServerException | InternalException | XmlParserException | InvalidResponseException |
-                 InvalidKeyException | NoSuchAlgorithmException | IOException | ErrorResponseException |
-                 InsufficientDataException e) {
+            Resource resource = new UrlResource(path.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                HttpHeaders responseHeaders = new HttpHeaders();
+                responseHeaders.setContentType(MediaType.valueOf("text/javascript"));
+                return ResponseEntity
+                        .ok()
+                        .headers(responseHeaders)
+                        .body(resource);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new ResourceNotFoundException();
+    }
+
+    @PostMapping("/api/code/{id}")
+    public ResponseEntity<HttpStatus> saveCode(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        Path pathCode = blobService.getCodePath(id);
+        try {
+            file.transferTo(pathCode);
+        } catch (IOException e) {
             systemMailService.sendExceptionMail(e);
             throw new RuntimeException(e);
         }
+        return ResponseEntity.ok(HttpStatus.OK);
     }
 }

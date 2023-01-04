@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.converters;
 
-import org.json.JSONObject;
-
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
+import org.json.JSONObject;
+
 import java.util.Map;
 
 @Converter

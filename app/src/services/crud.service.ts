@@ -10,7 +10,7 @@ export class CrudService<T extends { id: number }, A extends string, I> {
 
     public constructor(path: string) {
         this.basePath = `${ApiConfig.address}/`;
-        this.path = `${ApiConfig.address}/${path}/`;
+        this.path = `${ApiConfig.address}/${path}`;
     }
 
     list(): Promise<ApiListResponse<T, A>> {
@@ -19,7 +19,7 @@ export class CrudService<T extends { id: number }, A extends string, I> {
     }
 
     retrieve(id: I): Promise<ApiDetailsResponse<T>> {
-        return axios.get(this.path + id + '/', CrudService.getConfig())
+        return axios.get(this.path + '/' + id, CrudService.getConfig())
             .then(response => response.data);
     }
 
@@ -29,12 +29,12 @@ export class CrudService<T extends { id: number }, A extends string, I> {
     }
 
     update(id: I, data: T): Promise<ApiDetailsResponse<T>> {
-        return axios.put(this.path + id + '/', data, CrudService.getConfig())
+        return axios.put(this.path + '/' + id, data, CrudService.getConfig())
             .then(response => response.data);
     }
 
     destroy(id: I): Promise<void> {
-        return axios.delete(this.path + id + '/', CrudService.getConfig());
+        return axios.delete(this.path + '/' + id, CrudService.getConfig());
     }
 
     public static getConfig(): AxiosRequestConfig {

@@ -4,10 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oracle.truffle.js.runtime.Strings;
 import de.aivot.GoverBackend.models.Application;
 import de.aivot.GoverBackend.models.Destination;
+import javax.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 
-import javax.mail.MessagingException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -20,21 +21,22 @@ import java.util.Map;
 
 @Component
 public class DestinationSubmitService {
-    @Autowired
-    MailService mailService;
-    @Autowired
-    SystemMailService systemMailService;
-
+    private final MailService mailService;
     private static final String SUBJECT_TEMPLATE = "Neuer Antrag: %s";
 
-    public void handleSubmit(Destination destination, Application application, Map<String, Object> customerData, String pdfLink) throws MessagingException, IOException, InterruptedException {
+    @Autowired
+    public DestinationSubmitService(MailService mailService) {
+        this.mailService = mailService;
+    }
+
+    public void handleSubmit(Destination destination, Application application, Map<String, Object> customerData, String pdfLink) throws MessagingException, MailException, IOException, InterruptedException {
         switch (destination.getType()) {
             case Mail -> sendMail(destination, application, pdfLink);
             case HTTP -> sendHttp(destination, customerData);
         }
     }
 
-    private void sendMail(Destination destination, Application application, String pdfLink) throws MessagingException, MalformedURLException {
+    private void sendMail(Destination destination, Application application, String pdfLink) throws MessagingException, MalformedURLException, MailException {
         URL pdfUrl = new URL(pdfLink);
 
         String title = (String) application.getRoot().get("title");

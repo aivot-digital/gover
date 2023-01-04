@@ -18,12 +18,16 @@ import java.util.Optional;
 @RestController
 @CrossOrigin
 public class ApplicationController {
-    @Autowired
-    ApplicationRepository applicationRepository;
-    @Autowired
-    DepartmentRepository departmentRepository;
+    private final ApplicationRepository applicationRepository;
+    private final DepartmentRepository departmentRepository;
 
-    @GetMapping("/public/applications/{slug}/{version}")
+    @Autowired
+    public ApplicationController(ApplicationRepository applicationRepository, DepartmentRepository departmentRepository) {
+        this.applicationRepository = applicationRepository;
+        this.departmentRepository = departmentRepository;
+    }
+
+    @GetMapping("/api/public/applications/{slug}/{version}")
     public Application getApplication(Authentication authentication, @PathVariable String slug, @PathVariable String version) {
         User user = (User) authentication.getPrincipal();
         Optional<Application> applicationResult = applicationRepository.getBySlugAndVersion(slug, version);
@@ -38,7 +42,7 @@ public class ApplicationController {
         throw new ResourceNotFoundException();
     }
 
-    @GetMapping("/public/departments/{id}")
+    @GetMapping("/api/public/departments/{id}")
     public Department getDepartment(@PathVariable Long id) {
         Optional<Department> department = departmentRepository.findById(id);
 

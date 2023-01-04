@@ -23,13 +23,17 @@ import java.util.Optional;
 @RestController
 @CrossOrigin
 public class AuthController {
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    JwtService jwtService;
     private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final UserRepository userRepository;
+    private final JwtService jwtService;
 
-    @PostMapping("/auth/login")
+    @Autowired
+    public AuthController(UserRepository userRepository, JwtService jwtService) {
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
+    }
+
+    @PostMapping("/api/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthCredentials credentials) {
         Optional<User> foundUser = userRepository.findByEmail(credentials.getEmail());
 
@@ -53,7 +57,7 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/profile")
+    @GetMapping("/api/profile")
     public ResponseEntity<User> getProfile(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         if (user == null) {
@@ -65,7 +69,7 @@ public class AuthController {
         return ResponseEntity.ok(user);
     }
 
-    @PostMapping("/profile/set-password")
+    @PostMapping("/api/profile/set-password")
     public ResponseEntity<HttpStatus> setPassword(Authentication authentication, @RequestBody SetPasswordRequest setPasswordRequest) {
         User requester = (User) authentication.getPrincipal();
 

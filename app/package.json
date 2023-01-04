@@ -48,8 +48,9 @@
     "git-info": "node scripts/get-git-info.js",
     "start:customer": "REACT_APP_BUILD_TARGET=customer react-scripts start",
     "start:staff": "REACT_APP_BUILD_TARGET=staff react-scripts start",
-    "build:customer": "npm run git-info && BUILD_PATH=../src/main/resources/customer REACT_APP_BUILD_TARGET=customer react-scripts build",
-    "build:staff": "npm run git-info && BUILD_PATH=../src/main/resources/staff REACT_APP_BUILD_TARGET=staff PUBLIC_URL=/admin react-scripts build",
+    "build:customer": "npm run git-info && BUILD_PATH=../src/main/resources/static REACT_APP_BUILD_TARGET=customer react-scripts build",
+    "build:staff": "npm run git-info && BUILD_PATH=../src/main/resources/static/admin REACT_APP_BUILD_TARGET=staff PUBLIC_URL=/admin react-scripts build",
+    "build": "npm run build:customer && npm run build:staff",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -72,14 +73,14 @@
     ]
   },
   "devDependencies": {
-    "csv-parser": "^3.0.0",
-    "csv-writer": "^1.6.0",
-    "glob": "^8.0.3",
     "@types/jest": "^27.4.0",
     "@types/node": "^16.11.17",
     "@types/react": "^17.0.38",
     "@types/react-beautiful-dnd": "^13.1.2",
     "@types/react-dom": "^17.0.11",
-    "@types/react-helmet": "^6.1.5"
+    "@types/react-helmet": "^6.1.5",
+    "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
+    "glob": "^8.0.3"
   }
 }

@@ -13,8 +13,12 @@ import de.aivot.GoverBackend.repositories.DestinationRepository;
 import de.aivot.GoverBackend.services.*;
 import io.minio.errors.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,6 +26,8 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.mail.MessagingException;
 import javax.script.ScriptException;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -30,24 +36,50 @@ import java.util.Optional;
 @RestController
 @CrossOrigin
 public class SubmitController {
-    @Autowired
-    ApplicationRepository applicationRepository;
-    @Autowired
-    DestinationRepository destinationRepository;
-    @Autowired
-    DepartmentRepository departmentRepository;
-    @Autowired
-    PdfService pdfService;
-    @Autowired
-    DestinationSubmitService destinationSubmitService;
-    @Autowired
-    CustomerMailService customerMailService;
-    @Autowired
-    ScriptService scriptService;
-    @Autowired
-    SystemMailService systemMailService;
+    private final ApplicationRepository applicationRepository;
+    private final DestinationRepository destinationRepository;
+    private final DepartmentRepository departmentRepository;
+    private final PdfService pdfService;
+    private final DestinationSubmitService destinationSubmitService;
+    private final CustomerMailService customerMailService;
+    private final ScriptService scriptService;
+    private final SystemMailService systemMailService;
+    private final BlobService blobService;
 
-    @PostMapping("/public/submit/{applicationId}")
+    @Autowired
+    public SubmitController(ApplicationRepository applicationRepository, DestinationRepository destinationRepository, DepartmentRepository departmentRepository, PdfService pdfService, DestinationSubmitService destinationSubmitService, CustomerMailService customerMailService, ScriptService scriptService, SystemMailService systemMailService, BlobService blobService) {
+        this.applicationRepository = applicationRepository;
+        this.destinationRepository = destinationRepository;
+        this.departmentRepository = departmentRepository;
+        this.pdfService = pdfService;
+        this.destinationSubmitService = destinationSubmitService;
+        this.customerMailService = customerMailService;
+        this.scriptService = scriptService;
+        this.systemMailService = systemMailService;
+        this.blobService = blobService;
+    }
+
+    @GetMapping("/api/public/prints/{uuid}")
+    public ResponseEntity<Resource> getCode(@PathVariable String uuid) {
+        Path path = blobService.getPrintPdfPath(uuid);
+        try {
+            Resource resource = new UrlResource(path.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                HttpHeaders responseHeaders = new HttpHeaders();
+                responseHeaders.setContentType(MediaType.APPLICATION_PDF);
+                responseHeaders.set("filename", uuid + ".pdf");
+                return ResponseEntity
+                        .ok()
+                        .headers(responseHeaders)
+                        .body(resource);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new ResourceNotFoundException();
+    }
+
+    @PostMapping("/api/public/submit/{applicationId}")
     public String submit(@PathVariable Long applicationId, @RequestBody Map<String, Object> customerData) {
         Optional<Application> application = applicationRepository.findById(applicationId);
 
@@ -72,9 +104,9 @@ public class SubmitController {
                 throw new RuntimeException(e);
             }
 
-            String pdfLink;
+            String pdfUuid;
             try {
-                pdfLink = pdfService.generatePdf(application.get(), applicationDto);
+                pdfUuid = pdfService.generatePdf(application.get(), applicationDto);
             } catch (IOException | InterruptedException | ServerException | InsufficientDataException |
                      ErrorResponseException | NoSuchAlgorithmException | InvalidKeyException |
                      InvalidResponseException | XmlParserException | InternalException e) {
@@ -87,21 +119,21 @@ public class SubmitController {
                 Optional<Destination> destination = destinationRepository.findById(Long.valueOf(destinationId));
                 if (destination.isPresent()) {
                     try {
-                        destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, pdfLink);
-                    } catch (MessagingException | IOException | InterruptedException e) {
+                        destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString());
+                    } catch (IOException | InterruptedException | MessagingException e) {
                         systemMailService.sendExceptionMail(e);
                         throw new RuntimeException(e);
                     }
                 }
             }
 
-            return pdfLink;
+            return "/api/public/prints/" + pdfUuid;
         }
 
         throw new ResourceNotFoundException();
     }
 
-    @PostMapping("/public/send-copy/{applicationId}")
+    @PostMapping("/api/public/send-copy/{applicationId}")
     public ResponseEntity<HttpStatus> sendCopy(@PathVariable Long applicationId, @RequestBody SendCopyRequest sendCopyRequest) {
         Optional<Application> application = applicationRepository.findById(applicationId);
         if (application.isPresent()) {
@@ -133,8 +165,10 @@ public class SubmitController {
 
             try {
                 customerMailService.sendApplicationCopyMail(sendCopyRequest.getEmail(), application.get(), department, sendCopyRequest.getPdfLink());
-            } catch (MessagingException | IOException e) {
+            } catch (IOException e) {
                 systemMailService.sendExceptionMail(e);
+                throw new RuntimeException(e);
+            } catch (MessagingException e) {
                 throw new RuntimeException(e);
             }
         }

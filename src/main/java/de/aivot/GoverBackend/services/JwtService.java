@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.services;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import de.aivot.GoverBackend.models.JwtConfig;
@@ -16,8 +15,12 @@ import java.util.Date;
 
 @Component
 public class JwtService {
+    private final JwtConfig jwtConfig;
+
     @Autowired
-    JwtConfig jwtConfig;
+    public JwtService(JwtConfig jwtConfig) {
+        this.jwtConfig = jwtConfig;
+    }
 
     private final String ISSUER = "gover";
 
@@ -53,8 +56,6 @@ public class JwtService {
         DecodedJWT jwt;
         try {
             jwt = verifier.verify(token);
-        } catch (TokenExpiredException e) {
-            return null;
         } catch (Exception e) {
             return null;
         }
