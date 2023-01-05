@@ -68,100 +68,108 @@ export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, 
                 />
             }
 
-            <FadingPaper>
-                {
-                    responsibleDepartment &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            ZUSTÄNDIGE STELLE
-                        </Typography>
-                        <Typography
-                            component="pre"
-                            variant="body2"
-                        >
-                            {responsibleDepartment.name}<br/>
-                            {responsibleDepartment.address}
-                        </Typography>
-                    </Box>
-                }
+            {
+                (
+                    responsibleDepartment ||
+                    managingDepartment ||
+                    !isNullOrEmpty(element.textProcessingTime) ||
+                    (element.documentsToReceive && element.documentsToReceive.length > 0)
+                ) &&
+                <FadingPaper>
+                    {
+                        responsibleDepartment &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                ZUSTÄNDIGE STELLE
+                            </Typography>
+                            <Typography
+                                component="pre"
+                                variant="body2"
+                            >
+                                {responsibleDepartment.name}<br/>
+                                {responsibleDepartment.address}
+                            </Typography>
+                        </Box>
+                    }
 
-                {
-                    managingDepartment &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            BEWIRTSCHAFTENDE STELLE
-                        </Typography>
-                        <Typography
-                            component="pre"
-                            variant="body2"
-                        >
-                            {managingDepartment.name}<br/>
-                            {managingDepartment.address}
-                        </Typography>
-                    </Box>
-                }
+                    {
+                        managingDepartment &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                BEWIRTSCHAFTENDE STELLE
+                            </Typography>
+                            <Typography
+                                component="pre"
+                                variant="body2"
+                            >
+                                {managingDepartment.name}<br/>
+                                {managingDepartment.address}
+                            </Typography>
+                        </Box>
+                    }
 
-                {
-                    element.textProcessingTime &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            GESCHÄTZTE BEARBEITUNGSZEIT
-                        </Typography>
-                        <Typography
-                            component="pre"
-                            variant="body2"
-                        >
-                            {element.textProcessingTime}
-                        </Typography>
-                    </Box>
-                }
+                    {
+                        element.textProcessingTime &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                GESCHÄTZTE BEARBEITUNGSZEIT
+                            </Typography>
+                            <Typography
+                                component="pre"
+                                variant="body2"
+                            >
+                                {element.textProcessingTime}
+                            </Typography>
+                        </Box>
+                    }
 
-                {
-                    element.documentsToReceive && element.documentsToReceive.length > 0 &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            SIE ERHALTEN FOLGENDE DOKUMENTE
-                        </Typography>
-                        <List
-                            dense
-                            disablePadding
-                        >
-                            {
-                                element.documentsToReceive.map((doc: string) => (
-                                    <ListItem
-                                        key={doc}
-                                        disableGutters
-                                    >
-                                        <ListItemIcon sx={{minWidth: '34px'}}>
-                                            <FontAwesomeIcon
-                                                icon={faFileArrowUp}
-                                                fixedWidth
-                                                size={'lg'}
-                                                color={theme.palette.primary.main}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText>
-                                            {doc}
-                                        </ListItemText>
-                                    </ListItem>
-                                ))
-                            }
-                        </List>
-                    </Box>
-                }
-            </FadingPaper>
+                    {
+                        element.documentsToReceive && element.documentsToReceive.length > 0 &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                SIE ERHALTEN FOLGENDE DOKUMENTE
+                            </Typography>
+                            <List
+                                dense
+                                disablePadding
+                            >
+                                {
+                                    element.documentsToReceive.map((doc: string) => (
+                                        <ListItem
+                                            key={doc}
+                                            disableGutters
+                                        >
+                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                                <FontAwesomeIcon
+                                                    icon={faFileArrowUp}
+                                                    fixedWidth
+                                                    size={'lg'}
+                                                    color={theme.palette.primary.main}
+                                                />
+                                            </ListItemIcon>
+                                            <ListItemText>
+                                                {doc}
+                                            </ListItemText>
+                                        </ListItem>
+                                    ))
+                                }
+                            </List>
+                        </Box>
+                    }
+                </FadingPaper>
+            }
 
             <Box sx={{mt: 4}}>
                 <Typography

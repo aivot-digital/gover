@@ -21,7 +21,7 @@ interface RichTextEditorComponentViewProps {
 }
 
 export function RichTextEditorComponentView({value, onChange, label}: RichTextEditorComponentViewProps) {
-    const onChangeCallback = useEventCallback(({editor}) => {
+    const onChangeCallback = useEventCallback(({editor}: any) => {
         if (editor.isEmpty) {
             onChange('');
         } else {

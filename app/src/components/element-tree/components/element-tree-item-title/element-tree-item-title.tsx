@@ -15,7 +15,7 @@ import {ElementIcons} from '../../../../data/element-type/element-icons';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {checkId} from '../../../../utils/check-id';
 import {hasElementFunction} from '../../../../utils/has-element-function';
-import React, {useEffect} from 'react';
+import React from 'react';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {ElementNames} from '../../../../data/element-type/element-names';
 import {useTheme} from '@mui/material/styles';
@@ -27,9 +27,9 @@ import {hasElementFunctionRequirement} from '../../../../utils/has-element-funct
 import {stringOrDefault} from '../../../../utils/string-or-default';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {
-    selectExpandedTree,
     selectUseIdsInComponentTree,
-    selectUseTestMode, selectWarnDuplicateIds
+    selectUseTestMode,
+    selectWarnDuplicateIds
 } from '../../../../slices/admin-settings-slice';
 import {ElementTreeItemTitleProps} from './element-tree-item-title-props';
 import {AnyElement} from '../../../../models/elements/any-element';
@@ -39,7 +39,6 @@ import {selectLoadedApplication} from '../../../../slices/app-slice';
 
 
 export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>) {
-    const expandTree = useAppSelector(selectExpandedTree);
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
@@ -86,12 +85,6 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
         }
         return false;
     };
-
-    useEffect(() => {
-        if (expandTree && !props.isExpanded) {
-            handleToggleExpand();
-        }
-    }, [expandTree, handleToggleExpand, props]);
 
     const theme = useTheme();
 

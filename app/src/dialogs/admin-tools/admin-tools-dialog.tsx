@@ -13,7 +13,7 @@ import {
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from '../../store';
 import {toggleShowUserInput, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
-import {faFileExport, faFilePdf, faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
+import {faCode, faFileExport, faFilePdf, faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {resetUserInput} from '../../slices/customer-input-slice';
@@ -22,6 +22,7 @@ import {AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {resetStepper} from '../../slices/stepper-slice';
 import {downloadTextFile} from '../../utils/download-text-file';
+import {showErrorSnackbar, showSuccessSnackbar} from "../../slices/snackbar-slice";
 
 // TODO: Localize
 
@@ -110,36 +111,6 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                     <Divider sx={{my: 2, mt: 5}}/>
 
                     <Typography variant="body1">
-                        Erzeugen Sie den Code neu, wenn Funktionen (z.B. für Validierungen) hinzugefügt oder geändert
-                        wurden.
-                    </Typography>
-                    <Button
-                        sx={{my: 2}}
-                        startIcon={<FontAwesomeIcon
-                            icon={faRefresh}
-                            fixedWidth
-                            style={{marginTop: '-2px'}}
-                        />}
-                        size="large"
-                        variant="outlined"
-                        onClick={() => {
-                            if (application) {
-                                const codeStubs = CodeService.createCodeStubs(application);
-                                downloadTextFile(
-                                    application.slug + '.js',
-                                    codeStubs,
-                                    'text/javascript'
-                                );
-                                onClose();
-                            }
-                        }}
-                    >
-                        Erzeuge Code-Vorlage
-                    </Button>
-
-                    <Divider sx={{my: 2}}/>
-
-                    <Typography variant="body1">
                         Sie können die Eingaben in diesem Antrag zurücksetzen.
                     </Typography>
                     <Button
@@ -163,39 +134,62 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                     <Divider sx={{my: 2}}/>
 
                     <Typography variant="body1">
-                        Laden Sie die Dokumentation des Antrages herunter. Die Dokumentation enthält eine visuelle
-                        Darstellung des Antrages sowie Angaben zur Funktionsweise und technischen Informationen.
+                        Erzeugen Sie den Code neu, wenn Funktionen (z.B. für Validierungen) hinzugefügt oder geändert
+                        wurden.
                     </Typography>
                     <Button
                         sx={{my: 2}}
                         startIcon={<FontAwesomeIcon
-                            icon={faFilePdf}
+                            icon={faCode}
                             fixedWidth
                             style={{marginTop: '-2px'}}
                         />}
                         size="large"
                         variant="outlined"
+                        onClick={() => {
+                            if (application) {
+                                const codeStubs = CodeService.createCodeStubs(application);
+                                downloadTextFile(
+                                    application.slug + '.js',
+                                    codeStubs,
+                                    'text/javascript'
+                                );
+                                onClose();
+                            }
+                        }}
                     >
-                        Antrags-Dokumentation als .pdf-Datei herunterladen
+                        Erzeuge Code-Vorlage
                     </Button>
 
                     <Divider sx={{my: 2}}/>
 
                     <Typography variant="body1">
-                        Exportieren Sie den Antrag in einem maschinen-lesbaren Austauschformat.
+                        Laden Sie den Code für den Antrag neu.
+                        Dies ist nützlich, falls Entwickler den Code aktualisieren, während Sie den Antrag bearbeiten.
                     </Typography>
                     <Button
                         sx={{my: 2}}
                         startIcon={<FontAwesomeIcon
-                            icon={faFileExport}
+                            icon={faRefresh}
                             fixedWidth
                             style={{marginTop: '-2px'}}
                         />}
                         size="large"
                         variant="outlined"
-                        onClick={downloadConfig}
+                        onClick={() => {
+                            if (application != null) {
+                                CodeService.loadCode(application.id)
+                                    .then(() => {
+                                        dispatch(showSuccessSnackbar('Code erfolgreich neu geladen.'));
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        dispatch(showErrorSnackbar('Fehler beim Code neu laden.'));
+                                    });
+                            }
+                        }}
                     >
-                        Antrag als .gov-Datei exportieren
+                        Code neu laden
                     </Button>
                 </DialogContent>
             </Dialog>

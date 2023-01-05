@@ -3,7 +3,6 @@ import {DateFieldElement, DateFieldComponentModelMode} from '../../models/elemen
 import {DatePicker, DatePickerProps, LocalizationProvider} from '@mui/lab';
 import AdapterDateFns from '@mui/lab/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';
-import {DatePickerView} from '@mui/lab/DatePicker/shared';
 import {useCallback} from 'react';
 import {faCalendarDay} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
@@ -28,14 +27,14 @@ const placeholderMap = {
 }
 
 const viewsMap: {
-    [k in DateFieldComponentModelMode]: DatePickerView[];
+    [k in DateFieldComponentModelMode]: ('day' | 'month' | 'year')[];
 } = {
     [DateFieldComponentModelMode.Date]: ['day', 'month', 'year'],
     [DateFieldComponentModelMode.Month]: ['month', 'year'],
     [DateFieldComponentModelMode.Year]: ['year'],
 }
 
-const locale: Partial<DatePickerProps> = {
+const locale: Partial<DatePickerProps<any>> = {
     cancelText: 'Abbrechen',
     okText: 'Ok',
     toolbarPlaceholder: 'Auswählen',
@@ -60,7 +59,7 @@ export function DateFieldComponentView({setValue, element, value, error}: BaseVi
     const mask = maskMap[element.mode ?? DateFieldComponentModelMode.Date];
     const format = formatMap[element.mode ?? DateFieldComponentModelMode.Date];
     const views = viewsMap[element.mode ?? DateFieldComponentModelMode.Date];
-    const opensTo = element.mode as DatePickerView ?? 'day';
+    const opensTo = element.mode ?? 'day';
     const helper = error != null ? error : element.hint;
     const placeholder = placeholderMap[element.mode ?? DateFieldComponentModelMode.Date];
 
@@ -104,7 +103,7 @@ export function DateFieldComponentView({setValue, element, value, error}: BaseVi
                 clearable
                 disabled={element.disabled}
 
-                renderInput={(params) => (
+                renderInput={(params: any) => (
                     <TextField
                         {...params}
                         error={error != null}

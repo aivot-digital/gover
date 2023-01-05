@@ -6,7 +6,7 @@ import deLocale from 'date-fns/locale/de';
 import {useCallback} from 'react';
 import {BaseViewProps} from '../_lib/base-view-props';
 
-const locale: Partial<TimePickerProps> = {
+const locale: Partial<TimePickerProps<any>> = {
     cancelText: 'Abbrechen',
     okText: 'Ok',
     toolbarTitle: 'Auswählen',
@@ -44,7 +44,7 @@ export function TimeFieldComponentView({element, value, error, setValue}: BaseVi
                 onChange={handleChange}
                 disabled={element.disabled}
                 clearable
-                renderInput={(params) => (
+                renderInput={(params: any) => (
                     <TextField
                         {...params}
                         error={error != null}

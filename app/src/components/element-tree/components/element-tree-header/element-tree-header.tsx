@@ -1,12 +1,13 @@
 import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faArrowsFromLine, faGear, faListTree, faMessageCode} from '@fortawesome/pro-light-svg-icons';
+import {faGear, faListTree, faMessageCode} from '@fortawesome/pro-light-svg-icons';
 import {
     selectUseIdsInComponentTree,
-    selectUseTestMode, selectWarnDuplicateIds,
-    toggleExpandedTree,
+    selectUseTestMode,
+    selectWarnDuplicateIds,
     toggleIdsInComponentTree,
-    toggleTestMode, toggleWarnDuplicateIds
+    toggleTestMode,
+    toggleWarnDuplicateIds
 } from '../../../../slices/admin-settings-slice';
 import React, {useState} from 'react';
 import {useTheme} from '@mui/material/styles';
@@ -60,18 +61,6 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                 </Box>
 
                 <Box>
-                    <Tooltip
-                        title="Alle Elemente ausklappen"
-                        arrow
-                    >
-                        <IconButton
-                            onClick={() => {
-                                dispatch(toggleExpandedTree());
-                            }}
-                        >
-                            <FontAwesomeIcon icon={faArrowsFromLine}/>
-                        </IconButton>
-                    </Tooltip>
                     <Tooltip
                         title="Einstellungen für Entwickler:innen"
                         arrow

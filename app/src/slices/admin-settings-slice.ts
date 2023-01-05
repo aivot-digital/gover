@@ -7,7 +7,6 @@ const initialState: {
     useIdsInComponentTree: boolean;
     hideComponentTree: boolean;
     useTestMode: boolean;
-    expandedTree: boolean;
     isDraggingTreeElement: boolean;
     showUserInput: boolean;
     warnDuplicateIds: boolean;
@@ -17,7 +16,6 @@ const initialState: {
     useIdsInComponentTree: false,
     hideComponentTree: false,
     useTestMode: false,
-    expandedTree: false,
     isDraggingTreeElement: false,
     showUserInput: false,
     warnDuplicateIds: false,
@@ -42,9 +40,6 @@ const adminSettingsSlice = createSlice({
         toggleTestMode: (state, _: PayloadAction<void>) => {
             state.useTestMode = !state.useTestMode;
         },
-        toggleExpandedTree: (state, _: PayloadAction<void>) => {
-            state.expandedTree = !state.expandedTree;
-        },
         setIsDraggingTreeElement: (state, action: PayloadAction<boolean>) => {
             state.isDraggingTreeElement = action.payload;
         },
@@ -68,7 +63,6 @@ export const {
     toggleIdsInComponentTree,
     toggleComponentTree,
     toggleTestMode,
-    toggleExpandedTree,
     setIsDraggingTreeElement,
     toggleShowUserInput,
     toggleWarnDuplicateIds,
@@ -80,7 +74,6 @@ export const selectDisableValidation = (state: RootState) => state.adminSettings
 export const selectUseIdsInComponentTree = (state: RootState) => state.adminSettings.useIdsInComponentTree;
 export const selectHideComponentTree = (state: RootState) => state.adminSettings.hideComponentTree;
 export const selectUseTestMode = (state: RootState) => state.adminSettings.useTestMode;
-export const selectExpandedTree = (state: RootState) => state.adminSettings.expandedTree;
 export const selectIsDraggingTreeElement = (state: RootState) => state.adminSettings.isDraggingTreeElement;
 export const selectShowUserInput = (state: RootState) => state.adminSettings.showUserInput;
 export const selectWarnDuplicateIds = (state: RootState) => state.adminSettings.warnDuplicateIds;

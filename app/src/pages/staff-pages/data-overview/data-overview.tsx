@@ -48,6 +48,7 @@ export function DataOverview<T extends { id: number }>(props: DataOverviewProps<
         props.create()
             .then(newItem => {
                 setItems([...items, newItem]);
+                handleItemEdit(newItem)
                 setIsLoading(false);
             });
     };
