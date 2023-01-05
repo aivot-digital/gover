@@ -45,5 +45,9 @@ export function isComponentValid(dispatch: Dispatch<any>, comp: AnyElement, user
             .every(val => val);
     }
 
+    if (!isValid) {
+        console.debug(`Element ${comp.id} is not valid`);
+    }
+
     return isValid;
 }
