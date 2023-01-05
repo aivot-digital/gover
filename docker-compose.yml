@@ -12,8 +12,6 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - ./data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
 
   gover:
     image: aivot-digital/gover
@@ -25,5 +23,6 @@ services:
     restart: always
     volumes:
       - ./media:/app/media
+      - ./config:/app/config:ro
     ports:
-      - "8080:80"
+      - "8080:8080"
