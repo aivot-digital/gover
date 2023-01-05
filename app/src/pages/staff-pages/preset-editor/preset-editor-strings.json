@@ -1,0 +1,16 @@
+{
+    "en": {
+        "notFoundTitle": "Not Found",
+        "openAdminToolsTooltip": "Open admin tools",
+        "hideElementTreeTooltip": "Hide element tree",
+        "showElementTreeTooltip": "Show element tree",
+        "openAsCustomer": "Open application as customer"
+    },
+    "de": {
+        "notFoundTitle": "Nicht gefunden",
+        "openAdminToolsTooltip": "Admin-Werkzeuge öffnen",
+        "hideElementTreeTooltip": "Antragsstruktur ausblenden",
+        "showElementTreeTooltip": "Antragsstruktur einblenden",
+        "openAsCustomer": "Antrag als Antragsteller:in öffnen (in neuem Tab)"
+    }
+}

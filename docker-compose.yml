@@ -2,37 +2,27 @@ version: '3.1'
 
 services:
 
-  db:
+  gover-database:
     image: postgres
     restart: always
     environment:
       POSTGRES_PASSWORD: gover
       POSTGRES_USER: gover
       POSTGRES_DB: gover
-    ports:
-      - "5432:5432"
-  
-  minio:
-    image: minio/minio
-    restart: always
-    environment:
-      MINIO_ACCESS_KEY: gover
-      MINIO_SECRET_KEY: gover_secret_key
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    command: server /data --console-address ":9001"
-  
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data:/var/lib/postgresql/data
+
   gover:
-    image: aivot/gover
+    image: aivot-digital/gover
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - db
-      - minio
+      - gover-database
     restart: always
     volumes:
+      - ./media:/app/media
       - ./config:/app/config:ro
     ports:
-      - "8080:80"
+      - "8080:8080"

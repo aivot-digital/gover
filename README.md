@@ -42,30 +42,27 @@ Currently top secret. If you want to get an introduction into using Gover contac
 
 # Setup
 Gover was developed as a cloud native application and works best with Docker. 
-If you want to deploy MultiSpace without docker, read more at the [native setup section](./README.md#Native-Setup).
+If you want to deploy Gover without docker, read more at the [native setup section](./README.md#Native-Setup).
 
 Gover depends on a few other services to fully function:
 
 * [PostgreSQL](https://www.postgresql.org/)
-* [MinIO](https://min.io/)
 
 ## Prerequisites
 
-**Attention:** This projects requires [FontawesomePro](https://fontawesome.com/) Version 5 or higher.
+**Attention:** This projects requires [FontawesomePro](https://fontawesome.com/) Version 6 or higher.
 
 ## Download
-Clone this repository and the dependencies via 
+Clone this repository and enter it via:
 
 ```bash
-git clone --branch v1.0.6 https://github.com/aivot-digital/gover.git ./gover
+git clone https://github.com/aivot-digital/gover.git ./gover
 cd ./gover
-git clone --branch v1.0.1 https://github.com/aivot-digital/gover-frontend.git ./gover-frontend
-git clone --branch v1.0.1 https://github.com/aivot-digital/gover-backend.git ./gover-backend
 ```
 
 ## Authenticate FontawesomePro
 
-To pull the required FontawesomPro packages, edit the file `gover-frontend/.npmrc` and insert your FontawesomePro Key.
+To pull the required FontawesomPro packages, edit the file `./app/.npmrc` and insert your FontawesomePro Key.
 
 The file should look like this:
 
@@ -76,159 +73,90 @@ The file should look like this:
 
 More information about the FontawesomePro setup, can be found here: <https://fontawesome.com/docs/web/setup/packages>.
 
-## Docker Setup
+## DockerCompose Setup
 
-**This is one of two options. For the native setup, refer to the native setup guide below.**
+**This is one of two options. For the native setup, refer to the [native setup guide](./README.md#Native-Setup) below.**
 
 ### Prerequisites
-If you want to configure the gover installation, edit the file `./config/application.properties` inside the folder `config`.
+
+Configure the gover installation by editing the file `./config/application.properties`.
 The `application.properties` contains all configs for the Gover application.
+
+If you plan to use docker-compose, you do not need to change the `application.properties` at all.
 
 The config `application.properties` should contain the following data.
 
-```
-spring.datasource.url=jdbc:postgresql://db:5432/gover
-spring.datasource.username=gover
-spring.datasource.password=gover
+```properties
+spring.datasource.url=jdbc:postgresql://<POSTGRES_HOST>:<POSTGRES_PORT>/<POSTGRES_DATABASE>
+spring.datasource.username=<POSTGRES_USERNAME>
+spring.datasource.password=<POSTGRES_PASSWORD>
 
-minio.url=http://minio:9000
-minio.access=gover
-minio.secret=gover_secret_key
-minio.bucket=gover
+spring.mail.host=<SMTP_HOST>
+spring.mail.port=<SMTP_PORT>
+spring.mail.username=<SMTP_USERNAME>
+spring.mail.password=<SMTP_PASSWORD>
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
 
-smtp.host=<SMTP_HOST>
-smtp.port=<SMTP_PORT>
-smtp.username=<SMTP_USERNAME>
-smtp.password=<SMTP_PASSWORD>
-smtp.useTls=true
-
-gover.reportMail=<YOUR_ADMIN_MAIL>
+gover.reportMail=<REPORT_MAIL_ADDRESS>
 ```
 
-If you want to use the mail feature, insert the credentials to your smtp server into the `application.properties`.
+Replace all data in the angle brackets with your respective data.
 
 ### Running Gover
+
 If you have docker-compose installed get started by running `docker-compose up`.
-Gover is now available at <http://localhost:8080/admin>.
+Gover is now available at <http://localhost:8080/admin/index.html>.
 
-**Please note, that the gover application prints initial login data for a admin user to the console. Use these credentials for your first login.**
+**Please note**, that the Gover application prints initial login data for an admin user to the console. 
+Use these credentials for your first login.
+If you have the smtp correctly configured, an email with the credentials is also sent to the report mail address.
 
-Alternatively, if you want to configure the gover instance further, you can use the `docker-compose.yml` below:
-
-```yaml
-# docker-compose.yml
-
-version: '3.1'
-
-services:
-
-  db:
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: gover
-      POSTGRES_USER: gover
-      POSTGRES_DB: gover
-    ports:
-      - "5432:5432"
-  
-  minio:
-    image: minio/minio
-    restart: always
-    environment:
-      MINIO_ACCESS_KEY: gover
-      MINIO_SECRET_KEY: gover_secret_key
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    command: server /data --console-address ":9001"
-  
-  gover:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - db
-      - minio
-    restart: always
-    volumes:
-      - ./config:/app/config:ro
-    ports:
-      - "8080:80"
+```bash
+... Created default admin with email "admin@gover.aivot.de" and password "dkmWySOPpQAr"
 ```
-
-Please note, that you might need to adjust the path to the `config` folder for the Gover service in the `docker-compose.yml`.
 
 ## Native Setup
 
 **The native setup guide was made for unix platforms only.**
 
-**This is one of two options. For the docker setup, refer to the docker setup guide above.**
+**This is one of two options. For the docker setup, refer to the [docker setup guide](./README.md#DockerCompose-Setup) above.**
 
 ### Prerequisites
 
 * Working [PostgreSQL](https://www.postgresql.org/)
-* Working [MinIO](https://min.io/)
-* Working [nginx](https://www.nginx.com/)
 * Working [wkhtmltopdf](https://wkhtmltopdf.org/)
 * [node.js 17](https://nodejs.org/en/)
 * [openjdk17](https://openjdk.org/projects/jdk/17/)
-* [make 3.81](https://www.gnu.org/software/make/)
 
-Clone this repository with its submodules anywhere `git clone --recurse-submodules git@github.com:aivot-digital/gover.git` and change into the cloned repository.
+Clone this repository with its submodules anywhere and change into the cloned repository:
+
+```bash
+git clone git@github.com:aivot-digital/gover.git ./gover
+cd ./gover
+``` 
 
 ### Adjusting backend config
-Edit the file `./gover-backend/src/main/resources/application.properties` and insert the credentials for PostgreSQL, MinIO and your SMTP.
+
+Edit the file `./config/application.properties` and insert the credentials for PostgreSQL and your SMTP.
 
 ### Build
-Run the following command: `make all`.
-This will create a folder `./out` in the root of your project.
 
-### Configure nginx
-Configure your nginx as follows and reload the service with `service nginx reload`.
-
-```nginx
-upstream backend {
-  server localhost:8080;
-}
-
-server {
-  listen 80      default_server;
-  listen [::]:80 default_server;
-
-  location /admin {
-    alias     /<YOUR_CURRENT_PATH>/out/html/admin;
-    try_files $uri $uri/ /index.html;
-  }
-
-  location ^~/api/ {
-    proxy_pass       http://backend/;
-    proxy_set_header Host      $host;
-    proxy_set_header X-Real-IP $remote_addr;
-  }
-
-  location / {
-    root      /<YOUR_CURRENT_PATH>/out/html/app;
-    try_files $uri $uri/ /index.html;
-  }
-}
-```
-
-You may setup your nginx to https. Please refer to [this guide](http://nginx.org/en/docs/http/configuring_https_servers.html).
+Run the following command: `./mvnw -DskipTests install`.
+This will build a JAR file at `./target/Gover-2.0.0.jar`.
 
 ### Run Gover
 After everything is set up, you can now run the Gover instance.
-Simply run `java -jar ./out/gover.jar` or `nohup java -jar ./out/gover.jar`.
+Simply run `java -jar ./target/Gover-2.0.0.jar` or `nohup java -jar ./target/Gover-2.0.0.jar`.
 
+## Customization
 
-### Customization
-
-You can customize some parts of the gover application.
-All customizations must be applied, before the gover application is built.
+You can customize some parts of the Gover application.
+All customizations must be applied, before the Gover application is built.
 
 ### Customize Theming
 
-To customize the theming, edit the `custom-themes.json` at `./gover-frontend/src/custom-themes.json`.
+To customize the theming, edit the `custom-themes.json` at `./app/src/custom-themes.json`.
 This file contains a list of custom themes, which will be compiled into the Gover frontend application. A config for a new theme called `Candy` looks as follows.
 
 ```json

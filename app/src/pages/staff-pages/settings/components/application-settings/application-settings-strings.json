@@ -1,0 +1,34 @@
+{
+    "en": {
+        "providerTitle": "About the provider",
+        "nameLabel": "Name of the provider",
+        "namePlaceholder": "Aivot UG",
+        "nameHint": "The name is shown when access the application",
+
+        "installationTitle": "About the Gover instance",
+        "hostnameLabel": "Hostname of the instance",
+        "hostnamePlaceholder": "https://gover.aivot.de/",
+        "hostnameHint": "The hostname is the url the instance is running on",
+        "defaultThemeLabel": "Default theme",
+        "defaultThemeHint": "The default theme is applied to the admin interface and when creating new applications",
+
+        "saveLabel": "Save Changes",
+        "resetLabel": "Discard Changes"
+    },
+    "de": {
+        "providerTitle": "Über den Betreiber",
+        "nameLabel": "Name des Betreibers",
+        "namePlaceholder": "Aivot UG",
+        "nameHint": "Der Name wird in der Anwendung angezeigt",
+
+        "installationTitle": "Über die Gover-Instanz",
+        "hostnameLabel": "Hostname der Gover-Instanz",
+        "hostnamePlaceholder": "https://gover.aivot.de/",
+        "hostnameHint": "Der Hostname ist die URL, über die die Instanz aufrufbar ist",
+        "defaultThemeLabel": "Standard-Theme",
+        "defaultThemeHint": "Das Standard-Theme wird auf den Admin-Bereich angewendet, sowie wenn neue Anträge erstellt werden",
+
+        "saveLabel": "Änderungen Speichern",
+        "resetLabel": "Änderungen Verwerfen"
+    }
+}

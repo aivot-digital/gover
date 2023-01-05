@@ -1,0 +1,10 @@
+{
+  "en": {
+    "hint": "Click here to choose a file for uploading",
+    "accept": "Accepted formats:"
+  },
+  "de": {
+    "hint": "Klicken Sie hier, um eine Datei für den Upload auszuwählen",
+    "accept": "Akzeptierte Formate:"
+  }
+}

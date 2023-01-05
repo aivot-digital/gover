@@ -1,0 +1,16 @@
+{
+    "en": {
+        "closeTooltip": "Close",
+        "title": "Duplicate application",
+        "createAndEditLabel": "Duplicate and edit",
+        "onlyCreateLabel": "Duplicate",
+        "cancelLabel": "Cancel"
+    },
+    "de": {
+        "closeTooltip": "Schließen",
+        "title": "Antrag duplizieren",
+        "createAndEditLabel": "Duplizieren und Bearbeiten",
+        "onlyCreateLabel": "Nur Duplizieren",
+        "cancelLabel": "Abbrechen"
+    }
+}

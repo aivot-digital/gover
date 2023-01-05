@@ -1,52 +1,59 @@
 ##
-## Build Frontend
+## Build
 ##
-FROM node:17-alpine AS build-frontend
+FROM --platform=linux/amd64 eclipse-temurin:17-alpine as build
 
-RUN apk add git
-
-WORKDIR /gover-frontend
-
-COPY ./gover-frontend/package.json ./
-COPY ./gover-frontend/package-lock.json ./
-COPY ./gover-frontend/.npmrc ./
-
-RUN npm install
-
-COPY ./gover-frontend/ ./
-COPY ./.git /.git
-
-RUN npm run build:app
-RUN mv ./build ./app
-
-RUN PUBLIC_URL="/admin/" npm run build:admin
-RUN mv ./build ./admin
+RUN apk add --update git nodejs npm
 
 ##
-## Build Master
+## Copy App
 ##
-FROM nginx:mainline
+WORKDIR /gover/app
+
+COPY app/.npmrc .npmrc
+COPY app/package.json package.json
+COPY app/package-lock.json package-lock.json
+
+RUN npm ci
+
+COPY app/public public
+COPY app/scripts scripts
+COPY app/src src
+COPY app/tsconfig.json tsconfig.json
+
+##
+## Copy Server
+##
+WORKDIR /gover
+
+COPY .git .git
+COPY .mvn .mvn
+COPY mvnw mvnw
+COPY pom.xml pom.xml
+
+COPY src src
+
+##
+## Build
+##
+WORKDIR /gover
+RUN ./mvnw -DskipTests install
+
+
+##
+## Run
+##
+FROM --platform=linux/amd64 eclipse-temurin:17 as run
 
 WORKDIR /app
 
 RUN apt-get update
-RUN apt-get -y install openjdk-17-jdk wkhtmltopdf
+RUN apt-get -y install wkhtmltopdf
 
 RUN ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf;
 RUN chmod +x /usr/local/bin/wkhtmltopdf;
 
-COPY ./gover-backend/.mvn/ ./.mvn/
-COPY ./gover-backend/mvnw ./
-COPY ./gover-backend/pom.xml ./
+COPY --from=build /gover/target/Gover-1.0.0.jar /app/gover.jar
 
-COPY ./gover-backend/src ./src/
-
-RUN /app/mvnw -DskipTests install
-
-COPY --from=build-frontend /gover-frontend/app /var/www/app/html
-COPY --from=build-frontend /gover-frontend/admin /var/www/admin/html
-
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-
-ENTRYPOINT ["/bin/sh"]
-CMD  ["-c", "nginx & /app/mvnw spring-boot:run"]
+ENTRYPOINT ["java"]
+CMD  ["-jar", "/app/gover.jar"]
