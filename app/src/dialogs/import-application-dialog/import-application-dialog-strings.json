@@ -1,0 +1,20 @@
+{
+    "en": {
+        "title": "Import existing application",
+        "closeTooltip": "Close",
+        "importHelper": "Import an existing application in the GOV format (*.gov).",
+        "importEditLabel": "Import and Edit",
+        "importLabel": "Import",
+        "cancelLabel": "Cancel",
+        "importError": "File import failed."
+    },
+    "de": {
+        "title": "Bestehenden Antrag importieren",
+        "closeTooltip": "Schließen",
+        "importHelper": "Importieren Sie einen bestehenden Antrag im GOV-Format (*.gov).",
+        "importEditLabel": "Importieren and Bearbeiten",
+        "importLabel": "Nur Importieren",
+        "cancelLabel": "Abbrechen",
+        "importError": "Die Datei konnte nicht importiert werden."
+    }
+}

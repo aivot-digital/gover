@@ -1,12 +1,23 @@
 ### Jetbrains ###
 /.idea/
+*.iws
+*.iml
+*.ipr
+
+### Backend ###
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+/media/
+
+### Docker ###
+/data/
+
+### Frontend ###
+/app/node_modules/
+/app/build/
+/src/main/resources/static
 
 ### macOS ###
 .DS_Store
-
-### Build ###
-/out/
-
-### Dependencies ###
-/gover-frontend/
-/gover-backend/

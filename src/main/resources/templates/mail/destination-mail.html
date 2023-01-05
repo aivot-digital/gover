@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Neuer Antrag: <th:block th:text="${title}"></th:block></title>
+</head>
+<body>
+<p>
+    Hallo, <br/>
+    ein neuer Antrag ist eingegangen.
+    Antrag: <b th:text="${title}"></b>.
+</p>
+<p>
+    Diese E-Mail ist automatisch generiert.
+    Bitte nicht antworten.
+</p>
+</body>
+</html>

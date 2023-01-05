@@ -1,0 +1,28 @@
+{
+    "en": {
+        "defaultTitle": "Unnamed Application",
+        "lastUpdatedLabel": "Last updated",
+        "today": "Today",
+        "oClock": "o'clock",
+        "editLabel": "Edit",
+        "cloneLabel": "Duplicate",
+        "optionsLabel": "Options",
+        "openAsCustomerLabel": "Open application as a applicant (in new Tab)",
+        "downloadDocumentationLabel": "Download documentation",
+        "downloadGovFileLabel": "Download as .gov file",
+        "deleteLabel": "Delete application"
+    },
+    "de": {
+        "defaultTitle": "Unbenannter Antrag",
+        "lastUpdatedLabel": "Zuletzt bearbeitet",
+        "today": "Heute",
+        "oClock": "Uhr",
+        "editLabel": "Bearbeiten",
+        "cloneLabel": "Duplizieren",
+        "optionsLabel": "Optionen",
+        "openAsCustomerLabel": "Antrag als Antragsteller:in öffnen (in neuem Tab)",
+        "downloadDocumentationLabel": "Antrags-Dokumentation herunterladen",
+        "downloadGovFileLabel": "Antrag als .gov-Datei exportieren",
+        "deleteLabel": "Antrag löschen"
+    }
+}

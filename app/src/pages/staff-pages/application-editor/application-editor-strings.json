@@ -1,0 +1,24 @@
+{
+    "en": {
+        "notFoundTitle": "Not Found",
+        "disableValidations": "Disable validations",
+        "enableValidations": "Enable validations",
+        "disableVisibilities": "Disable visibilities",
+        "enableVisibilities": "Enable visibilities",
+        "openAdminToolsTooltip": "Open admin tools",
+        "hideElementTreeTooltip": "Hide element tree",
+        "showElementTreeTooltip": "Show element tree",
+        "openAsCustomer": "Open application as customer"
+    },
+    "de": {
+        "notFoundTitle": "Nicht gefunden",
+        "disableValidations": "Validierungen deaktivieren",
+        "enableValidations": "Validierungen aktivieren",
+        "disableVisibilities": "Sichtbarkeiten deaktivieren",
+        "enableVisibilities": "Sichtbarkeiten aktivieren",
+        "openAdminToolsTooltip": "Admin-Werkzeuge öffnen",
+        "hideElementTreeTooltip": "Antragsstruktur ausblenden",
+        "showElementTreeTooltip": "Antragsstruktur einblenden",
+        "openAsCustomer": "Antrag als Antragsteller:in öffnen (in neuem Tab)"
+    }
+}

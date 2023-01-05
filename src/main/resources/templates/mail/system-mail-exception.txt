@@ -1,0 +1,6 @@
+Es ist ein Fehler im Betrieb aufgetreten:
+
+Fehler: [(${message})]
+
+StackTrace:
+[(${stackTrace})]

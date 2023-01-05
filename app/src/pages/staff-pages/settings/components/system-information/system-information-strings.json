@@ -1,0 +1,12 @@
+{
+    "en": {
+        "versionLabel": "Version",
+        "branchLabel": "Branch",
+        "dateLabel": "Compiler Date"
+    },
+    "de": {
+        "versionLabel": "Version",
+        "branchLabel": "Ursprung",
+        "dateLabel": "Compiler-Datum"
+    }
+}
