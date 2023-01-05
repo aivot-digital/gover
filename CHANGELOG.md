@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0](https://github.com/aivot-digital/gover/compare/v1.0.5...v2.0.0) (2023-01-05)
+## [2.0.0](https://github.com/aivot-digital/gover/compare/v1.0.6...v2.0.0) (2023-01-05)
 
 ### Features
 
