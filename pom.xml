@@ -93,20 +93,34 @@
                 <version>3.1.0</version>
                 <executions>
                     <execution>
-                        <id>app</id>
+                        <id>install app</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
+                        <configuration>
+                            <arguments>
+                                <argument>ci</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build app</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>
+                                <argument>run</argument>
+                                <argument>build</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
                     <executable>npm</executable>
                     <workingDirectory>./app</workingDirectory>
-                    <arguments>
-                        <argument>run</argument>
-                        <argument>build</argument>
-                    </arguments>
                 </configuration>
             </plugin>
 
