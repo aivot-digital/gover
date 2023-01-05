@@ -16,7 +16,8 @@
 
 ### Frontend ###
 /app/node_modules/
-/app/build/
+/app/build/1
+/app/src/git-info.json
 /src/main/resources/static
 
 ### macOS ###
