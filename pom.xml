@@ -94,7 +94,7 @@
                 <executions>
                     <execution>
                         <id>install app</id>
-                        <phase>compile</phase>
+                        <phase>process-resources</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -106,7 +106,7 @@
                     </execution>
                     <execution>
                         <id>build app</id>
-                        <phase>compile</phase>
+                        <phase>process-resources</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
