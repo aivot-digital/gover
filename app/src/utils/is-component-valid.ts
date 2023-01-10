@@ -41,7 +41,7 @@ export function isComponentValid($debug: Logger, dispatch: Dispatch<any>, comp: 
                 if (comp.type === ElementType.ReplicatingContainer) {
                     const values: string[] | null = userInput[id];
                     return (values ?? []).map(val =>
-                        isComponentValid($debug, dispatch, child, userInput, `${comp.id}_${val}_`)
+                        isComponentValid($debug, dispatch, child, userInput, `${id}_${val}_`)
                     ).every(val => val);
                 } else {
                     return isComponentValid($debug, dispatch, child, userInput, idPrefix);
