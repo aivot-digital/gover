@@ -1,7 +1,10 @@
 import {TextField} from '@mui/material';
-import {DateFieldElement, DateFieldComponentModelMode} from '../../models/elements/form-elements/input-elements/date-field-element';
-import {DatePicker, DatePickerProps, LocalizationProvider} from '@mui/lab';
-import AdapterDateFns from '@mui/lab/AdapterDateFns';
+import {
+    DateFieldComponentModelMode,
+    DateFieldElement
+} from '../../models/elements/form-elements/input-elements/date-field-element';
+import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
+import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';
 import {useCallback} from 'react';
 import {faCalendarDay} from '@fortawesome/pro-light-svg-icons';
@@ -34,13 +37,6 @@ const viewsMap: {
     [DateFieldComponentModelMode.Year]: ['year'],
 }
 
-const locale: Partial<DatePickerProps<any>> = {
-    cancelText: 'Abbrechen',
-    okText: 'Ok',
-    toolbarPlaceholder: 'Auswählen',
-    clearText: 'Löschen',
-};
-
 export function DateFieldComponentView({setValue, element, value, error}: BaseViewProps<DateFieldElement, string>) {
     const dateValue = value != null ? new Date(value) : null;
 
@@ -68,9 +64,9 @@ export function DateFieldComponentView({setValue, element, value, error}: BaseVi
             if (changedValue != null) {
                 if (changedValue instanceof Date) {
                     if (isNaN(changedValue.getTime())) {
-                        setValue( null);
+                        setValue(null);
                     } else {
-                        setValue( changedValue.toISOString() ?? '');
+                        setValue(changedValue.toISOString() ?? '');
                     }
                 }
             } else {
@@ -82,7 +78,7 @@ export function DateFieldComponentView({setValue, element, value, error}: BaseVi
     return (
         <LocalizationProvider
             dateAdapter={AdapterDateFns}
-            locale={deLocale}
+            adapterLocale={deLocale}
         >
             <DatePicker
                 label={label}
@@ -96,11 +92,8 @@ export function DateFieldComponentView({setValue, element, value, error}: BaseVi
                 mask={mask}
                 value={dateValue}
 
-                {...locale}
-
                 onChange={handleChange}
 
-                clearable
                 disabled={element.disabled}
 
                 renderInput={(params: any) => (
@@ -114,6 +107,12 @@ export function DateFieldComponentView({setValue, element, value, error}: BaseVi
                         }}
                     />
                 )}
+
+                componentsProps={{
+                    actionBar: {
+                        actions: ['accept', 'cancel', 'clear'],
+                    },
+                }}
 
                 components={{
                     OpenPickerIcon: OpenIcon,
