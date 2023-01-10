@@ -106,7 +106,7 @@ Replace all data in the angle brackets with your respective data.
 ### Running Gover
 
 If you have docker-compose installed get started by running `docker-compose up`.
-Gover is now available at <http://localhost:8080/admin/index.html>.
+Gover is now available at <http://localhost:8080/admin>.
 
 **Please note**, that the Gover application prints initial login data for an admin user to the console. 
 Use these credentials for your first login.

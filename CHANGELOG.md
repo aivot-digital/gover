@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.1](https://github.com/aivot-digital/gover/compare/v2.0.0...v2.0.1) (2023-01-10)
+
+### Features
+
+* **Project:** Add auto redirect for the admin app. Appending index.html is no longer necessary
+* **Project:** Migrate @mui DatePicker from @mui/lab to @mui/x-date-pickers
+* **Project:** Remove unused library @mui/lab
+* **Project:** Update README.md with new path for the admin app
+
+### Bug Fixes
+
+* **Project:** Fix CORS settings for local development
+
+
 ## [2.0.0](https://github.com/aivot-digital/gover/compare/v1.0.6...v2.0.0) (2023-01-05)
 
 ### Features
