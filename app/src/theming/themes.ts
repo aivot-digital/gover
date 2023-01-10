@@ -1,5 +1,7 @@
 import {createTheme, PaletteOptions, Theme} from '@mui/material';
 import _CustomerThemes from '../custom-themes.json';
+import {deDE as datePickerLocale} from "@mui/x-date-pickers";
+import {deDE as coreLocale} from "@mui/material/locale";
 
 const CustomerThemes = _CustomerThemes as {
     name: string;
@@ -89,5 +91,5 @@ export function createAppTheme(theme?: string, baseTheme?: Theme) {
                 }
             }
         }
-    });
+    }, coreLocale, datePickerLocale);
 }

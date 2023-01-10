@@ -35,7 +35,9 @@
     "react-helmet": "^6.1.0",
     "react-markdown": "^7.1.1",
     "react-redux": "^7.2.6",
-    "react-router-dom": "^6.2.1"
+    "react-router-dom": "^6.2.1",
+    "@date-io/date-fns": "^2.16.0",
+    "@mui/x-date-pickers": "^5.0.13"
   },
   "devDependencies": {
     "react-scripts": "5.0.1",
