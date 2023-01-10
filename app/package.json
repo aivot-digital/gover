@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@date-io/date-fns": "^2.16.0",
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@fortawesome/fontawesome-svg-core": "^6.2.1",
@@ -14,9 +15,9 @@
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@monaco-editor/react": "^4.3.1",
     "@mui/icons-material": "^5.2.5",
-    "@mui/lab": "^5.0.0-alpha.64",
     "@mui/material": "^5.2.6",
     "@mui/x-data-grid": "^5.4.0",
+    "@mui/x-date-pickers": "^5.0.13",
     "@reduxjs/toolkit": "^1.7.1",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
@@ -35,15 +36,9 @@
     "react-helmet": "^6.1.0",
     "react-markdown": "^7.1.1",
     "react-redux": "^7.2.6",
-    "react-router-dom": "^6.2.1",
-    "@date-io/date-fns": "^2.16.0",
-    "@mui/x-date-pickers": "^5.0.13"
+    "react-router-dom": "^6.2.1"
   },
   "devDependencies": {
-    "react-scripts": "5.0.1",
-    "sass": "^1.45.2",
-    "typescript": "^4.5.4",
-    "web-vitals": "^2.1.2",
     "@types/jest": "^27.4.0",
     "@types/node": "^16.11.17",
     "@types/react": "^17.0.38",
@@ -52,7 +47,11 @@
     "@types/react-helmet": "^6.1.5",
     "csv-parser": "^3.0.0",
     "csv-writer": "^1.6.0",
-    "glob": "^8.0.3"
+    "glob": "^8.0.3",
+    "react-scripts": "5.0.1",
+    "sass": "^1.45.2",
+    "typescript": "^4.5.4",
+    "web-vitals": "^2.1.2"
   },
   "scripts": {
     "git-info": "node scripts/get-git-info.js",
