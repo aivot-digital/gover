@@ -1,7 +1,7 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit'
 import {RootState} from '../store';
 
-const initialState: {
+export interface AdminSettingsState {
     disableVisibility: boolean;
     disableValidation: boolean;
     useIdsInComponentTree: boolean;
@@ -10,7 +10,10 @@ const initialState: {
     isDraggingTreeElement: boolean;
     showUserInput: boolean;
     warnDuplicateIds: boolean;
-} = {
+    showDebugOutput: boolean;
+}
+
+const initialState: AdminSettingsState = {
     disableVisibility: false,
     disableValidation: false,
     useIdsInComponentTree: false,
@@ -19,37 +22,41 @@ const initialState: {
     isDraggingTreeElement: false,
     showUserInput: false,
     warnDuplicateIds: false,
+    showDebugOutput: false,
 };
 
 const adminSettingsSlice = createSlice({
     name: 'adminSettings',
     initialState: {...initialState},
     reducers: {
-        toggleVisibility: (state, _: PayloadAction<void>) => {
+        toggleVisibility: (state) => {
             state.disableVisibility = !state.disableVisibility;
         },
-        toggleValidation: (state, _: PayloadAction<void>) => {
+        toggleValidation: (state) => {
             state.disableValidation = !state.disableValidation;
         },
-        toggleIdsInComponentTree: (state, _: PayloadAction<void>) => {
+        toggleIdsInComponentTree: (state) => {
             state.useIdsInComponentTree = !state.useIdsInComponentTree;
         },
-        toggleComponentTree: (state, _: PayloadAction<void>) => {
+        toggleComponentTree: (state) => {
             state.hideComponentTree = !state.hideComponentTree;
         },
-        toggleTestMode: (state, _: PayloadAction<void>) => {
+        toggleTestMode: (state) => {
             state.useTestMode = !state.useTestMode;
         },
         setIsDraggingTreeElement: (state, action: PayloadAction<boolean>) => {
             state.isDraggingTreeElement = action.payload;
         },
-        toggleShowUserInput: (state, _: PayloadAction<void>) => {
+        toggleShowUserInput: (state) => {
             state.showUserInput = !state.showUserInput;
         },
-        toggleWarnDuplicateIds: (state, _: PayloadAction<void>) => {
+        toggleWarnDuplicateIds: (state) => {
             state.warnDuplicateIds = !state.warnDuplicateIds;
         },
-        resetAdminSettings: (state, _: PayloadAction<void>) => {
+        toggleShowDebugOutput: (state) => {
+            state.showDebugOutput = !state.showDebugOutput;
+        },
+        resetAdminSettings: (state) => {
             for (const key of Object.keys(initialState)) {
                 (state as any)[key] = (initialState as any)[key];
             }
@@ -66,6 +73,7 @@ export const {
     setIsDraggingTreeElement,
     toggleShowUserInput,
     toggleWarnDuplicateIds,
+    toggleShowDebugOutput,
     resetAdminSettings,
 } = adminSettingsSlice.actions;
 
@@ -77,5 +85,6 @@ export const selectUseTestMode = (state: RootState) => state.adminSettings.useTe
 export const selectIsDraggingTreeElement = (state: RootState) => state.adminSettings.isDraggingTreeElement;
 export const selectShowUserInput = (state: RootState) => state.adminSettings.showUserInput;
 export const selectWarnDuplicateIds = (state: RootState) => state.adminSettings.warnDuplicateIds;
+export const selectShowDebugOutput = (state: RootState) => state.adminSettings.showDebugOutput;
 
 export const adminSettingsReducer = adminSettingsSlice.reducer;

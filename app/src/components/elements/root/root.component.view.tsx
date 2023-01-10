@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
+import {Container, Dialog, DialogContent, StepLabel, Stepper, useTheme} from '@mui/material';
 import {RootElement} from '../../../models/elements/root-element';
 import {addError, resetErrors} from '../../../slices/customer-input-errors-slice';
 import {ViewDispatcherComponent} from '../../view-dispatcher.component';
@@ -30,9 +30,12 @@ import {selectCustomerInput} from '../../../slices/customer-input-slice';
 import {nextStep, previousStep, selectCurrentStep} from '../../../slices/stepper-slice';
 import {ElementType} from '../../../data/element-type/element-type';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useLogging} from "../../../hooks/use-logging";
+import {ElementNames} from "../../../data/element-type/element-names";
 
 export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
+    const [$debug] = useLogging();
 
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedApplication);
@@ -46,51 +49,74 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const [validatedWithErrors, setValidatedWithErrors] = useState(false);
 
     const isCurrentPageValid = useCallback(() => {
-        if (!adminSettings.disableValidation) {
-            if (currentStep === 0) {
-                if (!adminSettings.disableValidation) {
-                    if (customerData[PrivacyUserInputKey] == null || customerData[PrivacyUserInputKey] === false) {
-                        dispatch(addError({
-                            key: PrivacyUserInputKey,
-                            error: 'Bitte akzeptieren Sie die Hinweise zum Datenschutz.',
-                        }));
-                        return false;
-                    }
-                }
-            }
+        $debug.start('isCurrentPageValid');
 
-            if (currentStep === (element.children ?? []).length + 1) {
-                if (!adminSettings.disableValidation) {
-                    if (customerData[SummaryUserInputKey] == null || customerData[SummaryUserInputKey] === false) {
-                        dispatch(addError({
-                            key: SummaryUserInputKey,
-                            error: 'Bitte bestätigen Sie, dass Sie die Zusammenfassung Ihres Antrages geprüft haben.',
-                        }));
-                        return false;
-                    }
-                }
-            }
-
-            if (currentStep === (element.children ?? []).length + 2) {
-                if (!adminSettings.disableValidation) {
-                    if (customerData[SubmitHumanKey] == null || customerData[SubmitHumanKey] === false) {
-                        dispatch(addError({
-                            key: SubmitHumanKey,
-                            error: 'Bitte bestätigen Sie, dass Sie ein Mensch sind.',
-                        }));
-                        return false;
-                    }
-                }
-            }
-        }
-        const step = (element.children ?? [])[currentStep - 1];
-        if (step == null) {
+        if (adminSettings.disableValidation) {
+            $debug.log('Validation disabled');
+            $debug.end();
             return true;
         }
-        return adminSettings.disableValidation || isComponentValid(dispatch, step, customerData);
+
+        const steps = element.children ?? [];
+
+        let isValid = true;
+
+        if (currentStep === 0) {
+            $debug.log(`Testing ${ElementNames[ElementType.IntroductionStep]}`);
+
+            if (customerData[PrivacyUserInputKey] == null || customerData[PrivacyUserInputKey] === false) {
+                dispatch(addError({
+                    key: PrivacyUserInputKey,
+                    error: 'Bitte akzeptieren Sie die Hinweise zum Datenschutz.',
+                }));
+
+                isValid = false;
+            }
+        }
+
+        else if (currentStep === steps.length + 1) {
+            $debug.log(`Testing ${ElementNames[ElementType.SummaryStep]}`);
+
+            if (customerData[SummaryUserInputKey] == null || customerData[SummaryUserInputKey] === false) {
+                dispatch(addError({
+                    key: SummaryUserInputKey,
+                    error: 'Bitte bestätigen Sie, dass Sie die Zusammenfassung Ihres Antrages geprüft haben.',
+                }));
+
+
+                isValid = false;
+            }
+        }
+
+        else if (currentStep === steps.length + 2) {
+            $debug.log(`Testing ${ElementNames[ElementType.SubmitStep]}`);
+
+            if (customerData[SubmitHumanKey] == null || customerData[SubmitHumanKey] === false) {
+                dispatch(addError({
+                    key: SubmitHumanKey,
+                    error: 'Bitte bestätigen Sie, dass Sie ein Mensch sind.',
+                }));
+
+                isValid = false;
+            }
+        }
+
+        else {
+            const step = steps[currentStep - 1];
+            if (step != null) {
+                isValid = isComponentValid($debug, dispatch, step, customerData);
+            }
+        }
+
+        $debug.log(`${ElementNames[ElementType.SubmitStep]} is ${isValid ? '' : 'in'}valid`);
+        $debug.end();
+
+        return isValid;
     }, [dispatch, adminSettings, element, currentStep, customerData]);
 
     const handleNextStep = () => {
+        $debug.start('handleNextStep');
+
         dispatch(resetErrors());
         if (isCurrentPageValid()) {
             if (currentStep === (steps.length - 1)) {
@@ -123,6 +149,8 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
             currentStep !== (element.children ?? []).length + 2 &&
             setValidatedWithErrors(true)
         }
+
+        $debug.end();
     }
 
     const steps = [
