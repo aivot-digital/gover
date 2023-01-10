@@ -8,11 +8,16 @@ import {AnyInputElement} from '../models/elements/form-elements/input-elements/a
 import {AnyElement} from '../models/elements/any-element';
 import {isLayoutElement} from '../models/elements/form-elements/layout-elements/base-layout-element';
 import {isInputElement} from '../models/elements/form-elements/input-elements/base-input-element';
+import {Logger} from "../hooks/use-logging";
 
-export function isComponentValid(dispatch: Dispatch<any>, comp: AnyElement, userInput: any, idPrefix?: string): boolean {
+export function isComponentValid($debug: Logger, dispatch: Dispatch<any>, comp: AnyElement, userInput: any, idPrefix?: string): boolean {
     const id = idPrefix != null ? (idPrefix + comp.id) : comp.id;
 
+    $debug.start(`Validating Element ${id}`);
+
     if (!isComponentVisible(id, comp, userInput)) {
+        $debug.log(`Element ${id} is not visible and needs no validation`);
+        $debug.end();
         return true;
     }
 
@@ -36,18 +41,17 @@ export function isComponentValid(dispatch: Dispatch<any>, comp: AnyElement, user
                 if (comp.type === ElementType.ReplicatingContainer) {
                     const values: string[] | null = userInput[id];
                     return (values ?? []).map(val =>
-                        isComponentValid(dispatch, child, userInput, `${comp.id}_${val}_`)
+                        isComponentValid($debug, dispatch, child, userInput, `${comp.id}_${val}_`)
                     ).every(val => val);
                 } else {
-                    return isComponentValid(dispatch, child, userInput, idPrefix);
+                    return isComponentValid($debug, dispatch, child, userInput, idPrefix);
                 }
             })
             .every(val => val);
     }
 
-    if (!isValid) {
-        console.debug(`Element ${comp.id} is not valid`);
-    }
+    $debug.log(`Element ${comp.id} is ${isValid ? '' : 'in'}valid`);
+    $debug.end();
 
     return isValid;
 }

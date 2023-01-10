@@ -1,0 +1,20 @@
+{
+    "de": {
+        "close": "Schließen",
+
+        "title": "Admin-Werkzeuge für die Bearbeitung des Antrages",
+        "hint": "Aktivieren oder Deaktivieren Sie ausgewählte Funktionen, um Ihnen die Bearbeitung Ihres Antrages einfacher zu gestalten.",
+
+        "validateSwitchLabel": "Validierungen berücksichtigen",
+        "validateSwitchHint": "Deaktivieren Sie die Validierungen von Eingaben um schnell im Antrag navigieren zu können ohne fehlerhafte Eingaben korrigieren zu müssen.",
+
+        "visibilitySwitchLabel": "Sichtbarkeiten berücksichtigen",
+        "visibilitySwitchHint": "Deaktivieren Sie die Sichtbarkeiten um alle Abschnitte und Elemente des Antrages jederzeit einsehen zu können.",
+
+        "userInputSwitchLabel": "Nutzereingaben im Speicher anzeigen",
+        "userInputSwitchHint": "Lassen Sie sich die aktuellen Nutzereingaben im Speicher anzeigen. Entwickler können so besser nachvollziehen, welche Eingaben getätigt wurden.",
+
+        "debugSwitchLabel": "Debug-Ausgabe in der Konsole erlauben",
+        "debugSwitchHint": "Lassen Sie sich die Debug-Ausgaben in der JavaScript-Konsole anzeigen. Entwickler können so mögliche Probleme besser nachvollziehen."
+    }
+}

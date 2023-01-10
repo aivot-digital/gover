@@ -16,6 +16,7 @@ const customerInputErrorsSlice = createSlice({
             state.errors = {};
         },
         addError: (state, action: PayloadAction<{ key: string, error: string; }>) => {
+            console.log(`Adding error for ${action.payload.key}`, action.payload.error);
             state.errors[action.payload.key] = action.payload.error;
         },
     },

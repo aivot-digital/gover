@@ -1,5 +1,6 @@
 import React, {useCallback} from 'react';
 import {
+    Box,
     Button,
     Dialog,
     DialogContent,
@@ -11,9 +12,14 @@ import {
     Typography
 } from '@mui/material';
 import {useDispatch, useSelector} from 'react-redux';
-import {RootState} from '../../store';
-import {toggleShowUserInput, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
-import {faCode, faFileExport, faFilePdf, faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
+import {AppDispatch, RootState} from '../../store';
+import {
+    AdminSettingsState, toggleShowDebugOutput,
+    toggleShowUserInput,
+    toggleValidation,
+    toggleVisibility
+} from '../../slices/admin-settings-slice';
+import {faCode, faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {resetUserInput} from '../../slices/customer-input-slice';
@@ -23,20 +29,48 @@ import {selectLoadedApplication} from '../../slices/app-slice';
 import {resetStepper} from '../../slices/stepper-slice';
 import {downloadTextFile} from '../../utils/download-text-file';
 import {showErrorSnackbar, showSuccessSnackbar} from "../../slices/snackbar-slice";
+import {Localization} from "../../locale/localization";
+import strings from "./admin-tools-dialog-strings.json";
 
-// TODO: Localize
+const _ = Localization(strings);
+
+const switches: {
+    label: string;
+    hint: string;
+    onToggle: (dispatch: AppDispatch) => void;
+    isActive: (settings: AdminSettingsState) => boolean;
+}[] = [
+    {
+        label: _.validateSwitchLabel,
+        hint: _.validateSwitchHint,
+        onToggle: dispatch => dispatch(toggleValidation()),
+        isActive: settings => !settings.disableValidation,
+    },
+    {
+        label: _.visibilitySwitchLabel,
+        hint: _.visibilitySwitchHint,
+        onToggle: dispatch => dispatch(toggleVisibility()),
+        isActive: settings => !settings.disableVisibility,
+    },
+    {
+        label: _.debugSwitchLabel,
+        hint: _.debugSwitchHint,
+        onToggle: dispatch => dispatch(toggleShowDebugOutput()),
+        isActive: settings => settings.showDebugOutput,
+    },
+    {
+        label: _.userInputSwitchLabel,
+        hint: _.userInputSwitchHint,
+        onToggle: dispatch => dispatch(toggleShowUserInput()),
+        isActive: settings => settings.showUserInput,
+    },
+];
 
 export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
     const dispatch = useDispatch();
 
     const application = useSelector(selectLoadedApplication);
     const adminSettings = useSelector((state: RootState) => state.adminSettings);
-
-    const downloadConfig = useCallback(() => {
-        if (application) {
-            // TODO: Implement downloadConfigFile(rootModel);
-        }
-    }, [application]);
 
     return (
         <>
@@ -48,65 +82,35 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                 <DialogTitleWithClose
                     id="admin-tools-dialog-title"
                     onClose={onClose}
-                    closeTooltip={'Close' /* TODO: Localize */}
+                    closeTooltip={_.close}
                 >
-                    Admin-Werkzeuge für die Bearbeitung des Antrages
+                    {_.title}
                 </DialogTitleWithClose>
 
                 <DialogContent>
                     <Typography variant="body1">
-                        Aktivieren oder Deaktivieren Sie ausgewählte Funktionen, um Ihnen die Bearbeitung Ihres Antrages
-                        einfacher zu gestalten.
+                        {_.hint}
                     </Typography>
 
-                    <FormGroup sx={{mt: 3}}>
-                        <FormControlLabel
-                            control={<Switch
-                                checked={!adminSettings.disableValidation}
-                                onChange={() => {
-                                    dispatch(toggleValidation());
-                                }}
-                            />}
-                            label="Validierungen berücksichtigen"
-                        />
+                    <Box sx={{mt: 3}}>
+                        {
+                            switches.map(swtch => (
+                                <FormGroup key={swtch.label}>
+                                    <FormControlLabel
+                                        control={<Switch
+                                            checked={swtch.isActive(adminSettings)}
+                                            onChange={() => swtch.onToggle(dispatch)}
+                                        />}
+                                        label={swtch.label}
+                                    />
 
-                        <FormHelperText>
-                            Deaktivieren Sie die Validierungen von Eingaben um schnell im Antrag navigieren zu können
-                            ohne fehlerhafte Eingaben korrigieren zu müssen.
-                        </FormHelperText>
-
-                        <FormControlLabel
-                            sx={{mt: 2}}
-                            control={<Switch
-                                checked={!adminSettings.disableVisibility}
-                                onChange={() => {
-                                    dispatch(toggleVisibility());
-                                }}
-                            />}
-                            label="Sichtbarkeiten berücksichtigen"
-                        />
-
-                        <FormHelperText>
-                            Deaktivieren Sie die Sichtbarkeiten um alle Abschnitte und Elemente des Antrages jederzeit
-                            einsehen zu können.
-                        </FormHelperText>
-
-                        <FormControlLabel
-                            sx={{mt: 2}}
-                            control={<Switch
-                                checked={adminSettings.showUserInput}
-                                onChange={() => {
-                                    dispatch(toggleShowUserInput());
-                                }}
-                            />}
-                            label="Nutzereingaben im Speicher anzeigen"
-                        />
-
-                        <FormHelperText>
-                            Lassen Sie sich die aktuellen Nutzereingaben im Speicher anzeigen.
-                            Entwickler können so besser nachvollziehen, welche Eingaben getätigt wurden.
-                        </FormHelperText>
-                    </FormGroup>
+                                    <FormHelperText>
+                                        {swtch.hint}
+                                    </FormHelperText>
+                                </FormGroup>
+                            ))
+                        }
+                    </Box>
 
                     <Divider sx={{my: 2, mt: 5}}/>
 
