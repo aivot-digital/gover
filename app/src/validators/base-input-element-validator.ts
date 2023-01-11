@@ -10,7 +10,7 @@ export abstract class BaseInputElementValidator<T, M extends AnyInputElement> ex
             return null;
         }
 
-        const value: T | undefined = comp.disabled ? comp.value : (userInput[id] ?? comp.value);
+        const value: T | undefined = userInput[id] ?? comp.value;
 
         if (comp.required && (value == null || this.checkEmpty(comp, value))) {
             return this.getEmptyErrorText(comp);

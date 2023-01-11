@@ -36,9 +36,9 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
             </Typography>
 
             {
-                models.map(model => (
+                models.map((model, index) => (
                     <SummaryDispatcherComponent
-                        key={model.id}
+                        key={model.id + index.toString()}
                         model={model}
                     />
                 ))

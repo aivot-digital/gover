@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
 import de.aivot.GoverBackend.models.Application;
@@ -26,6 +27,10 @@ public class ScriptService {
     private static final Logger logger = LoggerFactory.getLogger(ScriptService.class);
 
     private final static String GLOBAL_DATA_FIELD = "$$global";
+    private final static String PATCH_FUNCTION_GROUP = "patch";
+    private final static String VALIDATE_FUNCTION_GROUP = "validate";
+    private final static String VISIBILITY_FUNCTION_GROUP = "visibility";
+    private final static String FUNCTION_NAME_KEY = "functionName";
 
     private final BlobService blobService;
 
@@ -63,38 +68,53 @@ public class ScriptService {
     }
 
     @Nullable
-    private String validateElement(Map<String, Object> element, Map<String, Object> customerData, @Nullable ScriptEngine script, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+    private String validateElement(Map<String, Object> pElement, Map<String, Object> customerData, @Nullable ScriptEngine script, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+        Map<String, Object> element = pElement;
+
+        if (!isElementVisible(script, element, idPrefix)) {
+            return null;
+        }
+
         String elementId = (String) element.get("id");
+
+        String patchFunc = getFunctionName(element, PATCH_FUNCTION_GROUP);
+        if (patchFunc != null) {
+            Object scriptRetVal = callFunction(script, element, elementId, patchFunc);
+            if (scriptRetVal instanceof Map<?, ?>) {
+                element = (Map<String, Object>) scriptRetVal;
+            }
+        }
+
         if (idPrefix != null) {
             elementId = idPrefix + "_" + elementId;
         }
 
-        // Store visible state to prevent recalculation in upcoming steps
-        boolean elementWasPreviouslyMarkedVisible = false;
+        boolean isRequired = Boolean.TRUE.equals(element.getOrDefault("required", false));
+        if (isRequired) {
+            Object data = customerData.getOrDefault(elementId, null);
 
-        if (element.containsKey("required") && Boolean.TRUE.equals(element.containsKey("required"))) {
-            if (isElementVisible(script, element, idPrefix)) {
-                elementWasPreviouslyMarkedVisible = true;
-                if (!customerData.containsKey(elementId)) {
-                    return "Missing required value for " + elementId;
-                }
+            if (data == null) {
+                return "Missing value for required element " + elementId;
+            }
+
+            if (data instanceof String && Strings.isNullOrEmpty((String) data)) {
+                return "Missing or empty value for required element " + elementId;
+            }
+
+            if (data instanceof Boolean && Boolean.FALSE.equals(data)) {
+                return "False value for required boolean element " + elementId;
+            }
+
+            if (data instanceof List<?> && ((List<?>) data).isEmpty()) {
+                return "Empty value for required element " + elementId;
             }
         }
 
-        if (element.containsKey("validate")) {
-            Map<String, String> validateFunctionSet = (Map<String, String>) element.get("validate");
-            if (validateFunctionSet.containsKey("functionName")) {
-                String functionName = validateFunctionSet.get("functionName");
-                if (functionName != null && !functionName.isEmpty()) {
-                    if (script == null) {
-                        throw new ScriptRequiredException();
-                    }
-                    if (elementWasPreviouslyMarkedVisible || isElementVisible(script, element, idPrefix)) {
-                        String elementString = mapToString(element);
-                        String functionCall = String.format("%s(%s, %s, '%s')", functionName, GLOBAL_DATA_FIELD, elementString, elementId);
-                        return (String) script.eval(functionCall);
-                    }
-                }
+        String validateFunc = getFunctionName(element, VALIDATE_FUNCTION_GROUP);
+        if (validateFunc != null) {
+            Object scriptRetVal = callFunction(script, element, elementId, validateFunc);
+            if (scriptRetVal instanceof String && !Strings.isNullOrEmpty((String) scriptRetVal)) {
+                return (String) scriptRetVal;
             }
         }
 
@@ -136,39 +156,51 @@ public class ScriptService {
     }
 
     public boolean isElementVisible(@Nullable ScriptEngine script, Map<String, Object> element, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
-        if (!element.containsKey("visibility")) {
+        String functionName = getFunctionName(element, VISIBILITY_FUNCTION_GROUP);
+        if (functionName == null) {
             return true;
         }
 
-        String elementString = mapToString(element);
-
-        Map<String, String> visibleFunctionSet = (Map<String, String>) element.get("visibility");
-        String functionName = visibleFunctionSet.get("functionName");
-
-        if (functionName != null && !functionName.isEmpty()) {
-            if (script == null) {
-                throw new ScriptRequiredException();
-            }
-
-            String elementId = (String) element.get("id");
-            if (idPrefix != null) {
-                elementId = idPrefix + "_" + elementId;
-            }
-            String functionCall = String.format("%s(%s, %s, '%s')", functionName, GLOBAL_DATA_FIELD, elementString, elementId);
-            Object result = script.eval(functionCall);
-
-            if (result instanceof Boolean) {
-                return (Boolean) result;
-            } else if (result instanceof String) {
-                return "true".equals(result);
-            } else {
-                return result != null;
-            }
+        String elementId = (String) element.get("id");
+        if (idPrefix != null) {
+            elementId = idPrefix + "_" + elementId;
         }
-        return true;
+
+        Object result = callFunction(script, element, elementId, functionName);
+
+        if (result instanceof Boolean) {
+            return (Boolean) result;
+        } else if (result instanceof String) {
+            return "true".equals(result);
+        } else {
+            return result != null;
+        }
     }
 
-    private String mapToString(Map<String, Object> map) throws JsonProcessingException {
+    @Nullable
+    private static String getFunctionName(Map<String, Object> element, String group) {
+        if (!element.containsKey(group)) {
+            return null;
+        }
+        Map<String, String> functionGroup = (Map<String, String>) element.get(group);
+        String funcName = functionGroup.getOrDefault(FUNCTION_NAME_KEY, null);
+        if (Strings.isNullOrEmpty(funcName)) {
+            return null;
+        } else {
+            return funcName;
+        }
+    }
+
+    private static Object callFunction(@Nullable ScriptEngine script, Map<String, Object> element, String elementId, String funcName) throws ScriptRequiredException, JsonProcessingException, ScriptException {
+        if (script == null) {
+            throw new ScriptRequiredException();
+        }
+        String elementString = mapToString(element);
+        String functionCall = String.format("%s(%s, %s, '%s')", funcName, GLOBAL_DATA_FIELD, elementString, elementId);
+        return script.eval(functionCall);
+    }
+
+    private static String mapToString(Map<String, Object> map) throws JsonProcessingException {
         return new ObjectMapper().writeValueAsString(map);
     }
 }
