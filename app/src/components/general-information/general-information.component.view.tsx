@@ -12,6 +12,7 @@ import {Department} from '../../models/department';
 import {DepartmentsService} from '../../services/departments.service';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
+import {isNullOrEmpty} from "../../utils/is-null-or-empty";
 
 export const PrivacyUserInputKey = '__privacy__';
 
@@ -46,191 +47,202 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                 text={element.teaserText ?? ''}
             />
 
-            <FadingPaper>
-                {
-                    responsibleDepartment &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            ZUSTÄNDIGE STELLE
-                        </Typography>
-                        <Typography
-                            component="pre"
-                            variant="body2"
-                        >
-                            {responsibleDepartment.name}<br/>
-                            {responsibleDepartment.address}
-                        </Typography>
-                    </Box>
-                }
+            {
+                (
+                    responsibleDepartment ||
+                    managingDepartment ||
+                    (element.eligiblePersons && element.eligiblePersons.length > 0) ||
+                    (element.supportingDocuments && element.supportingDocuments.length > 0) ||
+                    (element.documentsToAttach && element.documentsToAttach.length > 0) ||
+                    !isNullOrEmpty(application?.root.expiring) ||
+                    !isNullOrEmpty(element.expectedCosts)
+                ) &&
+                <FadingPaper>
+                    {
+                        responsibleDepartment &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                ZUSTÄNDIGE STELLE
+                            </Typography>
+                            <Typography
+                                component="pre"
+                                variant="body2"
+                            >
+                                {responsibleDepartment.name}<br/>
+                                {responsibleDepartment.address}
+                            </Typography>
+                        </Box>
+                    }
 
-                {
-                    managingDepartment &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            BEWIRTSCHAFTENDE STELLE
-                        </Typography>
-                        <Typography
-                            component="pre"
-                            variant="body2"
-                        >
-                            {managingDepartment.name}<br/>
-                            {managingDepartment.address}
-                        </Typography>
-                    </Box>
-                }
+                    {
+                        managingDepartment &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                BEWIRTSCHAFTENDE STELLE
+                            </Typography>
+                            <Typography
+                                component="pre"
+                                variant="body2"
+                            >
+                                {managingDepartment.name}<br/>
+                                {managingDepartment.address}
+                            </Typography>
+                        </Box>
+                    }
 
-                {
-                    element.eligiblePersons && element.eligiblePersons.length > 0 &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            ANTRAGSBERECHTIGTE
-                        </Typography>
-                        <List
-                            dense
-                            disablePadding
-                        >
-                            {
-                                element.eligiblePersons.map((person: string) => (
-                                    <ListItem
-                                        key={person}
-                                        disableGutters
-                                    >
-                                        <ListItemIcon sx={{minWidth: '34px'}}>
-                                            <FontAwesomeIcon
-                                                icon={faUser}
-                                                fixedWidth
-                                                size={'lg'}
-                                                color={theme.palette.primary.main}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText>
-                                            {person}
-                                        </ListItemText>
-                                    </ListItem>
-                                ))
-                            }
-                        </List>
-                    </Box>
-                }
+                    {
+                        element.eligiblePersons && element.eligiblePersons.length > 0 &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                ANTRAGSBERECHTIGTE
+                            </Typography>
+                            <List
+                                dense
+                                disablePadding
+                            >
+                                {
+                                    element.eligiblePersons.map((person: string) => (
+                                        <ListItem
+                                            key={person}
+                                            disableGutters
+                                        >
+                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                                <FontAwesomeIcon
+                                                    icon={faUser}
+                                                    fixedWidth
+                                                    size={'lg'}
+                                                    color={theme.palette.primary.main}
+                                                />
+                                            </ListItemIcon>
+                                            <ListItemText>
+                                                {person}
+                                            </ListItemText>
+                                        </ListItem>
+                                    ))
+                                }
+                            </List>
+                        </Box>
+                    }
 
-                {
-                    element.supportingDocuments && element.supportingDocuments.length > 0 &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            RELEVANTE DOKUMENTE
-                        </Typography>
-                        <List
-                            dense
-                            disablePadding
-                        >
-                            {
-                                element.supportingDocuments.map((document: string) => (
-                                    <ListItem
-                                        key={document}
-                                        disableGutters
-                                    >
-                                        <ListItemIcon sx={{minWidth: '34px'}}>
-                                            <FontAwesomeIcon
-                                                icon={faFileLines}
-                                                fixedWidth
-                                                size={'lg'}
-                                                color={theme.palette.primary.main}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText>
-                                            {document}
-                                        </ListItemText>
-                                    </ListItem>
-                                ))
-                            }
-                        </List>
-                    </Box>
-                }
+                    {
+                        element.supportingDocuments && element.supportingDocuments.length > 0 &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                RELEVANTE DOKUMENTE
+                            </Typography>
+                            <List
+                                dense
+                                disablePadding
+                            >
+                                {
+                                    element.supportingDocuments.map((document: string) => (
+                                        <ListItem
+                                            key={document}
+                                            disableGutters
+                                        >
+                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                                <FontAwesomeIcon
+                                                    icon={faFileLines}
+                                                    fixedWidth
+                                                    size={'lg'}
+                                                    color={theme.palette.primary.main}
+                                                />
+                                            </ListItemIcon>
+                                            <ListItemText>
+                                                {document}
+                                            </ListItemText>
+                                        </ListItem>
+                                    ))
+                                }
+                            </List>
+                        </Box>
+                    }
 
-                {
-                    element.documentsToAttach && element.documentsToAttach.length > 0 &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            EINZUREICHENDE DOKUMENTE
-                        </Typography>
-                        <List
-                            dense
-                            disablePadding
-                        >
-                            {
-                                element.documentsToAttach.map((document: string) => (
-                                    <ListItem
-                                        key={document}
-                                        disableGutters
-                                    >
-                                        <ListItemIcon sx={{minWidth: '34px'}}>
-                                            <FontAwesomeIcon
-                                                icon={faFileArrowUp}
-                                                fixedWidth
-                                                size={'lg'}
-                                                color={theme.palette.primary.main}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText>
-                                            {document}
-                                        </ListItemText>
-                                    </ListItem>
-                                ))
-                            }
-                        </List>
-                    </Box>
-                }
+                    {
+                        element.documentsToAttach && element.documentsToAttach.length > 0 &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                EINZUREICHENDE DOKUMENTE
+                            </Typography>
+                            <List
+                                dense
+                                disablePadding
+                            >
+                                {
+                                    element.documentsToAttach.map((document: string) => (
+                                        <ListItem
+                                            key={document}
+                                            disableGutters
+                                        >
+                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                                <FontAwesomeIcon
+                                                    icon={faFileArrowUp}
+                                                    fixedWidth
+                                                    size={'lg'}
+                                                    color={theme.palette.primary.main}
+                                                />
+                                            </ListItemIcon>
+                                            <ListItemText>
+                                                {document}
+                                            </ListItemText>
+                                        </ListItem>
+                                    ))
+                                }
+                            </List>
+                        </Box>
+                    }
 
-                {
-                    application?.root.expiring &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            ANTRAGSFRISTEN
-                        </Typography>
-                        <Typography
-                            component="pre"
-                            variant="body2"
-                        >
-                            {application.root.expiring}
-                        </Typography>
-                    </Box>
-                }
+                    {
+                        !isNullOrEmpty(application?.root.expiring) &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                ANTRAGSFRISTEN
+                            </Typography>
+                            <Typography
+                                component="pre"
+                                variant="body2"
+                            >
+                                {application!.root.expiring}
+                            </Typography>
+                        </Box>
+                    }
 
-                {
-                    element.expectedCosts &&
-                    <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
-                        <Typography
-                            variant="subtitle1"
-                            color="primary"
-                        >
-                            GEBÜHREN DIESES ANTRAGES
-                        </Typography>
-                        <Typography
-                            variant="body2"
-                        >
-                            {element.expectedCosts}
-                        </Typography>
-                    </Box>
-                }
-            </FadingPaper>
+                    {
+                        !isNullOrEmpty(element.expectedCosts) &&
+                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                            <Typography
+                                variant="subtitle1"
+                                color="primary"
+                            >
+                                GEBÜHREN DIESES ANTRAGES
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                            >
+                                {element.expectedCosts}
+                            </Typography>
+                        </Box>
+                    }
+                </FadingPaper>
+            }
 
             <Typography
                 variant={'body2'}
