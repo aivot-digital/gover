@@ -9,9 +9,15 @@ import {AnyElement} from '../models/elements/any-element';
 import {isLayoutElement} from '../models/elements/form-elements/layout-elements/base-layout-element';
 import {isInputElement} from '../models/elements/form-elements/input-elements/base-input-element';
 import {Logger} from "../hooks/use-logging";
+import {generateComponentPatch} from "./generate-component-patch";
 
-export function isComponentValid($debug: Logger, dispatch: Dispatch<any>, comp: AnyElement, userInput: any, idPrefix?: string): boolean {
-    const id = idPrefix != null ? (idPrefix + comp.id) : comp.id;
+export function isComponentValid($debug: Logger, dispatch: Dispatch<any>, _comp: AnyElement, userInput: any, idPrefix?: string): boolean {
+    const id = idPrefix != null ? (idPrefix + _comp.id) : _comp.id;
+
+    const comp = {
+        ..._comp,
+        ...generateComponentPatch(id, _comp, userInput),
+    }
 
     $debug.start(`Validating Element ${id}`);
 
