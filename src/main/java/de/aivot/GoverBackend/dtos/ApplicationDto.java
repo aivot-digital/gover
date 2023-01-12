@@ -49,23 +49,22 @@ public class ApplicationDto {
         }
     }
 
-    private List<FieldDto> processElement(Map<String, Object> element, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
-        boolean isVisible = scriptService.isElementVisible(application, element, customerData, idPrefix);
+    private List<FieldDto> processElement(Map<String, Object> pElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+        boolean isVisible = scriptService.isElementVisible(application, pElement, customerData, idPrefix);
         if (!isVisible) {
             return new LinkedList<>();
         }
+
+        Map<String, Object> element = scriptService.patchElement(application, pElement, customerData, idPrefix);
 
         Optional<ElementType> type = ElementType.findElement(element.get("type"));
         if (type.isEmpty()) {
             return new LinkedList<>();
         }
 
-        String id = (String) element.get("id");
-        if (idPrefix != null) {
-            id = idPrefix + "_" + id;
-        }
+        String id = ScriptService.getPrefixedId(element, idPrefix);
 
-        Object value = customerData.get(id);
+        Object value = ScriptService.getElementValue(customerData, element, idPrefix);
 
         switch (type.get()) {
             case Step -> {
