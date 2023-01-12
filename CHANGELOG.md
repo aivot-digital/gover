@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.0.2](https://github.com/aivot-digital/gover/compare/v2.0.1...v2.0.2) (2023-01-12)
+
+### Features
+
+* **Server:** Patches for elements are now handled by the sever
+
+### Bug Fixes
+
+* **Server:** Fix warnings during the server startup
+
 ## [2.0.1](https://github.com/aivot-digital/gover/compare/v2.0.0...v2.0.1) (2023-01-10)
 
 ### Features
