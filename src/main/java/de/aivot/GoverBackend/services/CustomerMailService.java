@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +27,7 @@ public class CustomerMailService {
     }
 
     public void sendApplicationCopyMail(String to, Application application, @Nullable Department department, String pdfLink) throws MessagingException, MalformedURLException, MailException {
-        URL pdfUrl = new URL(pdfLink);
+        Path pdfUrl = Paths.get(pdfLink);
 
         String title = (String) application.getRoot().get("title");
 

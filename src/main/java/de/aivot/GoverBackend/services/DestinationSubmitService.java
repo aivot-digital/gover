@@ -16,6 +16,8 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,8 +38,8 @@ public class DestinationSubmitService {
         }
     }
 
-    private void sendMail(Destination destination, Application application, String pdfLink) throws MessagingException, MalformedURLException, MailException {
-        URL pdfUrl = new URL(pdfLink);
+    private void sendMail(Destination destination, Application application, String pdfLink) throws MessagingException, MailException {
+        Path pdfPath = Paths.get(pdfLink);
 
         String title = (String) application.getRoot().get("title");
 
@@ -55,7 +57,7 @@ public class DestinationSubmitService {
                 subject,
                 text,
                 html,
-                pdfUrl
+                pdfPath
         );
     }
 
