@@ -3,16 +3,14 @@ package de.aivot.GoverBackend.services;
 import com.oracle.truffle.js.runtime.Strings;
 import de.aivot.GoverBackend.models.Application;
 import de.aivot.GoverBackend.models.Department;
-import javax.annotation.Nullable;
-import javax.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Nullable;
+import javax.mail.MessagingException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,14 +18,19 @@ import java.util.Map;
 public class CustomerMailService {
     private static final String SUBJECT_TEMPLATE = "Unterlagen für: %s";
     private final MailService mailService;
+    private final BlobService blobService;
 
     @Autowired
-    public CustomerMailService(MailService mailService) {
+    public CustomerMailService(MailService mailService, BlobService blobService) {
         this.mailService = mailService;
+        this.blobService = blobService;
     }
 
     public void sendApplicationCopyMail(String to, Application application, @Nullable Department department, String pdfLink) throws MessagingException, MalformedURLException, MailException {
-        Path pdfUrl = Paths.get(pdfLink);
+        String[] parts = pdfLink.split("/");
+        String pdfUuid = parts[parts.length - 1];
+
+        Path pdfUrl = blobService.getPrintPdfPath(pdfUuid);
 
         String title = (String) application.getRoot().get("title");
 
