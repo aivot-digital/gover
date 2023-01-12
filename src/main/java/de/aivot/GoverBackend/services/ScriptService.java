@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -47,7 +48,6 @@ public class ScriptService {
         } catch (IOException e) {
             logger.info("No ScriptEngine loaded");
         }
-
         return validateElement(application.getRoot(), customerData, script, null);
     }
 
@@ -75,37 +75,27 @@ public class ScriptService {
             return null;
         }
 
-        String elementId = (String) element.get("id");
+        element = patchElement(script, element, idPrefix);
 
-        String patchFunc = getFunctionName(element, PATCH_FUNCTION_GROUP);
-        if (patchFunc != null) {
-            Object scriptRetVal = callFunction(script, element, elementId, patchFunc);
-            if (scriptRetVal instanceof Map<?, ?>) {
-                element = (Map<String, Object>) scriptRetVal;
-            }
-        }
-
-        if (idPrefix != null) {
-            elementId = idPrefix + "_" + elementId;
-        }
+        String elementId = getPrefixedId(element, idPrefix);
 
         boolean isRequired = Boolean.TRUE.equals(element.getOrDefault("required", false));
         if (isRequired) {
-            Object data = customerData.getOrDefault(elementId, null);
+            Object value = getElementValue(customerData, element, idPrefix);
 
-            if (data == null) {
+            if (value == null) {
                 return "Missing value for required element " + elementId;
             }
 
-            if (data instanceof String && Strings.isNullOrEmpty((String) data)) {
+            if (value instanceof String && Strings.isNullOrEmpty((String) value)) {
                 return "Missing or empty value for required element " + elementId;
             }
 
-            if (data instanceof Boolean && Boolean.FALSE.equals(data)) {
+            if (value instanceof Boolean && Boolean.FALSE.equals(value)) {
                 return "False value for required boolean element " + elementId;
             }
 
-            if (data instanceof List<?> && ((List<?>) data).isEmpty()) {
+            if (value instanceof List<?> && ((List<?>) value).isEmpty()) {
                 return "Empty value for required element " + elementId;
             }
         }
@@ -145,6 +135,37 @@ public class ScriptService {
         return null;
     }
 
+    public static Object getElementValue(Map<String, Object> customerData, Map<String, Object> element, String idPrefix) {
+        String elementId = getPrefixedId(element, idPrefix);
+        Object patchedValue = element.getOrDefault("value", null);
+        if (patchedValue != null) {
+            return patchedValue;
+        }
+        return customerData.getOrDefault(elementId, null);
+    }
+
+    public Map<String, Object> patchElement(Application application, Map<String, Object> element, Map<String, Object> customerData, @Nullable String idPrefix) throws ScriptException, ScriptRequiredException, JsonProcessingException {
+        ScriptEngine script = null;
+        try {
+            script = prepareEngine(application, customerData);
+        } catch (IOException e) {
+            logger.info("No ScriptEngine loaded");
+        }
+        return patchElement(script, element, idPrefix);
+    }
+
+    private Map<String, Object> patchElement(@Nullable ScriptEngine script, Map<String, Object> element, String idPrefix) throws ScriptRequiredException, JsonProcessingException, ScriptException {
+        String elementId = getPrefixedId(element, idPrefix);
+        String patchFunc = getFunctionName(element, PATCH_FUNCTION_GROUP);
+        if (patchFunc != null) {
+            Object scriptRetVal = callFunction(script, element, elementId, patchFunc);
+            if (scriptRetVal instanceof Map<?, ?>) {
+                element = (Map<String, Object>) scriptRetVal;
+            }
+        }
+        return element;
+    }
+
     public boolean isElementVisible(Application application, Map<String, Object> element, Map<String, Object> customerData, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
         ScriptEngine script = null;
         try {
@@ -161,10 +182,7 @@ public class ScriptService {
             return true;
         }
 
-        String elementId = (String) element.get("id");
-        if (idPrefix != null) {
-            elementId = idPrefix + "_" + elementId;
-        }
+        String elementId = getPrefixedId(element, idPrefix);
 
         Object result = callFunction(script, element, elementId, functionName);
 
@@ -182,13 +200,11 @@ public class ScriptService {
         if (!element.containsKey(group)) {
             return null;
         }
+
         Map<String, String> functionGroup = (Map<String, String>) element.get(group);
         String funcName = functionGroup.getOrDefault(FUNCTION_NAME_KEY, null);
-        if (Strings.isNullOrEmpty(funcName)) {
-            return null;
-        } else {
-            return funcName;
-        }
+
+        return Strings.isNullOrEmpty(funcName) ? null : funcName;
     }
 
     private static Object callFunction(@Nullable ScriptEngine script, Map<String, Object> element, String elementId, String funcName) throws ScriptRequiredException, JsonProcessingException, ScriptException {
@@ -202,5 +218,13 @@ public class ScriptService {
 
     private static String mapToString(Map<String, Object> map) throws JsonProcessingException {
         return new ObjectMapper().writeValueAsString(map);
+    }
+
+    public static String getPrefixedId(@NotNull Map<String, Object> element, @Nullable String idPrefix) {
+        String elementId = (String) element.get("id");
+        if (idPrefix != null) {
+            elementId = idPrefix + "_" + elementId;
+        }
+        return elementId;
     }
 }

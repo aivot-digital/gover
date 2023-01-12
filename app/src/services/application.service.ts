@@ -57,6 +57,9 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
     async submit(application: Application, userInput: CustomerInput): Promise<string> {
         const customerData = {...userInput};
 
+        /*
+        The generation of the patched values is from now on handled on the server.
+        We keep this for the very unlikely case of shifting it back to the client.
         const extractValues = (elem: AnyElement) => {
             const patchedElem = generateComponentPatch(elem.id, elem, userInput);
             if (patchedElem != null && (patchedElem as any).value != null) {
@@ -67,6 +70,7 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
             }
         };
         extractValues(application.root);
+         */
 
         return await axios.post(
             ApiConfig.address + '/public/submit/' + application.id,
