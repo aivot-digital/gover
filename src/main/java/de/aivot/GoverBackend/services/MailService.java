@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.services;
 
 import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
 import javax.annotation.Nullable;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -20,6 +22,7 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Map;
 
 @Component
@@ -31,11 +34,11 @@ public class MailService {
         this.mailSender = mailSender;
     }
 
-    public void sendMail(String to, String subject, String textMessage, String htmlMessage, URL... attachmentURLs) throws MessagingException, MailException {
-        sendMail(to, null, null, subject, textMessage, htmlMessage, attachmentURLs);
+    public void sendMail(String to, String subject, String textMessage, String htmlMessage, Path... attachmentPaths) throws MessagingException, MailException {
+        sendMail(to, null, null, subject, textMessage, htmlMessage, attachmentPaths);
     }
 
-    public void sendMail(String to, @Nullable String cc, @Nullable String bcc, String subject, String textMessage, String htmlMessage, URL... attachmentURLs) throws MessagingException, MailException {
+    public void sendMail(String to, @Nullable String cc, @Nullable String bcc, String subject, String textMessage, String htmlMessage, Path... attachmentPaths) throws MessagingException, MailException {
 
         InternetAddress[] mailToList = InternetAddress.parse(to);
         InternetAddress[] mailCcList = cc != null ? InternetAddress.parse(cc) : null;
@@ -70,11 +73,12 @@ public class MailService {
         Multipart multipart = new MimeMultipart();
         multipart.addBodyPart(mimeBodyPart);
 
-        for (URL url : attachmentURLs) {
+        for (Path path : attachmentPaths) {
             MimeBodyPart attachmentPart = new MimeBodyPart();
-            attachmentPart.setDataHandler(new DataHandler(url));
+            DataSource source = new FileDataSource(path.toFile());
+            attachmentPart.setDataHandler(new DataHandler(source));
             attachmentPart.setDisposition(Part.ATTACHMENT);
-            attachmentPart.setFileName(url.getFile());
+            attachmentPart.setFileName(path.getFileName().toString());
             multipart.addBodyPart(attachmentPart);
         }
 
