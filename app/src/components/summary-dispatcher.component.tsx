@@ -1,12 +1,12 @@
 import React, {ComponentType} from 'react';
 import {useSelector} from 'react-redux';
-import {RootState} from '../store';
 import {isComponentVisible} from '../utils/is-component-visible';
 import {generateComponentPatch} from '../utils/generate-component-patch';
 import {SummaryMap} from './summary.map';
 import {BaseSummaryProps} from './_lib/base-summary-props';
 import {selectCustomerInput} from '../slices/customer-input-slice';
 import {AnyElement} from '../models/elements/any-element';
+import {selectDisableVisibility} from "../slices/admin-settings-slice";
 
 interface DispatcherComponentProps<M extends AnyElement> {
     model: M;
@@ -17,6 +17,7 @@ export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefi
     const id = idPrefix != null ? (idPrefix + model.id) : model.id;
 
     const customerInput = useSelector(selectCustomerInput);
+    const disableVisibility = useSelector(selectDisableVisibility)
 
     const patchedModel = {
         ...model,
@@ -26,9 +27,7 @@ export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefi
 
     const value = (patchedModel as any).value ?? customerInput[id];
 
-    const adminSettings = useSelector((state: RootState) => state.adminSettings);
-
-    const isVisible = adminSettings.disableVisibility || isComponentVisible(id, model, customerInput);
+    const isVisible = disableVisibility || isComponentVisible(id, model, customerInput);
 
     if (!isVisible) {
         return null;

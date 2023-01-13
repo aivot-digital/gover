@@ -10,6 +10,9 @@ import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {AnyElement} from '../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
+import {isComponentVisible} from "../../utils/is-component-visible";
+import {selectCustomerInput} from "../../slices/customer-input-slice";
+import {CustomerInput} from "../../models/customer-input";
 
 export const SummaryUserInputKey = '__summary__';
 
@@ -17,12 +20,13 @@ export const SummaryUserInputKey = '__summary__';
 
 export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>) {
     const application = useSelector(selectLoadedApplication);
+    const customerInput = useSelector(selectCustomerInput);
 
     if (application == null) {
         return null;
     }
 
-    const models = flattenElements(application.root);
+    const models = flattenElements(application.root, customerInput, undefined);
 
     return (
         <>
@@ -74,7 +78,15 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
     );
 }
 
-export function flattenElements(model: AnyElement): AnyElement[] {
+export function flattenElements(model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
+    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
+
+    const isVisible = isComponentVisible(id, model, userInput);
+
+    if (!isVisible) {
+        return [];
+    }
+
     let results: AnyElement[] = [];
 
     const Summary = SummaryMap[model.type];
@@ -84,7 +96,7 @@ export function flattenElements(model: AnyElement): AnyElement[] {
 
     if (model.type !== ElementType.ReplicatingContainer && isAnyElementWithChildren(model)) {
         for (const child of model.children) {
-            results = results.concat(flattenElements(child));
+            results = results.concat(flattenElements(child, userInput, idPrefix));
         }
     }
 
