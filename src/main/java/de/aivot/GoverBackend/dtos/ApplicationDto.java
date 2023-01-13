@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.dtos;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
 import de.aivot.GoverBackend.models.Application;
@@ -8,7 +9,6 @@ import de.aivot.GoverBackend.services.ScriptService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import javax.script.ScriptException;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -216,7 +216,7 @@ public class ApplicationDto {
                     (String) fieldData.get("label"),
                     options.get(0)
             ));
-            for (int i=1; i<options.size(); i++) {
+            for (int i = 1; i < options.size(); i++) {
                 fields.add(new ValueFieldDto(
                         "",
                         options.get(i)

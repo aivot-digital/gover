@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.dtos.ApplicationDto;
 import de.aivot.GoverBackend.models.Application;
-import io.minio.errors.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.TemplateEngine;
@@ -27,7 +26,7 @@ public class PdfService {
     }
 
 
-    public String generatePdf(Application application, ApplicationDto applicationDto) throws IOException, InterruptedException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public String generatePdf(Application application, ApplicationDto applicationDto) throws IOException, InterruptedException {
         String uuid = UUID.randomUUID().toString();
         Path pathHtml = blobService.getPrintHtmlPath(uuid);
         Path pathPdf = blobService.getPrintPdfPath(uuid);

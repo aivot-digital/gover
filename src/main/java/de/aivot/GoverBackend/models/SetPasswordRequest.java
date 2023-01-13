@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.models;
 
-import javax.annotation.Nullable;
+import com.sun.istack.Nullable;
 
 public class SetPasswordRequest {
     @Nullable

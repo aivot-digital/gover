@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.utils;
 
-import java.nio.charset.StandardCharsets;
+import com.sun.istack.Nullable;
+
 import java.util.Random;
 
 public class StringUtils {
@@ -14,5 +15,13 @@ public class StringUtils {
                 .limit(length)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
+    }
+
+    public static boolean isNullOrEmpty(@Nullable String str) {
+        return str == null || str.trim().isEmpty();
+    }
+
+    public static boolean isNotNullOrEmpty(@Nullable String str) {
+        return !isNullOrEmpty(str);
     }
 }
