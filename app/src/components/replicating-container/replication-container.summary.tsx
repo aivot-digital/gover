@@ -9,13 +9,24 @@ import React from 'react';
 import {faTurnDown} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {AnyElement} from '../../models/elements/any-element';
+import {useSelector} from "react-redux";
+import {selectCustomerInput} from "../../slices/customer-input-slice";
 
-export function ReplicationContainerSummary({model, value}: BaseSummaryProps<ReplicatingContainerElement>) {
-    let childModels: AnyElement[] = [];
-    for (const child of model.children ?? []) {
-        childModels = childModels.concat(flattenElements(child));
-    }
+export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerElement>) {
+    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
+
+    const customerInput = useSelector(selectCustomerInput);
+
+    const makeChildModels = (val: string) => {
+        let childModels: AnyElement[] = [];
+        for (const child of model.children ?? []) {
+            childModels = childModels.concat(flattenElements(child, customerInput, `${id}_${val}_`));
+        }
+        return childModels;
+    };
+
     const values: string[] = value ?? [];
+
     return (
         <>
             <Grid
@@ -84,11 +95,11 @@ export function ReplicationContainerSummary({model, value}: BaseSummaryProps<Rep
                             </Grid>
                         </Grid>
                         {
-                            childModels.map(child => (
+                            makeChildModels(val).map(child => (
                                 <SummaryDispatcherComponent
-                                    key={child.id}
+                                    key={`${id}_${val}_${child.id}`}
                                     model={child}
-                                    idPrefix={`${model.id}_${val}_`}
+                                    idPrefix={`${id}_${val}_`}
                                 />
                             ))
                         }
