@@ -11,7 +11,6 @@ import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.repositories.DestinationRepository;
 import de.aivot.GoverBackend.services.*;
-import io.minio.errors.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -28,8 +27,6 @@ import javax.script.ScriptException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -107,9 +104,7 @@ public class SubmitController {
             String pdfUuid;
             try {
                 pdfUuid = pdfService.generatePdf(application.get(), applicationDto);
-            } catch (IOException | InterruptedException | ServerException | InsufficientDataException |
-                     ErrorResponseException | NoSuchAlgorithmException | InvalidKeyException |
-                     InvalidResponseException | XmlParserException | InternalException e) {
+            } catch (IOException | InterruptedException e) {
                 systemMailService.sendExceptionMail(e);
                 throw new RuntimeException(e);
             }

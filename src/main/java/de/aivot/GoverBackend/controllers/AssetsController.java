@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.controllers;
 
+import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.SystemAssetKey;
 import de.aivot.GoverBackend.services.BlobService;
 import de.aivot.GoverBackend.services.SystemMailService;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;

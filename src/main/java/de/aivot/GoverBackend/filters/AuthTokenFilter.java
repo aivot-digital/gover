@@ -1,13 +1,10 @@
 package de.aivot.GoverBackend.filters;
 
+import com.sun.istack.NotNull;
+import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.models.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
 import de.aivot.GoverBackend.services.JwtService;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,7 +13,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.annotation.Nullable;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Optional;

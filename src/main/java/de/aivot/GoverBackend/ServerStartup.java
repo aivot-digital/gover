@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend;
 
 import com.oracle.truffle.js.runtime.Strings;
+import com.sun.istack.NotNull;
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.models.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
 import de.aivot.GoverBackend.services.BlobService;
 import de.aivot.GoverBackend.services.SystemMailService;
 import de.aivot.GoverBackend.utils.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+
 
 @Component
 public class ServerStartup implements ApplicationListener<ApplicationReadyEvent> {

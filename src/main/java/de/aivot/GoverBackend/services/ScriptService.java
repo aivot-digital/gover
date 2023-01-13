@@ -2,17 +2,17 @@ package de.aivot.GoverBackend.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
+import com.sun.istack.NotNull;
+import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
 import de.aivot.GoverBackend.models.Application;
+import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.NotNull;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -22,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+
+;
 
 @Component
 public class ScriptService {
@@ -87,7 +89,7 @@ public class ScriptService {
                 return "Missing value for required element " + elementId;
             }
 
-            if (value instanceof String && Strings.isNullOrEmpty((String) value)) {
+            if (value instanceof String && StringUtils.isNullOrEmpty((String) value)) {
                 return "Missing or empty value for required element " + elementId;
             }
 
@@ -103,7 +105,7 @@ public class ScriptService {
         String validateFunc = getFunctionName(element, VALIDATE_FUNCTION_GROUP);
         if (validateFunc != null) {
             Object scriptRetVal = callFunction(script, element, elementId, validateFunc);
-            if (scriptRetVal instanceof String && !Strings.isNullOrEmpty((String) scriptRetVal)) {
+            if (scriptRetVal instanceof String && StringUtils.isNotNullOrEmpty((String) scriptRetVal)) {
                 return (String) scriptRetVal;
             }
         }
@@ -204,7 +206,7 @@ public class ScriptService {
         Map<String, String> functionGroup = (Map<String, String>) element.get(group);
         String funcName = functionGroup.getOrDefault(FUNCTION_NAME_KEY, null);
 
-        return Strings.isNullOrEmpty(funcName) ? null : funcName;
+        return StringUtils.isNullOrEmpty(funcName) ? null : funcName;
     }
 
     private static Object callFunction(@Nullable ScriptEngine script, Map<String, Object> element, String elementId, String funcName) throws ScriptRequiredException, JsonProcessingException, ScriptException {
