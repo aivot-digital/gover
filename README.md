@@ -143,11 +143,11 @@ Edit the file `./config/application.properties` and insert the credentials for P
 ### Build
 
 Run the following command: `./mvnw -DskipTests install`.
-This will build a JAR file at `./target/Gover-2.0.0.jar`.
+This will build a JAR file at `./target/Gover-2.0.3.jar`.
 
 ### Run Gover
 After everything is set up, you can now run the Gover instance.
-Simply run `java -jar ./target/Gover-2.0.0.jar` or `nohup java -jar ./target/Gover-2.0.0.jar`.
+Simply run `java -jar ./target/Gover-2.0.0.jar` or `nohup java -jar ./target/Gover-2.0.3.jar`.
 
 ## Customization
 

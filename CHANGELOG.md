@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.3](https://github.com/aivot-digital/gover/compare/v2.0.2...v2.0.3) (2023-01-13)
+
+### Bug Fixes
+
+* **Project:** Remove unused dependency minio and fix outdated imports
+* **App:** Fix summary displaying invisible container elements (container, replicating container)
+
 ## [2.0.2](https://github.com/aivot-digital/gover/compare/v2.0.1...v2.0.2) (2023-01-12)
 
 ### Features
