@@ -4,6 +4,7 @@ import {IntroductionStepElement} from '../../models/elements/step-elements/intro
 import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
 import {Department} from "../../models/department";
 import {DepartmentsService} from "../../services/departments.service";
+import {isNullOrEmpty} from "../../utils/is-null-or-empty";
 
 export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
     const [vendors, setVendors] = useState<Department[]>([]);
@@ -77,7 +78,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 </Select>
             </FormControl>
 
-            <Typography variant="h6" sx={{mt: 4}}>
+            <Typography
+                variant="h6"
+                sx={{mt: 4}}
+            >
                 Zugehörige Initiative
             </Typography>
 
@@ -110,7 +114,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 })}
             />
 
-            <Typography variant="h6" sx={{mt: 4}}>
+            <Typography
+                variant="h6"
+                sx={{mt: 4}}
+            >
                 Informationen für Antragstellende
             </Typography>
 
@@ -160,6 +167,9 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 onChange={event => props.onPatch({
                     supportingDocuments: event.target.value.split('\n'),
                 })}
+                onBlur={() => props.onPatch({
+                    supportingDocuments: (props.component.supportingDocuments ?? []).filter(ln => !isNullOrEmpty(ln)),
+                })}
                 helperText="Dokumente, welche Antragsberechtigte vor Antragstellung lesen sollten. Bitte geben Sie pro Zeile ein Dokument an."
             />
 
@@ -172,6 +182,9 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 onChange={event => props.onPatch({
                     documentsToAttach: event.target.value.split('\n'),
                 })}
+                onBlur={() => props.onPatch({
+                    documentsToAttach: (props.component.documentsToAttach ?? []).filter(ln => !isNullOrEmpty(ln)),
+                })}
                 helperText="Dokumente, welche Antragsberechtigte einzureichen haben. Bitte geben Sie pro Zeile ein Dokument an."
             />
 
@@ -182,6 +195,13 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 onChange={event => props.onPatch({
                     expectedCosts: event.target.value,
                 })}
+                onBlur={() => {
+                    if (isNullOrEmpty(props.component.expectedCosts)) {
+                        props.onPatch({
+                            expectedCosts: undefined,
+                        });
+                    }
+                }}
             />
         </>
     );
