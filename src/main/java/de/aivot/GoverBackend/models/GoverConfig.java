@@ -6,7 +6,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "gover")
 public class GoverConfig {
+    private String fromMail;
     private String reportMail;
+
+    public String getFromMail() {
+        return fromMail;
+    }
+
+    public void setFromMail(String fromMail) {
+        this.fromMail = fromMail;
+    }
 
     public String getReportMail() {
         return reportMail;
