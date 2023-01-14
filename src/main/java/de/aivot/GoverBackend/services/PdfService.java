@@ -34,6 +34,9 @@ public class PdfService {
         String template = loadTemplate(applicationDto);
         Files.writeString(pathHtml, template);
 
+        String pdfTitle = (String) application.getRoot().getOrDefault("headline", application.getRoot().getOrDefault("title", application.getSlug()));
+        pdfTitle = pdfTitle.replaceAll("\\r?\\n", " ");
+
         Process generateToPdf = new ProcessBuilder(
                 "wkhtmltopdf",
                 "--encoding",
@@ -47,7 +50,7 @@ public class PdfService {
                 "--footer-spacing",
                 "5",
                 "--header-left",
-                (String) application.getRoot().get("title"),
+                pdfTitle,
                 "--footer-left",
                 "[date] [time] Uhr",
                 "--footer-right",

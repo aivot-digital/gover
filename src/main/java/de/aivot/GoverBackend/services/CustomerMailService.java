@@ -32,7 +32,7 @@ public class CustomerMailService {
 
         Path pdfUrl = blobService.getPrintPdfPath(pdfUuid);
 
-        String title = (String) application.getRoot().get("title");
+        String title = (String) application.getRoot().getOrDefault("headline", application.getRoot().getOrDefault("title", application.getSlug()));
 
         Map<String, Object> mailData = new HashMap<>();
         mailData.put("title", title);
