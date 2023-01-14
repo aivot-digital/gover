@@ -34,11 +34,7 @@ public class ApplicationDto {
         this.customerData = customerData;
         this.scriptService = scriptService;
 
-        String title = (String) root.get("headline");
-        if (title == null) {
-            title = (String) root.get("title");
-        }
-        this.title = title;
+        this.title = (String) root.getOrDefault("headline", root.getOrDefault("title", application.getSlug()));
 
         this.now = LocalDate.now();
         this.fields = new LinkedList<>();
