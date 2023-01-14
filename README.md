@@ -98,6 +98,7 @@ spring.mail.password=<SMTP_PASSWORD>
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
+gover.fromMail=<FROM_MAIL_ADDRESS>
 gover.reportMail=<REPORT_MAIL_ADDRESS>
 ```
 

@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.services;
 
 import com.sun.istack.Nullable;
+import de.aivot.GoverBackend.models.GoverConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -26,10 +27,12 @@ import java.util.Map;
 
 @Component
 public class MailService {
+    private final GoverConfig goverConfig;
     private final JavaMailSender mailSender;
 
     @Autowired
-    public MailService(JavaMailSender mailSender) {
+    public MailService(GoverConfig goverConfig, JavaMailSender mailSender) {
+        this.goverConfig = goverConfig;
         this.mailSender = mailSender;
     }
 
@@ -63,6 +66,7 @@ public class MailService {
             );
         }
 
+        message.setFrom(goverConfig.getFromMail());
         message.setSubject(subject);
         message.setText(textMessage);
 
