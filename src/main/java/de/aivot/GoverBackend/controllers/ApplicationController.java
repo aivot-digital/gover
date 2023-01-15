@@ -29,7 +29,7 @@ public class ApplicationController {
 
     @GetMapping("/api/public/applications/{slug}/{version}")
     public Application getApplication(Authentication authentication, @PathVariable String slug, @PathVariable String version) {
-        User user = (User) authentication.getPrincipal();
+        User user = authentication != null ? (User) authentication.getPrincipal() : null;
         Optional<Application> applicationResult = applicationRepository.getBySlugAndVersion(slug, version);
 
         if (applicationResult.isPresent()) {
