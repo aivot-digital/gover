@@ -14,7 +14,7 @@ export class CrudService<T extends { id: number }, A extends string, I> {
     }
 
     list(): Promise<ApiListResponse<T, A>> {
-        return axios.get(this.path, CrudService.getConfig())
+        return axios.get(this.path + '?size=500', CrudService.getConfig())
             .then(response => response.data);
     }
 
