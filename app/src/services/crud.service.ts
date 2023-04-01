@@ -3,6 +3,7 @@ import axios, {AxiosRequestConfig} from 'axios';
 import {ApiListResponse} from '../models/api-list-response';
 import {ApiDetailsResponse} from '../models/api-details-response';
 import {LocalStorageService} from './local-storage.service';
+import {LocalstorageKey} from "../data/localstorage-key";
 
 export class CrudService<T extends { id: number }, A extends string, I> {
     protected readonly basePath: string;
@@ -38,7 +39,7 @@ export class CrudService<T extends { id: number }, A extends string, I> {
     }
 
     public static getConfig(): AxiosRequestConfig {
-        const jwt = LocalStorageService.loadString('jwt');
+        const jwt = LocalStorageService.loadString(LocalstorageKey.JWT);
         return {
             timeout: 1000,
             headers: jwt != null ? {

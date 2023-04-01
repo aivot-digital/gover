@@ -20,6 +20,7 @@ import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {resetSnackbar} from '../slices/snackbar-slice';
 import {logout, selectAuthenticationState} from '../slices/auth-slice';
+import {AuthState} from "../data/auth-state";
 
 const routes: [string, FunctionComponent][] = [
     ['/', Login],
@@ -46,7 +47,7 @@ function StaffApp() {
             return response;
         }, error => {
             console.error(error);
-            if (error.response.status === 401) {
+            if (error.response.status === 401 && authState === AuthState.Authenticated) {
                 dispatch(logout());
             }
             return Promise.reject(error);

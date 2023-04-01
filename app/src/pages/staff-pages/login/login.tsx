@@ -9,6 +9,7 @@ import strings from './login-strings.json';
 import {SystemAssetsService} from '../../../services/system-assets.service';
 import {Localization} from '../../../locale/localization';
 import {authenticate, selectAuthenticationState} from '../../../slices/auth-slice';
+import {AuthState} from "../../../data/auth-state";
 
 const __ = Localization(strings);
 
@@ -17,24 +18,33 @@ export function Login() {
     const navigate = useNavigate();
     const authState = useSelector(selectAuthenticationState);
 
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     useEffect(() => {
-        if (authState === 'is-authenticated') {
+        if (authState === AuthState.Authenticated) {
             navigate('/overview');
+        }
+        if (authState !== AuthState.NotInitialized) {
+            setIsAuthenticating(false);
         }
     }, [navigate, authState]);
 
-    const handleAuthenticate = (event: React.FormEvent) => {
+    const handleAuthenticate = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         dispatch(authenticate({email: email.trim(), password}));
+        setIsAuthenticating(true);
         return false;
     };
 
     return (
         <>
-            <MetaElement title={'Gover'}/>
+            <MetaElement
+                title="Login"
+            />
+
             <Container sx={{mt: 5}}>
                 <Box
                     sx={{
@@ -53,10 +63,12 @@ export function Login() {
                             height={100}
                             style={{objectFit: 'contain'}}
                         />
+
+                        {authState}
                     </Box>
                     <Typography
                         variant="h5"
-                        color={'primary'}
+                        color="primary"
                     >
                         {__.title}
                     </Typography>
@@ -77,27 +89,32 @@ export function Login() {
                                 type="email"
                                 label={__.emailLabel}
                                 placeholder={__.emailPlaceholder}
-                                helperText={authState && __.signInError}
-                                error={authState === 'authentication-failed'}
+                                helperText={authState === AuthState.AuthenticationFailed && __.signInError}
+                                error={authState === AuthState.AuthenticationFailed}
+                                disabled={isAuthenticating}
                             />
                             <TextField
                                 value={password}
                                 onChange={event => setPassword(event.target.value)}
                                 type="password"
                                 label={__.passwordLabel}
-                                helperText={authState && __.signInError}
-                                error={authState === 'authentication-failed'}
+                                helperText={authState === AuthState.AuthenticationFailed && __.signInError}
+                                error={authState === AuthState.AuthenticationFailed}
+                                disabled={isAuthenticating}
                             />
                             <Button
                                 type="submit"
                                 sx={{mt: 2}}
                                 variant="contained"
                                 size={'large'}
-                                startIcon={<FontAwesomeIcon
-                                    icon={faArrowRightToBracket}
-                                    fixedWidth
-                                    style={{marginTop: '-2px', marginRight: '4px'}}
-                                />}
+                                startIcon={
+                                    <FontAwesomeIcon
+                                        icon={faArrowRightToBracket}
+                                        fixedWidth
+                                        style={{marginTop: '-2px', marginRight: '4px'}}
+                                    />
+                                }
+                                disabled={isAuthenticating}
                             >
                                 {__.signInLabel}
                             </Button>

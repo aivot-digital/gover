@@ -3,6 +3,7 @@ import {UsersService} from '../services/users.service';
 import {User} from '../models/user';
 import {LocalStorageService} from '../services/local-storage.service';
 import {RootState} from '../store';
+import {LocalstorageKey} from "../data/localstorage-key";
 
 const initialState: {
     user?: User;
@@ -11,7 +12,7 @@ const initialState: {
 export const refreshUser = createAsyncThunk(
     'user/refresh',
     async () => {
-        const jwt = LocalStorageService.loadString('jwt');
+        const jwt = LocalStorageService.loadString(LocalstorageKey.JWT);
 
         if (jwt == null) {
             throw new Error('no stored used');
