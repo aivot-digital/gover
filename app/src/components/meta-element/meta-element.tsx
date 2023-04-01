@@ -9,7 +9,7 @@ interface MetaElementProps {
     title?: string;
 }
 
-export function MetaElement(props: MetaElementProps) {
+export function MetaElement({title}: MetaElementProps) {
     const theme = useTheme();
 
     const colorVariables = Object.entries({
@@ -46,8 +46,8 @@ export function MetaElement(props: MetaElementProps) {
             />
             <meta charSet="utf-8"/>
             {
-                props.title &&
-                <title>{props.title}</title>
+                title &&
+                <title>Gover - {title}</title>
             }
         </Helmet>
     );
