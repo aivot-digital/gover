@@ -132,7 +132,7 @@ const DestinationsOverviewConfig: DataOverviewProps<Destination> = {
             showIf: dest => dest.type === DestinationType.HTTP,
         },
         {
-            field: 'maxAttachmentBytes',
+            field: 'maxAttachmentMegaBytes',
             label: _.maxAttachmentBytesLabel,
             placeholder: _.maxAttachmentBytesPlaceholder,
             helperText: _.maxAttachmentBytesHelper,

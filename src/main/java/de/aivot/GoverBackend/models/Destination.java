@@ -34,8 +34,7 @@ public class Destination {
     private String apiAddress;
     private String authorizationHeader;
 
-    // TODO: This is MB not bytes!!!
-    private Integer maxAttachmentBytes;
+    private Integer maxAttachmentMegaBytes;
 
     public Long getId() {
         return id;
@@ -117,11 +116,11 @@ public class Destination {
         this.updated = updated;
     }
 
-    public Integer getMaxAttachmentBytes() {
-        return maxAttachmentBytes;
+    public Integer getMaxAttachmentMegaBytes() {
+        return maxAttachmentMegaBytes;
     }
 
-    public void setMaxAttachmentBytes(Integer maxAttachmentBytes) {
-        this.maxAttachmentBytes = maxAttachmentBytes;
+    public void setMaxAttachmentMegaBytes(Integer maxAttachmentMegaBytes) {
+        this.maxAttachmentMegaBytes = maxAttachmentMegaBytes;
     }
 }

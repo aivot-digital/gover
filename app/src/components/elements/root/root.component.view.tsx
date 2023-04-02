@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useState} from 'react';
 import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
 import {RootElement} from '../../../models/elements/root-element';
 import {addError, resetErrors} from '../../../slices/customer-input-errors-slice';
@@ -13,7 +13,7 @@ import {faShieldCheck} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import Tooltip from '@mui/material/Tooltip';
 import {Submitted} from '../../static-components/submitted/submitted';
-import {SummaryUserInputKey} from '../../summary/summary.component.view';
+import {SummaryAttachmentsTooLargeKey, SummaryUserInputKey} from '../../summary/summary.component.view';
 import {SubmitHumanKey} from '../../submit/submit.component.view';
 import {
     ProcessingDataLoaderComponentView
@@ -32,8 +32,10 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useLogging} from "../../../hooks/use-logging";
 import {ElementNames} from "../../../data/element-type/element-names";
-import {DestinationsService} from "../../../services/destinations.service";
-import {Destination} from "../../../models/destination";
+import {
+    FileUploadElementItem,
+    isFileUploadElementItem
+} from "../../../models/elements/form-elements/input-elements/file-upload-element";
 
 export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
@@ -46,11 +48,12 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const currentStep = useAppSelector(selectCurrentStep);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [pdfLink, setPdfLink] = useState('');
 
     const [validatedWithErrors, setValidatedWithErrors] = useState(false);
 
-    const isCurrentPageValid = useCallback(() => {
+    const isCurrentPageValid = async () => {
         $debug.start('isCurrentPageValid');
 
         if (adminSettings.disableValidation) {
@@ -85,6 +88,27 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
 
                 isValid = false;
             }
+
+            setIsLoading(true);
+            try {
+                const maxFileSizeMb = await ApplicationService.getMaxFileSize(application!);
+                const maxFileSizeBytes = maxFileSizeMb * 1000 * 1000;
+                const totalFileSize = Object.keys(customerData)
+                    .map(c => customerData[c])
+                    .filter(c => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
+                    .map(c => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
+                    .reduce((acc, size) => acc + size);
+                if (totalFileSize > maxFileSizeBytes) {
+                    dispatch(addError({
+                        key: SummaryAttachmentsTooLargeKey,
+                        error: maxFileSizeMb.toFixed(2),
+                    }));
+                    isValid = false;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+            setIsLoading(false);
         } else if (currentStep === steps.length + 2) {
             $debug.log(`Testing ${ElementNames[ElementType.SubmitStep]}`);
 
@@ -107,58 +131,29 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
         $debug.end();
 
         return isValid;
-    }, [dispatch, adminSettings, element, currentStep, customerData]);
+    };
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         $debug.start('handleNextStep');
 
         dispatch(resetErrors());
-        if (isCurrentPageValid()) {
+        const currentPageValid = await isCurrentPageValid();
+
+        if (currentPageValid) {
             if (currentStep === (steps.length - 1)) {
                 if (application != null) {
                     setIsSubmitting(true);
-
-                    // TODO: Find better approach
-                    new Promise((resolve: (destinationId?: number) => void) => {
-                        if (application?.root.destination != null) {
-                            resolve(parseInt(application?.root.destination))
-                        } else {
-                            resolve();
-                        }
-                    })
-                        .then((destinationId?: number) => {
-                            if (destinationId != null) {
-                                return DestinationsService.retrieve(destinationId);
-                            } else {
-                                return;
-                            }
-                        })
-                        .then((destination?: Destination) => {
-                            if (destination != null) {
-
-                            } else {
-
-                            }
-                        })
-                        .catch(error => {
-
-                        })
-                        .then(() => {
-                            return ApplicationService.submit(application, customerData);
-                        })
-                        .then(pdfLink => {
-                            setValidatedWithErrors(false);
-                            setPdfLink(pdfLink);
-                            dispatch(nextStep());
-                            UserInputService.cleanUserInput(application);
-                        })
-                        .catch(error => {
-                            console.error(error);
-                            dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
-                        })
-                        .finally(() => {
-                            setIsSubmitting(false);
-                        });
+                    try {
+                        const pdfLink = await ApplicationService.submit(application, customerData)
+                        setValidatedWithErrors(false);
+                        setPdfLink(pdfLink);
+                        dispatch(nextStep());
+                        UserInputService.cleanUserInput(application);
+                    } catch(error) {
+                        console.error(error);
+                        dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                    }
+                    setIsSubmitting(false);
                 } else {
                     throw new Error('Cannot submit customer data: No application data loaded.');
                 }
@@ -274,6 +269,17 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
             <AppFooter
                 mode={AppMode.Customer}
             />
+
+            <Dialog
+                open={isLoading}
+                fullWidth
+            >
+                <DialogContent>
+                    <ProcessingDataLoaderComponentView
+                        message="Ihre Daten werden final überprüft"
+                    />
+                </DialogContent>
+            </Dialog>
 
             <Dialog
                 open={isSubmitting}

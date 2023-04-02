@@ -5,7 +5,7 @@ import {BaseViewProps} from '../_lib/base-view-props';
 import {SummaryMap} from '../summary.map';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import {ElementType} from '../../data/element-type/element-type';
-import {Box, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, Typography} from '@mui/material';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {AnyElement} from '../../models/elements/any-element';
@@ -13,14 +13,17 @@ import {isAnyElementWithChildren} from '../../models/elements/any-element-with-c
 import {isComponentVisible} from "../../utils/is-component-visible";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {CustomerInput} from "../../models/customer-input";
+import {selectCustomerInputErrorValue} from "../../slices/customer-input-errors-slice";
 
 export const SummaryUserInputKey = '__summary__';
+export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
 
 // TODO: Localization
 
 export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>) {
     const application = useSelector(selectLoadedApplication);
     const customerInput = useSelector(selectCustomerInput);
+    const summaryError = useSelector(selectCustomerInputErrorValue(SummaryAttachmentsTooLargeKey));
 
     if (application == null) {
         return null;
@@ -74,6 +77,18 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
                     }}
                 />
             </Box>
+
+            {
+                summaryError &&
+                <Alert
+                    severity={'error'}
+                    sx={{mt: 4}}
+                >
+                    <AlertTitle>Maximale Gesamtgröße der Anlagen überschritten</AlertTitle>
+                    Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das maximum von {summaryError} MB.
+                    Bitte laden Sie nur notwendige Anlagen hoch und komprimieren Sie diese ausreichend.
+                </Alert>
+            }
         </>
     );
 }
