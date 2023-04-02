@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {Container, Dialog, DialogContent, StepLabel, Stepper, useTheme} from '@mui/material';
+import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
 import {RootElement} from '../../../models/elements/root-element';
 import {addError, resetErrors} from '../../../slices/customer-input-errors-slice';
 import {ViewDispatcherComponent} from '../../view-dispatcher.component';
@@ -72,9 +72,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
 
                 isValid = false;
             }
-        }
-
-        else if (currentStep === steps.length + 1) {
+        } else if (currentStep === steps.length + 1) {
             $debug.log(`Testing ${ElementNames[ElementType.SummaryStep]}`);
 
             if (customerData[SummaryUserInputKey] == null || customerData[SummaryUserInputKey] === false) {
@@ -83,12 +81,9 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                     error: 'Bitte bestätigen Sie, dass Sie die Zusammenfassung Ihres Antrages geprüft haben.',
                 }));
 
-
                 isValid = false;
             }
-        }
-
-        else if (currentStep === steps.length + 2) {
+        } else if (currentStep === steps.length + 2) {
             $debug.log(`Testing ${ElementNames[ElementType.SubmitStep]}`);
 
             if (customerData[SubmitHumanKey] == null || customerData[SubmitHumanKey] === false) {
@@ -99,9 +94,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
 
                 isValid = false;
             }
-        }
-
-        else {
+        } else {
             const step = steps[currentStep - 1];
             if (step != null) {
                 isValid = isComponentValid($debug, dispatch, step, customerData);

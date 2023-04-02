@@ -18,6 +18,7 @@ const BaseComponents = [
     ElementType.Table,
     ElementType.Time,
     ElementType.Alert,
+    ElementType.FileUpload,
 
     ElementType.ReplicatingContainer,
 ];
@@ -47,4 +48,5 @@ export const ElementChildOptions: ElementTypesMap<ElementType[] | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+    [ElementType.FileUpload]: null,
 };

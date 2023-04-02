@@ -21,6 +21,7 @@ import {GeneralInformationComponentView} from './general-information/general-inf
 import {SummaryComponentView} from './summary/summary.component.view';
 import {SubmitComponentView} from './submit/submit.component.view';
 import {ImageView} from './image/image-view';
+import {FileUploadView} from "./file-upload-field/file-upload.view";
 
 export const ViewMap: ElementTypesMap<any> = {
     [ElementType.Root]: RootComponentView,
@@ -45,4 +46,5 @@ export const ViewMap: ElementTypesMap<any> = {
     [ElementType.SummaryStep]: SummaryComponentView,
     [ElementType.SubmitStep]: SubmitComponentView,
     [ElementType.SubmittedStep]: null,
+    [ElementType.FileUpload]: FileUploadView,
 }

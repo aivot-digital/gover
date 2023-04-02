@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -22,6 +23,8 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
+import javax.mail.util.ByteArrayDataSource;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -36,11 +39,15 @@ public class MailService {
         this.mailSender = mailSender;
     }
 
-    public void sendMail(String to, String subject, String textMessage, String htmlMessage, Path... attachmentPaths) throws MessagingException, MailException {
-        sendMail(to, null, null, subject, textMessage, htmlMessage, attachmentPaths);
+    public void sendMail(String to, String subject, String textMessage, String htmlMessage) throws MessagingException, MailException, IOException {
+        sendMail(to, null, null, subject, textMessage, htmlMessage, new Path[]{}, new MultipartFile[]{});
     }
 
-    public void sendMail(String to, @Nullable String cc, @Nullable String bcc, String subject, String textMessage, String htmlMessage, Path... attachmentPaths) throws MessagingException, MailException {
+    public void sendMail(String to, String subject, String textMessage, String htmlMessage, Path... attachmentPaths) throws MessagingException, MailException, IOException {
+        sendMail(to, null, null, subject, textMessage, htmlMessage, attachmentPaths, new MultipartFile[]{});
+    }
+
+    public void sendMail(String to, @Nullable String cc, @Nullable String bcc, String subject, String textMessage, String htmlMessage, Path[] attachmentPaths, MultipartFile[] attachmentFiles) throws MessagingException, MailException, IOException {
 
         InternetAddress[] mailToList = InternetAddress.parse(to);
         InternetAddress[] mailCcList = cc != null ? InternetAddress.parse(cc) : null;
@@ -82,6 +89,15 @@ public class MailService {
             attachmentPart.setDataHandler(new DataHandler(source));
             attachmentPart.setDisposition(Part.ATTACHMENT);
             attachmentPart.setFileName(path.getFileName().toString());
+            multipart.addBodyPart(attachmentPart);
+        }
+
+        for (MultipartFile file : attachmentFiles) {
+            MimeBodyPart attachmentPart = new MimeBodyPart();
+            DataSource source = new ByteArrayDataSource(file.getInputStream(), file.getContentType());
+            attachmentPart.setDataHandler(new DataHandler(source));
+            attachmentPart.setFileName(file.getOriginalFilename());
+            attachmentPart.setDisposition(Part.ATTACHMENT);
             multipart.addBodyPart(attachmentPart);
         }
 

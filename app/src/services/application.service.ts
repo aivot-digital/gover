@@ -6,14 +6,12 @@ import {CrudService} from './crud.service';
 import {CustomerInput} from '../models/customer-input';
 import axios, {AxiosResponse} from 'axios';
 import {ApiConfig} from '../api-config';
-import {generateComponentPatch} from '../utils/generate-component-patch';
-import {AnyElement} from '../models/elements/any-element';
-import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {generateElementWithDefaultValues} from '../utils/generate-element-with-default-values';
 import {ApplicationStatus} from '../data/application-status/application-status';
+import {FileUploadElementItem} from "../models/elements/form-elements/input-elements/file-upload-element";
 
 
-class _ApplicationService extends CrudService<Application, 'applications', number>{
+class _ApplicationService extends CrudService<Application, 'applications', number> {
     constructor() {
         super('applications');
     }
@@ -47,7 +45,7 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
         return data;
     }
 
-    async retrieveBySlug(slug: string, version: string):  Promise<Application> {
+    async retrieveBySlug(slug: string, version: string): Promise<Application> {
         const response: AxiosResponse = await axios.get(ApiConfig.address + '/public/applications/' + slug + '/' + version, CrudService.getConfig());
         const application = response.data;
         _ApplicationService.normalizeAppModel(application.root);
@@ -55,28 +53,29 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
     }
 
     async submit(application: Application, userInput: CustomerInput): Promise<string> {
-        const customerData = {...userInput};
+        const data = new FormData();
+        data.set('inputs', JSON.stringify(userInput));
 
-        /*
-        The generation of the patched values is from now on handled on the server.
-        We keep this for the very unlikely case of shifting it back to the client.
-        const extractValues = (elem: AnyElement) => {
-            const patchedElem = generateComponentPatch(elem.id, elem, userInput);
-            if (patchedElem != null && (patchedElem as any).value != null) {
-                customerData[elem.id] = (patchedElem as any).value;
+        const fileSets = Object
+            .keys(userInput)
+            .filter(key => {
+                const val = userInput[key];
+                return Array.isArray(val) && val.length > 0 && val[0].uri != null;
+            }).map(key => userInput[key]) as unknown as FileUploadElementItem[][];
+
+        for (const fileSet of fileSets) {
+            for (const file of fileSet) {
+                console.log(file);
+                const blob = await fetch(file.uri).then(r => r.blob());
+                data.append('files', blob, file.name);
             }
-            if (isAnyElementWithChildren(elem)) {
-                elem.children.forEach(extractValues);
-            }
-        };
-        extractValues(application.root);
-         */
+        }
 
         return await axios.post(
             ApiConfig.address + '/public/submit/' + application.id,
-            customerData, {
+            data, {
                 ...CrudService.getConfig(),
-                timeout: 1000 * 60 * 2 // Set 2 Minutes Timeout
+                timeout: 1000 * 60 * 5 // Set 5 Minutes Timeout
             }
         )
             .then(response => response.data);

@@ -31,6 +31,7 @@ import {FunctionComponent} from 'react';
 import {RootComponentEditorTabCode} from './elements/root/root.component.editor-tab.code';
 import {ImageEditor} from './image/image-editor';
 import {RootComponentEditorTabPublish} from './elements/root/root.component.editor-tab.publish';
+import {FileUploadEditor} from "./file-upload-field/file-upload.editor";
 
 export type EditorType = FunctionComponent<BaseEditorProps<any>>;
 
@@ -89,4 +90,5 @@ export const EditorMap: ElementTypesMap<EditorType | EditorTypeSet> = {
     [ElementType.SummaryStep]: SummaryComponentEditor,
     [ElementType.SubmitStep]: SubmitComponentEditor,
     [ElementType.SubmittedStep]: SubmitComponentEditor,
+    [ElementType.FileUpload]: FileUploadEditor,
 }

@@ -21,4 +21,5 @@ export enum ElementType {
     SummaryStep,
     Image,
     SubmittedStep,
+    FileUpload,
 }

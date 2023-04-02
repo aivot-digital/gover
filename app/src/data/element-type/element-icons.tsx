@@ -12,7 +12,7 @@ import {
     faCommand,
     faDistributeSpacingVertical,
     faFile,
-    faFileInvoice,
+    faFileInvoice, faFileUpload,
     faHeading,
     faImage,
     faInfoCircle,
@@ -48,4 +48,5 @@ export const ElementIcons: ElementTypesMap<IconDefinition> = {
     [ElementType.SummaryStep]: faCircleExclamationCheck,
     [ElementType.SubmitStep]: faCircleEnvelope,
     [ElementType.SubmittedStep]: faCheckCircle,
+    [ElementType.FileUpload]: faFileUpload,
 }

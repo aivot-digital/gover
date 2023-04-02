@@ -24,4 +24,5 @@ export const ElementNames: ElementTypesMap<string> = {
     [ElementType.SummaryStep]: 'Zusammenfassung',
     [ElementType.SubmitStep]: 'Absenden des Antrages',
     [ElementType.SubmittedStep]: 'Antrag abgesendet',
+    [ElementType.FileUpload]: 'Anlage(n)',
 };

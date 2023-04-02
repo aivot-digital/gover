@@ -11,6 +11,7 @@ import {CheckboxFieldComponentValidator} from './checkbox-field/checkbox-field.c
 import {DateFieldComponentValidator} from './date-field/date-field.component.validator';
 import {MultiCheckboxFieldComponentValidator} from './multi-checkbox-field/multi-checkbox-field.component.validator';
 import {ReplicatingContainerValidator} from './replicating-container/replicating-container.validator';
+import {FileUploadValidator} from "./file-upload-field/file-upload.validator";
 
 export const ValidatorMap: ElementTypesMap<BaseValidator<any> | null> = {
     [ElementType.Root]: null,
@@ -35,4 +36,5 @@ export const ValidatorMap: ElementTypesMap<BaseValidator<any> | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+    [ElementType.FileUpload]: new FileUploadValidator(),
 }
