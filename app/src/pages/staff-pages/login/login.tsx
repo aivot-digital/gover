@@ -63,8 +63,6 @@ export function Login() {
                             height={100}
                             style={{objectFit: 'contain'}}
                         />
-
-                        {authState}
                     </Box>
                     <Typography
                         variant="h5"
