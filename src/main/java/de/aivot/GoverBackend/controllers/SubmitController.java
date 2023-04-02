@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.repositories.DestinationRepository;
 import de.aivot.GoverBackend.services.*;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -20,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.mail.MessagingException;
@@ -77,8 +79,10 @@ public class SubmitController {
     }
 
     @PostMapping("/api/public/submit/{applicationId}")
-    public String submit(@PathVariable Long applicationId, @RequestBody Map<String, Object> customerData) {
+    public String submit(@PathVariable Long applicationId, @RequestParam("inputs") String inputs, @RequestParam("files") MultipartFile[] files) {
         Optional<Application> application = applicationRepository.findById(applicationId);
+
+        Map<String, Object> customerData = new JSONObject(inputs).toMap();
 
         if (application.isPresent()) {
             String validationError;
@@ -114,7 +118,7 @@ public class SubmitController {
                 Optional<Destination> destination = destinationRepository.findById(Long.valueOf(destinationId));
                 if (destination.isPresent()) {
                     try {
-                        destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString());
+                        destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files);
                     } catch (IOException | InterruptedException | MessagingException e) {
                         systemMailService.sendExceptionMail(e);
                         throw new RuntimeException(e);

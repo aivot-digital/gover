@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -39,7 +40,7 @@ public class SystemMailService {
 
         try {
             mailService.sendMail(to, "[Gover] Informationen", text, html);
-        } catch (MessagingException | MailException e) {
+        } catch (MessagingException | MailException | IOException e) {
             logger.error("Failed to send info admin mail", e);
         }
     }
@@ -59,7 +60,7 @@ public class SystemMailService {
 
         try {
             mailService.sendMail(goverConfig.getReportMail(), "[Gover] Fehler im Betrieb", text, html);
-        } catch (MessagingException | MailException e) {
+        } catch (MessagingException | MailException | IOException e) {
             logger.error("Failed to send exception admin mail", e);
         }
     }

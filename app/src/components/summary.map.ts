@@ -14,6 +14,7 @@ import {
 import {TableFieldComponentSummary} from './table-field/table-field.component.summary';
 import {NumberComponentSummary} from './number-field/number.component.summary';
 import {ReplicationContainerSummary} from './replicating-container/replication-container.summary';
+import {FileUploadSummary} from "./file-upload-field/file-upload.summary";
 
 export const SummaryMap: ElementTypesMap<any | null> = {
     [ElementType.Root]: null,
@@ -38,4 +39,5 @@ export const SummaryMap: ElementTypesMap<any | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+    [ElementType.FileUpload]: FileUploadSummary,
 }

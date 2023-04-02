@@ -24,4 +24,5 @@ export const ElementDropzones: ElementTypesMap<string | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
+    [ElementType.FileUpload]: null,
 };

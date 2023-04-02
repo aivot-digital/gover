@@ -8,6 +8,7 @@ import {TableFieldElement} from './table-field-element';
 import {TextFieldElement} from './text-field-element';
 import {TimeFieldElement} from './time-field-element';
 import {ReplicatingContainerElement} from '../layout-elements/replicating-container-element';
+import {FileUploadElement} from "./file-upload-element";
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -19,6 +20,7 @@ export type AnyInputElement = (
     TableFieldElement |
     TextFieldElement |
     TimeFieldElement |
+    FileUploadElement |
 
     ReplicatingContainerElement
     );

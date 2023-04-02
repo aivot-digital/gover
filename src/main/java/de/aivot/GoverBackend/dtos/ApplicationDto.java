@@ -99,6 +99,9 @@ public class ApplicationDto {
             case Time -> {
                 return initTime(element, value);
             }
+            case FileUpload -> {
+                return initFileUpload(element, value);
+            }
             default -> {
                 return new LinkedList<>();
             }
@@ -130,12 +133,14 @@ public class ApplicationDto {
     }
 
     private List<FieldDto> processReplicatingContainer(String id, Map<String, Object> containerElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+        // TODO: Check processing of replicating containers in replicating containers
+
         List<FieldDto> fields = new LinkedList<>();
         List<Map<String, Object>> children = (List<Map<String, Object>>) containerElement.get("children");
 
         List<String> childIds = (List<String>) customerData.get(id);
 
-        if (!childIds.isEmpty()) {
+        if (childIds != null && !childIds.isEmpty()) {
             fields.add(new HeadlineFieldDto((String) containerElement.get("label"), 3));
 
             for (int i = 0; i < childIds.size(); i++) {
@@ -358,6 +363,35 @@ public class ApplicationDto {
                 label,
                 valueText
         ));
+
+        return fields;
+    }
+
+    private List<FieldDto> initFileUpload(Map<String, Object> element, Object value) {
+        List<FieldDto> fields = new LinkedList<>();
+        String label = (String) element.get("label");
+
+
+        if (value instanceof List<?>) {
+            List<Map<String, String>> items = (List<Map<String, String>>) value;
+
+            fields.add(new ValueFieldDto(
+                    label,
+                    items.get(0).get("name")
+            ));
+
+            for (int i=1; i<items.size(); i++) {
+                fields.add(new ValueFieldDto(
+                        "",
+                        items.get(i).get("name")
+                ));
+            }
+        } else {
+            fields.add(new ValueFieldDto(
+                    label,
+                    "Keine Anlagen hinzugefügt"
+            ));
+        }
 
         return fields;
     }

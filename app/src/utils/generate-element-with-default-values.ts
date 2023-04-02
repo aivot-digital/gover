@@ -147,5 +147,11 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
                 alt: 'Aivot Logo',
                 src: 'https://aivot.de/img/aivot-logo.svg',
             };
+        case ElementType.FileUpload:
+            return {
+                id,
+                type: ElementType.FileUpload,
+                label: 'Anlage(n)',
+            };
     }
 }

@@ -24,4 +24,5 @@ export const ElementIsInput: ElementTypesMap<boolean> = {
     [ElementType.SummaryStep]: false,
     [ElementType.SubmitStep]: false,
     [ElementType.SubmittedStep]: false,
+    [ElementType.FileUpload]: true,
 };

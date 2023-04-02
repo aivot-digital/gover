@@ -67,6 +67,7 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Table]: ElementTypeGroups.Input,
     [ElementType.Text]: ElementTypeGroups.Input,
     [ElementType.Time]: ElementTypeGroups.DateTime,
+    [ElementType.FileUpload]: ElementTypeGroups.Input,
 
     [ElementType.IntroductionStep]: null,
     [ElementType.SummaryStep]: null,

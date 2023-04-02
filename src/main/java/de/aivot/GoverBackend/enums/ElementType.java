@@ -25,7 +25,8 @@ public enum ElementType {
     SubmitStep(18),
     SummaryStep(19),
     Image(20),
-    SubmittedStep(21);
+    SubmittedStep(21),
+    FileUpload(22);
 
     private final int id;
 

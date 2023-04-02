@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.services.SystemMailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -21,7 +22,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> exception(Exception ex, WebRequest request) throws Exception {
-        if (!(ex instanceof ResourceNotFoundException || ex instanceof ResponseStatusException)) {
+        if (!(ex instanceof ResourceNotFoundException || ex instanceof ResponseStatusException || ex instanceof AccessDeniedException)) {
             systemMailService.sendExceptionMail(ex);
         }
         return super.handleException(ex, request);

@@ -9,7 +9,7 @@ import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
 
 import javax.mail.MessagingException;
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +26,7 @@ public class CustomerMailService {
         this.blobService = blobService;
     }
 
-    public void sendApplicationCopyMail(String to, Application application, @Nullable Department department, String pdfLink) throws MessagingException, MalformedURLException, MailException {
+    public void sendApplicationCopyMail(String to, Application application, @Nullable Department department, String pdfLink) throws MessagingException, IOException, MailException {
         String[] parts = pdfLink.split("/");
         String pdfUuid = parts[parts.length - 1];
 

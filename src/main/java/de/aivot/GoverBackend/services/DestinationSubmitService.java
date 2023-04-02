@@ -8,11 +8,10 @@ import javax.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -31,14 +30,14 @@ public class DestinationSubmitService {
         this.mailService = mailService;
     }
 
-    public void handleSubmit(Destination destination, Application application, Map<String, Object> customerData, String pdfLink) throws MessagingException, MailException, IOException, InterruptedException {
+    public void handleSubmit(Destination destination, Application application, Map<String, Object> customerData, String pdfLink, MultipartFile[] files) throws MessagingException, MailException, IOException, InterruptedException {
         switch (destination.getType()) {
-            case Mail -> sendMail(destination, application, pdfLink);
+            case Mail -> sendMail(destination, application, pdfLink, files);
             case HTTP -> sendHttp(destination, customerData);
         }
     }
 
-    private void sendMail(Destination destination, Application application, String pdfLink) throws MessagingException, MailException {
+    private void sendMail(Destination destination, Application application, String pdfLink, MultipartFile[] files) throws MessagingException, MailException, IOException {
         Path pdfPath = Paths.get(pdfLink);
 
         String title = (String) application.getRoot().getOrDefault("headline", application.getRoot().getOrDefault("title", application.getSlug()));
@@ -57,7 +56,8 @@ public class DestinationSubmitService {
                 subject,
                 text,
                 html,
-                pdfPath
+                new Path[] {pdfPath},
+                files
         );
     }
 
