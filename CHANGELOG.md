@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0](https://github.com/aivot-digital/gover/compare/v2.0.3...v2.1.0) (2023-04-02)
+
+### Features
+
+* **Project:** Added different ports for customer and staff app in the dev environment
+* **Project:** Bump the version for the gover jar file
+* **App:** Add new element for file uploads
+
+### Bug Fixes
+
+* **App:** Fix auth state handling and prevent incorrect reset on wrong email/password
+* **Server:** Exclude ResponseStatusExceptions and AccessDeniedExceptions from admin logging
+
+
 ## [2.0.3](https://github.com/aivot-digital/gover/compare/v2.0.2...v2.0.3) (2023-01-13)
 
 ### Bug Fixes
