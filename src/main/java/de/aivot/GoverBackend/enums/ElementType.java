@@ -1,13 +1,16 @@
 package de.aivot.GoverBackend.enums;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+import de.aivot.GoverBackend.lib.Identifiable;
+
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum ElementType {
+public enum ElementType implements Identifiable<Integer> {
     Root(0),
     Step(1),
     Alert(2),
-    Container(3),
+    Group(3),
     Checkbox(4),
     Date(5),
     Headline(6),
@@ -28,18 +31,21 @@ public enum ElementType {
     SubmittedStep(21),
     FileUpload(22);
 
-    private final int id;
+    private final Integer key;
 
-    ElementType(int id) {
-        this.id = id;
+    ElementType(Integer id) {
+        this.key = id;
     }
 
-    public int getId() {
-        return id;
+    @Override
+    @JsonValue
+    public Integer getKey() {
+        return key;
     }
 
-    public boolean matches(Object id) {
-        return id.equals(this.id);
+    @Override
+    public boolean matches(Object other) {
+        return key.equals(other);
     }
 
     public static Optional<ElementType> findElement(Object id) {

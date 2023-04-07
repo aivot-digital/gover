@@ -11,4 +11,9 @@ export interface FileUploadElement extends BaseInputElement<FileUploadElementIte
 export interface FileUploadElementItem {
     name: string;
     uri: string;
+    size: number;
+}
+
+export function isFileUploadElementItem(obj: any): obj is FileUploadElementItem {
+    return obj != null && obj.name != null && obj.uri != null && obj.size != null;
 }

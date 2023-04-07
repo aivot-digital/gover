@@ -1,12 +1,26 @@
 import React, {useRef, useState} from 'react';
-import {Box, Button, FormLabel, IconButton, Typography, useTheme} from '@mui/material';
+import {
+    Box,
+    Button,
+    FormLabel,
+    IconButton,
+    Table, TableBody, TableCell,
+    TableContainer,
+    TableHead, TableRow,
+    Typography, useMediaQuery,
+    useTheme
+} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faTrashCanXmark, faUpload} from '@fortawesome/pro-light-svg-icons';
+import {faCloudArrowUp, faTrashCanXmark, faUpload} from '@fortawesome/pro-light-svg-icons';
 import {BaseViewProps} from "../_lib/base-view-props";
 import {
     FileUploadElement,
     FileUploadElementItem
 } from "../../models/elements/form-elements/input-elements/file-upload-element";
+import {humanizeFileSize} from "../../utils/humanize-file-size";
+import {humanizeNumber, pluralize} from "../../utils/humanize-number-size";
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
+import {showErrorSnackbar} from "../../slices/snackbar-slice";
 
 export function FileUploadView({
                                    element,
@@ -15,8 +29,10 @@ export function FileUploadView({
                                    setValue
                                }: BaseViewProps<FileUploadElement, FileUploadElementItem[]>) {
     const theme = useTheme();
+    const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
+    const isBreakpointMdAndDown = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files != null && event.target.files.length > 0) {
@@ -50,13 +66,21 @@ export function FileUploadView({
         const fileUploadItems: FileUploadElementItem[] = [
             ...value ?? [],
         ];
+        let addedItems = 0;
         for (let i = 0; (i < files.length && (maxFiles == null || fileUploadItems.length < maxFiles)); i++) {
             const file = files[i];
             fileUploadItems.push({
                 name: file.name,
                 uri: URL.createObjectURL(file),
+                size: file.size,
             });
+            addedItems++;
         }
+
+        if (addedItems < files.length) {
+            dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
+        }
+
         setValue(fileUploadItems);
     }
 
@@ -81,11 +105,71 @@ export function FileUploadView({
                 </FormLabel>
             </Box>
 
+            {
+                value != null &&
+                value.length > 0 &&
+                <TableContainer sx={{mb: 2}}>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>
+                                    Dateiname
+                                </TableCell>
+                                <TableCell align="right">
+                                    Dateigröße
+                                </TableCell>
+                                <TableCell/>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {
+                                value.map(file => (
+                                    <TableRow
+                                        key={file.uri}
+                                    >
+                                        <TableCell>
+                                            {file.name}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            {humanizeFileSize(file.size)}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            {
+                                                isBreakpointMdAndDown ?
+                                                    <IconButton
+                                                        onClick={() => handleRemove(file)}
+                                                    >
+                                                        <FontAwesomeIcon
+                                                            size="xs"
+                                                            icon={faTrashCanXmark}
+                                                        />
+                                                    </IconButton> :
+                                                    <Button
+                                                        variant="outlined"
+                                                        onClick={() => handleRemove(file)}
+                                                        startIcon={
+                                                            <FontAwesomeIcon
+                                                                size="xs"
+                                                                icon={faTrashCanXmark}
+                                                            />
+                                                        }
+                                                    >
+                                                        Löschen
+                                                    </Button>
+                                            }
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            }
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            }
+
             <Box
                 sx={{
                     p: 2,
                     border: `2px ${isFocused ? 'solid' : 'dashed'} ${error != null ? theme.palette.error.main : (isFocused ? theme.palette.primary.main : theme.palette.grey["500"])}`,
-                    textAlign: 'center',
                     backgroundColor: theme.palette.grey["100"],
                     transition: 'background-color 250ms ease-in-out',
                     '&:hover': {
@@ -94,39 +178,9 @@ export function FileUploadView({
                 }}
                 onDrop={handleDrop}
             >
-                {
-                    value &&
-                    value.length > 0 &&
-                    <Box sx={{mb: 2}}>
-                        {
-                            value.map(file => (
-                                <Box
-                                    key={file.uri}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <Typography>{file.name}</Typography>
-                                    <IconButton
-                                        sx={{ml: 1}}
-                                        onClick={() => handleRemove(file)}
-                                    >
-                                        <FontAwesomeIcon
-                                            size="xs"
-                                            icon={faTrashCanXmark}
-                                        />
-                                    </IconButton>
-                                </Box>
-                            ))
-                        }
-                    </Box>
-                }
                 <Box
                     sx={{
                         position: 'relative',
-                        p: 4,
                     }}
                 >
                     <input
@@ -150,32 +204,31 @@ export function FileUploadView({
                         onBlur={() => setIsFocused(false)}
                         disabled={fileMaximumReached}
                     />
-                    <Box>
+
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                        }}
+                    >
+
                         <FontAwesomeIcon
-                            icon={faUpload}
-                            size="3x"
+                            icon={faCloudArrowUp}
+                            size="xl"
                             color={fileMaximumReached ? theme.palette.grey["500"] : theme.palette.grey["700"]}
                         />
 
                         <Typography
                             sx={{
-                                mt: 4,
+                                ml: 1,
                                 color: fileMaximumReached ? theme.palette.grey["500"] : undefined,
                             }}
                         >
                             Datei mit Drag & Drop hier reinziehen
                         </Typography>
 
-                        <Typography
-                            sx={{
-                                my: 2,
-                                color: fileMaximumReached ? theme.palette.grey["500"] : undefined,
-                            }}
-                        >
-                            oder
-                        </Typography>
-
                         <Button
+                            sx={{ml: 'auto'}}
                             onClick={() => {
                                 if (inputRef.current != null) {
                                     inputRef.current.click();
@@ -189,35 +242,54 @@ export function FileUploadView({
                     {
                         element.extensions &&
                         element.extensions.length > 0 &&
-                        <Box
-                            sx={{
-                                mt: 4,
-                            }}
+                        <Typography
+                            color={theme.palette.grey["700"]}
+                            variant="caption"
                         >
-                            <Typography
-                                color={theme.palette.grey["700"]}
-                                variant="caption"
-                            >
-                                Erlaubte Dateitypen: {element.extensions.map(ext => '.' + ext).join(', ')}
-                            </Typography>
-                        </Box>
+                            Erlaubte Dateitypen: {element.extensions.map(ext => '.' + ext).join(', ')}
+                        </Typography>
                     }
                 </Box>
             </Box>
 
-            <Box
-                sx={{
-                    mt: 0.5,
-                    ml: 1.5,
-                }}
-            >
-                <Typography
-                    color={theme.palette.grey["600"]}
-                    variant="caption"
+            {
+                (
+                    error != null ||
+                    element.hint != null ||
+                    (
+                        element.minFiles &&
+                        element.minFiles > 0
+                    )
+                ) &&
+                <Box
+                    sx={{
+                        display: 'flex',
+                        mt: 0.5,
+                        mx: 1.5,
+                    }}
                 >
-                    {element.hint}
-                </Typography>
-            </Box>
+                    <Typography
+                        color={error != null ? theme.palette.error.main : theme.palette.grey["600"]}
+                        variant="caption"
+                    >
+                        {error || element.hint}
+                    </Typography>
+
+                    {
+                        element.minFiles &&
+                        element.minFiles > 0 &&
+                        <Typography
+                            color={theme.palette.grey["600"]}
+                            variant="caption"
+                            sx={{
+                                ml: 'auto',
+                            }}
+                        >
+                            Mindestens {humanizeNumber(element.minFiles)} {pluralize(element.minFiles, 'Anlage', 'Anlagen')}
+                        </Typography>
+                    }
+                </Box>
+            }
         </Box>
     );
 }

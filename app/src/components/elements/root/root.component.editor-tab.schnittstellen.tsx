@@ -31,9 +31,9 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                     <InputLabel>Auswahl der Schnittstelle</InputLabel>
                     <Select
                         label="Auswahl der Schnittstelle"
-                        value={props.component.interface ?? ''}
+                        value={props.component.destination ?? ''}
                         onChange={event => props.onPatch({
-                            interface: event.target.value,
+                            destination: event.target.value,
                         })}
                     >
                         {

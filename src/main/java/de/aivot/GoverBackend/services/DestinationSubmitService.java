@@ -40,7 +40,7 @@ public class DestinationSubmitService {
     private void sendMail(Destination destination, Application application, String pdfLink, MultipartFile[] files) throws MessagingException, MailException, IOException {
         Path pdfPath = Paths.get(pdfLink);
 
-        String title = (String) application.getRoot().getOrDefault("headline", application.getRoot().getOrDefault("title", application.getSlug()));
+        String title = application.getApplicationTitle();
 
         Map<String, Object> mailData = new HashMap<>();
         mailData.put("title", title);

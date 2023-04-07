@@ -7,6 +7,7 @@ import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
 import de.aivot.GoverBackend.models.Application;
+import de.aivot.GoverBackend.models.elements.BaseElement;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-
-;
 
 @Component
 public class ScriptService {
@@ -50,7 +49,7 @@ public class ScriptService {
         } catch (IOException e) {
             logger.info("No ScriptEngine loaded");
         }
-        return validateElement(application.getRoot(), customerData, script, null);
+        return null; //validateElement(application.getRoot(), customerData, script, null);
     }
 
     private ScriptEngine prepareEngine(Application application, Map<String, Object> customerData) throws IOException, ScriptException {
@@ -69,10 +68,9 @@ public class ScriptService {
         return engine;
     }
 
+    /*
     @Nullable
-    private String validateElement(Map<String, Object> pElement, Map<String, Object> customerData, @Nullable ScriptEngine script, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
-        Map<String, Object> element = pElement;
-
+    private String validateElement(BaseElement element, Map<String, Object> customerData, @Nullable ScriptEngine script, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
         if (!isElementVisible(script, element, idPrefix)) {
             return null;
         }
@@ -217,11 +215,12 @@ public class ScriptService {
         String functionCall = String.format("%s(%s, %s, '%s')", funcName, GLOBAL_DATA_FIELD, elementString, elementId);
         return script.eval(functionCall);
     }
-
+*/
     private static String mapToString(Map<String, Object> map) throws JsonProcessingException {
         return new ObjectMapper().writeValueAsString(map);
     }
 
+    /*
     public static String getPrefixedId(@NotNull Map<String, Object> element, @Nullable String idPrefix) {
         String elementId = (String) element.get("id");
         if (idPrefix != null) {
@@ -229,4 +228,5 @@ public class ScriptService {
         }
         return elementId;
     }
+     */
 }

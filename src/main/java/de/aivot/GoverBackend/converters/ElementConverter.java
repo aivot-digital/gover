@@ -1,22 +1,27 @@
 package de.aivot.GoverBackend.converters;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import org.json.JSONObject;
 
-import java.util.Map;
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
 
 @Converter
-public class ElementConverter implements AttributeConverter<Map<String, Object>, String> {
+public class ElementConverter implements AttributeConverter<RootElement, String> {
     @Override
-    public String convertToDatabaseColumn(Map<String, Object> baseElement) {
-        JSONObject json = new JSONObject(baseElement);
-        return json.toString();
+    public String convertToDatabaseColumn(RootElement baseElement) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(baseElement);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public Map<String, Object> convertToEntityAttribute(String s) {
-        JSONObject json = new JSONObject(s);
-        return json.toMap();
+    public RootElement convertToEntityAttribute(String s) {
+        return new RootElement(new JSONObject(s).toMap());
     }
 }

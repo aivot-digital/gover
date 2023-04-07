@@ -1,14 +1,14 @@
-package de.aivot.GoverBackend.dtos;
+package de.aivot.GoverBackend.pdf;
 
 import java.util.List;
 
-public class TableFieldDto extends FieldDto {
+public class TablePdfRowDto extends BasePdfRowDto {
     public final String label;
     public final List<String> columnHeaders;
     public final List<List<String>> columnValues;
 
-    public TableFieldDto(String label, List<String> columnHeaders, List<List<String>> columnValues) {
-        super("table");
+    public TablePdfRowDto(String label, List<String> columnHeaders, List<List<String>> columnValues) {
+        super(PdfRowDtoType.Table);
         this.label = label;
         this.columnHeaders = columnHeaders;
         this.columnValues = columnValues;

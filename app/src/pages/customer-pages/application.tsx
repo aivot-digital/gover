@@ -3,7 +3,7 @@ import React, {useEffect} from 'react';
 import {
     LoadingPlaceholderComponentView
 } from '../../components/static-components/loading-placeholder/loading-placeholder.component.view';
-import {Theme, ThemeProvider} from '@mui/material';
+import {Alert, Snackbar, Theme, ThemeProvider} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
 import {LoadUserInputDialog} from '../../dialogs/load-user-input/load-user-input.dialog';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
@@ -13,6 +13,7 @@ import {InputWatcher} from '../../components/static-components/input-watcher/inp
 import {fetchApplicationBySlug, selectApplicationLoadFailed, selectLoadedApplication} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {resetSnackbar} from "../../slices/snackbar-slice";
 
 export function Application() {
     const params = useParams();
@@ -20,6 +21,7 @@ export function Application() {
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedApplication);
     const failedToLoad = useAppSelector(selectApplicationLoadFailed);
+    const snackbar = useAppSelector(state => state.snackbar);
 
     useEffect(() => {
         if (params.slug != null && params.version != null) {
@@ -38,6 +40,20 @@ export function Application() {
                 <ViewDispatcherComponent model={application.root}/>
                 <LoadUserInputDialog application={application}/>
                 <InputWatcher application={application}/>
+
+                <Snackbar
+                    open={snackbar.message != null}
+                    autoHideDuration={6000}
+                    onClose={() => dispatch(resetSnackbar())}
+                >
+                    <Alert
+                        onClose={() => dispatch(resetSnackbar())}
+                        severity={snackbar.severity}
+                        sx={{width: '100%'}}
+                    >
+                        {snackbar.message}
+                    </Alert>
+                </Snackbar>
             </ThemeProvider>
         );
     }

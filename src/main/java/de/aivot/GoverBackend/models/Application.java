@@ -3,6 +3,10 @@ package de.aivot.GoverBackend.models;
 import de.aivot.GoverBackend.converters.ElementConverter;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+
+import de.aivot.GoverBackend.enums.ApplicationStatus;
+import de.aivot.GoverBackend.models.elements.RootElement;
+import de.aivot.GoverBackend.pdf.ApplicationPdfDto;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -23,9 +27,12 @@ public class Application {
     @NotBlank(message = "Version cannot be blank")
     @ColumnDefault("'1.0'")
     private String version;
+    @NotBlank(message = "Status cannot be blank")
+    @ColumnDefault("0")
+    private ApplicationStatus status;
     @Lob
     @Convert(converter = ElementConverter.class)
-    private Map<String, Object> root;
+    private RootElement root;
     @CreationTimestamp
     private LocalDateTime created;
     @UpdateTimestamp
@@ -55,11 +62,19 @@ public class Application {
         this.version = version;
     }
 
-    public Map<String, Object> getRoot() {
+    public ApplicationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ApplicationStatus status) {
+        this.status = status;
+    }
+
+    public RootElement getRoot() {
         return root;
     }
 
-    public void setRoot(Map<String, Object> root) {
+    public void setRoot(RootElement root) {
         this.root = root;
     }
 
@@ -77,5 +92,13 @@ public class Application {
 
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
+    }
+
+    public String getApplicationTitle() {
+        return root.getHeadline() != null ? root.getHeadline() : (root.getTitle() != null ? root.getTitle() : getSlug());
+    }
+
+    public ApplicationPdfDto toPdfDto(Map<String, Object> customerData) {
+        return new ApplicationPdfDto(this, customerData);
     }
 }

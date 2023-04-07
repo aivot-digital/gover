@@ -1,12 +1,13 @@
 package de.aivot.GoverBackend.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.GoverBackend.dtos.ApplicationDto;
+import de.aivot.GoverBackend.pdf.ApplicationPdfDto;
 import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
 import de.aivot.GoverBackend.models.Application;
 import de.aivot.GoverBackend.models.Department;
 import de.aivot.GoverBackend.models.Destination;
 import de.aivot.GoverBackend.models.SendCopyRequest;
+import de.aivot.GoverBackend.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.repositories.DestinationRepository;
@@ -80,14 +81,16 @@ public class SubmitController {
 
     @PostMapping("/api/public/submit/{applicationId}")
     public String submit(@PathVariable Long applicationId, @RequestParam("inputs") String inputs, @RequestParam("files") MultipartFile[] files) {
-        Optional<Application> application = applicationRepository.findById(applicationId);
+        Optional<Application> fetchedApplication = applicationRepository.findById(applicationId);
 
         Map<String, Object> customerData = new JSONObject(inputs).toMap();
 
-        if (application.isPresent()) {
+        if (fetchedApplication.isPresent()) {
+            Application application = fetchedApplication.get();
+
             String validationError;
             try {
-                validationError = scriptService.validateApplication(application.get(), customerData);
+                validationError = scriptService.validateApplication(application, customerData);
             } catch (ScriptRequiredException | ScriptException | JsonProcessingException e) {
                 systemMailService.sendExceptionMail(e);
                 throw new RuntimeException(e);
@@ -97,28 +100,22 @@ public class SubmitController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationError);
             }
 
-            ApplicationDto applicationDto;
-            try {
-                applicationDto = new ApplicationDto(application.get(), customerData, scriptService);
-            } catch (ScriptRequiredException | ScriptException | JsonProcessingException e) {
-                systemMailService.sendExceptionMail(e);
-                throw new RuntimeException(e);
-            }
+            ApplicationPdfDto applicationDto = application.toPdfDto(customerData);
 
             String pdfUuid;
             try {
-                pdfUuid = pdfService.generatePdf(application.get(), applicationDto);
+                pdfUuid = pdfService.generatePdf(application, applicationDto);
             } catch (IOException | InterruptedException e) {
                 systemMailService.sendExceptionMail(e);
                 throw new RuntimeException(e);
             }
 
-            Integer destinationId = (Integer) application.get().getRoot().get("interface");
+            Integer destinationId = application.getRoot().getDestination();
             if (destinationId != null) {
                 Optional<Destination> destination = destinationRepository.findById(Long.valueOf(destinationId));
                 if (destination.isPresent()) {
                     try {
-                        destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files);
+                        destinationSubmitService.handleSubmit(destination.get(), application, customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files);
                     } catch (IOException | InterruptedException | MessagingException e) {
                         systemMailService.sendExceptionMail(e);
                         throw new RuntimeException(e);
@@ -134,36 +131,27 @@ public class SubmitController {
 
     @PostMapping("/api/public/send-copy/{applicationId}")
     public ResponseEntity<HttpStatus> sendCopy(@PathVariable Long applicationId, @RequestBody SendCopyRequest sendCopyRequest) {
-        Optional<Application> application = applicationRepository.findById(applicationId);
-        if (application.isPresent()) {
-            Map<String, Object> introStep = (Map<String, Object>) application.get().getRoot().get("introductionStep");
+        Optional<Application> fetchedApplication = applicationRepository.findById(applicationId);
+        if (fetchedApplication.isPresent()) {
+            Application application = fetchedApplication.get();
 
-            Object storedDepartmentId = introStep.get("managingDepartment");
-            if (storedDepartmentId == null || (storedDepartmentId instanceof String && ((String) storedDepartmentId).isEmpty())) {
-                storedDepartmentId = introStep.get("responsibleDepartment");
-            }
+            IntroductionStepElement introStep = application.getRoot().getIntroductionStep();
 
-            Long departmentId = null;
-            if (storedDepartmentId != null) {
-                if (storedDepartmentId instanceof String) {
-                    departmentId = Long.valueOf((String) storedDepartmentId);
-                } else if (storedDepartmentId instanceof Integer) {
-                    departmentId = Long.valueOf((Integer) storedDepartmentId);
-                } else if (storedDepartmentId instanceof Long) {
-                    departmentId = (Long) storedDepartmentId;
-                }
+            Integer departmentId = introStep.getManagingDepartment();
+            if (departmentId == null) {
+                departmentId = introStep.getResponsibleDepartment();
             }
 
             Department department = null;
             if (departmentId != null) {
-                Optional<Department> _department = departmentRepository.findById(departmentId);
+                Optional<Department> _department = departmentRepository.findById(Long.valueOf(departmentId));
                 if (_department.isPresent()) {
                     department = _department.get();
                 }
             }
 
             try {
-                customerMailService.sendApplicationCopyMail(sendCopyRequest.getEmail(), application.get(), department, sendCopyRequest.getPdfLink());
+                customerMailService.sendApplicationCopyMail(sendCopyRequest.getEmail(), application, department, sendCopyRequest.getPdfLink());
             } catch (IOException e) {
                 systemMailService.sendExceptionMail(e);
                 throw new RuntimeException(e);

@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {
+    Alert,
     Box,
     Button,
     Dialog,
@@ -18,6 +19,8 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {PrivacyUserInputKey} from '../../components/general-information/general-information.component.view';
 import {Application} from '../../models/application';
 import {Logo} from '../../components/static-components/logo/logo';
+import {CustomerInput} from "../../models/customer-input";
+import {isFileUploadElementItem} from "../../models/elements/form-elements/input-elements/file-upload-element";
 
 interface LoadUserInputDialogProps {
     application: Application;
@@ -26,7 +29,7 @@ interface LoadUserInputDialogProps {
 export function LoadUserInputDialog({application}: LoadUserInputDialogProps) {
     const dispatch = useDispatch();
     const [lastSaveDate, setLastSaveDate] = useState<Date | null>(null);
-    const [lastSaveData, setLastSaveData] = useState<any | null>(null);
+    const [lastSaveData, setLastSaveData] = useState<CustomerInput | null>(null);
 
     useEffect(() => {
         setLastSaveDate(UserInputService.loadUserInputDate(application));
@@ -44,7 +47,16 @@ export function LoadUserInputDialog({application}: LoadUserInputDialogProps) {
 
     const handleLoad = () => {
         if (lastSaveData != null) {
-            dispatch(setUserInput(lastSaveData));
+            const cleanedSaveData = {
+                ...lastSaveData,
+            };
+            for (const key of Object.keys(cleanedSaveData)) {
+                const val = cleanedSaveData[key];
+                if (Array.isArray(val) && val.length > 0 && isFileUploadElementItem(val[0])) {
+                    delete cleanedSaveData[key];
+                }
+            }
+            dispatch(setUserInput(cleanedSaveData));
         }
         handleClose();
     };
@@ -107,6 +119,11 @@ export function LoadUserInputDialog({application}: LoadUserInputDialogProps) {
                             </Typography>
                         </Box>
                     </Box>
+
+                    <Alert severity="warning" sx={{mt: 2}}>
+                        Bitte beachten Sie, dass aus Datenschutzgründen zuvor hinzugefügte Anlagen <strong>nicht</strong> zwischengespeichert wurden.
+                        Sie werden automatisch an den entsprechenden Stellen darauf hingewiesen, diese erneut hinzuzufügen.
+                    </Alert>
                 </DialogContentText>
             </DialogContent>
             <DialogActions

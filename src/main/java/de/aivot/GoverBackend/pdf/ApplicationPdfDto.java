@@ -1,51 +1,23 @@
-package de.aivot.GoverBackend.dtos;
+package de.aivot.GoverBackend.pdf;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
 import de.aivot.GoverBackend.models.Application;
-import de.aivot.GoverBackend.services.ScriptService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.script.ScriptException;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
-public class ApplicationDto {
-    private static final Logger logger = LoggerFactory.getLogger(ApplicationDto.class);
-
+public class ApplicationPdfDto {
     public final String title;
-    public final List<FieldDto> fields;
-    public final LocalDate now;
+    public final List<BasePdfRowDto> fields;
+    public final LocalDate now = LocalDate.now();
 
-    private final Application application;
-    private final ScriptService scriptService;
-    private final Map<String, Object> customerData;
-
-    public ApplicationDto(Application application, Map<String, Object> customerData, ScriptService scriptService) throws ScriptRequiredException, ScriptException, JsonProcessingException {
-        Map<String, Object> root = application.getRoot();
-
-        this.application = application;
-        this.customerData = customerData;
-        this.scriptService = scriptService;
-
-        this.title = (String) root.getOrDefault("headline", root.getOrDefault("title", application.getSlug()));
-
-        this.now = LocalDate.now();
-        this.fields = new LinkedList<>();
-
-        Collection<Map<String, Object>> segments = (Collection<Map<String, Object>>) root.get("children");
-        for (Map<String, Object> segment : segments) {
-            this.fields.addAll(processElement(segment, null));
-        }
+    public ApplicationPdfDto(Application application, Map<String, Object> customerData) {
+        title = application.getApplicationTitle();
+        fields = application.getRoot().toPdfRows(customerData, null);
     }
 
-    private List<FieldDto> processElement(Map<String, Object> pElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+    /*
+    private List<BasePdfRowDto> processElement(StepElement pElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
         boolean isVisible = scriptService.isElementVisible(application, pElement, customerData, idPrefix);
         if (!isVisible) {
             return new LinkedList<>();
@@ -66,7 +38,7 @@ public class ApplicationDto {
             case Step -> {
                 return processSegment(id, element);
             }
-            case Container -> {
+            case Group -> {
                 return processGroup(id, element, idPrefix);
             }
             case ReplicatingContainer -> {
@@ -108,11 +80,11 @@ public class ApplicationDto {
         }
     }
 
-    private List<FieldDto> processSegment(String id, Map<String, Object> segmentElement) throws ScriptRequiredException, ScriptException, JsonProcessingException {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> processSegment(String id, Map<String, Object> segmentElement) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+        List<BasePdfRowDto> fields = new LinkedList<>();
         List<Map<String, Object>> children = (List<Map<String, Object>>) segmentElement.get("children");
 
-        fields.add(new HeadlineFieldDto((String) segmentElement.get("title"), 2));
+        fields.add(new HeadlinePdfRowDto((String) segmentElement.get("title"), 2));
 
         for (Map<String, Object> childElement : children) {
             fields.addAll(processElement(childElement, null));
@@ -120,9 +92,11 @@ public class ApplicationDto {
 
         return fields;
     }
+     */
 
-    private List<FieldDto> processGroup(String id, Map<String, Object> groupElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
-        List<FieldDto> fields = new LinkedList<>();
+    /*
+    private List<BasePdfRowDto> processGroup(String id, Map<String, Object> groupElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+        List<BasePdfRowDto> fields = new LinkedList<>();
         List<Map<String, Object>> children = (List<Map<String, Object>>) groupElement.get("children");
 
         for (Map<String, Object> childElement : children) {
@@ -132,22 +106,22 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> processReplicatingContainer(String id, Map<String, Object> containerElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
+    private List<BasePdfRowDto> processReplicatingContainer(String id, Map<String, Object> containerElement, @Nullable String idPrefix) throws ScriptRequiredException, ScriptException, JsonProcessingException {
         // TODO: Check processing of replicating containers in replicating containers
 
-        List<FieldDto> fields = new LinkedList<>();
+        List<BasePdfRowDto> fields = new LinkedList<>();
         List<Map<String, Object>> children = (List<Map<String, Object>>) containerElement.get("children");
 
         List<String> childIds = (List<String>) customerData.get(id);
 
         if (childIds != null && !childIds.isEmpty()) {
-            fields.add(new HeadlineFieldDto((String) containerElement.get("label"), 3));
+            fields.add(new HeadlinePdfRowDto((String) containerElement.get("label"), 3));
 
             for (int i = 0; i < childIds.size(); i++) {
                 String childId = childIds.get(i);
                 String headlineTemplate = (String) containerElement.get("headlineTemplate");
                 headlineTemplate = headlineTemplate.replace("#", "" + (i + 1));
-                fields.add(new HeadlineFieldDto(headlineTemplate, 4));
+                fields.add(new HeadlinePdfRowDto(headlineTemplate, 4));
 
                 for (Map<String, Object> childElement : children) {
                     fields.addAll(processElement(childElement, id + "_" + childId));
@@ -158,10 +132,10 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initCheckbox(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initCheckbox(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
 
-        fields.add(new ValueFieldDto(
+        fields.add(new ValuePdfRowDto(
                 (String) fieldData.get("label"),
                 Boolean.TRUE.equals(value) ? "Ja" : "Nein"
         ));
@@ -169,8 +143,8 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initDate(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initDate(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
 
         String displayValue = "Keine Angaben";
 
@@ -195,7 +169,7 @@ public class ApplicationDto {
             }
         }
 
-        fields.add(new ValueFieldDto(
+        fields.add(new ValuePdfRowDto(
                 (String) fieldData.get("label"),
                 displayValue
         ));
@@ -203,22 +177,22 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initMultiCheckbox(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initMultiCheckbox(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
         List<String> options = (List<String>) value;
 
         if (options == null || options.isEmpty()) {
-            fields.add(new ValueFieldDto(
+            fields.add(new ValuePdfRowDto(
                     (String) fieldData.get("label"),
                     "Keine Angaben"
             ));
         } else {
-            fields.add(new ValueFieldDto(
+            fields.add(new ValuePdfRowDto(
                     (String) fieldData.get("label"),
                     options.get(0)
             ));
             for (int i = 1; i < options.size(); i++) {
-                fields.add(new ValueFieldDto(
+                fields.add(new ValuePdfRowDto(
                         "",
                         options.get(i)
                 ));
@@ -228,8 +202,8 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initNumber(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initNumber(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
 
         String displayValue = "Keine Angaben";
 
@@ -251,7 +225,7 @@ public class ApplicationDto {
             }
         }
 
-        fields.add(new ValueFieldDto(
+        fields.add(new ValuePdfRowDto(
                 (String) fieldData.get("label"),
                 displayValue
         ));
@@ -259,10 +233,10 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initRadio(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initRadio(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
 
-        fields.add(new ValueFieldDto(
+        fields.add(new ValuePdfRowDto(
                 (String) fieldData.get("label"),
                 value != null ? (String) value : "Keine Angaben"
         ));
@@ -270,10 +244,10 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initSelect(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initSelect(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
 
-        fields.add(new ValueFieldDto(
+        fields.add(new ValuePdfRowDto(
                 (String) fieldData.get("label"),
                 value != null ? (String) value : "Keine Angaben"
         ));
@@ -281,7 +255,7 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initTable(Map<String, Object> fieldData, Object value) {
+    private List<BasePdfRowDto> initTable(Map<String, Object> fieldData, Object value) {
         List<String> columnHeaders = new LinkedList<>();
         Collection<Map<String, Object>> tableColumns = (Collection<Map<String, Object>>) fieldData.get("fields");
         for (Map<String, Object> col : tableColumns) {
@@ -328,15 +302,15 @@ public class ApplicationDto {
             }
         }
 
-        List<FieldDto> fields = new LinkedList<>();
-        fields.add(new TableFieldDto((String) fieldData.get("label"), columnHeaders, columnValues));
+        List<BasePdfRowDto> fields = new LinkedList<>();
+        fields.add(new TablePdfRowDto((String) fieldData.get("label"), columnHeaders, columnValues));
         return fields;
     }
 
-    private List<FieldDto> initText(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initText(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
 
-        fields.add(new ValueFieldDto(
+        fields.add(new ValuePdfRowDto(
                 (String) fieldData.get("label"),
                 value != null ? (String) value : "Keine Angaben"
         ));
@@ -344,8 +318,8 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initTime(Map<String, Object> fieldData, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initTime(Map<String, Object> fieldData, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
         String label = (String) fieldData.get("label");
 
         String valueText = "Keine Angaben";
@@ -359,7 +333,7 @@ public class ApplicationDto {
             e.printStackTrace();
         }
 
-        fields.add(new ValueFieldDto(
+        fields.add(new ValuePdfRowDto(
                 label,
                 valueText
         ));
@@ -367,27 +341,27 @@ public class ApplicationDto {
         return fields;
     }
 
-    private List<FieldDto> initFileUpload(Map<String, Object> element, Object value) {
-        List<FieldDto> fields = new LinkedList<>();
+    private List<BasePdfRowDto> initFileUpload(Map<String, Object> element, Object value) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
         String label = (String) element.get("label");
 
 
         if (value instanceof List<?>) {
             List<Map<String, String>> items = (List<Map<String, String>>) value;
 
-            fields.add(new ValueFieldDto(
+            fields.add(new ValuePdfRowDto(
                     label,
                     items.get(0).get("name")
             ));
 
             for (int i=1; i<items.size(); i++) {
-                fields.add(new ValueFieldDto(
+                fields.add(new ValuePdfRowDto(
                         "",
                         items.get(i).get("name")
                 ));
             }
         } else {
-            fields.add(new ValueFieldDto(
+            fields.add(new ValuePdfRowDto(
                     label,
                     "Keine Anlagen hinzugefügt"
             ));
@@ -395,4 +369,5 @@ public class ApplicationDto {
 
         return fields;
     }
+    */
 }

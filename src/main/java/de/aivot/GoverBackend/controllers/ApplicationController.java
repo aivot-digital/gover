@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.controllers;
 
+import de.aivot.GoverBackend.enums.ApplicationStatus;
 import de.aivot.GoverBackend.models.Application;
 import de.aivot.GoverBackend.models.Department;
 import de.aivot.GoverBackend.models.User;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,7 @@ public class ApplicationController {
 
         if (applicationResult.isPresent()) {
             Application application = applicationResult.get();
-            if (user != null || (int) application.getRoot().get("status") == 2) {
+            if (user != null || (application.getStatus() == ApplicationStatus.Published)) {
                 return application;
             }
         }

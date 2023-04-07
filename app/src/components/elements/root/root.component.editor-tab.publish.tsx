@@ -23,7 +23,7 @@ export function RootComponentEditorTabPublish({component, onPatch}: BaseEditorPr
     }[] = [
         {
             label: 'Schnittstelle eingerichtet',
-            done: !isNullOrEmpty(component.interface),
+            done: !isNullOrEmpty(component.destination),
         },
 
         {
