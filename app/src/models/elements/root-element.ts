@@ -26,10 +26,7 @@ export interface RootElement extends BaseElement<ElementType.Root> {
     privacyText?: string;
     accessibility?: number;
 
-    interface?: string;
-    applicationId?: string;
-    maturity?: string;
-    paymentMethod?: string;
+    destination?: string;
 
     introductionStep: IntroductionStepElement;
     summaryStep: SummaryStepElement;

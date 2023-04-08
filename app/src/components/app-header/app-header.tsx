@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {AppHeaderProps} from './app-header-props';
-import {Box, Container, IconButton, Tooltip, Typography} from '@mui/material';
+import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import strings from './app-header-strings.json';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
@@ -18,6 +18,7 @@ import {Logo} from '../static-components/logo/logo';
 const __ = Localization(strings);
 
 export function AppHeader({mode}: AppHeaderProps) {
+    const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const app = useAppSelector(selectLoadedApplication);
 
@@ -51,15 +52,46 @@ export function AppHeader({mode}: AppHeaderProps) {
         <>
             <Box sx={{boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.06)'}}>
                 <Container>
-                    <Box sx={{py: 4, display: 'flex', alignItems: 'center'}}>
-                        <Box sx={{display: 'flex', flex: 1, alignItems: 'center'}}>
+                    <Box
+                        sx={{
+                            py: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            [theme.breakpoints.down('md')]: {
+                                flexDirection: 'column',
+                                alignItems: 'flex-start',
+                            },
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flex: 1,
+                                alignItems: 'center',
+                                [theme.breakpoints.down('md')]: {
+                                    flexDirection: 'column',
+                                    alignItems: 'flex-start',
+                                },
+                            }}
+                        >
                             <Box>
                                 <Logo
                                     width={200}
                                     height={100}
                                 />
                             </Box>
-                            <Box sx={{ml: 4, pl: 4, borderLeft: '1px solid #E4E4E4'}}>
+                            <Box
+                                sx={{
+                                    ml: 4,
+                                    pl: 4,
+                                    borderLeft: '1px solid #E4E4E4',
+                                    [theme.breakpoints.down('md')]: {
+                                        borderLeft: 'none',
+                                        pl: 0,
+                                        ml: 0,
+                                    },
+                                }}
+                            >
                                 <div>
                                     <Typography
                                         variant="h1"
@@ -80,7 +112,12 @@ export function AppHeader({mode}: AppHeaderProps) {
                                 </div>
                             </Box>
                         </Box>
-                        <Box>
+                        <Box sx={{
+                            [theme.breakpoints.down('md')]: {
+                                ml: 'auto',
+                                mt: 2,
+                            },
+                        }}>
                             {
                                 mode === AppMode.Customer &&
                                 <Tooltip

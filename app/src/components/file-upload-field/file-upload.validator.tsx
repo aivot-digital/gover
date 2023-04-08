@@ -22,6 +22,15 @@ export class FileUploadValidator extends BaseInputElementValidator<FileUploadEle
             if (comp.maxFiles != null && value.length > comp.maxFiles) {
                 return `Bitte fügen Sie maximal ${comp.maxFiles} Anlagen hinzu.`;
             }
+
+            if (comp.extensions != null && comp.extensions.length > 0) {
+                for (const val of value) {
+                    const extension = val.name.split('.').pop();
+                    if (extension == null || !(comp.extensions.includes(extension))) {
+                        return `Die Anlage ${val.name} hat eine nicht zugelassene Dateiendung.`;
+                    }
+                }
+            }
         }
         return null;
     }
