@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/aivot-digital/gover/compare/v2.1.0...v2.1.1) (2023-04-08)
+
+### Features
+
+* **App:** Updated file upload element with new styling and validations
+
+
 ## [2.1.0](https://github.com/aivot-digital/gover/compare/v2.0.3...v2.1.0) (2023-04-02)
 
 ### Features
