@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Box, Button, Container, SxProps, Typography} from '@mui/material';
+import {Box, Button, Container, SxProps, Typography, useTheme} from '@mui/material';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {SystemAssetsService} from '../../services/system-assets.service';
 import {AppFooterProps} from './app-footer-props';
@@ -24,6 +24,7 @@ const buttonStyle: SxProps = {
 };
 
 export function AppFooter({mode}: AppFooterProps) {
+    const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     const [showHelp, setShowHelp] = useState(false);
@@ -34,7 +35,19 @@ export function AppFooter({mode}: AppFooterProps) {
         <>
             <Box sx={{boxShadow: 'inset 0px 10px 10px rgba(0, 0, 0, 0.12)'}}>
                 <Container>
-                    <Box sx={{display: 'flex', pt: 12, pb: 15, alignItems: 'flex-end'}}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            pt: 12,
+                            pb: 15,
+                            alignItems: 'flex-end',
+                            justifyContent: 'space-between',
+                            [theme.breakpoints.down('md')]: {
+                                flexDirection: 'column',
+                                alignItems: 'flex-start',
+                            }
+                        }}
+                    >
                         <img
                             src={SystemAssetsService.getLogoLink()}
                             alt={name}
@@ -43,7 +56,7 @@ export function AppFooter({mode}: AppFooterProps) {
                             style={{objectFit: 'contain'}}
                         />
 
-                        <Box sx={{ml: 'auto'}}>
+                        <Box>
                             {
                                 mode === AppMode.Customer &&
                                 <Box sx={{mb: 1}}>
