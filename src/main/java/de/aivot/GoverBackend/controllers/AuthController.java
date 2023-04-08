@@ -1,10 +1,10 @@
 package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.UserRole;
-import de.aivot.GoverBackend.models.AuthCredentials;
-import de.aivot.GoverBackend.models.AuthResponse;
+import de.aivot.GoverBackend.models.auth.AuthCredentials;
+import de.aivot.GoverBackend.models.auth.AuthResponse;
 import de.aivot.GoverBackend.models.SetPasswordRequest;
-import de.aivot.GoverBackend.models.User;
+import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
 import de.aivot.GoverBackend.services.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,11 +1,12 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 
+import javax.script.ScriptEngine;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,7 +16,7 @@ public class MultiCheckboxField extends InputElement<Collection<String>> {
     private Collection<String> options;
     private Integer minimumRequiredOptions;
 
-    public MultiCheckboxField(BaseElement parent, Map<String, Object> data) {
+    public MultiCheckboxField(Map<String, Object> data) {
         super(data);
 
         options = (Collection<String>) data.get("options");
@@ -41,12 +42,13 @@ public class MultiCheckboxField extends InputElement<Collection<String>> {
     }
 
     @Override
-    public boolean isValid(Collection<String> value, String idPrefix) {
-        return testValuesInOptions(value) && testRequiredOptionsMet(value);
+    public void validate(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        testValuesInOptions(value);
+        testRequiredOptionsMet(value);
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Collection<String> value, String idPrefix) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         if (options == null || options.isEmpty()) {
@@ -73,7 +75,7 @@ public class MultiCheckboxField extends InputElement<Collection<String>> {
         return fields;
     }
 
-    private boolean testValuesInOptions(Collection<String> values) {
+    private void testValuesInOptions(Collection<String> values) throws ValidationException {
         for (String val : values) {
             boolean valueFound = false;
             for (String opt : options) {
@@ -83,13 +85,14 @@ public class MultiCheckboxField extends InputElement<Collection<String>> {
                 }
             }
             if (!valueFound) {
-                return false;
+                throw new ValidationException(this, "Invalid option " + val);
             }
         }
-        return true;
     }
 
-    private boolean testRequiredOptionsMet(Collection<String> values) {
-        return minimumRequiredOptions == null || values.size() >= minimumRequiredOptions;
+    private void testRequiredOptionsMet(Collection<String> values) throws ValidationException {
+        if (minimumRequiredOptions != null && values.size() >= minimumRequiredOptions) {
+            throw new ValidationException(this, "Not enought options selected");
+        }
     }
 }

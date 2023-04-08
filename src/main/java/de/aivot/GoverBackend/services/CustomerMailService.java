@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.services;
 
 import com.oracle.truffle.js.runtime.Strings;
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.Application;
-import de.aivot.GoverBackend.models.Department;
+import de.aivot.GoverBackend.models.entities.Application;
+import de.aivot.GoverBackend.models.entities.Department;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Component;

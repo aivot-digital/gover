@@ -9,7 +9,7 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
 @Converter
-public class ElementConverter implements AttributeConverter<RootElement, String> {
+public class RootElementConverter implements AttributeConverter<RootElement, String> {
     @Override
     public String convertToDatabaseColumn(RootElement baseElement) {
         ObjectMapper mapper = new ObjectMapper();

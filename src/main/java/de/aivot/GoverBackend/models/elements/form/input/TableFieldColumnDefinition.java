@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
+import de.aivot.GoverBackend.utils.MapUtils;
+
+import java.util.Map;
 
 public class TableFieldColumnDefinition {
     private String label;
@@ -11,7 +13,15 @@ public class TableFieldColumnDefinition {
     private Boolean optional;
     private Boolean disabled;
 
-    @Nullable
+    public TableFieldColumnDefinition(Map<String, Object> data) {
+        label = MapUtils.getString(data, "label");
+        datatype = MapUtils.getEnum(data, "label", String.class, TableColumnDataType.values());
+        placeholder = MapUtils.getString(data, "placeholder");
+        decimalPlaces = MapUtils.getInteger(data, "decimalPlaces");
+        optional = MapUtils.getBoolean(data, "optional");
+        disabled = MapUtils.getBoolean(data, "disabled");
+    }
+
     public String getLabel() {
         return label;
     }
@@ -20,7 +30,6 @@ public class TableFieldColumnDefinition {
         this.label = label;
     }
 
-    @Nullable
     public TableColumnDataType getDatatype() {
         return datatype;
     }
@@ -29,7 +38,6 @@ public class TableFieldColumnDefinition {
         this.datatype = datatype;
     }
 
-    @Nullable
     public String getPlaceholder() {
         return placeholder;
     }
@@ -38,7 +46,6 @@ public class TableFieldColumnDefinition {
         this.placeholder = placeholder;
     }
 
-    @Nullable
     public Integer getDecimalPlaces() {
         return decimalPlaces;
     }
@@ -47,7 +54,6 @@ public class TableFieldColumnDefinition {
         this.decimalPlaces = decimalPlaces;
     }
 
-    @Nullable
     public Boolean getOptional() {
         return optional;
     }
@@ -56,7 +62,6 @@ public class TableFieldColumnDefinition {
         this.optional = optional;
     }
 
-    @Nullable
     public Boolean getDisabled() {
         return disabled;
     }

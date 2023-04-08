@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.utils;
 
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.models.elements.BaseElement;
 import de.aivot.GoverBackend.models.elements.form.FormElement;
 import de.aivot.GoverBackend.models.elements.form.content.*;
 import de.aivot.GoverBackend.models.elements.form.input.*;
@@ -11,7 +10,7 @@ import de.aivot.GoverBackend.models.elements.form.layout.ReplicatingContainerLay
 import java.util.Map;
 
 public class ElementResolver {
-    public static FormElement resolve(BaseElement parent, Map<String, Object> elementData) {
+    public static FormElement resolve(Map<String, Object> elementData) {
         Object typeObj = elementData.get("type");
 
         if (typeObj instanceof Integer) {
@@ -21,55 +20,55 @@ public class ElementResolver {
             if (type != null) {
                 switch (type) {
                     case Alert -> {
-                        return new Alert(parent, elementData);
+                        return new Alert(elementData);
                     }
                     case Group -> {
-                        return new GroupLayout(parent, elementData);
+                        return new GroupLayout(elementData);
                     }
                     case Checkbox -> {
-                        return new CheckboxField(parent, elementData);
+                        return new CheckboxField(elementData);
                     }
                     case Date -> {
-                        return new DateField(parent, elementData);
+                        return new DateField(elementData);
                     }
                     case Headline -> {
-                        return new Headline(parent, elementData);
+                        return new Headline(elementData);
                     }
                     case MultiCheckbox -> {
-                        return new MultiCheckboxField(parent, elementData);
+                        return new MultiCheckboxField(elementData);
                     }
                     case Number -> {
-                        return new NumberField(parent, elementData);
+                        return new NumberField(elementData);
                     }
                     case ReplicatingContainer -> {
-                        return new ReplicatingContainerLayout(parent, elementData);
+                        return new ReplicatingContainerLayout(elementData);
                     }
                     case Richtext -> {
-                        return new RichText(parent, elementData);
+                        return new RichText(elementData);
                     }
                     case Radio -> {
-                        return new RadioField(parent, elementData);
+                        return new RadioField(elementData);
                     }
                     case Select -> {
-                        return new SelectField(parent, elementData);
+                        return new SelectField(elementData);
                     }
                     case Spacer -> {
-                        return new Spacer(parent, elementData);
+                        return new Spacer(elementData);
                     }
                     case Table -> {
-                        return new TableField(parent, elementData);
+                        return new TableField(elementData);
                     }
                     case Text -> {
-                        return new TextField(parent, elementData);
+                        return new TextField(elementData);
                     }
                     case Time -> {
-                        return new TimeField(parent, elementData);
+                        return new TimeField(elementData);
                     }
                     case Image -> {
-                        return new Image(parent, elementData);
+                        return new Image(elementData);
                     }
                     case FileUpload -> {
-                        return new FileUploadField(parent, elementData);
+                        return new FileUploadField(elementData);
                     }
                 }
             }

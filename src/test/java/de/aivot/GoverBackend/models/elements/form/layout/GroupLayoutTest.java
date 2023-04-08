@@ -1,73 +1,39 @@
 package de.aivot.GoverBackend.models.elements.form.layout;
 
 
-import de.aivot.GoverBackend.enums.AlertType;
-import de.aivot.GoverBackend.models.elements.form.content.Alert;
+import de.aivot.GoverBackend.models.elements.AbstractElementTest;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class GroupLayoutTest {
-    @Test
-    void testSerializeSuccessful() throws JSONException {
-        var jsonStr = """
-                {
-                    "alertType": 0,
-                    "title": "title",
-                    "text": "text"
-                }
-                    """;
-
-        var json = new JSONObject(jsonStr).toMap();
-        var item = new Alert(json);
-
-        assertEquals(AlertType.Error, item.getAlertType());
-        assertEquals("title", item.getTitle());
-        assertEquals("text", item.getText());
+class GroupLayoutTest extends AbstractElementTest<GroupLayout> {
+    @Override
+    protected Map<String, Object> getJSON() {
+        return new HashMap<>(){{
+            put("children", new LinkedList<>() {{
+                add(new HashMap<>());
+            }});
+        }};
     }
 
-    @Test
-    void testSerializeEmpty() {
-        var jsonStr = "{}";
-
-        var json = new JSONObject(jsonStr).toMap();
-        var item = new Alert(json);
-
-        assertNull(item.getAlertType());
-        assertNull(item.getTitle());
-        assertNull(item.getText());
+    @Override
+    protected GroupLayout newItem(Map<String, Object> json) {
+        return new GroupLayout(json);
     }
 
-    @Test
-    void testSerializeInvalidJson() {
-        var jsonStr = "INVALID JSON";
-
-        assertThrows(JSONException.class, () -> {
-            var json = new JSONObject(jsonStr).toMap();
-            new Alert(json);
-        });
+    @Override
+    protected void testAllFieldsFilled(GroupLayout item) {
+        assertEquals(1, item.getChildren().size());
     }
 
-    @Test
-    void isVisible() {
-        var item = new Alert(new HashMap<>());
-        assertTrue(item.isVisible(new HashMap<>(), null));
-    }
-
-    @Test
-    void isValid() {
-        var item = new Alert(new HashMap<>());
-        assertTrue(item.isValid(new HashMap<>(), null));
-    }
-
-    @Test
-    void toPdfRows() {
-        var item = new Alert(new HashMap<>());
-        var rows = item.toPdfRows(new HashMap<>(), null);
-        assertTrue(rows.isEmpty());
+    @Override
+    protected void testAllFieldsNull(GroupLayout item) {
+        assertNull(item.getChildren());
     }
 }

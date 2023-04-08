@@ -1,12 +1,14 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.RequiredValidationException;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.TablePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
+import javax.script.ScriptEngine;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,12 +19,14 @@ public class TableField extends InputElement<List<Map<String, String>>> {
     private Integer maximumRows;
     private Integer minimumRequiredRows;
 
-    public TableField(BaseElement parent, Map<String, Object> data) {
+    public TableField(Map<String, Object> data) {
         super(data);
-        // TODO
+
+        fields = MapUtils.getCollection(data, "fields", TableFieldColumnDefinition::new);
+        maximumRows = MapUtils.getInteger(data, "maximumRows");
+        minimumRequiredRows = MapUtils.getInteger(data, "minimumRequiredRows");
     }
 
-    @Nullable
     public Collection<TableFieldColumnDefinition> getFields() {
         return fields;
     }
@@ -31,7 +35,6 @@ public class TableField extends InputElement<List<Map<String, String>>> {
         this.fields = fields;
     }
 
-    @Nullable
     public Integer getMaximumRows() {
         return maximumRows;
     }
@@ -40,7 +43,6 @@ public class TableField extends InputElement<List<Map<String, String>>> {
         this.maximumRows = maximumRows;
     }
 
-    @Nullable
     public Integer getMinimumRequiredRows() {
         return minimumRequiredRows;
     }
@@ -50,17 +52,17 @@ public class TableField extends InputElement<List<Map<String, String>>> {
     }
 
     @Override
-    public boolean isValid(List<Map<String, String>> value, String idPrefix) {
+    public void validate(Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (Boolean.TRUE.equals(getRequired()) && value.isEmpty()) {
-            return false;
+            throw new RequiredValidationException(this);
         }
 
         if (minimumRequiredRows != null && value.size() < minimumRequiredRows) {
-            return false;
+            throw new ValidationException(this, "Not enough rows");
         }
 
         if (maximumRows != null && value.size() > maximumRows) {
-            return false;
+            throw new ValidationException(this, "Too many rows");
         }
 
         for (Map<String, String> row : value) {
@@ -69,7 +71,7 @@ public class TableField extends InputElement<List<Map<String, String>>> {
 
                 if (!Boolean.TRUE.equals(col.getOptional())) {
                     if (val == null || val.trim().isEmpty()) {
-                        return false;
+                        throw new ValidationException(this, "No value in required column " + col.getLabel());
                     }
                 }
 
@@ -77,17 +79,15 @@ public class TableField extends InputElement<List<Map<String, String>>> {
                     try {
                         Double.parseDouble(val);
                     } catch (NumberFormatException e) {
-                        return false;
+                        throw new ValidationException(this, "Failed to parse number value in column " + col.getLabel() + " in table: " + e.getMessage());
                     }
                 }
             }
         }
-
-        return true;
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(List<Map<String, String>> value, String idPrefix) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) {
         List<String> columnHeaders = new LinkedList<>();
 
         for (TableFieldColumnDefinition col : fields) {

@@ -7,33 +7,26 @@ import de.aivot.GoverBackend.models.elements.form.content.Alert;
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum AlertType implements Identifiable<Integer> {
-    Error(0),
-    Warning(1),
-    Info(2),
-    Success(3);
+public enum AlertType implements Identifiable<String> {
+    Error("error"),
+    Warning("warning"),
+    Info("info"),
+    Success("success");
 
-    private final Integer key;
+    private final String key;
 
-    private AlertType(Integer key) {
+    private AlertType(String key) {
         this.key = key;
     }
 
     @Override
     @JsonValue
-    public Integer getKey() {
+    public String getKey() {
         return key;
     }
 
     @Override
     public boolean matches(Object other) {
         return key.equals(other);
-    }
-
-    public static Optional<AlertType> findElement(Object id) {
-        return Arrays
-                .stream(AlertType.values())
-                .filter(e -> e.matches(id))
-                .findFirst();
     }
 }

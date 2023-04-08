@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.pdf;
 
-import de.aivot.GoverBackend.models.Application;
+import de.aivot.GoverBackend.models.entities.Application;
 
+import javax.script.ScriptEngine;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -11,9 +12,9 @@ public class ApplicationPdfDto {
     public final List<BasePdfRowDto> fields;
     public final LocalDate now = LocalDate.now();
 
-    public ApplicationPdfDto(Application application, Map<String, Object> customerData) {
+    public ApplicationPdfDto(Application application, Map<String, Object> customerData, ScriptEngine scriptEngine) {
         title = application.getApplicationTitle();
-        fields = application.getRoot().toPdfRows(customerData, null);
+        fields = application.getRoot().toPdfRows(customerData, null, scriptEngine);
     }
 
     /*

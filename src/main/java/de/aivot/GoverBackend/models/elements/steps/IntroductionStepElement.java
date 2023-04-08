@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.models.elements.steps;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.models.elements.BaseElement;
-import de.aivot.GoverBackend.models.elements.RootElement;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Collection;
 import java.util.Map;
@@ -22,21 +21,25 @@ public class IntroductionStepElement extends BaseElement {
 
     public IntroductionStepElement(Map<String, Object> data) {
         super(data);
-
-        initiativeName = (String) data.get("initiativeName");
-        initiativeLogoLink = (String) data.get("initiativeLogoLink");
-        initiativeLink = (String) data.get("initiativeLink");
-        teaserText = (String) data.get("teaserText");
-        organization = (String) data.get("organization");
-        responsibleDepartment = (Integer) data.get("responsibleDepartment");
-        managingDepartment = (Integer) data.get("managingDepartment");
-        eligiblePersons = (Collection<String>) data.get("eligiblePersons");
-        supportingDocuments = (Collection<String>) data.get("supportingDocuments");
-        documentsToAttach = (Collection<String>) data.get("documentsToAttach");
-        expectedCosts = (String) data.get("expectedCosts");
     }
 
-    @Nullable
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        initiativeName = MapUtils.getString(values, "initiativeName");
+        initiativeLogoLink = MapUtils.getString(values, "initiativeLogoLink");
+        initiativeLink = MapUtils.getString(values, "initiativeLink");
+        teaserText = MapUtils.getString(values, "teaserText");
+        organization = MapUtils.getString(values, "organization");
+        responsibleDepartment = MapUtils.getInteger(values, "responsibleDepartment");
+        managingDepartment = MapUtils.getInteger(values, "managingDepartment");
+        eligiblePersons = MapUtils.get(values, "eligiblePersons", Collection.class);
+        supportingDocuments = MapUtils.get(values, "supportingDocuments", Collection.class);
+        documentsToAttach = MapUtils.get(values, "documentsToAttach", Collection.class);
+        expectedCosts = MapUtils.getString(values, "expectedCosts");
+    }
+
+    // region Getters & Setters
+
     public String getInitiativeName() {
         return initiativeName;
     }
@@ -45,7 +48,6 @@ public class IntroductionStepElement extends BaseElement {
         this.initiativeName = initiativeName;
     }
 
-    @Nullable
     public String getInitiativeLogoLink() {
         return initiativeLogoLink;
     }
@@ -54,7 +56,6 @@ public class IntroductionStepElement extends BaseElement {
         this.initiativeLogoLink = initiativeLogoLink;
     }
 
-    @Nullable
     public String getInitiativeLink() {
         return initiativeLink;
     }
@@ -63,7 +64,6 @@ public class IntroductionStepElement extends BaseElement {
         this.initiativeLink = initiativeLink;
     }
 
-    @Nullable
     public String getTeaserText() {
         return teaserText;
     }
@@ -72,7 +72,6 @@ public class IntroductionStepElement extends BaseElement {
         this.teaserText = teaserText;
     }
 
-    @Nullable
     public String getOrganization() {
         return organization;
     }
@@ -81,7 +80,6 @@ public class IntroductionStepElement extends BaseElement {
         this.organization = organization;
     }
 
-    @Nullable
     public Integer getResponsibleDepartment() {
         return responsibleDepartment;
     }
@@ -90,7 +88,6 @@ public class IntroductionStepElement extends BaseElement {
         this.responsibleDepartment = responsibleDepartment;
     }
 
-    @Nullable
     public Integer getManagingDepartment() {
         return managingDepartment;
     }
@@ -99,7 +96,6 @@ public class IntroductionStepElement extends BaseElement {
         this.managingDepartment = managingDepartment;
     }
 
-    @Nullable
     public Collection<String> getEligiblePersons() {
         return eligiblePersons;
     }
@@ -108,7 +104,6 @@ public class IntroductionStepElement extends BaseElement {
         this.eligiblePersons = eligiblePersons;
     }
 
-    @Nullable
     public Collection<String> getSupportingDocuments() {
         return supportingDocuments;
     }
@@ -117,7 +112,6 @@ public class IntroductionStepElement extends BaseElement {
         this.supportingDocuments = supportingDocuments;
     }
 
-    @Nullable
     public Collection<String> getDocumentsToAttach() {
         return documentsToAttach;
     }
@@ -126,7 +120,6 @@ public class IntroductionStepElement extends BaseElement {
         this.documentsToAttach = documentsToAttach;
     }
 
-    @Nullable
     public String getExpectedCosts() {
         return expectedCosts;
     }
@@ -134,4 +127,6 @@ public class IntroductionStepElement extends BaseElement {
     public void setExpectedCosts(String expectedCosts) {
         this.expectedCosts = expectedCosts;
     }
+
+    // endregion
 }

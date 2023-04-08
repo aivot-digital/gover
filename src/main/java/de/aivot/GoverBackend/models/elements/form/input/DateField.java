@@ -2,11 +2,13 @@ package de.aivot.GoverBackend.models.elements.form.input;
 
 import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.DateType;
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.RequiredValidationException;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 
+import javax.script.ScriptEngine;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -23,13 +25,18 @@ public class DateField extends InputElement<String> {
     private Boolean mustBePast;
     private Boolean mustBeFuture;
 
-    public DateField(BaseElement parent, Map<String, Object> data) {
+    public DateField(Map<String, Object> data) {
         super(data);
 
         placeholder = (String) data.get("placeholder");
         mode = (DateType) data.get("mode");
         mustBePast = (Boolean) data.get("mustBePast");
         mustBeFuture = (Boolean) data.get("mustBeFuture");
+    }
+
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
     }
 
     @Nullable
@@ -69,32 +76,45 @@ public class DateField extends InputElement<String> {
     }
 
     @Override
-    public boolean isValid(String value, String idPrefix) {
-        LocalDate date;
-        try {
-            date = LocalDate.parse(value);
-        } catch (DateTimeParseException e) {
-            return false;
+    public void validate(Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        if (value == null && Boolean.TRUE.equals(getRequired())) {
+            throw new RequiredValidationException(this);
         }
-        return validateIsFuture(date) && validateIsPast(date);
+
+        if (value != null) {
+            LocalDate date;
+            try {
+                var cleandDate = value;
+                if (value.contains("T")) {
+                    cleandDate = value.split("T")[0];
+                }
+                date = LocalDate.parse(cleandDate);
+            } catch (DateTimeParseException e) {
+                throw new ValidationException(this, "Failed to parse date:" + e.getMessage());
+            }
+            validateIsFuture(date);
+            validateIsPast(date);
+        }
     }
 
-    private boolean validateIsFuture(LocalDate date) {
+    private void validateIsFuture(LocalDate date) throws ValidationException {
         if (Boolean.TRUE.equals(mustBeFuture)) {
-            return date.isAfter(LocalDate.now());
+            if (!date.isAfter(LocalDate.now())) {
+                throw new ValidationException(this, "Must be future");
+            }
         }
-        return true;
     }
 
-    private boolean validateIsPast(LocalDate date) {
+    private void validateIsPast(LocalDate date) throws ValidationException {
         if (Boolean.TRUE.equals(mustBePast)) {
-            return date.isBefore(LocalDate.now());
+            if (!date.isBefore(LocalDate.now())) {
+                throw new ValidationException(this, "Must be past");
+            }
         }
-        return true;
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(String value, String idPrefix) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
         String displayValue = "Keine Angaben";

@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.RequiredValidationException;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 
+import javax.script.ScriptEngine;
 import java.util.*;
 
 public class FileUploadField extends InputElement<Collection<FileUploadFieldItem>> {
@@ -14,7 +16,7 @@ public class FileUploadField extends InputElement<Collection<FileUploadFieldItem
     private Integer maxFiles;
     private Integer minFiles;
 
-    public FileUploadField(BaseElement parent, Map<String, Object> data) {
+    public FileUploadField(Map<String, Object> data) {
         super(data);
 
         extensions = (Collection<String>) data.get("extensions");
@@ -60,55 +62,55 @@ public class FileUploadField extends InputElement<Collection<FileUploadFieldItem
     }
 
     @Override
-    public boolean isValid(Collection<FileUploadFieldItem> value, String idPrefix) {
-        if (value == null) {
-            return !Boolean.TRUE.equals(getRequired());
+    public void validate(Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        if (value == null && Boolean.TRUE.equals(getRequired())) {
+            throw new RequiredValidationException(this);
         }
 
-        if (Boolean.TRUE.equals(isMultifile) && value.size() > 1) {
-            return false;
-        }
-
-        if (Boolean.TRUE.equals(isMultifile)) {
-            if (minFiles != null && value.size() < minFiles) {
-                return false;
+        if (value != null) {
+            if (Boolean.TRUE.equals(isMultifile) && value.size() > 1) {
+                throw new ValidationException(this, "Too many files");
             }
 
-            if (maxFiles != null && value.size() > maxFiles) {
-                return false;
-            }
-        }
+            if (Boolean.TRUE.equals(isMultifile)) {
+                if (minFiles != null && value.size() < minFiles) {
+                    throw new ValidationException(this, "Not enough files");
+                }
 
-        if (extensions != null) {
-            for (FileUploadFieldItem item : value) {
-                String itemName = item.getName();
-                if (itemName != null) {
-                    if (itemName.contains(".")) {
-                        String extension = item.getName().substring(itemName.lastIndexOf(".") + 1);
-                        boolean extensionFound = false;
-                        for (String ext : extensions) {
-                            if (ext.equals(extension)) {
-                                extensionFound = true;
-                                break;
+                if (maxFiles != null && value.size() > maxFiles) {
+                    throw new ValidationException(this, "Too many files");
+                }
+            }
+
+            if (extensions != null) {
+                for (FileUploadFieldItem item : value) {
+                    String itemName = item.getName();
+                    if (itemName != null) {
+                        if (itemName.contains(".")) {
+                            String extension = item.getName().substring(itemName.lastIndexOf(".") + 1);
+                            boolean extensionFound = false;
+                            for (String ext : extensions) {
+                                if (ext.equals(extension)) {
+                                    extensionFound = true;
+                                    break;
+                                }
                             }
-                        }
-                        if (!extensionFound) {
-                            return false;
+                            if (!extensionFound) {
+                                throw new ValidationException(this, "Invalid extension " + extension);
+                            }
+                        } else {
+                            throw new ValidationException(this, "Invalid empty extension");
                         }
                     } else {
-                        return false;
+                        throw new ValidationException(this, "Broken file upload item");
                     }
-                } else {
-                    return false;
                 }
             }
         }
-
-        return true;
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Collection<FileUploadFieldItem> value, String idPrefix) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         if (value != null && !value.isEmpty()) {

@@ -1,15 +1,21 @@
 package de.aivot.GoverBackend.models.elements.form.layout;
 
-import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.RequiredValidationException;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.FormElement;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
+import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
+import de.aivot.GoverBackend.utils.MapUtils;
 
-import java.util.*;
+import javax.script.ScriptEngine;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
-public class ReplicatingContainerLayout extends InputElement<String[]> {
+public class ReplicatingContainerLayout extends InputElement<Collection<String>> {
     private Integer minimumRequiredSets;
     private Integer maximumSets;
     private String headlineTemplate;
@@ -17,28 +23,72 @@ public class ReplicatingContainerLayout extends InputElement<String[]> {
     private String removeLabel;
     private Collection<FormElement> children;
 
-    public ReplicatingContainerLayout(BaseElement parent, Map<String, Object> data) {
+    public ReplicatingContainerLayout(Map<String, Object> data) {
         super(data);
+    }
 
-        minimumRequiredSets = (Integer) data.get("minimumRequiredSets");
-        maximumSets = (Integer) data.get("maximumSets");
-        headlineTemplate = (String) data.get("headlineTemplate");
-        addLabel = (String) data.get("addLabel");
-        removeLabel = (String) data.get("removeLabel");
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
+        minimumRequiredSets = MapUtils.getInteger(values, "minimumRequiredSets");
+        maximumSets = MapUtils.getInteger(values, "maximumSets");
+        headlineTemplate = MapUtils.getString(values, "headlineTemplate");
+        addLabel = MapUtils.getString(values, "addLabel");
+        removeLabel = MapUtils.getString(values, "removeLabel");
 
+        children = MapUtils.getCollection(values, "children", ElementResolver::resolve);
+    }
 
-        Collection<Map<String, Object>> childDataCollection = (Collection<Map<String, Object>>) data.get("children");
-        if (childDataCollection != null) {
-            children = new LinkedList<>();
-            for (Map<String, Object> childData : childDataCollection) {
-                if (childData != null) {
-                    children.add(ElementResolver.resolve(this, childData));
+    @Override
+    public void validate(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        if (value == null) {
+            if (Boolean.TRUE.equals(getRequired())) {
+                throw new RequiredValidationException(this);
+            }
+        } else {
+            if (minimumRequiredSets != null && value.size() < minimumRequiredSets) {
+                throw new ValidationException(this, "Not enough items");
+            }
+
+            if (maximumSets != null && value.size() > maximumSets) {
+                throw new ValidationException(this, "Too many items");
+            }
+
+            if (children != null) {
+                for (var val : value) {
+                    for (var child : children) {
+                        child.validate(customerInput, getResolvedId(idPrefix) + "_" + val, scriptEngine);
+                    }
                 }
             }
         }
     }
 
-    @Nullable
+    @Override
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
+        List<BasePdfRowDto> fields = new LinkedList<>();
+
+        if (value != null && !value.isEmpty()) {
+            fields.add(new HeadlinePdfRowDto(getLabel(), 4));
+
+            List<String> values = value.stream().toList();
+            for (int i = 0; i < value.size(); i++) {
+                String childId = values.get(i);
+
+                String headline = headlineTemplate != null ? headlineTemplate.replace("#", "" + (i + 1)) : String.valueOf(i + 1);
+                fields.add(new HeadlinePdfRowDto(headline, 5));
+
+                for (var child : children) {
+                    fields.addAll(child.toPdfRows(customerInput, getResolvedId(idPrefix) + "_" + childId, scriptEngine));
+                }
+            }
+        }
+
+        return fields;
+    }
+
+    //region Getters & Setters
+
     public Integer getMinimumRequiredSets() {
         return minimumRequiredSets;
     }
@@ -47,7 +97,6 @@ public class ReplicatingContainerLayout extends InputElement<String[]> {
         this.minimumRequiredSets = minimumRequiredSets;
     }
 
-    @Nullable
     public Integer getMaximumSets() {
         return maximumSets;
     }
@@ -56,7 +105,6 @@ public class ReplicatingContainerLayout extends InputElement<String[]> {
         this.maximumSets = maximumSets;
     }
 
-    @Nullable
     public String getHeadlineTemplate() {
         return headlineTemplate;
     }
@@ -65,7 +113,6 @@ public class ReplicatingContainerLayout extends InputElement<String[]> {
         this.headlineTemplate = headlineTemplate;
     }
 
-    @Nullable
     public String getAddLabel() {
         return addLabel;
     }
@@ -74,7 +121,6 @@ public class ReplicatingContainerLayout extends InputElement<String[]> {
         this.addLabel = addLabel;
     }
 
-    @Nullable
     public String getRemoveLabel() {
         return removeLabel;
     }
@@ -83,7 +129,6 @@ public class ReplicatingContainerLayout extends InputElement<String[]> {
         this.removeLabel = removeLabel;
     }
 
-    @Nullable
     public Collection<FormElement> getChildren() {
         return children;
     }
@@ -92,35 +137,5 @@ public class ReplicatingContainerLayout extends InputElement<String[]> {
         this.children = children;
     }
 
-    @Override
-    public boolean isValid(String[] value, String idPrefix) {
-        // TODO
-        return false;
-    }
-
-    @Override
-    public List<BasePdfRowDto> toPdfRows(String[] value, String idPrefix) {
-        List<BasePdfRowDto> fields = new LinkedList<>();
-
-        /* TODO
-        List<String> childIds = (List<String>) value.get(id);
-
-        if (childIds != null && !childIds.isEmpty()) {
-            fields.add(new HeadlinePdfRowDto((String) containerElement.get("label"), 3));
-
-            for (int i = 0; i < childIds.size(); i++) {
-                String childId = childIds.get(i);
-                String headlineTemplate = (String) containerElement.get("headlineTemplate");
-                headlineTemplate = headlineTemplate.replace("#", "" + (i + 1));
-                fields.add(new HeadlinePdfRowDto(headlineTemplate, 4));
-
-                for (Map<String, Object> childElement : children) {
-                    fields.addAll(processElement(childElement, id + "_" + childId));
-                }
-            }
-        }
-         */
-
-        return fields;
-    }
+    //endregion
 }

@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oracle.truffle.js.runtime.Strings;
-import de.aivot.GoverBackend.models.Application;
-import de.aivot.GoverBackend.models.Destination;
+import de.aivot.GoverBackend.models.entities.Application;
+import de.aivot.GoverBackend.models.entities.Destination;
 import javax.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;

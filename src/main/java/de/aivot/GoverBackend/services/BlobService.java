@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.enums.SystemAssetKey;
-import de.aivot.GoverBackend.models.Application;
+import de.aivot.GoverBackend.models.entities.Application;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

@@ -1,12 +1,14 @@
 package de.aivot.GoverBackend.models.elements;
 
-import com.sun.istack.Nullable;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
+import javax.script.ScriptEngine;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,54 +39,65 @@ public class RootElement extends BaseElement {
     private SummaryStepElement summaryStep;
     private SubmitStepElement submitStep;
 
-    public RootElement(Map<String, Object> data) {
-        super(data);
+    public RootElement(Map<String, Object> values) {
+        super(values);
+    }
 
-        title = (String) data.get("title");
-        headline = (String) data.get("headline");
-        tabTitle = (String) data.get("tabTitle");
-        theme = (String) data.get("theme");
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        title = MapUtils.getString(values, "title");
+        headline = MapUtils.getString(values, "headline");
+        tabTitle = MapUtils.getString(values, "tabTitle");
+        theme = MapUtils.getString(values, "theme");
 
-        if (data.get("children") != null) {
-            children = new LinkedList<>();
-            for (Map<String, Object> childData : (Collection<Map<String, Object>>) data.get("children")) {
-                if (childData != null) {
-                    children.add(new StepElement(childData));
-                }
+
+        children = MapUtils.getCollection(values, "children", StepElement::new);
+
+        expiring = MapUtils.getString(values, "expiring");
+        accessLevel = MapUtils.getString(values, "accessLevel");
+
+        legalSupport = MapUtils.getInteger(values, "legalSupport");
+        technicalSupport = MapUtils.getInteger(values, "technicalSupport");
+
+        privacy = MapUtils.getInteger(values, "privacy");
+        imprint = MapUtils.getInteger(values, "imprint");
+        accessibility = MapUtils.getInteger(values, "accessibility");
+
+        privacyText = MapUtils.getString(values, "privacyText");
+
+        destination = MapUtils.getInteger(values, "destination");
+
+        introductionStep = MapUtils.getApply(values, "introductionStep", Map.class, IntroductionStepElement::new);
+        summaryStep = MapUtils.getApply(values, "summaryStep", Map.class, SummaryStepElement::new);
+        submitStep = MapUtils.getApply(values, "submitStep", Map.class, SubmitStepElement::new);
+    }
+
+    @Override
+    public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        introductionStep.validate(customerInput, idPrefix, scriptEngine);
+        summaryStep.validate(customerInput, idPrefix, scriptEngine);
+        submitStep.validate(customerInput, idPrefix, scriptEngine);
+
+        if (children != null) {
+            for (var child : children) {
+                child.validate(customerInput, idPrefix, scriptEngine);
             }
-        }
-
-        expiring = (String) data.get("expiring");
-        accessLevel = (String) data.get("accessLevel");
-
-        legalSupport = (Integer) data.get("legalSupport");
-        technicalSupport = (Integer) data.get("technicalSupport");
-
-        privacy = (Integer) data.get("privacy");
-        imprint = (Integer) data.get("imprint");
-        accessibility = (Integer) data.get("accessibility");
-
-        privacyText = (String) data.get("privacyText");
-
-        destination = (Integer) data.get("destination");
-
-        Map<String, Object> introductionStepData = (Map<String, Object>) data.get("introductionStep");
-        if (introductionStepData != null) {
-            introductionStep = new IntroductionStepElement(introductionStepData);
-        }
-
-        Map<String, Object> summaryStepData = (Map<String, Object>) data.get("summaryStep");
-        if (summaryStepData != null) {
-            summaryStep = new SummaryStepElement(summaryStepData);
-        }
-
-        Map<String, Object> submitStepData = (Map<String, Object>) data.get("submitStep");
-        if (submitStepData != null) {
-            submitStep = new SubmitStepElement(submitStepData);
         }
     }
 
-    @Nullable
+    @Override
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+        List<BasePdfRowDto> rows = new LinkedList<>();
+
+        for (StepElement step : children) {
+            rows.addAll(step.toPdfRows(customerInput, idPrefix, scriptEngine));
+        }
+
+        return rows;
+    }
+
+    // region Getters & Setters
+
     public String getTitle() {
         return title;
     }
@@ -93,7 +106,6 @@ public class RootElement extends BaseElement {
         this.title = title;
     }
 
-    @Nullable
     public String getHeadline() {
         return headline;
     }
@@ -102,7 +114,6 @@ public class RootElement extends BaseElement {
         this.headline = headline;
     }
 
-    @Nullable
     public String getTabTitle() {
         return tabTitle;
     }
@@ -111,7 +122,6 @@ public class RootElement extends BaseElement {
         this.tabTitle = tabTitle;
     }
 
-    @Nullable
     public String getTheme() {
         return theme;
     }
@@ -120,7 +130,6 @@ public class RootElement extends BaseElement {
         this.theme = theme;
     }
 
-    @Nullable
     public Collection<StepElement> getChildren() {
         return children;
     }
@@ -129,7 +138,6 @@ public class RootElement extends BaseElement {
         this.children = children;
     }
 
-    @Nullable
     public String getExpiring() {
         return expiring;
     }
@@ -138,7 +146,6 @@ public class RootElement extends BaseElement {
         this.expiring = expiring;
     }
 
-    @Nullable
     public String getAccessLevel() {
         return accessLevel;
     }
@@ -147,7 +154,6 @@ public class RootElement extends BaseElement {
         this.accessLevel = accessLevel;
     }
 
-    @Nullable
     public Integer getLegalSupport() {
         return legalSupport;
     }
@@ -156,7 +162,6 @@ public class RootElement extends BaseElement {
         this.legalSupport = legalSupport;
     }
 
-    @Nullable
     public Integer getTechnicalSupport() {
         return technicalSupport;
     }
@@ -165,7 +170,6 @@ public class RootElement extends BaseElement {
         this.technicalSupport = technicalSupport;
     }
 
-    @Nullable
     public Integer getImprint() {
         return imprint;
     }
@@ -174,7 +178,6 @@ public class RootElement extends BaseElement {
         this.imprint = imprint;
     }
 
-    @Nullable
     public Integer getPrivacy() {
         return privacy;
     }
@@ -183,7 +186,6 @@ public class RootElement extends BaseElement {
         this.privacy = privacy;
     }
 
-    @Nullable
     public Integer getAccessibility() {
         return accessibility;
     }
@@ -192,7 +194,6 @@ public class RootElement extends BaseElement {
         this.accessibility = accessibility;
     }
 
-    @Nullable
     public String getPrivacyText() {
         return privacyText;
     }
@@ -201,7 +202,6 @@ public class RootElement extends BaseElement {
         this.privacyText = privacyText;
     }
 
-    @Nullable
     public Integer getDestination() {
         return destination;
     }
@@ -210,7 +210,7 @@ public class RootElement extends BaseElement {
         this.destination = destination;
     }
 
-    @Nullable
+
     public IntroductionStepElement getIntroductionStep() {
         return introductionStep;
     }
@@ -219,7 +219,6 @@ public class RootElement extends BaseElement {
         this.introductionStep = introductionStep;
     }
 
-    @Nullable
     public SummaryStepElement getSummaryStep() {
         return summaryStep;
     }
@@ -228,7 +227,6 @@ public class RootElement extends BaseElement {
         this.summaryStep = summaryStep;
     }
 
-    @Nullable
     public SubmitStepElement getSubmitStep() {
         return submitStep;
     }
@@ -237,24 +235,5 @@ public class RootElement extends BaseElement {
         this.submitStep = submitStep;
     }
 
-    @Override
-    public boolean isValid(Map<String, Object> customerInput, @Nullable String idPrefix) {
-        return (
-                introductionStep.isValid(customerInput, idPrefix) &&
-                        summaryStep.isValid(customerInput, idPrefix) &&
-                        submitStep.isValid(customerInput, idPrefix) &&
-                        children.stream().allMatch(c -> c.isValid(customerInput, idPrefix))
-        );
-    }
-
-    @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, @Nullable String idPrefix) {
-        List<BasePdfRowDto> rows = new LinkedList<>();
-
-        for (StepElement step : children) {
-            rows.addAll(step.toPdfRows(customerInput, idPrefix));
-        }
-
-        return rows;
-    }
+    // endregion
 }

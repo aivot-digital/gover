@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.models.elements.form;
 
 import de.aivot.GoverBackend.models.elements.BaseElement;
-import org.springframework.lang.Nullable;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Map;
 
@@ -10,10 +10,15 @@ public abstract class FormElement extends BaseElement {
 
     protected FormElement(Map<String, Object> data) {
         super(data);
-        weight = (Integer) data.get("weight");
     }
 
-    @Nullable
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        weight = MapUtils.getInteger(values, "weight");
+    }
+
+    //region Getters & Setters
+
     public Integer getWeight() {
         return weight;
     }
@@ -21,4 +26,6 @@ public abstract class FormElement extends BaseElement {
     public void setWeight(Integer weight) {
         this.weight = weight;
     }
+
+    //endregion
 }

@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.auth;
 
 public class AuthResponse {
     private String jwtToken;

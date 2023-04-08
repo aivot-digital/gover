@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.models.GoverConfig;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import javax.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

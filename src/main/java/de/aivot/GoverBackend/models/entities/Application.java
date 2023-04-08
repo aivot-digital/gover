@@ -1,9 +1,14 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.entities;
 
-import de.aivot.GoverBackend.converters.ElementConverter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import de.aivot.GoverBackend.converters.RootElementConverter;
 import javax.persistence.*;
+import javax.script.ScriptEngine;
 import javax.validation.constraints.NotBlank;
 
+import de.aivot.GoverBackend.converters.JacksonRootElementSerializer;
+import de.aivot.GoverBackend.converters.JacksonRootElementDeserializer;
 import de.aivot.GoverBackend.enums.ApplicationStatus;
 import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.pdf.ApplicationPdfDto;
@@ -27,11 +32,12 @@ public class Application {
     @NotBlank(message = "Version cannot be blank")
     @ColumnDefault("'1.0'")
     private String version;
-    @NotBlank(message = "Status cannot be blank")
     @ColumnDefault("0")
     private ApplicationStatus status;
     @Lob
-    @Convert(converter = ElementConverter.class)
+    @Convert(converter = RootElementConverter.class)
+    @JsonSerialize(converter = JacksonRootElementSerializer.class)
+    @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
     private RootElement root;
     @CreationTimestamp
     private LocalDateTime created;
@@ -98,7 +104,7 @@ public class Application {
         return root.getHeadline() != null ? root.getHeadline() : (root.getTitle() != null ? root.getTitle() : getSlug());
     }
 
-    public ApplicationPdfDto toPdfDto(Map<String, Object> customerData) {
-        return new ApplicationPdfDto(this, customerData);
+    public ApplicationPdfDto toPdfDto(Map<String, Object> customerData, ScriptEngine scriptEngine) {
+        return new ApplicationPdfDto(this, customerData, scriptEngine);
     }
 }

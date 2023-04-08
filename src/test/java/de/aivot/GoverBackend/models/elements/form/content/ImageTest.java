@@ -1,74 +1,43 @@
 package de.aivot.GoverBackend.models.elements.form.content;
 
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.jupiter.api.Test;
+import de.aivot.GoverBackend.models.elements.AbstractElementTest;
 
 import java.util.HashMap;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-class ImageTest {
-    @Test
-    void testSerializeSuccessful() throws JSONException {
-        var jsonStr = """
-                {
-                    "height": 100,
-                    "width": 100,
-                    "src": "src",
-                    "alt": "alt"
-                }
-                    """;
+class ImageTest extends AbstractElementTest<Image> {
+    @Override
+    protected Map<String, Object> getJSON() {
+        return new HashMap<>() {{
+            put("height", 100);
+            put("width", 100);
+            put("src", "src");
+            put("alt", "alt");
+        }};
+    }
 
-        var json = new JSONObject(jsonStr).toMap();
-        var item = new Image(json);
+    @Override
+    protected Image newItem(Map<String, Object> json) {
+        return new Image(json);
+    }
 
+    @Override
+    protected void testAllFieldsFilled(Image item) {
         assertEquals(100, item.getHeight());
         assertEquals(100, item.getWidth());
         assertEquals("src", item.getSrc());
         assertEquals("alt", item.getAlt());
     }
 
-    @Test
-    void testSerializeEmpty() {
-        var jsonStr = "{}";
-
-        var json = new JSONObject(jsonStr).toMap();
-        var item = new Image(json);
-
+    @Override
+    protected void testAllFieldsNull(Image item) {
         assertNull(item.getHeight());
         assertNull(item.getWidth());
         assertNull(item.getSrc());
         assertNull(item.getAlt());
-    }
-
-    @Test
-    void testSerializeInvalidJson() {
-        var jsonStr = "INVALID JSON";
-
-        assertThrows(JSONException.class, () -> {
-            var json = new JSONObject(jsonStr).toMap();
-            new Image(json);
-        });
-    }
-
-    @Test
-    void isVisible() {
-        var item = new Image(new HashMap<>());
-        assertTrue(item.isVisible(new HashMap<>(), null));
-    }
-
-    @Test
-    void isValid() {
-        var item = new Image(new HashMap<>());
-        assertTrue(item.isValid(new HashMap<>(), null));
-    }
-
-    @Test
-    void toPdfRows() {
-        var item = new Image(new HashMap<>());
-        var rows = item.toPdfRows(new HashMap<>(), null);
-        assertTrue(rows.isEmpty());
     }
 }

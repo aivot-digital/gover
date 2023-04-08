@@ -2,13 +2,9 @@ package de.aivot.GoverBackend.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.istack.NotNull;
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
-import de.aivot.GoverBackend.models.Application;
-import de.aivot.GoverBackend.models.elements.BaseElement;
-import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.models.entities.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,51 +17,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 
-@Component
 public class ScriptService {
-    private static final Logger logger = LoggerFactory.getLogger(ScriptService.class);
 
-    private final static String GLOBAL_DATA_FIELD = "$$global";
-    private final static String PATCH_FUNCTION_GROUP = "patch";
-    private final static String VALIDATE_FUNCTION_GROUP = "validate";
-    private final static String VISIBILITY_FUNCTION_GROUP = "visibility";
-    private final static String FUNCTION_NAME_KEY = "functionName";
-
-    private final BlobService blobService;
-
-    @Autowired
-    public ScriptService(BlobService blobService) {
-        this.blobService = blobService;
-    }
-
-    @Nullable
-    public String validateApplication(Application application, Map<String, Object> customerData) throws ScriptRequiredException, ScriptException, JsonProcessingException {
-        ScriptEngine script = null;
-        try {
-            script = prepareEngine(application, customerData);
-        } catch (IOException e) {
-            logger.info("No ScriptEngine loaded");
-        }
-        return null; //validateElement(application.getRoot(), customerData, script, null);
-    }
-
-    private ScriptEngine prepareEngine(Application application, Map<String, Object> customerData) throws IOException, ScriptException {
-        Path codePath = blobService.getCodePath(application);
-
-        BufferedReader in = Files.newBufferedReader(codePath);
-
+    public static ScriptEngine getEngine() {
         System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
         ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("JavaScript");
-        engine.eval(in);
-
-        String globalData = mapToString(customerData);
-        engine.eval(String.format("const %s = %s;", GLOBAL_DATA_FIELD, globalData));
-
-        return engine;
+        return manager.getEngineByName("JavaScript");
     }
 
     /*

@@ -1,11 +1,10 @@
 package de.aivot.GoverBackend.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.pdf.ApplicationPdfDto;
-import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
-import de.aivot.GoverBackend.models.Application;
-import de.aivot.GoverBackend.models.Department;
-import de.aivot.GoverBackend.models.Destination;
+import de.aivot.GoverBackend.models.entities.Application;
+import de.aivot.GoverBackend.models.entities.Department;
+import de.aivot.GoverBackend.models.entities.Destination;
 import de.aivot.GoverBackend.models.SendCopyRequest;
 import de.aivot.GoverBackend.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
@@ -26,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.mail.MessagingException;
-import javax.script.ScriptException;
+import javax.script.ScriptEngine;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
@@ -42,19 +41,17 @@ public class SubmitController {
     private final PdfService pdfService;
     private final DestinationSubmitService destinationSubmitService;
     private final CustomerMailService customerMailService;
-    private final ScriptService scriptService;
     private final SystemMailService systemMailService;
     private final BlobService blobService;
 
     @Autowired
-    public SubmitController(ApplicationRepository applicationRepository, DestinationRepository destinationRepository, DepartmentRepository departmentRepository, PdfService pdfService, DestinationSubmitService destinationSubmitService, CustomerMailService customerMailService, ScriptService scriptService, SystemMailService systemMailService, BlobService blobService) {
+    public SubmitController(ApplicationRepository applicationRepository, DestinationRepository destinationRepository, DepartmentRepository departmentRepository, PdfService pdfService, DestinationSubmitService destinationSubmitService, CustomerMailService customerMailService, SystemMailService systemMailService, BlobService blobService) {
         this.applicationRepository = applicationRepository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
         this.pdfService = pdfService;
         this.destinationSubmitService = destinationSubmitService;
         this.customerMailService = customerMailService;
-        this.scriptService = scriptService;
         this.systemMailService = systemMailService;
         this.blobService = blobService;
     }
@@ -80,27 +77,21 @@ public class SubmitController {
     }
 
     @PostMapping("/api/public/submit/{applicationId}")
-    public String submit(@PathVariable Long applicationId, @RequestParam("inputs") String inputs, @RequestParam("files") MultipartFile[] files) {
+    public String submit(@PathVariable Long applicationId, @RequestParam(value = "inputs", required = true) String inputs, @RequestParam(value = "files", required = false) MultipartFile[] files) {
         Optional<Application> fetchedApplication = applicationRepository.findById(applicationId);
-
+        ScriptEngine scriptEngine = ScriptService.getEngine();
         Map<String, Object> customerData = new JSONObject(inputs).toMap();
 
         if (fetchedApplication.isPresent()) {
             Application application = fetchedApplication.get();
 
-            String validationError;
             try {
-                validationError = scriptService.validateApplication(application, customerData);
-            } catch (ScriptRequiredException | ScriptException | JsonProcessingException e) {
-                systemMailService.sendExceptionMail(e);
-                throw new RuntimeException(e);
+                application.getRoot().validate(customerData, null, scriptEngine);
+            } catch (ValidationException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field " + ex.getElement().getId() + ": " + ex.getMessage());
             }
 
-            if (validationError != null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationError);
-            }
-
-            ApplicationPdfDto applicationDto = application.toPdfDto(customerData);
+            ApplicationPdfDto applicationDto = application.toPdfDto(customerData, scriptEngine);
 
             String pdfUuid;
             try {

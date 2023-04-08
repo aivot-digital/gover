@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.entities;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;

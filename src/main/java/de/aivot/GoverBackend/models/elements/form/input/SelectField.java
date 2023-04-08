@@ -1,11 +1,12 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 
+import javax.script.ScriptEngine;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,7 +16,7 @@ public class SelectField extends InputElement<String> {
     private String placeholder;
     private Collection<String> options;
 
-    public SelectField(BaseElement parent, Map<String, Object> data) {
+    public SelectField(Map<String, Object> data) {
         super(data);
 
         placeholder = (String) data.get("placeholder");
@@ -40,12 +41,12 @@ public class SelectField extends InputElement<String> {
     }
 
     @Override
-    public boolean isValid(String value, String idPrefix) {
-        return testValueInOptions(value);
+    public void validate(Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        testValueInOptions(value);
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(String value, String idPrefix) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         fields.add(new ValuePdfRowDto(
@@ -56,7 +57,7 @@ public class SelectField extends InputElement<String> {
         return fields;
     }
 
-    private boolean testValueInOptions(String value) {
+    private void testValueInOptions(String value) throws ValidationException {
         boolean valueFound = false;
         for (String opt : options) {
             if (value.equals(opt)) {
@@ -64,6 +65,8 @@ public class SelectField extends InputElement<String> {
                 break;
             }
         }
-        return valueFound;
+        if (!valueFound) {
+            throw new ValidationException(this, "Invalid option " + value);
+        }
     }
 }

@@ -1,12 +1,15 @@
 package de.aivot.GoverBackend.models.elements;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.models.functions.FunctionSet;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.TestProtocolSet;
+import de.aivot.GoverBackend.models.functions.Function;
+import de.aivot.GoverBackend.models.functions.FunctionCode;
+import de.aivot.GoverBackend.models.functions.FunctionNoCode;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
-import net.minidev.json.annotate.JsonIgnore;
+import de.aivot.GoverBackend.utils.MapUtils;
 
+import javax.script.ScriptEngine;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -17,22 +20,57 @@ public abstract class BaseElement {
     private String name;
 
     private TestProtocolSet testProtocolSet;
-    private FunctionSet functionSet;
 
-    protected BaseElement(Map<String, Object> data) {
+    private Function<Boolean> isVisible;
+    private FunctionCode<Map<String, Object>> patchElement;
 
-        type = ElementType.findElement(data.get("type")).orElse(null);
-        id = (String) data.get("id");
-        name = (String) data.get("name");
+    public BaseElement(Map<String, Object> values) {
+        type = MapUtils.getEnum(values, "type", Integer.class, ElementType.values(), ElementType.Group);
+        id = MapUtils.getString(values, "id", "missing_id");
+        name = MapUtils.getString(values, "name", "");
 
-        if (data.containsKey("testProtocolSet")) {
-            testProtocolSet = new TestProtocolSet((Map<String, Object>) data.get("testProtocolSet"));
-        }
+        testProtocolSet = MapUtils.getApply(values, "testProtocolSet", Map.class, TestProtocolSet::new);
 
-        if (data.containsKey("functionSet")) {
-            functionSet = new FunctionSet((Map<String, Object>) data.get("functionSet"));
-        }
+        isVisible = MapUtils.getApply(values, "isVisible", Map.class, d -> {
+            boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
+            return mainFunctionExists ? new FunctionCode<Boolean>(d) : new FunctionNoCode<Boolean>(d);
+        });
+        patchElement = MapUtils.getApply(values, "patchElement", Map.class, FunctionCode::new);
+
+        applyValues(values);
     }
+
+    public abstract void applyValues(Map<String, Object> values);
+
+    public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    }
+
+    public boolean isVisible(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+        if (isVisible == null) {
+            return true;
+        }
+
+        Boolean isVisibleResult = isVisible.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
+        return Boolean.TRUE.equals(isVisibleResult);
+    }
+
+    public void patch(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+        if (patchElement == null) {
+            return;
+        }
+        Map<String, Object> patchElementResult = patchElement.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
+        applyValues(patchElementResult);
+    }
+
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+        return new LinkedList<>();
+    }
+
+    protected String getResolvedId(String idPrefix) {
+        return idPrefix != null ? idPrefix + "_" + id : id;
+    }
+
+    // region Getters & Setters
 
     public String getId() {
         return id;
@@ -50,7 +88,6 @@ public abstract class BaseElement {
         this.type = type;
     }
 
-    @Nullable
     public String getName() {
         return name;
     }
@@ -59,7 +96,6 @@ public abstract class BaseElement {
         this.name = name;
     }
 
-    @Nullable
     public TestProtocolSet getTestProtocolSet() {
         return testProtocolSet;
     }
@@ -68,24 +104,21 @@ public abstract class BaseElement {
         this.testProtocolSet = testProtocolSet;
     }
 
-    @Nullable
-    public FunctionSet getFunctionSet() {
-        return functionSet;
+    public Function<Boolean> getIsVisible() {
+        return isVisible;
     }
 
-    public void setFunctionSet(FunctionSet functionSet) {
-        this.functionSet = functionSet;
+    public void setIsVisible(Function<Boolean> isVisible) {
+        this.isVisible = isVisible;
     }
 
-    public boolean isVisible(Map<String, Object> customerInput, @Nullable String idPrefix) {
-        return true;
+    public FunctionCode<Map<String, Object>> getPatchElement() {
+        return patchElement;
     }
 
-    public boolean isValid(Map<String, Object> customerInput, @Nullable String idPrefix) {
-        return true;
+    public void setPatchElement(FunctionCode<Map<String, Object>> patchElement) {
+        this.patchElement = patchElement;
     }
 
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, @Nullable String idPrefix) {
-        return new LinkedList<>();
-    }
+    // endregion
 }

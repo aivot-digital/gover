@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.repositories;
 
-import de.aivot.GoverBackend.models.Application;
+import de.aivot.GoverBackend.models.entities.Application;
 import javax.transaction.Transactional;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;

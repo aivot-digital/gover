@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

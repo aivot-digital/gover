@@ -1,11 +1,12 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import org.springframework.lang.Nullable;
 
+import javax.script.ScriptEngine;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,7 @@ public class TextField extends InputElement<String> {
     private Boolean isMultiline;
     private Integer maxCharacters;
 
-    public TextField(BaseElement parent, Map<String, Object> data) {
+    public TextField(Map<String, Object> data) {
         super(data);
 
         placeholder = (String) data.get("placeholder");
@@ -51,12 +52,14 @@ public class TextField extends InputElement<String> {
     }
 
     @Override
-    public boolean isValid(String value, String idPrefix) {
-        return maxCharacters == null || value.length() <= maxCharacters;
+    public void validate(Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        if (maxCharacters != null && value.length() <= maxCharacters) {
+            throw new ValidationException(this, "Too many characters");
+        }
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(String value, String idPrefix) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         fields.add(new ValuePdfRowDto(

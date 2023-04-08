@@ -1,13 +1,14 @@
 package de.aivot.GoverBackend.models.elements.steps;
 
-import com.sun.istack.Nullable;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.BaseElement;
-import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.elements.form.FormElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
+import de.aivot.GoverBackend.utils.MapUtils;
 
+import javax.script.ScriptEngine;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,23 +19,43 @@ public class StepElement extends BaseElement {
     private String icon;
     private Collection<FormElement> children;
 
-    public StepElement(Map<String, Object> data) {
-        super(data);
+    public StepElement(Map<String, Object> values) {
+        super(values);
+    }
 
-        title = (String) data.get("title");
-        icon = (String) data.get("icon");
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        title = MapUtils.getString(values, "title");
+        icon = MapUtils.getString(values, "icon");
+        children = MapUtils.getCollection(values, "children", ElementResolver::resolve);
+    }
 
-        if (data.get("children") != null) {
-            children = new LinkedList<>();
-            for (Map<String, Object> childData : (Collection<Map<String, Object>>) data.get("children")) {
-                if (childData != null) {
-                    children.add(ElementResolver.resolve(this, childData));
-                }
+    @Override
+    public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        if (children != null) {
+            for (var child : children) {
+                child.validate(customerInput, idPrefix, scriptEngine);
             }
         }
     }
 
-    @Nullable
+    @Override
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+        List<BasePdfRowDto> rows = new LinkedList<>();
+
+        rows.add(new HeadlinePdfRowDto(title == null ? "Unbenannter Abschnitt" : title, 1));
+
+        if (children != null) {
+            for (var child : children) {
+                rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+            }
+        }
+
+        return rows;
+    }
+
+    // region Getters & Setters
+
     public String getTitle() {
         return title;
     }
@@ -43,7 +64,6 @@ public class StepElement extends BaseElement {
         this.title = title;
     }
 
-    @Nullable
     public String getIcon() {
         return icon;
     }
@@ -52,7 +72,6 @@ public class StepElement extends BaseElement {
         this.icon = icon;
     }
 
-    @Nullable
     public Collection<FormElement> getChildren() {
         return children;
     }
@@ -61,23 +80,5 @@ public class StepElement extends BaseElement {
         this.children = children;
     }
 
-    @Override
-    public boolean isValid(Map<String, Object> customerInput, @Nullable String idPrefix) {
-        return children.stream().allMatch(c -> c.isValid(customerInput, idPrefix));
-    }
-
-    @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, @Nullable String idPrefix) {
-        List<BasePdfRowDto> rows = new LinkedList<>();
-
-        rows.add(new HeadlinePdfRowDto(title == null ? "Unbenannter Abschnitt" : title, 1));
-
-        if (children != null) {
-            for (var child : children) {
-                rows.addAll(child.toPdfRows(customerInput, idPrefix));
-            }
-        }
-
-        return rows;
-    }
+    // endregion
 }

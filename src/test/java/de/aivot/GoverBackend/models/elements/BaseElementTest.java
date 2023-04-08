@@ -1,103 +1,61 @@
 package de.aivot.GoverBackend.models.elements;
 
-
-import de.aivot.GoverBackend.enums.ConditionOperator;
-import de.aivot.GoverBackend.enums.ConditionSetOperator;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
-import de.aivot.GoverBackend.models.functions.FunctionNoCode;
-import de.aivot.GoverBackend.models.functions.conditions.ConditionOperandReference;
-import de.aivot.GoverBackend.models.functions.conditions.ConditionOperandValue;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BaseElementTest {
-    @Test
-    void testSerializeSuccessful() throws JSONException {
-        var jsonStr = """
-                {
-                    "id": "id",
-                    "type": 1,
-                    "name": "name",
-                    "testProtocolSet": {
-                        "technicalTest": {
-                            "userId": 0,
-                            "timestamp": "2023-04-07"
-                        },
-                        "professionalTest": {
-                            "userId": 1,
-                            "timestamp": "2023-04-08"
-                        }
-                    },
-                    "functionSet": {
-                        "isVisible": {
-                            "requirements": "requirements isVisible",
-                            "functions": {
-                                "main": "alert('main')"
-                            },
-                            "mainFunction": "main"
-                        },
-                        "isValid": {
-                            "requirements": "requirements isValid",
-                            "conditionSet": {
-                                "operator": 0,
-                                "conditions": [{
-                                    "operator": 0,
-                                    "operandA": {
-                                        "ref": "ref0",
-                                    },
-                                    "operandB": {
-                                        "value": "value0",
-                                    }
-                                }],
-                                "conditionSets": [{
-                                    "operator": "1",
-                                    "conditions": [{
-                                        "operator": 1,
-                                        "operandA": {
-                                            "ref": "ref1",
-                                        },
-                                        "operandB": {
-                                            "value": "value1",
-                                        }
-                                    }],
-                                }],
-                            }
-                        },
-                        "isDisabled": {
-                            "requirements": "requirements isDisabled",
-                            "functions": {
-                                "main": "alert('main')"
-                            },
-                            "mainFunction": "main"
-                        },
-                        "patchElement": {
-                            "requirements": "requirements patchElement",
-                            "functions": {
-                                "main": "alert('main')"
-                            },
-                            "mainFunction": "main"
-                        },
-                        "computeValue": {
-                            "requirements": "requirements computeValue",
-                            "functions": {
-                                "main": "alert('main')"
-                            },
-                            "mainFunction": "main"
-                        },
-                    }
-                }
-                    """;
+class BaseElementTest extends AbstractElementTest<BaseElement> {
+    @Override
+    protected Map<String, Object> getJSON() {
+        return new HashMap<>() {{
+            put("type", ElementType.Root.getKey());
+            put("id", "id");
+            put("name", "name");
+            put("testProtocolSet", new HashMap<>() {{
+                put("technicalTest", new HashMap<>() {{
+                    put("userId", 0);
+                    put("timestamp", "2023-04-07");
+                }});
+                put("professionalTest", new HashMap<>() {{
+                    put("userId", 1);
+                    put("timestamp", "2023-04-08");
+                }});
+            }});
+            put("isVisible", new HashMap<>() {{
+                put("requirements", "requirements isVisible");
+                put("mainFunction", "main");
+                put("functions", new HashMap<>() {{
+                    put("main", "alert('isVisible')");
+                }});
+            }});
+            put("patchElement", new HashMap<>() {{
+                put("requirements", "requirements patchElement");
+                put("mainFunction", "main");
+                put("functions", new HashMap<>() {{
+                    put("main", "alert('patchElement')");
+                }});
+            }});
+        }};
+    }
 
-        var json = new JSONObject(jsonStr).toMap();
-        var item = new BaseElement(null, json) {
+    @Override
+    protected BaseElement newItem(Map<String, Object> json) {
+        return new BaseElement(json) {
+            @Override
+            public void applyValues(Map<String, Object> values) {
+
+            }
         };
+    }
 
+    @Override
+    protected void testAllFieldsFilled(BaseElement item) {
+        assertEquals(ElementType.Root, item.getType());
         assertEquals("id", item.getId());
-        assertEquals(ElementType.Step, item.getType());
         assertEquals("name", item.getName());
 
         assertNotNull(item.getTestProtocolSet());
@@ -110,46 +68,26 @@ class BaseElementTest {
         assertEquals(1, item.getTestProtocolSet().getProfessionalTest().getUserId());
         assertEquals("2023-04-08", item.getTestProtocolSet().getProfessionalTest().getTimestamp());
 
-        assertNotNull(item.getFunctionSet());
-        assertNotNull(item.getFunctionSet().getIsVisible());
-        assertEquals("requirements isVisible", item.getFunctionSet().getIsVisible().getRequirements());
-        assertInstanceOf(FunctionCode.class, item.getFunctionSet().getIsVisible());
-        assertEquals("main", ((FunctionCode) item.getFunctionSet().getIsVisible()).getMainFunction());
-        assertEquals(1, ((FunctionCode) item.getFunctionSet().getIsVisible()).getFunctions().size());
+        assertNotNull(item.getIsVisible());
+        assertEquals("requirements isVisible", item.getIsVisible().getRequirements());
+        assertInstanceOf(FunctionCode.class, item.getIsVisible());
+        assertEquals("main", ((FunctionCode) item.getIsVisible()).getMainFunction());
+        assertEquals(1, ((FunctionCode) item.getIsVisible()).getFunctions().size());
 
-        assertNotNull(item.getFunctionSet().getIsValid());
-        assertEquals("requirements isValid", item.getFunctionSet().getIsValid().getRequirements());
-        assertInstanceOf(FunctionNoCode.class, item.getFunctionSet().getIsValid());
-        assertNotNull(((FunctionNoCode) item.getFunctionSet().getIsValid()).getConditionSet());
-        assertEquals(ConditionSetOperator.All, ((FunctionNoCode) item.getFunctionSet().getIsValid()).getConditionSet().getOperator());
-        assertEquals(1, ((FunctionNoCode) item.getFunctionSet().getIsValid()).getConditionSet().getConditions().size());
-        assertEquals(1, ((FunctionNoCode) item.getFunctionSet().getIsValid()).getConditionSet().getConditionsSets().size());
-        assertEquals(ConditionOperator.Equals, ((FunctionNoCode) item.getFunctionSet().getIsValid()).getConditionSet().getConditions().stream().toList().get(0).getOperator());
-        assertInstanceOf(ConditionOperandReference.class, ((FunctionNoCode) item.getFunctionSet().getIsValid()).getConditionSet().getConditions().stream().toList().get(0).getOperandA());
-        assertInstanceOf(ConditionOperandValue.class, ((FunctionNoCode) item.getFunctionSet().getIsValid()).getConditionSet().getConditions().stream().toList().get(0).getOperandB());
+        assertNotNull(item);
+        assertNotNull(item.getPatchElement());
+        assertEquals("requirements patchElement", item.getPatchElement().getRequirements());
+        assertEquals("main", item.getPatchElement().getMainFunction());
+        assertEquals(1, item.getPatchElement().getFunctions().size());
     }
 
-    @Test
-    void testSerializeEmpty() {
-        var jsonStr = "{}";
-
-        var json = new JSONObject(jsonStr).toMap();
-        var item = new BaseElement(null, json) {
-        };
-
+    @Override
+    protected void testAllFieldsNull(BaseElement item) {
         assertNull(item.getId());
         assertNull(item.getType());
         assertNull(item.getName());
-    }
-
-    @Test
-    void testSerializeInvalidJson() {
-        var jsonStr = "INVALID JSON";
-
-        assertThrows(JSONException.class, () -> {
-            var json = new JSONObject(jsonStr).toMap();
-            new BaseElement(null, json) {
-            };
-        });
+        assertNull(item.getTestProtocolSet());
+        assertNull(item.getIsVisible());
+        assertNull(item.getPatchElement());
     }
 }

@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.entities;
 
 import de.aivot.GoverBackend.enums.DestinationType;
 import org.hibernate.annotations.CreationTimestamp;
@@ -26,6 +26,7 @@ public class Destination {
     private LocalDateTime created;
     @UpdateTimestamp
     private LocalDateTime updated;
+    private Integer maxAttachmentBytes;
 
     private String mailTo;
     private String mailCC;
@@ -34,6 +35,8 @@ public class Destination {
     private String apiAddress;
     private String authorizationHeader;
 
+
+    //region Getters & Setters
 
     public Long getId() {
         return id;
@@ -114,4 +117,14 @@ public class Destination {
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
     }
+
+    public Integer getMaxAttachmentBytes() {
+        return maxAttachmentBytes;
+    }
+
+    public void setMaxAttachmentBytes(Integer maxAttachmentBytes) {
+        this.maxAttachmentBytes = maxAttachmentBytes;
+    }
+
+    //endregion
 }

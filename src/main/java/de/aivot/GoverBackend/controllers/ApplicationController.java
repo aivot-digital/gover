@@ -1,10 +1,9 @@
 package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.ApplicationStatus;
-import de.aivot.GoverBackend.models.Application;
-import de.aivot.GoverBackend.models.Department;
-import de.aivot.GoverBackend.models.User;
-import de.aivot.GoverBackend.models.elements.RootElement;
+import de.aivot.GoverBackend.models.entities.Application;
+import de.aivot.GoverBackend.models.entities.Department;
+import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,13 +28,20 @@ public class ApplicationController {
         this.departmentRepository = departmentRepository;
     }
 
+    /**
+     * Fetch a single application based on the slug and version. Not published applications are only served to authenticated users.
+     * @param authentication Optional authentication object of the current user.
+     * @param slug The slug of the application.
+     * @param version The version of the application
+     * @return The desired application or a resource not found exception.
+     */
     @GetMapping("/api/public/applications/{slug}/{version}")
     public Application getApplication(Authentication authentication, @PathVariable String slug, @PathVariable String version) {
         User user = authentication != null ? (User) authentication.getPrincipal() : null;
-        Optional<Application> applicationResult = applicationRepository.getBySlugAndVersion(slug, version);
+        var applicationResult = applicationRepository.getBySlugAndVersion(slug, version);
 
         if (applicationResult.isPresent()) {
-            Application application = applicationResult.get();
+            var application = applicationResult.get();
             if (user != null || (application.getStatus() == ApplicationStatus.Published)) {
                 return application;
             }
@@ -44,9 +50,14 @@ public class ApplicationController {
         throw new ResourceNotFoundException();
     }
 
+    /**
+     * Get a department by its id.
+     * @param id The id of the department to fetch.
+     * @return The desired department or a resource not found exception.
+     */
     @GetMapping("/api/public/departments/{id}")
     public Department getDepartment(@PathVariable Long id) {
-        Optional<Department> department = departmentRepository.findById(id);
+        var department = departmentRepository.findById(id);
 
         if (department.isPresent()) {
             return department.get();

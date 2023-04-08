@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.services;
 
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.GoverConfig;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;

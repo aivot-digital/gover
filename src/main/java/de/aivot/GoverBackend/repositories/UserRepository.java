@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.repositories;
 
 import de.aivot.GoverBackend.enums.UserRole;
-import de.aivot.GoverBackend.models.User;
+import de.aivot.GoverBackend.models.entities.User;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;

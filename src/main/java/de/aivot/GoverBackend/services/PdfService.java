@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.pdf.ApplicationPdfDto;
-import de.aivot.GoverBackend.models.Application;
+import de.aivot.GoverBackend.models.entities.Application;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.TemplateEngine;

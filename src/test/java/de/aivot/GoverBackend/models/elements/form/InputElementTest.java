@@ -1,0 +1,93 @@
+package de.aivot.GoverBackend.models.elements.form;
+
+
+import de.aivot.GoverBackend.models.elements.AbstractElementTest;
+import de.aivot.GoverBackend.pdf.BasePdfRowDto;
+
+import javax.script.ScriptEngine;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class InputElementTest extends AbstractElementTest<InputElement<Object>> {
+    @Override
+    protected Map<String, Object> getJSON() {
+        return new HashMap<>() {{
+            put("label", "label");
+            put("hint", "hint");
+            put("required", true);
+            put("disabled", false);
+            put("isValid", new HashMap<>() {{
+                put("requirements", "requirements isValid");
+                put("mainFunction", "main");
+                put("functions", new HashMap<>() {{
+                    put("main", "alert('isValid')");
+                }});
+            }});
+            put("isDisabled", new HashMap<>() {{
+                put("requirements", "requirements isDisabled");
+                put("mainFunction", "main");
+                put("functions", new HashMap<>() {{
+                    put("main", "alert('isDisabled')");
+                }});
+            }});
+            put("isRequired", new HashMap<>() {{
+                put("requirements", "requirements isRequired");
+                put("mainFunction", "main");
+                put("functions", new HashMap<>() {{
+                    put("main", "alert('isRequired')");
+                }});
+            }});
+            put("computeValue", new HashMap<>() {{
+                put("requirements", "requirements computeValue");
+                put("mainFunction", "main");
+                put("functions", new HashMap<>() {{
+                    put("main", "alert('computeValue')");
+                }});
+            }});
+        }};
+    }
+
+    @Override
+    protected InputElement<Object> newItem(Map<String, Object> json) {
+        return new InputElement<>(json) {
+            @Override
+            public boolean isValid(Object value, String idPrefix) {
+                return false;
+            }
+
+            @Override
+            public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Object value, String idPrefix, ScriptEngine scriptEngine) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    protected void testAllFieldsFilled(InputElement<Object> item) {
+        assertEquals("label", item.getLabel());
+        assertEquals("hint", item.getHint());
+        assertEquals(true, item.getRequired());
+        assertEquals(false, item.getDisabled());
+
+        assertNotNull(item.getIsValid());
+        assertNotNull(item.getIsDisabled());
+        assertNotNull(item.getIsRequired());
+        assertNotNull(item.getComputeValue());
+
+        // TODO: Check details of functions
+    }
+
+    @Override
+    protected void testAllFieldsNull(InputElement<Object> item) {
+        assertNull(item.getLabel());
+        assertNull(item.getHint());
+        assertNull(item.getRequired());
+        assertNull(item.getDisabled());
+
+        assertNull(item.getIsValid());
+        assertNull(item.getIsDisabled());
+        assertNull(item.getIsRequired());
+        assertNull(item.getComputeValue());
+    }
+}

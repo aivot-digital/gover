@@ -53,18 +53,18 @@
 <body>
 <h1 th:text="${data.title}"></h1>
 <div th:each="field: ${data.fields}">
-    <h2 th:if="${#strings.equals(field.type, 'headline') && field.size == 2}" th:text="${field.text}"></h2>
-    <h3 th:if="${#strings.equals(field.type, 'headline') && field.size == 3}" th:text="${field.text}"></h3>
-    <h4 th:if="${#strings.equals(field.type, 'headline') && field.size == 4}" th:text="${field.text}"></h4>
-    <h5 th:if="${#strings.equals(field.type, 'headline') && field.size == 5}" th:text="${field.text}"></h5>
-    <h6 th:if="${#strings.equals(field.type, 'headline') && field.size == 6}" th:text="${field.text}"></h6>
+    <h2 th:if="${#strings.equals(field.type, 'Headline') && field.size == 2}" th:text="${field.text}"></h2>
+    <h3 th:if="${#strings.equals(field.type, 'Headline') && field.size == 3}" th:text="${field.text}"></h3>
+    <h4 th:if="${#strings.equals(field.type, 'Headline') && field.size == 4}" th:text="${field.text}"></h4>
+    <h5 th:if="${#strings.equals(field.type, 'Headline') && field.size == 5}" th:text="${field.text}"></h5>
+    <h6 th:if="${#strings.equals(field.type, 'Headline') && field.size == 6}" th:text="${field.text}"></h6>
 
-    <div class="value-field" th:if="${#strings.equals(field.type, 'value')}">
+    <div class="value-field" th:if="${#strings.equals(field.type, 'Value')}">
         <div class="label" th:text="${field.label}"></div>
         <div class="value" th:text="${field.value}"></div>
     </div>
 
-    <table class="value-field" th:if="${#strings.equals(field.type, 'table')}">
+    <table class="value-field" th:if="${#strings.equals(field.type, 'Table')}">
         <thead>
         <tr>
             <th th:each="header: ${field.columnHeaders}" th:text="${header}"></th>

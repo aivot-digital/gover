@@ -1,6 +1,9 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.entities;
 
-import de.aivot.GoverBackend.converters.ElementConverter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import de.aivot.GoverBackend.converters.*;
+import de.aivot.GoverBackend.models.elements.form.layout.GroupLayout;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -15,8 +18,10 @@ public class Preset {
     @GeneratedValue
     private Long id;
     @Lob
-    @Convert(converter = ElementConverter.class)
-    private Map<String, Object> root;
+    @Convert(converter = GroupLayoutConverter.class)
+    @JsonSerialize(converter = JacksonGroupLayoutSerializer.class)
+    @JsonDeserialize(converter = JacksonGroupLayoutDeserializer.class)
+    private GroupLayout root;
     @CreationTimestamp
     private LocalDateTime created;
     @UpdateTimestamp
@@ -30,11 +35,11 @@ public class Preset {
         this.id = id;
     }
 
-    public Map<String, Object> getRoot() {
+    public GroupLayout getRoot() {
         return root;
     }
 
-    public void setRoot(Map<String, Object> root) {
+    public void setRoot(GroupLayout root) {
         this.root = root;
     }
 

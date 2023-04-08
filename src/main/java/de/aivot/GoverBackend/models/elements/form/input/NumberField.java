@@ -1,11 +1,12 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 
+import javax.script.ScriptEngine;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,7 @@ public class NumberField extends InputElement<Double> {
     private Integer decimalPlaces;
     private String suffix;
 
-    public NumberField(BaseElement parent, Map<String, Object> data) {
+    public NumberField(Map<String, Object> data) {
         super(data);
 
         placeholder = (String) data.get("placeholder");
@@ -51,13 +52,12 @@ public class NumberField extends InputElement<Double> {
     }
 
     @Override
-    public boolean isValid(Double value, String idPrefix) {
+    public void validate(Map<String, Object> customerInput, Double value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         // TODO
-        return true;
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Double value, String idPrefix) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Double value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         String displayValue = "Keine Angaben";

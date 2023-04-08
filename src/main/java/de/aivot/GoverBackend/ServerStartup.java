@@ -3,7 +3,7 @@ package de.aivot.GoverBackend;
 import com.oracle.truffle.js.runtime.Strings;
 import com.sun.istack.NotNull;
 import de.aivot.GoverBackend.enums.UserRole;
-import de.aivot.GoverBackend.models.User;
+import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
 import de.aivot.GoverBackend.services.BlobService;
 import de.aivot.GoverBackend.services.SystemMailService;

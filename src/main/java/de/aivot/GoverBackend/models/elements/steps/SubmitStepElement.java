@@ -1,10 +1,8 @@
 package de.aivot.GoverBackend.models.elements.steps;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.models.elements.BaseElement;
-import de.aivot.GoverBackend.models.elements.RootElement;
+import de.aivot.GoverBackend.utils.MapUtils;
 
-import javax.persistence.criteria.Root;
 import java.util.Collection;
 import java.util.Map;
 
@@ -16,14 +14,18 @@ public class SubmitStepElement extends BaseElement {
 
     public SubmitStepElement(Map<String, Object> data) {
         super(data);
-
-        textPreSubmit = (String) data.get("textPreSubmit");
-        textPostSubmit = (String) data.get("textPostSubmit");
-        textProcessingTime = (String) data.get("textProcessingTime");
-        documentsToReceive = (Collection<String>) data.get("documentsToReceive");
     }
 
-    @Nullable
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        textPreSubmit = MapUtils.getString(values, "textPreSubmit");
+        textPostSubmit = MapUtils.getString(values, "textPostSubmit");
+        textProcessingTime = MapUtils.getString(values, "textProcessingTime");
+        documentsToReceive = MapUtils.get(values, "documentsToReceive", Collection.class);
+    }
+
+    //region Getters & Setters
+
     public String getTextPreSubmit() {
         return textPreSubmit;
     }
@@ -32,7 +34,6 @@ public class SubmitStepElement extends BaseElement {
         this.textPreSubmit = textPreSubmit;
     }
 
-    @Nullable
     public String getTextPostSubmit() {
         return textPostSubmit;
     }
@@ -41,7 +42,6 @@ public class SubmitStepElement extends BaseElement {
         this.textPostSubmit = textPostSubmit;
     }
 
-    @Nullable
     public String getTextProcessingTime() {
         return textProcessingTime;
     }
@@ -50,7 +50,6 @@ public class SubmitStepElement extends BaseElement {
         this.textProcessingTime = textProcessingTime;
     }
 
-    @Nullable
     public Collection<String> getDocumentsToReceive() {
         return documentsToReceive;
     }
@@ -58,4 +57,6 @@ public class SubmitStepElement extends BaseElement {
     public void setDocumentsToReceive(Collection<String> documentsToReceive) {
         this.documentsToReceive = documentsToReceive;
     }
+
+    //endregion
 }
