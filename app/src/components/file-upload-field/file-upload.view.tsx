@@ -4,14 +4,18 @@ import {
     Button,
     FormLabel,
     IconButton,
-    Table, TableBody, TableCell,
+    Table,
+    TableBody,
+    TableCell,
     TableContainer,
-    TableHead, TableRow,
-    Typography, useMediaQuery,
+    TableHead,
+    TableRow,
+    Typography,
+    useMediaQuery,
     useTheme
 } from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faCloudArrowUp, faTrashCanXmark, faUpload} from '@fortawesome/pro-light-svg-icons';
+import {faCloudArrowUp, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {BaseViewProps} from "../_lib/base-view-props";
 import {
     FileUploadElement,
