@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/aivot-digital/gover/compare/v2.1.1...v2.1.2) (2023-04-09)
+
+### Bug Fixes
+
+* **App:** Removed unnecessary Gover from dashboard tab title
+
+
 ## [2.1.1](https://github.com/aivot-digital/gover/compare/v2.1.0...v2.1.1) (2023-04-08)
 
 ### Features
