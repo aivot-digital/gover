@@ -135,7 +135,7 @@ export function ApplicationOverview() {
     return (
         <>
             <MetaElement
-                title={`Gover - ${providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}`}
+                title={providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}
             />
 
             <AppHeader
