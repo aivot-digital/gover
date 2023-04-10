@@ -36,6 +36,7 @@ export function FileUploadView({
     const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
+    const [isDraggedOver, setIsDraggedOver] = useState(false);
     const isBreakpointMdAndDown = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +63,7 @@ export function FileUploadView({
 
     const handleDrop: React.DragEventHandler<HTMLDivElement> = (event) => {
         handleAdd(event.dataTransfer.files);
+        setIsDraggedOver(false);
     };
 
     const handleAdd = (files: FileList) => {
@@ -179,7 +181,10 @@ export function FileUploadView({
                     '&:hover': {
                         backgroundColor: theme.palette.grey["50"],
                     },
+                    boxShadow: isDraggedOver ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
                 }}
+                onDragOver={() => setIsDraggedOver(true)}
+                onDragLeave={() => setIsDraggedOver(false)}
                 onDrop={handleDrop}
             >
                 <Box
