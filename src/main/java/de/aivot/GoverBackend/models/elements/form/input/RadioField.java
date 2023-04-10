@@ -1,10 +1,10 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
 import java.util.Collection;
@@ -17,17 +17,13 @@ public class RadioField extends InputElement<String> {
 
     public RadioField(Map<String, Object> data) {
         super(data);
-
-        options = (Collection<String>) data.get("options");
     }
 
-    @Nullable
-    public Collection<String> getOptions() {
-        return options;
-    }
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
 
-    public void setOptions(Collection<String> options) {
-        this.options = options;
+        options = MapUtils.get(values, "options", Collection.class);
     }
 
     @Override
@@ -58,5 +54,13 @@ public class RadioField extends InputElement<String> {
         if (!valueFound) {
             throw new ValidationException(this, "Invalid option " + value);
         }
+    }
+
+    public Collection<String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Collection<String> options) {
+        this.options = options;
     }
 }

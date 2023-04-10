@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
 import java.time.DateTimeException;
@@ -27,52 +28,16 @@ public class DateField extends InputElement<String> {
 
     public DateField(Map<String, Object> data) {
         super(data);
-
-        placeholder = (String) data.get("placeholder");
-        mode = (DateType) data.get("mode");
-        mustBePast = (Boolean) data.get("mustBePast");
-        mustBeFuture = (Boolean) data.get("mustBeFuture");
     }
 
     @Override
     public void applyValues(Map<String, Object> values) {
         super.applyValues(values);
-    }
 
-    @Nullable
-    public String getPlaceholder() {
-        return placeholder;
-    }
-
-    public void setPlaceholder(String placeholder) {
-        this.placeholder = placeholder;
-    }
-
-    @Nullable
-    public DateType getMode() {
-        return mode;
-    }
-
-    public void setMode(DateType mode) {
-        this.mode = mode;
-    }
-
-    @Nullable
-    public Boolean getMustBePast() {
-        return mustBePast;
-    }
-
-    public void setMustBePast(Boolean mustBePast) {
-        this.mustBePast = mustBePast;
-    }
-
-    @Nullable
-    public Boolean getMustBeFuture() {
-        return mustBeFuture;
-    }
-
-    public void setMustBeFuture(Boolean mustBeFuture) {
-        this.mustBeFuture = mustBeFuture;
+        placeholder = MapUtils.getString(values, "placeholder");
+        mode = MapUtils.getEnum(values, "mode", String.class, DateType.values());
+        mustBePast = MapUtils.getBoolean(values, "mustBePast");
+        mustBeFuture = MapUtils.getBoolean(values, "mustBeFuture");
     }
 
     @Override
@@ -146,4 +111,45 @@ public class DateField extends InputElement<String> {
 
         return rows;
     }
+
+    //region Getter & Setter
+
+    @Nullable
+    public String getPlaceholder() {
+        return placeholder;
+    }
+
+    public void setPlaceholder(String placeholder) {
+        this.placeholder = placeholder;
+    }
+
+    @Nullable
+    public DateType getMode() {
+        return mode;
+    }
+
+    public void setMode(DateType mode) {
+        this.mode = mode;
+    }
+
+    @Nullable
+    public Boolean getMustBePast() {
+        return mustBePast;
+    }
+
+    public void setMustBePast(Boolean mustBePast) {
+        this.mustBePast = mustBePast;
+    }
+
+    @Nullable
+    public Boolean getMustBeFuture() {
+        return mustBeFuture;
+    }
+
+    public void setMustBeFuture(Boolean mustBeFuture) {
+        this.mustBeFuture = mustBeFuture;
+    }
+
+    //endregion
+
 }

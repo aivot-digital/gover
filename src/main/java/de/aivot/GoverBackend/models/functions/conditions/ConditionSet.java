@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
+import de.aivot.GoverBackend.models.elements.BaseElement;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -28,6 +29,15 @@ public class ConditionSet {
                 conditionsSets.add(new ConditionSet(conditionSetData));
             }
         }
+    }
+
+    public boolean evaluate(Map<String, Object> customerInput) {
+        return switch (operator) {
+            case All ->
+                    conditions.stream().allMatch(c -> c.evaluate(customerInput)) && conditionsSets.stream().allMatch(cs -> cs.evaluate(customerInput));
+            case Any ->
+                    conditions.stream().anyMatch(c -> c.evaluate(customerInput)) && conditionsSets.stream().anyMatch(cs -> cs.evaluate(customerInput));
+        };
     }
 
     public ConditionSetOperator getOperator() {

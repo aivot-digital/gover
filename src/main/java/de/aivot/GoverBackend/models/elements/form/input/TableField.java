@@ -21,34 +21,15 @@ public class TableField extends InputElement<List<Map<String, String>>> {
 
     public TableField(Map<String, Object> data) {
         super(data);
-
-        fields = MapUtils.getCollection(data, "fields", TableFieldColumnDefinition::new);
-        maximumRows = MapUtils.getInteger(data, "maximumRows");
-        minimumRequiredRows = MapUtils.getInteger(data, "minimumRequiredRows");
     }
 
-    public Collection<TableFieldColumnDefinition> getFields() {
-        return fields;
-    }
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
 
-    public void setFields(Collection<TableFieldColumnDefinition> fields) {
-        this.fields = fields;
-    }
-
-    public Integer getMaximumRows() {
-        return maximumRows;
-    }
-
-    public void setMaximumRows(Integer maximumRows) {
-        this.maximumRows = maximumRows;
-    }
-
-    public Integer getMinimumRequiredRows() {
-        return minimumRequiredRows;
-    }
-
-    public void setMinimumRequiredRows(Integer minimumRequiredRows) {
-        this.minimumRequiredRows = minimumRequiredRows;
+        fields = MapUtils.getCollection(values, "fields", TableFieldColumnDefinition::new);
+        maximumRows = MapUtils.getInteger(values, "maximumRows");
+        minimumRequiredRows = MapUtils.getInteger(values, "minimumRequiredRows");
     }
 
     @Override
@@ -127,5 +108,29 @@ public class TableField extends InputElement<List<Map<String, String>>> {
         List<BasePdfRowDto> fields = new LinkedList<>();
         fields.add(new TablePdfRowDto(getLabel(), columnHeaders, columnValues));
         return fields;
+    }
+
+    public Collection<TableFieldColumnDefinition> getFields() {
+        return fields;
+    }
+
+    public void setFields(Collection<TableFieldColumnDefinition> fields) {
+        this.fields = fields;
+    }
+
+    public Integer getMaximumRows() {
+        return maximumRows;
+    }
+
+    public void setMaximumRows(Integer maximumRows) {
+        this.maximumRows = maximumRows;
+    }
+
+    public Integer getMinimumRequiredRows() {
+        return minimumRequiredRows;
+    }
+
+    public void setMinimumRequiredRows(Integer minimumRequiredRows) {
+        this.minimumRequiredRows = minimumRequiredRows;
     }
 }

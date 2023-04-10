@@ -1,14 +1,17 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 public class FileUploadField extends InputElement<Collection<FileUploadFieldItem>> {
     private Collection<String> extensions;
@@ -18,47 +21,16 @@ public class FileUploadField extends InputElement<Collection<FileUploadFieldItem
 
     public FileUploadField(Map<String, Object> data) {
         super(data);
-
-        extensions = (Collection<String>) data.get("extensions");
-        isMultifile = (Boolean) data.get("isMultifile");
-        maxFiles = (Integer) data.get("maxFiles");
-        minFiles = (Integer) data.get("minFiles");
     }
 
-    @Nullable
-    public Collection<String> getExtensions() {
-        return extensions;
-    }
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
 
-    public void setExtensions(Collection<String> extensions) {
-        this.extensions = extensions;
-    }
-
-    @Nullable
-    public Boolean getMultifile() {
-        return isMultifile;
-    }
-
-    public void setMultifile(Boolean multifile) {
-        isMultifile = multifile;
-    }
-
-    @Nullable
-    public Integer getMaxFiles() {
-        return maxFiles;
-    }
-
-    public void setMaxFiles(Integer maxFiles) {
-        this.maxFiles = maxFiles;
-    }
-
-    @Nullable
-    public Integer getMinFiles() {
-        return minFiles;
-    }
-
-    public void setMinFiles(Integer minFiles) {
-        this.minFiles = minFiles;
+        extensions = MapUtils.get(values, "extensions", Collection.class);
+        isMultifile = MapUtils.getBoolean(values, "isMultifile");
+        maxFiles = MapUtils.getInteger(values, "maxFiles");
+        minFiles = MapUtils.getInteger(values, "minFiles");
     }
 
     @Override
@@ -137,4 +109,40 @@ public class FileUploadField extends InputElement<Collection<FileUploadFieldItem
         return fields;
     }
 
+
+    //region Getter & Setter
+
+    public Collection<String> getExtensions() {
+        return extensions;
+    }
+
+    public void setExtensions(Collection<String> extensions) {
+        this.extensions = extensions;
+    }
+
+    public Boolean getMultifile() {
+        return isMultifile;
+    }
+
+    public void setMultifile(Boolean multifile) {
+        isMultifile = multifile;
+    }
+
+    public Integer getMaxFiles() {
+        return maxFiles;
+    }
+
+    public void setMaxFiles(Integer maxFiles) {
+        this.maxFiles = maxFiles;
+    }
+
+    public Integer getMinFiles() {
+        return minFiles;
+    }
+
+    public void setMinFiles(Integer minFiles) {
+        this.minFiles = minFiles;
+    }
+
+    //endregion
 }

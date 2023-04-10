@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 import org.springframework.lang.Nullable;
 
 import javax.script.ScriptEngine;
@@ -18,37 +19,15 @@ public class TextField extends InputElement<String> {
 
     public TextField(Map<String, Object> data) {
         super(data);
-
-        placeholder = (String) data.get("placeholder");
-        isMultiline = (Boolean) data.get("isMultiline");
-        maxCharacters = (Integer) data.get("maxCharacters");
     }
 
-    @Nullable
-    public String getPlaceholder() {
-        return placeholder;
-    }
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
 
-    public void setPlaceholder(String placeholder) {
-        this.placeholder = placeholder;
-    }
-
-    @Nullable
-    public Boolean getMultiline() {
-        return isMultiline;
-    }
-
-    public void setMultiline(Boolean multiline) {
-        isMultiline = multiline;
-    }
-
-    @Nullable
-    public Integer getMaxCharacters() {
-        return maxCharacters;
-    }
-
-    public void setMaxCharacters(Integer maxCharacters) {
-        this.maxCharacters = maxCharacters;
+        placeholder = MapUtils.getString(values, "placeholder");
+        isMultiline = MapUtils.getBoolean(values, "isMultiline");
+        maxCharacters = MapUtils.getInteger(values, "maxCharacters");
     }
 
     @Override
@@ -68,5 +47,29 @@ public class TextField extends InputElement<String> {
         ));
 
         return fields;
+    }
+
+    public String getPlaceholder() {
+        return placeholder;
+    }
+
+    public void setPlaceholder(String placeholder) {
+        this.placeholder = placeholder;
+    }
+
+    public Boolean getMultiline() {
+        return isMultiline;
+    }
+
+    public void setMultiline(Boolean multiline) {
+        isMultiline = multiline;
+    }
+
+    public Integer getMaxCharacters() {
+        return maxCharacters;
+    }
+
+    public void setMaxCharacters(Integer maxCharacters) {
+        this.maxCharacters = maxCharacters;
     }
 }

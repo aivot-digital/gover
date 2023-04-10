@@ -31,6 +31,43 @@ public class Condition {
         }
     }
 
+    public boolean evaluate(Map<String, Object> customerInput) {
+        Object valA = operandA instanceof ConditionOperandReference ? ((ConditionOperandReference) operandA).getId() : ((ConditionOperandValue) operandA).getValue();
+        Object valB = operandA instanceof ConditionOperandReference ? ((ConditionOperandReference) operandA).getId() : ((ConditionOperandValue) operandA).getValue();
+
+        if (valA == null || valB == null) {
+            return false;
+        }
+
+        if (valA instanceof String && valB instanceof String) {
+
+        } else if ((valA instanceof Integer && valB instanceof Integer) || (valA instanceof Double && valB instanceof Double)) {
+
+        }
+
+        return switch (operator) {
+            case Equals -> valA.equals(valB);
+            case NotEquals -> !valA.equals(valB);
+
+            case LessThan -> Double.valueOf(valA) <= valB;
+            case LessThanOrEqual -> valA valB;
+            case GreaterThan -> valA valB;
+            case GreaterThanOrEqual -> valA valB;
+
+            case Includes -> valA valB;
+            case NotIncludes -> valA valB;
+            case StartsWith -> valA valB;
+            case NotStartsWith -> valA valB;
+            case EndsWith -> valA valB;
+            case NotEndsWith -> valA valB;
+            case MatchesPattern -> valA valB;
+            case NotMatchesPattern -> valA valB;
+            case IncludesPattern -> valA valB;
+            case NotIncludesPattern -> valA valB;
+            default -> false;
+        };
+    }
+
     public ConditionOperator getOperator() {
         return operator;
     }

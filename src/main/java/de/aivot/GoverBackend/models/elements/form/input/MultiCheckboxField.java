@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
 import java.util.Collection;
@@ -18,27 +19,14 @@ public class MultiCheckboxField extends InputElement<Collection<String>> {
 
     public MultiCheckboxField(Map<String, Object> data) {
         super(data);
-
-        options = (Collection<String>) data.get("options");
-        minimumRequiredOptions = (Integer) data.get("minimumRequiredOptions");
     }
 
-    @Nullable
-    public Collection<String> getOptions() {
-        return options;
-    }
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
 
-    public void setOptions(Collection<String> options) {
-        this.options = options;
-    }
-
-    @Nullable
-    public Integer getMinimumRequiredOptions() {
-        return minimumRequiredOptions;
-    }
-
-    public void setMinimumRequiredOptions(Integer minimumRequiredOptions) {
-        this.minimumRequiredOptions = minimumRequiredOptions;
+        options = MapUtils.get(values, "options", Collection.class);
+        minimumRequiredOptions = MapUtils.getInteger(values, "minimumRequiredOptions");
     }
 
     @Override
@@ -92,7 +80,23 @@ public class MultiCheckboxField extends InputElement<Collection<String>> {
 
     private void testRequiredOptionsMet(Collection<String> values) throws ValidationException {
         if (minimumRequiredOptions != null && values.size() >= minimumRequiredOptions) {
-            throw new ValidationException(this, "Not enought options selected");
+            throw new ValidationException(this, "Not enough options selected");
         }
+    }
+
+    public Collection<String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Collection<String> options) {
+        this.options = options;
+    }
+
+    public Integer getMinimumRequiredOptions() {
+        return minimumRequiredOptions;
+    }
+
+    public void setMinimumRequiredOptions(Integer minimumRequiredOptions) {
+        this.minimumRequiredOptions = minimumRequiredOptions;
     }
 }

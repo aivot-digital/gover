@@ -1,10 +1,10 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
 import java.util.Collection;
@@ -18,26 +18,14 @@ public class SelectField extends InputElement<String> {
 
     public SelectField(Map<String, Object> data) {
         super(data);
-
-        placeholder = (String) data.get("placeholder");
-        options = (Collection<String>) data.get("options");
     }
 
-    public String getPlaceholder() {
-        return placeholder;
-    }
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
 
-    public void setPlaceholder(String placeholder) {
-        this.placeholder = placeholder;
-    }
-
-    @Nullable
-    public Collection<String> getOptions() {
-        return options;
-    }
-
-    public void setOptions(Collection<String> options) {
-        this.options = options;
+        placeholder = MapUtils.getString(values, "placeholder");
+        options = MapUtils.get(values, "options", Collection.class);
     }
 
     @Override
@@ -68,5 +56,21 @@ public class SelectField extends InputElement<String> {
         if (!valueFound) {
             throw new ValidationException(this, "Invalid option " + value);
         }
+    }
+
+    public String getPlaceholder() {
+        return placeholder;
+    }
+
+    public void setPlaceholder(String placeholder) {
+        this.placeholder = placeholder;
+    }
+
+    public Collection<String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Collection<String> options) {
+        this.options = options;
     }
 }

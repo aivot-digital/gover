@@ -1,10 +1,10 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.form.InputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
 import java.util.LinkedList;
@@ -18,42 +18,19 @@ public class NumberField extends InputElement<Double> {
 
     public NumberField(Map<String, Object> data) {
         super(data);
-
-        placeholder = (String) data.get("placeholder");
-        decimalPlaces = (Integer) data.get("decimalPlaces");
-        suffix = (String) data.get("suffix");
     }
 
-    @Nullable
-    public String getPlaceholder() {
-        return placeholder;
-    }
+    @Override
+    public void applyValues(Map<String, Object> values) {
+        super.applyValues(values);
 
-    public void setPlaceholder(String placeholder) {
-        this.placeholder = placeholder;
-    }
-
-    @Nullable
-    public Integer getDecimalPlaces() {
-        return decimalPlaces;
-    }
-
-    public void setDecimalPlaces(Integer decimalPlaces) {
-        this.decimalPlaces = decimalPlaces;
-    }
-
-    @Nullable
-    public String getSuffix() {
-        return suffix;
-    }
-
-    public void setSuffix(String suffix) {
-        this.suffix = suffix;
+        placeholder = MapUtils.getString(values, "placeholder");
+        decimalPlaces = MapUtils.getInteger(values, "decimalPlaces");
+        suffix = MapUtils.getString(values, "suffix");
     }
 
     @Override
     public void validate(Map<String, Object> customerInput, Double value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
-        // TODO
     }
 
     @Override
@@ -78,5 +55,29 @@ public class NumberField extends InputElement<Double> {
         ));
 
         return fields;
+    }
+
+    public String getPlaceholder() {
+        return placeholder;
+    }
+
+    public void setPlaceholder(String placeholder) {
+        this.placeholder = placeholder;
+    }
+
+    public Integer getDecimalPlaces() {
+        return decimalPlaces;
+    }
+
+    public void setDecimalPlaces(Integer decimalPlaces) {
+        this.decimalPlaces = decimalPlaces;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
     }
 }

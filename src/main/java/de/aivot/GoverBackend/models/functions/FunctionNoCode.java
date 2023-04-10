@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import javax.script.ScriptEngine;
 import java.util.Map;
 
-public class FunctionNoCode<T> extends Function<T> {
+public class FunctionNoCode extends Function<Boolean> {
     private ConditionSet conditionSet;
 
     public FunctionNoCode(Map<String, Object> data) {
@@ -18,9 +18,8 @@ public class FunctionNoCode<T> extends Function<T> {
     }
 
     @Override
-    public T evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
-        // TODO
-        return null;
+    public Boolean evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
+        return conditionSet.evaluate(customerInput);
     }
 
     public ConditionSet getConditionSet() {
