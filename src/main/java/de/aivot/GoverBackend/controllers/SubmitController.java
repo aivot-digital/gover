@@ -79,7 +79,7 @@ public class SubmitController {
     }
 
     @PostMapping("/api/public/submit/{applicationId}")
-    public String submit(@PathVariable Long applicationId, @RequestParam("inputs") String inputs, @RequestParam("files") MultipartFile[] files) {
+    public String submit(@PathVariable Long applicationId, @RequestParam(value = "inputs") String inputs, @RequestParam(value = "files", required = false) MultipartFile[] files) {
         Optional<Application> application = applicationRepository.findById(applicationId);
 
         Map<String, Object> customerData = new JSONObject(inputs).toMap();
