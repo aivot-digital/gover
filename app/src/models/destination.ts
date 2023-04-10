@@ -11,4 +11,7 @@ export interface Destination {
 
     apiAddress?: string;
     authorizationHeader?: string;
+
+    // TODO: This is MB not bytes!!!
+    maxAttachmentBytes?: number;
 }

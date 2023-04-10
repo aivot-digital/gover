@@ -32,6 +32,8 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useLogging} from "../../../hooks/use-logging";
 import {ElementNames} from "../../../data/element-type/element-names";
+import {DestinationsService} from "../../../services/destinations.service";
+import {Destination} from "../../../models/destination";
 
 export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
@@ -115,7 +117,35 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
             if (currentStep === (steps.length - 1)) {
                 if (application != null) {
                     setIsSubmitting(true);
-                    ApplicationService.submit(application, customerData)
+
+                    // TODO: Find better approach
+                    new Promise((resolve: (destinationId?: number) => void) => {
+                        if (application?.root.destination != null) {
+                            resolve(parseInt(application?.root.destination))
+                        } else {
+                            resolve();
+                        }
+                    })
+                        .then((destinationId?: number) => {
+                            if (destinationId != null) {
+                                return DestinationsService.retrieve(destinationId);
+                            } else {
+                                return;
+                            }
+                        })
+                        .then((destination?: Destination) => {
+                            if (destination != null) {
+
+                            } else {
+
+                            }
+                        })
+                        .catch(error => {
+
+                        })
+                        .then(() => {
+                            return ApplicationService.submit(application, customerData);
+                        })
                         .then(pdfLink => {
                             setValidatedWithErrors(false);
                             setPdfLink(pdfLink);

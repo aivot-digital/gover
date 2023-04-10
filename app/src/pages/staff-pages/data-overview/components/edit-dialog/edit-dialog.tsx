@@ -179,9 +179,10 @@ export function EditDialog<T>({
                                                 }}
                                                 onBlur={() => {
                                                     if (itemToEdit[field.field] != null) {
+                                                        const value = itemToEdit[field.field] as any;
                                                         setItemToEdit({
                                                             ...itemToEdit,
-                                                            [field.field]: (itemToEdit[field.field] as unknown as string).trim(),
+                                                            [field.field]: typeof value === 'string' ? value.trim() : value,
                                                         });
                                                     }
                                                 }}
