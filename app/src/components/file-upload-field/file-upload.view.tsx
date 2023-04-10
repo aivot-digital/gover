@@ -268,6 +268,9 @@ export function FileUploadView({
                     (
                         element.minFiles &&
                         element.minFiles > 0
+                    ) || (
+                        element.maxFiles &&
+                        element.maxFiles > 0
                     )
                 ) &&
                 <Box
@@ -285,8 +288,13 @@ export function FileUploadView({
                     </Typography>
 
                     {
-                        element.minFiles &&
-                        element.minFiles > 0 &&
+                        ((
+                            element.minFiles &&
+                            element.minFiles > 0
+                        ) || (
+                            element.maxFiles &&
+                            element.maxFiles > 0
+                        )) &&
                         <Typography
                             color={theme.palette.grey["600"]}
                             variant="caption"
@@ -294,7 +302,19 @@ export function FileUploadView({
                                 ml: 'auto',
                             }}
                         >
-                            Mindestens {humanizeNumber(element.minFiles)} {pluralize(element.minFiles, 'Anlage', 'Anlagen')}
+                            {
+                                element.minFiles == element.maxFiles ?
+                                    'Genau' :
+                                    (
+                                        element.minFiles != null && element.minFiles > 0 ?
+                                            'Mindestens' :
+                                            'Höchstens'
+                                    )
+                            } {
+                            humanizeNumber(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!)
+                        } {
+                            pluralize(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!, 'Anlage', 'Anlagen')
+                        }
                         </Typography>
                     }
                 </Box>
