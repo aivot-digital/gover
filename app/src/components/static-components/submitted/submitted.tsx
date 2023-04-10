@@ -29,6 +29,7 @@ import {useSelector} from 'react-redux';
 import {isNullOrEmpty} from '../../../utils/is-null-or-empty';
 import {ApplicationService} from '../../../services/application.service';
 import {selectLoadedApplication} from '../../../slices/app-slice';
+import {validateEmail} from "../../../utils/validate-email";
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -155,14 +156,20 @@ export function Submitted({pdfLink}: { pdfLink: string }) {
     const [email, setEmail] = useState('');
     const [privacy, setPrivacy] = useState(false);
     const [privacyError, setPrivacyError] = useState<string>();
+    const [mailInvalid, setMailInvalid] = useState(false);
     const [mailSent, setMailSent] = useState(false);
 
     const sendApplicationCopyMail = () => {
         if (application != null) {
             if (privacy) {
-                ApplicationService.sendApplicationCopy(application, pdfLink, email);
-                setMailSent(true);
-                setPrivacyError(undefined);
+                if (validateEmail(email)) {
+                    ApplicationService.sendApplicationCopy(application, pdfLink, email);
+                    setMailSent(true);
+                    setPrivacyError(undefined);
+                    setMailInvalid(false);
+                } else {
+                    setMailInvalid(true);
+                }
             } else {
                 setPrivacyError('Sie müssen Ihr Einverständnis zum Versandt der E-Mail geben.');
             }
@@ -259,6 +266,8 @@ export function Submitted({pdfLink}: { pdfLink: string }) {
                         value={email}
                         disabled={mailSent}
                         onChange={event => setEmail(event.target.value)}
+                        error={mailInvalid}
+                        helperText={mailInvalid ? 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' : undefined}
                     />
                     <FormControl error={privacyError != null}>
                         <FormControlLabel
