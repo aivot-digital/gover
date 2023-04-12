@@ -101,7 +101,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                 if (totalFileSize > maxFileSizeBytes) {
                     dispatch(addError({
                         key: SummaryAttachmentsTooLargeKey,
-                        error: maxFileSizeMb.toFixed(2),
+                        error: maxFileSizeMb.toFixed(0),
                     }));
                     isValid = false;
                 }

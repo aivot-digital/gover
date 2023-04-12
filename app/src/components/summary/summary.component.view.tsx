@@ -85,8 +85,7 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
                     sx={{mt: 4}}
                 >
                     <AlertTitle>Maximale Gesamtgröße der Anlagen überschritten</AlertTitle>
-                    Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das maximum von {summaryError} MB.
-                    Bitte laden Sie nur notwendige Anlagen hoch und komprimieren Sie diese ausreichend.
+                    Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das Maximum von {summaryError} MB.
                 </Alert>
             }
         </>
