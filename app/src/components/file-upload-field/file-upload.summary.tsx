@@ -4,6 +4,7 @@ import {
     FileUploadElement,
     FileUploadElementItem
 } from "../../models/elements/form-elements/input-elements/file-upload-element";
+import {humanizeFileSize} from "../../utils/humanize-file-size";
 
 export function FileUploadSummary({model, value}: BaseSummaryProps<FileUploadElement>) {
     const theme = useTheme();
@@ -49,7 +50,7 @@ export function FileUploadSummary({model, value}: BaseSummaryProps<FileUploadEle
                     variant="body2"
                 >
                     {
-                        value != null && value.length > 0 ? (value as FileUploadElementItem[]).map(item => item.name).join(', ') : 'Keine Anlagen hinzugefügt'
+                        value != null && value.length > 0 ? (value as FileUploadElementItem[]).map(item => `${item.name} (${humanizeFileSize(item.size)})`).join(', ') : 'Keine Anlagen hinzugefügt'
                     }
                 </Typography>
             </Grid>

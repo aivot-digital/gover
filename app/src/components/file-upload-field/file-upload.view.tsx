@@ -233,7 +233,7 @@ export function FileUploadView({
                                 color: fileMaximumReached ? theme.palette.grey["500"] : undefined,
                             }}
                         >
-                            Datei mit Drag & Drop hier reinziehen
+                            Datei per Drag & Drop auf dieses Feld hochladen
                         </Typography>
 
                         <Button

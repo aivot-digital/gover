@@ -34,6 +34,7 @@ public class Destination {
     private String apiAddress;
     private String authorizationHeader;
 
+    private Integer maxAttachmentMegaBytes;
 
     public Long getId() {
         return id;
@@ -113,5 +114,13 @@ public class Destination {
 
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
+    }
+
+    public Integer getMaxAttachmentMegaBytes() {
+        return maxAttachmentMegaBytes;
+    }
+
+    public void setMaxAttachmentMegaBytes(Integer maxAttachmentMegaBytes) {
+        this.maxAttachmentMegaBytes = maxAttachmentMegaBytes;
     }
 }
