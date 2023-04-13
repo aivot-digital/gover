@@ -26,7 +26,6 @@ public class Destination {
     private LocalDateTime created;
     @UpdateTimestamp
     private LocalDateTime updated;
-    private Integer maxAttachmentBytes;
 
     private String mailTo;
     private String mailCC;
@@ -35,6 +34,7 @@ public class Destination {
     private String apiAddress;
     private String authorizationHeader;
 
+    private Integer maxAttachmentMegaBytes;
 
     //region Getters & Setters
 
@@ -118,12 +118,12 @@ public class Destination {
         this.updated = updated;
     }
 
-    public Integer getMaxAttachmentBytes() {
-        return maxAttachmentBytes;
+    public Integer getMaxAttachmentMegaBytes() {
+        return maxAttachmentMegaBytes;
     }
 
-    public void setMaxAttachmentBytes(Integer maxAttachmentBytes) {
-        this.maxAttachmentBytes = maxAttachmentBytes;
+    public void setMaxAttachmentMegaBytes(Integer maxAttachmentMegaBytes) {
+        this.maxAttachmentMegaBytes = maxAttachmentMegaBytes;
     }
 
     //endregion

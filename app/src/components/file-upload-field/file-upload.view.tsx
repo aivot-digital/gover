@@ -36,6 +36,7 @@ export function FileUploadView({
     const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isFocused, setIsFocused] = useState(false);
+    const [isDraggedOver, setIsDraggedOver] = useState(false);
     const isBreakpointMdAndDown = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +63,7 @@ export function FileUploadView({
 
     const handleDrop: React.DragEventHandler<HTMLDivElement> = (event) => {
         handleAdd(event.dataTransfer.files);
+        setIsDraggedOver(false);
     };
 
     const handleAdd = (files: FileList) => {
@@ -179,7 +181,10 @@ export function FileUploadView({
                     '&:hover': {
                         backgroundColor: theme.palette.grey["50"],
                     },
+                    boxShadow: isDraggedOver ? `0 0 0.5em ${theme.palette.primary.main}` : undefined,
                 }}
+                onDragOver={() => setIsDraggedOver(true)}
+                onDragLeave={() => setIsDraggedOver(false)}
                 onDrop={handleDrop}
             >
                 <Box
@@ -228,7 +233,7 @@ export function FileUploadView({
                                 color: fileMaximumReached ? theme.palette.grey["500"] : undefined,
                             }}
                         >
-                            Datei mit Drag & Drop hier reinziehen
+                            Datei per Drag & Drop auf dieses Feld hochladen
                         </Typography>
 
                         <Button
@@ -263,6 +268,9 @@ export function FileUploadView({
                     (
                         element.minFiles &&
                         element.minFiles > 0
+                    ) || (
+                        element.maxFiles &&
+                        element.maxFiles > 0
                     )
                 ) &&
                 <Box
@@ -280,8 +288,13 @@ export function FileUploadView({
                     </Typography>
 
                     {
-                        element.minFiles &&
-                        element.minFiles > 0 &&
+                        ((
+                            element.minFiles &&
+                            element.minFiles > 0
+                        ) || (
+                            element.maxFiles &&
+                            element.maxFiles > 0
+                        )) &&
                         <Typography
                             color={theme.palette.grey["600"]}
                             variant="caption"
@@ -289,7 +302,19 @@ export function FileUploadView({
                                 ml: 'auto',
                             }}
                         >
-                            Mindestens {humanizeNumber(element.minFiles)} {pluralize(element.minFiles, 'Anlage', 'Anlagen')}
+                            {
+                                element.minFiles == element.maxFiles ?
+                                    'Genau' :
+                                    (
+                                        element.minFiles != null && element.minFiles > 0 ?
+                                            'Mindestens' :
+                                            'Höchstens'
+                                    )
+                            } {
+                            humanizeNumber(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!)
+                        } {
+                            pluralize(element.minFiles != null && element.minFiles > 0 ? element.minFiles : element.maxFiles!, 'Anlage', 'Anlagen')
+                        }
                         </Typography>
                     }
                 </Box>

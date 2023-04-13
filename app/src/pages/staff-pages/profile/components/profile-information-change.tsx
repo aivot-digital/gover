@@ -8,6 +8,7 @@ import strings from './profile-information-change-strings.json';
 import {Localization} from '../../../../locale/localization';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {validateEmail} from "../../../../utils/validate-email";
 
 const __ = Localization(strings);
 
@@ -30,10 +31,7 @@ export function ProfileInformationChange() {
                 return false;
             }
 
-            if (!editedUser.email.toLowerCase()
-                .match(
-                    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-                )) {
+            if (!validateEmail(editedUser.email)) {
                 setEmailError(__.emailErrorInvalid);
                 return false;
             }

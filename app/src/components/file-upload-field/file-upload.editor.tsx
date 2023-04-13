@@ -34,6 +34,8 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             checked={props.component.isMultifile ?? false}
                             onChange={event => props.onPatch({
                                 isMultifile: event.target.checked,
+                                minFiles: undefined,
+                                maxFiles: undefined,
                             })}
                         />
                     }
