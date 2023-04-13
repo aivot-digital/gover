@@ -75,7 +75,7 @@ public class ApplicationController {
         Optional<Application> application = applicationRepository.findById(applicationId);
 
         if (application.isPresent()) {
-            Integer destinationId = (Integer) application.get().getRoot().get("destination");
+            Integer destinationId = application.get().getRoot().getDestination();
             if (destinationId != null) {
                 Optional<Destination> destination = destinationRepository.findById(Long.valueOf(destinationId));
                 if (destination.isPresent()) {

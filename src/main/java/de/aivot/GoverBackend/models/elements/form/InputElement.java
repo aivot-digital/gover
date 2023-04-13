@@ -1,9 +1,7 @@
 package de.aivot.GoverBackend.models.elements.form;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.functions.Function;
-import de.aivot.GoverBackend.models.functions.FunctionCode;
-import de.aivot.GoverBackend.models.functions.FunctionNoCode;
+import de.aivot.GoverBackend.models.functions.*;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -20,10 +18,10 @@ public abstract class InputElement<T> extends FormElement {
     private String hint;
     private Boolean required;
     private Boolean disabled;
-    private Function<String> isValid;
-    private Function<Boolean> isDisabled;
-    private Function<Boolean> isRequired;
-    private FunctionCode<T> computeValue;
+    private Function validate;
+    private Function isDisabled;
+    private Function isRequired;
+    private FunctionCode computeValue;
 
     protected InputElement(Map<String, Object> data) {
         super(data);
@@ -38,19 +36,19 @@ public abstract class InputElement<T> extends FormElement {
         required = MapUtils.getBoolean(values, "required");
         disabled = MapUtils.getBoolean(values, "disabled");
 
-        isValid = MapUtils.getApply(values, "isValid", Map.class, d -> {
+        validate = MapUtils.getApply(values, "validate", Map.class, d -> {
             boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
-            return mainFunctionExists ? new FunctionCode<String>(d) : new FunctionNoCode<String>(d);
+            return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
         });
 
         isDisabled = MapUtils.getApply(values, "isDisabled", Map.class, d -> {
             boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
-            return mainFunctionExists ? new FunctionCode<Boolean>(d) : new FunctionNoCode<Boolean>(d);
+            return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
         });
 
         isRequired = MapUtils.getApply(values, "isRequired", Map.class, d -> {
             boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
-            return mainFunctionExists ? new FunctionCode<Boolean>(d) : new FunctionNoCode<Boolean>(d);
+            return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
         });
 
         computeValue = MapUtils.getApply(values, "computeValue", Map.class, FunctionCode::new);
@@ -60,8 +58,16 @@ public abstract class InputElement<T> extends FormElement {
         if (computeValue == null) {
             return Optional.empty();
         }
-        T computedValue = computeValue.evaluate(this, customerData, getResolvedId(idPrefix), scriptEngine);
-        return computedValue != null ? Optional.of(computedValue) : Optional.empty();
+        FunctionResult computedValueResult = computeValue.evaluate(this, customerData, getResolvedId(idPrefix), scriptEngine);
+        if (computedValueResult != null) {
+            try {
+                return Optional.of((T) computedValueResult.getObjectValue());
+            } catch (ClassCastException e) {
+                return Optional.empty();
+            }
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -99,10 +105,11 @@ public abstract class InputElement<T> extends FormElement {
 
             validate(customerInput, value, idPrefix, scriptEngine);
 
-            if (isValid != null) {
-                String funcResult = isValid.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
-                if (funcResult != null) {
-                    throw new ValidationException(this, "Validation function failed with: " + funcResult);
+            if (validate != null) {
+                FunctionResult funcResult = validate.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
+                Boolean isInvalid = funcResult.getBooleanValue();
+                if (isInvalid) {
+                    throw new ValidationException(this, "Validation function failed with: " + funcResult.getStringValue());
                 }
             }
         }
@@ -161,35 +168,35 @@ public abstract class InputElement<T> extends FormElement {
         this.disabled = disabled;
     }
 
-    public Function<String> getIsValid() {
-        return isValid;
+    public Function getValidate() {
+        return validate;
     }
 
-    public void setIsValid(Function<String> isValid) {
-        this.isValid = isValid;
+    public void setValidate(Function validate) {
+        this.validate = validate;
     }
 
-    public Function<Boolean> getIsDisabled() {
+    public Function getIsDisabled() {
         return isDisabled;
     }
 
-    public void setIsDisabled(Function<Boolean> isDisabled) {
+    public void setIsDisabled(Function isDisabled) {
         this.isDisabled = isDisabled;
     }
 
-    public Function<Boolean> getIsRequired() {
+    public Function getIsRequired() {
         return isRequired;
     }
 
-    public void setIsRequired(Function<Boolean> isRequired) {
+    public void setIsRequired(Function isRequired) {
         this.isRequired = isRequired;
     }
 
-    public FunctionCode<T> getComputeValue() {
+    public FunctionCode getComputeValue() {
         return computeValue;
     }
 
-    public void setComputeValue(FunctionCode<T> computeValue) {
+    public void setComputeValue(FunctionCode computeValue) {
         this.computeValue = computeValue;
     }
     //endregion

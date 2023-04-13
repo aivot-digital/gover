@@ -45,7 +45,15 @@ public class SubmitController {
     private final BlobService blobService;
 
     @Autowired
-    public SubmitController(ApplicationRepository applicationRepository, DestinationRepository destinationRepository, DepartmentRepository departmentRepository, PdfService pdfService, DestinationSubmitService destinationSubmitService, CustomerMailService customerMailService, SystemMailService systemMailService, BlobService blobService) {
+    public SubmitController(
+            ApplicationRepository applicationRepository,
+            DestinationRepository destinationRepository,
+            DepartmentRepository departmentRepository,
+            PdfService pdfService,
+            DestinationSubmitService destinationSubmitService,
+            CustomerMailService customerMailService,
+            SystemMailService systemMailService,
+            BlobService blobService) {
         this.applicationRepository = applicationRepository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
@@ -91,7 +99,7 @@ public class SubmitController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field " + ex.getElement().getId() + ": " + ex.getMessage());
             }
 
-            Integer destinationId = (Integer) application.getRoot().get("destination");
+            Integer destinationId = application.getRoot().getDestination();
             Optional<Destination> destination = Optional.empty();
             if (destinationId != null) {
                 destination = destinationRepository.findById(Long.valueOf(destinationId));
@@ -108,13 +116,7 @@ public class SubmitController {
                 }
             }
 
-            ApplicationDto applicationDto;
-            try {
-                applicationDto = new ApplicationDto(application.get(), customerData, scriptService);
-            } catch (ScriptRequiredException | ScriptException | JsonProcessingException e) {
-                systemMailService.sendExceptionMail(e);
-                throw new RuntimeException(e);
-            }
+            ApplicationPdfDto applicationDto = new ApplicationPdfDto(application, customerData, scriptEngine);
 
             String pdfUuid;
             try {
@@ -126,7 +128,7 @@ public class SubmitController {
 
             if (destination.isPresent()) {
                 try {
-                    destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files != null ? files : new MultipartFile[]{});
+                    destinationSubmitService.handleSubmit(destination.get(), application, customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files != null ? files : new MultipartFile[]{});
                 } catch (IOException | InterruptedException | MessagingException e) {
                     systemMailService.sendExceptionMail(e);
                     throw new RuntimeException(e);

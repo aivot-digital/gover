@@ -50,17 +50,18 @@ class InputElementTest extends AbstractElementTest<InputElement<Object>> {
 
     @Override
     protected InputElement<Object> newItem(Map<String, Object> json) {
-        return new InputElement<>(json) {
-            @Override
-            public boolean isValid(Object value, String idPrefix) {
-                return false;
-            }
-
-            @Override
-            public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Object value, String idPrefix, ScriptEngine scriptEngine) {
-                return null;
-            }
-        };
+        //return new InputElement<>(json) {
+        //    @Override
+        //    public boolean isValid(Object value, String idPrefix) {
+        //        return false;
+        //    }
+//
+        //    @Override
+        //    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Object value, String idPrefix, ScriptEngine scriptEngine) {
+        //        return null;
+        //    }
+        //};
+        return null;
     }
 
     @Override
@@ -70,7 +71,7 @@ class InputElementTest extends AbstractElementTest<InputElement<Object>> {
         assertEquals(true, item.getRequired());
         assertEquals(false, item.getDisabled());
 
-        assertNotNull(item.getIsValid());
+        assertNotNull(item.getValidate());
         assertNotNull(item.getIsDisabled());
         assertNotNull(item.getIsRequired());
         assertNotNull(item.getComputeValue());
@@ -85,7 +86,7 @@ class InputElementTest extends AbstractElementTest<InputElement<Object>> {
         assertNull(item.getRequired());
         assertNull(item.getDisabled());
 
-        assertNull(item.getIsValid());
+        assertNull(item.getValidate());
         assertNull(item.getIsDisabled());
         assertNull(item.getIsRequired());
         assertNull(item.getComputeValue());

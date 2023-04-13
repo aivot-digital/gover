@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.models.TestProtocolSet;
 import de.aivot.GoverBackend.models.functions.Function;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
 import de.aivot.GoverBackend.models.functions.FunctionNoCode;
+import de.aivot.GoverBackend.models.functions.FunctionResult;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
@@ -21,8 +22,8 @@ public abstract class BaseElement {
 
     private TestProtocolSet testProtocolSet;
 
-    private Function<Boolean> isVisible;
-    private FunctionCode<Map<String, Object>> patchElement;
+    private Function isVisible;
+    private FunctionCode patchElement;
 
     public BaseElement(Map<String, Object> values) {
         type = MapUtils.getEnum(values, "type", Integer.class, ElementType.values(), ElementType.Group);
@@ -33,7 +34,7 @@ public abstract class BaseElement {
 
         isVisible = MapUtils.getApply(values, "isVisible", Map.class, d -> {
             boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
-            return mainFunctionExists ? new FunctionCode<Boolean>(d) : new FunctionNoCode<Boolean>(d);
+            return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
         });
         patchElement = MapUtils.getApply(values, "patchElement", Map.class, FunctionCode::new);
 
@@ -50,16 +51,16 @@ public abstract class BaseElement {
             return true;
         }
 
-        Boolean isVisibleResult = isVisible.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
-        return Boolean.TRUE.equals(isVisibleResult);
+        FunctionResult isVisibleResult = isVisible.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
+        return isVisibleResult.getBooleanValue();
     }
 
     public void patch(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         if (patchElement == null) {
             return;
         }
-        Map<String, Object> patchElementResult = patchElement.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
-        applyValues(patchElementResult);
+        FunctionResult patchElementResult = patchElement.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
+        applyValues(patchElementResult.getJsonValue());
     }
 
     public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
@@ -104,19 +105,19 @@ public abstract class BaseElement {
         this.testProtocolSet = testProtocolSet;
     }
 
-    public Function<Boolean> getIsVisible() {
+    public Function getIsVisible() {
         return isVisible;
     }
 
-    public void setIsVisible(Function<Boolean> isVisible) {
+    public void setIsVisible(Function isVisible) {
         this.isVisible = isVisible;
     }
 
-    public FunctionCode<Map<String, Object>> getPatchElement() {
+    public FunctionCode getPatchElement() {
         return patchElement;
     }
 
-    public void setPatchElement(FunctionCode<Map<String, Object>> patchElement) {
+    public void setPatchElement(FunctionCode patchElement) {
         this.patchElement = patchElement;
     }
 

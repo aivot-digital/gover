@@ -6,14 +6,14 @@ import de.aivot.GoverBackend.utils.MapUtils;
 import javax.script.ScriptEngine;
 import java.util.Map;
 
-public abstract class Function<T> {
+public abstract class Function {
     private String requirements;
 
     protected Function(Map<String, Object> data) {
         requirements = MapUtils.getString(data, "requirements");
     }
 
-    public abstract T evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine);
+    public abstract FunctionResult evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine);
 
     public String getRequirements() {
         return requirements;

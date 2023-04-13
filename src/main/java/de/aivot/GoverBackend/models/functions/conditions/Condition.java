@@ -1,16 +1,19 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
 import de.aivot.GoverBackend.enums.ConditionOperator;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Map;
+import java.util.regex.PatternSyntaxException;
 
 public class Condition {
     private ConditionOperator operator;
     private ConditionOperand operandA;
     private ConditionOperand operandB;
+    private String conditionUnmetMessage;
 
     public Condition(Map<String, Object> data) {
-        operator = ConditionOperator.findElement(data.get("operator")).orElse(null);
+        operator = MapUtils.getEnum(data, "operator", Integer.class, ConditionOperator.values());
 
         if (data.get("operandA") != null) {
             Map<String, Object> operandAData = (Map<String, Object>) data.get("operandA");
@@ -29,43 +32,102 @@ public class Condition {
                 operandB = new ConditionOperandReference(operandBData);
             }
         }
+
+        conditionUnmetMessage = MapUtils.getString(data, "conditionUnmetMessage");
     }
 
-    public boolean evaluate(Map<String, Object> customerInput) {
-        Object valA = operandA instanceof ConditionOperandReference ? ((ConditionOperandReference) operandA).getId() : ((ConditionOperandValue) operandA).getValue();
-        Object valB = operandA instanceof ConditionOperandReference ? ((ConditionOperandReference) operandA).getId() : ((ConditionOperandValue) operandA).getValue();
-
-        if (valA == null || valB == null) {
-            return false;
+    public String evaluate(Map<String, Object> customerInput) {
+        Object rawValA;
+        if (operandA instanceof ConditionOperandReference op) {
+            rawValA = customerInput.get(op.getId());
+        } else {
+            rawValA = ((ConditionOperandValue) operandA).getValue();
         }
 
-        if (valA instanceof String && valB instanceof String) {
-
-        } else if ((valA instanceof Integer && valB instanceof Integer) || (valA instanceof Double && valB instanceof Double)) {
-
+        Object rawValB;
+        if (operandB instanceof ConditionOperandReference op) {
+            rawValB = customerInput.get(op.getId());
+        } else {
+            rawValB = ((ConditionOperandValue) operandB).getValue();
         }
 
-        return switch (operator) {
-            case Equals -> valA.equals(valB);
-            case NotEquals -> !valA.equals(valB);
+        if (rawValA == null || rawValB == null) {
+            return conditionUnmetMessage;
+        }
 
-            case LessThan -> Double.valueOf(valA) <= valB;
-            case LessThanOrEqual -> valA valB;
-            case GreaterThan -> valA valB;
-            case GreaterThanOrEqual -> valA valB;
+        boolean conditionMet = false;
 
-            case Includes -> valA valB;
-            case NotIncludes -> valA valB;
-            case StartsWith -> valA valB;
-            case NotStartsWith -> valA valB;
-            case EndsWith -> valA valB;
-            case NotEndsWith -> valA valB;
-            case MatchesPattern -> valA valB;
-            case NotMatchesPattern -> valA valB;
-            case IncludesPattern -> valA valB;
-            case NotIncludesPattern -> valA valB;
-            default -> false;
-        };
+        if (rawValA instanceof String valA && rawValB instanceof String valB) {
+            conditionMet = switch (operator) {
+                case Equals -> valA.equals(valB);
+                case NotEquals -> !valA.equals(valB);
+
+                case Includes -> valA.contains(valB);
+                case NotIncludes -> !valA.contains(valB);
+
+                case StartsWith -> valA.startsWith(valB);
+                case NotStartsWith -> !valA.startsWith(valB);
+                case EndsWith -> valA.endsWith(valB);
+                case NotEndsWith -> !valA.endsWith(valB);
+
+                case MatchesPattern -> {
+                    try {
+                        yield valA.matches("^" + valB + "$");
+                    } catch (PatternSyntaxException ex) {
+                        yield false;
+                    }
+                }
+                case NotMatchesPattern -> {
+                    try {
+                        yield !valA.matches("^" + valB + "$");
+                    } catch (PatternSyntaxException ex) {
+                        yield false;
+                    }
+                }
+                case IncludesPattern -> {
+                    try {
+                        yield valA.matches(valB);
+                    } catch (PatternSyntaxException ex) {
+                        yield false;
+                    }
+                }
+                case NotIncludesPattern -> {
+                    try {
+                        yield !valA.matches(valB);
+                    } catch (PatternSyntaxException ex) {
+                        yield false;
+                    }
+                }
+
+                default -> false;
+            };
+        } else if (rawValA instanceof Integer valA && rawValB instanceof Integer valB) {
+            conditionMet = switch (operator) {
+                case Equals -> valA.equals(valB);
+                case NotEquals -> !valA.equals(valB);
+
+                case LessThan -> valA < valB;
+                case LessThanOrEqual -> valA <= valB;
+                case GreaterThan -> valA > valB;
+                case GreaterThanOrEqual -> valA >= valB;
+
+                default -> false;
+            };
+        } else if (rawValA instanceof Double valA && rawValB instanceof Double valB) {
+            conditionMet = switch (operator) {
+                case Equals -> valA.equals(valB);
+                case NotEquals -> !valA.equals(valB);
+
+                case LessThan -> valA < valB;
+                case LessThanOrEqual -> valA <= valB;
+                case GreaterThan -> valA > valB;
+                case GreaterThanOrEqual -> valA >= valB;
+
+                default -> false;
+            };
+        }
+
+        return conditionMet ? null : conditionUnmetMessage;
     }
 
     public ConditionOperator getOperator() {
@@ -90,5 +152,13 @@ public class Condition {
 
     public void setOperandB(ConditionOperand operandB) {
         this.operandB = operandB;
+    }
+
+    public String getConditionUnmetMessage() {
+        return conditionUnmetMessage;
+    }
+
+    public void setConditionUnmetMessage(String conditionUnmetMessage) {
+        this.conditionUnmetMessage = conditionUnmetMessage;
     }
 }

@@ -11,7 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class FunctionCode<T> extends Function<T> {
+public class FunctionCode extends Function {
     private Map<String, String> functions;
     private String mainFunction;
 
@@ -22,7 +22,7 @@ public class FunctionCode<T> extends Function<T> {
                     
                     %s
                     
-                    %s($data, $element, %s);
+                    return %s($data, $element, '%s');
                 })();
     """;
 
@@ -33,7 +33,22 @@ public class FunctionCode<T> extends Function<T> {
     }
 
     @Override
-    public T evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
+    public FunctionResult evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
+        var jsCode = buildJsCode(element, customerInput, id);
+
+        try {
+            Object returnValue = scriptEngine.eval(jsCode);
+            if (returnValue != null) {
+                return new FunctionResult(returnValue);
+            } else {
+                return null;
+            }
+        } catch (ScriptException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String buildJsCode(BaseElement element, Map<String, Object> customerInput, String id) {
         var mapper = new ObjectMapper();
         String customerData;
         try {
@@ -54,18 +69,13 @@ public class FunctionCode<T> extends Function<T> {
             fns.add(String.format("function %s%s", fnName, functions.get(fnName)));
         }
 
-        var jsCode = String.format(
+        return String.format(
                 jsCodeTemplate,
                 customerData,
                 elementData,
                 String.join("\n\n", fns),
                 mainFunction != null ? mainFunction : "main",
                 id);
-        try {
-            return (T) scriptEngine.eval(jsCode);
-        } catch (ScriptException | ClassCastException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     //region Getters & Setters
