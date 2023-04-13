@@ -97,6 +97,23 @@ public class SubmitController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationError);
             }
 
+            Integer destinationId = (Integer) application.get().getRoot().get("destination");
+            Optional<Destination> destination = Optional.empty();
+            if (destinationId != null) {
+                destination = destinationRepository.findById(Long.valueOf(destinationId));
+            }
+
+            if (destination.isPresent() && destination.get().getMaxAttachmentMegaBytes() != null) {
+                long filesTotalBytes = 0;
+                for (MultipartFile file : files) {
+                    filesTotalBytes += file.getSize();
+                }
+                long allowedTotalBytes = destination.get().getMaxAttachmentMegaBytes() * 1000 * 1000;
+                if (filesTotalBytes > allowedTotalBytes) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Exceeded max allowed file size of destination");
+                }
+            }
+
             ApplicationDto applicationDto;
             try {
                 applicationDto = new ApplicationDto(application.get(), customerData, scriptService);
@@ -113,16 +130,12 @@ public class SubmitController {
                 throw new RuntimeException(e);
             }
 
-            Integer destinationId = (Integer) application.get().getRoot().get("destination");
-            if (destinationId != null) {
-                Optional<Destination> destination = destinationRepository.findById(Long.valueOf(destinationId));
-                if (destination.isPresent()) {
-                    try {
-                        destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files != null ? files : new MultipartFile[]{});
-                    } catch (IOException | InterruptedException | MessagingException e) {
-                        systemMailService.sendExceptionMail(e);
-                        throw new RuntimeException(e);
-                    }
+            if (destination.isPresent()) {
+                try {
+                    destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files != null ? files : new MultipartFile[]{});
+                } catch (IOException | InterruptedException | MessagingException e) {
+                    systemMailService.sendExceptionMail(e);
+                    throw new RuntimeException(e);
                 }
             }
 

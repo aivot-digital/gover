@@ -4,6 +4,9 @@ import {
     FileUploadElementItem
 } from "../../models/elements/form-elements/input-elements/file-upload-element";
 
+const maxSizeInMegaBytes = 10;
+const maxSizeInBytes = maxSizeInMegaBytes * 1000 * 1000 // 10 MB
+
 export class FileUploadValidator extends BaseInputElementValidator<FileUploadElementItem[], FileUploadElement> {
     protected checkEmpty(comp: FileUploadElement, value: FileUploadElementItem[]): boolean {
         return value.length === 0;
@@ -29,6 +32,12 @@ export class FileUploadValidator extends BaseInputElementValidator<FileUploadEle
                     if (extension == null || !(comp.extensions.includes(extension))) {
                         return `Die Anlage ${val.name} hat eine nicht zugelassene Dateiendung.`;
                     }
+                }
+            }
+
+            for (const val of value) {
+                if (val.size > maxSizeInBytes) {
+                    return `Die Anlage ${val.name} überschreitet die maximale Dateigröße pro Datei von ${maxSizeInMegaBytes} MB`;
                 }
             }
         }
