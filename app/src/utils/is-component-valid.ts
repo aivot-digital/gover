@@ -4,10 +4,10 @@ import {BaseValidator} from '../validators/base-validator';
 import {ValidatorMap} from '../components/validator.map';
 import {addError} from '../slices/customer-input-errors-slice';
 import {ElementType} from '../data/element-type/element-type';
-import {AnyInputElement} from '../models/elements/form-elements/input-elements/any-input-element';
+import {AnyInputElement} from '../models/elements/./form/./input/any-input-element';
 import {AnyElement} from '../models/elements/any-element';
-import {isLayoutElement} from '../models/elements/form-elements/layout-elements/base-layout-element';
-import {isInputElement} from '../models/elements/form-elements/input-elements/base-input-element';
+import {isLayoutElement} from '../models/elements/./form/./layout/base-layout-element';
+import {isInputElement} from '../models/elements/./form/./input/base-input-element';
 import {Logger} from "../hooks/use-logging";
 import {generateComponentPatch} from "./generate-component-patch";
 

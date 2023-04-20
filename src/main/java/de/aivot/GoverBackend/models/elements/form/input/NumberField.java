@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.InputElement;
+import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -11,7 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class NumberField extends InputElement<Double> {
+public class NumberField extends BaseInputElement<Double> {
     private String placeholder;
     private Integer decimalPlaces;
     private String suffix;

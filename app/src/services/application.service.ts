@@ -8,7 +8,7 @@ import axios, {AxiosResponse} from 'axios';
 import {ApiConfig} from '../api-config';
 import {generateElementWithDefaultValues} from '../utils/generate-element-with-default-values';
 import {ApplicationStatus} from '../data/application-status/application-status';
-import {FileUploadElementItem} from "../models/elements/form-elements/input-elements/file-upload-element";
+import {FileUploadElementItem} from "../models/elements/./form/./input/file-upload-element";
 
 
 class _ApplicationService extends CrudService<Application, 'applications', number> {
@@ -88,6 +88,17 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
                 email,
                 pdfLink,
             }, {
+                ...CrudService.getConfig(),
+                timeout: 1000 * 60 * 2 // Set 2 Minutes Timeout
+            }
+        )
+            .then(response => response.data);
+    }
+
+    async getMaxFileSize(application: Application): Promise<number> {
+        return await axios.post(
+            ApiConfig.address + '/public/max-file-size/' + application.id,
+             {
                 ...CrudService.getConfig(),
                 timeout: 1000 * 60 * 2 // Set 2 Minutes Timeout
             }

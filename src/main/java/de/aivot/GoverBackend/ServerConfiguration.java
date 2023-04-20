@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend;
 
-import de.aivot.GoverBackend.models.*;
 import de.aivot.GoverBackend.models.entities.*;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;

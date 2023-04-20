@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Table, TableCell, TableContainer, TableHead, TableRow, Typography, TableBody, Grid} from '@mui/material';
-import {TableFieldElement} from '../../models/elements/form-elements/input-elements/table-field-element';
+import {TableFieldElement} from '../../models/elements/./form/./input/table-field-element';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 
 export function TableFieldComponentSummary({model, value}: BaseSummaryProps<TableFieldElement>) {

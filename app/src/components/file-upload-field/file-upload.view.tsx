@@ -20,7 +20,7 @@ import {BaseViewProps} from "../_lib/base-view-props";
 import {
     FileUploadElement,
     FileUploadElementItem
-} from "../../models/elements/form-elements/input-elements/file-upload-element";
+} from "../../models/elements/./form/./input/file-upload-element";
 import {humanizeFileSize} from "../../utils/humanize-file-size";
 import {humanizeNumber, pluralize} from "../../utils/humanize-number-size";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";

@@ -4,7 +4,7 @@ import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.enums.DateType;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.InputElement;
+import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class DateField extends InputElement<String> {
+public class DateField extends BaseInputElement<String> {
     private String placeholder;
     private DateType mode;
     private Boolean mustBePast;

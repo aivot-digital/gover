@@ -1,7 +1,7 @@
 import React from 'react';
-import {ContainerElement} from '../../models/elements/form-elements/layout-elements/container-element';
+import {GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
-export function ContainerComponentEditor(_: BaseEditorProps<ContainerElement>) {
+export function ContainerComponentEditor(_: BaseEditorProps<GroupLayout>) {
     return <></>;
 }

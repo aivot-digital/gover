@@ -1,6 +1,6 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.lib;
 
-import com.sun.istack.Nullable;
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Map;
 
@@ -9,17 +9,10 @@ public class TestProtocolSet {
     private TestProtocol professionalTest;
 
     public TestProtocolSet(Map<String, Object> data) {
-        if (data != null) {
-            if (data.containsKey("technicalTest")) {
-                technicalTest = new TestProtocol((Map<String, Object>) data.get("technicalTest"));
-            }
-            if (data.containsKey("professionalTest")) {
-                professionalTest = new TestProtocol((Map<String, Object>) data.get("professionalTest"));
-            }
-        }
+        technicalTest = MapUtils.getApply(data, "technicalTest", Map.class, TestProtocol::new);
+        professionalTest = MapUtils.getApply(data, "professionalTest", Map.class, TestProtocol::new);
     }
 
-    @Nullable
     public TestProtocol getTechnicalTest() {
         return technicalTest;
     }
@@ -28,7 +21,6 @@ public class TestProtocolSet {
         this.technicalTest = technicalTest;
     }
 
-    @Nullable
     public TestProtocol getProfessionalTest() {
         return professionalTest;
     }

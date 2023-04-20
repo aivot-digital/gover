@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.repositories;
 
 import de.aivot.GoverBackend.enums.SystemConfigKey;
-import de.aivot.GoverBackend.models.SystemConfig;
+import de.aivot.GoverBackend.models.entities.SystemConfig;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;

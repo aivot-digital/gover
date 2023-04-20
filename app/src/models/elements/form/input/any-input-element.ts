@@ -7,7 +7,7 @@ import {SelectFieldElement} from './select-field-element';
 import {TableFieldElement} from './table-field-element';
 import {TextFieldElement} from './text-field-element';
 import {TimeFieldElement} from './time-field-element';
-import {ReplicatingContainerElement} from '../layout-elements/replicating-container-element';
+import {ReplicatingContainerLayout} from '../layout/replicating-container-layout';
 import {FileUploadElement} from "./file-upload-element";
 
 export type AnyInputElement = (
@@ -22,5 +22,5 @@ export type AnyInputElement = (
     TimeFieldElement |
     FileUploadElement |
 
-    ReplicatingContainerElement
+    ReplicatingContainerLayout
     );

@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.utils;
 
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.models.elements.form.FormElement;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.models.elements.form.content.*;
 import de.aivot.GoverBackend.models.elements.form.input.*;
 import de.aivot.GoverBackend.models.elements.form.layout.GroupLayout;
@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.models.elements.form.layout.ReplicatingContainerLay
 import java.util.Map;
 
 public class ElementResolver {
-    public static FormElement resolve(Map<String, Object> elementData) {
+    public static BaseFormElement resolve(Map<String, Object> elementData) {
         Object typeObj = elementData.get("type");
 
         if (typeObj instanceof Integer) {

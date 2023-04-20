@@ -1,6 +1,6 @@
 import React from 'react';
 import {useSelector} from 'react-redux';
-import {SummaryStepElement} from '../../models/elements/step-elements/summary-step-element';
+import {SummaryStepElement} from '../../models/elements/./steps/summary-step-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 import {SummaryMap} from '../summary.map';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';

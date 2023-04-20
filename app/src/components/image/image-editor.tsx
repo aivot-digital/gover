@@ -1,6 +1,6 @@
 import {TextField} from '@mui/material';
 import {BaseEditorProps} from '../_lib/base-editor-props';
-import {ImageElement} from '../../models/elements/form-elements/content-elements/image-element';
+import {ImageElement} from '../../models/elements/./form/./content/image-element';
 
 export function ImageEditor(props: BaseEditorProps<ImageElement>) {
     return (

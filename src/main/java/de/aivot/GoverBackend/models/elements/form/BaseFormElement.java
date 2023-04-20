@@ -5,10 +5,10 @@ import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Map;
 
-public abstract class FormElement extends BaseElement {
+public abstract class BaseFormElement extends BaseElement {
     private Integer weight;
 
-    protected FormElement(Map<String, Object> data) {
+    protected BaseFormElement(Map<String, Object> data) {
         super(data);
     }
 

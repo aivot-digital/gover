@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
-import {NumberFieldElement} from '../../models/elements/form-elements/input-elements/number-field-element';
+import {NumberFieldElement} from '../../models/elements/./form/./input/number-field-element';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {isNullOrEmpty} from '../../utils/is-null-or-empty';
 

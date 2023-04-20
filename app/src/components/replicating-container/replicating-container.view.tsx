@@ -1,6 +1,6 @@
 import {
-    ReplicatingContainerElement
-} from '../../models/elements/form-elements/layout-elements/replicating-container-element';
+    ReplicatingContainerLayout
+} from '../../models/elements/form/layout/replicating-container-layout';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {Box, Button, FormHelperText, FormLabel, Grid, Typography} from '@mui/material';
 import {stringOrDefault} from '../../utils/string-or-default';
@@ -14,7 +14,7 @@ export function ReplicatingContainerView({
                                              setValue,
                                              element,
                                              value
-                                         }: BaseViewProps<ReplicatingContainerElement, string[]>) {
+                                         }: BaseViewProps<ReplicatingContainerLayout, string[]>) {
     useEffect(() => {
         if (element.minimumRequiredSets != null && element.minimumRequiredSets > 0 && (value == null || value.length < element.minimumRequiredSets)) {
             setValue(Array.from({length: element.minimumRequiredSets}, (_, i) => generateElementId(i.toString())));

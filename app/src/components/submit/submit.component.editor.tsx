@@ -1,6 +1,6 @@
 import React from 'react';
 import {BaseEditorProps} from '../_lib/base-editor-props';
-import {SubmitStepElement} from '../../models/elements/step-elements/submit-step-element';
+import {SubmitStepElement} from '../../models/elements/./steps/submit-step-element';
 import {TextField} from '@mui/material';
 import {isNullOrEmpty} from "../../utils/is-null-or-empty";
 

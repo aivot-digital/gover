@@ -7,7 +7,7 @@ export function isComponentVisible(id: string, model: AnyElement, userInput?: an
         try {
             return func(userInput ?? {}, model, id);
         } catch (err) {
-            console.error(`Failed to run visibility function ${model.visibility?.functionName} of ID ${id}`, model, err);
+            console.error(`Failed to run visibility function ${model.isVisible?.functionName} of ID ${id}`, model, err);
             return false;
         }
     }

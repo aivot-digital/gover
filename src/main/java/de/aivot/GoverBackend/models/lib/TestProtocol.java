@@ -1,4 +1,6 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.lib;
+
+import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Map;
 
@@ -7,10 +9,8 @@ public class TestProtocol {
     private String timestamp;
 
     public TestProtocol(Map<String, Object> data) {
-        if (data != null) {
-            userId = (Integer) data.get("userId");
-            timestamp = (String) data.get("timestamp");
-        }
+        userId = MapUtils.getInteger(data, "userId");
+        timestamp = MapUtils.getString(data, "timestamp");
     }
 
     public Integer getUserId() {

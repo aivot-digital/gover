@@ -1,8 +1,8 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Box, Chip, Grid, Typography} from '@mui/material';
 import {
-    ReplicatingContainerElement
-} from '../../models/elements/form-elements/layout-elements/replicating-container-element';
+    ReplicatingContainerLayout
+} from '../../models/elements/form/layout/replicating-container-layout';
 import {flattenElements} from '../summary/summary.component.view';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
@@ -12,7 +12,7 @@ import {AnyElement} from '../../models/elements/any-element';
 import {useSelector} from "react-redux";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 
-export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerElement>) {
+export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerLayout>) {
     const id = idPrefix != null ? (idPrefix + model.id) : model.id;
 
     const customerInput = useSelector(selectCustomerInput);

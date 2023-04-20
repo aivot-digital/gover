@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {TextFieldElement} from '../../models/elements/form-elements/input-elements/text-field-element';
+import {TextFieldElement} from '../../models/elements/./form/./input/text-field-element';
 
 export class TextFieldComponentValidator extends BaseInputElementValidator<string, TextFieldElement> {
     protected checkEmpty(comp: TextFieldElement, value: string): boolean {

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {BaseViewProps} from '../_lib/base-view-props';
-import {SubmitStepElement} from '../../models/elements/step-elements/submit-step-element';
+import {SubmitStepElement} from '../../models/elements/./steps/submit-step-element';
 import {Preamble} from '../static-components/preamble/preamble';
 import {
     Box,

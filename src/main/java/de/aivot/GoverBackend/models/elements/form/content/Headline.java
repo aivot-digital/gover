@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.models.elements.form.content;
 
-import de.aivot.GoverBackend.models.elements.form.FormElement;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -10,7 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class Headline extends FormElement {
+public class Headline extends BaseFormElement {
     public final static int HEADLINE_SIZE_DEFAULT = 2;
     public final static int HEADLINE_SIZE_SMALL = 2;
 

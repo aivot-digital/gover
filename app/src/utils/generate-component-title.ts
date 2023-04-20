@@ -1,17 +1,17 @@
 import {ElementType} from '../data/element-type/element-type';
 import {RootElement} from '../models/elements/root-element';
-import {StepElement} from '../models/elements/step-elements/step-element';
-import {HeadlineElement} from '../models/elements/form-elements/content-elements/headline-element';
+import {StepElement} from '../models/elements/./steps/step-element';
+import {HeadlineElement} from '../models/elements/./form/./content/headline-element';
 import {ElementNames} from '../data/element-type/element-names';
-import {AlertElement} from '../models/elements/form-elements/content-elements/alert-element';
-import {SpacerElement} from '../models/elements/form-elements/content-elements/spacer-element';
+import {AlertElement} from '../models/elements/./form/./content/alert-element';
+import {SpacerElement} from '../models/elements/./form/./content/spacer-element';
 import {stringOrDefault} from './string-or-default';
 import {
-    ReplicatingContainerElement
-} from '../models/elements/form-elements/layout-elements/replicating-container-element';
+    ReplicatingContainerLayout
+} from '../models/elements/form/layout/replicating-container-layout';
 import {isNullOrEmpty} from './is-null-or-empty';
 import {AnyElement} from '../models/elements/any-element';
-import {AnyInputElement} from '../models/elements/form-elements/input-elements/any-input-element';
+import {AnyInputElement} from '../models/elements/./form/./input/any-input-element';
 
 export function generateComponentTitle(component: AnyElement) {
     const elementName = ElementNames[component.type];
@@ -27,7 +27,7 @@ export function generateComponentTitle(component: AnyElement) {
         case ElementType.Headline:
             return stringOrDefault((component as HeadlineElement).content, elementName);
         case ElementType.ReplicatingContainer:
-            return stringOrDefault((component as ReplicatingContainerElement).label, elementName);
+            return stringOrDefault((component as ReplicatingContainerLayout).label, elementName);
         case ElementType.Richtext:
             return ElementNames[component.type];
         case ElementType.Image:

@@ -3,7 +3,7 @@ import {Grid, Typography, useTheme} from '@mui/material';
 import {
     FileUploadElement,
     FileUploadElementItem
-} from "../../models/elements/form-elements/input-elements/file-upload-element";
+} from "../../models/elements/./form/./input/file-upload-element";
 import {humanizeFileSize} from "../../utils/humanize-file-size";
 
 export function FileUploadSummary({model, value}: BaseSummaryProps<FileUploadElement>) {

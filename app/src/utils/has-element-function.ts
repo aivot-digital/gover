@@ -3,8 +3,8 @@ import {AnyElement} from '../models/elements/any-element';
 
 export function hasElementFunction(comp: AnyElement): boolean {
     return (
-        (comp.visibility != null && !isNullOrEmpty(comp.visibility.functionName)) ||
+        (comp.isVisible != null && !isNullOrEmpty(comp.isVisible.functionName)) ||
         (comp.validate != null && !isNullOrEmpty(comp.validate.functionName)) ||
-        (comp.patch != null && !isNullOrEmpty(comp.patch.functionName))
+        (comp.patchElement != null && !isNullOrEmpty(comp.patchElement.functionName))
     );
 }

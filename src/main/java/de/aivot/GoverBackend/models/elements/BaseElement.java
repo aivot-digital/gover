@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.models.elements;
 
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.TestProtocolSet;
+import de.aivot.GoverBackend.models.lib.TestProtocolSet;
 import de.aivot.GoverBackend.models.functions.Function;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
 import de.aivot.GoverBackend.models.functions.FunctionNoCode;

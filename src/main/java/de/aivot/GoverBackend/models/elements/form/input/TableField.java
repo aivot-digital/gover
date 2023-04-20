@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.models.elements.form.input;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.InputElement;
+import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.TablePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -14,7 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class TableField extends InputElement<List<Map<String, String>>> {
+public class TableField extends BaseInputElement<List<Map<String, String>>> {
     private Collection<TableFieldColumnDefinition> fields;
     private Integer maximumRows;
     private Integer minimumRequiredRows;

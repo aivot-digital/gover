@@ -1,5 +1,5 @@
 import {MenuItem, TextField} from '@mui/material';
-import {SelectFieldElement} from '../../models/elements/form-elements/input-elements/select-field-element';
+import {SelectFieldElement} from '../../models/elements/./form/./input/select-field-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 
 export function SelectFieldComponentView({element, error, value, setValue}: BaseViewProps<SelectFieldElement, string>) {

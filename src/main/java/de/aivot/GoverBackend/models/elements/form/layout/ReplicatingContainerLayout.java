@@ -2,8 +2,8 @@ package de.aivot.GoverBackend.models.elements.form.layout;
 
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.FormElement;
-import de.aivot.GoverBackend.models.elements.form.InputElement;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
+import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
@@ -15,13 +15,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class ReplicatingContainerLayout extends InputElement<Collection<String>> {
+public class ReplicatingContainerLayout extends BaseInputElement<Collection<String>> {
     private Integer minimumRequiredSets;
     private Integer maximumSets;
     private String headlineTemplate;
     private String addLabel;
     private String removeLabel;
-    private Collection<FormElement> children;
+    private Collection<BaseFormElement> children;
 
     public ReplicatingContainerLayout(Map<String, Object> data) {
         super(data);
@@ -129,11 +129,11 @@ public class ReplicatingContainerLayout extends InputElement<Collection<String>>
         this.removeLabel = removeLabel;
     }
 
-    public Collection<FormElement> getChildren() {
+    public Collection<BaseFormElement> getChildren() {
         return children;
     }
 
-    public void setChildren(Collection<FormElement> children) {
+    public void setChildren(Collection<BaseFormElement> children) {
         this.children = children;
     }
 

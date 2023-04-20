@@ -12,7 +12,7 @@ import {
     faUserCircle
 } from '@fortawesome/pro-light-svg-icons';
 import {StepIcon} from '../models/step-icon';
-import {AnyStepElement} from '../models/elements/step-elements/any-step-element';
+import {AnyStepElement} from '../models/elements/./steps/any-step-element';
 import {ElementType} from './element-type/element-type';
 
 export const StepIcons: StepIcon[] = [

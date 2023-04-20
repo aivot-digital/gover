@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.models.elements.steps;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.BaseElement;
-import de.aivot.GoverBackend.models.elements.form.FormElement;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
@@ -17,7 +17,7 @@ import java.util.Map;
 public class StepElement extends BaseElement {
     private String title;
     private String icon;
-    private Collection<FormElement> children;
+    private Collection<BaseFormElement> children;
 
     public StepElement(Map<String, Object> values) {
         super(values);
@@ -72,11 +72,11 @@ public class StepElement extends BaseElement {
         this.icon = icon;
     }
 
-    public Collection<FormElement> getChildren() {
+    public Collection<BaseFormElement> getChildren() {
         return children;
     }
 
-    public void setChildren(Collection<FormElement> children) {
+    public void setChildren(Collection<BaseFormElement> children) {
         this.children = children;
     }
 

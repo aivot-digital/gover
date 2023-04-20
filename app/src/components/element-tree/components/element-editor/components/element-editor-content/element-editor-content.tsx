@@ -13,7 +13,7 @@ import {selectLoadedApplication} from '../../../../../../slices/app-slice';
 import {useAppSelector} from '../../../../../../hooks/use-app-selector';
 import {AnyElement} from '../../../../../../models/elements/any-element';
 import {ElementEditorContentProps} from './element-editor-content-props';
-import {AnyFormElement} from '../../../../../../models/elements/form-elements/any-form-element';
+import {AnyFormElement} from '../../../../../../models/elements/./form/any-form-element';
 
 export function ElementEditorContent<T extends AnyElement>({
                                                                element,

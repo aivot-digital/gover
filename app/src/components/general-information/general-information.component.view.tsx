@@ -4,7 +4,7 @@ import {ElementType} from '../../data/element-type/element-type';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faFileArrowUp, faFileLines, faUser} from '@fortawesome/pro-light-svg-icons';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {IntroductionStepElement} from '../../models/elements/step-elements/introduction-step-element';
+import {IntroductionStepElement} from '../../models/elements/./steps/introduction-step-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 import {FadingPaper} from '../static-components/fading-paper/fading-paper';
 import {Preamble} from '../static-components/preamble/preamble';

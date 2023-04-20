@@ -1,5 +1,5 @@
 import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
-import {TableFieldElement} from '../../models/elements/form-elements/input-elements/table-field-element';
+import {TableFieldElement} from '../../models/elements/./form/./input/table-field-element';
 import {DataGrid, GridColumns, GridRenderCellParams, GridSelectionModel} from '@mui/x-data-grid';
 import {useCallback, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';

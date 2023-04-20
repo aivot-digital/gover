@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.models.elements.form;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.models.functions.*;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class InputElement<T> extends FormElement {
+public abstract class BaseInputElement<T> extends BaseFormElement {
     private String label;
     private String hint;
     private Boolean required;
@@ -23,7 +24,7 @@ public abstract class InputElement<T> extends FormElement {
     private Function isRequired;
     private FunctionCode computeValue;
 
-    protected InputElement(Map<String, Object> data) {
+    protected BaseInputElement(Map<String, Object> data) {
         super(data);
     }
 

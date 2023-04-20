@@ -4,9 +4,9 @@ import {faArrowLeft, faArrowRight} from '@fortawesome/pro-regular-svg-icons';
 import {faCheckCircle} from '@fortawesome/pro-solid-svg-icons';
 import React, {useEffect, useRef} from 'react';
 import {ElementType} from '../../../../../data/element-type/element-type';
-import {AnyStepElement} from '../../../../../models/elements/step-elements/any-step-element';
+import {AnyStepElement} from '../../../../../models/elements/./steps/any-step-element';
 import {getStepIcon} from '../../../../../data/step-icons';
-import {isStepElement} from '../../../../../models/elements/step-elements/step-element';
+import {isStepElement} from '../../../../../models/elements/./steps/step-element';
 import {ElementNames} from '../../../../../data/element-type/element-names';
 
 interface CustomStepProps {

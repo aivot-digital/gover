@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {SelectFieldElement} from '../../models/elements/form-elements/input-elements/select-field-element';
+import {SelectFieldElement} from '../../models/elements/./form/./input/select-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {normalizeLines, splitLineInputEvent} from '../../utils/split-line-input';
 

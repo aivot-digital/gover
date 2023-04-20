@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {SelectFieldElement} from '../../models/elements/form-elements/input-elements/select-field-element';
+import {SelectFieldElement} from '../../models/elements/./form/./input/select-field-element';
 
 export class SelectFieldComponentValidator extends BaseInputElementValidator<string, SelectFieldElement> {
     protected checkEmpty(comp: SelectFieldElement, value: string): boolean {

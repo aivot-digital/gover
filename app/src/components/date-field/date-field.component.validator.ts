@@ -1,4 +1,4 @@
-import {DateFieldElement, DateFieldComponentModelMode} from '../../models/elements/form-elements/input-elements/date-field-element';
+import {DateFieldElement, DateFieldComponentModelMode} from '../../models/elements/./form/./input/date-field-element';
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
 import {isFuture, isPast, isToday} from 'date-fns';
 

@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
-import {SelectFieldElement} from '../../models/elements/form-elements/input-elements/select-field-element';
+import {SelectFieldElement} from '../../models/elements/./form/./input/select-field-element';
 import {stringOrDefault} from '../../utils/string-or-default';
 
 export function SelectFieldComponentSummary({model, value}: BaseSummaryProps<SelectFieldElement>) {

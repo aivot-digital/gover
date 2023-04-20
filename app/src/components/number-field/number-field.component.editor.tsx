@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {NumberFieldElement} from '../../models/elements/form-elements/input-elements/number-field-element';
+import {NumberFieldElement} from '../../models/elements/./form/./input/number-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 export function NumberFieldComponentEditor(props: BaseEditorProps<NumberFieldElement>) {

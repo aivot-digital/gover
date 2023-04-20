@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {CheckboxFieldElement} from '../../models/elements/form-elements/input-elements/checkbox-field-element';
+import {CheckboxFieldElement} from '../../models/elements/./form/./input/checkbox-field-element';
 
 export class CheckboxFieldComponentValidator extends BaseInputElementValidator<boolean, CheckboxFieldElement> {
     protected checkEmpty(comp: CheckboxFieldElement, value: boolean): boolean {

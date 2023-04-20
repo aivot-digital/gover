@@ -1,4 +1,4 @@
-import {StepElement} from '../../models/elements/step-elements/step-element';
+import {StepElement} from '../../models/elements/./steps/step-element';
 import {Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Select, TextField} from '@mui/material';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';

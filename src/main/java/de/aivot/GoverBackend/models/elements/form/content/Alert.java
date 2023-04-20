@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.models.elements.form.content;
 
 import de.aivot.GoverBackend.enums.AlertType;
-import de.aivot.GoverBackend.models.elements.form.FormElement;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Map;
 
-public class Alert extends FormElement {
+public class Alert extends BaseFormElement {
     private String title;
     private String text;
     private AlertType alertType;

@@ -1,9 +1,9 @@
-import {ContainerElement} from '../../models/elements/form-elements/layout-elements/container-element';
+import {GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {BaseViewProps} from '../_lib/base-view-props';
 import {Grid} from '@mui/material';
 
-export function ContainerComponentView({element, idPrefix}: BaseViewProps<ContainerElement, void>) {
+export function ContainerComponentView({element, idPrefix}: BaseViewProps<GroupLayout, void>) {
     return (
         <Grid container spacing={2}>
             {

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {BaseEditorProps} from '../_lib/base-editor-props';
-import {IntroductionStepElement} from '../../models/elements/step-elements/introduction-step-element';
+import {IntroductionStepElement} from '../../models/elements/./steps/introduction-step-element';
 import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
 import {Department} from "../../models/department";
 import {DepartmentsService} from "../../services/departments.service";

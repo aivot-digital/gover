@@ -2,7 +2,7 @@ import {BaseInputElementValidator} from '../../validators/base-input-element-val
 import {
     FileUploadElement,
     FileUploadElementItem
-} from "../../models/elements/form-elements/input-elements/file-upload-element";
+} from "../../models/elements/./form/./input/file-upload-element";
 
 const maxSizeInMegaBytes = 10;
 const maxSizeInBytes = maxSizeInMegaBytes * 1000 * 1000 // 10 MB

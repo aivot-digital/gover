@@ -1,7 +1,7 @@
 import {BaseValidator} from './base-validator';
 import {isComponentVisible} from '../utils/is-component-visible';
 import {loadValidityFunction} from '../utils/load-function';
-import {AnyInputElement} from '../models/elements/form-elements/input-elements/any-input-element';
+import {AnyInputElement} from '../models/elements/./form/./input/any-input-element';
 
 export abstract class BaseInputElementValidator<T, M extends AnyInputElement> extends BaseValidator<M> {
     makeErrors(id: string, comp: M, userInput: any): string | null {

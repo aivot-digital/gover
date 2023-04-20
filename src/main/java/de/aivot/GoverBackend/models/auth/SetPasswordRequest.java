@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.models;
+package de.aivot.GoverBackend.models.auth;
 
 import com.sun.istack.Nullable;
 

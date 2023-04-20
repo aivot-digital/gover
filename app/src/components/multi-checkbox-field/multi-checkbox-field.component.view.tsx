@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, FormGroup, FormHelperText, FormLabel} from '@mui/material';
-import {MultiCheckboxFieldElement} from '../../models/elements/form-elements/input-elements/multi-checkbox-field-element';
+import {MultiCheckboxFieldElement} from '../../models/elements/./form/./input/multi-checkbox-field-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 
 export function MultiCheckboxFieldComponentView({

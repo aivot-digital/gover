@@ -1,21 +1,15 @@
-import {FunctionSet} from '../../components/_lib/function-set';
-import {TestProtocol} from '../../components/_lib/test-protocol';
 import {ElementType} from '../../data/element-type/element-type';
+import {TestProtocolSet} from "../lib/test-protocol-set";
+import {FunctionCode} from "../functions/function-code";
 
 export interface BaseElement<T extends ElementType> {
-    id: string;
     type: T;
+    id: string;
 
     name?: string;
 
-    visibility?: FunctionSet;
-    validate?: FunctionSet;
-    patch?: FunctionSet;
+    isVisible?: Function;
+    patchElement?: FunctionCode;
 
-    technicalTest?: TestProtocol;
-    professionalTest?: TestProtocol;
-}
-
-export function isBaseElement(obj: any): obj is BaseElement<ElementType> {
-    return obj.type != null;
+    testProtocolSet?: TestProtocolSet;
 }

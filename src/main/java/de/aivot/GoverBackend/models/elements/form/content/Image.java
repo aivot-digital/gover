@@ -1,11 +1,11 @@
 package de.aivot.GoverBackend.models.elements.form.content;
 
-import de.aivot.GoverBackend.models.elements.form.FormElement;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Map;
 
-public class Image extends FormElement {
+public class Image extends BaseFormElement {
     private Integer height;
     private Integer width;
     private String src;

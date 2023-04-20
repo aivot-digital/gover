@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
-import {RadioFieldElement} from '../../models/elements/form-elements/input-elements/radio-field-element';
+import {RadioFieldElement} from '../../models/elements/./form/./input/radio-field-element';
 import {stringOrDefault} from '../../utils/string-or-default';
 
 export function RadioFieldComponentSummary({model, value}: BaseSummaryProps<RadioFieldElement>) {

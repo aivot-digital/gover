@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {HeadlineElement} from '../../models/elements/form-elements/content-elements/headline-element';
+import {HeadlineElement} from '../../models/elements/./form/./content/headline-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement>) {

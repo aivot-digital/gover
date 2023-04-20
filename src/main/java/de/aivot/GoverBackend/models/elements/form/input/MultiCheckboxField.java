@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
-import com.sun.istack.Nullable;
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.InputElement;
+import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -13,7 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class MultiCheckboxField extends InputElement<Collection<String>> {
+public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     private Collection<String> options;
     private Integer minimumRequiredOptions;
 

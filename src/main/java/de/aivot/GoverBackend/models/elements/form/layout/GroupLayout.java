@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.models.elements.form.layout;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.FormElement;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -12,8 +12,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class GroupLayout extends FormElement {
-    private Collection<FormElement> children;
+public class GroupLayout extends BaseFormElement {
+    private Collection<BaseFormElement> children;
 
     public GroupLayout(Map<String, Object> data) {
         super(data);
@@ -40,7 +40,7 @@ public class GroupLayout extends FormElement {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
         if (children != null) {
-            for (FormElement child : children) {
+            for (BaseFormElement child : children) {
                 rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
             }
         }
@@ -48,11 +48,11 @@ public class GroupLayout extends FormElement {
         return rows;
     }
 
-    public Collection<FormElement> getChildren() {
+    public Collection<BaseFormElement> getChildren() {
         return children;
     }
 
-    public void setChildren(Collection<FormElement> children) {
+    public void setChildren(Collection<BaseFormElement> children) {
         this.children = children;
     }
 

@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {TimeFieldElement} from '../../models/elements/form-elements/input-elements/time-field-element';
+import {TimeFieldElement} from '../../models/elements/./form/./input/time-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 export function TimeFieldComponentEditor(props: BaseEditorProps<TimeFieldElement>) {

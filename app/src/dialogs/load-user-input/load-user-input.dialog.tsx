@@ -20,7 +20,7 @@ import {PrivacyUserInputKey} from '../../components/general-information/general-
 import {Application} from '../../models/application';
 import {Logo} from '../../components/static-components/logo/logo';
 import {CustomerInput} from "../../models/customer-input";
-import {isFileUploadElementItem} from "../../models/elements/form-elements/input-elements/file-upload-element";
+import {isFileUploadElementItem} from "../../models/elements/./form/./input/file-upload-element";
 
 interface LoadUserInputDialogProps {
     application: Application;

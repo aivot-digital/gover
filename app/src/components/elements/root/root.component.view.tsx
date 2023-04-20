@@ -35,7 +35,7 @@ import {ElementNames} from "../../../data/element-type/element-names";
 import {
     FileUploadElementItem,
     isFileUploadElementItem
-} from "../../../models/elements/form-elements/input-elements/file-upload-element";
+} from "../../../models/elements/./form/./input/file-upload-element";
 
 export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();

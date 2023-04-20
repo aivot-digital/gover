@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
-import de.aivot.GoverBackend.models.elements.BaseElement;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Collection;

@@ -1,5 +1,5 @@
 import {Typography, useTheme} from '@mui/material';
-import {HeadlineElement} from '../../models/elements/form-elements/content-elements/headline-element';
+import {HeadlineElement} from '../../models/elements/./form/./content/headline-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 
 export function HeadlineComponentView({element}: BaseViewProps<HeadlineElement, void>) {

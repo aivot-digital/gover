@@ -1,16 +1,16 @@
 import {PatchFunction} from '../models/_lib/patch-function';
 import {VisibilityFunction} from '../models/_lib/visibility-function';
 import {ValidityFunction} from '../models/_lib/validity-function';
-import {AnyInputElement} from '../models/elements/form-elements/input-elements/any-input-element';
+import {AnyInputElement} from '../models/elements/./form/./input/any-input-element';
 import {AnyElement} from '../models/elements/any-element';
 import {isNullOrEmpty} from './is-null-or-empty';
 
 export function loadPatchFunction(model: AnyElement): PatchFunction | null {
-    return loadFunction<PatchFunction>(model, model.patch?.functionName);
+    return loadFunction<PatchFunction>(model, model.patchElement?.functionName);
 }
 
 export function loadVisibilityFunction(model: AnyElement): VisibilityFunction | null {
-    return loadFunction<VisibilityFunction>(model, model.visibility?.functionName);
+    return loadFunction<VisibilityFunction>(model, model.isVisible?.functionName);
 }
 
 export function loadValidityFunction(model: AnyInputElement): ValidityFunction | null {

@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {TableFieldElement} from '../../models/elements/form-elements/input-elements/table-field-element';
+import {TableFieldElement} from '../../models/elements/./form/./input/table-field-element';
 import {isNullOrEmpty} from '../../utils/is-null-or-empty';
 
 export class TableFieldComponentValidator extends BaseInputElementValidator<{[key: string]: string}[], TableFieldElement> {

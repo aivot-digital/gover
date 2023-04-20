@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-    ReplicatingContainerElement
-} from '../../models/elements/form-elements/layout-elements/replicating-container-element';
+    ReplicatingContainerLayout
+} from '../../models/elements/form/layout/replicating-container-layout';
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
-export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerElement>) {
+export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
     const minRequiredError = (
         props.component.minimumRequiredSets != null &&
         props.component.maximumSets != null &&

@@ -1,6 +1,6 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
 import {BaseEditorProps} from '../_lib/base-editor-props';
-import {FileUploadElement} from "../../models/elements/form-elements/input-elements/file-upload-element";
+import {FileUploadElement} from "../../models/elements/./form/./input/file-upload-element";
 import {normalizeLines, splitLineInputEvent} from "../../utils/split-line-input";
 
 export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {

@@ -1,5 +1,5 @@
 import {Box, Button, Checkbox, FormControl, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
-import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form-elements/input-elements/table-field-element';
+import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/./form/./input/table-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {faPlus} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';

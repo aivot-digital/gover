@@ -2,14 +2,12 @@ package de.aivot.GoverBackend.models.elements.form;
 
 
 import de.aivot.GoverBackend.models.elements.AbstractElementTest;
-import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 
-import javax.script.ScriptEngine;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class InputElementTest extends AbstractElementTest<InputElement<Object>> {
+class InputElementTest extends AbstractElementTest<BaseInputElement<Object>> {
     @Override
     protected Map<String, Object> getJSON() {
         return new HashMap<>() {{
@@ -49,7 +47,7 @@ class InputElementTest extends AbstractElementTest<InputElement<Object>> {
     }
 
     @Override
-    protected InputElement<Object> newItem(Map<String, Object> json) {
+    protected BaseInputElement<Object> newItem(Map<String, Object> json) {
         //return new InputElement<>(json) {
         //    @Override
         //    public boolean isValid(Object value, String idPrefix) {
@@ -65,7 +63,7 @@ class InputElementTest extends AbstractElementTest<InputElement<Object>> {
     }
 
     @Override
-    protected void testAllFieldsFilled(InputElement<Object> item) {
+    protected void testAllFieldsFilled(BaseInputElement<Object> item) {
         assertEquals("label", item.getLabel());
         assertEquals("hint", item.getHint());
         assertEquals(true, item.getRequired());
@@ -80,7 +78,7 @@ class InputElementTest extends AbstractElementTest<InputElement<Object>> {
     }
 
     @Override
-    protected void testAllFieldsNull(InputElement<Object> item) {
+    protected void testAllFieldsNull(BaseInputElement<Object> item) {
         assertNull(item.getLabel());
         assertNull(item.getHint());
         assertNull(item.getRequired());

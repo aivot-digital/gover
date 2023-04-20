@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Box, IconButton, Typography} from '@mui/material';
-import {StepElement} from '../../models/elements/step-elements/step-element';
+import {StepElement} from '../../models/elements/./steps/step-element';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faPenToSquare} from '@fortawesome/pro-light-svg-icons';
 import Tooltip from '@mui/material/Tooltip';

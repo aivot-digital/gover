@@ -2,7 +2,7 @@ import {TextField} from '@mui/material';
 import {
     DateFieldComponentModelMode,
     DateFieldElement
-} from '../../models/elements/form-elements/input-elements/date-field-element';
+} from '../../models/elements/./form/./input/date-field-element';
 import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';

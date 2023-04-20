@@ -1,7 +1,7 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
 import {
     MultiCheckboxFieldElement
-} from '../../models/elements/form-elements/input-elements/multi-checkbox-field-element';
+} from '../../models/elements/./form/./input/multi-checkbox-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {normalizeLines, splitLineInputEvent} from '../../utils/split-line-input';
 
