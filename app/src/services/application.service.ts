@@ -95,6 +95,16 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
             .then(response => response.data);
     }
 
+    async getMaxFileSize(application: Application): Promise<number> {
+        return await axios.get(
+            ApiConfig.address + '/public/max-file-size/' + application.id, {
+                ...CrudService.getConfig(),
+                timeout: 1000 * 60 * 2 // Set 2 Minutes Timeout
+            }
+        )
+            .then(response => response.data);
+    }
+
     private static normalizeAppModel(model: RootElement): RootElement {
         /* TODO: Check this
         if (model.generalInformation == null) {
