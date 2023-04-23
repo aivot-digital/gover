@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.5](https://github.com/aivot-digital/gover/compare/v2.1.4...v2.1.5) (2023-04-23)
+
+### Bug Fixes
+
+* **App:** Add missing function for max file size
+
 ## [2.1.4](https://github.com/aivot-digital/gover/compare/v2.1.3...v2.1.4) (2023-04-23)
 
 ### Features

@@ -53,7 +53,7 @@ RUN apt-get -y install wkhtmltopdf
 RUN ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf;
 RUN chmod +x /usr/local/bin/wkhtmltopdf;
 
-COPY --from=build /gover/target/Gover-2.1.4.jar /app/gover.jar
+COPY --from=build /gover/target/Gover-2.1.5.jar /app/gover.jar
 
 ENTRYPOINT ["java"]
 CMD  ["-jar", "/app/gover.jar"]
