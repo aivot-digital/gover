@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.6](https://github.com/aivot-digital/gover/compare/v2.1.5...v2.1.6) (2023-04-24)
+
+### Bug Fixes
+
+* **App:** Fix users password setting in users list as an admin
+
 ## [2.1.5](https://github.com/aivot-digital/gover/compare/v2.1.4...v2.1.5) (2023-04-23)
 
 ### Bug Fixes
