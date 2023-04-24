@@ -36,23 +36,23 @@ export function UserList() {
             .then(response => setUsers(response._embedded.users));
     };
 
-    const handleUserSave = (user: MakeOptional<User, 'id'>, password?: string) => {
-        if (user.id == null) {
-            UsersService.create(user)
-                .then(createdUser => {
-                    if (password != null) {
-                        UsersService.setPassword(password, createdUser.id);
-                    }
-                    fetchUsers();
-                });
-        } else {
-            UsersService.update(user.id, user as User)
-                .then(updatedUser => {
-                    if (password != null) {
-                        UsersService.setPassword(password, updatedUser.id);
-                    }
-                    fetchUsers();
-                });
+    const handleUserSave = async (user?: MakeOptional<User, 'id'>, password?: string) => {
+        let updatedUser: User | null = null;
+        if (user != null) {
+            if (user.id == null) {
+                updatedUser = await UsersService.create(user);
+            } else {
+                updatedUser = await UsersService.update(user.id, user as User);
+            }
+        }
+        if (password != null) {
+            if (updatedUser != null) {
+                await UsersService.setPassword(password, updatedUser.id);
+            } else {
+                if (userToEdit != null && userToEdit.id != null) {
+                    await UsersService.setPassword(password, userToEdit.id);
+                }
+            }
         }
         setUserToEdit(undefined);
     };
