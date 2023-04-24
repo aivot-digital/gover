@@ -96,9 +96,8 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
     }
 
     async getMaxFileSize(application: Application): Promise<number> {
-        return await axios.post(
-            ApiConfig.address + '/public/max-file-size/' + application.id,
-             {
+        return await axios.get(
+            ApiConfig.address + '/public/max-file-size/' + application.id, {
                 ...CrudService.getConfig(),
                 timeout: 1000 * 60 * 2 // Set 2 Minutes Timeout
             }

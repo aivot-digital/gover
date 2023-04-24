@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.1.6](https://github.com/aivot-digital/gover/compare/v2.1.5...v2.1.6) (2023-04-24)
+
+### Bug Fixes
+
+* **App:** Fix users password setting in users list as an admin
+
+## [2.1.5](https://github.com/aivot-digital/gover/compare/v2.1.4...v2.1.5) (2023-04-23)
+
+### Bug Fixes
+
+* **App:** Add missing function for max file size
+
+## [2.1.4](https://github.com/aivot-digital/gover/compare/v2.1.3...v2.1.4) (2023-04-23)
+
+### Features
+
+* **App:** Added destination max size property and file size check
+
 ## [2.1.3](https://github.com/aivot-digital/gover/compare/v2.1.2...v2.1.3) (2023-04-10)
 
 ### Bug Fixes
@@ -11,7 +29,6 @@
 * **App:** Fix missing styling when dragging files over fiel upload element
 * **App:** Fix min/max file counter in file upload element
 * **App:** Fix min/max counter resetting when disabling multiple files in file input element editor
-* 
 
 ## [2.1.2](https://github.com/aivot-digital/gover/compare/v2.1.1...v2.1.2) (2023-04-09)
 

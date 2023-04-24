@@ -1,6 +1,6 @@
 {
   "name": "gover",
-  "version": "2.1.2",
+  "version": "2.1.6",
   "private": true,
   "dependencies": {
     "@date-io/date-fns": "^2.16.0",

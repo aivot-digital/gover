@@ -22,7 +22,7 @@ const __ = Localization(strings);
 
 interface EditUserDialogProps extends DialogProps {
     user: MakeOptional<User, 'id'>;
-    onSave: (user: MakeOptional<User, 'id'>, password?: string) => void;
+    onSave: (user?: MakeOptional<User, 'id'>, password?: string) => void;
     onClose: () => void;
 }
 
@@ -47,7 +47,7 @@ export function EditUserDialog(props: EditUserDialogProps) {
             }
         }
 
-        if (editedUser != null) {
+        if (editedUser != null || password.length > 0) {
             props.onSave(editedUser, password.length > 0 ? password : undefined);
         } else {
             props.onClose();
