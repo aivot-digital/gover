@@ -188,8 +188,8 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 })}
             />
 
-            <FormGroup>
-                <InputLabel>Antragsberechtigte</InputLabel>
+            <FormGroup sx={{mt: 2}}>
+                <InputLabel sx={{mb: 1}}>Antragsberechtigte</InputLabel>
                 <CheckboxTree
                     options={eligibleEntities}
                     value={props.component.eligiblePersons ?? []}
