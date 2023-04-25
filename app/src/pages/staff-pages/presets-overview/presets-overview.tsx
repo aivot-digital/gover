@@ -1,11 +1,11 @@
 import {DataOverview} from '../data-overview/data-overview';
 import {DataOverviewProps} from '../data-overview/data-overview-props';
 import {PresetsService} from '../../../services/presets.service';
-import {Preset} from '../../../models/preset';
+import {Preset} from '../../../models/entities/preset';
 import {ElementType} from '../../../data/element-type/element-type';
-import {generateElementIdForType} from '../../../utils/generate-element-id';
 import strings from './presets-overview-strings.json';
 import {Localization} from '../../../locale/localization';
+import {generateElementIdForType} from "../../../utils/id-utils";
 
 const _ = Localization(strings);
 

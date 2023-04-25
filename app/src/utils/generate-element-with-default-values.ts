@@ -1,9 +1,9 @@
-import {AnyElement} from '../models/elements/any-element';
 import {ElementType} from '../data/element-type/element-type';
-import {generateElementIdForType} from './generate-element-id';
-import {IntroductionStepElement} from '../models/elements/./steps/introduction-step-element';
-import {SummaryStepElement} from '../models/elements/./steps/summary-step-element';
-import {SubmitStepElement} from '../models/elements/./steps/submit-step-element';
+import {IntroductionStepElement} from '../models/elements/steps/introduction-step-element';
+import {SummaryStepElement} from '../models/elements/steps/summary-step-element';
+import {SubmitStepElement} from '../models/elements/steps/submit-step-element';
+import {AnyElement} from "../models/elements/any-element";
+import {generateElementIdForType} from "./id-utils";
 
 export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
     const id = generateElementIdForType(type);

@@ -1,11 +1,11 @@
 import {DataOverview} from '../data-overview/data-overview';
-import {Destination} from '../../../models/destination';
+import {Destination} from '../../../models/entities/destination';
 import {DestinationsService} from '../../../services/destinations.service';
 import {DestinationType} from '../../../data/destination-type/destination-type';
 import {DataOverviewProps} from '../data-overview/data-overview-props';
 import strings from './destinations-overview-strings.json';
 import {Localization} from '../../../locale/localization';
-import {isNullOrEmpty} from '../../../utils/is-null-or-empty';
+import {isStringNullOrEmpty} from "../../../utils/string-utils";
 
 const _ = Localization(strings);
 
@@ -56,13 +56,13 @@ const DestinationsOverviewConfig: DataOverviewProps<Destination> = {
         let sec: string = destination.type;
 
         if (destination.type === DestinationType.Mail) {
-            if (!isNullOrEmpty(destination.mailTo)) {
+            if (!isStringNullOrEmpty(destination.mailTo)) {
                 sec += `\n${destination.mailTo}`;
             }
-            if (!isNullOrEmpty(destination.mailCC)) {
+            if (!isStringNullOrEmpty(destination.mailCC)) {
                 sec += `\nCC: ${destination.mailCC}`;
             }
-            if (!isNullOrEmpty(destination.mailBCC)) {
+            if (!isStringNullOrEmpty(destination.mailBCC)) {
                 sec += `\nBCC: ${destination.mailBCC}`;
             }
         } else {

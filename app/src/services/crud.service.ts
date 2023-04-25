@@ -8,14 +8,15 @@ import {LocalstorageKey} from "../data/localstorage-key";
 export class CrudService<T extends { id: number }, A extends string, I> {
     protected readonly basePath: string;
     protected readonly path: string;
+    protected readonly pageSize: number = 999;
 
     public constructor(path: string) {
         this.basePath = `${ApiConfig.address}/`;
         this.path = `${ApiConfig.address}/${path}`;
     }
 
-    list(): Promise<ApiListResponse<T, A>> {
-        return axios.get(this.path + '?size=500', CrudService.getConfig())
+    list(page?: number, size?: number): Promise<ApiListResponse<T, A>> {
+        return axios.get(`${this.path}?page=${page ?? 0}&size=${size ?? this.pageSize}`, CrudService.getConfig())
             .then(response => response.data);
     }
 

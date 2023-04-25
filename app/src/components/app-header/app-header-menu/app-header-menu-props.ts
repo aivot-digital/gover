@@ -1,4 +1,4 @@
-import {AppMode} from '../../../../data/app-mode';
+import {AppMode} from '../../../data/app-mode';
 
 export interface AppHeaderMenuProps {
     mode: AppMode;

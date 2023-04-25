@@ -1,9 +1,9 @@
 import {Box, Button, Checkbox, FormControl, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
-import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/./form/./input/table-field-element';
+import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {faPlus} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {isNullOrEmpty} from '../../utils/is-null-or-empty';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement>) {
     const columnLabelErrors = makeColumnLabelErrors(props.component.fields);
@@ -292,7 +292,7 @@ function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[]): (stri
     const errors: (string | null)[] = [];
     const labelSet = new Set<string>();
     for (const field of fields) {
-        if (isNullOrEmpty(field.label) || field.label.length < 3) {
+        if (isStringNullOrEmpty(field.label) || field.label.length < 3) {
             errors.push('Bitte geben Sie einen Titel mit mindestens drei Zeichen ein.');
         } else if (labelSet.has(field.label)) {
             errors.push('Eine Spalte mit diesem Titel existiert bereits. Bitte geben Sie einen einzigartigen Titel ein.');

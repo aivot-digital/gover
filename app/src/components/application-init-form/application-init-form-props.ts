@@ -1,4 +1,4 @@
-import {Application} from '../../models/application';
+import {Application} from '../../models/entities/application';
 import {RootElement} from '../../models/elements/root-element';
 
 export interface ApplicationInitFormProps {

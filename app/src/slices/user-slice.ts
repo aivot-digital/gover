@@ -1,9 +1,9 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit'
 import {UsersService} from '../services/users.service';
-import {User} from '../models/user';
 import {LocalStorageService} from '../services/local-storage.service';
 import {RootState} from '../store';
 import {LocalstorageKey} from "../data/localstorage-key";
+import {User} from "../models/entities/user";
 
 const initialState: {
     user?: User;

@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, FormHelperText} from '@mui/material';
-import {CheckboxFieldElement} from '../../models/elements/./form/./input/checkbox-field-element';
+import {CheckboxFieldElement} from '../../models/elements/form/input/checkbox-field-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 
 export function CheckboxFieldComponentView({

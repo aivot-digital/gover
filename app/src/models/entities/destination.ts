@@ -1,4 +1,5 @@
-import {DestinationType} from '../data/destination-type/destination-type';
+import {DestinationType} from "../../data/destination-type/destination-type";
+
 
 export interface Destination {
     id: number;

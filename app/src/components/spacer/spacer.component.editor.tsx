@@ -1,5 +1,5 @@
 import {TextField} from '@mui/material';
-import {SpacerElement} from '../../models/elements/./form/./content/spacer-element';
+import {SpacerElement} from '../../models/elements/form/content/spacer-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement>) {

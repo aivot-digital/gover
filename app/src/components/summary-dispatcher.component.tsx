@@ -1,6 +1,6 @@
 import React, {ComponentType} from 'react';
 import {useSelector} from 'react-redux';
-import {isComponentVisible} from '../utils/is-component-visible';
+import {isElementVisible} from '../utils/is-element-visible';
 import {generateComponentPatch} from '../utils/generate-component-patch';
 import {SummaryMap} from './summary.map';
 import {BaseSummaryProps} from './_lib/base-summary-props';
@@ -27,7 +27,7 @@ export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefi
 
     const value = (patchedModel as any).value ?? customerInput[id];
 
-    const isVisible = disableVisibility || isComponentVisible(id, model, customerInput);
+    const isVisible = disableVisibility || isElementVisible(id, model, customerInput);
 
     if (!isVisible) {
         return null;

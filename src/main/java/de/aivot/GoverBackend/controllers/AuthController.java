@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.UserRole;
+import de.aivot.GoverBackend.exceptions.LoginFailedException;
 import de.aivot.GoverBackend.models.auth.AuthCredentials;
 import de.aivot.GoverBackend.models.auth.AuthResponse;
 import de.aivot.GoverBackend.models.auth.SetPasswordRequest;
@@ -38,13 +39,13 @@ public class AuthController {
         Optional<User> foundUser = userRepository.findByEmail(credentials.getEmail());
 
         if (foundUser.isEmpty()) {
-            throw new AccessDeniedException("Invalid email or password");
+            throw new LoginFailedException("Invalid email or password");
         }
 
         User user = foundUser.get();
 
         if (!user.isActive()) {
-            throw new AccessDeniedException("Inactive user");
+            throw new LoginFailedException("Inactive user");
         }
 
         if (passwordEncoder.matches(credentials.getPassword(), user.getPassword())) {
@@ -53,7 +54,7 @@ public class AuthController {
             authResponse.setJwtToken(token);
             return ResponseEntity.ok(authResponse);
         } else {
-            throw new AccessDeniedException("Invalid email or password");
+            throw new LoginFailedException("Invalid email or password");
         }
     }
 

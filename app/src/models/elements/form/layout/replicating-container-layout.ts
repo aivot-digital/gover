@@ -1,13 +1,13 @@
 import {ElementType} from '../../../../data/element-type/element-type';
-import {BaseFormElement} from "../base-form-element";
 import {BaseInputElement} from "../base-input-element";
+import {AnyFormElement} from "../any-form-element";
 
 export interface ReplicatingContainerLayout extends BaseInputElement<string[], ElementType.ReplicatingContainer> {
     required?: boolean;
     minimumRequiredSets?: number;
     maximumSets?: number;
 
-    children: BaseFormElement<any>;
+    children: AnyFormElement[];
 
     headlineTemplate?: string;
     addLabel?: string;

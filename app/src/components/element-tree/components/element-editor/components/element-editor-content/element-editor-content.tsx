@@ -6,14 +6,15 @@ import {EditorDispatcher} from '../../../../../editor-dispatcher';
 import {CodeTab} from '../../tabs/code-tab/code-tab';
 import React from 'react';
 import {StructureTab} from '../../tabs/structure-tab/structure-tab';
-import {checkId} from '../../../../../../utils/check-id';
+import {checkId} from '../../../../../../utils/id-utils';
 import {TestTab} from '../../tabs/test-tab/test-tab';
 import {ElementType} from '../../../../../../data/element-type/element-type';
 import {selectLoadedApplication} from '../../../../../../slices/app-slice';
 import {useAppSelector} from '../../../../../../hooks/use-app-selector';
 import {AnyElement} from '../../../../../../models/elements/any-element';
 import {ElementEditorContentProps} from './element-editor-content-props';
-import {AnyFormElement} from '../../../../../../models/elements/./form/any-form-element';
+import {AnyFormElement} from '../../../../../../models/elements/form/any-form-element';
+import {FunctionCode} from "../../../../../../models/functions/function-code";
 
 export function ElementEditorContent<T extends AnyElement>({
                                                                element,
@@ -118,27 +119,28 @@ export function ElementEditorContent<T extends AnyElement>({
             return (
                 <CodeTab
                     key="visibility"
-                    field="visibility"
-                    element={element}
-                    onChange={handleUpdate}
+                    func={element.isVisible}
+                    allowNoCode={true}
+                    onChange={updatedFunc => handleUpdate({isVisible: updatedFunc})}
                 />
             );
         case DefaultTabs.validation:
-            return (
+            // TODO: Check input elem
+            return null; /*(
                 <CodeTab
                     key="validate"
-                    field="validate"
-                    element={element}
-                    onChange={handleUpdate}
+                    func={element.isV}
+                    allowNoCode={true}
+                    onChange={updatedFunc => handleUpdate({isVisible: updatedFunc})}
                 />
-            );
+            );*/
         case DefaultTabs.patch:
             return (
                 <CodeTab
                     key="patch"
-                    field="patch"
-                    element={element}
-                    onChange={handleUpdate}
+                    func={element.patchElement}
+                    allowNoCode={false}
+                    onChange={updatedFunc => handleUpdate({patchElement: updatedFunc as FunctionCode})}
                 />
             );
         case DefaultTabs.structure:
@@ -152,7 +154,9 @@ export function ElementEditorContent<T extends AnyElement>({
             return (
                 <TestTab
                     elementModel={element}
-                    onPatch={handleUpdate}
+                    onPatch={updatedTestProtocolSet => handleUpdate({
+                        testProtocolSet: updatedTestProtocolSet,
+                    })}
                 />
             );
         default:

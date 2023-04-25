@@ -1,14 +1,16 @@
 import {Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useState} from 'react';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Application} from '../../models/application';
+import {Application} from '../../models/entities/application';
 import {ApplicationInitForm, validateApplication} from '../../components/application-init-form/application-init-form';
 import {ElementType} from '../../data/element-type/element-type';
-import {generateElementIdForType} from '../../utils/generate-element-id';
 import {ApplicationInitFormPropsErrors} from '../../components/application-init-form/application-init-form-props';
 import {AddApplicationDialogProps} from './add-application-dialog-props';
 import {Localization} from '../../locale/localization';
 import strings from './add-application-dialog-strings.json';
+import {ApplicationStatus} from "../../data/application-status/application-status";
+import {generateElementWithDefaultValues} from "../../utils/generate-element-with-default-values";
+import {RootElement} from "../../models/elements/root-element";
 
 const _ = Localization(strings);
 
@@ -91,28 +93,12 @@ export function AddApplicationDialog(props: AddApplicationDialogProps) {
 
 function emptyApplication(): Application {
     return {
-        code: '',
         created: '',
         id: -1,
-        root: {
-            id: generateElementIdForType(ElementType.Root),
-            type: ElementType.Root,
-            children: [],
-            introductionStep: {
-                id: generateElementIdForType(ElementType.IntroductionStep),
-                type: ElementType.IntroductionStep,
-            },
-            summaryStep: {
-                id: generateElementIdForType(ElementType.SummaryStep),
-                type: ElementType.SummaryStep,
-            },
-            submitStep: {
-                id: generateElementIdForType(ElementType.SubmitStep),
-                type: ElementType.SubmitStep,
-            },
-        },
+        root: generateElementWithDefaultValues(ElementType.Root) as RootElement,
         slug: '',
         updated: '',
-        version: ''
+        version: '',
+        status: ApplicationStatus.Drafted,
     };
 }

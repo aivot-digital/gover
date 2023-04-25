@@ -1,5 +1,5 @@
-import {stringOrDefault} from './string-or-default';
 import React from 'react';
+import {stringOrDefault} from "./string-utils";
 
 export function splitLineInput(input?: string): string[] {
     return stringOrDefault(input, '').split('\n');

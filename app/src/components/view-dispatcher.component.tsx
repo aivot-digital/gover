@@ -1,26 +1,25 @@
 import React, {ComponentType, ErrorInfo} from 'react';
 import {connect} from 'react-redux';
 import {RootState} from '../store';
-import {isComponentVisible} from '../utils/is-component-visible';
+import {isElementVisible} from '../utils/is-element-visible';
 import {generateComponentPatch} from '../utils/generate-component-patch';
 import {ViewMap} from './view.map';
 import {BaseViewProps} from './_lib/base-view-props';
 import {updateUserInput} from '../slices/customer-input-slice';
 import {Alert, AlertTitle, Grid} from '@mui/material';
-import {ElementType} from '../data/element-type/element-type';
 import {Dispatch} from '@reduxjs/toolkit';
 import {CustomerInput} from '../models/customer-input';
 import {CustomerInputErrors} from '../models/customer-input-errors';
 import {AnyElement} from '../models/elements/any-element';
 
 interface DispatcherComponentProps<M extends AnyElement> {
-    model: M & any;
+    element: M;
     idPrefix?: string;
 }
 
 interface InternalProps {
-    updateUserInput: any;
-    userInputData?: CustomerInput;
+    updateUserInput: (update: { key: string, value: any }) => void;
+    userInputData: CustomerInput;
     adminSettings: any;
     allErrors: CustomerInputErrors;
 }
@@ -45,7 +44,7 @@ class _ViewDispatcherComponent<M extends AnyElement, V> extends React.Component<
 
     render() {
         const {
-            model,
+            element,
             idPrefix,
             updateUserInput,
             userInputData,
@@ -57,22 +56,22 @@ class _ViewDispatcherComponent<M extends AnyElement, V> extends React.Component<
             return this.renderError();
         }
 
-        const id = this.makeId(model, idPrefix);
+        const id = this.makeId(element, idPrefix);
 
-        const isVisible = adminSettings.disableVisibility || isComponentVisible(id, model, userInputData);
+        const isVisible = adminSettings.disableVisibility || isElementVisible(id, element, userInputData);
 
         if (!isVisible) {
             return null;
         }
 
-        const Component: ComponentType<BaseViewProps<M, V>> = ViewMap[model.type as ElementType];
+        const Component: ComponentType<BaseViewProps<M, V>> = ViewMap[element.type];
         if (Component == null) {
             return null;
         }
 
         const patchedModel = {
-            ...model,
-            ...generateComponentPatch(id, model, userInputData),
+            ...element,
+            ...generateComponentPatch(id, element, userInputData),
             id,
         };
 
@@ -95,8 +94,8 @@ class _ViewDispatcherComponent<M extends AnyElement, V> extends React.Component<
         return (
             <Grid
                 item
-                xs={model.weight ?? 12}
-                id={model.id}
+                xs={('weight' in element && element.weight != null) ? element.weight : 12}
+                id={element.id}
             >
                 <Component {...viewProps} />
             </Grid>
@@ -109,21 +108,21 @@ class _ViewDispatcherComponent<M extends AnyElement, V> extends React.Component<
                 <AlertTitle>
                     Interner Systemfehler
                 </AlertTitle>
-                Das Element mit der Id "{this.props.model.id}" konnte nicht erfolgreich erzeugt werden.
+                Das Element mit der Id "{this.props.element.id}" konnte nicht erfolgreich erzeugt werden.
                 Bitte überprüfen Sie die Elementstruktur.
             </Alert>
         );
     }
 
-    makeId(model: M, idPrefix?: string | null): string {
+    makeId(model: AnyElement, idPrefix?: string | null): string {
         return idPrefix != null ? (idPrefix + model.id) : model.id;
     }
 
-    makeValue(model: M, id: string, global?: any): V | null | undefined {
+    makeValue(model: AnyElement, id: string, global?: any): V | null | undefined {
         return (model as any).value ?? (global ?? {})[id];
     }
 
-    makeErrors(model: M, id: string, allErrors?: any): any | undefined {
+    makeErrors(model: AnyElement, id: string, allErrors?: any): any | undefined {
         return (model as any).errors ?? (allErrors ?? {})[id];
     }
 }

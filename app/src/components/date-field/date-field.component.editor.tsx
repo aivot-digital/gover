@@ -2,7 +2,7 @@ import {Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select, T
 import {
     DateFieldElement,
     DateFieldComponentModelMode
-} from '../../models/elements/./form/./input/date-field-element';
+} from '../../models/elements/form/input/date-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 const modes: [DateFieldComponentModelMode, string][] = [

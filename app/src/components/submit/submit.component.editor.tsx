@@ -1,8 +1,8 @@
 import React from 'react';
 import {BaseEditorProps} from '../_lib/base-editor-props';
-import {SubmitStepElement} from '../../models/elements/./steps/submit-step-element';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {TextField} from '@mui/material';
-import {isNullOrEmpty} from "../../utils/is-null-or-empty";
+import {isStringNullOrEmpty} from "../../utils/string-utils";
 
 export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>) {
     return (
@@ -51,7 +51,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                     documentsToReceive: event.target.value.split('\n'),
                 })}
                 onBlur={() => props.onPatch({
-                    documentsToReceive: (props.component.documentsToReceive ?? []).filter(ln => !isNullOrEmpty(ln)),
+                    documentsToReceive: (props.component.documentsToReceive ?? []).filter(ln => !isStringNullOrEmpty(ln)),
                 })}
                 helperText="Durch die zuständige und/oder bewirtschaftende Stelle auszustellende Dokumente. Bitte geben Sie pro Zeile ein Dokument an."
             />

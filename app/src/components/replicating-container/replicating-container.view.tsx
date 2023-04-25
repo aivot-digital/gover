@@ -3,12 +3,12 @@ import {
 } from '../../models/elements/form/layout/replicating-container-layout';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {Box, Button, FormHelperText, FormLabel, Grid, Typography} from '@mui/material';
-import {stringOrDefault} from '../../utils/string-or-default';
 import {faPlusCircle, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {BaseViewProps} from '../_lib/base-view-props';
 import {useCallback, useEffect} from 'react';
-import {generateElementId} from '../../utils/generate-element-id';
+import {stringOrDefault} from "../../utils/string-utils";
+import {generateElementId} from "../../utils/id-utils";
 
 export function ReplicatingContainerView({
                                              setValue,
@@ -93,7 +93,7 @@ export function ReplicatingContainerView({
                                 (element.children ?? []).map((child, childIndex) => (
                                     <ViewDispatcherComponent
                                         key={childIndex}
-                                        model={child}
+                                        element={child}
                                         idPrefix={`${element.id}_${val}_`}
                                     />
                                 ))

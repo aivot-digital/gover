@@ -15,7 +15,7 @@ export const UserRoleLabels: {
 export const UserRoleLevels: {
     [key in UserRole]: number;
 } = {
-    [UserRole.Admin]: 2,
-    [UserRole.Publisher]: 1,
+    [UserRole.Admin]: 999,
+    [UserRole.Publisher]: 100,
     [UserRole.Editor]: 0,
 };

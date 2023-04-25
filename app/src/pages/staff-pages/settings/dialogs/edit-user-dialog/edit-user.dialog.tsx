@@ -1,6 +1,6 @@
 import React, {FormEvent, useState} from 'react';
 import {DialogProps} from '@mui/material/Dialog/Dialog';
-import {User} from '../../../../../models/user';
+import {User} from '../../../../../models/entities/user';
 import {
     Button,
     Dialog, DialogActions,

@@ -1,7 +1,7 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText} from '@mui/material';
 import React, {useState} from 'react';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Application} from '../../models/application';
+import {Application} from '../../models/entities/application';
 import {Localization} from '../../locale/localization';
 import strings from './import-application-dialog-strings.json';
 import {ImportApplicationDialogProps} from './import-application-dialog-props';

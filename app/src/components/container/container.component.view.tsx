@@ -10,7 +10,7 @@ export function ContainerComponentView({element, idPrefix}: BaseViewProps<GroupL
                 (element.children ?? []).map((child, index) => (
                     <ViewDispatcherComponent
                         key={index}
-                        model={child}
+                        element={child}
                         idPrefix={idPrefix}
                     />
                 ))

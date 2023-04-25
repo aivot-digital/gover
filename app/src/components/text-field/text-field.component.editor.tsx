@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {TextFieldElement} from '../../models/elements/./form/./input/text-field-element';
+import {TextFieldElement} from '../../models/elements/form/input/text-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 export function TextFieldComponentEditor(props: BaseEditorProps<TextFieldElement>) {

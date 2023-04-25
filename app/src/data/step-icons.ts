@@ -12,8 +12,12 @@ import {
     faUserCircle
 } from '@fortawesome/pro-light-svg-icons';
 import {StepIcon} from '../models/step-icon';
-import {AnyStepElement} from '../models/elements/./steps/any-step-element';
 import {ElementType} from './element-type/element-type';
+import {StepElement} from "../models/elements/steps/step-element";
+import {IntroductionStepElement} from "../models/elements/steps/introduction-step-element";
+import {SummaryStepElement} from "../models/elements/steps/summary-step-element";
+import {SubmitStepElement} from "../models/elements/steps/submit-step-element";
+import {SubmittedStepElement} from "../models/elements/steps/submitted-step-element";
 
 export const StepIcons: StepIcon[] = [
     {
@@ -73,7 +77,7 @@ export const StepIconsMap = StepIcons.reduce((acc, val) => ({
     [val.id]: val,
 }), {} as any);
 
-export function getStepIcon(step: AnyStepElement): IconDefinition {
+export function getStepIcon(step: StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement): IconDefinition {
     switch (step.type) {
         case ElementType.Step:
             if (step.icon != null && step.icon in StepIconsMap) {

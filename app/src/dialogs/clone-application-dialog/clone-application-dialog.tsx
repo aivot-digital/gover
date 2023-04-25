@@ -1,7 +1,7 @@
 import {Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useState} from 'react';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Application} from '../../models/application';
+import {Application} from '../../models/entities/application';
 import {ApplicationInitForm, validateApplication} from '../../components/application-init-form/application-init-form';
 import {ApplicationInitFormPropsErrors} from '../../components/application-init-form/application-init-form-props';
 import {CloneApplicationDialogProps} from './clone-application-dialog-props';

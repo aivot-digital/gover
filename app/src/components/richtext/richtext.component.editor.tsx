@@ -1,5 +1,5 @@
 import React from 'react';
-import {RichtextElement} from '../../models/elements/./form/./content/richtext-element';
+import {RichtextElement} from '../../models/elements/form/content/richtext-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {
     RichTextEditorComponentView

@@ -1,7 +1,7 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
 import {format} from 'date-fns';
-import {DateFieldElement, DateFieldComponentModelMode} from '../../models/elements/./form/./input/date-field-element';
+import {DateFieldElement, DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
 
 export function DateFieldComponentSummary({model, value}: BaseSummaryProps<DateFieldElement>) {
     const date = value != null && value.length > 0 && new Date(value);

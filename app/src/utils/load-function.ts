@@ -1,12 +1,14 @@
 import {PatchFunction} from '../models/_lib/patch-function';
 import {VisibilityFunction} from '../models/_lib/visibility-function';
 import {ValidityFunction} from '../models/_lib/validity-function';
-import {AnyInputElement} from '../models/elements/./form/./input/any-input-element';
 import {AnyElement} from '../models/elements/any-element';
-import {isNullOrEmpty} from './is-null-or-empty';
+import {AnyInputElement} from "../models/elements/form/input/any-input-element";
+import {isStringNullOrEmpty} from "./string-utils";
 
+/*
+TODO: Remove
 export function loadPatchFunction(model: AnyElement): PatchFunction | null {
-    return loadFunction<PatchFunction>(model, model.patchElement?.functionName);
+    return loadFunction<PatchFunction>(model, model.patchElement);
 }
 
 export function loadVisibilityFunction(model: AnyElement): VisibilityFunction | null {
@@ -18,7 +20,7 @@ export function loadValidityFunction(model: AnyInputElement): ValidityFunction |
 }
 
 function loadFunction<F>(model: AnyElement, functionName?: string | null): F | null {
-    if (!isNullOrEmpty(functionName)) {
+    if (!isStringNullOrEmpty(functionName)) {
         const func: F | null = (window as any)[functionName!];
         if (func != null) {
             try {
@@ -32,3 +34,4 @@ function loadFunction<F>(model: AnyElement, functionName?: string | null): F | n
     }
     return null;
 }
+*/

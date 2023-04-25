@@ -1,4 +1,4 @@
-import React, {useCallback} from 'react';
+import React from 'react';
 import {
     Box,
     Button,
@@ -14,12 +14,13 @@ import {
 import {useDispatch, useSelector} from 'react-redux';
 import {AppDispatch, RootState} from '../../store';
 import {
-    AdminSettingsState, toggleShowDebugOutput,
+    AdminSettingsState,
+    toggleShowDebugOutput,
     toggleShowUserInput,
     toggleValidation,
     toggleVisibility
 } from '../../slices/admin-settings-slice';
-import {faCode, faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
+import {faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {resetUserInput} from '../../slices/customer-input-slice';
@@ -27,7 +28,6 @@ import {CodeService} from '../../services/code.service';
 import {AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {resetStepper} from '../../slices/stepper-slice';
-import {downloadTextFile} from '../../utils/download-text-file';
 import {showErrorSnackbar, showSuccessSnackbar} from "../../slices/snackbar-slice";
 import {Localization} from "../../locale/localization";
 import strings from "./admin-tools-dialog-strings.json";
@@ -137,6 +137,8 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
 
                     <Divider sx={{my: 2}}/>
 
+                    {/*
+                    TODO: Maybe remove
                     <Typography variant="body1">
                         Erzeugen Sie den Code neu, wenn Funktionen (z.B. für Validierungen) hinzugefügt oder geändert
                         wurden.
@@ -164,6 +166,8 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                     >
                         Erzeuge Code-Vorlage
                     </Button>
+                    */
+                    }
 
                     <Divider sx={{my: 2}}/>
 

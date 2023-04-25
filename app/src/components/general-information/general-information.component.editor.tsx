@@ -1,10 +1,65 @@
 import React, {useEffect, useState} from 'react';
 import {BaseEditorProps} from '../_lib/base-editor-props';
-import {IntroductionStepElement} from '../../models/elements/./steps/introduction-step-element';
-import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
-import {Department} from "../../models/department";
+import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {FormControl, FormGroup, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
+import {Department} from "../../models/entities/department";
 import {DepartmentsService} from "../../services/departments.service";
-import {isNullOrEmpty} from "../../utils/is-null-or-empty";
+import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {CheckboxTree, CheckboxTreeOption} from "../checkbox-tree/checkbox-tree";
+
+const eligibleEntities: CheckboxTreeOption[] = [
+    {
+        label: 'Rechtspersonen',
+        children: [
+            'Natürliche Personen',
+            {
+                label: 'Juristische Personen des öffentlichen Rechts',
+                children: [
+                    {
+                        label: 'Körperschaften',
+                        children: [
+                            'Gebietskörperschaften',
+                            'Verbandskörperschaften',
+                            'Personal- und Realkörperschaften',
+                        ],
+                    },
+                    'Anstalten des öffentlichen Rechts',
+                    'Öffentlich-rechtliche Stiftungen',
+                ],
+            },
+            {
+                label: 'Juristische Personen des privaten Rechts',
+                children: [
+                    'Vereine (e.V., a.V.)',
+                    'Aktiengesellschaften (AG)',
+                    'Kommanditgesellschaften auf Aktien (KGaA)',
+                    'Gesellschaften mit beschränkter Haftung (GmbH, UG)',
+                    'Eingetragene Genossenschaften (eG)',
+                    'Europäische Gesellschaften (SE)',
+                ],
+            },
+        ],
+    },
+    {
+        label: 'Personengesellschaften',
+        children: [
+            'Offene Handelsgesellschaften (OHG)',
+            'Kommanditgesellschaften (KG)',
+            'Gesellschaft bürgerlichen Rechts (GbR)',
+            'Partnerschaftsgesellschaften',
+            'Partenreedereien',
+            'Stille Gesellschaften',
+        ],
+    },
+    {
+        label: 'Gesamthandsgemeinschaften',
+        children: [
+            'Gütergemeinschaften',
+            'Erbengemeinschaften',
+            'Wohnungseigentümergemeinschaften',
+        ],
+    },
+]
 
 export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
     const [vendors, setVendors] = useState<Department[]>([]);
@@ -133,30 +188,16 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 })}
             />
 
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
+            <FormGroup>
                 <InputLabel>Antragsberechtigte</InputLabel>
-                <Select
-                    value={(props.component.eligiblePersons ?? []).join('')}
-                    label="Antragsberechtigte"
-                    onChange={event => props.onPatch({
-                        eligiblePersons: [event.target.value],
+                <CheckboxTree
+                    options={eligibleEntities}
+                    value={props.component.eligiblePersons ?? []}
+                    onChange={update => props.onPatch({
+                        eligiblePersons: update,
                     })}
-                >
-                    {
-                        [["Natürliche Personen", "Natürliche Personen"], ["Juristische Personen", "Juristische Personen"]].map(([value, label]) => (
-                            <MenuItem
-                                key={label}
-                                value={value}
-                            >
-                                {label}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+                />
+            </FormGroup>
 
             <TextField
                 value={(props.component.supportingDocuments ?? []).join('\n')}
@@ -168,7 +209,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     supportingDocuments: event.target.value.split('\n'),
                 })}
                 onBlur={() => props.onPatch({
-                    supportingDocuments: (props.component.supportingDocuments ?? []).filter(ln => !isNullOrEmpty(ln)),
+                    supportingDocuments: (props.component.supportingDocuments ?? []).filter(ln => !isStringNullOrEmpty(ln)),
                 })}
                 helperText="Dokumente, welche Antragsberechtigte vor Antragstellung lesen sollten. Bitte geben Sie pro Zeile ein Dokument an."
             />
@@ -183,7 +224,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     documentsToAttach: event.target.value.split('\n'),
                 })}
                 onBlur={() => props.onPatch({
-                    documentsToAttach: (props.component.documentsToAttach ?? []).filter(ln => !isNullOrEmpty(ln)),
+                    documentsToAttach: (props.component.documentsToAttach ?? []).filter(ln => !isStringNullOrEmpty(ln)),
                 })}
                 helperText="Dokumente, welche Antragsberechtigte einzureichen haben. Bitte geben Sie pro Zeile ein Dokument an."
             />
@@ -196,7 +237,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     expectedCosts: event.target.value,
                 })}
                 onBlur={() => {
-                    if (isNullOrEmpty(props.component.expectedCosts)) {
+                    if (isStringNullOrEmpty(props.component.expectedCosts)) {
                         props.onPatch({
                             expectedCosts: undefined,
                         });

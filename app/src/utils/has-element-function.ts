@@ -1,10 +1,10 @@
-import {isNullOrEmpty} from './is-null-or-empty';
 import {AnyElement} from '../models/elements/any-element';
+import {isStringNotNullOrEmpty} from "./string-utils";
 
 export function hasElementFunction(comp: AnyElement): boolean {
     return (
-        (comp.isVisible != null && !isNullOrEmpty(comp.isVisible.functionName)) ||
-        (comp.validate != null && !isNullOrEmpty(comp.validate.functionName)) ||
-        (comp.patchElement != null && !isNullOrEmpty(comp.patchElement.functionName))
+        (comp.isVisible != null && isStringNotNullOrEmpty(comp.isVisible.requirements)) ||
+        (comp.patchElement != null && isStringNotNullOrEmpty(comp.patchElement.requirements))
+        // TODO: Check func
     );
 }

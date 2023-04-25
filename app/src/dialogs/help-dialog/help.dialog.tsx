@@ -8,7 +8,7 @@ import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import MuiAccordion, {AccordionProps} from '@mui/material/Accordion';
 import MuiAccordionSummary, {AccordionSummaryProps,} from '@mui/material/AccordionSummary';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Department} from '../../models/department';
+import {Department} from '../../models/entities/department';
 import {useSelector} from 'react-redux';
 import {DepartmentsService} from '../../services/departments.service';
 import {HelpDialogProps} from './help-dialog-props';
@@ -43,7 +43,7 @@ export function HelpDialog(props: HelpDialogProps) {
             open={props.open}
             maxWidth="md"
             scroll="paper"
-            onBackdropClick={props.onHide}
+            onClose={props.onHide}
             fullWidth={true}
         >
             <DialogTitleWithClose

@@ -10,7 +10,7 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {Localization} from '../../locale/localization';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
-import {AppHeaderMenu} from './components/app-header-menu/app-header-menu';
+import {AppHeaderMenu} from './app-header-menu/app-header-menu';
 import {AccessibilityDialog} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {HelpDialog} from '../../dialogs/help-dialog/help.dialog';
 import {Logo} from '../static-components/logo/logo';

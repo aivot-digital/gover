@@ -1,5 +1,5 @@
 import {CustomerInput} from '../models/customer-input';
-import {Application} from '../models/application';
+import {Application} from '../models/entities/application';
 
 const DATA_KEY = 'state';
 const DATE_KEY = 'date';

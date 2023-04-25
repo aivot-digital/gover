@@ -1,5 +1,5 @@
 import {Alert, AlertTitle} from '@mui/material';
-import {AlertElement} from '../../models/elements/./form/./content/alert-element';
+import {AlertElement} from '../../models/elements/form/content/alert-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 
 export function AlertComponentView({element}: BaseViewProps<AlertElement, void>) {

@@ -1,5 +1,5 @@
 import {AlertColor, FormControl, InputLabel, MenuItem, Select, TextField} from '@mui/material';
-import {AlertElement} from '../../models/elements/./form/./content/alert-element';
+import {AlertElement} from '../../models/elements/form/content/alert-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 const colors = [

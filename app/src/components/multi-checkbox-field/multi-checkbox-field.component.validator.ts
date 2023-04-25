@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {MultiCheckboxFieldElement} from '../../models/elements/./form/./input/multi-checkbox-field-element';
+import {MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 
 export class MultiCheckboxFieldComponentValidator extends BaseInputElementValidator<string[], MultiCheckboxFieldElement> {
     protected checkEmpty(comp: MultiCheckboxFieldElement, value: string[]): boolean {

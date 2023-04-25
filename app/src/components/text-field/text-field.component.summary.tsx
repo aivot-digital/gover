@@ -1,8 +1,8 @@
-import {TextFieldElement} from '../../models/elements/./form/./input/text-field-element';
+import {TextFieldElement} from '../../models/elements/form/input/text-field-element';
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Box, Button, Grid, Typography, useTheme} from '@mui/material';
-import {stringOrDefault} from '../../utils/string-or-default';
 import {useState} from 'react';
+import {stringOrDefault} from "../../utils/string-utils";
 
 export function TextFieldComponentSummary({model, value}: BaseSummaryProps<TextFieldElement>) {
     const theme = useTheme();

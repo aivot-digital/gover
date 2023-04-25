@@ -18,12 +18,12 @@ import {
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {showNotImplementedMessage} from '../../../../../utils/show-not-implemented-message';
 import {ApplicationService} from '../../../../../services/application.service';
-import {downloadCodeFile, downloadConfigFile} from '../../../../../utils/download-config-file';
-import {Application} from '../../../../../models/application';
+import {Application} from '../../../../../models/entities/application';
 import {getColorPalette} from '../../../../../theming/themes';
 import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
 import strings from './application-list-item-strings.json';
 import {Localization} from '../../../../../locale/localization';
+import {downloadCodeFile, downloadConfigFile} from "../../../../../utils/download-utils";
 
 const __ = Localization(strings);
 
@@ -107,7 +107,7 @@ export function ApplicationListItem({
                     className={styles.metaText}
                     sx={{mt: -0.6, fontSize: '0.875rem', lineHeight: '1.5rem'}}
                 >
-                    {ApplicationStatusNames[application.root.status ?? ApplicationStatus.Drafted]} • {__.lastUpdatedLabel}: {isToday(lastUpdate) ? __.today : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} {__.oClock}
+                    {ApplicationStatusNames[application.status ?? ApplicationStatus.Drafted]} • {__.lastUpdatedLabel}: {isToday(lastUpdate) ? __.today : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} {__.oClock}
                 </Typography>
             </Box>
             <Box className={styles.listItemActions}>

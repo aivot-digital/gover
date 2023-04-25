@@ -1,5 +1,5 @@
 import {DialogProps} from '@mui/material/Dialog/Dialog';
-import {Application} from '../../models/application';
+import {Application} from '../../models/entities/application';
 
 export interface CloneApplicationDialogProps extends DialogProps {
     applications: Application[];

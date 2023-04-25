@@ -1,11 +1,10 @@
 import {ApiConfig} from '../api-config';
 import axios from 'axios';
 import {CrudService} from './crud.service';
-import {Application} from '../models/application';
-import {isNullOrEmpty} from '../utils/is-null-or-empty';
-import {FunctionSet} from '../components/_lib/function-set';
+import {Application} from '../models/entities/application';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
+import {isStringNullOrEmpty} from "../utils/string-utils";
 
 const scriptElementIdPrefix = 'logic-bundle-';
 
@@ -48,79 +47,79 @@ export class CodeService {
         });
     }
 
-    public static createCodeStubs(application: Application): string {
-        const root = application.root;
-        const lines = [
-            '// Code for ' + root.title,
-            '',
-        ];
-
-        const processElement = (element: AnyElement) => {
-            const addCodeBlock = (
-                field: 'validate' | 'patch' | 'visibility',
-                funcPrefix: string,
-                funcPurpose: string,
-                funcReturnType: string,
-                funcReturnText: string,
-                funcDefaultReturn: string,
-            ) => {
-                const data: FunctionSet | undefined = element[field];
-                if (data != null && (!isNullOrEmpty(data.requirements) || !isNullOrEmpty(data.functionName))) {
-                    const funcName = isNullOrEmpty(data.functionName) ? funcPrefix + '_' + element.id : data.functionName;
-
-                    lines.push('/**');
-                    lines.push(` * ${funcPurpose}`);
-                    lines.push(' *');
-                    lines.push(' * @param {any} $global - The global data object containing all customer data.');
-                    lines.push(' * @param {any} $element - The config data of the current element.');
-                    lines.push(' * @param {string} $id - The id of the current element.');
-                    lines.push(` * @returns {${funcReturnType}} ${funcReturnText}`);
-                    lines.push(' */');
-                    lines.push(`function ${funcName}($global, $element, $id) {`);
-                    if (!isNullOrEmpty(data.requirements)) {
-                        lines.push('    /*');
-                        lines.push('    ' + data.requirements);
-                        lines.push('    */');
-                    }
-                    lines.push(`    return ${funcDefaultReturn};`);
-                    lines.push('}\n');
-                }
-            };
-
-            addCodeBlock(
-                'validate',
-                'validate',
-                `Determine if ${element.id} is valid and return possible errors.`,
-                '(string|null)',
-                'The error string if the element is not valid or null if no error was found.',
-                'null'
-            );
-
-            addCodeBlock(
-                'visibility',
-                'is_visible',
-                `Determine if ${element.id} is visible.`,
-                'boolean',
-                'True if the element is visible, false otherwise.',
-                'false'
-            );
-
-            addCodeBlock(
-                'patch',
-                'patch',
-                `Patch the config of ${element.id} with custom data.`,
-                'any',
-                'A patches subset of the element config.',
-                '{...$element}'
-            );
-
-            if (isAnyElementWithChildren(element)) {
-                element.children.forEach(processElement);
-            }
-        };
-
-        processElement(root);
-
-        return lines.join('\n');
-    }
+    // public static createCodeStubs(application: Application): string {
+    //     const root = application.root;
+    //     const lines = [
+    //         '// Code for ' + root.title,
+    //         '',
+    //     ];
+    //
+    //     const processElement = (element: AnyElement) => {
+    //         const addCodeBlock = (
+    //             field: 'validate' | 'patch' | 'visibility',
+    //             funcPrefix: string,
+    //             funcPurpose: string,
+    //             funcReturnType: string,
+    //             funcReturnText: string,
+    //             funcDefaultReturn: string,
+    //         ) => {
+    //             const data: FunctionSet | undefined = element[field];
+    //             if (data != null && (!isStringNullOrEmpty(data.requirements) || !isStringNullOrEmpty(data.functionName))) {
+    //                 const funcName = isStringNullOrEmpty(data.functionName) ? funcPrefix + '_' + element.id : data.functionName;
+    //
+    //                 lines.push('/**');
+    //                 lines.push(` * ${funcPurpose}`);
+    //                 lines.push(' *');
+    //                 lines.push(' * @param {any} $global - The global data object containing all customer data.');
+    //                 lines.push(' * @param {any} $element - The config data of the current element.');
+    //                 lines.push(' * @param {string} $id - The id of the current element.');
+    //                 lines.push(` * @returns {${funcReturnType}} ${funcReturnText}`);
+    //                 lines.push(' */');
+    //                 lines.push(`function ${funcName}($global, $element, $id) {`);
+    //                 if (!isStringNullOrEmpty(data.requirements)) {
+    //                     lines.push('    /*');
+    //                     lines.push('    ' + data.requirements);
+    //                     lines.push('    */');
+    //                 }
+    //                 lines.push(`    return ${funcDefaultReturn};`);
+    //                 lines.push('}\n');
+    //             }
+    //         };
+    //
+    //         addCodeBlock(
+    //             'validate',
+    //             'validate',
+    //             `Determine if ${element.id} is valid and return possible errors.`,
+    //             '(string|null)',
+    //             'The error string if the element is not valid or null if no error was found.',
+    //             'null'
+    //         );
+    //
+    //         addCodeBlock(
+    //             'visibility',
+    //             'is_visible',
+    //             `Determine if ${element.id} is visible.`,
+    //             'boolean',
+    //             'True if the element is visible, false otherwise.',
+    //             'false'
+    //         );
+    //
+    //         addCodeBlock(
+    //             'patch',
+    //             'patch',
+    //             `Patch the config of ${element.id} with custom data.`,
+    //             'any',
+    //             'A patches subset of the element config.',
+    //             '{...$element}'
+    //         );
+    //
+    //         if (isAnyElementWithChildren(element)) {
+    //             element.children.forEach(processElement);
+    //         }
+    //     };
+    //
+    //     processElement(root);
+    //
+    //     return lines.join('\n');
+    // }
 }

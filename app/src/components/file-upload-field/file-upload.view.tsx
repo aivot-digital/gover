@@ -20,11 +20,10 @@ import {BaseViewProps} from "../_lib/base-view-props";
 import {
     FileUploadElement,
     FileUploadElementItem
-} from "../../models/elements/./form/./input/file-upload-element";
-import {humanizeFileSize} from "../../utils/humanize-file-size";
-import {humanizeNumber, pluralize} from "../../utils/humanize-number-size";
+} from "../../models/elements/form/input/file-upload-element";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../slices/snackbar-slice";
+import {humanizeFileSize, humanizeNumber, pluralize} from "../../utils/huminization-utils";
 
 export function FileUploadView({
                                    element,

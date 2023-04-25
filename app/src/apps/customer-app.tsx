@@ -1,6 +1,6 @@
 import React, {useEffect} from 'react';
 import {HashRouter, Route, Routes} from 'react-router-dom';
-import {Application} from '../pages/customer-pages/application';
+import {ApplicationPage} from '../pages/customer-pages/application-page';
 import {fetchSystemConfig} from '../slices/system-config-slice';
 import {useDispatch} from 'react-redux';
 
@@ -15,7 +15,10 @@ function CustomerApp() {
     return (
         <HashRouter>
             <Routes>
-                <Route path="/:slug/:version" element={<Application/>}/>
+                <Route
+                    path="/:slug/:version"
+                    element={<ApplicationPage/>}
+                />
             </Routes>
         </HashRouter>
     );

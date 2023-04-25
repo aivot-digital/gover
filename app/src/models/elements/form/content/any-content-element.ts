@@ -4,10 +4,9 @@ import {RichtextElement} from './richtext-element';
 import {SpacerElement} from './spacer-element';
 import {ImageElement} from './image-element';
 
-export type AnyContentElement = (
+export type AnyContentElement =
     AlertElement |
     HeadlineElement |
     ImageElement |
     RichtextElement |
-    SpacerElement
-    );
+    SpacerElement;

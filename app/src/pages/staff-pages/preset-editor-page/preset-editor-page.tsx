@@ -12,10 +12,10 @@ import {useAuthGuard} from '../../../hooks/use-auth-guard';
 import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
 import {faSave} from '@fortawesome/pro-light-svg-icons';
 import {Localization} from '../../../locale/localization';
-import strings from './preset-editor-strings.json';
+import strings from './preset-editor-page-strings.json';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {PresetsService} from '../../../services/presets.service';
-import {Preset} from '../../../models/preset';
+import {Preset} from '../../../models/entities/preset';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -24,7 +24,7 @@ import {ElementTree} from '../../../components/element-tree/element-tree';
 
 const _ = Localization(strings);
 
-export function PresetEditor() {
+export function PresetEditorPage() {
     useAuthGuard();
 
     const dispatch = useAppDispatch();
@@ -136,7 +136,7 @@ export function PresetEditor() {
                     >
                         <Container>
                             <ViewDispatcherComponent
-                                model={preset.root}
+                                element={preset.root}
                             />
                         </Container>
                     </Grid>

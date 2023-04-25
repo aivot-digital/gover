@@ -1,7 +1,8 @@
 import {AnyElement} from '../../../../../../models/elements/any-element';
+import {Function} from "../../../../../../models/functions/function";
 
 export interface CodeTabProps<T extends AnyElement> {
-    element: T;
-    field: keyof T & ('visibility' | 'validate' | 'patch');
-    onChange: (data: T) => void;
+    func?: Function;
+    allowNoCode: boolean;
+    onChange: (updatedFunc: Function | undefined) => void;
 }

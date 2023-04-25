@@ -16,12 +16,12 @@ import {useAuthGuard} from '../../../hooks/use-auth-guard';
 import strings from './data-overview-strings.json';
 import {useNavigate} from 'react-router-dom';
 import {Localization} from '../../../locale/localization';
-import {downloadObjectFile} from '../../../utils/download-object-file';
 import {ImportDialog} from './components/import-dialog/import-dialog';
 import {readFile} from '../../../utils/read-file';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {EditDialog} from './components/edit-dialog/edit-dialog';
+import {downloadObjectFile} from "../../../utils/download-utils";
 
 const _ = Localization(strings);
 

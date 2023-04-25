@@ -3,10 +3,10 @@ import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material
 import {RootElement} from '../../../models/elements/root-element';
 import {addError, resetErrors} from '../../../slices/customer-input-errors-slice';
 import {ViewDispatcherComponent} from '../../view-dispatcher.component';
-import {isComponentValid} from '../../../utils/is-component-valid';
+import {isElementValid} from '../../../utils/is-element-valid';
 import {CustomStep} from './components/custom-step/custom-step';
 import {PrivacyUserInputKey} from '../../general-information/general-information.component.view';
-import {isComponentVisible} from '../../../utils/is-component-visible';
+import {isElementVisible} from '../../../utils/is-element-visible';
 import {BaseViewProps} from '../../_lib/base-view-props';
 import Chip from '@mui/material/Chip';
 import {faShieldCheck} from '@fortawesome/pro-light-svg-icons';
@@ -35,7 +35,7 @@ import {ElementNames} from "../../../data/element-type/element-names";
 import {
     FileUploadElementItem,
     isFileUploadElementItem
-} from "../../../models/elements/./form/./input/file-upload-element";
+} from "../../../models/elements/form/input/file-upload-element";
 
 export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
@@ -123,7 +123,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
         } else {
             const step = steps[currentStep - 1];
             if (step != null) {
-                isValid = isComponentValid($debug, dispatch, step, customerData);
+                isValid = isElementValid($debug, dispatch, step, customerData);
             }
         }
 
@@ -192,7 +192,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                     >
                         {
                             steps
-                                .filter(step => isComponentVisible(step.id, step, customerData))
+                                .filter(step => isElementVisible(step.id, step, customerData))
                                 .map((step, index) => (
                                     <CustomStep
                                         key={index}
@@ -208,7 +208,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                                         validatedWithErrors={validatedWithErrors}
                                     >
                                         <ViewDispatcherComponent
-                                            model={step}
+                                            element={step}
                                         />
                                     </CustomStep>
                                 ))

@@ -2,7 +2,7 @@ import React from 'react';
 import {DepartmentsService} from '../../../services/departments.service';
 import {DataOverview} from '../data-overview/data-overview';
 import {DataOverviewProps} from '../data-overview/data-overview-props';
-import {Department} from '../../../models/department';
+import {Department} from '../../../models/entities/department';
 import {Localization} from '../../../locale/localization';
 import strings from './departments-overview-strings.json';
 

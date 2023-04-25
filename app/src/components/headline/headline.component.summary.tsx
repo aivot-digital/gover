@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
-import {HeadlineElement} from '../../models/elements/./form/./content/headline-element';
+import {HeadlineElement} from '../../models/elements/form/content/headline-element';
 
 export function HeadlineComponentSummary({model}: BaseSummaryProps<HeadlineElement>) {
     return (

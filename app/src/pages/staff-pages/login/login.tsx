@@ -8,7 +8,7 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import strings from './login-strings.json';
 import {SystemAssetsService} from '../../../services/system-assets.service';
 import {Localization} from '../../../locale/localization';
-import {authenticate, selectAuthenticationState} from '../../../slices/auth-slice';
+import {authenticate, logout, selectAuthenticationState} from '../../../slices/auth-slice';
 import {AuthState} from "../../../data/auth-state";
 
 const __ = Localization(strings);
@@ -27,13 +27,14 @@ export function Login() {
         if (authState === AuthState.Authenticated) {
             navigate('/overview');
         }
-        if (authState !== AuthState.NotInitialized) {
+        if (authState === AuthState.AuthenticationFailed) {
             setIsAuthenticating(false);
         }
     }, [navigate, authState]);
 
     const handleAuthenticate = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        dispatch(logout());
         dispatch(authenticate({email: email.trim(), password}));
         setIsAuthenticating(true);
         return false;

@@ -1,7 +1,7 @@
 import {Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Department} from '../../models/department';
+import {Department} from '../../models/entities/department';
 import {DepartmentsService} from '../../services/departments.service';
 import {useSelector} from 'react-redux';
 import {AccessibilityDialogProps} from './accessibility-dialog-props';
@@ -26,7 +26,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             open={props.open}
             maxWidth={'md'}
             scroll={'paper'}
-            onBackdropClick={props.onHide}
+            onClose={props.onHide}
             fullWidth={true}
         >
             <DialogTitleWithClose

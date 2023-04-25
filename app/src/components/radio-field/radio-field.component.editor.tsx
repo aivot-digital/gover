@@ -1,5 +1,5 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {RadioFieldElement} from '../../models/elements/./form/./input/radio-field-element';
+import {RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {normalizeLines, splitLineInputEvent} from '../../utils/split-line-input';
 

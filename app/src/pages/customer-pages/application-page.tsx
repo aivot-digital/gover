@@ -15,7 +15,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetSnackbar} from "../../slices/snackbar-slice";
 
-export function Application() {
+export function ApplicationPage() {
     const params = useParams();
 
     const dispatch = useAppDispatch();
@@ -37,7 +37,7 @@ export function Application() {
         return (
             <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(application.root.theme, baseTheme)}>
                 <MetaElement title={application.root.tabTitle}/>
-                <ViewDispatcherComponent model={application.root}/>
+                <ViewDispatcherComponent element={application.root}/>
                 <LoadUserInputDialog application={application}/>
                 <InputWatcher application={application}/>
 

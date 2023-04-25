@@ -4,7 +4,6 @@ import {RootElement} from '../../../models/elements/root-element';
 import {BaseEditorProps} from '../../_lib/base-editor-props';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faPaperPlane} from '@fortawesome/pro-light-svg-icons';
-import {isNullOrEmpty} from '../../../utils/is-null-or-empty';
 import {ApplicationStatus} from '../../../data/application-status/application-status';
 import {hasUntestedChild} from '../../../utils/has-untested-child';
 import {isElementTested} from '../../../utils/is-element-tested';
@@ -12,10 +11,16 @@ import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
 import {UserRole} from '../../../data/user-role';
 import {checkUserRole} from '../../../utils/check-user-role';
+import {selectLoadedApplication, updateAppModel} from "../../../slices/app-slice";
+import {useAppDispatch} from "../../../hooks/use-app-dispatch";
 
-export function RootComponentEditorTabPublish({component, onPatch}: BaseEditorProps<RootElement>) {
+export function RootComponentEditorTabPublish({component}: BaseEditorProps<RootElement>) {
+    const dispatch = useAppDispatch();
+
     const user = useAppSelector(selectUser);
-    const published = component.status === ApplicationStatus.Published;
+    const application = useAppSelector(selectLoadedApplication);
+
+    const isPublished = application?.status === ApplicationStatus.Published;
 
     const checklist: {
         label: string;
@@ -23,39 +28,35 @@ export function RootComponentEditorTabPublish({component, onPatch}: BaseEditorPr
     }[] = [
         {
             label: 'Schnittstelle eingerichtet',
-            done: !isNullOrEmpty(component.destination),
+            done: component.destination != null,
         },
 
         {
             label: 'Fachlicher Support eingerichtet',
-            done: component.legalSupport != null && (typeof component.legalSupport !== 'string' || !isNullOrEmpty(component.legalSupport)),
+            done: component.legalSupport != null,
         },
         {
             label: 'Technischer Support eingerichtet',
-            done: component.legalSupport != null && (typeof component.technicalSupport !== 'string' || !isNullOrEmpty(component.technicalSupport)),
+            done: component.legalSupport != null,
         },
 
 
         {
             label: 'Impressum eingerichtet',
-            done: component.imprint != null && (typeof component.imprint !== 'string' || !isNullOrEmpty(component.imprint)),
+            done: component.imprint != null,
         },
         {
             label: 'Datenschutzerklärung eingerichtet',
-            done: component.imprint != null && (typeof component.privacy !== 'string' || !isNullOrEmpty(component.privacy)),
+            done: component.imprint != null,
         },
         {
             label: 'Barrierefreiheitserklärung eingerichtet',
-            done: component.imprint != null && (typeof component.accessibility !== 'string' || !isNullOrEmpty(component.accessibility)),
+            done: component.imprint != null,
         },
 
         {
             label: 'Zuständige und/oder bewirtschaftende Stelle eingerichtet',
-            done: (
-                component.introductionStep.responsibleDepartment != null && (typeof component.introductionStep.responsibleDepartment !== 'string' || !isNullOrEmpty(component.introductionStep.responsibleDepartment))
-            ) || (
-                component.introductionStep.managingDepartment != null && (typeof component.introductionStep.managingDepartment !== 'string' || !isNullOrEmpty(component.introductionStep.managingDepartment))
-            ),
+            done: component.introductionStep.responsibleDepartment != null || component.introductionStep.managingDepartment != null,
         },
 
         {
@@ -70,7 +71,7 @@ export function RootComponentEditorTabPublish({component, onPatch}: BaseEditorPr
         },
     ];
 
-    const publishDisabled = published || !checkUserRole(UserRole.Publisher, user) || checklist.some(item => !item.done);
+    const publishDisabled = isPublished || !checkUserRole(UserRole.Publisher, user) || checklist.some(item => !item.done);
 
     return (
         <>
@@ -106,7 +107,7 @@ export function RootComponentEditorTabPublish({component, onPatch}: BaseEditorPr
             </List>
 
             {
-                published &&
+                isPublished &&
                 <Alert
                     severity='success'
                     sx={{mb: 2}}
@@ -116,7 +117,7 @@ export function RootComponentEditorTabPublish({component, onPatch}: BaseEditorPr
             }
 
             {
-                !published &&
+                !isPublished &&
                 <Tooltip
                     title={
                         publishDisabled ?
@@ -132,9 +133,12 @@ export function RootComponentEditorTabPublish({component, onPatch}: BaseEditorPr
                         }
                         disabled={publishDisabled}
                         onClick={() => {
-                            onPatch({
-                                status: ApplicationStatus.Published,
-                            });
+                            if (application != null) {
+                                dispatch(updateAppModel({
+                                    ...application,
+                                    status: ApplicationStatus.Published,
+                                }));
+                            }
                         }}
                     >
                         Antrag Veröffentlichen

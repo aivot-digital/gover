@@ -1,5 +1,5 @@
 import {Box, TextField} from '@mui/material';
-import {TextFieldElement} from '../../models/elements/./form/./input/text-field-element';
+import {TextFieldElement} from '../../models/elements/form/input/text-field-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 
 export function TextFieldComponentView({element, value, error, setValue}: BaseViewProps<TextFieldElement, string>) {

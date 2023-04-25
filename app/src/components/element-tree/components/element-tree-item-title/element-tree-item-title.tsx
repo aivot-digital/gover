@@ -13,7 +13,7 @@ import {
 } from '@fortawesome/pro-light-svg-icons';
 import {ElementIcons} from '../../../../data/element-type/element-icons';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
-import {checkId} from '../../../../utils/check-id';
+import {checkId} from '../../../../utils/id-utils';
 import {hasElementFunction} from '../../../../utils/has-element-function';
 import React from 'react';
 import {ElementType} from '../../../../data/element-type/element-type';
@@ -23,8 +23,6 @@ import Chip from '@mui/material/Chip';
 import {hasUntestedChild} from '../../../../utils/has-untested-child';
 import {RootElement} from '../../../../models/elements/root-element';
 import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
-import {hasElementFunctionRequirement} from '../../../../utils/has-element-function-requirement';
-import {stringOrDefault} from '../../../../utils/string-or-default';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {
     selectUseIdsInComponentTree,
@@ -36,6 +34,7 @@ import {AnyElement} from '../../../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
 import {getStepIcon} from '../../../../data/step-icons';
 import {selectLoadedApplication} from '../../../../slices/app-slice';
+import {stringOrDefault} from "../../../../utils/string-utils";
 
 
 export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>) {
@@ -226,8 +225,8 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
     const icons: TreeElementIcon[] = [];
 
     if (useTestMode) {
-        const professionalTestMissing = element.professionalTest == null;
-        const technicalTestMissing = hasElementFunction(element) && element.technicalTest == null;
+        const professionalTestMissing = element.testProtocolSet?.professionalTest == null;
+        const technicalTestMissing = hasElementFunction(element) && element.testProtocolSet?.technicalTest == null;
 
         if (professionalTestMissing) {
             icons.push({
@@ -268,16 +267,18 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
     }
 
     if (hasElementFunction(element)) {
-        icons.push({
-            icon: faCircleF,
-            tooltip: 'Individuelle Funktionen definiert',
-        });
-    } else if (hasElementFunctionRequirement(element)) {
-        icons.push({
-            color: 'error',
-            icon: faCircleF,
-            tooltip: 'Individuelle Funktionen erforderlich',
-        });
+        if (element.testProtocolSet?.technicalTest != null) {
+            icons.push({
+                icon: faCircleF,
+                tooltip: 'Individuelle Funktionen definiert',
+            });
+        } else {
+            icons.push({
+                color: 'error',
+                icon: faCircleF,
+                tooltip: 'Individuelle Funktionen erforderlich',
+            });
+        }
     }
 
     return icons;

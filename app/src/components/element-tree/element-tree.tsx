@@ -9,12 +9,12 @@ import {ElementTreeItemList} from './components/element-tree-item-list/element-t
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faPlusCircle} from '@fortawesome/pro-light-svg-icons';
 import {ElementType} from '../../data/element-type/element-type';
-import {generateElementIdForType} from '../../utils/generate-element-id';
 import {AddElementDialog} from '../../dialogs/add-element-dialog/add-element-dialog';
 import {AnyElement} from '../../models/elements/any-element';
 import {AnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {ElementTreeItem} from './components/element-tree-item/element-tree-item';
 import {isRootElement, RootElement} from '../../models/elements/root-element';
+import {generateElementIdForType} from "../../utils/id-utils";
 
 export function ElementTree<T extends AnyElementWithChildren>(props: ElementTreeProps<T>) {
     const [showAddDialog, setShowAddDialog] = useState(false);

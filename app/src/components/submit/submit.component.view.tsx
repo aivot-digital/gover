@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {BaseViewProps} from '../_lib/base-view-props';
-import {SubmitStepElement} from '../../models/elements/./steps/submit-step-element';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../static-components/preamble/preamble';
 import {
     Box,
@@ -19,13 +19,13 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faFileArrowUp, faUserRobot} from '@fortawesome/pro-light-svg-icons';
 import {faShieldCheck} from '@fortawesome/pro-solid-svg-icons';
 import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
-import {isNullOrEmpty} from '../../utils/is-null-or-empty';
-import {Department} from '../../models/department';
+import {Department} from '../../models/entities/department';
 import {DepartmentsService} from '../../services/departments.service';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectCustomerInputErrorValue} from '../../slices/customer-input-errors-slice';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
 
 export const SubmitHumanKey = '__human__';
 
@@ -62,7 +62,7 @@ export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, 
     return (
         <>
             {
-                !isNullOrEmpty(element.textPreSubmit) &&
+                !isStringNullOrEmpty(element.textPreSubmit) &&
                 <Preamble
                     text={element.textPreSubmit ?? ''}
                 />
@@ -72,7 +72,7 @@ export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, 
                 (
                     responsibleDepartment ||
                     managingDepartment ||
-                    !isNullOrEmpty(element.textProcessingTime) ||
+                    !isStringNullOrEmpty(element.textProcessingTime) ||
                     (element.documentsToReceive && element.documentsToReceive.length > 0)
                 ) &&
                 <FadingPaper>

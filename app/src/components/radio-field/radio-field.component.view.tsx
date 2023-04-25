@@ -1,5 +1,5 @@
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@mui/material';
-import {RadioFieldElement} from '../../models/elements/./form/./input/radio-field-element';
+import {RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 
 export function RadioFieldComponentView({element, value, error, setValue}: BaseViewProps<RadioFieldElement, string>) {

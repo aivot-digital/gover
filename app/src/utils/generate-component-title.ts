@@ -1,17 +1,14 @@
 import {ElementType} from '../data/element-type/element-type';
 import {RootElement} from '../models/elements/root-element';
-import {StepElement} from '../models/elements/./steps/step-element';
-import {HeadlineElement} from '../models/elements/./form/./content/headline-element';
+import {StepElement} from '../models/elements/steps/step-element';
+import {HeadlineElement} from '../models/elements/form/content/headline-element';
 import {ElementNames} from '../data/element-type/element-names';
-import {AlertElement} from '../models/elements/./form/./content/alert-element';
-import {SpacerElement} from '../models/elements/./form/./content/spacer-element';
-import {stringOrDefault} from './string-or-default';
-import {
-    ReplicatingContainerLayout
-} from '../models/elements/form/layout/replicating-container-layout';
-import {isNullOrEmpty} from './is-null-or-empty';
-import {AnyElement} from '../models/elements/any-element';
-import {AnyInputElement} from '../models/elements/./form/./input/any-input-element';
+import {AlertElement} from '../models/elements/form/content/alert-element';
+import {SpacerElement} from '../models/elements/form/content/spacer-element';
+import {ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
+import {AnyInputElement} from '../models/elements/form/input/any-input-element';
+import {AnyElement} from "../models/elements/any-element";
+import {isStringNotNullOrEmpty, stringOrDefault} from "./string-utils";
 
 export function generateComponentTitle(component: AnyElement) {
     const elementName = ElementNames[component.type];
@@ -34,7 +31,7 @@ export function generateComponentTitle(component: AnyElement) {
             return component.alt;
         case ElementType.Spacer:
             const height = (component as SpacerElement).height;
-            return isNullOrEmpty(height) ? `${elementName} (${height}px)` : elementName;
+            return isStringNotNullOrEmpty(height) ? `${elementName} (${height}px)` : elementName;
         case ElementType.Date:
         case ElementType.Table:
         case ElementType.Radio:

@@ -1,5 +1,5 @@
 import {InputAdornment, TextField} from '@mui/material';
-import {NumberFieldElement} from '../../models/elements/./form/./input/number-field-element';
+import {NumberFieldElement} from '../../models/elements/form/input/number-field-element';
 import {useCallback, useEffect, useState} from 'react';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../_lib/base-view-props';
@@ -9,10 +9,10 @@ export function NumberFieldComponentView({element, value, error, setValue}: Base
     const [valueBufferIsNan, setValueBufferIsNan] = useState(false);
 
     useEffect(() => {
-        if (element.id != null && element.value != null && value !== element.value) {
-            setValue(element.value);
+        if (element.id != null && element.computedValue != null && value !== element.computedValue) {
+            setValue(element.computedValue);
         }
-    }, [value, element.id, element.value, setValue]);
+    }, [value, element.id, element.computedValue, setValue]);
 
     const handleChange = useCallback(event => {
         setValueBuffer(event.target.value);

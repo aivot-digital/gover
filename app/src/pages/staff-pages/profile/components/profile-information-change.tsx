@@ -1,14 +1,14 @@
 import {Alert, Button, TextField, Typography} from '@mui/material';
 import React, {FormEvent, useCallback, useState} from 'react';
-import {User} from '../../../../models/user';
+import {User} from '../../../../models/entities/user';
 import {UsersService} from '../../../../services/users.service';
 import {refreshUser, selectUser} from '../../../../slices/user-slice';
-import {isNullOrEmpty} from '../../../../utils/is-null-or-empty';
 import strings from './profile-information-change-strings.json';
 import {Localization} from '../../../../locale/localization';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {validateEmail} from "../../../../utils/validate-email";
+import {isStringNullOrEmpty} from "../../../../utils/string-utils";
 
 const __ = Localization(strings);
 
@@ -71,7 +71,7 @@ export function ProfileInformationChange() {
                     setUserChanged(false);
                 }}
                 helperText={nameError}
-                error={!isNullOrEmpty(nameError)}
+                error={!isStringNullOrEmpty(nameError)}
             />
             <TextField
                 label={__.emailLabel}
@@ -88,7 +88,7 @@ export function ProfileInformationChange() {
                     setUserChanged(false);
                 }}
                 helperText={emailError}
-                error={!isNullOrEmpty(emailError)}
+                error={!isStringNullOrEmpty(emailError)}
             />
             <TextField
                 label={__.roleLabel}

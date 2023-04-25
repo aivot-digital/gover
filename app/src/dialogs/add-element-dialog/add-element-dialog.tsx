@@ -17,7 +17,7 @@ import React, {useEffect, useState} from 'react';
 import {ElementChildOptions} from '../../data/element-type/element-child-options';
 import {ElementIcons} from '../../data/element-type/element-icons';
 import {ElementNames} from '../../data/element-type/element-names';
-import {Preset} from '../../models/preset';
+import {Preset} from '../../models/entities/preset';
 import {PresetsService} from '../../services/presets.service';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 import {ElementType} from '../../data/element-type/element-type';
@@ -26,7 +26,7 @@ import {faLayerPlus} from '@fortawesome/pro-light-svg-icons';
 import {ElementTypesMap} from '../../data/element-type/element-types-map';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {AnyElement} from '../../models/elements/any-element';
-import {regenerateIdsForElement} from '../../utils/regenerate-ids';
+import {regenerateIdsForElement} from "../../utils/id-utils";
 
 enum ElementTypeGroups {
     Display,

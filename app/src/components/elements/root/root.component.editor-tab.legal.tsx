@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
 import {RootElement} from '../../../models/elements/root-element';
 import {BaseEditorProps} from '../../_lib/base-editor-props';
-import {Department} from '../../../models/department';
+import {Department} from '../../../models/entities/department';
 import {DepartmentsService} from '../../../services/departments.service';
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>) {

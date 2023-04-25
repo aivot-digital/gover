@@ -1,6 +1,6 @@
 import axios from 'axios';
-import {User} from '../models/user';
 import {CrudService} from './crud.service';
+import {User} from "../models/entities/user";
 
 class _UserService extends CrudService<User, 'users', number> {
     constructor() {

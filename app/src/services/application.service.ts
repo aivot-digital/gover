@@ -1,6 +1,6 @@
 import {RootElement} from '../models/elements/root-element';
 import {ElementType} from '../data/element-type/element-type';
-import {Application} from '../models/application';
+import {Application} from '../models/entities/application';
 import {ApiDetailsResponse} from '../models/api-details-response';
 import {CrudService} from './crud.service';
 import {CustomerInput} from '../models/customer-input';
@@ -8,7 +8,7 @@ import axios, {AxiosResponse} from 'axios';
 import {ApiConfig} from '../api-config';
 import {generateElementWithDefaultValues} from '../utils/generate-element-with-default-values';
 import {ApplicationStatus} from '../data/application-status/application-status';
-import {FileUploadElementItem} from "../models/elements/./form/./input/file-upload-element";
+import {FileUploadElementItem} from "../models/elements/form/input/file-upload-element";
 
 
 class _ApplicationService extends CrudService<Application, 'applications', number> {
@@ -16,10 +16,10 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
         super('applications');
     }
 
-    async createNew(slug: string, version: string, title: string, model?: RootElement): Promise<ApiDetailsResponse<Application>> {
+    async createNew(slug: string, version: string, title: string, rootElement?: RootElement): Promise<ApiDetailsResponse<Application>> {
         const newRoot: RootElement = {
             ...generateElementWithDefaultValues<ElementType.Root>(ElementType.Root) as RootElement,
-            ...model,
+            ...rootElement,
         };
         newRoot.title = title;
         const newApplication: Omit<Application, 'id'> = {
@@ -28,28 +28,20 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
             root: newRoot,
             created: '',
             updated: '',
+            status: ApplicationStatus.Drafted,
         };
 
         return await this.create(newApplication);
     }
 
     async clone(oldId: number, newSlug: string, newVersion: string, newTitle: string): Promise<ApiDetailsResponse<Application>> {
-        const model = await this.retrieve(oldId);
-        model.root.status = ApplicationStatus.Drafted;
-        return await this.createNew(newSlug, newVersion, newTitle, model.root);
-    }
-
-    async retrieve(id: number): Promise<ApiDetailsResponse<Application>> {
-        const data = await super.retrieve(id);
-        _ApplicationService.normalizeAppModel(data.root);
-        return data;
+        const application = await this.retrieve(oldId);
+        return await this.createNew(newSlug, newVersion, newTitle, application.root);
     }
 
     async retrieveBySlug(slug: string, version: string): Promise<Application> {
         const response: AxiosResponse = await axios.get(ApiConfig.address + '/public/applications/' + slug + '/' + version, CrudService.getConfig());
-        const application = response.data;
-        _ApplicationService.normalizeAppModel(application.root);
-        return application;
+        return response.data;
     }
 
     async submit(application: Application, userInput: CustomerInput): Promise<string> {
@@ -103,40 +95,6 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
             }
         )
             .then(response => response.data);
-    }
-
-    private static normalizeAppModel(model: RootElement): RootElement {
-        /* TODO: Check this
-        if (model.generalInformation == null) {
-            model.generalInformation = {
-                type: ElementType.GeneralInformation,
-                id: generateElementId('gi'),
-                ...ElementDefaults[ElementType.GeneralInformation]
-            };
-        }
-        if (model.summary == null) {
-            model.summary = {
-                type: ElementType.Summary,
-                id: generateElementId('ov'),
-                ...ElementDefaults[ElementType.Summary]
-            };
-        }
-        if (model.submit == null) {
-            model.submit = {
-                type: ElementType.Submit,
-                id: generateElementId('sm'),
-                ...ElementDefaults[ElementType.Submit]
-            };
-        }
-
-        if (model.headline == null) {
-            model.headline = 'Antrag auf Förderung aus dem \nProgramm „[NAME DES PROGRAMMS]“';
-        }
-        if (model.privacyText == null) {
-            model.privacyText = ElementDefaults[ElementType.Root].privacyText;
-        }
-         */
-        return model;
     }
 }
 

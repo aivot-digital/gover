@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
-import {CheckboxFieldElement} from '../../models/elements/./form/./input/checkbox-field-element';
+import {CheckboxFieldElement} from '../../models/elements/form/input/checkbox-field-element';
 
 export function CheckboxFieldComponentSummary({model, value}: BaseSummaryProps<CheckboxFieldElement>) {
     return (

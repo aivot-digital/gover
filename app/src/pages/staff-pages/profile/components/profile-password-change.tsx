@@ -1,9 +1,9 @@
 import {Alert, Button, TextField, Typography} from '@mui/material';
 import React, {FormEvent, useCallback, useState} from 'react';
 import {UsersService} from '../../../../services/users.service';
-import {isNullOrEmpty} from '../../../../utils/is-null-or-empty';
 import strings from './profile-password-change-strings.json';
 import {Localization} from '../../../../locale/localization';
+import {isStringNullOrEmpty} from "../../../../utils/string-utils";
 
 const __ = Localization(strings);
 
@@ -56,7 +56,7 @@ export function ProfilePasswordChange() {
                     setPasswordError(undefined);
                 }}
                 helperText={passwordError}
-                error={!isNullOrEmpty(passwordError)}
+                error={!isStringNullOrEmpty(passwordError)}
             />
             <TextField
                 label={__.retypePasswordLabel}
@@ -69,7 +69,7 @@ export function ProfilePasswordChange() {
                     setPasswordError(undefined);
                 }}
                 helperText={passwordError}
-                error={!isNullOrEmpty(passwordError)}
+                error={!isStringNullOrEmpty(passwordError)}
             />
 
             {

@@ -1,4 +1,4 @@
-import {Application} from '../models/application';
+import {Application} from "../models/entities/application";
 
 export function checkSlugAndVersion(applications: Application[], slug?: string, version?: string): string[] {
     const errors: string[] = [];

@@ -13,8 +13,8 @@ import {BoxLinkComponentView} from '../../../components/box-link/box-link.compon
 import {AddApplicationDialog} from '../../../dialogs/add-application-dialog/add-application-dialog';
 import {ImportApplicationDialog} from '../../../dialogs/import-application-dialog/import-application-dialog';
 import {MetaElement} from '../../../components/meta-element/meta-element';
-import {Application} from '../../../models/application';
-import {ProviderLink} from '../../../models/provider-link';
+import {Application} from '../../../models/entities/application';
+import {ProviderLink} from '../../../models/entities/provider-link';
 import {ProviderLinksService} from '../../../services/provider-links.service';
 import {AppHeader} from '../../../components/app-header/app-header';
 import {AppMode} from '../../../data/app-mode';
@@ -24,7 +24,7 @@ import {
     EmptySearchDataListPlaceholder
 } from '../../../components/empty-search-data-list-placeholder/empty-search-data-list-placeholder';
 import {Localization} from '../../../locale/localization';
-import strings from './application-overview-strings.json';
+import strings from './applications-overview-page-strings.json';
 import {CloneApplicationDialog} from '../../../dialogs/clone-application-dialog/clone-application-dialog';
 import {useAuthGuard} from '../../../hooks/use-auth-guard';
 import {useAppSelector} from '../../../hooks/use-app-selector';
@@ -33,7 +33,7 @@ import {SystemConfigKeys} from '../../../data/system-config-keys';
 
 const __ = Localization(strings);
 
-export function ApplicationOverview() {
+export function ApplicationsOverviewPage() {
     useAuthGuard();
 
     const navigate = useNavigate();
@@ -79,7 +79,7 @@ export function ApplicationOverview() {
 
     const handleAdd = (application: Application, navigateToEditAfterwards: boolean) => {
         ApplicationService
-            .createNew(application.slug, application.version, application.root.title ?? '')
+            .createNew(application.slug, application.version, application.root.title ?? '', application.root)
             .then((result) => {
                 if (navigateToEditAfterwards) {
                     navigate('/edit/' + result.id);

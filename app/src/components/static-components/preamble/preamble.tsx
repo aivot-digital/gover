@@ -32,7 +32,7 @@ export function Preamble(props: PreambleProps) {
                             lg={7}
                         >
                             <ViewDispatcherComponent
-                                model={{
+                                element={{
                                     id: 'preambleText',
                                     type: ElementType.Richtext,
                                     content: props.text,
@@ -70,7 +70,7 @@ export function Preamble(props: PreambleProps) {
                         >
                             <Box sx={{maxWidth: '660px'}}>
                                 <ViewDispatcherComponent
-                                    model={{
+                                    element={{
                                         id: 'preambleText',
                                         type: ElementType.Richtext,
                                         content: props.text,

@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {FormControl, InputLabel, MenuItem, Select, Typography} from '@mui/material';
 import {RootElement} from '../../../models/elements/root-element';
 import {BaseEditorProps} from '../../_lib/base-editor-props';
-import {Destination} from '../../../models/destination';
+import {Destination} from '../../../models/entities/destination';
 import {DestinationsService} from '../../../services/destinations.service';
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement>) {
@@ -33,7 +33,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                         label="Auswahl der Schnittstelle"
                         value={props.component.destination ?? ''}
                         onChange={event => props.onPatch({
-                            destination: event.target.value,
+                            destination: typeof event.target.value === 'string' ? parseInt(event.target.value) : event.target.value,
                         })}
                     >
                         {

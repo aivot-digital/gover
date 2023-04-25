@@ -1,4 +1,4 @@
-import {Department} from '../models/department';
+import {Department} from '../models/entities/department';
 import {CrudService} from './crud.service';
 import {ApiDetailsResponse} from '../models/api-details-response';
 import axios from 'axios';

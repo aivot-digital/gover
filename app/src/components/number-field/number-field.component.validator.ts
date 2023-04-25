@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {NumberFieldElement} from '../../models/elements/./form/./input/number-field-element';
+import {NumberFieldElement} from '../../models/elements/form/input/number-field-element';
 
 export class NumberFieldComponentValidator extends BaseInputElementValidator<number, NumberFieldElement> {
     protected checkEmpty(comp: NumberFieldElement, value: number): boolean {

@@ -1,5 +1,5 @@
 import {TextField} from '@mui/material';
-import {TimeFieldElement} from '../../models/elements/./form/./input/time-field-element';
+import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';

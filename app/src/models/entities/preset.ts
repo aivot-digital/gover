@@ -1,8 +1,8 @@
-import {ContainerElement} from './elements/form-elements/layout-elements/container-element';
+import {GroupLayout} from "../elements/form/layout/group-layout";
 
 export interface Preset {
     id: number;
-    root: ContainerElement;
+    root: GroupLayout;
     created?: string;
     updated?: string;
 }

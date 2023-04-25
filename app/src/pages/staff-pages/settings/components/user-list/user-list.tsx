@@ -16,7 +16,7 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faAdd, faBars} from '@fortawesome/pro-light-svg-icons';
 import {UsersService} from '../../../../../services/users.service';
 import React, {useEffect, useState} from 'react';
-import {User} from '../../../../../models/user';
+import {User} from '../../../../../models/entities/user';
 import {EditUserDialog} from '../../dialogs/edit-user-dialog/edit-user.dialog';
 import {MakeOptional} from '../../../../../types';
 import {UserRole} from '../../../../../data/user-role';

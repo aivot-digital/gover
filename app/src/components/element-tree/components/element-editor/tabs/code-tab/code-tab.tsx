@@ -7,9 +7,9 @@ import {selectLoadedApplication} from '../../../../../../slices/app-slice';
 import {useAppSelector} from '../../../../../../hooks/use-app-selector';
 import {CodeTabProps} from './code-tab-props';
 import {AnyElement} from '../../../../../../models/elements/any-element';
-import {FunctionSet} from '../../../../../_lib/function-set';
 
-export function CodeTab<T extends AnyElement>({field, element, onChange}: CodeTabProps<T>) {
+// TODO: implement new code editor
+export function CodeTab<T extends AnyElement>({func, allowNoCode, onChange}: CodeTabProps<T>) {
     const application = useAppSelector(selectLoadedApplication);
 
     const editorRef = useRef<any>();
@@ -25,6 +25,7 @@ export function CodeTab<T extends AnyElement>({field, element, onChange}: CodeTa
         }
     }, [application, editorRef]);
 
+/*
     const handleChange = (patch: Partial<FunctionSet>) => {
         onChange({
             ...element,
@@ -34,7 +35,10 @@ export function CodeTab<T extends AnyElement>({field, element, onChange}: CodeTa
             },
         });
     };
+ */
 
+    return (<div/>);
+/*
     return (
         <Box sx={{m: 4}}>
             <Typography
@@ -92,4 +96,5 @@ export function CodeTab<T extends AnyElement>({field, element, onChange}: CodeTa
             </Box>
         </Box>
     );
+ */
 }

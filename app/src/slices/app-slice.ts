@@ -1,8 +1,8 @@
 import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit'
 import {ApplicationService} from '../services/application.service';
-import {Application} from '../models/application';
 import {CodeService} from '../services/code.service';
 import {RootState} from '../store';
+import {Application} from "../models/entities/application";
 
 const initialState: {
     loadedApplication?: Application;

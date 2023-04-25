@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
 import {RootElement} from '../../../models/elements/root-element';
 import {BaseEditorProps} from '../../_lib/base-editor-props';
-import {Department} from '../../../models/department';
+import {Department} from '../../../models/entities/department';
 import {DepartmentsService} from '../../../services/departments.service';
 import {Themes} from '../../../theming/themes';
 
@@ -31,7 +31,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
             >
                 <InputLabel>Theme (Visuelles Erscheinungsbild)</InputLabel>
                 <Select
-                    value={props.component.theme ?? '_blue' /* TODO: Localize theme names */}
+                    value={props.component.theme ?? ''}
                     label="Theme (Visuelles Erscheinungsbild)"
                     onChange={event => props.onPatch({
                         theme: event.target.value,

@@ -1,5 +1,6 @@
-import {RootElement} from './elements/root-element';
-import {ApplicationStatus} from "../data/application-status/application-status";
+import {ApplicationStatus} from "../../data/application-status/application-status";
+import {RootElement} from "../elements/root-element";
+
 
 export interface Application {
     id: number;

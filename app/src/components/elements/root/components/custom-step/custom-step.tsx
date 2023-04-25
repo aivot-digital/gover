@@ -4,13 +4,16 @@ import {faArrowLeft, faArrowRight} from '@fortawesome/pro-regular-svg-icons';
 import {faCheckCircle} from '@fortawesome/pro-solid-svg-icons';
 import React, {useEffect, useRef} from 'react';
 import {ElementType} from '../../../../../data/element-type/element-type';
-import {AnyStepElement} from '../../../../../models/elements/./steps/any-step-element';
 import {getStepIcon} from '../../../../../data/step-icons';
-import {isStepElement} from '../../../../../models/elements/./steps/step-element';
+import {isStepElement, StepElement} from '../../../../../models/elements/steps/step-element';
 import {ElementNames} from '../../../../../data/element-type/element-names';
+import {IntroductionStepElement} from "../../../../../models/elements/steps/introduction-step-element";
+import {SummaryStepElement} from "../../../../../models/elements/steps/summary-step-element";
+import {SubmitStepElement} from "../../../../../models/elements/steps/submit-step-element";
+import {SubmittedStepElement} from "../../../../../models/elements/steps/submitted-step-element";
 
 interface CustomStepProps {
-    step: AnyStepElement;
+    step: StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
     children: React.ReactNode;
 
     nextLabel?: string;

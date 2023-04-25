@@ -26,10 +26,10 @@ import {
 import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
 import {useSelector} from 'react-redux';
-import {isNullOrEmpty} from '../../../utils/is-null-or-empty';
 import {ApplicationService} from '../../../services/application.service';
 import {selectLoadedApplication} from '../../../slices/app-slice';
 import {validateEmail} from "../../../utils/validate-email";
+import {isStringNullOrEmpty} from "../../../utils/string-utils";
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -197,7 +197,7 @@ export function Submitted({pdfLink}: { pdfLink: string }) {
     return (
         <>
             {
-                !isNullOrEmpty(submitStep?.textPostSubmit) &&
+                !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit ?? ''}
                 />

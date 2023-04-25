@@ -7,7 +7,7 @@ import {ElementTreeItemListProps} from './element-tree-item-list-props';
 import {selectIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
-import {regenerateIdsForElement} from '../../../../utils/regenerate-ids';
+import {regenerateIdsForElement} from "../../../../utils/id-utils";
 
 
 export function ElementTreeItemList<T extends AnyElementWithChildren>({

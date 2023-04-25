@@ -1,5 +1,5 @@
 import {DataOverview} from '../data-overview/data-overview';
-import {ProviderLink} from '../../../models/provider-link';
+import {ProviderLink} from '../../../models/entities/provider-link';
 import {ProviderLinksService} from '../../../services/provider-links.service';
 import {DataOverviewProps} from '../data-overview/data-overview-props';
 import {Localization} from '../../../locale/localization';

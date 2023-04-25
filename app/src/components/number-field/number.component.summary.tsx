@@ -1,8 +1,8 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
-import {NumberFieldElement} from '../../models/elements/./form/./input/number-field-element';
+import {NumberFieldElement} from '../../models/elements/form/input/number-field-element';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
-import {isNullOrEmpty} from '../../utils/is-null-or-empty';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
 
 export function NumberComponentSummary({model, value}: BaseSummaryProps<NumberFieldElement>) {
     return (
@@ -28,9 +28,9 @@ export function NumberComponentSummary({model, value}: BaseSummaryProps<NumberFi
             >
                 <Typography variant={"body2"}>
                     {
-                        isNullOrEmpty(value) ?
+                        isStringNullOrEmpty(value) ?
                             'Keine Angabe' :
-                            formatNumStringToGermanNum(value, model.decimalPlaces) + (!isNullOrEmpty(model.suffix) ? ' ' + model.suffix : '')
+                            formatNumStringToGermanNum(value, model.decimalPlaces) + (!isStringNullOrEmpty(model.suffix) ? ' ' + model.suffix : '')
                     }
                 </Typography>
             </Grid>

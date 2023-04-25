@@ -4,7 +4,7 @@ import strings from './application-init-form-strings.json';
 import {Alert, TextField, Typography} from '@mui/material';
 import {slugify} from '../../utils/slugify';
 import React from 'react';
-import {Application} from '../../models/application';
+import {Application} from '../../models/entities/application';
 import {checkTitle} from '../../utils/check-title';
 import {checkSlugAndVersion} from '../../utils/check-slug-and-version';
 import {checkVersion} from '../../utils/check-version';

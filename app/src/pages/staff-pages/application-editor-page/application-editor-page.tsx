@@ -38,7 +38,7 @@ import {
 } from '@fortawesome/pro-light-svg-icons';
 import {AdminToolsDialog} from '../../../dialogs/admin-tools/admin-tools-dialog';
 import {Localization} from '../../../locale/localization';
-import strings from './application-editor-strings.json';
+import strings from './application-editor-page-strings.json';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementTree} from '../../../components/element-tree/element-tree';
@@ -46,7 +46,7 @@ import {setCurrentStep} from '../../../slices/stepper-slice';
 
 const _ = Localization(strings);
 
-export function ApplicationEditor() {
+export function ApplicationEditorPage() {
     useAuthGuard();
 
     const params = useParams();
@@ -177,7 +177,7 @@ export function ApplicationEditor() {
                         }}
                     >
                         <ViewDispatcherComponent
-                            model={application.root}
+                            element={application.root}
                         />
                     </Grid>
                 </Grid>

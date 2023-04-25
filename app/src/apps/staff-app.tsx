@@ -1,7 +1,7 @@
 import React, {FunctionComponent, useEffect} from 'react';
 import {HashRouter, Route, Routes} from 'react-router-dom';
-import {ApplicationOverview} from '../pages/staff-pages/application-overview/application-overview';
-import {ApplicationEditor} from '../pages/staff-pages/application-editor/application-editor';
+import {ApplicationsOverviewPage} from '../pages/staff-pages/applications-overview-page/applications-overview-page';
+import {ApplicationEditorPage} from '../pages/staff-pages/application-editor-page/application-editor-page';
 import {Login} from '../pages/staff-pages/login/login';
 import {DepartmentsOverview} from '../pages/staff-pages/departments-overview/departments-overview';
 import {DestinationsOverview} from '../pages/staff-pages/destinations-overview/destinations-overview';
@@ -15,7 +15,7 @@ import {Alert, Snackbar, Theme, ThemeProvider} from '@mui/material';
 import {createAppTheme} from '../theming/themes';
 import {SystemConfigKeys} from '../data/system-config-keys';
 import {PresetsOverview} from '../pages/staff-pages/presets-overview/presets-overview';
-import {PresetEditor} from '../pages/staff-pages/preset-editor/preset-editor';
+import {PresetEditorPage} from '../pages/staff-pages/preset-editor-page/preset-editor-page';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {resetSnackbar} from '../slices/snackbar-slice';
@@ -24,15 +24,15 @@ import {AuthState} from "../data/auth-state";
 
 const routes: [string, FunctionComponent][] = [
     ['/', Login],
-    ['/overview', ApplicationOverview],
+    ['/overview', ApplicationsOverviewPage],
     ['/presets', PresetsOverview],
-    ['/presets/edit/:id', PresetEditor],
+    ['/presets/edit/:id', PresetEditorPage],
     ['/vendors', DepartmentsOverview],
     ['/destinations', DestinationsOverview],
     ['/settings', Settings],
     ['/provider-links', ProviderLinksOverview],
     ['/profile', Profile],
-    ['/edit/:id', ApplicationEditor],
+    ['/edit/:id', ApplicationEditorPage],
 ];
 
 function StaffApp() {

@@ -1,6 +1,6 @@
 import React from 'react';
 import {useSelector} from 'react-redux';
-import {SummaryStepElement} from '../../models/elements/./steps/summary-step-element';
+import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {BaseViewProps} from '../_lib/base-view-props';
 import {SummaryMap} from '../summary.map';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
@@ -10,7 +10,7 @@ import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {AnyElement} from '../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
-import {isComponentVisible} from "../../utils/is-component-visible";
+import {isElementVisible} from "../../utils/is-element-visible";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {CustomerInput} from "../../models/customer-input";
 import {selectCustomerInputErrorValue} from "../../slices/customer-input-errors-slice";
@@ -70,7 +70,7 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
 
             <Box>
                 <ViewDispatcherComponent
-                    model={{
+                    element={{
                         type: ElementType.Checkbox,
                         label: 'Ich habe die Zusammenfassung meines Antrages geprüft.',
                         id: SummaryUserInputKey
@@ -95,7 +95,7 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
 export function flattenElements(model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
     const id = idPrefix != null ? (idPrefix + model.id) : model.id;
 
-    const isVisible = isComponentVisible(id, model, userInput);
+    const isVisible = isElementVisible(id, model, userInput);
 
     if (!isVisible) {
         return [];

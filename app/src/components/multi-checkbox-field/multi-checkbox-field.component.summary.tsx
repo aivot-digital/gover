@@ -1,6 +1,6 @@
 import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, List, ListItem, Typography} from '@mui/material';
-import {MultiCheckboxFieldElement} from '../../models/elements/./form/./input/multi-checkbox-field-element';
+import {MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 
 export function MultiCheckboxFieldComponentSummary({model, value}: BaseSummaryProps<MultiCheckboxFieldElement>) {
     return (
