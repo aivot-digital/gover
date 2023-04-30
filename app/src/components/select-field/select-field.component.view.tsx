@@ -1,6 +1,7 @@
 import {MenuItem, TextField} from '@mui/material';
 import {SelectFieldElement} from '../../models/elements/form/input/select-field-element';
 import {BaseViewProps} from '../_lib/base-view-props';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
 
 export function SelectFieldComponentView({element, error, value, setValue}: BaseViewProps<SelectFieldElement, string>) {
     return (
@@ -14,7 +15,11 @@ export function SelectFieldComponentView({element, error, value, setValue}: Base
             value={value ?? ''}
             onChange={event => {
                 if (element.id != null) {
-                    setValue(event.target.value ?? '');
+                    if (isStringNullOrEmpty(event.target.value)) {
+                        setValue(undefined);
+                    } else {
+                        setValue(event.target.value ?? '');
+                    }
                 }
             }}
             disabled={element.disabled ?? false}

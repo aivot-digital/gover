@@ -23,10 +23,10 @@ export function TextFieldComponentView({element, value, error, setValue}: BaseVi
                     </Box>
                     {
                         element.maxCharacters && element.maxCharacters > 0 ?
-                        <Box sx={{ml: 3}}>
-                            {(value ?? '').length}/{element.maxCharacters}
-                        </Box>
-                        :
+                            <Box sx={{ml: 3}}>
+                                {(value ?? '').length}/{element.maxCharacters}
+                            </Box>
+                            :
                             <span/>
                     }
                 </Box>
@@ -34,12 +34,22 @@ export function TextFieldComponentView({element, value, error, setValue}: BaseVi
             value={value ?? ''}
             onChange={event => {
                 if (element.id != null) {
-                    setValue(event.target.value);
+                    const val = event.target.value;
+                    if (val.length === 0) {
+                        setValue(undefined);
+                    } else {
+                        setValue(val);
+                    }
                 }
             }}
             onBlur={() => {
                 if (element.id != null && value != null) {
-                    setValue(value.trim());
+                    const trimmedValue = value.trim();
+                    if (trimmedValue.length === 0) {
+                        setValue(undefined);
+                    } else {
+                        setValue(trimmedValue);
+                    }
                 }
             }}
             inputProps={element.maxCharacters ? {maxLength: element.maxCharacters} : undefined}

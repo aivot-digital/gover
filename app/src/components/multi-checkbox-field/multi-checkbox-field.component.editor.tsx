@@ -1,9 +1,7 @@
-import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {
-    MultiCheckboxFieldElement
-} from '../../models/elements/form/input/multi-checkbox-field-element';
+import {FormControl, TextField} from '@mui/material';
+import {MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
-import {normalizeLines, splitLineInputEvent} from '../../utils/split-line-input';
+import {StringListInput} from "../string-list-input/string-list-input";
 
 export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement>) {
     const minRequiredError = (
@@ -14,52 +12,17 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
 
     return (
         <>
-            <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={(props.component.options ?? []).join('\n')}
+            <StringListInput
                 label="Optionen"
-                margin="normal"
-                multiline
-                rows={10}
-                helperText="Bitte geben Sie pro Zeile eine Option an."
-                onChange={event => props.onPatch({
-                    options: splitLineInputEvent(event),
+                addLabel="Option hinzufügen"
+                hint="Die Bürger:in kann eine oder mehrere dieser Optionen auswählen."
+                noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
+                value={props.component.options}
+                onChange={options => props.onPatch({
+                    options: options,
                 })}
-                onBlur={() => props.onPatch({
-                    options: normalizeLines(props.component.options),
-                })}
+                allowEmpty={false}
             />
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.required ?? false}
-                            onChange={event => props.onPatch({
-                                required: event.target.checked,
-                                minimumRequiredOptions: event.target.checked ? 1 : undefined,
-                            })}
-                        />
-                    }
-                    label="Pflichtangabe"
-                />
-            </FormControl>
 
             {
                 props.component.required &&
@@ -94,20 +57,6 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     />
                 </FormControl>
             }
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.disabled ?? false}
-                            onChange={event => props.onPatch({
-                                disabled: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Eingabe deaktiviert"
-                />
-            </FormControl>
         </>
     );
 }

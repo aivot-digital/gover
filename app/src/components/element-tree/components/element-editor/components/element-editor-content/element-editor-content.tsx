@@ -1,12 +1,22 @@
 import {DefaultTabs} from '../../data/default-tabs';
-import {Box, FormControl, FormHelperText, IconButton, InputLabel, MenuItem, Select, TextField} from '@mui/material';
+import {
+    Box, Checkbox,
+    FormControl,
+    FormControlLabel,
+    FormHelperText,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField, Tooltip
+} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faArrowsRotate} from '@fortawesome/pro-light-svg-icons';
 import {EditorDispatcher} from '../../../../../editor-dispatcher';
 import {CodeTab} from '../../tabs/code-tab/code-tab';
 import React from 'react';
 import {StructureTab} from '../../tabs/structure-tab/structure-tab';
-import {checkId} from '../../../../../../utils/id-utils';
+import {checkId, generateElementIdForType} from '../../../../../../utils/id-utils';
 import {TestTab} from '../../tabs/test-tab/test-tab';
 import {ElementType} from '../../../../../../data/element-type/element-type';
 import {selectLoadedApplication} from '../../../../../../slices/app-slice';
@@ -15,6 +25,8 @@ import {AnyElement} from '../../../../../../models/elements/any-element';
 import {ElementEditorContentProps} from './element-editor-content-props';
 import {AnyFormElement} from '../../../../../../models/elements/form/any-form-element';
 import {FunctionCode} from "../../../../../../models/functions/function-code";
+import {BaseInputElement} from "../../../../../../models/elements/form/base-input-element";
+import {isAnyInputElement} from "../../../../../../models/elements/form/input/any-input-element";
 
 export function ElementEditorContent<T extends AnyElement>({
                                                                element,
@@ -50,16 +62,18 @@ export function ElementEditorContent<T extends AnyElement>({
                             error={idError != null}
                         />
                         <Box sx={{ml: 2, transform: 'translateY(-6px)'}}>
-                            <IconButton
-                                onClick={() => {
-                                    const res = window.confirm('Sind Sie sicher, dass Sie eine neue, zufällige ID generieren möchten?');
-                                    if (res) {
-                                        handleUpdate({id: 'e' + new Date().getTime().toString()});
-                                    }
-                                }}
-                            >
-                                <FontAwesomeIcon icon={faArrowsRotate}/>
-                            </IconButton>
+                            <Tooltip title="ID neu generieren">
+                                <IconButton
+                                    onClick={() => {
+                                        const res = window.confirm('Sind Sie sicher, dass Sie eine neue, zufällige ID generieren möchten?');
+                                        if (res) {
+                                            handleUpdate({id: generateElementIdForType(element.type)});
+                                        }
+                                    }}
+                                >
+                                    <FontAwesomeIcon icon={faArrowsRotate}/>
+                                </IconButton>
+                            </Tooltip>
                         </Box>
                     </Box>
 
@@ -109,6 +123,76 @@ export function ElementEditorContent<T extends AnyElement>({
 
                     <Box sx={{m: 4}}/>
 
+                    {
+                        isAnyInputElement(element) &&
+                        <>
+                            <TextField
+                                value={element.label ?? ''}
+                                label="Titel"
+                                margin="normal"
+                                onChange={event => handleUpdate({
+                                    label: event.target.value,
+                                })}
+                                helperText="Dieser Text wird der Bürger:in im Antrag angezeigt und Beschreibt die Eingabe in der eingereichten PDF-Datei."
+                            />
+
+                            <TextField
+                                value={element.hint ?? ''}
+                                label="Hinweis"
+                                margin="normal"
+                                onChange={event => handleUpdate({
+                                    hint: event.target.value,
+                                })}
+                                helperText="Der Hinweis sollte genutzt werden, um den Bürger:innen weitere Informationen über die Eingabe zu geben."
+                            />
+
+                            <FormControl>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={element.required ?? false}
+                                            onChange={event => handleUpdate({
+                                                required: event.target.checked,
+                                                disabled: undefined,
+                                            })}
+                                            disabled={element.disabled}
+                                        />
+                                    }
+                                    label="Pflichtangabe"
+                                />
+
+                                {
+                                    element.disabled &&
+                                    <FormHelperText>
+                                        Deaktivierte Eingaben können keine Pflichtangaben sein.
+                                    </FormHelperText>
+                                }
+                            </FormControl>
+
+                            <FormControl sx={{mb: 4}}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={element.disabled ?? false}
+                                            onChange={event => handleUpdate({
+                                                required: undefined,
+                                                disabled: event.target.checked,
+                                            })}
+                                            disabled={element.required}
+                                        />
+                                    }
+                                    label="Eingabe deaktiviert"
+                                />
+                                {
+                                    element.required &&
+                                    <FormHelperText>
+                                        Pflichtangaben können nicht deaktiviert werden.
+                                    </FormHelperText>
+                                }
+                            </FormControl>
+                        </>
+                    }
+
                     <EditorDispatcher
                         props={element}
                         onPatch={handleUpdate}
@@ -119,27 +203,51 @@ export function ElementEditorContent<T extends AnyElement>({
             return (
                 <CodeTab
                     key="visibility"
+                    resultTitle="Sichtbarkeit festlegen"
+                    resultHint="Dieses Element ist Sichtbar, wenn die folgende Funktion wahr ist."
+                    element={element}
                     func={element.isVisible}
                     allowNoCode={true}
+                    shouldReturnString={false}
                     onChange={updatedFunc => handleUpdate({isVisible: updatedFunc})}
                 />
             );
         case DefaultTabs.validation:
-            // TODO: Check input elem
-            return null; /*(
+            return (
                 <CodeTab
                     key="validate"
-                    func={element.isV}
+                    resultTitle="Validierung durchführen"
+                    resultHint="Dieses Element ist valide, wenn die folgende Funktion keine Nachricht mit einem Validierungsproblem erzeugt."
+                    element={element}
+                    func={(element as BaseInputElement<any, any>).validate}
                     allowNoCode={true}
-                    onChange={updatedFunc => handleUpdate({isVisible: updatedFunc})}
+                    shouldReturnString={true}
+                    onChange={updatedFunc => handleUpdate({validate: updatedFunc})}
                 />
-            );*/
+            );
+        case DefaultTabs.value:
+            return (
+                <CodeTab
+                    key="value"
+                    resultTitle="Dynamischen Wert bestimmen"
+                    resultHint="Dieses Element bekommt den Rückgabewert der folgenden Funktion."
+                    element={element}
+                    func={(element as BaseInputElement<any, any>).computeValue}
+                    allowNoCode={false}
+                    shouldReturnString={false}
+                    onChange={updatedFunc => handleUpdate({computeValue: updatedFunc})}
+                />
+            );
         case DefaultTabs.patch:
             return (
                 <CodeTab
                     key="patch"
+                    resultTitle="Element aktualisieren"
+                    resultHint="Dieses Element wird mit dem Rückgabewert der folgenden Funktion aktualisiert."
+                    element={element}
                     func={element.patchElement}
                     allowNoCode={false}
+                    shouldReturnString={false}
                     onChange={updatedFunc => handleUpdate({patchElement: updatedFunc as FunctionCode})}
                 />
             );

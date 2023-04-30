@@ -34,7 +34,12 @@ export function MultiCheckboxFieldComponentView({
                                             const list = value ?? [];
 
                                             if (list.includes(option)) {
-                                                setValue(list.filter((elem: string) => elem !== option));
+                                                const updatedList = list.filter((elem: string) => elem !== option);
+                                                if (updatedList.length === 0) {
+                                                    setValue(undefined);
+                                                } else {
+                                                    setValue(updatedList);
+                                                }
                                             } else {
                                                 setValue([
                                                     ...list,

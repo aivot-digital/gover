@@ -1,8 +1,5 @@
-import {Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select, TextField} from '@mui/material';
-import {
-    DateFieldElement,
-    DateFieldComponentModelMode
-} from '../../models/elements/form/input/date-field-element';
+import {Checkbox, FormControl, FormControlLabel, InputLabel, MenuItem, Select} from '@mui/material';
+import {DateFieldComponentModelMode, DateFieldElement} from '../../models/elements/form/input/date-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 const modes: [DateFieldComponentModelMode, string][] = [
@@ -14,24 +11,6 @@ const modes: [DateFieldComponentModelMode, string][] = [
 export function DateFieldComponentEditor(props: BaseEditorProps<DateFieldElement>) {
     return (
         <>
-            <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
             <FormControl
                 margin="normal"
             >
@@ -56,20 +35,6 @@ export function DateFieldComponentEditor(props: BaseEditorProps<DateFieldElement
                         ))
                     }
                 </Select>
-            </FormControl>
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.required ?? false}
-                            onChange={event => props.onPatch({
-                                required: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Pflichtangabe"
-                />
             </FormControl>
 
             {
@@ -107,20 +72,6 @@ export function DateFieldComponentEditor(props: BaseEditorProps<DateFieldElement
                     />
                 </FormControl>
             }
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.disabled ?? false}
-                            onChange={event => props.onPatch({
-                                disabled: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Eingabe deaktiviert"
-                />
-            </FormControl>
         </>
     );
 }

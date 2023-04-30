@@ -1,8 +1,6 @@
 import React from 'react';
-import {
-    ReplicatingContainerLayout
-} from '../../models/elements/form/layout/replicating-container-layout';
-import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
+import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
+import {TextField} from '@mui/material';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
 export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
@@ -15,24 +13,6 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
 
     return (
         <>
-            <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
             <TextField
                 value={props.component.headlineTemplate ?? ''}
                 label="Überschrift des einzelnen Datensatzes"
@@ -60,21 +40,6 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     removeLabel: event.target.value,
                 })}
             />
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.required ?? false}
-                            onChange={event => props.onPatch({
-                                required: event.target.checked,
-                                minimumRequiredSets: event.target.checked ? 1 : 0,
-                            })}
-                        />
-                    }
-                    label="Pflichtangabe"
-                />
-            </FormControl>
 
             {
                 props.component.required &&
@@ -129,20 +94,6 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 }}
                 error={minRequiredError}
             />
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.disabled ?? false}
-                            onChange={event => props.onPatch({
-                                disabled: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Eingabe deaktiviert"
-                />
-            </FormControl>
         </>
     );
 }

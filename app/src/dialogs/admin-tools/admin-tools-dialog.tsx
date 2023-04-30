@@ -1,10 +1,8 @@
 import React from 'react';
 import {
     Box,
-    Button,
     Dialog,
     DialogContent,
-    Divider,
     FormControlLabel,
     FormGroup,
     FormHelperText,
@@ -20,15 +18,8 @@ import {
     toggleValidation,
     toggleVisibility
 } from '../../slices/admin-settings-slice';
-import {faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {resetUserInput} from '../../slices/customer-input-slice';
-import {CodeService} from '../../services/code.service';
 import {AdminToolsDialogProps} from './admin-tools-dialog-props';
-import {selectLoadedApplication} from '../../slices/app-slice';
-import {resetStepper} from '../../slices/stepper-slice';
-import {showErrorSnackbar, showSuccessSnackbar} from "../../slices/snackbar-slice";
 import {Localization} from "../../locale/localization";
 import strings from "./admin-tools-dialog-strings.json";
 
@@ -69,7 +60,6 @@ const switches: {
 export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
     const dispatch = useDispatch();
 
-    const application = useSelector(selectLoadedApplication);
     const adminSettings = useSelector((state: RootState) => state.adminSettings);
 
     return (
@@ -111,94 +101,6 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                             ))
                         }
                     </Box>
-
-                    <Divider sx={{my: 2, mt: 5}}/>
-
-                    <Typography variant="body1">
-                        Sie können die Eingaben in diesem Antrag zurücksetzen.
-                    </Typography>
-                    <Button
-                        sx={{my: 2}}
-                        startIcon={<FontAwesomeIcon
-                            icon={faTrashAlt}
-                            fixedWidth
-                            style={{marginTop: '-2px'}}
-                        />}
-                        size="large"
-                        variant="outlined"
-                        onClick={() => {
-                            dispatch(resetUserInput());
-                            dispatch(resetStepper());
-                            onClose();
-                        }}
-                    >
-                        Eingaben zurücksetzen
-                    </Button>
-
-                    <Divider sx={{my: 2}}/>
-
-                    {/*
-                    TODO: Maybe remove
-                    <Typography variant="body1">
-                        Erzeugen Sie den Code neu, wenn Funktionen (z.B. für Validierungen) hinzugefügt oder geändert
-                        wurden.
-                    </Typography>
-                    <Button
-                        sx={{my: 2}}
-                        startIcon={<FontAwesomeIcon
-                            icon={faCode}
-                            fixedWidth
-                            style={{marginTop: '-2px'}}
-                        />}
-                        size="large"
-                        variant="outlined"
-                        onClick={() => {
-                            if (application) {
-                                const codeStubs = CodeService.createCodeStubs(application);
-                                downloadTextFile(
-                                    application.slug + '.js',
-                                    codeStubs,
-                                    'text/javascript'
-                                );
-                                onClose();
-                            }
-                        }}
-                    >
-                        Erzeuge Code-Vorlage
-                    </Button>
-                    */
-                    }
-
-                    <Divider sx={{my: 2}}/>
-
-                    <Typography variant="body1">
-                        Laden Sie den Code für den Antrag neu.
-                        Dies ist nützlich, falls Entwickler den Code aktualisieren, während Sie den Antrag bearbeiten.
-                    </Typography>
-                    <Button
-                        sx={{my: 2}}
-                        startIcon={<FontAwesomeIcon
-                            icon={faRefresh}
-                            fixedWidth
-                            style={{marginTop: '-2px'}}
-                        />}
-                        size="large"
-                        variant="outlined"
-                        onClick={() => {
-                            if (application != null) {
-                                CodeService.loadCode(application.id)
-                                    .then(() => {
-                                        dispatch(showSuccessSnackbar('Code erfolgreich neu geladen.'));
-                                    })
-                                    .catch(err => {
-                                        console.error(err);
-                                        dispatch(showErrorSnackbar('Fehler beim Code neu laden.'));
-                                    });
-                            }
-                        }}
-                    >
-                        Code neu laden
-                    </Button>
                 </DialogContent>
             </Dialog>
         </>

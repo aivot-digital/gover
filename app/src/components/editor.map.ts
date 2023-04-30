@@ -28,7 +28,6 @@ import {BaseEditorProps} from './_lib/base-editor-props';
 import {RootComponentEditorTabSchnittstellen} from './elements/root/root.component.editor-tab.schnittstellen';
 import {RootComponentEditorTabLegal} from './elements/root/root.component.editor-tab.legal';
 import {FunctionComponent} from 'react';
-import {RootComponentEditorTabCode} from './elements/root/root.component.editor-tab.code';
 import {ImageEditor} from './image/image-editor';
 import {RootComponentEditorTabPublish} from './elements/root/root.component.editor-tab.publish';
 import {FileUploadEditor} from "./file-upload-field/file-upload.editor";
@@ -58,10 +57,6 @@ export const EditorMap: ElementTypesMap<EditorType | EditorTypeSet> = {
             {
                 label: 'Rechtliches',
                 editor: RootComponentEditorTabLegal,
-            },
-            {
-                label: 'Code',
-                editor: RootComponentEditorTabCode,
             },
             {
                 label: 'Veröffentlichen',

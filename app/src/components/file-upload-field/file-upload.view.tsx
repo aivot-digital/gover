@@ -55,7 +55,7 @@ export function FileUploadView({
             if (index >= 0) {
                 const updatedFiles = [...value];
                 updatedFiles.splice(index, 1);
-                setValue(updatedFiles);
+                setValue(updatedFiles.length > 0 ? updatedFiles : undefined);
             }
         }
     };
@@ -86,7 +86,7 @@ export function FileUploadView({
             dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
         }
 
-        setValue(fileUploadItems);
+        setValue(fileUploadItems.length > 0 ? fileUploadItems : undefined);
     }
 
     const fileMaximumReached = (

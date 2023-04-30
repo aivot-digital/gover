@@ -11,6 +11,8 @@ import {Dispatch} from '@reduxjs/toolkit';
 import {CustomerInput} from '../models/customer-input';
 import {CustomerInputErrors} from '../models/customer-input-errors';
 import {AnyElement} from '../models/elements/any-element';
+import {evaluateFunction} from "../utils/evaluate-function";
+import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
 
 interface DispatcherComponentProps<M extends AnyElement> {
     element: M;
@@ -119,6 +121,9 @@ class _ViewDispatcherComponent<M extends AnyElement, V> extends React.Component<
     }
 
     makeValue(model: AnyElement, id: string, global?: any): V | null | undefined {
+        if (isAnyInputElement(model) && model.computeValue != null) {
+            return evaluateFunction(model.computeValue, (global ?? {}), model, id, false);
+        }
         return (model as any).value ?? (global ?? {})[id];
     }
 

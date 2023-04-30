@@ -7,10 +7,20 @@ import {BaseSummaryProps} from './_lib/base-summary-props';
 import {selectCustomerInput} from '../slices/customer-input-slice';
 import {AnyElement} from '../models/elements/any-element';
 import {selectDisableVisibility} from "../slices/admin-settings-slice";
+import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
+import {evaluateFunction} from "../utils/evaluate-function";
+import {CustomerInput} from "../models/customer-input";
 
 interface DispatcherComponentProps<M extends AnyElement> {
     model: M;
     idPrefix?: string;
+}
+
+function makeValue(model: AnyElement, id: string, global?: CustomerInput): any | null | undefined {
+    if (isAnyInputElement(model) && model.computeValue != null) {
+        return evaluateFunction(model.computeValue, (global ?? {}), model, id, false);
+    }
+    return (model as any).value ?? (global ?? {})[id];
 }
 
 export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefix}: DispatcherComponentProps<M>) {
@@ -25,7 +35,7 @@ export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefi
         id,
     };
 
-    const value = (patchedModel as any).value ?? customerInput[id];
+    const value = makeValue(patchedModel, id, customerInput);
 
     const isVisible = disableVisibility || isElementVisible(id, model, customerInput);
 

@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.models.elements.form;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
-import de.aivot.GoverBackend.models.functions.*;
+import de.aivot.GoverBackend.models.functions.Function;
+import de.aivot.GoverBackend.models.functions.FunctionCode;
+import de.aivot.GoverBackend.models.functions.FunctionNoCode;
+import de.aivot.GoverBackend.models.functions.FunctionResult;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -20,8 +22,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
     private Boolean required;
     private Boolean disabled;
     private Function validate;
-    private Function isDisabled;
-    private Function isRequired;
     private FunctionCode computeValue;
 
     protected BaseInputElement(Map<String, Object> data) {
@@ -38,17 +38,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         disabled = MapUtils.getBoolean(values, "disabled");
 
         validate = MapUtils.getApply(values, "validate", Map.class, d -> {
-            boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
-            return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
-        });
-
-        isDisabled = MapUtils.getApply(values, "isDisabled", Map.class, d -> {
-            boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
-            return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
-        });
-
-        isRequired = MapUtils.getApply(values, "isRequired", Map.class, d -> {
-            boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
+            boolean mainFunctionExists = MapUtils.getString(d, "code") != null;
             return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
         });
 
@@ -175,22 +165,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
 
     public void setValidate(Function validate) {
         this.validate = validate;
-    }
-
-    public Function getIsDisabled() {
-        return isDisabled;
-    }
-
-    public void setIsDisabled(Function isDisabled) {
-        this.isDisabled = isDisabled;
-    }
-
-    public Function getIsRequired() {
-        return isRequired;
-    }
-
-    public void setIsRequired(Function isRequired) {
-        this.isRequired = isRequired;
     }
 
     public FunctionCode getComputeValue() {

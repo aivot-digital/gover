@@ -2,11 +2,11 @@ package de.aivot.GoverBackend.models.elements;
 
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.lib.TestProtocolSet;
 import de.aivot.GoverBackend.models.functions.Function;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
 import de.aivot.GoverBackend.models.functions.FunctionNoCode;
 import de.aivot.GoverBackend.models.functions.FunctionResult;
+import de.aivot.GoverBackend.models.lib.TestProtocolSet;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
@@ -33,7 +33,7 @@ public abstract class BaseElement {
         testProtocolSet = MapUtils.getApply(values, "testProtocolSet", Map.class, TestProtocolSet::new);
 
         isVisible = MapUtils.getApply(values, "isVisible", Map.class, d -> {
-            boolean mainFunctionExists = MapUtils.getString(d, "mainFunction") != null;
+            boolean mainFunctionExists = MapUtils.getString(d, "code") != null;
             return mainFunctionExists ? new FunctionCode(d) : new FunctionNoCode(d);
         });
         patchElement = MapUtils.getApply(values, "patchElement", Map.class, FunctionCode::new);

@@ -13,18 +13,10 @@ class FunctionCodeTest {
     @Test
     void constructor() {
         var fn = new FunctionCode(new HashMap<>() {{
-            put("functions", new HashMap<String, String>() {{
-                put("main", "($data, $element, $id) { return toUpperCase($id); }");
-                put("toUpperCase", "(str) { return str.toUpperCase(); }");
-            }});
-            put("mainFunction", "main");
-        }}) {
-        };
-
-        assertEquals("main", fn.getMainFunction());
-        assertEquals(2, fn.getFunctions().size());
-        assertTrue(fn.getFunctions().containsKey("main"));
-        assertTrue(fn.getFunctions().containsKey("toUpperCase"));
+            put("code", "function main($data, $element, $id) { return toUpperCase($id); }\nfunction toUpperCase(str) { return str.toUpperCase(); }");
+        }});
+        assertNotNull(fn.getCode());
+        assertFalse(fn.getCode().isEmpty());
     }
 
     @Test

@@ -6,6 +6,7 @@ import {Department} from "../../models/entities/department";
 import {DepartmentsService} from "../../services/departments.service";
 import {isStringNullOrEmpty} from "../../utils/string-utils";
 import {CheckboxTree, CheckboxTreeOption} from "../checkbox-tree/checkbox-tree";
+import {StringListInput} from "../string-list-input/string-list-input";
 
 const eligibleEntities: CheckboxTreeOption[] = [
     {
@@ -180,7 +181,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 value={props.component.teaserText ?? ''}
                 label="Kurzbeschreibung"
                 margin="normal"
-                helperText={'Schildern Sie kurz und präzise den Antrag und dessen Zweck.'}
+                helperText="Schildern Sie kurz und präzise den Antrag und dessen Zweck."
                 multiline
                 rows={4}
                 onChange={event => props.onPatch({
@@ -200,36 +201,6 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             </FormGroup>
 
             <TextField
-                value={(props.component.supportingDocuments ?? []).join('\n')}
-                label="Relevante Dokumente"
-                margin="normal"
-                multiline
-                rows={4}
-                onChange={event => props.onPatch({
-                    supportingDocuments: event.target.value.split('\n'),
-                })}
-                onBlur={() => props.onPatch({
-                    supportingDocuments: (props.component.supportingDocuments ?? []).filter(ln => !isStringNullOrEmpty(ln)),
-                })}
-                helperText="Dokumente, welche Antragsberechtigte vor Antragstellung lesen sollten. Bitte geben Sie pro Zeile ein Dokument an."
-            />
-
-            <TextField
-                value={(props.component.documentsToAttach ?? []).join('\n')}
-                label="Einzureichende Dokumente"
-                margin="normal"
-                multiline
-                rows={4}
-                onChange={event => props.onPatch({
-                    documentsToAttach: event.target.value.split('\n'),
-                })}
-                onBlur={() => props.onPatch({
-                    documentsToAttach: (props.component.documentsToAttach ?? []).filter(ln => !isStringNullOrEmpty(ln)),
-                })}
-                helperText="Dokumente, welche Antragsberechtigte einzureichen haben. Bitte geben Sie pro Zeile ein Dokument an."
-            />
-
-            <TextField
                 value={props.component.expectedCosts ?? ''}
                 label="Gebühren des Antrages"
                 margin="normal"
@@ -244,6 +215,38 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     }
                 }}
             />
+
+            <Typography
+                variant="h6"
+                sx={{mt: 4}}
+            >
+                Dokumente des Antrags
+            </Typography>
+
+            <StringListInput
+                label="Relevante Dokumente"
+                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
+                addLabel="Dokument hinzufügen"
+                noItemsHint="Keine relevanten Dokumente angegeben"
+                value={props.component.supportingDocuments}
+                onChange={supportingDocuments => props.onPatch({
+                    supportingDocuments: supportingDocuments,
+                })}
+                allowEmpty={true}
+            />
+
+            <StringListInput
+                label="Einzureichende Dokumente"
+                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
+                addLabel="Dokument hinzufügen"
+                noItemsHint="Keine einzureichenden Dokumente angegeben"
+                value={props.component.documentsToAttach}
+                onChange={supportingDocuments => props.onPatch({
+                    documentsToAttach: supportingDocuments,
+                })}
+                allowEmpty={true}
+            />
+
         </>
     );
 }

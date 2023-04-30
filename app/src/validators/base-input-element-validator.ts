@@ -24,7 +24,7 @@ export abstract class BaseInputElementValidator<T, M extends AnyInputElement> ex
 
         let error: string | null = null;
         try {
-            error = evaluateFunction<string>(comp.validate, customerInput, comp, id);
+            error = evaluateFunction(comp.validate, customerInput, comp, id, false);
         } catch (err) {
             console.error('Failed to run validator of ID ' + id, err);
         }

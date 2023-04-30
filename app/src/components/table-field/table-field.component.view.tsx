@@ -28,7 +28,8 @@ export function TableFieldComponentView({element, value, error, setValue}: BaseV
 
     const handleDelete = useCallback(() => {
         if (element.id != null && selectionModel != null) {
-            setValue((value ?? []).filter((_: any, index: number) => !selectionModel.includes(index)));
+            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectionModel.includes(index));
+            setValue(updatedRows.length > 0 ? updatedRows : undefined);
             setSelectionModel(undefined);
         }
     }, [element.id, selectionModel, setValue, value]);

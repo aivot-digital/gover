@@ -64,13 +64,13 @@ export function DateFieldComponentView({setValue, element, value, error}: BaseVi
             if (changedValue != null) {
                 if (changedValue instanceof Date) {
                     if (isNaN(changedValue.getTime())) {
-                        setValue(null);
+                        setValue(undefined);
                     } else {
                         setValue(changedValue.toISOString() ?? '');
                     }
                 }
             } else {
-                setValue(null);
+                setValue(undefined);
             }
         }
     }, [setValue, element.id]);

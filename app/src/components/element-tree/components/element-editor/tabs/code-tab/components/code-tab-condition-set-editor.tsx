@@ -1,0 +1,240 @@
+import {AnyElement} from "../../../../../../../models/elements/any-element";
+import {ConditionSet} from "../../../../../../../models/functions/conditions/condition-set";
+import {Box, Button, MenuItem, TextField, Typography} from "@mui/material";
+import {ConditionSetOperator} from "../../../../../../../data/condition-set-operator";
+import {ConditionOperator} from "../../../../../../../data/condition-operator";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faAdd, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
+import React from "react";
+import {CodeTabCondition} from "./code-tab-condition";
+
+interface CodeTabConditionSetEditorProps {
+    element: AnyElement;
+    allElements: AnyElement[];
+    conditionSet: ConditionSet;
+    onChange: (cs: ConditionSet) => void;
+    shouldReturnString: boolean;
+}
+
+export function CodeTabConditionSetEditor({
+                                              element,
+                                              allElements,
+                                              conditionSet,
+                                              onChange,
+                                              shouldReturnString,
+                                          }: CodeTabConditionSetEditorProps) {
+    return (
+        <Box>
+            <Typography>
+                {
+                    shouldReturnString ?
+                        'Diese Funktion gibt einen Fehler zurück, wenn' :
+                        'Diese Funktion ist wahr, wenn'
+                }
+            </Typography>
+
+            <TextField
+                select
+                fullWidth
+                value={conditionSet.operator}
+                label="Bedingung"
+                onChange={event => onChange({
+                    ...conditionSet,
+                    operator: parseInt(event.target.value) as ConditionSetOperator,
+                })}
+            >
+                {
+                    shouldReturnString ? (
+                        <MenuItem
+                            value={ConditionSetOperator.Any}
+                        >
+                            <u>keine einzige</u>&nbsp;der folgenden Bedingungen wahr ist
+                        </MenuItem>
+                    ) : (
+                        <MenuItem
+                            value={ConditionSetOperator.Any}
+                        >
+                            <u>mindestens eine</u>&nbsp;der folgenden Bedingungen wahr ist
+                        </MenuItem>
+                    )
+                }
+
+                {
+                    shouldReturnString ? (
+                        <MenuItem
+                            value={ConditionSetOperator.All}
+                        >
+                            <u>nicht alle</u>&nbsp;der folgenden Bedingungen wahr sind
+                        </MenuItem>
+                    ) : (
+                        <MenuItem
+                            value={ConditionSetOperator.All}
+                        >
+                            <u>alle</u>&nbsp;der folgenden Bedingungen wahr sind
+                        </MenuItem>
+                    )
+                }
+            </TextField>
+
+            {
+                shouldReturnString &&
+                <TextField
+                    fullWidth
+                    label="Fehlernachricht"
+                    value={conditionSet.conditionSetUnmetMessage}
+                    onChange={event => onChange({
+                        ...conditionSet,
+                        conditionSetUnmetMessage: event.target.value,
+                    })}
+                    helperText="Dieser Fehler wird angezeigt, wenn die Bedingungsgruppe nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
+                />
+            }
+
+            <Box
+                sx={{
+                    ml: 2,
+                    mt: 2,
+                    pl: 2,
+                    borderLeft: '2px solid #e0e0e0',
+                }}
+            >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        mb: 2,
+                    }}
+                >
+                    <Button
+                        startIcon={
+                            <FontAwesomeIcon icon={faAdd}/>
+                        }
+                        onClick={() => onChange({
+                            ...conditionSet,
+                            conditions: [
+                                ...conditionSet.conditions ?? [],
+                                {
+                                    operator: ConditionOperator.Equals,
+                                    operandA: {
+                                        id: element.id,
+                                    },
+                                    operandB: {
+                                        value: 'Test',
+                                    },
+                                    conditionUnmetMessage: '',
+                                },
+                            ],
+                        })}
+                    >
+                        Bedingung hinzufügen
+                    </Button>
+                </Box>
+
+                {
+                    conditionSet.conditions &&
+                    conditionSet.conditions.map((cond, index) => (
+                        <Box
+                            sx={{mb: 3}}
+                            key={index}
+                        >
+                            <CodeTabCondition
+                                allElements={allElements}
+                                cond={cond}
+                                index={index}
+                                onDelete={() => onChange({
+                                    ...conditionSet,
+                                    conditions: conditionSet.conditions!.filter(c => c !== cond),
+                                })}
+                                onChange={updatedCond => onChange({
+                                    ...conditionSet,
+                                    conditions: conditionSet.conditions!.map(c => c !== cond ? c : updatedCond),
+                                })}
+                            />
+                            {
+                                shouldReturnString &&
+                                <TextField
+                                    label="Fehlernachricht, wenn diese Bedingung nicht wahr ist"
+                                    value={cond.conditionUnmetMessage}
+                                    onChange={event => onChange({
+                                        ...conditionSet,
+                                        conditions: conditionSet.conditions!.map(c => c !== cond ? c : {
+                                            ...cond,
+                                            conditionUnmetMessage: event.target.value,
+                                        }),
+                                    })}
+                                    helperText="Diese Fehlernachricht wird angezeigt, wenn die Bedingung nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
+                                />
+                            }
+                        </Box>
+                    ))
+                }
+
+                <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
+                    <Button
+                        onClick={() => onChange({
+                            ...conditionSet,
+                            conditionsSets: [
+                                ...conditionSet.conditionsSets ?? [],
+                                {
+                                    operator: ConditionSetOperator.All,
+                                    conditions: [],
+                                    conditionsSets: [],
+                                    conditionSetUnmetMessage: '',
+                                },
+                            ],
+                        })}
+                        startIcon={
+                            <FontAwesomeIcon icon={faAdd}/>
+                        }
+                    >
+                        Bedingungsgruppe hinzufügen
+                    </Button>
+                </Box>
+
+                {
+                    conditionSet.conditionsSets &&
+                    conditionSet.conditionsSets.map((cs, index) => (
+                        <Box
+                            sx={{mb: 3}}
+                            key={index}
+                        >
+                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                                <Typography variant="caption">
+                                    {index + 1}. Bedingungsgruppe
+                                </Typography>
+
+                                <Button
+                                    size="small"
+                                    color="error"
+                                    startIcon={
+                                        <FontAwesomeIcon icon={faTrashCanXmark}/>
+                                    }
+                                    onClick={() => onChange({
+                                        ...conditionSet,
+                                        conditionsSets: conditionSet.conditionsSets!.filter(c => c !== cs),
+                                    })}
+                                >
+                                    Gruppe löschen
+                                </Button>
+                            </Box>
+
+                            <CodeTabConditionSetEditor
+                                element={element}
+                                allElements={allElements}
+                                conditionSet={cs}
+                                onChange={updatedCs => {
+                                    onChange({
+                                        ...conditionSet,
+                                        conditionsSets: conditionSet.conditionsSets!.map(c => c !== cs ? c : updatedCs),
+                                    })
+                                }}
+                                shouldReturnString={shouldReturnString}
+                            />
+                        </Box>
+                    ))
+                }
+            </Box>
+        </Box>
+    );
+}
+

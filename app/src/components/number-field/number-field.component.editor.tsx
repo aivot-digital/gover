@@ -1,4 +1,4 @@
-import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
+import {TextField} from '@mui/material';
 import {NumberFieldElement} from '../../models/elements/form/input/number-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 
@@ -6,32 +6,12 @@ export function NumberFieldComponentEditor(props: BaseEditorProps<NumberFieldEle
     return (
         <>
             <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
                 value={props.component.placeholder ?? ''}
                 label="Platzhalter"
                 fullWidth
                 margin="normal"
                 onChange={event => props.onPatch({
                     placeholder: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
                 })}
             />
 
@@ -57,34 +37,6 @@ export function NumberFieldComponentEditor(props: BaseEditorProps<NumberFieldEle
                     });
                 }}
             />
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.required ?? false}
-                            onChange={event => props.onPatch({
-                                required: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Pflichtangabe"
-                />
-            </FormControl>
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.disabled ?? false}
-                            onChange={event => props.onPatch({
-                                disabled: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Eingabe deaktiviert"
-                />
-            </FormControl>
         </>
     );
 }

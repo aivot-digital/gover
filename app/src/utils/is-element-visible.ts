@@ -8,7 +8,7 @@ export function isElementVisible(id: string, element: AnyElement, customerInput:
     }
 
     try {
-        return evaluateFunction<boolean>(element.isVisible, customerInput, element, id) ?? false;
+        return evaluateFunction(element.isVisible, customerInput, element, id, true);
     } catch (err) {
         console.error(`Failed to run visibility function of ID ${id}`, element, err);
         return false;

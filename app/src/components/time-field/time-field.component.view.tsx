@@ -14,13 +14,13 @@ export function TimeFieldComponentView({element, value, error, setValue}: BaseVi
             if (changedValue != null) {
                 if (changedValue instanceof Date) {
                     if (isNaN(changedValue.getTime())) {
-                        setValue(null)
+                        setValue(undefined)
                     } else {
                         setValue(changedValue.toISOString() ?? '');
                     }
                 }
             } else {
-                setValue(null);
+                setValue(undefined);
             }
         }
     }, [element.id, setValue]);

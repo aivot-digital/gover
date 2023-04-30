@@ -1,4 +1,4 @@
-import {Box, Button, Checkbox, FormControl, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
+import {Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
 import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {BaseEditorProps} from '../_lib/base-editor-props';
 import {faPlus} from '@fortawesome/pro-light-svg-icons';
@@ -16,53 +16,6 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
 
     return (
         <>
-            <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
-            <FormControl>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={props.component.required ?? false}
-                        onChange={event => props.onPatch({
-                            required: event.target.checked,
-                            minimumRequiredRows: event.target.checked ? 1 : undefined,
-                        })}
-                    />
-                }
-                label="Pflichtangabe"
-            />
-            </FormControl>
-
-        <FormControl>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={props.component.disabled ?? false}
-                        onChange={event => props.onPatch({
-                            disabled: event.target.checked,
-                        })}
-                    />
-                }
-                label="Eingabe deaktiviert"
-            />
-        </FormControl>
-
             {
                 props.component.required &&
                 <TextField
@@ -265,7 +218,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
             }
             <Button
                 sx={{mt: 2}}
-                startIcon={<FontAwesomeIcon icon={faPlus} />}
+                startIcon={<FontAwesomeIcon icon={faPlus}/>}
                 variant="contained"
                 onClick={() => {
                     props.onPatch({
