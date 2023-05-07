@@ -14,6 +14,7 @@ import {ElementEditorProps} from './element-editor-props';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {ElementType} from '../../../../data/element-type/element-type';
+import ProjectPackage from '../../../../../package.json';
 
 export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>) {
     const dispatch = useAppDispatch();
@@ -25,7 +26,14 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
     const handleSave = () => {
-        props.onSave(updatedElement ?? props.element);
+        if (updatedElement != null) {
+            props.onSave({
+                ...updatedElement,
+                appVersion: ProjectPackage.version,
+            });
+        } else {
+            props.onSave(props.element);
+        }
     };
 
     const handleSetCurrentTab = (newTab: string) => {

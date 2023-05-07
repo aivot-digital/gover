@@ -13,6 +13,7 @@ import {DepartmentsService} from '../../services/departments.service';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
+import ProjectPackage from '../../../package.json';
 
 export const PrivacyUserInputKey = '__privacy__';
 
@@ -268,6 +269,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                         element={{
                             id: 'privacyText',
                             type: ElementType.Richtext,
+                            appVersion: ProjectPackage.version,
                             content: application.root.privacyText,
                         }}
                     />
@@ -278,6 +280,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                 <ViewDispatcherComponent
                     element={{
                         type: ElementType.Checkbox,
+                        appVersion: ProjectPackage.version,
                         label: 'Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen.',
                         id: PrivacyUserInputKey,
                         required: true,

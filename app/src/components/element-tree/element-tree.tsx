@@ -33,6 +33,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
             handleAddElement({
                 id: generateElementIdForType(ElementType.Step),
                 type: ElementType.Step,
+                appVersion: ProjectPackage.version,
                 children: [],
             });
         } else {

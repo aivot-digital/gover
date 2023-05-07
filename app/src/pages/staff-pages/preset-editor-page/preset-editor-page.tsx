@@ -10,7 +10,6 @@ import {NotFoundPage} from '../../../components/static-components/not-found-page
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {useAuthGuard} from '../../../hooks/use-auth-guard';
 import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
-import {faSave} from '@fortawesome/pro-light-svg-icons';
 import {Localization} from '../../../locale/localization';
 import strings from './preset-editor-page-strings.json';
 import {useAppSelector} from '../../../hooks/use-app-selector';
@@ -19,7 +18,7 @@ import {Preset} from '../../../models/entities/preset';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ElementTree} from '../../../components/element-tree/element-tree';
 
 const _ = Localization(strings);
@@ -48,19 +47,15 @@ export function PresetEditorPage() {
         }
     }, [params]);
 
-    const onSave = () => {
-        if (preset == null) {
-            return;
+    useEffect(() => {
+        if (preset != null) {
+            PresetsService.update(preset.id, preset)
+                .catch(err => {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Failed to save preset'));
+                });
         }
-        PresetsService.update(preset.id, preset)
-            .then(() => {
-                dispatch(showSuccessSnackbar('Preset Saved'))
-            })
-            .catch(err => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Failed to save preset'));
-            });
-    };
+    }, [preset]);
 
     if (failedToLoad) {
         return (
@@ -84,13 +79,6 @@ export function PresetEditorPage() {
                 <AppToolbar
                     title={preset.root.name ?? ''}
                     parentPath={'/presets'}
-                    actions={[
-                        {
-                            tooltip: _.openAdminToolsTooltip,
-                            icon: faSave,
-                            onClick: onSave,
-                        },
-                    ]}
                     noPlaceholder={true}
                 />
 

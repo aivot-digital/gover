@@ -14,6 +14,7 @@ import {isElementVisible} from "../../utils/is-element-visible";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {CustomerInput} from "../../models/customer-input";
 import {selectCustomerInputErrorValue} from "../../slices/customer-input-errors-slice";
+import ProjectPackage from '../../../package.json';
 
 export const SummaryUserInputKey = '__summary__';
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
@@ -73,7 +74,8 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
                     element={{
                         type: ElementType.Checkbox,
                         label: 'Ich habe die Zusammenfassung meines Antrages geprüft.',
-                        id: SummaryUserInputKey
+                        id: SummaryUserInputKey,
+                        appVersion: ProjectPackage.version,
                     }}
                 />
             </Box>

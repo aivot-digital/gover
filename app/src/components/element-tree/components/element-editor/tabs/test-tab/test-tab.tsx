@@ -4,7 +4,7 @@ import {useSelector} from 'react-redux';
 import {format} from 'date-fns';
 import {User} from '../../../../../../models/entities/user';
 import {UsersService} from '../../../../../../services/users.service';
-import {hasElementFunction} from '../../../../../../utils/has-element-function';
+import {getFunctionStatus} from '../../../../../../utils/function-status-utils';
 import {UserRole} from '../../../../../../data/user-role';
 import {selectUser} from '../../../../../../slices/user-slice';
 import {TestTabProps} from './test-tab-props';
@@ -50,7 +50,7 @@ export function TestTab<T extends AnyElement>({elementModel, onPatch}: TestTabPr
                 }
             </Box>
             {
-                hasElementFunction(elementModel) &&
+                getFunctionStatus(elementModel) != null &&
                 <Box>
                     <Typography
                         variant="h6"

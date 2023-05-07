@@ -6,11 +6,9 @@ import {FunctionNoCode} from "../functions/function-no-code";
 export interface BaseElement<T extends ElementType> {
     type: T;
     id: string;
-
+    appVersion: string;
     name?: string;
-
     isVisible?: FunctionCode | FunctionNoCode;
     patchElement?: FunctionCode;
-
     testProtocolSet?: TestProtocolSet;
 }

@@ -6,6 +6,7 @@ import {ElementType} from '../../../data/element-type/element-type';
 import strings from './presets-overview-strings.json';
 import {Localization} from '../../../locale/localization';
 import {generateElementIdForType} from "../../../utils/id-utils";
+import ProjectPackage from '../../../../package.json';
 
 const _ = Localization(strings);
 
@@ -31,6 +32,7 @@ const PresetsOverviewConfig: DataOverviewProps<Preset> = {
                 root: {
                     id: id,
                     type: ElementType.Container,
+                    appVersion: ProjectPackage.version,
                     name: _.format(_.newPresetName, {id}),
                     children: [],
                 },

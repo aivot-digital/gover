@@ -23,7 +23,7 @@ import {getColorPalette} from '../../../../../theming/themes';
 import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
 import strings from './application-list-item-strings.json';
 import {Localization} from '../../../../../locale/localization';
-import {downloadCodeFile, downloadConfigFile} from "../../../../../utils/download-utils";
+import {downloadConfigFile} from "../../../../../utils/download-utils";
 
 const __ = Localization(strings);
 
@@ -34,10 +34,10 @@ interface ApplicationListItemComponentViewProps {
 }
 
 export function ApplicationListItem({
-                                                     application,
-                                                     onClone,
-                                                     onDelete
-                                                 }: ApplicationListItemComponentViewProps) {
+                                        application,
+                                        onClone,
+                                        onDelete
+                                    }: ApplicationListItemComponentViewProps) {
     const [optionAnchorEl, setOptionAnchorEl] = useState<null | HTMLElement>(null);
     const showOptions = Boolean(optionAnchorEl);
 
@@ -70,7 +70,6 @@ export function ApplicationListItem({
             ApplicationService.retrieve(application.id)
                 .then(model => {
                     downloadConfigFile(model);
-                    downloadCodeFile(model);
                 });
         }
         handleCloseOptions();

@@ -36,6 +36,7 @@ import {
     FileUploadElementItem,
     isFileUploadElementItem
 } from "../../../models/elements/form/input/file-upload-element";
+import ProjectPackage from '../../../../package.json';
 
 export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
@@ -227,6 +228,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                             step={{
                                 id: '',
                                 type: ElementType.SubmittedStep,
+                                appVersion: ProjectPackage.version,
                                 pdfLink: pdfLink
                             }}
                             title="Ihr Antrag wurde erfolgreich eingereicht"

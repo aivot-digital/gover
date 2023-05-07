@@ -1,6 +1,5 @@
 import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit'
 import {ApplicationService} from '../services/application.service';
-import {CodeService} from '../services/code.service';
 import {RootState} from '../store';
 import {Application} from "../models/entities/application";
 
@@ -12,11 +11,6 @@ const initialState: {
 export const fetchApplicationById = createAsyncThunk(
     'app/fetchApplicationById',
     async (id: number, _) => {
-        try {
-            await CodeService.loadCode(id);
-        } catch (err) {
-            // TODO: Handle code not existent
-        }
         return await ApplicationService.retrieve(id);
     }
 );
@@ -24,13 +18,7 @@ export const fetchApplicationById = createAsyncThunk(
 export const fetchApplicationBySlug = createAsyncThunk(
     'app/fetchApplicationBySlug',
     async (req: { slug: string, version: string }, _) => {
-        const application = await ApplicationService.retrieveBySlug(req.slug, req.version);
-        try {
-            await CodeService.loadCode(application.id);
-        } catch (err) {
-            // TODO: Handle code not existent
-        }
-        return application;
+        return await ApplicationService.retrieveBySlug(req.slug, req.version);
     }
 );
 

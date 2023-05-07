@@ -18,6 +18,7 @@ import java.util.Map;
 public abstract class BaseElement {
     private ElementType type;
     private String id;
+    private String appVersion;
     private String name;
 
     private TestProtocolSet testProtocolSet;
@@ -28,6 +29,7 @@ public abstract class BaseElement {
     public BaseElement(Map<String, Object> values) {
         type = MapUtils.getEnum(values, "type", Integer.class, ElementType.values(), ElementType.Group);
         id = MapUtils.getString(values, "id", "missing_id");
+        appVersion = MapUtils.getString(values, "appVersion", "0.0.0");
         name = MapUtils.getString(values, "name", "");
 
         testProtocolSet = MapUtils.getApply(values, "testProtocolSet", Map.class, TestProtocolSet::new);
@@ -119,6 +121,14 @@ public abstract class BaseElement {
 
     public void setPatchElement(FunctionCode patchElement) {
         this.patchElement = patchElement;
+    }
+
+    public String getAppVersion() {
+        return appVersion;
+    }
+
+    public void setAppVersion(String appVersion) {
+        this.appVersion = appVersion;
     }
 
     // endregion

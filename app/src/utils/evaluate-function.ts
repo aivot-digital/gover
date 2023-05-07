@@ -76,11 +76,13 @@ function evaluateCondition(condition: Condition, customerInput: CustomerInput): 
         valueB = valueB ? 'Ja' : 'Nein';
     }
 
+    /*
     console.log(
         valueA,
         condition.operator != null ? ConditionOperatorLabel[condition.operator] : 'No Operator',
         valueB,
     );
+     */
 
     switch (condition.operator) {
         case ConditionOperator.Equals:

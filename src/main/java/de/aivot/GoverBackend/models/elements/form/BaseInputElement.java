@@ -98,7 +98,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
 
             if (validate != null) {
                 FunctionResult funcResult = validate.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
-                Boolean isInvalid = funcResult.getBooleanValue();
+                Boolean isInvalid = funcResult != null && funcResult.getBooleanValue();
                 if (isInvalid) {
                     throw new ValidationException(this, "Validation function failed with: " + funcResult.getStringValue());
                 }

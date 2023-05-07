@@ -4,6 +4,7 @@ import {ElementType} from '../../../data/element-type/element-type';
 import React from 'react';
 import {useSelector} from 'react-redux';
 import {selectLoadedApplication} from '../../../slices/app-slice';
+import ProjectPackage from '../../../../package.json';
 
 interface PreambleProps {
     text: string;
@@ -35,6 +36,7 @@ export function Preamble(props: PreambleProps) {
                                 element={{
                                     id: 'preambleText',
                                     type: ElementType.Richtext,
+                                    appVersion: ProjectPackage.version,
                                     content: props.text,
                                 }}
                             />
@@ -73,6 +75,7 @@ export function Preamble(props: PreambleProps) {
                                     element={{
                                         id: 'preambleText',
                                         type: ElementType.Richtext,
+                                        appVersion: ProjectPackage.version,
                                         content: props.text,
                                     }}
                                 />

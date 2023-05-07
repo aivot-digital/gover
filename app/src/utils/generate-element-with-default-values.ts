@@ -4,13 +4,16 @@ import {SummaryStepElement} from '../models/elements/steps/summary-step-element'
 import {SubmitStepElement} from '../models/elements/steps/submit-step-element';
 import {AnyElement} from "../models/elements/any-element";
 import {generateElementIdForType} from "./id-utils";
+import ProjectPackage from '../../package.json';
 
 export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
     const id = generateElementIdForType(type);
+    const appVersion = ProjectPackage.version;
+
     switch (type) {
         case ElementType.Root:
             return {
-                id, type,
+                id, type, appVersion,
                 children: [],
                 introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
                 summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
@@ -18,38 +21,38 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             };
         case ElementType.Step:
             return {
-                id, type,
+                id, type, appVersion,
                 children: [],
             };
         case ElementType.Alert:
             return {
-                id, type,
+                id, type, appVersion,
                 title: 'Hinweis',
                 text: 'Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.'
             };
         case ElementType.Container:
             return {
-                id, type,
+                id, type, appVersion,
                 children: [],
             };
         case ElementType.Checkbox:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Checkbox (Ja/Nein)',
             };
         case ElementType.Date:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Datum',
             };
         case ElementType.Headline:
             return {
-                id, type,
+                id, type, appVersion,
                 content: 'Überschrift',
             };
         case ElementType.MultiCheckbox:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Checkbox (Mehrfachauswahl)',
                 options: [
                     'Option 1',
@@ -59,24 +62,24 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             };
         case ElementType.Number:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Zahl',
             };
         case ElementType.ReplicatingContainer:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Strukturierte Listeneingabe',
                 headlineTemplate: 'Datensatz Nr. #',
                 children: [],
             };
         case ElementType.Richtext:
             return {
-                id, type,
+                id, type, appVersion,
                 content: '<p class="MuiTypography-root MuiTypography-body2">Fließtext</p>',
             };
         case ElementType.Radio:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Radio-Button (Einfachauswahl)',
                 options: [
                     'Option 1',
@@ -86,7 +89,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             };
         case ElementType.Select:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Dropdown (Einfachauswahl)',
                 options: [
                     'Option 1',
@@ -96,12 +99,12 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             };
         case ElementType.Spacer:
             return {
-                id, type,
+                id, type, appVersion,
                 height: '30',
             };
         case ElementType.Table:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Tabelle',
                 fields: [
                     {
@@ -118,39 +121,37 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             };
         case ElementType.Text:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Text',
             };
         case ElementType.Time:
             return {
-                id, type,
+                id, type, appVersion,
                 label: 'Zeit',
             };
         case ElementType.IntroductionStep:
             return {
-                id, type, // TODO: Mit Default-Daten befüllen
+                id, type, appVersion, // TODO: Mit Default-Daten befüllen
             };
         case ElementType.SubmitStep:
             return {
-                id, type,
+                id, type, appVersion,
                 textPreSubmit: 'Sie können Ihren Antrag nun verbindlich bei der zuständigen/bewirtschaftenden Stelle einreichen. Nach der Einreichung können Sie sich den Antrag für Ihre Unterlagen herunterladen oder zusenden lassen.',
                 textPostSubmit: 'Sie können Ihren Antrag herunterladen oder sich per E-Mail zuschicken lassen. Wir empfehlen Ihnen, den Antrag anschließend zu Ihren Unterlagen zu nehmen.',
             };
         case ElementType.SummaryStep:
             return {
-                id, type, // TODO: Mit Default-Daten befüllen
+                id, type, appVersion, // TODO: Mit Default-Daten befüllen
             };
         case ElementType.Image:
             return {
-                id,
-                type: ElementType.Image,
+                id, type, appVersion,
                 alt: 'Aivot Logo',
                 src: 'https://aivot.de/img/aivot-logo.svg',
             };
         case ElementType.FileUpload:
             return {
-                id,
-                type: ElementType.FileUpload,
+                id, type, appVersion,
                 label: 'Anlage(n)',
             };
     }

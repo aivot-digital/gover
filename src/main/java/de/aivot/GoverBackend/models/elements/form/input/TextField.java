@@ -31,7 +31,7 @@ public class TextField extends BaseInputElement<String> {
 
     @Override
     public void validate(Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
-        if (maxCharacters != null && value.length() <= maxCharacters) {
+        if (maxCharacters != null && value.length() > maxCharacters) {
             throw new ValidationException(this, "Too many characters");
         }
     }

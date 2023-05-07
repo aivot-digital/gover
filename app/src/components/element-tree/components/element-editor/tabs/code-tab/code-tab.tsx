@@ -198,6 +198,10 @@ export function CodeTab({
 
             {
                 func != null &&
+                (
+                    'code' in func ||
+                    'conditionSet' in func
+                ) &&
                 <>
                     <Alert
                         sx={{mt: 8}}

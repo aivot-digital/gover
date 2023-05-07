@@ -9,12 +9,12 @@ import {
     faDiamondExclamation,
     faListCheck,
     faMemoCircleCheck,
-    faPlusCircle
+    faPlusCircle, faQuestionCircle
 } from '@fortawesome/pro-light-svg-icons';
 import {ElementIcons} from '../../../../data/element-type/element-icons';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {checkId} from '../../../../utils/id-utils';
-import {hasElementFunction} from '../../../../utils/has-element-function';
+import {getFunctionStatus} from '../../../../utils/function-status-utils';
 import React from 'react';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {ElementNames} from '../../../../data/element-type/element-names';
@@ -149,7 +149,6 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                 sx={{fontSize: '1rem', color: '#16191F'}}
             >
                 {
-
                     useIdsInComponentTree ?
                         props.element.id :
                         (
@@ -226,7 +225,7 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
 
     if (useTestMode) {
         const professionalTestMissing = element.testProtocolSet?.professionalTest == null;
-        const technicalTestMissing = hasElementFunction(element) && element.testProtocolSet?.technicalTest == null;
+        const technicalTestMissing = (getFunctionStatus(element) == null || getFunctionStatus(element) != 'fulfilled') && element.testProtocolSet?.technicalTest == null;
 
         if (professionalTestMissing) {
             icons.push({
@@ -266,11 +265,18 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
         }
     }
 
-    if (hasElementFunction(element)) {
-        if (element.testProtocolSet?.technicalTest != null) {
+    const functionStatus = getFunctionStatus(element);
+    if (functionStatus != null) {
+        if (functionStatus === 'fulfilled') {
             icons.push({
                 icon: faCircleF,
                 tooltip: 'Individuelle Funktionen definiert',
+            });
+        } else if (functionStatus === 'unnecessary') {
+            icons.push({
+                color: 'error',
+                icon: faQuestionCircle,
+                tooltip: 'Individuelle Funktionen definiert aber keine Anforderung vorhanden',
             });
         } else {
             icons.push({

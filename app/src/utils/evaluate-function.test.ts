@@ -7,6 +7,7 @@ import {AnyElement} from "../models/elements/any-element";
 const element: AnyElement = {
     id: '',
     type: ElementType.Checkbox,
+    appVersion: 'test',
 };
 
 const customerData = {

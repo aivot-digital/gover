@@ -36,24 +36,28 @@ public class ConditionSet {
     public String evaluate(Map<String, Object> customerInput) {
         return switch (operator) {
             case All -> {
-                for (var c : conditions) {
-                    var res = c.evaluate(customerInput);
-                    if (res != null) {
-                        yield res;
+                if (conditions != null) {
+                    for (var c : conditions) {
+                        var res = c.evaluate(customerInput);
+                        if (res != null) {
+                            yield res;
+                        }
                     }
                 }
 
-                for (var c : conditionsSets) {
-                    var res = c.evaluate(customerInput);
-                    if (res != null) {
-                        yield res;
+                if (conditionsSets != null) {
+                    for (var c : conditionsSets) {
+                        var res = c.evaluate(customerInput);
+                        if (res != null) {
+                            yield res;
+                        }
                     }
                 }
 
                 yield null;
             }
             case Any -> {
-                boolean res = conditions.stream().anyMatch(c -> c.evaluate(customerInput) == null) && conditionsSets.stream().anyMatch(cs -> cs.evaluate(customerInput) == null);
+                boolean res = (conditions != null && conditions.stream().anyMatch(c -> c.evaluate(customerInput) == null)) || (conditionsSets != null && conditionsSets.stream().anyMatch(cs -> cs.evaluate(customerInput) == null));
                 if (!res) {
                     yield conditionSetUnmetMessage;
                 }
