@@ -1,5 +1,5 @@
 import React, {FormEvent, useState} from 'react';
-import {Alert, AlertTitle, Box, Button, TextField, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, Button, TextField, Typography, CircularProgress} from '@mui/material';
 import axios from "axios";
 import {ApiConfig} from "../../../../../api-config";
 import {CrudService} from "../../../../../services/crud.service";
@@ -24,18 +24,26 @@ export function SmtpTest() {
 
         axios.post(
             smtpTestAddress,
-            testPayload,
-            CrudService.getConfig()
+            testPayload, {
+                ...CrudService.getConfig(),
+                timeout: 1000 * 60 * 5 // Set 5 Minutes Timeout
+            }
         )
             .then(res => {
-                if (res.data().result != null) {
-                    setEmailTestResult(res.data().result);
+                console.log(res);
+                if (res.data.result != null) {
+                    setEmailTestResult(res.data.result);
                 } else {
                     setEmailTestResult(true);
                 }
             })
             .catch(err => {
-                setEmailTestResult(err.message);
+                console.log(err);
+                if (err.response != null && err.response.data != null && err.response.data.message != null) {
+                    setEmailTestResult(err.response.data.message);
+                } else {
+                    setEmailTestResult(err.message);
+                }
             })
             .finally(() => {
                 setIsSending(false);
@@ -54,6 +62,36 @@ export function SmtpTest() {
                 Gover versendet eine Test-E-Mail an die angegebene Adresse.
                 Sollten Probleme auftreten, werden diese hier angezeigt.
             </Typography>
+
+            {
+                isSending &&
+                <Alert
+                    severity="info"
+                    sx={{mt: 2}}
+                >
+                    <AlertTitle>
+                        Teste E-Mail-Versand
+                    </AlertTitle>
+
+                    <Box
+                        sx={{
+                            mt: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <CircularProgress
+                            color="info"
+                            size="2em"
+                        />
+
+                        <Typography sx={{ml: 2}}>
+                            Der Test der verbindung läuft aktuell. Schließen Sie diese Seite nicht. Der Test kann bis zu
+                            5 Minuten dauern.
+                        </Typography>
+                    </Box>
+                </Alert>
+            }
 
             {
                 emailTestResult != null &&

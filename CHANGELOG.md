@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.8](https://github.com/aivot-digital/gover/compare/v2.1.7...v2.1.8) (2023-05-10)
+
+### Bug Fixes
+
+* **App:** Fix timeout for smtp server connection test
+
 ## [2.1.7](https://github.com/aivot-digital/gover/compare/v2.1.6...v2.1.7) (2023-05-07)
 
 ### Features
