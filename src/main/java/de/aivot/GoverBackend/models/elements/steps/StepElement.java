@@ -34,7 +34,10 @@ public class StepElement extends BaseElement {
     public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (children != null) {
             for (var child : children) {
-                child.validate(customerInput, idPrefix, scriptEngine);
+                child.patch(customerInput, idPrefix, scriptEngine);
+                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
+                    child.validate(customerInput, idPrefix, scriptEngine);
+                }
             }
         }
     }
@@ -47,7 +50,10 @@ public class StepElement extends BaseElement {
 
         if (children != null) {
             for (var child : children) {
-                rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+                child.patch(customerInput, idPrefix, scriptEngine);
+                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
+                    rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+                }
             }
         }
 

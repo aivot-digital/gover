@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.enums.SystemAssetKey;
-import de.aivot.GoverBackend.models.entities.Application;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,14 +22,6 @@ public class BlobService {
 
     public Path getPrintHtmlPath(String uuid) {
         return Paths.get("./media/prints/" + uuid + ".html");
-    }
-
-    public Path getCodePath(Application app) {
-        return getCodePath(app.getId());
-    }
-
-    public Path getCodePath(Long id) {
-        return Paths.get("./media/code/" + id.toString() + ".js");
     }
 
     public Path getAssetPath(SystemAssetKey key) {

@@ -30,7 +30,10 @@ public class GroupLayout extends BaseFormElement {
     public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (children != null) {
             for (var child : children) {
-                child.validate(customerInput, idPrefix, scriptEngine);
+                child.patch(customerInput, idPrefix, scriptEngine);
+                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
+                    child.validate(customerInput, idPrefix, scriptEngine);
+                }
             }
         }
     }
@@ -40,8 +43,11 @@ public class GroupLayout extends BaseFormElement {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
         if (children != null) {
-            for (BaseFormElement child : children) {
-                rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+            for (var child : children) {
+                child.patch(customerInput, idPrefix, scriptEngine);
+                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
+                    rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+                }
             }
         }
 

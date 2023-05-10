@@ -57,7 +57,11 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
             if (children != null) {
                 for (var val : value) {
                     for (var child : children) {
-                        child.validate(customerInput, getResolvedId(idPrefix) + "_" + val, scriptEngine);
+                        String childId = getResolvedId(idPrefix) + "_" + val;
+                        child.patch(customerInput, childId, scriptEngine);
+                        if (child.isVisible(customerInput, childId, scriptEngine)) {
+                            child.validate(customerInput, childId, scriptEngine);
+                        }
                     }
                 }
             }
@@ -73,13 +77,17 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
 
             List<String> values = value.stream().toList();
             for (int i = 0; i < value.size(); i++) {
-                String childId = values.get(i);
+                String val = values.get(i);
 
                 String headline = headlineTemplate != null ? headlineTemplate.replace("#", "" + (i + 1)) : String.valueOf(i + 1);
                 fields.add(new HeadlinePdfRowDto(headline, 5));
 
                 for (var child : children) {
-                    fields.addAll(child.toPdfRows(customerInput, getResolvedId(idPrefix) + "_" + childId, scriptEngine));
+                    String childId = getResolvedId(idPrefix) + "_" + val;
+                    child.patch(customerInput, childId, scriptEngine);
+                    if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
+                        fields.addAll(child.toPdfRows(customerInput, childId, scriptEngine));
+                    }
                 }
             }
         }

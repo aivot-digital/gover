@@ -65,7 +65,7 @@ public class SubmitController {
     }
 
     @GetMapping("/api/public/prints/{uuid}")
-    public ResponseEntity<Resource> getCode(@PathVariable String uuid) {
+    public ResponseEntity<Resource> getPrint(@PathVariable String uuid) {
         Path path = blobService.getPrintPdfPath(uuid);
         try {
             Resource resource = new UrlResource(path.toUri());

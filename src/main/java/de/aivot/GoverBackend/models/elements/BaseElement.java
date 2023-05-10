@@ -46,6 +46,7 @@ public abstract class BaseElement {
     public abstract void applyValues(Map<String, Object> values);
 
     public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+
     }
 
     public boolean isVisible(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {

@@ -80,7 +80,10 @@ public class RootElement extends BaseElement {
 
         if (children != null) {
             for (var child : children) {
-                child.validate(customerInput, idPrefix, scriptEngine);
+                child.patch(customerInput, idPrefix, scriptEngine);
+                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
+                    child.validate(customerInput, idPrefix, scriptEngine);
+                }
             }
         }
     }
@@ -89,8 +92,11 @@ public class RootElement extends BaseElement {
     public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
-        for (StepElement step : children) {
-            rows.addAll(step.toPdfRows(customerInput, idPrefix, scriptEngine));
+        for (StepElement child : children) {
+            child.patch(customerInput, idPrefix, scriptEngine);
+            if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
+                rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+            }
         }
 
         return rows;

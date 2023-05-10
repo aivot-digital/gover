@@ -69,7 +69,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         }
 
         if (rawValue == null) {
-            // TODO: Check required function
             if (Boolean.TRUE.equals(required)) {
                 throw new ValidationException(this, "Field is required but value was null");
             }
@@ -115,7 +114,8 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
             id = idPrefix + '_' + id;
         }
 
-        Object rawValue = customerInput.get(id);
+        Optional<T> computedValue = getComputedValue(customerInput, idPrefix, scriptEngine);
+        Object rawValue = computedValue.isPresent() ? computedValue.get() :  customerInput.get(id);
         try {
             T value = (T) rawValue;
             return toPdfRows(customerInput, value, idPrefix, scriptEngine);
