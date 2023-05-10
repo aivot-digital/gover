@@ -45,15 +45,22 @@ RUN ./mvnw -DskipTests install
 ##
 FROM --platform=linux/amd64 eclipse-temurin:17 as run
 
+ENV TZ "Europe/Berlin"
+ENV LANG de_DE.UTF-8
+ENV LANGUAGE de_DE:de
+ENV LC_ALL en_US.UTF-8
+
 WORKDIR /app
 
 RUN apt-get update
-RUN apt-get -y install wkhtmltopdf
+RUN apt-get -y install wkhtmltopdf tzdata locales
 
-RUN ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf;
-RUN chmod +x /usr/local/bin/wkhtmltopdf;
+RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata && \
+    ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf && \
+    chmod +x /usr/local/bin/wkhtmltopdf
 
-COPY --from=build /gover/target/Gover-2.1.6.jar /app/gover.jar
+COPY --from=build /gover/target/Gover-2.1.8.jar /app/gover.jar
 
 ENTRYPOINT ["java"]
 CMD  ["-jar", "/app/gover.jar"]

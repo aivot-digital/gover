@@ -10,7 +10,7 @@
     </parent>
     <groupId>de.aivot</groupId>
     <artifactId>Gover</artifactId>
-    <version>2.1.6</version>
+    <version>2.1.8</version>
     <name>Gover</name>
     <description>Gover Project</description>
     <properties>
@@ -83,6 +83,11 @@
             <groupId>org.graalvm.js</groupId>
             <artifactId>js-scriptengine</artifactId>
             <version>22.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-spring-boot-starter</artifactId>
+            <version>6.18.1</version>
         </dependency>
     </dependencies>
 
