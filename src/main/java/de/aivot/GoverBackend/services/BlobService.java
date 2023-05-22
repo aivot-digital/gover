@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 public class BlobService {
     public void init() throws IOException {
         Files.createDirectories(Paths.get("./media/prints/"));
-        Files.createDirectories(Paths.get("./media/code/"));
         Files.createDirectories(Paths.get("./media/assets/"));
     }
 
