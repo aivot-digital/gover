@@ -48,17 +48,17 @@ FROM --platform=linux/amd64 eclipse-temurin:17 as run
 ENV TZ "Europe/Berlin"
 ENV LANG de_DE.UTF-8
 ENV LANGUAGE de_DE:de
-ENV LC_ALL en_US.UTF-8
+ENV LC_ALL de_DE.UTF-8
 
 WORKDIR /app
 
-RUN apt-get update
-RUN apt-get -y install wkhtmltopdf tzdata locales
-
-RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata && \
-    ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf && \
-    chmod +x /usr/local/bin/wkhtmltopdf
+RUN apt-get update && \
+    apt-get -y install tzdata locales && \
+    wget -O /tmp/wkhtmltox.deb https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb && \
+    apt-get install -y -f /tmp/wkhtmltox.deb && \
+    rm /tmp/wkhtmltox.deb && \
+    ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
 
 COPY --from=build /gover/target/Gover-2.1.8.jar /app/gover.jar
 
