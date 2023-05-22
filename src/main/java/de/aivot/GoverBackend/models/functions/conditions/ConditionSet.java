@@ -19,15 +19,19 @@ public class ConditionSet {
         if (data.containsKey("conditions")) {
             conditions = new LinkedList<>();
             List<Map<String, Object>> conditionsData = (List<Map<String, Object>>) data.get("conditions");
-            for (Map<String, Object> conditionData : conditionsData) {
-                conditions.add(new Condition(conditionData));
+            if (conditionsData != null) {
+                for (Map<String, Object> conditionData : conditionsData) {
+                    conditions.add(new Condition(conditionData));
+                }
             }
         }
-        if (data.containsKey("conditionSets")) {
+        if (data.containsKey("conditionsSets")) {
             conditionsSets = new LinkedList<>();
-            List<Map<String, Object>> conditionSetsData = (List<Map<String, Object>>) data.get("conditionSets");
-            for (Map<String, Object> conditionSetData : conditionSetsData) {
-                conditionsSets.add(new ConditionSet(conditionSetData));
+            List<Map<String, Object>> conditionSetsData = (List<Map<String, Object>>) data.get("conditionsSets");
+            if (conditionSetsData != null) {
+                for (Map<String, Object> conditionSetData : conditionSetsData) {
+                    conditionsSets.add(new ConditionSet(conditionSetData));
+                }
             }
         }
         conditionSetUnmetMessage = MapUtils.getString(data, "conditionSetUnmetMessage");
