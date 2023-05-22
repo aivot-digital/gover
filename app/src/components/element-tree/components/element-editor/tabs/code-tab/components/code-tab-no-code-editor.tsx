@@ -29,7 +29,8 @@ export function CodeTabNoCodeEditor({
             isAnyInputElement(e) &&
             e.type !== ElementType.Table &&
             e.type !== ElementType.MultiCheckbox &&
-            e.type !== ElementType.ReplicatingContainer
+            e.type !== ElementType.ReplicatingContainer &&
+            e.type !== ElementType.FileUpload
         );
 
     return (

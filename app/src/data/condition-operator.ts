@@ -109,5 +109,5 @@ export const ConditionOperatorLimiter: {
     [ElementType.SummaryStep]: [],
     [ElementType.Image]: [],
     [ElementType.SubmittedStep]: [],
-    [ElementType.FileUpload]: []
+    [ElementType.FileUpload]: [],
 };
