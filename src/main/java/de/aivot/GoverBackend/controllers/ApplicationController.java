@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.ApplicationStatus;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.entities.Application;
 import de.aivot.GoverBackend.models.entities.Department;
 import de.aivot.GoverBackend.models.entities.Destination;
@@ -24,12 +25,14 @@ public class ApplicationController {
     private final ApplicationRepository applicationRepository;
     private final DepartmentRepository departmentRepository;
     private final DestinationRepository destinationRepository;
+    private final GoverConfig goverConfig;
 
     @Autowired
-    public ApplicationController(ApplicationRepository applicationRepository, DepartmentRepository departmentRepository, DestinationRepository destinationRepository) {
+    public ApplicationController(ApplicationRepository applicationRepository, DepartmentRepository departmentRepository, DestinationRepository destinationRepository, GoverConfig goverConfig) {
         this.applicationRepository = applicationRepository;
         this.departmentRepository = departmentRepository;
         this.destinationRepository = destinationRepository;
+        this.goverConfig = goverConfig;
     }
 
     /**
@@ -87,5 +90,10 @@ public class ApplicationController {
         }
 
         return 100;
+    }
+
+    @GetMapping("/api/public/sentry-dns")
+    public String getSentryDns() {
+        return goverConfig.getSentryWebApp();
     }
 }
