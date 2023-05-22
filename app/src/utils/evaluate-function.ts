@@ -219,7 +219,7 @@ function evaluateCondition(condition: Condition, customerInput: CustomerInput): 
 
         case ConditionOperator.NotIncludesPattern:
             if (typeof valueA === 'string' && typeof valueB === 'string') {
-                const re = new RegExp(`^${valueB}$`);
+                const re = new RegExp(`${valueB}`);
                 if (!re.test(valueA)) {
                     return null;
                 }
