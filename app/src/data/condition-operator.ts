@@ -24,8 +24,8 @@ export const ConditionOperatorLabel: {
 } = {
     [ConditionOperator.Equals]: "gleich",
     [ConditionOperator.NotEquals]: "ungleich",
-    [ConditionOperator.LessThan]: "weniger als",
-    [ConditionOperator.LessThanOrEqual]: "weniger als oder gleich",
+    [ConditionOperator.LessThan]: "kleiner als",
+    [ConditionOperator.LessThanOrEqual]: "kleiner als oder gleich",
     [ConditionOperator.GreaterThan]: "größer als",
     [ConditionOperator.GreaterThanOrEqual]: "größer als oder gleich",
     [ConditionOperator.Includes]: "beinhaltet",
@@ -35,9 +35,9 @@ export const ConditionOperatorLabel: {
     [ConditionOperator.EndsWith]: "endet mit",
     [ConditionOperator.NotEndsWith]: "endet nicht mit",
     [ConditionOperator.MatchesPattern]: "entspricht Muster",
-    [ConditionOperator.NotMatchesPattern]: "entspricht Muster nicht",
+    [ConditionOperator.NotMatchesPattern]: "entspricht nicht Muster",
     [ConditionOperator.IncludesPattern]: "beinhaltet Muster",
-    [ConditionOperator.NotIncludesPattern]: "beinhaltet Muster nicht",
+    [ConditionOperator.NotIncludesPattern]: "beinhaltet nicht Muster",
 };
 
 export const ConditionOperatorLimiter: {
