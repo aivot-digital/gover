@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Configuration;
 public class GoverConfig {
     private String fromMail;
     private String reportMail;
+    private String sentryServer;
+    private String sentryWebApp;
+    private String environment;
 
     public String getFromMail() {
         return fromMail;
@@ -23,5 +26,29 @@ public class GoverConfig {
 
     public void setReportMail(String reportMail) {
         this.reportMail = reportMail;
+    }
+
+    public String getSentryServer() {
+        return sentryServer;
+    }
+
+    public void setSentryServer(String sentryServer) {
+        this.sentryServer = sentryServer;
+    }
+
+    public String getSentryWebApp() {
+        return sentryWebApp;
+    }
+
+    public void setSentryWebApp(String sentryWebApp) {
+        this.sentryWebApp = sentryWebApp;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
     }
 }
