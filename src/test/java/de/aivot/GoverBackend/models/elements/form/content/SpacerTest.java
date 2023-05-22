@@ -30,6 +30,6 @@ class SpacerTest extends AbstractElementTest<Spacer> {
 
     @Override
     protected void testAllFieldsNull(Spacer item) {
-        assertNull(item.getHeight());
+        assertEquals(100, item.getHeight());
     }
 }

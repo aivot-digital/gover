@@ -35,9 +35,9 @@ class ImageTest extends AbstractElementTest<Image> {
 
     @Override
     protected void testAllFieldsNull(Image item) {
-        assertNull(item.getHeight());
-        assertNull(item.getWidth());
-        assertNull(item.getSrc());
-        assertNull(item.getAlt());
+        assertEquals(100, item.getHeight());
+        assertEquals(100, item.getWidth());
+        assertEquals("", item.getSrc());
+        assertEquals("", item.getAlt());
     }
 }

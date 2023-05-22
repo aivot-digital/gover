@@ -29,6 +29,6 @@ class RichTextTest extends AbstractElementTest<RichText> {
 
     @Override
     protected void testAllFieldsNull(RichText item) {
-        assertNull(item.getContent());
+        assertEquals("", item.getContent());
     }
 }

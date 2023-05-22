@@ -33,8 +33,8 @@ class AlertTest extends AbstractElementTest<Alert> {
 
     @Override
     protected void testAllFieldsNull(Alert item) {
-        assertNull(item.getTitle());
-        assertNull(item.getText());
-        assertNull(item.getAlertType());
+        assertEquals("", item.getTitle());
+        assertEquals("", item.getText());
+        assertEquals(AlertType.Success, item.getAlertType());
     }
 }

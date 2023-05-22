@@ -31,8 +31,8 @@ class HeadlineTest extends AbstractElementTest<Headline> {
 
     @Override
     protected void testAllFieldsNull(Headline item) {
-        assertNull(item.getContent());
-        assertNull(item.getSmall());
+        assertEquals("", item.getContent());
+        assertEquals(false, item.getSmall());
     }
 
     @Test

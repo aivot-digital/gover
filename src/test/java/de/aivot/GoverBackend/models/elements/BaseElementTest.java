@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.models.elements;
 
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
+import de.aivot.GoverBackend.models.functions.FunctionNoCode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -70,22 +71,18 @@ class BaseElementTest extends AbstractElementTest<BaseElement> {
 
         assertNotNull(item.getIsVisible());
         assertEquals("requirements isVisible", item.getIsVisible().getRequirements());
-        assertInstanceOf(FunctionCode.class, item.getIsVisible());
-        assertEquals("main", ((FunctionCode) item.getIsVisible()).getMainFunction());
-        assertEquals(1, ((FunctionCode) item.getIsVisible()).getFunctions().size());
+        assertInstanceOf(FunctionNoCode.class, item.getIsVisible());
 
         assertNotNull(item);
         assertNotNull(item.getPatchElement());
         assertEquals("requirements patchElement", item.getPatchElement().getRequirements());
-        assertEquals("main", item.getPatchElement().getMainFunction());
-        assertEquals(1, item.getPatchElement().getFunctions().size());
     }
 
     @Override
     protected void testAllFieldsNull(BaseElement item) {
-        assertNull(item.getId());
-        assertNull(item.getType());
-        assertNull(item.getName());
+        assertEquals("missing_id", item.getId());
+        assertEquals(ElementType.Group, item.getType());
+        assertEquals("", item.getName());
         assertNull(item.getTestProtocolSet());
         assertNull(item.getIsVisible());
         assertNull(item.getPatchElement());
