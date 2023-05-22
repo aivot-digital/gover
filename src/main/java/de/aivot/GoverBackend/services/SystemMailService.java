@@ -39,7 +39,7 @@ public class SystemMailService {
         String text = mailService.loadTemplate("system-mail-info.txt", mailData);
 
         try {
-            mailService.sendMail(to, "[Gover] Informationen", text, html);
+            mailService.sendMail(to, "[Gover / " + goverConfig.getEnvironment() + "] Informationen", text, html);
         } catch (MessagingException | MailException | IOException e) {
             logger.error("Failed to send info admin mail", e);
         }
@@ -59,7 +59,7 @@ public class SystemMailService {
         String text = mailService.loadTemplate("system-mail-exception.txt", mailData);
 
         try {
-            mailService.sendMail(goverConfig.getReportMail(), "[Gover] Fehler im Betrieb", text, html);
+            mailService.sendMail(goverConfig.getReportMail(), "[Gover / " + goverConfig.getEnvironment() + "] Fehler im Betrieb", text, html);
         } catch (MessagingException | MailException | IOException e) {
             logger.error("Failed to send exception admin mail", e);
         }
