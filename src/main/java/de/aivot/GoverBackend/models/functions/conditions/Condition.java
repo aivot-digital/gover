@@ -60,7 +60,9 @@ public class Condition {
         if (rawValA instanceof String valA && rawValB instanceof String valB) {
             conditionMet = switch (operator) {
                 case Equals -> valA.equals(valB);
+                case EqualsIgnoreCase -> valA.equalsIgnoreCase(valB);
                 case NotEquals -> !valA.equals(valB);
+                case NotEqualsIgnoreCase -> !valA.equalsIgnoreCase(valB);
 
                 case Includes -> valA.contains(valB);
                 case NotIncludes -> !valA.contains(valB);

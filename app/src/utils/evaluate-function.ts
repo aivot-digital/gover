@@ -89,10 +89,22 @@ function evaluateCondition(condition: Condition, customerInput: CustomerInput): 
             if (valueA == valueB) {
                 return null;
             }
-            return condMessage(condition, `"${valueA}" darf nicht ist ungleich "${valueB}" sein`);
+            return condMessage(condition, `"${valueA}" darf nicht ungleich "${valueB}" sein`);
+
+        case ConditionOperator.EqualsIgnoreCase:
+            if ((valueA == null && valueB == null) || (valueA.toLowerCase() === valueB.toLowerCase())) {
+                return null;
+            }
+            return condMessage(condition, `"${valueA}" darf nicht ungleich "${valueB}" sein`);
 
         case ConditionOperator.NotEquals:
             if (valueA != valueB) {
+                return null;
+            }
+            return condMessage(condition, `"${valueA}" darf nicht gleich "${valueB}" sein`);
+
+        case ConditionOperator.NotEqualsIgnoreCase:
+            if ((valueA == null && valueB == null) || (valueA.toLowerCase() !== valueB.toLowerCase())) {
                 return null;
             }
             return condMessage(condition, `"${valueA}" darf nicht gleich "${valueB}" sein`);

@@ -2,7 +2,9 @@ import {ElementType} from "./element-type/element-type";
 
 export enum ConditionOperator {
     Equals = 0,
+    EqualsIgnoreCase = 16,
     NotEquals = 1,
+    NotEqualsIgnoreCase = 17,
     LessThan = 2,
     LessThanOrEqual = 3,
     GreaterThan = 4,
@@ -23,7 +25,9 @@ export const ConditionOperatorLabel: {
     [key in ConditionOperator]: string;
 } = {
     [ConditionOperator.Equals]: "gleich",
+    [ConditionOperator.EqualsIgnoreCase]: "gleich (ohne Groß-/Kleinschreibung)",
     [ConditionOperator.NotEquals]: "ungleich",
+    [ConditionOperator.NotEqualsIgnoreCase]: "ungleich (ohne Groß-/Kleinschreibung)",
     [ConditionOperator.LessThan]: "kleiner als",
     [ConditionOperator.LessThanOrEqual]: "kleiner als oder gleich",
     [ConditionOperator.GreaterThan]: "größer als",
@@ -82,7 +86,9 @@ export const ConditionOperatorLimiter: {
     [ElementType.Table]: [],
     [ElementType.Text]: [
         ConditionOperator.Equals,
+        ConditionOperator.EqualsIgnoreCase,
         ConditionOperator.NotEquals,
+        ConditionOperator.NotEqualsIgnoreCase,
         ConditionOperator.Includes,
         ConditionOperator.NotIncludes,
         ConditionOperator.StartsWith,
