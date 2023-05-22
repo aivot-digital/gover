@@ -53,11 +53,11 @@ function newNoCodeFunction(func: Function | undefined, element: AnyElement): Fun
             conditions: [
                 {
                     operandA: {
-                        id: element.id,
+                        id: '',
                     },
                     operator: ConditionOperator.Equals,
                     operandB: {
-                        value: 'Test-Wert'
+                        value: ''
                     },
                     conditionUnmetMessage: '',
                 },
