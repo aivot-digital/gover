@@ -22,7 +22,10 @@ export function NumberFieldComponentView({element, value, error, setValue}: Base
     const handleBlur = useCallback(() => {
         if (element.id != null) {
             if (valueBuffer != null && valueBuffer !== '') {
-                const num = parseFloat(valueBuffer.replaceAll('.', '').replaceAll(',', '.'));
+                let num = parseFloat(valueBuffer.replaceAll('.', '').replaceAll(',', '.'));
+                if (element.decimalPlaces != null) {
+                    num = parseFloat(num.toFixed(element.decimalPlaces));
+                }
                 if (!isNaN(num)) {
                     setValue(num);
                     setValueBuffer(formatNumToGermanNum(num, element.decimalPlaces));
