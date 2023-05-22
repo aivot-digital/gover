@@ -110,25 +110,25 @@ function evaluateCondition(condition: Condition, customerInput: CustomerInput): 
             return condMessage(condition, `"${valueA}" darf nicht gleich "${valueB}" sein`);
 
         case ConditionOperator.LessThan:
-            if (valueA >= valueB) {
+            if (valueA < valueB) {
                 return null;
             }
             return condMessage(condition, `"${valueA}" darf nicht größer oder gleich "${valueB}" sein`);
 
         case ConditionOperator.LessThanOrEqual:
-            if (valueA > valueB) {
+            if (valueA <= valueB) {
                 return null;
             }
             return condMessage(condition, `"${valueA}" darf nicht größer "${valueB}" sein`);
 
         case ConditionOperator.GreaterThan:
-            if (valueA <= valueB) {
+            if (valueA > valueB) {
                 return null;
             }
             return condMessage(condition, `"${valueA}" darf nicht kleiner oder gleich "${valueB}" sein`);
 
         case ConditionOperator.GreaterThanOrEqual:
-            if (valueA < valueB) {
+            if (valueA >= valueB) {
                 return null;
             }
             return condMessage(condition, `"${valueA}" darf nicht kleiner "${valueB}" sein`);
