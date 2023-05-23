@@ -1,14 +1,15 @@
 import {AnyElement} from "../../../../../../../models/elements/any-element";
 import {Condition} from "../../../../../../../models/functions/conditions/condition";
-import {Box, Button, IconButton, MenuItem, TextField, Tooltip, Typography} from "@mui/material";
+import {Box, IconButton, Tooltip, Typography} from "@mui/material";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faRefresh, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
 import {
-    ConditionOperator, ConditionOperatorHint, ConditionOperatorIsUnary,
+    ConditionOperator,
+    ConditionOperatorHint,
+    ConditionOperatorIsUnary,
     ConditionOperatorLabel,
 } from "../../../../../../../data/condition-operator";
 import React from "react";
-import {CodeTabConditionOperand} from "./code-tab-condition-operand";
 import {ElementType} from "../../../../../../../data/element-type/element-type";
 import Evaluators from "../../../../../../../evaluators";
 import {SelectFieldComponent} from "../../../../../../select-field/select-field-component";
@@ -145,10 +146,14 @@ export function CodeTabCondition({
                                                 ...cond,
                                                 target: val ?? '',
                                             })}
-                                            options={allElements.map(elem => ({
-                                                value: elem.id,
-                                                label: stringOrDefault(elem.name, generateComponentTitle(elem)),
-                                            }))}
+                                            options={
+                                                allElements
+                                                    .filter(elem => elem.type === referencedElement?.type)
+                                                    .map(elem => ({
+                                                        value: elem.id,
+                                                        label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                                                    }))
+                                            }
                                         />
                                     }
                                 </Box>
