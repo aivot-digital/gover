@@ -1,12 +1,12 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
 import {HeadlineElement} from '../../models/elements/form/content/headline-element';
-import {BaseEditorProps} from '../_lib/base-editor-props';
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement>) {
     return (
         <>
             <TextField
-                value={props.component.content ?? ''}
+                value={props.element.content ?? ''}
                 label="Überschrift"
                 fullWidth
                 margin="normal"
@@ -19,7 +19,7 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement>)
                 <FormControlLabel
                     control={
                         <Checkbox
-                            checked={props.component.small ?? false}
+                            checked={props.element.small ?? false}
                             onChange={event => props.onPatch({
                                 small: event.target.checked,
                             })}

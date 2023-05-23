@@ -5,7 +5,6 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faFileArrowUp, faFileLines, faUser} from '@fortawesome/pro-light-svg-icons';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {BaseViewProps} from '../_lib/base-view-props';
 import {FadingPaper} from '../static-components/fading-paper/fading-paper';
 import {Preamble} from '../static-components/preamble/preamble';
 import {Department} from '../../models/entities/department';
@@ -14,6 +13,7 @@ import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
 import ProjectPackage from '../../../package.json';
+import {BaseViewProps} from "../../views/base-view";
 
 export const PrivacyUserInputKey = '__privacy__';
 

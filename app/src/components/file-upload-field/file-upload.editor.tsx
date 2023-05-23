@@ -1,10 +1,10 @@
 import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {BaseEditorProps} from '../_lib/base-editor-props';
 import {FileUploadElement} from "../../models/elements/form/input/file-upload-element";
 import {StringListInput} from "../string-list-input/string-list-input";
+import {BaseEditor} from "../../editors/base-editor";
 
-export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
-    const invalidMinMax = props.component.minFiles != null && props.component.maxFiles != null && props.component.minFiles > props.component.maxFiles;
+export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatch}) => {
+    const invalidMinMax = element.minFiles != null && element.maxFiles != null && element.minFiles > element.maxFiles;
 
     return (
         <>
@@ -12,8 +12,8 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                 <FormControlLabel
                     control={
                         <Checkbox
-                            checked={props.component.isMultifile ?? false}
-                            onChange={event => props.onPatch({
+                            checked={element.isMultifile ?? false}
+                            onChange={event => onPatch({
                                 isMultifile: event.target.checked,
                                 minFiles: undefined,
                                 maxFiles: undefined,
@@ -25,17 +25,17 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
             </FormControl>
 
             {
-                props.component.isMultifile &&
+                element.isMultifile &&
                 <>
                     <TextField
-                        value={(props.component.minFiles ?? 0).toString()}
+                        value={(element.minFiles ?? 0).toString()}
                         label="Minimalzahl an Anlagen"
                         fullWidth
                         margin="normal"
                         helperText={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : 'Geben Sie 0 ein, um keine Minimalzahl zu fordern.'}
                         onChange={event => {
                             const val = parseInt(event.target.value ?? '0');
-                            props.onPatch({
+                            onPatch({
                                 minFiles: isNaN(val) ? 0 : val,
                             });
                         }}
@@ -43,14 +43,14 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                     />
 
                     <TextField
-                        value={(props.component.maxFiles ?? 0).toString()}
+                        value={(element.maxFiles ?? 0).toString()}
                         label="Maximalanzahl an Anlagen"
                         fullWidth
                         margin="normal"
                         helperText={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : 'Geben Sie 0 ein, um keine Maximalanzahl zu fordern.'}
                         onChange={event => {
                             const val = parseInt(event.target.value ?? '0');
-                            props.onPatch({
+                            onPatch({
                                 maxFiles: isNaN(val) ? 0 : val,
                             });
                         }}
@@ -64,8 +64,8 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                 addLabel="Dateiendung hinzufügen"
                 hint="Die Bürger:in kann nur Dateien mit diesen Endungen hochladen. Gebe Sie die Endung ohne Punkt an. Z.B. pdf."
                 noItemsHint="Keine Endungen hinzugefügt. Bürger:innen können Dateien mit beliebiger Endung hochladen."
-                value={props.component.extensions}
-                onChange={extensions => props.onPatch({
+                value={element.extensions}
+                onChange={extensions => onPatch({
                     extensions: extensions,
                 })}
                 allowEmpty={true}

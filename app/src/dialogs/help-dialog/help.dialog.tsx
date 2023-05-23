@@ -1,5 +1,5 @@
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography} from '@mui/material';
-import {BoxLinkComponentView} from '../../components/box-link/box-link.component.view';
+import {BoxLink} from '../../components/box-link/box-link';
 import React, {useEffect, useState} from 'react';
 import {styled} from '@mui/material/styles';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
@@ -64,23 +64,23 @@ export function HelpDialog(props: HelpDialogProps) {
                         item
                         xs={6}
                     >
-                        <BoxLinkComponentView
+                        <BoxLink
                             link={`mailto:${specialDepartment?.specialSupportAddress}?subject=Fachlicher Support: ${application?.root.title}`}
                         >
                             <span>Fachlicher Support</span><br/>
                             Unterstützung zum Inhalt <br/>und Ausfüllen des Antrages
-                        </BoxLinkComponentView>
+                        </BoxLink>
                     </Grid>
                     <Grid
                         item
                         xs={6}
                     >
-                        <BoxLinkComponentView
+                        <BoxLink
                             link={`mailto:${technicalDepartment?.technicalSupportAddress}?subject=Technischer Support: ${application?.root.title}`}
                         >
                             <span>Technischer Support</span><br/>
                             Unterstützung bei technischen Problemen und Fehlern
-                        </BoxLinkComponentView>
+                        </BoxLink>
                     </Grid>
                 </Grid>
 

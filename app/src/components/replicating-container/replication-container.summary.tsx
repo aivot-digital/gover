@@ -1,4 +1,3 @@
-import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Box, Chip, Grid, Typography} from '@mui/material';
 import {
     ReplicatingContainerLayout
@@ -11,8 +10,9 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {AnyElement} from '../../models/elements/any-element';
 import {useSelector} from "react-redux";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
+import {BaseSummaryProps} from "../../summaries/base-summary";
 
-export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerLayout>) {
+export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
     const id = idPrefix != null ? (idPrefix + model.id) : model.id;
 
     const customerInput = useSelector(selectCustomerInput);

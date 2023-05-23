@@ -3,7 +3,7 @@ import {TableFieldElement} from '../../models/elements/form/input/table-field-el
 import {DataGrid, GridColumns, GridRenderCellParams, GridSelectionModel} from '@mui/x-data-grid';
 import {useCallback, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
-import {BaseViewProps} from '../_lib/base-view-props';
+import {BaseViewProps} from "../../views/base-view";
 
 export function TableFieldComponentView({element, value, error, setValue}: BaseViewProps<TableFieldElement, any[]>) {
     const [selectionModel, setSelectionModel] = useState<GridSelectionModel>();

@@ -8,6 +8,7 @@ import {ConditionSetOperator} from "../data/condition-set-operator";
 import {isConditionOperandReference} from "../models/functions/conditions/condition-operand-reference";
 import {ConditionOperator, ConditionOperatorLabel} from "../data/condition-operator";
 import {stringOrDefault} from "./string-utils";
+import { ElementType } from "../data/element-type/element-type";
 
 export function evaluateFunction(func: FunctionNoCode | FunctionCode | undefined | null, customerInput: CustomerInput, element: AnyElement, id: string, returnBoolean: boolean): any {
     if (func == null) {
@@ -75,14 +76,6 @@ function evaluateCondition(condition: Condition, customerInput: CustomerInput): 
     if (typeof valueB === 'boolean') {
         valueB = valueB ? 'Ja' : 'Nein';
     }
-
-    /*
-    console.log(
-        valueA,
-        condition.operator != null ? ConditionOperatorLabel[condition.operator] : 'No Operator',
-        valueB,
-    );
-     */
 
     switch (condition.operator) {
         case ConditionOperator.Equals:

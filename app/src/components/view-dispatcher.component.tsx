@@ -3,8 +3,6 @@ import {connect} from 'react-redux';
 import {RootState} from '../store';
 import {isElementVisible} from '../utils/is-element-visible';
 import {generateComponentPatch} from '../utils/generate-component-patch';
-import {ViewMap} from './view.map';
-import {BaseViewProps} from './_lib/base-view-props';
 import {updateUserInput} from '../slices/customer-input-slice';
 import {Alert, AlertTitle, Grid} from '@mui/material';
 import {Dispatch} from '@reduxjs/toolkit';
@@ -13,6 +11,8 @@ import {CustomerInputErrors} from '../models/customer-input-errors';
 import {AnyElement} from '../models/elements/any-element';
 import {evaluateFunction} from "../utils/evaluate-function";
 import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
+import Views from "../views";
+import {BaseViewProps} from "../views/base-view";
 
 interface DispatcherComponentProps<M extends AnyElement> {
     element: M;
@@ -66,7 +66,7 @@ class _ViewDispatcherComponent<M extends AnyElement, V> extends React.Component<
             return null;
         }
 
-        const Component: ComponentType<BaseViewProps<M, V>> = ViewMap[element.type];
+        const Component: ComponentType<BaseViewProps<M, V>> | null = Views[element.type];
         if (Component == null) {
             return null;
         }

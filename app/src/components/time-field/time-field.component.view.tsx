@@ -4,7 +4,7 @@ import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';
 import {useCallback} from 'react';
-import {BaseViewProps} from '../_lib/base-view-props';
+import {BaseViewProps} from "../../views/base-view";
 
 export function TimeFieldComponentView({element, value, error, setValue}: BaseViewProps<TimeFieldElement, string>) {
     const dateValue = value != null ? new Date(value) : null;

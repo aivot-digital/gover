@@ -1,7 +1,6 @@
 import {Box, Drawer,} from '@mui/material';
 import React, {useState} from 'react';
 import {PresetsService} from '../../../../services/presets.service';
-import {EditorMap, EditorType, EditorTypeSet, isEditorTypeSet} from '../../../editor.map';
 import {AddPresetDialog} from '../../../../dialogs/add-preset/add-preset.dialog';
 import {DefaultTabs} from './data/default-tabs';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -15,6 +14,7 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {AnyElement} from '../../../../models/elements/any-element';
 import {ElementType} from '../../../../data/element-type/element-type';
 import ProjectPackage from '../../../../../package.json';
+import Editors from "../../../../editors";
 
 export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>) {
     const dispatch = useAppDispatch();
@@ -71,8 +71,8 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
         handleClosePresetDialog();
     };
 
-    const editor: EditorType | EditorTypeSet | null = EditorMap[(updatedElement ?? props.element).type];
-    const additionalTabs = editor != null && isEditorTypeSet(editor) ? editor.additionalTabs : [];
+    const editor = Editors[(updatedElement ?? props.element).type];
+    const additionalTabs = editor?.additionalTabs ?? [];
 
     return (
         <Drawer

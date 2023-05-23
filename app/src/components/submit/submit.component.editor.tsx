@@ -1,14 +1,14 @@
 import React from 'react';
-import {BaseEditorProps} from '../_lib/base-editor-props';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {TextField} from '@mui/material';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>) {
     return (
         <>
             <TextField
-                value={props.component.textPreSubmit ?? ''}
+                value={props.element.textPreSubmit ?? ''}
                 label="Text vor dem Absenden des Antrages"
                 margin="normal"
                 multiline
@@ -19,7 +19,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
             />
 
             <TextField
-                value={props.component.textPostSubmit ?? ''}
+                value={props.element.textPostSubmit ?? ''}
                 label="Text nach dem Absenden des Antrages"
                 margin="normal"
                 multiline
@@ -30,7 +30,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
             />
 
             <TextField
-                value={props.component.textProcessingTime ?? ''}
+                value={props.element.textProcessingTime ?? ''}
                 label="Bearbeitungszeit des Antrages"
                 margin="normal"
                 helperText={'Ungefähre Bearbeitungszeit der zuständigen und/oder bewirtschaftenden Stelle.'}
@@ -42,7 +42,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
             />
 
             <TextField
-                value={(props.component.documentsToReceive ?? []).join('\n')}
+                value={(props.element.documentsToReceive ?? []).join('\n')}
                 label="Dokumente die Antragstellende erhalten"
                 margin="normal"
                 multiline
@@ -51,7 +51,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                     documentsToReceive: event.target.value.split('\n'),
                 })}
                 onBlur={() => props.onPatch({
-                    documentsToReceive: (props.component.documentsToReceive ?? []).filter(ln => !isStringNullOrEmpty(ln)),
+                    documentsToReceive: (props.element.documentsToReceive ?? []).filter(ln => !isStringNullOrEmpty(ln)),
                 })}
                 helperText="Durch die zuständige und/oder bewirtschaftende Stelle auszustellende Dokumente. Bitte geben Sie pro Zeile ein Dokument an."
             />

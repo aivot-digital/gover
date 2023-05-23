@@ -1,14 +1,14 @@
 import {StepElement} from '../../models/elements/steps/step-element';
 import {Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Select, TextField} from '@mui/material';
-import {BaseEditorProps} from '../_lib/base-editor-props';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {StepIcons} from '../../data/step-icons';
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
     return (
         <>
             <TextField
-                value={props.component.title ?? ''}
+                value={props.element.title ?? ''}
                 label="Name des Abschnitts"
                 fullWidth
                 margin="normal"
@@ -26,7 +26,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                 <Select
                     labelId="icon-select-label"
                     label="Icon"
-                    value={props.component.icon ?? ''}
+                    value={props.element.icon ?? ''}
                     onChange={event => props.onPatch({
                         icon: event.target.value ?? '',
                     })}

@@ -27,7 +27,7 @@ export function CodeTabConditionOperand({operand, allElements, onChange, options
     let helperText = null;
     switch (matchingType) {
         case ElementType.Time:
-            helperText = 'Bitte im Format HH:MM:SS eingeben.';
+            helperText = 'Bitte im Format HH:MM eingeben.';
             break;
         case ElementType.Date:
             helperText = 'Bitte im Format TT.MM.JJJJ eingeben.';

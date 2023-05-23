@@ -2,14 +2,14 @@ import React, {ComponentType} from 'react';
 import {useSelector} from 'react-redux';
 import {isElementVisible} from '../utils/is-element-visible';
 import {generateComponentPatch} from '../utils/generate-component-patch';
-import {SummaryMap} from './summary.map';
-import {BaseSummaryProps} from './_lib/base-summary-props';
 import {selectCustomerInput} from '../slices/customer-input-slice';
 import {AnyElement} from '../models/elements/any-element';
 import {selectDisableVisibility} from "../slices/admin-settings-slice";
 import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
 import {evaluateFunction} from "../utils/evaluate-function";
 import {CustomerInput} from "../models/customer-input";
+import Summaries from "../summaries";
+import {BaseSummaryProps} from "../summaries/base-summary";
 
 interface DispatcherComponentProps<M extends AnyElement> {
     model: M;
@@ -43,12 +43,12 @@ export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefi
         return null;
     }
 
-    const Component: ComponentType<BaseSummaryProps<M>> = SummaryMap[model.type];
+    const Component: ComponentType<BaseSummaryProps<M, any>> | null = Summaries[model.type];
     if (Component == null) {
         return null;
     }
 
-    const viewProps: BaseSummaryProps<M> = {
+    const viewProps: BaseSummaryProps<M, any> = {
         model: patchedModel,
         value,
         idPrefix,

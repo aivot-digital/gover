@@ -1,13 +1,13 @@
 import {FormControl, TextField} from '@mui/material';
 import {MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
-import {BaseEditorProps} from '../_lib/base-editor-props';
 import {StringListInput} from "../string-list-input/string-list-input";
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement>) {
     const minRequiredError = (
-        props.component.minimumRequiredOptions != null &&
-        props.component.options != null &&
-        props.component.minimumRequiredOptions > props.component.options.length
+        props.element.minimumRequiredOptions != null &&
+        props.element.options != null &&
+        props.element.minimumRequiredOptions > props.element.options.length
     );
 
     return (
@@ -17,7 +17,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 addLabel="Option hinzufügen"
                 hint="Die Bürger:in kann eine oder mehrere dieser Optionen auswählen."
                 noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
-                value={props.component.options}
+                value={props.element.options}
                 onChange={options => props.onPatch({
                     options: options,
                 })}
@@ -25,10 +25,10 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
             />
 
             {
-                props.component.required &&
+                props.element.required &&
                 <FormControl>
                     <TextField
-                        value={props.component.minimumRequiredOptions?.toString() ?? ''}
+                        value={props.element.minimumRequiredOptions?.toString() ?? ''}
                         label="Erforderliche Mindestanzahl"
                         helperText={minRequiredError ? 'Sie fordern mehr Optionen als Sie angegeben haben.' : 'Geben Sie 0 ein, um keine Mindestanzahl zu fordern.'}
                         onChange={event => {
@@ -47,7 +47,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                             });
                         }}
                         onBlur={() => {
-                            if (props.component.minimumRequiredOptions == null || props.component.minimumRequiredOptions === 0) {
+                            if (props.element.minimumRequiredOptions == null || props.element.minimumRequiredOptions === 0) {
                                 props.onPatch({
                                     required: false,
                                 });

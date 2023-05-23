@@ -9,7 +9,7 @@ import {faCloudUpload, faPlus} from '@fortawesome/pro-light-svg-icons';
 import {AppFooter} from '../../../components/app-footer/app-footer';
 import {Introductory} from '../../../components/introductory/introductory';
 import {ApplicationListItem} from './components/application-list-item/application-list-item';
-import {BoxLinkComponentView} from '../../../components/box-link/box-link.component.view';
+import {BoxLink} from '../../../components/box-link/box-link';
 import {AddApplicationDialog} from '../../../dialogs/add-application-dialog/add-application-dialog';
 import {ImportApplicationDialog} from '../../../dialogs/import-application-dialog/import-application-dialog';
 import {MetaElement} from '../../../components/meta-element/meta-element';
@@ -229,11 +229,11 @@ export function ApplicationsOverviewPage() {
                         item
                         xs={6}
                     >
-                        <BoxLinkComponentView link="https://aivot.de/gover">
+                        <BoxLink link="https://aivot.de/gover">
                             <span>{__.generalSupportLinkLabel1}</span>
                             <br/>
                             {__.generalSupportLinkLabel2}
-                        </BoxLinkComponentView>
+                        </BoxLink>
                     </Grid>
                     {
                         providerLinks != null &&
@@ -243,7 +243,7 @@ export function ApplicationsOverviewPage() {
                                 item
                                 xs={6}
                             >
-                                <BoxLinkComponentView link={link}>
+                                <BoxLink link={link}>
                                     {
                                         text
                                             .split('\n')
@@ -255,7 +255,7 @@ export function ApplicationsOverviewPage() {
                                                     <React.Fragment key={index}>{line}<br/></React.Fragment>
                                             )
                                     }
-                                </BoxLinkComponentView>
+                                </BoxLink>
                             </Grid>
                         ))
                     }

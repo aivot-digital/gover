@@ -1,20 +1,20 @@
 import React from 'react';
 import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {TextField} from '@mui/material';
-import {BaseEditorProps} from '../_lib/base-editor-props';
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
     const minRequiredError = (
-        props.component.minimumRequiredSets != null &&
-        props.component.maximumSets != null &&
-        props.component.maximumSets > 0 &&
-        props.component.minimumRequiredSets > props.component.maximumSets
+        props.element.minimumRequiredSets != null &&
+        props.element.maximumSets != null &&
+        props.element.maximumSets > 0 &&
+        props.element.minimumRequiredSets > props.element.maximumSets
     );
 
     return (
         <>
             <TextField
-                value={props.component.headlineTemplate ?? ''}
+                value={props.element.headlineTemplate ?? ''}
                 label="Überschrift des einzelnen Datensatzes"
                 margin="normal"
                 helperText='Verwenden Sie "#" um die aktuelle Nummer des Datensatzes in der Überschrift einzusetzen.'
@@ -24,7 +24,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             />
 
             <TextField
-                value={props.component.addLabel ?? ''}
+                value={props.element.addLabel ?? ''}
                 label='Label-Text für Aktion "Hinzufügen"'
                 margin="normal"
                 onChange={event => props.onPatch({
@@ -33,7 +33,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             />
 
             <TextField
-                value={props.component.removeLabel ?? ''}
+                value={props.element.removeLabel ?? ''}
                 label='Label-Text für Aktion "Löschen"'
                 margin="normal"
                 onChange={event => props.onPatch({
@@ -42,9 +42,9 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             />
 
             {
-                props.component.required &&
+                props.element.required &&
                 <TextField
-                    value={props.component.minimumRequiredSets?.toString() ?? ''}
+                    value={props.element.minimumRequiredSets?.toString() ?? ''}
                     label="Mindestanzahl der hinzuzufügenden Datensätze"
                     margin="normal"
                     helperText={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Mindestanzahl zu fordern.'}
@@ -65,7 +65,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     }}
                     onBlur={() => {
                         props.onPatch({
-                            required: props.component.minimumRequiredSets != null && props.component.minimumRequiredSets > 0,
+                            required: props.element.minimumRequiredSets != null && props.element.minimumRequiredSets > 0,
                         });
                     }}
                     error={minRequiredError}
@@ -73,7 +73,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             }
 
             <TextField
-                value={props.component.maximumSets?.toString() ?? ''}
+                value={props.element.maximumSets?.toString() ?? ''}
                 label="Maximalanzahl der hinzuzufügenden Datensätze"
                 margin="normal"
                 helperText={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Maximalanzahl zu fordern.'}

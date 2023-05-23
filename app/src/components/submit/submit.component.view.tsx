@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import {BaseViewProps} from '../_lib/base-view-props';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../static-components/preamble/preamble';
 import {
@@ -26,6 +25,7 @@ import {selectCustomerInputErrorValue} from '../../slices/customer-input-errors-
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {BaseViewProps} from "../../views/base-view";
 
 export const SubmitHumanKey = '__human__';
 

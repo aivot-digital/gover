@@ -8,6 +8,14 @@ import {Localization} from '../../locale/localization';
 
 const __ = Localization(strings);
 
+/**
+ * @deprecated Use FieldUploadFieldComponent
+ * @param extensions
+ * @param multiple
+ * @param onChange
+ * @param value
+ * @constructor
+ */
 export function FileUpload({extensions, multiple, onChange, value}: FileUploadProps) {
     const inputRef = useRef<HTMLInputElement | null>(null);
 

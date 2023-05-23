@@ -1,12 +1,12 @@
 import {TextField} from '@mui/material';
 import {SpacerElement} from '../../models/elements/form/content/spacer-element';
-import {BaseEditorProps} from '../_lib/base-editor-props';
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement>) {
     return (
         <>
             <TextField
-                value={props.component.height ?? ''}
+                value={props.element.height ?? ''}
                 label="Abstand"
                 helperText="Die Angabe erfolgt in Pixeln (px)."
                 fullWidth

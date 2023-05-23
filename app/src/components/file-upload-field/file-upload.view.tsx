@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCloudArrowUp, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
-import {BaseViewProps} from "../_lib/base-view-props";
 import {
     FileUploadElement,
     FileUploadElementItem
@@ -24,6 +23,7 @@ import {
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../slices/snackbar-slice";
 import {humanizeFileSize, humanizeNumber, pluralize} from "../../utils/huminization-utils";
+import { BaseViewProps } from '../../views/base-view';
 
 export function FileUploadView({
                                    element,
@@ -302,7 +302,7 @@ export function FileUploadView({
                             }}
                         >
                             {
-                                element.minFiles == element.maxFiles ?
+                                element.minFiles === element.maxFiles ?
                                     'Genau' :
                                     (
                                         element.minFiles != null && element.minFiles > 0 ?

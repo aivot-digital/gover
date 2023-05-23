@@ -1,8 +1,6 @@
 import React from 'react';
 import {useSelector} from 'react-redux';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
-import {BaseViewProps} from '../_lib/base-view-props';
-import {SummaryMap} from '../summary.map';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import {ElementType} from '../../data/element-type/element-type';
 import {Alert, AlertTitle, Box, Typography} from '@mui/material';
@@ -15,13 +13,15 @@ import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {CustomerInput} from "../../models/customer-input";
 import {selectCustomerInputErrorValue} from "../../slices/customer-input-errors-slice";
 import ProjectPackage from '../../../package.json';
+import {BaseViewProps} from "../../views/base-view";
+import SummaryMap from '../../summaries';
 
 export const SummaryUserInputKey = '__summary__';
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
 
 // TODO: Localization
 
-export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>) {
+export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, any>) {
     const application = useSelector(selectLoadedApplication);
     const customerInput = useSelector(selectCustomerInput);
     const summaryError = useSelector(selectCustomerInputErrorValue(SummaryAttachmentsTooLargeKey));

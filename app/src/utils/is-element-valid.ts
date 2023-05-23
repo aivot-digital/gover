@@ -1,7 +1,6 @@
 import {Dispatch} from '@reduxjs/toolkit';
 import {isElementVisible} from './is-element-visible';
 import {BaseValidator} from '../validators/base-validator';
-import {ValidatorMap} from '../components/validator.map';
 import {addError} from '../slices/customer-input-errors-slice';
 import {ElementType} from '../data/element-type/element-type';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
@@ -9,6 +8,7 @@ import {AnyElement} from '../models/elements/any-element';
 import {Logger} from "../hooks/use-logging";
 import {generateComponentPatch} from "./generate-component-patch";
 import {isAnyElementWithChildren} from "../models/elements/any-element-with-children";
+import Validators from "../validators";
 
 export function isElementValid($debug: Logger, dispatch: Dispatch<any>, _comp: AnyElement, userInput: any, idPrefix?: string): boolean {
     const id = idPrefix != null ? (idPrefix + _comp.id) : _comp.id;
@@ -29,7 +29,7 @@ export function isElementValid($debug: Logger, dispatch: Dispatch<any>, _comp: A
     let isValid = true;
 
     if (isAnyInputElement(comp)) {
-        const validator: BaseValidator<AnyInputElement> | null = ValidatorMap[comp.type];
+        const validator: BaseValidator<AnyInputElement> | null = Validators[comp.type];
         if (validator != null) {
             const error = validator.makeErrors(id, comp, userInput);
             if (error != null) {

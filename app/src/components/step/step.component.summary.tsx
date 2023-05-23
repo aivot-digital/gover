@@ -1,4 +1,3 @@
-import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Box, IconButton, Typography} from '@mui/material';
 import {StepElement} from '../../models/elements/steps/step-element';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
@@ -10,8 +9,9 @@ import {setCurrentStep} from '../../slices/stepper-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {getStepIcon} from '../../data/step-icons';
+import {BaseSummaryProps} from "../../summaries/base-summary";
 
-export function StepComponentSummary({model}: BaseSummaryProps<StepElement>) {
+export function StepComponentSummary({model}: BaseSummaryProps<StepElement, any>) {
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedApplication);
 

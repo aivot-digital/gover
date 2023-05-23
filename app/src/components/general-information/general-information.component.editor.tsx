@@ -1,12 +1,13 @@
 import React, {useEffect, useState} from 'react';
-import {BaseEditorProps} from '../_lib/base-editor-props';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FormControl, FormGroup, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
 import {Department} from "../../models/entities/department";
 import {DepartmentsService} from "../../services/departments.service";
 import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {CheckboxTree, CheckboxTreeOption} from "../checkbox-tree/checkbox-tree";
+import {CheckboxTree} from "../checkbox-tree/checkbox-tree";
 import {StringListInput} from "../string-list-input/string-list-input";
+import {CheckboxTreeOption} from "../checkbox-tree/checkbox-tree-option";
+import {BaseEditorProps} from "../../editors/base-editor";
 
 const eligibleEntities: CheckboxTreeOption[] = [
     {
@@ -80,7 +81,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             >
                 <InputLabel>Zuständige Stelle</InputLabel>
                 <Select
-                    value={props.component.responsibleDepartment ?? ''}
+                    value={props.element.responsibleDepartment ?? ''}
                     label="Zuständige Stelle"
                     onChange={event => props.onPatch({
                         responsibleDepartment: event.target.value as number,
@@ -110,7 +111,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             >
                 <InputLabel>Bewirtschaftende Stelle</InputLabel>
                 <Select
-                    value={props.component.managingDepartment ?? ''}
+                    value={props.element.managingDepartment ?? ''}
                     label="Bewirtschaftende Stelle"
                     onChange={event => props.onPatch({
                         managingDepartment: event.target.value as number,
@@ -142,7 +143,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             </Typography>
 
             <TextField
-                value={props.component.initiativeName ?? ''}
+                value={props.element.initiativeName ?? ''}
                 label="Initiative"
                 margin="normal"
                 onChange={event => props.onPatch({
@@ -151,7 +152,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             />
 
             <TextField
-                value={props.component.initiativeLogoLink ?? ''}
+                value={props.element.initiativeLogoLink ?? ''}
                 label="Logo der Initiative"
                 margin="normal"
                 onChange={event => props.onPatch({
@@ -164,7 +165,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 label="URL zur Webseite der Initiative"
                 margin="normal"
                 helperText={'Das dargestellte Logo der Initiative verlinkt auf diese Webseite.'}
-                value={props.component.initiativeLink ?? ''}
+                value={props.element.initiativeLink ?? ''}
                 onChange={event => props.onPatch({
                     initiativeLink: event.target.value,
                 })}
@@ -178,7 +179,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             </Typography>
 
             <TextField
-                value={props.component.teaserText ?? ''}
+                value={props.element.teaserText ?? ''}
                 label="Kurzbeschreibung"
                 margin="normal"
                 helperText="Schildern Sie kurz und präzise den Antrag und dessen Zweck."
@@ -193,7 +194,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 <InputLabel sx={{mb: 1}}>Antragsberechtigte</InputLabel>
                 <CheckboxTree
                     options={eligibleEntities}
-                    value={props.component.eligiblePersons ?? []}
+                    value={props.element.eligiblePersons ?? []}
                     onChange={update => props.onPatch({
                         eligiblePersons: update,
                     })}
@@ -201,14 +202,14 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             </FormGroup>
 
             <TextField
-                value={props.component.expectedCosts ?? ''}
+                value={props.element.expectedCosts ?? ''}
                 label="Gebühren des Antrages"
                 margin="normal"
                 onChange={event => props.onPatch({
                     expectedCosts: event.target.value,
                 })}
                 onBlur={() => {
-                    if (isStringNullOrEmpty(props.component.expectedCosts)) {
+                    if (isStringNullOrEmpty(props.element.expectedCosts)) {
                         props.onPatch({
                             expectedCosts: undefined,
                         });
@@ -228,7 +229,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine relevanten Dokumente angegeben"
-                value={props.component.supportingDocuments}
+                value={props.element.supportingDocuments}
                 onChange={supportingDocuments => props.onPatch({
                     supportingDocuments: supportingDocuments,
                 })}
@@ -240,7 +241,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine einzureichenden Dokumente angegeben"
-                value={props.component.documentsToAttach}
+                value={props.element.documentsToAttach}
                 onChange={supportingDocuments => props.onPatch({
                     documentsToAttach: supportingDocuments,
                 })}
