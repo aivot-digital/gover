@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {Box, Button, Divider, Typography} from '@mui/material';
 import ProjectPackage from '../../../package.json';
+import GitInfo from '../../git-info.json';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 import {ElementTreeProps} from './element-tree-props';
@@ -188,7 +189,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                                 color: '#BFBFBF',
                             }}
                         >
-                            &copy; 2022 Aivot
+                            &copy; {new Date(GitInfo.date).getFullYear()} Aivot
                         </Typography>
 
                         <Typography
