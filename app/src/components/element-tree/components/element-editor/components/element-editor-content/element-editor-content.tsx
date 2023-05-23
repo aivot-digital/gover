@@ -28,6 +28,7 @@ import {ElementEditorContentProps} from './element-editor-content-props';
 import {AnyFormElement} from '../../../../../../models/elements/form/any-form-element';
 import {BaseInputElement} from "../../../../../../models/elements/form/base-input-element";
 import {isAnyInputElement} from "../../../../../../models/elements/form/input/any-input-element";
+import {TextFieldComponent} from "../../../../../text-field/text-field-component";
 
 export function ElementEditorContent<T extends AnyElement>({
                                                                element,
@@ -50,33 +51,12 @@ export function ElementEditorContent<T extends AnyElement>({
         case DefaultTabs.properties:
             return (
                 <Box sx={{p: 4}}>
-                    <Box sx={{display: 'flex', alignItems: 'center'}}>
-                        <TextField
-                            label="ID (für Entwickler:innen)"
-                            value={element.id ?? ''}
-                            fullWidth
-                            margin="normal"
-                            onChange={event => {
-                                handleUpdate({id: event.target.value ?? ''});
-                            }}
-                            helperText={idError != null ? idError : 'Verwenden Sie bitte ausschließlich alphanumerische Zeichen und Unterstriche.'}
-                            error={idError != null}
-                        />
-                        <Box sx={{ml: 2, transform: 'translateY(-6px)'}}>
-                            <Tooltip title="ID neu generieren">
-                                <IconButton
-                                    onClick={() => {
-                                        const res = window.confirm('Sind Sie sicher, dass Sie eine neue, zufällige ID generieren möchten?');
-                                        if (res) {
-                                            handleUpdate({id: generateElementIdForType(element.type)});
-                                        }
-                                    }}
-                                >
-                                    <FontAwesomeIcon icon={faArrowsRotate}/>
-                                </IconButton>
-                            </Tooltip>
-                        </Box>
-                    </Box>
+                    <TextFieldComponent
+                        label="ID (für Entwickler:innen)"
+                        value={element.id ?? ''}
+                        disabled
+                        onChange={_ => {}}
+                    />
 
                     {
                         element.type !== ElementType.Root &&

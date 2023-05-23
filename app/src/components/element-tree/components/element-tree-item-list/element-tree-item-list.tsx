@@ -7,7 +7,7 @@ import {ElementTreeItemListProps} from './element-tree-item-list-props';
 import {selectIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
-import {regenerateIdsForElement} from "../../../../utils/id-utils";
+import {cloneElement} from "../../../../utils/clone-element";
 
 
 export function ElementTreeItemList<T extends AnyElementWithChildren>({
@@ -70,7 +70,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>({
                                 const updatedChildren = [...element.children];
                                 const index = updatedChildren.indexOf(child);
                                 if (index >= 0) {
-                                    const clonedElem = regenerateIdsForElement(JSON.parse(JSON.stringify(child))) as any;
+                                    const clonedElem = cloneElement(child);
                                     updatedChildren.splice(index, 0, clonedElem);
                                 }
                                 // @ts-ignore

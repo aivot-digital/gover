@@ -1,6 +1,7 @@
 import {RootElement} from '../models/elements/root-element';
 import {AnyElement} from '../models/elements/any-element';
 import {ElementType} from "../data/element-type/element-type";
+import {ElementTypesMap} from "../data/element-type/element-types-map";
 
 const idRegex = /^[a-z][a-zA-Z0-9_]*$/;
 
@@ -35,44 +36,40 @@ function countIdOccurrences(comp: AnyElement, id: string): number {
     return occurrences;
 }
 
-export function generateElementIdForType(type?: ElementType): string {
-    let prefix = 'e';
-    switch (type) {
-        case ElementType.Root:
-            prefix = 'root';
-            break;
-        case ElementType.Step:
-            prefix = 'step';
-            break;
-        case ElementType.SummaryStep:
-            prefix = 'sum';
-            break;
-        case ElementType.IntroductionStep:
-            prefix = 'general';
-            break;
-        case ElementType.SubmitStep:
-            prefix = 'submit';
-            break;
-        case ElementType.Container:
-            prefix = 'cont';
-            break;
-    }
-    return generateElementId(prefix, true);
+const prefixMap: ElementTypesMap<string> = {
+    [ElementType.Root]: 'root',
+    [ElementType.Step]: 'step',
+    [ElementType.Alert]: 'alrt',
+    [ElementType.Container]: 'grup',
+    [ElementType.Checkbox]: 'ckbx',
+    [ElementType.Date]: 'date',
+    [ElementType.Headline]: 'hdln',
+    [ElementType.MultiCheckbox]: 'mucx',
+    [ElementType.Number]: 'numb',
+    [ElementType.ReplicatingContainer]: 'repc',
+    [ElementType.Richtext]: 'ritx',
+    [ElementType.Radio]: 'radi',
+    [ElementType.Select]: 'selc',
+    [ElementType.Spacer]: 'spac',
+    [ElementType.Table]: 'tabl',
+    [ElementType.Text]: 'text',
+    [ElementType.Time]: 'time',
+    [ElementType.IntroductionStep]: 'intr',
+    [ElementType.SubmitStep]: 'subm',
+    [ElementType.SummaryStep]: 'summ',
+    [ElementType.Image]: 'imag',
+    [ElementType.SubmittedStep]: 'subx',
+    [ElementType.FileUpload]: 'fupl'
+};
+
+export function generateElementIdForType(type: ElementType): string {
+    return generateElementId(prefixMap[type]);
 }
 
-export function regenerateIdsForElement(elem: AnyElement): AnyElement {
-    const updatedElem = {
-        ...elem,
-        id: generateElementIdForType(elem.type),
-    };
-
-    if ('children' in updatedElem) {
-        updatedElem.children = updatedElem.children.map(child => regenerateIdsForElement(child)) as any;
-    }
-
-    return updatedElem;
+export function generateElementIdForReplicatingContainerChild(): string {
+    return generateElementId(prefixMap[ElementType.ReplicatingContainer] + '_c');
 }
 
-export function generateElementId(prefix: string = 'e', addRandom?: boolean): string {
-    return prefix + (new Date().getTime() * (addRandom ? Math.floor((Math.random() + 0.1) * 100) : 1)).toFixed();
+function generateElementId(prefix: string): string {
+    return prefix + '_' + new Date().getTime().toFixed() + Math.floor((Math.random() + 0.1) * 1000).toFixed(0);
 }

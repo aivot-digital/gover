@@ -5,7 +5,7 @@ import {faPlusCircle, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {useCallback, useEffect} from 'react';
 import {stringOrDefault} from "../../utils/string-utils";
-import {generateElementId} from "../../utils/id-utils";
+import {generateElementIdForReplicatingContainerChild, generateElementIdForType} from "../../utils/id-utils";
 import {BaseViewProps} from "../../views/base-view";
 
 export function ReplicatingContainerView({
@@ -16,12 +16,12 @@ export function ReplicatingContainerView({
                                          }: BaseViewProps<ReplicatingContainerLayout, string[]>) {
     useEffect(() => {
         if (element.minimumRequiredSets != null && element.minimumRequiredSets > 0 && (value == null || value.length < element.minimumRequiredSets)) {
-            setValue(Array.from({length: element.minimumRequiredSets}, (_, i) => generateElementId(i.toString())));
+            setValue(Array.from({length: element.minimumRequiredSets}, () => generateElementIdForReplicatingContainerChild()));
         }
     }, [setValue, value, element]);
 
     const handleAdd = useCallback(() => {
-        setValue([...(value ?? []), generateElementId('')]);
+        setValue([...(value ?? []), generateElementIdForReplicatingContainerChild()]);
     }, [setValue, value]);
 
     const handleDelete = useCallback((id: string) => {

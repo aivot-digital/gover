@@ -1,14 +1,17 @@
 import {
     Alert,
-    AlertTitle, Box,
+    AlertTitle,
+    Box,
     Dialog,
-    DialogContent, FormControlLabel,
+    DialogContent,
+    FormControlLabel,
     List,
     ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    ListSubheader, Switch,
+    ListSubheader,
+    Switch,
     Tab,
     Tabs,
 } from '@mui/material';
@@ -25,8 +28,7 @@ import {DialogTitleWithClose} from '../../components/static-components/dialog-ti
 import {faLayerPlus} from '@fortawesome/pro-light-svg-icons';
 import {ElementTypesMap} from '../../data/element-type/element-types-map';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
-import {AnyElement} from '../../models/elements/any-element';
-import {regenerateIdsForElement} from "../../utils/id-utils";
+import {cloneElement} from "../../utils/clone-element";
 
 enum ElementTypeGroups {
     Display,
@@ -88,11 +90,7 @@ export function AddElementDialog({parentType, onAddElement, onClose}: AddElement
     }, [parentType, setPresets]);
 
     const addPresetElement = (preset: Preset) => {
-        let elem: AnyElement = {...preset.root};
-        if (regenerateIds) {
-            elem = regenerateIdsForElement(elem);
-        }
-        onAddElement(elem);
+        onAddElement(cloneElement(preset.root));
     };
 
     const childOptions = ElementChildOptions[parentType] ?? [];
