@@ -134,7 +134,7 @@ export function ElementEditorContent<T extends AnyElement>({
                                 onChange={event => handleUpdate({
                                     label: event.target.value,
                                 })}
-                                helperText="Dieser Text wird der Bürger:in im Antrag angezeigt und Beschreibt die Eingabe in der eingereichten PDF-Datei."
+                                helperText="Dieser Text wird den Bürger:innen im Antrag angezeigt."
                             />
 
                             <TextField
