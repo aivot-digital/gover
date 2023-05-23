@@ -105,7 +105,7 @@ export const ConditionOperatorHint: ElementTypesMap<string | null> = {
     [ElementType.Alert]: null,
     [ElementType.Container]: null,
     [ElementType.Checkbox]: null,
-    [ElementType.Date]: 'Bitte im Format TT.MM.JJJJ eingeben.',
+    [ElementType.Date]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: null,
     [ElementType.Number]: null,
