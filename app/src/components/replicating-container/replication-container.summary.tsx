@@ -2,7 +2,7 @@ import {Box, Chip, Grid, Typography} from '@mui/material';
 import {
     ReplicatingContainerLayout
 } from '../../models/elements/form/layout/replicating-container-layout';
-import {flattenElements} from '../summary/summary.component.view';
+import {flattenElementsForSummary} from '../summary/summary.component.view';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
 import {faTurnDown} from '@fortawesome/pro-light-svg-icons';
@@ -12,7 +12,7 @@ import {useSelector} from "react-redux";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {BaseSummaryProps} from "../../summaries/base-summary";
 
-export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
+export function ReplicationContainerSummary({allElements, model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
     const id = idPrefix != null ? (idPrefix + model.id) : model.id;
 
     const customerInput = useSelector(selectCustomerInput);
@@ -20,7 +20,7 @@ export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummar
     const makeChildModels = (val: string) => {
         let childModels: AnyElement[] = [];
         for (const child of model.children ?? []) {
-            childModels = childModels.concat(flattenElements(child, customerInput, `${id}_${val}_`));
+            childModels = childModels.concat(flattenElementsForSummary(allElements, child, customerInput, `${id}_${val}_`));
         }
         return childModels;
     };
@@ -97,8 +97,9 @@ export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummar
                         {
                             makeChildModels(val).map(child => (
                                 <SummaryDispatcherComponent
+                                    allElements={allElements}
                                     key={`${id}_${val}_${child.id}`}
-                                    model={child}
+                                    element={child}
                                     idPrefix={`${id}_${val}_`}
                                 />
                             ))

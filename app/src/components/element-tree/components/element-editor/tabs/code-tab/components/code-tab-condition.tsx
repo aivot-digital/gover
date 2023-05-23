@@ -1,21 +1,20 @@
 import {AnyElement} from "../../../../../../../models/elements/any-element";
 import {Condition} from "../../../../../../../models/functions/conditions/condition";
-import {Box, Button, MenuItem, TextField, Typography} from "@mui/material";
+import {Box, Button, IconButton, MenuItem, TextField, Tooltip, Typography} from "@mui/material";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
+import {faRefresh, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
 import {
-    ConditionOperator,
+    ConditionOperator, ConditionOperatorHint, ConditionOperatorIsUnary,
     ConditionOperatorLabel,
-    ConditionOperatorLimiter
 } from "../../../../../../../data/condition-operator";
 import React from "react";
 import {CodeTabConditionOperand} from "./code-tab-condition-operand";
-import {
-    ConditionOperandReference,
-    isConditionOperandReference
-} from "../../../../../../../models/functions/conditions/condition-operand-reference";
 import {ElementType} from "../../../../../../../data/element-type/element-type";
-import {isConditionOperandValue} from "../../../../../../../models/functions/conditions/condition-operand-value";
+import Evaluators from "../../../../../../../evaluators";
+import {SelectFieldComponent} from "../../../../../../select-field/select-field-component";
+import {stringOrDefault} from "../../../../../../../utils/string-utils";
+import {generateComponentTitle} from "../../../../../../../utils/generate-component-title";
+import {TextFieldComponent} from "../../../../../../text-field/text-field-component";
 
 interface CodeTabConditionProps {
     allElements: AnyElement[];
@@ -33,56 +32,27 @@ export function CodeTabCondition({
                                      onChange
                                  }: CodeTabConditionProps) {
 
-    let referencedOperandA = null;
-    if (isConditionOperandReference(cond.operandA)) {
-        const operand: ConditionOperandReference = cond.operandA;
-        referencedOperandA = allElements.find(e => e.id === operand.id);
-    }
+    const referencedElement = allElements.find(e => e.id === cond.reference);
 
-    let referencedOperandB = null;
-    if (isConditionOperandReference(cond.operandB)) {
-        const operand: ConditionOperandReference = cond.operandB;
-        referencedOperandB = allElements.find(e => e.id === operand.id);
-    }
-
-    let availableOperators: ConditionOperator[] = [];
-    if (referencedOperandA == null && referencedOperandB == null) {
-        availableOperators = ConditionOperatorLimiter[ElementType.Text];
-    } else if (referencedOperandA != null && referencedOperandB != null) {
-        const operatorsA = ConditionOperatorLimiter[referencedOperandA.type];
-        const operatorsB = ConditionOperatorLimiter[referencedOperandB.type];
-        availableOperators = operatorsA.filter(op => operatorsB.includes(op));
-    } else if (referencedOperandA != null) {
-        availableOperators = ConditionOperatorLimiter[referencedOperandA.type];
-    } else if (referencedOperandB != null) {
-        availableOperators = ConditionOperatorLimiter[referencedOperandB.type];
-    }
+    const evaluator = referencedElement != null ? Evaluators[referencedElement.type] : null;
+    const availableOperators: ConditionOperator[] = evaluator ? Object.keys(evaluator) as unknown as ConditionOperator[] : [];
 
     let availableValueOptions = null;
-    if (referencedOperandA != null && isConditionOperandValue(cond.operandB)) {
-        switch (referencedOperandA.type) {
+    if (referencedElement != null && cond.value != null) {
+        switch (referencedElement.type) {
             case ElementType.Radio:
             case ElementType.Select:
             case ElementType.MultiCheckbox:
-                availableValueOptions = [...(referencedOperandA.options ?? [])];
+                availableValueOptions = [...(referencedElement.options ?? [])];
                 break;
             case ElementType.Checkbox:
                 availableValueOptions = ['Ja', 'Nein'];
                 break;
         }
     }
-    if (referencedOperandB != null && isConditionOperandValue(cond.operandA)) {
-        switch (referencedOperandB.type) {
-            case ElementType.Radio:
-            case ElementType.Select:
-            case ElementType.MultiCheckbox:
-                availableValueOptions = [...(referencedOperandB.options ?? [])];
-                break;
-            case ElementType.Checkbox:
-                availableValueOptions = ['Ja', 'Nein'];
-                break;
-        }
-    }
+
+    const isUnaryOperator = cond.operator != null ? ConditionOperatorIsUnary[cond.operator] : true;
+    const valueHelperText = referencedElement != null ? ConditionOperatorHint[referencedElement.type] : null;
 
     return (
         <Box>
@@ -105,53 +75,101 @@ export function CodeTabCondition({
 
             <Box sx={{display: 'flex'}}>
                 <Box sx={{flex: 2}}>
-                    <CodeTabConditionOperand
-                        operand={cond.operandA}
-                        allElements={allElements}
-                        onChange={op => onChange({
+                    <SelectFieldComponent
+                        label="Element-Referenz"
+                        required
+                        value={cond.reference}
+                        onChange={val => onChange({
                             ...cond,
-                            operandA: op,
+                            reference: val ?? '',
                         })}
-                        options={availableValueOptions ?? undefined}
-                        matchingType={referencedOperandB?.type}
+                        options={allElements.map(elem => ({
+                            label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                            value: elem.id,
+                        }))}
                     />
                 </Box>
 
                 <Box sx={{flex: 1, mx: 2}}>
-                    <TextField
-                        select
-                        label="Operator"
-                        value={cond.operator}
-                        onChange={event => onChange({
-                            ...cond,
-                            operator: parseInt(event.target.value),
-                        })}
-                    >
-                        {
-                            availableOperators.map(key => (
-                                <MenuItem
-                                    value={key}
-                                    key={key}
-                                >
-                                    {ConditionOperatorLabel[key]}
-                                </MenuItem>
-                            ))
-                        }
-                    </TextField>
+                    {
+                        availableOperators != null &&
+                        availableOperators.length > 0 &&
+                        <SelectFieldComponent
+                            label="Operator"
+                            required
+                            value={cond.operator?.toString() ?? ''}
+                            onChange={val => onChange({
+                                ...cond,
+                                operator: val != null ? parseInt(val) as ConditionOperator : undefined,
+                            })}
+                            options={availableOperators.map(op => ({
+                                value: op.toString(),
+                                label: ConditionOperatorLabel[op]
+                            }))}
+                        />
+                    }
                 </Box>
 
-                <Box sx={{flex: 2}}>
-                    <CodeTabConditionOperand
-                        operand={cond.operandB}
-                        allElements={allElements}
-                        onChange={op => onChange({
-                            ...cond,
-                            operandB: op,
-                        })}
-                        options={availableValueOptions ?? undefined}
-                        matchingType={referencedOperandA?.type}
-                    />
-                </Box>
+                {
+                    !isUnaryOperator &&
+                    <Box sx={{flex: 2, display: 'flex', alignItems: 'center'}}>
+                        {
+                            availableOperators != null &&
+                            availableOperators.length > 0 &&
+                            <>
+                                <Box sx={{flex: 1}}>
+                                    {
+                                        cond.value != null &&
+                                        <TextFieldComponent
+                                            label="Wert"
+                                            required
+                                            value={cond.value}
+                                            onChange={val => onChange({
+                                                ...cond,
+                                                value: val ?? '',
+                                            })}
+                                            hint={valueHelperText ?? undefined}
+                                        />
+                                    }
+
+                                    {
+                                        cond.target != null &&
+                                        <SelectFieldComponent
+                                            label="Element-Referenz"
+                                            required
+                                            value={cond.target}
+                                            onChange={val => onChange({
+                                                ...cond,
+                                                target: val ?? '',
+                                            })}
+                                            options={allElements.map(elem => ({
+                                                value: elem.id,
+                                                label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                                            }))}
+                                        />
+                                    }
+                                </Box>
+
+                                <Box sx={{ml: 1}}>
+                                    <Tooltip title={cond.value == null ? 'In Wert ändern' : 'In Referenz ändern'}>
+                                        <IconButton
+                                            onClick={() => onChange({
+                                                ...cond,
+                                                target: cond.value == null ? undefined : '',
+                                                value: cond.value == null ? '' : undefined,
+                                            })}
+                                        >
+                                            <FontAwesomeIcon
+                                                size="sm"
+                                                icon={faRefresh}
+                                            />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            </>
+                        }
+                    </Box>
+                }
             </Box>
         </Box>
     );

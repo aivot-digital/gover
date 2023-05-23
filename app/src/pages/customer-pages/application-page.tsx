@@ -14,6 +14,7 @@ import {fetchApplicationBySlug, selectApplicationLoadFailed, selectLoadedApplica
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetSnackbar} from "../../slices/snackbar-slice";
+import {flattenElements} from "../../utils/flatten-elements";
 
 export function ApplicationPage() {
     const params = useParams();
@@ -34,12 +35,26 @@ export function ApplicationPage() {
     } else if (application == null) {
         return <LoadingPlaceholderComponentView/>;
     } else {
+        const allElements = flattenElements(application.root);
+
         return (
             <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(application.root.theme, baseTheme)}>
-                <MetaElement title={application.root.tabTitle}/>
-                <ViewDispatcherComponent element={application.root}/>
-                <LoadUserInputDialog application={application}/>
-                <InputWatcher application={application}/>
+                <MetaElement
+                    title={application.root.tabTitle}
+                />
+
+                <ViewDispatcherComponent
+                    allElements={allElements}
+                    element={application.root}
+                />
+
+                <LoadUserInputDialog
+                    application={application}
+                />
+
+                <InputWatcher
+                    application={application}
+                />
 
                 <Snackbar
                     open={snackbar.message != null}
@@ -49,7 +64,9 @@ export function ApplicationPage() {
                     <Alert
                         onClose={() => dispatch(resetSnackbar())}
                         severity={snackbar.severity}
-                        sx={{width: '100%'}}
+                        sx={{
+                            width: '100%',
+                        }}
                     >
                         {snackbar.message}
                     </Alert>

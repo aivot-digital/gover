@@ -52,13 +52,9 @@ function newNoCodeFunction(func: Function | undefined, element: AnyElement): Fun
             operator: ConditionSetOperator.Any,
             conditions: [
                 {
-                    operandA: {
-                        id: '',
-                    },
+                    reference: '',
                     operator: ConditionOperator.Equals,
-                    operandB: {
-                        value: ''
-                    },
+                    value: '',
                     conditionUnmetMessage: '',
                 },
             ],

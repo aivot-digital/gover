@@ -12,50 +12,52 @@ import Summaries from "../summaries";
 import {BaseSummaryProps} from "../summaries/base-summary";
 
 interface DispatcherComponentProps<M extends AnyElement> {
-    model: M;
+    allElements: AnyElement[];
+    element: M;
     idPrefix?: string;
 }
 
-function makeValue(model: AnyElement, id: string, global?: CustomerInput): any | null | undefined {
+function makeValue(allElements: AnyElement[], model: AnyElement, id: string, global?: CustomerInput): any | null | undefined {
     if (isAnyInputElement(model) && model.computeValue != null) {
-        return evaluateFunction(model.computeValue, (global ?? {}), model, id, false);
+        return evaluateFunction(allElements, model.computeValue, (global ?? {}), model, id, false);
     }
     return (model as any).value ?? (global ?? {})[id];
 }
 
-export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefix}: DispatcherComponentProps<M>) {
-    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
+export function SummaryDispatcherComponent<M extends AnyElement>({allElements, element, idPrefix}: DispatcherComponentProps<M>) {
+    const id = idPrefix != null ? (idPrefix + element.id) : element.id;
 
     const customerInput = useSelector(selectCustomerInput);
     const disableVisibility = useSelector(selectDisableVisibility)
 
     const patchedModel = {
-        ...model,
-        ...generateComponentPatch(id, model, customerInput),
+        ...element,
+        ...generateComponentPatch(allElements, id, element, customerInput),
         id,
     };
 
-    const value = makeValue(patchedModel, id, customerInput);
+    const value = makeValue(allElements, patchedModel, id, customerInput);
 
-    const isVisible = disableVisibility || isElementVisible(id, model, customerInput);
+    const isVisible = disableVisibility || isElementVisible(allElements, id, element, customerInput);
 
     if (!isVisible) {
         return null;
     }
 
-    const Component: ComponentType<BaseSummaryProps<M, any>> | null = Summaries[model.type];
+    const Component: ComponentType<BaseSummaryProps<M, any>> | null = Summaries[element.type];
     if (Component == null) {
         return null;
     }
 
     const viewProps: BaseSummaryProps<M, any> = {
+        allElements: allElements,
         model: patchedModel,
         value,
         idPrefix,
     };
 
     return (
-        <div id={model.id}>
+        <div id={element.id}>
             <Component {...viewProps} />
         </div>
     );

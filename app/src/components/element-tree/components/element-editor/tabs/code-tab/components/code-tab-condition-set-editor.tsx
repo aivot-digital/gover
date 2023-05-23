@@ -115,12 +115,8 @@ export function CodeTabConditionSetEditor({
                                 ...conditionSet.conditions ?? [],
                                 {
                                     operator: ConditionOperator.Equals,
-                                    operandA: {
-                                        id: element.id,
-                                    },
-                                    operandB: {
-                                        value: 'Test',
-                                    },
+                                    reference: '',
+                                    value: '',
                                     conditionUnmetMessage: '',
                                 },
                             ],

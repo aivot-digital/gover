@@ -3,6 +3,9 @@ import {ElementType} from "../data/element-type/element-type";
 import {ConditionSetOperator} from "../data/condition-set-operator";
 import {ConditionOperator} from "../data/condition-operator";
 import {AnyElement} from "../models/elements/any-element";
+import {FunctionNoCode} from "../models/functions/function-no-code";
+
+// TODO: Fix tests
 
 const element: AnyElement = {
     id: '',
@@ -32,25 +35,22 @@ const customerData = {
     'num-text-id4': '0',
 };
 
-function newNoCodeFunc(id1: keyof typeof customerData, id2: keyof typeof customerData) {
+function newNoCodeFunc(id1: keyof typeof customerData, id2: keyof typeof customerData): FunctionNoCode {
     return {
         requirements: '',
         conditionSet: {
             operator: ConditionSetOperator.All,
             conditions: [{
                 operator: ConditionOperator.Equals,
-                operandA: {
-                    id: id1,
-                },
-                operandB: {
-                    id: id2,
-                },
+                reference: id1,
+                target: id2,
             }],
         }
     };
 }
 
-const evalAbbr = (id1: keyof typeof customerData, id2: keyof typeof customerData) => evaluateFunction(
+const evalAbbr = (allElements: AnyElement[], id1: keyof typeof customerData, id2: keyof typeof customerData) => evaluateFunction(
+    allElements,
     newNoCodeFunc(id1, id2),
     customerData,
     element,
@@ -59,7 +59,7 @@ const evalAbbr = (id1: keyof typeof customerData, id2: keyof typeof customerData
 );
 
 test('test evaluate code function', () => {
-    const resTrue = evaluateFunction({
+    const resTrue = evaluateFunction([], {
         requirements: '',
         code: `
         function main(data, element, id) {
@@ -69,7 +69,7 @@ test('test evaluate code function', () => {
     }, customerData, element, 'boolean-id1', true);
     expect(resTrue).toBe(true);
 
-    const resFalse = evaluateFunction({
+    const resFalse = evaluateFunction([],{
         requirements: '',
         code: `
         function main(data, element, id) {
@@ -82,79 +82,79 @@ test('test evaluate code function', () => {
 
 test('test condition evaluate no-code equals boolean', () => {
     expect(
-        evalAbbr('boolean-id1', 'boolean-id1')
+        evalAbbr([], 'boolean-id1', 'boolean-id1')
     ).toBe(true);
 
     expect(
-        evalAbbr('boolean-id1', 'boolean-id2')
+        evalAbbr([],'boolean-id1', 'boolean-id2')
     ).toBe(false);
 
     expect(
-        evalAbbr('boolean-id1', 'undefined')
+        evalAbbr([],'boolean-id1', 'undefined')
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals boolean -- type --> text', () => {
     expect(
-        evalAbbr('boolean-id1', 'boolean-text-id1')
+        evalAbbr([],'boolean-id1', 'boolean-text-id1')
     ).toBe(true);
 
     expect(
-        evalAbbr('boolean-id2', 'boolean-text-id2')
+        evalAbbr([],'boolean-id2', 'boolean-text-id2')
     ).toBe(true);
 
     expect(
-        evalAbbr('boolean-id1', 'boolean-text-id2')
+        evalAbbr([],'boolean-id1', 'boolean-text-id2')
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals text', () => {
     expect(
-        evalAbbr('text-id1', 'text-id1')
+        evalAbbr([],'text-id1', 'text-id1')
     ).toBe(true);
 
     expect(
-        evalAbbr('text-id1', 'text-id3')
+        evalAbbr([],'text-id1', 'text-id3')
     ).toBe(false);
 
     expect(
-        evalAbbr('text-id1', 'undefined')
+        evalAbbr([],'text-id1', 'undefined')
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals number', () => {
     expect(
-        evalAbbr('num-id1', 'num-id2')
+        evalAbbr([],'num-id1', 'num-id2')
     ).toBe(true);
 
     expect(
-        evalAbbr('num-id1', 'num-id3')
+        evalAbbr([],'num-id1', 'num-id3')
     ).toBe(true);
 
     expect(
-        evalAbbr('num-id1', 'num-id4')
+        evalAbbr([],'num-id1', 'num-id4')
     ).toBe(false);
 
     expect(
-        evalAbbr('num-id1', 'num-id4')
+        evalAbbr([],'num-id1', 'num-id4')
     ).toBe(false);
 
     expect(
-        evalAbbr('num-id1', 'undefined')
+        evalAbbr([],'num-id1', 'undefined')
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals number -- type --> text', () => {
     expect(
-        evalAbbr('num-id1', 'num-text-id1')
+        evalAbbr([],'num-id1', 'num-text-id1')
     ).toBe(true);
 
     expect(
-        evalAbbr('num-id2', 'num-text-id3')
+        evalAbbr([],'num-id2', 'num-text-id3')
     ).toBe(true);
 
     expect(
-        evalAbbr('num-id1', 'num-text-id4')
+        evalAbbr([],'num-id1', 'num-text-id4')
     ).toBe(false);
 });
 

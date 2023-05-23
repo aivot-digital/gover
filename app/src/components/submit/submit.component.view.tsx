@@ -31,7 +31,7 @@ export const SubmitHumanKey = '__human__';
 
 // TODO: Localization
 
-export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, void>) {
+export function SubmitComponentView({allElements, element}: BaseViewProps<SubmitStepElement, void>) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
 
@@ -64,6 +64,7 @@ export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, 
             {
                 !isStringNullOrEmpty(element.textPreSubmit) &&
                 <Preamble
+                    allElements={allElements}
                     text={element.textPreSubmit ?? ''}
                 />
             }

@@ -3,6 +3,7 @@ import {FunctionComponent} from "react";
 
 // TODO: Make private
 export interface BaseSummaryProps<M extends AnyElement, V> {
+    allElements: AnyElement[];
     model: M;
     value: V;
     idPrefix?: string;

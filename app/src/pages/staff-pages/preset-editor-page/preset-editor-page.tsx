@@ -20,6 +20,7 @@ import {SystemConfigKeys} from '../../../data/system-config-keys';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ElementTree} from '../../../components/element-tree/element-tree';
+import {flattenElements} from "../../../utils/flatten-elements";
 
 const _ = Localization(strings);
 
@@ -70,6 +71,8 @@ export function PresetEditorPage() {
     } else if (preset == null) {
         return <LoadingPlaceholderComponentView/>;
     } else {
+        const allElements = flattenElements(preset.root);
+
         return (
             <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(defaultTheme, baseTheme)}>
                 <MetaElement
@@ -124,6 +127,7 @@ export function PresetEditorPage() {
                     >
                         <Container>
                             <ViewDispatcherComponent
+                                allElements={allElements}
                                 element={preset.root}
                             />
                         </Container>

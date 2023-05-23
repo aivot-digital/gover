@@ -43,6 +43,7 @@ import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementTree} from '../../../components/element-tree/element-tree';
 import {setCurrentStep} from '../../../slices/stepper-slice';
+import {flattenElements} from "../../../utils/flatten-elements";
 
 const _ = Localization(strings);
 
@@ -82,6 +83,8 @@ export function ApplicationEditorPage() {
     } else if (application == null) {
         return <LoadingPlaceholderComponentView/>;
     } else {
+        const allElements = flattenElements(application.root);
+
         return (
             <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(application?.root.theme, baseTheme)}>
                 <MetaElement
@@ -177,6 +180,7 @@ export function ApplicationEditorPage() {
                         }}
                     >
                         <ViewDispatcherComponent
+                            allElements={allElements}
                             element={application.root}
                         />
                     </Grid>

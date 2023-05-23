@@ -21,7 +21,7 @@ export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
 
 // TODO: Localization
 
-export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, any>) {
+export function SummaryComponentView({allElements}: BaseViewProps<SummaryStepElement, any>) {
     const application = useSelector(selectLoadedApplication);
     const customerInput = useSelector(selectCustomerInput);
     const summaryError = useSelector(selectCustomerInputErrorValue(SummaryAttachmentsTooLargeKey));
@@ -30,7 +30,7 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, any>) 
         return null;
     }
 
-    const models = flattenElements(application.root, customerInput, undefined);
+    const models = flattenElementsForSummary(allElements, application.root, customerInput, undefined);
 
     return (
         <>
@@ -46,8 +46,9 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, any>) 
             {
                 models.map((model, index) => (
                     <SummaryDispatcherComponent
+                        allElements={allElements}
                         key={model.id + index.toString()}
-                        model={model}
+                        element={model}
                     />
                 ))
             }
@@ -71,6 +72,7 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, any>) 
 
             <Box>
                 <ViewDispatcherComponent
+                    allElements={allElements}
                     element={{
                         type: ElementType.Checkbox,
                         label: 'Ich habe die Zusammenfassung meines Antrages geprüft.',
@@ -94,10 +96,10 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, any>) 
     );
 }
 
-export function flattenElements(model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
+export function flattenElementsForSummary(allElements: AnyElement[], model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
     const id = idPrefix != null ? (idPrefix + model.id) : model.id;
 
-    const isVisible = isElementVisible(id, model, userInput);
+    const isVisible = isElementVisible(allElements, id, model, userInput);
 
     if (!isVisible) {
         return [];
@@ -112,7 +114,7 @@ export function flattenElements(model: AnyElement, userInput: CustomerInput, idP
 
     if (model.type !== ElementType.ReplicatingContainer && isAnyElementWithChildren(model)) {
         for (const child of model.children) {
-            results = results.concat(flattenElements(child, userInput, idPrefix));
+            results = results.concat(flattenElementsForSummary(allElements, child, userInput, idPrefix));
         }
     }
 

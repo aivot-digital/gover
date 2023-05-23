@@ -8,47 +8,29 @@ import java.util.regex.PatternSyntaxException;
 
 public class Condition {
     private ConditionOperator operator;
-    private ConditionOperand operandA;
-    private ConditionOperand operandB;
+    private String reference;
+    private String target;
+    private String value;
     private String conditionUnmetMessage;
 
     public Condition(Map<String, Object> data) {
         operator = MapUtils.getEnum(data, "operator", Integer.class, ConditionOperator.values());
 
-        if (data.get("operandA") != null) {
-            Map<String, Object> operandAData = (Map<String, Object>) data.get("operandA");
-            if (operandAData.containsKey("value")) {
-                operandA = new ConditionOperandValue(operandAData);
-            } else {
-                operandA = new ConditionOperandReference(operandAData);
-            }
-        }
-
-        if (data.get("operandB") != null) {
-            Map<String, Object> operandBData = (Map<String, Object>) data.get("operandB");
-            if (operandBData.containsKey("value")) {
-                operandB = new ConditionOperandValue(operandBData);
-            } else {
-                operandB = new ConditionOperandReference(operandBData);
-            }
-        }
+        reference = MapUtils.getString(data, "reference");
+        target = MapUtils.getString(data, "target");
+        value = MapUtils.getString(data, "value");
 
         conditionUnmetMessage = MapUtils.getString(data, "conditionUnmetMessage");
     }
 
     public String evaluate(Map<String, Object> customerInput) {
-        Object rawValA;
-        if (operandA instanceof ConditionOperandReference op) {
-            rawValA = customerInput.get(op.getId());
-        } else {
-            rawValA = ((ConditionOperandValue) operandA).getValue();
-        }
+        Object rawValA = customerInput.get(reference);
 
         Object rawValB;
-        if (operandB instanceof ConditionOperandReference op) {
-            rawValB = customerInput.get(op.getId());
+        if (target != null) {
+            rawValB = customerInput.get(target);
         } else {
-            rawValB = ((ConditionOperandValue) operandB).getValue();
+            rawValB = value;
         }
 
         if (rawValA == null || rawValB == null) {
@@ -140,20 +122,28 @@ public class Condition {
         this.operator = operator;
     }
 
-    public ConditionOperand getOperandA() {
-        return operandA;
+    public String getReference() {
+        return reference;
     }
 
-    public void setOperandA(ConditionOperand operandA) {
-        this.operandA = operandA;
+    public void setReference(String reference) {
+        this.reference = reference;
     }
 
-    public ConditionOperand getOperandB() {
-        return operandB;
+    public String getTarget() {
+        return target;
     }
 
-    public void setOperandB(ConditionOperand operandB) {
-        this.operandB = operandB;
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
     }
 
     public String getConditionUnmetMessage() {

@@ -1,6 +1,4 @@
-import {
-    ReplicatingContainerLayout
-} from '../../models/elements/form/layout/replicating-container-layout';
+import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {Box, Button, FormHelperText, FormLabel, Grid, Typography} from '@mui/material';
 import {faPlusCircle, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
@@ -11,6 +9,7 @@ import {generateElementId} from "../../utils/id-utils";
 import {BaseViewProps} from "../../views/base-view";
 
 export function ReplicatingContainerView({
+                                             allElements,
                                              setValue,
                                              element,
                                              value
@@ -92,6 +91,7 @@ export function ReplicatingContainerView({
                             {
                                 (element.children ?? []).map((child, childIndex) => (
                                     <ViewDispatcherComponent
+                                        allElements={allElements}
                                         key={childIndex}
                                         element={child}
                                         idPrefix={`${element.id}_${val}_`}

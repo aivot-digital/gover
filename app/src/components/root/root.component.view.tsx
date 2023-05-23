@@ -31,14 +31,11 @@ import {ElementType} from '../../data/element-type/element-type';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {useLogging} from "../../hooks/use-logging";
 import {ElementNames} from "../../data/element-type/element-names";
-import {
-    FileUploadElementItem,
-    isFileUploadElementItem
-} from "../../models/elements/form/input/file-upload-element";
+import {FileUploadElementItem, isFileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from "../../views/base-view";
 
-export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
+export function RootComponentView({allElements, element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
     const [$debug] = useLogging();
 
@@ -124,7 +121,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
         } else {
             const step = steps[currentStep - 1];
             if (step != null) {
-                isValid = isElementValid($debug, dispatch, step, customerData);
+                isValid = isElementValid($debug, allElements, dispatch, step, customerData);
             }
         }
 
@@ -150,7 +147,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                         setPdfLink(pdfLink);
                         dispatch(nextStep());
                         UserInputService.cleanUserInput(application);
-                    } catch(error) {
+                    } catch (error) {
                         console.error(error);
                         dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
                     }
@@ -193,7 +190,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                     >
                         {
                             steps
-                                .filter(step => isElementVisible(step.id, step, customerData))
+                                .filter(step => isElementVisible(allElements, step.id, step, customerData))
                                 .map((step, index) => (
                                     <CustomStep
                                         key={index}
@@ -209,6 +206,7 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                                         validatedWithErrors={validatedWithErrors}
                                     >
                                         <ViewDispatcherComponent
+                                            allElements={allElements}
                                             element={step}
                                         />
                                     </CustomStep>
@@ -233,7 +231,10 @@ export function RootComponentView({element}: BaseViewProps<RootElement, void>) {
                             }}
                             title="Ihr Antrag wurde erfolgreich eingereicht"
                         >
-                            <Submitted pdfLink={pdfLink}/>
+                            <Submitted
+                                allElements={allElements}
+                                pdfLink={pdfLink}
+                            />
                         </CustomStep>
                     </Stepper>
                 }

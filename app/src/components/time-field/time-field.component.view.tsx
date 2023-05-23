@@ -40,7 +40,7 @@ export function TimeFieldComponentView({element, value, error, setValue}: BaseVi
                     <TextField
                         {...params}
                         error={error != null}
-                        placeholder="hh:mm"
+                        placeholder="HH:MM"
                         helperText={error != null ? error : element.hint}
                     />
                 )}

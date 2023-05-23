@@ -17,7 +17,7 @@ import {BaseViewProps} from "../../views/base-view";
 
 export const PrivacyUserInputKey = '__privacy__';
 
-export function GeneralInformationComponentView({element}: BaseViewProps<IntroductionStepElement, void>) {
+export function GeneralInformationComponentView({allElements, element}: BaseViewProps<IntroductionStepElement, void>) {
     const application = useAppSelector(selectLoadedApplication);
     const theme = useTheme();
 
@@ -45,6 +45,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
     return (
         <>
             <Preamble
+                allElements={allElements}
                 text={element.teaserText ?? ''}
             />
 
@@ -266,6 +267,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                     sx={{maxWidth: '600px', mt: 1}}
                 >
                     <ViewDispatcherComponent
+                        allElements={allElements}
                         element={{
                             id: 'privacyText',
                             type: ElementType.Richtext,
@@ -278,6 +280,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
 
             <Box>
                 <ViewDispatcherComponent
+                    allElements={allElements}
                     element={{
                         type: ElementType.Checkbox,
                         appVersion: ProjectPackage.version,

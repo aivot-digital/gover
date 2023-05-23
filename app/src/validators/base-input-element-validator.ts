@@ -3,28 +3,29 @@ import {isElementVisible} from '../utils/is-element-visible';
 import {AnyInputElement} from "../models/elements/form/input/any-input-element";
 import {evaluateFunction} from "../utils/evaluate-function";
 import {CustomerInput} from "../models/customer-input";
+import {AnyElement} from "../models/elements/any-element";
 
 export abstract class BaseInputElementValidator<T, M extends AnyInputElement> extends BaseValidator<M> {
-    makeErrors(id: string, comp: M, customerInput: CustomerInput): string | null {
-        const isVisible = isElementVisible(id, comp, customerInput);
+    makeErrors(allElements: AnyElement[] = [], id: string, comp: M, userInput: any): string | null {
+        const isVisible = isElementVisible(allElements, id, comp, userInput);
         if (!isVisible) {
             return null;
         }
 
-        const value: T | undefined = customerInput[id]; // TODO: Compute value ?? comp.computeValue;
+        const value: T | undefined = userInput[id]; // TODO: Compute value ?? comp.computeValue;
 
         if (comp.required && (value == null || this.checkEmpty(comp, value))) {
             return this.getEmptyErrorText(comp);
         }
 
-        const specificError = this.makeSpecificErrors(comp, value, customerInput);
+        const specificError = this.makeSpecificErrors(comp, value, userInput);
         if (specificError != null) {
             return specificError;
         }
 
         let error: string | null = null;
         try {
-            error = evaluateFunction(comp.validate, customerInput, comp, id, false);
+            error = evaluateFunction(allElements, comp.validate, userInput, comp, id, false);
         } catch (err) {
             console.error('Failed to run validator of ID ' + id, err);
         }

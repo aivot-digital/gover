@@ -8,6 +8,7 @@ export interface BaseViewProps<M extends AnyElement, V> {
     error?: string;
     value?: V | null;
     idPrefix?: string;
+    allElements: AnyElement[];
 }
 
 export type BaseView<M extends AnyElement, V> = FunctionComponent<BaseViewProps<M, V>>;

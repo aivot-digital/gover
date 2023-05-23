@@ -1,38 +1,37 @@
-import {
-    ConditionOperandReference,
-    isConditionOperandReference
-} from "../../../../../../../models/functions/conditions/condition-operand-reference";
-import {
-    ConditionOperandValue,
-    isConditionOperandValue
-} from "../../../../../../../models/functions/conditions/condition-operand-value";
 import {AnyElement} from "../../../../../../../models/elements/any-element";
-import {Box, IconButton, MenuItem, TextField, Tooltip} from "@mui/material";
+import {Box, IconButton, Tooltip} from "@mui/material";
 import {stringOrDefault} from "../../../../../../../utils/string-utils";
 import {generateComponentTitle} from "../../../../../../../utils/generate-component-title";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faRefresh} from "@fortawesome/pro-light-svg-icons";
 import React from "react";
 import {ElementType} from "../../../../../../../data/element-type/element-type";
+import {ConditionOperatorHint} from "../../../../../../../data/condition-operator";
+import {SelectFieldComponent} from "../../../../../../select-field/select-field-component";
+import {TextFieldComponent} from "../../../../../../text-field/text-field-component";
 
-interface CodeTabConditionOperandProps {
-    operand?: ConditionOperandReference | ConditionOperandValue;
+type ReferenceProps = {
+    reference: string;
+    onChange: (op: string) => void;
+};
+
+type ValueTargetProps = {
+    value?: string;
+    onChangeValue: (op: string) => void;
+
+    target?: string;
+    onChangeTarget: (op: string) => void;
+};
+
+type CodeTabConditionOperandProps = {
     allElements: AnyElement[];
-    onChange: (op: ConditionOperandReference | ConditionOperandValue) => void;
     options?: string[];
-    matchingType?: ElementType;
-}
+    referenceType?: ElementType;
+} & (ReferenceProps | ValueTargetProps);
 
-export function CodeTabConditionOperand({operand, allElements, onChange, options, matchingType}: CodeTabConditionOperandProps) {
-    let helperText = null;
-    switch (matchingType) {
-        case ElementType.Time:
-            helperText = 'Bitte im Format HH:MM eingeben.';
-            break;
-        case ElementType.Date:
-            helperText = 'Bitte im Format TT.MM.JJJJ eingeben.';
-            break;
-    }
+export function CodeTabConditionOperand(props: CodeTabConditionOperandProps) {
+
+    const helperText = props.referenceType != null ? ConditionOperatorHint[props.referenceType] : null;
 
     return (
         <Box
@@ -42,68 +41,78 @@ export function CodeTabConditionOperand({operand, allElements, onChange, options
             }}
         >
             {
-                (
-                    operand == null ||
-                    isConditionOperandReference(operand)
-                ) &&
-                <TextField
-                    select
+                'reference' in props &&
+                <SelectFieldComponent
                     label="Element-Referenz"
-                    value={operand?.id ?? ''}
-                    onChange={event => onChange({
-                        id: event.target.value,
-                    })}
-                >
-                    {
-                        allElements.map(elem => (
-                            <MenuItem
-                                key={elem.id}
-                                value={elem.id}
-                            >
-                                {stringOrDefault(elem.name, generateComponentTitle(elem))}
-                            </MenuItem>
-                        ))
-                    }
-                </TextField>
+                    value={props.reference}
+                    required
+                    onChange={val => props.onChange(val ?? '')}
+                    options={props.allElements.map(elem => ({
+                        label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                        value: elem.id,
+                    }))}
+                />
             }
 
             {
-                isConditionOperandValue(operand) &&
-                <TextField
-                    label="Wert"
-                    select={options != null}
-                    value={operand.value}
-                    onChange={event => onChange({
-                        value: event.target.value,
-                    })}
-                    helperText={helperText}
-                >
-                    {
-                        options != null &&
-                        options.map(opt => (
-                            <MenuItem
-                                key={opt}
-                                value={opt}
-                            >
-                                {opt}
-                            </MenuItem>
-                        ))
-                    }
-                </TextField>
+                'target' in props &&
+                <SelectFieldComponent
+                    label="Element-Referenz"
+                    value={props.target}
+                    onChange={val => props.onChangeTarget(val ?? '')}
+                    options={props.allElements.map(elem => ({
+                        label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                        value: elem.id,
+                    }))}
+                />
             }
 
-            <Box sx={{ml: 1}}>
-                <Tooltip title={operand == null || isConditionOperandReference(operand) ? 'In Wert ändern' : 'In Referenz ändern'}>
-                    <IconButton
-                        onClick={() => onChange(operand == null || isConditionOperandReference(operand) ? {value: ''} : {id: ''})}
-                    >
-                        <FontAwesomeIcon
-                            size="sm"
-                            icon={faRefresh}
-                        />
-                    </IconButton>
-                </Tooltip>
-            </Box>
+            {
+                'value' in props &&
+                props.options != null &&
+                <SelectFieldComponent
+                    label="Wert"
+                    value={props.value}
+                    onChange={val => props.onChangeValue(val ?? '')}
+                    options={props.options.map(opt => ({
+                        label: opt,
+                        value: opt,
+                    }))}
+                />
+            }
+
+            {
+                'value' in props &&
+                props.options == null &&
+                <TextFieldComponent
+                    label="Wert"
+                    value={props.value}
+                    onChange={val => props.onChangeValue(val ?? '')}
+                    hint={helperText ?? undefined}
+                />
+            }
+
+            {
+                !('reference' in props) &&
+                <Box sx={{ml: 1}}>
+                    <Tooltip title={props.value == null ? 'In Wert ändern' : 'In Referenz ändern'}>
+                        <IconButton
+                            onClick={() => {
+                                if (props.value != null) {
+                                    props.onChangeTarget('');
+                                } else {
+                                    props.onChangeValue('');
+                                }
+                            }}
+                        >
+                            <FontAwesomeIcon
+                                size="sm"
+                                icon={faRefresh}
+                            />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            }
         </Box>
     );
 }

@@ -27,7 +27,9 @@ public enum ConditionOperator implements Identifiable<Integer> {
     IncludesPattern(14),
     NotIncludesPattern(15),
     EqualsIgnoreCase(16), // TODO: Implementieren
-    NotEqualsIgnoreCase(17); // TODO: Implementieren
+    NotEqualsIgnoreCase(17), // TODO: Implementieren
+    Empty(18), // TODO: Implementieren
+    NotEmpty(19); // TODO: Implementieren
 
     private final Integer key;
 

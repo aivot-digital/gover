@@ -5,8 +5,12 @@ import React from 'react';
 import {useSelector} from 'react-redux';
 import {selectLoadedApplication} from '../../../slices/app-slice';
 import ProjectPackage from '../../../../package.json';
+import {AnyElement} from "../../../models/elements/any-element";
+
+// TODO: Replace RichText with component
 
 interface PreambleProps {
+    allElements: AnyElement[];
     text: string;
 }
 
@@ -33,6 +37,7 @@ export function Preamble(props: PreambleProps) {
                             lg={7}
                         >
                             <ViewDispatcherComponent
+                                allElements={props.allElements}
                                 element={{
                                     id: 'preambleText',
                                     type: ElementType.Richtext,
@@ -72,6 +77,7 @@ export function Preamble(props: PreambleProps) {
                         >
                             <Box sx={{maxWidth: '660px'}}>
                                 <ViewDispatcherComponent
+                                    allElements={props.allElements}
                                     element={{
                                         id: 'preambleText',
                                         type: ElementType.Richtext,
