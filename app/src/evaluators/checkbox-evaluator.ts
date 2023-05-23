@@ -2,7 +2,10 @@ import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
 
 function transformValue(val: any) {
-    return typeof val === 'boolean' && val ? 'Ja' : 'Nein';
+    if (typeof val === 'boolean') {
+        return val ? 'Ja (True)' : 'Nein (False)';
+    }
+    return val;
 }
 
 export const CheckboxEvaluator: BaseEvaluator<boolean> = {

@@ -124,6 +124,10 @@ export function CodeTabCondition({
                                 <Box sx={{flex: 1}}>
                                     {
                                         cond.value != null &&
+                                        (
+                                            availableValueOptions === null ||
+                                            availableValueOptions.length === 0
+                                        ) &&
                                         <TextFieldComponent
                                             label="Wert"
                                             required
@@ -133,6 +137,28 @@ export function CodeTabCondition({
                                                 value: val ?? '',
                                             })}
                                             hint={valueHelperText ?? undefined}
+                                        />
+                                    }
+
+                                    {
+                                        cond.value != null &&
+                                        (
+                                            availableValueOptions !== null &&
+                                            availableValueOptions.length > 0
+                                        ) &&
+                                        <SelectFieldComponent
+                                            label="Wert"
+                                            required
+                                            value={cond.value}
+                                            onChange={val => onChange({
+                                                ...cond,
+                                                value: val ?? '',
+                                            })}
+                                            hint={valueHelperText ?? undefined}
+                                            options={availableValueOptions.map(opt => ({
+                                                label: opt,
+                                                value: opt,
+                                            }))}
                                         />
                                     }
 
