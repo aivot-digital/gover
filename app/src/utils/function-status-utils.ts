@@ -1,12 +1,10 @@
 import {AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty} from "./string-utils";
-import {isFunctionCode} from "../models/functions/function-code";
-import {isFunctionNoCode} from "../models/functions/function-no-code";
 import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
 
 export function getFunctionStatus(comp: AnyElement): null | 'open' | 'fulfilled' | 'unnecessary' {
     if (comp.isVisible != null) {
-        const funcExists = isFunctionCode(comp.isVisible) || isFunctionNoCode(comp.isVisible);
+        const funcExists = isStringNotNullOrEmpty(comp.isVisible.code) || comp.isVisible.conditionSet != null;
         if (isStringNotNullOrEmpty(comp.isVisible.requirements)) {
             return funcExists ? 'fulfilled' : 'open';
         } else if (funcExists) {
@@ -15,7 +13,7 @@ export function getFunctionStatus(comp: AnyElement): null | 'open' | 'fulfilled'
     }
 
     if (comp.patchElement != null) {
-        const funcExists = isFunctionCode(comp.patchElement);
+        const funcExists = isStringNotNullOrEmpty(comp.patchElement.code);
         if (isStringNotNullOrEmpty(comp.patchElement.requirements)) {
             return funcExists ? 'fulfilled' : 'open';
         } else if (funcExists) {
@@ -25,7 +23,7 @@ export function getFunctionStatus(comp: AnyElement): null | 'open' | 'fulfilled'
 
     if (isAnyInputElement(comp)) {
         if (comp.validate != null) {
-            const funcExists = isFunctionCode(comp.validate) || isFunctionNoCode(comp.validate);
+            const funcExists = isStringNotNullOrEmpty(comp.validate.code) || comp.validate.conditionSet != null;
             if (isStringNotNullOrEmpty(comp.validate.requirements)) {
                 return funcExists ? 'fulfilled' : 'open';
             } else if (funcExists) {
@@ -34,7 +32,7 @@ export function getFunctionStatus(comp: AnyElement): null | 'open' | 'fulfilled'
         }
 
         if (comp.computeValue != null) {
-            const funcExists = isFunctionCode(comp.computeValue);
+            const funcExists = isStringNotNullOrEmpty(comp.computeValue.requirements);
             if (isStringNotNullOrEmpty(comp.computeValue.requirements)) {
                 return funcExists ? 'fulfilled' : 'open';
             } else if (funcExists) {

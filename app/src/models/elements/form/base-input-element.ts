@@ -1,7 +1,6 @@
 import {BaseFormElement} from "./base-form-element";
 import {ElementType} from "../../../data/element-type/element-type";
-import {FunctionCode} from "../../functions/function-code";
-import {FunctionNoCode} from "../../functions/function-no-code";
+import {Function} from "../../functions/function";
 
 export interface BaseInputElement<V, T extends ElementType> extends BaseFormElement<T> {
     label?: string;
@@ -9,8 +8,8 @@ export interface BaseInputElement<V, T extends ElementType> extends BaseFormElem
     required?: boolean;
     disabled?: boolean;
 
-    validate?: FunctionCode | FunctionNoCode;
-    computeValue?: FunctionCode;
+    validate?: Function;
+    computeValue?: Function;
 
     computedValue?: V;
 }

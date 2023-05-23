@@ -3,7 +3,7 @@ import {ElementType} from "../data/element-type/element-type";
 import {ConditionSetOperator} from "../data/condition-set-operator";
 import {ConditionOperator} from "../data/condition-operator";
 import {AnyElement} from "../models/elements/any-element";
-import {FunctionNoCode} from "../models/functions/function-no-code";
+import {Function} from "../models/functions/function";
 
 // TODO: Fix tests
 
@@ -35,7 +35,7 @@ const customerData = {
     'num-text-id4': '0',
 };
 
-function newNoCodeFunc(id1: keyof typeof customerData, id2: keyof typeof customerData): FunctionNoCode {
+function newNoCodeFunc(id1: keyof typeof customerData, id2: keyof typeof customerData): Function {
     return {
         requirements: '',
         conditionSet: {

@@ -1,11 +1,11 @@
-import {FunctionCode} from "../../../../../../../models/functions/function-code";
 import React, {useCallback, useRef} from "react";
 import {Box, Typography} from "@mui/material";
 import Editor from "@monaco-editor/react";
+import {Function} from "../../../../../../../models/functions/function";
 
 interface CodeTabCodeEditorProps {
-    func: FunctionCode;
-    onChange: (func: FunctionCode) => void;
+    func: Function;
+    onChange: (func: Function) => void;
 }
 
 export function CodeTabCodeEditor({func, onChange}: CodeTabCodeEditorProps) {

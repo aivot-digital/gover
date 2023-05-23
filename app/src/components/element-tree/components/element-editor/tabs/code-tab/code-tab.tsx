@@ -13,8 +13,6 @@ import {
 import React from 'react';
 import {RichTextEditorComponentView} from '../../../../../richt-text-editor/rich-text-editor.component.view';
 import {Function} from "../../../../../../models/functions/function";
-import {FunctionNoCode} from "../../../../../../models/functions/function-no-code";
-import {FunctionCode, isFunctionCode} from "../../../../../../models/functions/function-code";
 import {ConditionSetOperator} from "../../../../../../data/condition-set-operator";
 import {AnyElement} from "../../../../../../models/elements/any-element";
 import {CodeTabCodeEditor} from "./components/code-tab-code-editor";
@@ -22,6 +20,7 @@ import {CodeTabNoCodeEditor} from "./components/code-tab-no-code-editor";
 import {ConditionOperator} from "../../../../../../data/condition-operator";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faEllipsisVertical, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
+import {isStringNotNullOrEmpty} from "../../../../../../utils/string-utils";
 
 export type CodeTabProps = {
     element: AnyElement;
@@ -30,22 +29,22 @@ export type CodeTabProps = {
     shouldReturnString: boolean;
 } & ({
     allowNoCode: true;
-    func?: FunctionNoCode | FunctionCode;
-    onChange: (updatedFunc: FunctionNoCode | FunctionCode | undefined) => void;
+    func?: Function;
+    onChange: (updatedFunc: Function | undefined) => void;
 } | {
     allowNoCode: false;
-    func?: FunctionCode;
-    onChange: (updatedFunc: FunctionCode | undefined) => void;
+    func?: Function;
+    onChange: (updatedFunc: Function | undefined) => void;
 })
 
-function newCodeFunction(func: Function | undefined): FunctionCode {
+function newCodeFunction(func: Function | undefined): Function {
     return {
         requirements: func?.requirements ?? '',
         code: 'function main(data, element, id) {\n    console.log(data, element, id)\n}',
     };
 }
 
-function newNoCodeFunction(func: Function | undefined, element: AnyElement): FunctionNoCode {
+function newNoCodeFunction(func: Function | undefined, element: AnyElement): Function {
     return {
         requirements: func?.requirements ?? '',
         conditionSet: {
@@ -94,7 +93,6 @@ export function CodeTab({
             <RichTextEditorComponentView
                 value={func?.requirements ?? ''}
                 onChange={req => {
-                    // @ts-ignore TODO: Fix typing issues
                     onChange({
                         ...func,
                         requirements: req,
@@ -105,10 +103,7 @@ export function CodeTab({
             {
                 (
                     func == null ||
-                    !(
-                        'code' in func ||
-                        'conditionSet' in func
-                    )
+                    (func.code == null && func.conditionSet == null)
                 ) &&
                 <Box sx={{display: 'flex', mt: 4, alignItems: 'stretch'}}>
                     {
@@ -195,8 +190,8 @@ export function CodeTab({
             {
                 func != null &&
                 (
-                    'code' in func ||
-                    'conditionSet' in func
+                    func.code != null ||
+                    func.conditionSet != null
                 ) &&
                 <>
                     <Alert
@@ -219,14 +214,14 @@ export function CodeTab({
                     >
                         <Typography variant="subtitle1">
                             {
-                                isFunctionCode(func) ? 'Programmcode' : 'No-Code Funktion'
+                                func.code != null ? 'Programmcode' : 'No-Code Funktion'
                             }
                         </Typography>
 
                         <Box>
                             {
                                 allowNoCode &&
-                                !isFunctionCode(func) &&
+                                func.conditionSet != null &&
                                 <Button
                                     onClick={() => {
                                         const res = window.confirm('Soll wirklich zu Programmcode gewechselt werden? Alle Inhalte für diese Funktion gehen damit verloren.');
@@ -241,7 +236,7 @@ export function CodeTab({
 
                             {
                                 allowNoCode &&
-                                isFunctionCode(func) &&
+                                func.code != null &&
                                 <Button
                                     onClick={() => {
                                         const res = window.confirm('Soll wirklich zu No-Code gewechselt werden? Alle Inhalte für diese Funktion gehen damit verloren.');
@@ -268,32 +263,34 @@ export function CodeTab({
                                 anchorEl={anchorEl}
                                 onClose={handleClose}
                             >
-                                    <MenuItem
-                                        onClick={() => {
-                                            const res = window.confirm('Soll die Funktion wirklich gelöscht werden? Diese Aktion kann nicht rückgängig gemacht werden.');
-                                            if (res) {
-                                                onChange(undefined);
-                                            }
-                                            handleClose();
-                                        }}
-                                    >
-                                        <ListItemIcon>
-                                            <FontAwesomeIcon
-                                                icon={faTrashCanXmark}
-                                                style={{marginTop: '-4px'}}
-                                            />
-                                        </ListItemIcon>
-                                        <ListItemText>
-                                            Funktion entfernen
-                                        </ListItemText>
-                                    </MenuItem>
+                                <MenuItem
+                                    onClick={() => {
+                                        const res = window.confirm('Soll die Funktion wirklich gelöscht werden? Diese Aktion kann nicht rückgängig gemacht werden.');
+                                        if (res) {
+                                            onChange({
+                                                requirements: func.requirements,
+                                            });
+                                        }
+                                        handleClose();
+                                    }}
+                                >
+                                    <ListItemIcon>
+                                        <FontAwesomeIcon
+                                            icon={faTrashCanXmark}
+                                            style={{marginTop: '-4px'}}
+                                        />
+                                    </ListItemIcon>
+                                    <ListItemText>
+                                        Funktion entfernen
+                                    </ListItemText>
+                                </MenuItem>
                             </Menu>
                         </Box>
                     </Box>
 
                     <Box sx={{mt: 2}}>
                         {
-                            isFunctionCode(func) &&
+                            func.code != null &&
                             <CodeTabCodeEditor
                                 func={func}
                                 onChange={onChange}
@@ -302,7 +299,7 @@ export function CodeTab({
 
                         {
                             allowNoCode &&
-                            !isFunctionCode(func) &&
+                            func.conditionSet != null &&
                             <CodeTabNoCodeEditor
                                 element={element}
                                 func={func}

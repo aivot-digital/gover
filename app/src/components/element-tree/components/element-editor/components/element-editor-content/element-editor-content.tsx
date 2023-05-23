@@ -1,6 +1,7 @@
 import {DefaultTabs} from '../../data/default-tabs';
 import {
-    Box, Checkbox,
+    Box,
+    Checkbox,
     FormControl,
     FormControlLabel,
     FormHelperText,
@@ -8,7 +9,8 @@ import {
     InputLabel,
     MenuItem,
     Select,
-    TextField, Tooltip
+    TextField,
+    Tooltip
 } from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faArrowsRotate} from '@fortawesome/pro-light-svg-icons';
@@ -24,7 +26,6 @@ import {useAppSelector} from '../../../../../../hooks/use-app-selector';
 import {AnyElement} from '../../../../../../models/elements/any-element';
 import {ElementEditorContentProps} from './element-editor-content-props';
 import {AnyFormElement} from '../../../../../../models/elements/form/any-form-element';
-import {FunctionCode} from "../../../../../../models/functions/function-code";
 import {BaseInputElement} from "../../../../../../models/elements/form/base-input-element";
 import {isAnyInputElement} from "../../../../../../models/elements/form/input/any-input-element";
 
@@ -248,7 +249,7 @@ export function ElementEditorContent<T extends AnyElement>({
                     func={element.patchElement}
                     allowNoCode={false}
                     shouldReturnString={false}
-                    onChange={updatedFunc => handleUpdate({patchElement: updatedFunc as FunctionCode})}
+                    onChange={updatedFunc => handleUpdate({patchElement: updatedFunc})}
                 />
             );
         case DefaultTabs.structure:

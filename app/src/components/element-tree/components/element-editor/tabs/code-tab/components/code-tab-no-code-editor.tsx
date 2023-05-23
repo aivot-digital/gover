@@ -1,5 +1,4 @@
 import {AnyElement} from "../../../../../../../models/elements/any-element";
-import {FunctionNoCode} from "../../../../../../../models/functions/function-no-code";
 import {useAppSelector} from "../../../../../../../hooks/use-app-selector";
 import {selectLoadedApplication} from "../../../../../../../slices/app-slice";
 import {flattenElements} from "../../../../../../../utils/flatten-elements";
@@ -7,11 +6,12 @@ import {CodeTabConditionSetEditor} from "./code-tab-condition-set-editor";
 import React from "react";
 import {ConditionSetOperator} from "../../../../../../../data/condition-set-operator";
 import Evaluators from "../../../../../../../evaluators";
+import {Function} from "../../../../../../../models/functions/function";
 
 interface CodeTabNoCodeEditorProps {
     element: AnyElement;
-    func: FunctionNoCode;
-    onChange: (func: FunctionNoCode) => void;
+    func: Function;
+    onChange: (func: Function) => void;
     shouldReturnString: boolean;
 }
 

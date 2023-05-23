@@ -46,7 +46,7 @@ export function CodeTabCondition({
                 availableValueOptions = [...(referencedElement.options ?? [])];
                 break;
             case ElementType.Checkbox:
-                availableValueOptions = ['Ja', 'Nein'];
+                availableValueOptions = ['Ja (True)', 'Nein (False)'];
                 break;
         }
     }

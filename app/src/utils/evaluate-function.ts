@@ -1,17 +1,16 @@
 import {CustomerInput} from "../models/customer-input";
 import {AnyElement} from "../models/elements/any-element";
-import {FunctionNoCode} from "../models/functions/function-no-code";
-import {FunctionCode, isFunctionCode} from "../models/functions/function-code";
 import {ConditionSet} from "../models/functions/conditions/condition-set";
 import {Condition} from "../models/functions/conditions/condition";
 import {ConditionSetOperator} from "../data/condition-set-operator";
 import {ConditionOperatorMessage} from "../data/condition-operator";
-import {stringOrDefault} from "./string-utils";
+import {isStringNotNullOrEmpty, stringOrDefault} from "./string-utils";
 import Evaluators from "../evaluators";
+import {Function as FunctionModel} from "../models/functions/function";
 
 export function evaluateFunction(
     allElements: AnyElement[],
-    func: FunctionNoCode | FunctionCode | undefined | null,
+    func: FunctionModel | undefined | null,
     customerInput: CustomerInput,
     element: AnyElement,
     id: string,
@@ -21,7 +20,7 @@ export function evaluateFunction(
         return null;
     }
 
-    if (isFunctionCode(func)) {
+    if (isStringNotNullOrEmpty(func.code)) {
         return evaluateFunctionCode(func, customerInput, element, id);
     } else {
         const ret = evaluateFunctionNoCode(allElements, func, customerInput);
@@ -29,7 +28,7 @@ export function evaluateFunction(
     }
 }
 
-function evaluateFunctionCode(func: FunctionCode, customerInput: CustomerInput, element: AnyElement, id: string): any {
+function evaluateFunctionCode(func: FunctionModel, customerInput: CustomerInput, element: AnyElement, id: string): any {
     const fn = new Function('data', 'element', 'id', `
             ${func.code}
             return main(data, element, id);
@@ -44,7 +43,7 @@ function evaluateFunctionCode(func: FunctionCode, customerInput: CustomerInput, 
 
 function evaluateFunctionNoCode(
     allElements: AnyElement[],
-    func: FunctionNoCode,
+    func: FunctionModel,
     customerInput: CustomerInput
 ): string | null {
     return func.conditionSet != null ? evaluateConditionSet(allElements, func.conditionSet, customerInput) : null;
