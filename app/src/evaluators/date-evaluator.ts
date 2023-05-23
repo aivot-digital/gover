@@ -1,6 +1,7 @@
 import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
 import {isValid, parse, parseISO} from "date-fns";
+import {equal} from "assert";
 
 const dayRegex = /^\d\d\.\d\d\.\d\d\d\d$/;
 const dayThisMonthRegex = /^\d\d\.$/;
@@ -63,6 +64,20 @@ function transformValue(val: any): [Date, Precision] | [null, null] {
     return isValid(date) ? [date, precision] : [null, null];
 }
 
+enum DateDiff {
+    Less,
+    Equal,
+    Greater,
+}
+
+function compareDate(d1: Date, d2: Date): [DateDiff, DateDiff, DateDiff] {
+    return [
+        d1.getDay() === d2.getDay() ? DateDiff.Equal : (d1.getDay() < d2.getDay() ? DateDiff.Less : DateDiff.Greater),
+        d1.getMonth() === d2.getMonth() ? DateDiff.Equal : (d1.getMonth() < d2.getMonth() ? DateDiff.Less : DateDiff.Greater),
+        d1.getFullYear() === d2.getFullYear() ? DateDiff.Equal : (d1.getFullYear() < d2.getFullYear() ? DateDiff.Less : DateDiff.Greater),
+    ];
+}
+
 export const DateEvaluator: BaseEvaluator<string> = {
     [ConditionOperator.Equals]: (valueA, valueB) => {
         const [tValA, pValA] = transformValue(valueA);
@@ -72,23 +87,20 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
+        const [
+            dayEq,
+            monthEq,
+            yearEq,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
+
         switch (pValB) {
             case Precision.day:
-                return tValA.getDay() == tValB.getDay() && tValA.getMonth() === tValB.getMonth() && tValA.getFullYear() === tValB.getFullYear();
-            case Precision.month:
-                return tValA.getMonth() === tValB.getMonth() && tValA.getFullYear() === tValB.getFullYear();
-            case Precision.year:
-                return tValA.getFullYear() === tValB.getFullYear();
             case Precision.iso:
-                switch (pValA) {
-                    case Precision.day:
-                    case Precision.iso:
-                        return tValA.getDay() == tValB.getDay() && tValA.getMonth() === tValB.getMonth() && tValA.getFullYear() === tValB.getFullYear();
-                    case Precision.month:
-                        return tValA.getMonth() === tValB.getMonth() && tValA.getFullYear() === tValB.getFullYear();
-                    case Precision.year:
-                        return tValA.getFullYear() === tValB.getFullYear();
-                }
+                return dayEq && monthEq && yearEq;
+            case Precision.month:
+                return monthEq && yearEq;
+            case Precision.year:
+                return yearEq;
         }
     },
     [ConditionOperator.NotEquals]: (valueA, valueB) => {
@@ -99,23 +111,172 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
+        const [
+            dayNeq,
+            monthNeq,
+            yearNeq,
+        ] = compareDate(tValA, tValB).map(d => d !== DateDiff.Equal);
+
         switch (pValB) {
             case Precision.day:
-                return tValA.getDay() != tValB.getDay() || tValA.getMonth() !== tValB.getMonth() || tValA.getFullYear() !== tValB.getFullYear();
-            case Precision.month:
-                return tValA.getMonth() !== tValB.getMonth() || tValA.getFullYear() !== tValB.getFullYear();
-            case Precision.year:
-                return tValA.getFullYear() !== tValB.getFullYear();
             case Precision.iso:
-                switch (pValA) {
-                    case Precision.day:
-                    case Precision.iso:
-                        return tValA.getDay() != tValB.getDay() || tValA.getMonth() !== tValB.getMonth() || tValA.getFullYear() !== tValB.getFullYear();
-                    case Precision.month:
-                        return tValA.getMonth() !== tValB.getMonth() || tValA.getFullYear() !== tValB.getFullYear();
-                    case Precision.year:
-                        return tValA.getFullYear() !== tValB.getFullYear();
-                }
+                return dayNeq || monthNeq || yearNeq;
+            case Precision.month:
+                return monthNeq || yearNeq;
+            case Precision.year:
+                return yearNeq;
+        }
+    },
+
+    [ConditionOperator.LessThan]: (valueA, valueB) => {
+        const [tValA, pValA] = transformValue(valueA);
+        const [tValB, pValB] = transformValue(valueB);
+
+        if (tValA == null || tValB == null){
+            return false;
+        }
+
+        const [
+            _,
+            monthEqual,
+            yearEqual,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
+
+        const [
+            dayLess,
+            monthLess,
+            yearLess,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Less);
+
+        switch (pValB) {
+            case Precision.day:
+            case Precision.iso:
+                return (
+                    yearLess ||
+                    (yearEqual && monthLess) ||
+                    (yearEqual && monthEqual && dayLess)
+                );
+            case Precision.month:
+                return (
+                    yearLess ||
+                    (yearEqual && monthLess)
+                );
+            case Precision.year:
+                return yearLess;
+        }
+    },
+
+    [ConditionOperator.LessThanOrEqual]: (valueA, valueB) => {
+        const [tValA, pValA] = transformValue(valueA);
+        const [tValB, pValB] = transformValue(valueB);
+
+        if (tValA == null || tValB == null){
+            return false;
+        }
+
+        const [
+            dayEqual,
+            monthEqual,
+            yearEqual,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
+
+        const [
+            dayLess,
+            monthLess,
+            yearLess,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Less);
+
+        switch (pValB) {
+            case Precision.day:
+            case Precision.iso:
+                return (
+                    yearLess ||
+                    (yearEqual && monthLess) ||
+                    (yearEqual && monthEqual && (dayLess || dayEqual))
+                );
+            case Precision.month:
+                return (
+                    yearLess ||
+                    (yearEqual && (monthLess || monthEqual))
+                );
+            case Precision.year:
+                return yearLess || yearEqual;
+        }
+    },
+
+    [ConditionOperator.GreaterThan]: (valueA, valueB) => {
+        const [tValA, pValA] = transformValue(valueA);
+        const [tValB, pValB] = transformValue(valueB);
+
+        if (tValA == null || tValB == null){
+            return false;
+        }
+
+        const [
+            _,
+            monthEqual,
+            yearEqual,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
+
+        const [
+            dayGreater,
+            monthGreater,
+            yearGreater,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Greater);
+
+        switch (pValB) {
+            case Precision.day:
+            case Precision.iso:
+                return (
+                    yearGreater ||
+                    (yearEqual && monthGreater) ||
+                    (yearEqual && monthEqual && dayGreater)
+                );
+            case Precision.month:
+                return (
+                    yearGreater ||
+                    (yearEqual && monthGreater)
+                );
+            case Precision.year:
+                return yearGreater;
+        }
+    },
+
+    [ConditionOperator.GreaterThanOrEqual]: (valueA, valueB) => {
+        const [tValA, pValA] = transformValue(valueA);
+        const [tValB, pValB] = transformValue(valueB);
+
+        if (tValA == null || tValB == null){
+            return false;
+        }
+
+        const [
+            dayEqual,
+            monthEqual,
+            yearEqual,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
+
+        const [
+            dayGreater,
+            monthGreater,
+            yearGreater,
+        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Greater);
+
+        switch (pValB) {
+            case Precision.day:
+            case Precision.iso:
+                return (
+                    yearGreater ||
+                    (yearEqual && monthGreater) ||
+                    (yearEqual && monthEqual && (dayGreater || dayEqual))
+                );
+            case Precision.month:
+                return (
+                    yearGreater ||
+                    (yearEqual && (monthGreater || monthEqual))
+                );
+            case Precision.year:
+                return yearGreater || yearEqual;
         }
     },
 
