@@ -14,6 +14,7 @@ interface CodeTabConditionSetEditorProps {
     conditionSet: ConditionSet;
     onChange: (cs: ConditionSet) => void;
     shouldReturnString: boolean;
+    supressConditionUnmetMessage?: boolean;
 }
 
 export function CodeTabConditionSetEditor({
@@ -22,6 +23,7 @@ export function CodeTabConditionSetEditor({
                                               conditionSet,
                                               onChange,
                                               shouldReturnString,
+                                              supressConditionUnmetMessage,
                                           }: CodeTabConditionSetEditorProps) {
     return (
         <Box>
@@ -78,9 +80,11 @@ export function CodeTabConditionSetEditor({
 
             {
                 shouldReturnString &&
+                conditionSet.operator === ConditionSetOperator.Any &&
+                !supressConditionUnmetMessage &&
                 <TextField
                     fullWidth
-                    label="Fehlernachricht"
+                    label="Fehlermeldung"
                     value={conditionSet.conditionSetUnmetMessage}
                     onChange={event => onChange({
                         ...conditionSet,
@@ -153,8 +157,10 @@ export function CodeTabConditionSetEditor({
                                 />
                                 {
                                     shouldReturnString &&
+                                    conditionSet.operator === ConditionSetOperator.All &&
+                                    !supressConditionUnmetMessage &&
                                     <TextField
-                                        label="Fehlernachricht, wenn diese Bedingung nicht wahr ist"
+                                        label="Fehlermeldung, wenn diese Bedingung nicht wahr ist"
                                         value={cond.conditionUnmetMessage}
                                         onChange={event => onChange({
                                             ...conditionSet,
@@ -163,7 +169,7 @@ export function CodeTabConditionSetEditor({
                                                 conditionUnmetMessage: event.target.value,
                                             }),
                                         })}
-                                        helperText="Diese Fehlernachricht wird angezeigt, wenn die Bedingung nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
+                                        helperText="Diese Fehlermeldung wird angezeigt, wenn die Bedingung nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
                                     />
                                 }
                             </Box>
@@ -232,6 +238,7 @@ export function CodeTabConditionSetEditor({
                                         })
                                     }}
                                     shouldReturnString={shouldReturnString}
+                                    supressConditionUnmetMessage={conditionSet.operator === ConditionSetOperator.Any}
                                 />
                             </Box>
                         ))

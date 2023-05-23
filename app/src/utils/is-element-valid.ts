@@ -31,7 +31,7 @@ export function isElementValid($debug: Logger, allElements: AnyElement[], dispat
     if (isAnyInputElement(comp)) {
         const validator: BaseValidator<AnyInputElement> | null = Validators[comp.type];
         if (validator != null) {
-            const error = validator.makeErrors([], id, comp, userInput);
+            const error = validator.makeErrors(allElements, id, comp, userInput);
             if (error != null) {
                 isValid = false;
                 dispatch(addError({key: id, error}));

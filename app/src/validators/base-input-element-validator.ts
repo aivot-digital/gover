@@ -6,7 +6,7 @@ import {CustomerInput} from "../models/customer-input";
 import {AnyElement} from "../models/elements/any-element";
 
 export abstract class BaseInputElementValidator<T, M extends AnyInputElement> extends BaseValidator<M> {
-    makeErrors(allElements: AnyElement[] = [], id: string, comp: M, userInput: any): string | null {
+    makeErrors(allElements: AnyElement[], id: string, comp: M, userInput: any): string | null {
         const isVisible = isElementVisible(allElements, id, comp, userInput);
         if (!isVisible) {
             return null;

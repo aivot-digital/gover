@@ -185,7 +185,7 @@ export function ElementEditorContent<T extends AnyElement>({
                 <CodeTab
                     key="visibility"
                     resultTitle="Sichtbarkeit festlegen"
-                    resultHint="Dieses Element ist Sichtbar, wenn die folgende Funktion wahr ist."
+                    resultHint="Dieses Element ist sichtbar, wenn die folgende Funktion wahr ist:"
                     element={element}
                     func={element.isVisible}
                     allowNoCode={true}
@@ -198,7 +198,7 @@ export function ElementEditorContent<T extends AnyElement>({
                 <CodeTab
                     key="validate"
                     resultTitle="Validierung durchführen"
-                    resultHint="Dieses Element ist valide, wenn die folgende Funktion keine Nachricht mit einem Validierungsproblem erzeugt."
+                    resultHint="Dieses Element ist valide, wenn die folgende Funktion keine Meldung mit einem Validierungsproblem erzeugt:"
                     element={element}
                     func={(element as BaseInputElement<any, any>).validate}
                     allowNoCode={true}
@@ -211,7 +211,7 @@ export function ElementEditorContent<T extends AnyElement>({
                 <CodeTab
                     key="value"
                     resultTitle="Dynamischen Wert bestimmen"
-                    resultHint="Dieses Element bekommt den Rückgabewert der folgenden Funktion."
+                    resultHint="Dieses Element bekommt den Rückgabewert der folgenden Funktion:"
                     element={element}
                     func={(element as BaseInputElement<any, any>).computeValue}
                     allowNoCode={false}
@@ -224,7 +224,7 @@ export function ElementEditorContent<T extends AnyElement>({
                 <CodeTab
                     key="patch"
                     resultTitle="Element aktualisieren"
-                    resultHint="Dieses Element wird mit dem Rückgabewert der folgenden Funktion aktualisiert."
+                    resultHint="Dieses Element wird mit dem Rückgabewert der folgenden Funktion aktualisiert:"
                     element={element}
                     func={element.patchElement}
                     allowNoCode={false}

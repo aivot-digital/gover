@@ -92,7 +92,7 @@ function evaluateCondition(allElements: AnyElement[], condition: Condition, cust
 
     const referencedElement = allElements.find(elem => elem.id === condition.reference);
     if (referencedElement == null) {
-        console.log('No referencedElement', condition);
+        console.log('No referencedElement', condition, allElements);
         return null;
     }
 
