@@ -1,6 +1,6 @@
 import {AnyElement} from "../../../../../../../models/elements/any-element";
 import {ConditionSet} from "../../../../../../../models/functions/conditions/condition-set";
-import {Box, Button, MenuItem, TextField, Typography} from "@mui/material";
+import {Box, Button, Divider, IconButton, MenuItem, TextField, Typography} from "@mui/material";
 import {ConditionSetOperator} from "../../../../../../../data/condition-set-operator";
 import {ConditionOperator} from "../../../../../../../data/condition-operator";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -89,146 +89,154 @@ export function CodeTabConditionSetEditor({
                     helperText="Dieser Fehler wird angezeigt, wenn die Bedingungsgruppe nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
                 />
             }
-
             <Box
                 sx={{
+                    pt: 2,
                     ml: 2,
-                    mt: 2,
-                    pl: 2,
-                    borderLeft: '2px solid #e0e0e0',
+                    borderLeft: '1px solid #e0e0e0',
                 }}
             >
                 <Box
                     sx={{
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        mb: 2,
+                        ml: 2,
+                        p: 2,
+                        border: '1px solid #e0e0e0',
                     }}
                 >
-                    <Button
-                        startIcon={
-                            <FontAwesomeIcon icon={faAdd}/>
-                        }
-                        onClick={() => onChange({
-                            ...conditionSet,
-                            conditions: [
-                                ...conditionSet.conditions ?? [],
-                                {
-                                    operator: ConditionOperator.Equals,
-                                    reference: '',
-                                    value: '',
-                                    conditionUnmetMessage: '',
-                                },
-                            ],
-                        })}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            mb: 2,
+                        }}
                     >
-                        Bedingung hinzufügen
-                    </Button>
-                </Box>
-
-                {
-                    conditionSet.conditions &&
-                    conditionSet.conditions.map((cond, index) => (
-                        <Box
-                            sx={{mb: 3}}
-                            key={index}
-                        >
-                            <CodeTabCondition
-                                allElements={allElements}
-                                cond={cond}
-                                index={index}
-                                onDelete={() => onChange({
-                                    ...conditionSet,
-                                    conditions: conditionSet.conditions!.filter(c => c !== cond),
-                                })}
-                                onChange={updatedCond => onChange({
-                                    ...conditionSet,
-                                    conditions: conditionSet.conditions!.map(c => c !== cond ? c : updatedCond),
-                                })}
-                            />
-                            {
-                                shouldReturnString &&
-                                <TextField
-                                    label="Fehlernachricht, wenn diese Bedingung nicht wahr ist"
-                                    value={cond.conditionUnmetMessage}
-                                    onChange={event => onChange({
-                                        ...conditionSet,
-                                        conditions: conditionSet.conditions!.map(c => c !== cond ? c : {
-                                            ...cond,
-                                            conditionUnmetMessage: event.target.value,
-                                        }),
-                                    })}
-                                    helperText="Diese Fehlernachricht wird angezeigt, wenn die Bedingung nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
-                                />
+                        <Button
+                            startIcon={
+                                <FontAwesomeIcon icon={faAdd}/>
                             }
-                        </Box>
-                    ))
-                }
-
-                <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
-                    <Button
-                        onClick={() => onChange({
-                            ...conditionSet,
-                            conditionsSets: [
-                                ...conditionSet.conditionsSets ?? [],
-                                {
-                                    operator: ConditionSetOperator.All,
-                                    conditions: [],
-                                    conditionsSets: [],
-                                    conditionSetUnmetMessage: '',
-                                },
-                            ],
-                        })}
-                        startIcon={
-                            <FontAwesomeIcon icon={faAdd}/>
-                        }
-                    >
-                        Bedingungsgruppe hinzufügen
-                    </Button>
-                </Box>
-
-                {
-                    conditionSet.conditionsSets &&
-                    conditionSet.conditionsSets.map((cs, index) => (
-                        <Box
-                            sx={{mb: 3}}
-                            key={index}
+                            onClick={() => onChange({
+                                ...conditionSet,
+                                conditions: [
+                                    ...conditionSet.conditions ?? [],
+                                    {
+                                        operator: ConditionOperator.Equals,
+                                        reference: '',
+                                        value: '',
+                                        conditionUnmetMessage: '',
+                                    },
+                                ],
+                            })}
                         >
-                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                                <Typography variant="caption">
-                                    {index + 1}. Bedingungsgruppe
-                                </Typography>
+                            Bedingung hinzufügen
+                        </Button>
+                    </Box>
 
-                                <Button
-                                    size="small"
-                                    color="error"
-                                    startIcon={
-                                        <FontAwesomeIcon icon={faTrashCanXmark}/>
-                                    }
-                                    onClick={() => onChange({
+                    {
+                        conditionSet.conditions &&
+                        conditionSet.conditions.map((cond, index) => (
+                            <Box
+                                sx={{mb: 3}}
+                                key={index}
+                            >
+                                <CodeTabCondition
+                                    allElements={allElements}
+                                    cond={cond}
+                                    index={index}
+                                    onDelete={() => onChange({
                                         ...conditionSet,
-                                        conditionsSets: conditionSet.conditionsSets!.filter(c => c !== cs),
+                                        conditions: conditionSet.conditions!.filter(c => c !== cond),
                                     })}
-                                >
-                                    Gruppe löschen
-                                </Button>
-                            </Box>
-
-                            <CodeTabConditionSetEditor
-                                element={element}
-                                allElements={allElements}
-                                conditionSet={cs}
-                                onChange={updatedCs => {
-                                    onChange({
+                                    onChange={updatedCond => onChange({
                                         ...conditionSet,
-                                        conditionsSets: conditionSet.conditionsSets!.map(c => c !== cs ? c : updatedCs),
-                                    })
-                                }}
-                                shouldReturnString={shouldReturnString}
-                            />
-                        </Box>
-                    ))
-                }
+                                        conditions: conditionSet.conditions!.map(c => c !== cond ? c : updatedCond),
+                                    })}
+                                />
+                                {
+                                    shouldReturnString &&
+                                    <TextField
+                                        label="Fehlernachricht, wenn diese Bedingung nicht wahr ist"
+                                        value={cond.conditionUnmetMessage}
+                                        onChange={event => onChange({
+                                            ...conditionSet,
+                                            conditions: conditionSet.conditions!.map(c => c !== cond ? c : {
+                                                ...cond,
+                                                conditionUnmetMessage: event.target.value,
+                                            }),
+                                        })}
+                                        helperText="Diese Fehlernachricht wird angezeigt, wenn die Bedingung nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
+                                    />
+                                }
+                            </Box>
+                        ))
+                    }
+
+                    <Divider sx={{my: 2}}/>
+
+                    <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
+                        <Button
+                            onClick={() => onChange({
+                                ...conditionSet,
+                                conditionsSets: [
+                                    ...conditionSet.conditionsSets ?? [],
+                                    {
+                                        operator: ConditionSetOperator.All,
+                                        conditions: [],
+                                        conditionsSets: [],
+                                        conditionSetUnmetMessage: '',
+                                    },
+                                ],
+                            })}
+                            startIcon={
+                                <FontAwesomeIcon icon={faAdd}/>
+                            }
+                        >
+                            Bedingungsgruppe hinzufügen
+                        </Button>
+                    </Box>
+
+                    {
+                        conditionSet.conditionsSets &&
+                        conditionSet.conditionsSets.map((cs, index) => (
+                            <Box
+                                sx={{mb: 3}}
+                                key={index}
+                            >
+                                <Box sx={{display: 'flex', alignItems: 'center', mb: 2}}>
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => onChange({
+                                            ...conditionSet,
+                                            conditionsSets: conditionSet.conditionsSets!.filter(c => c !== cs),
+                                        })}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faTrashCanXmark}
+                                            size="sm"
+                                        />
+                                    </IconButton>
+
+                                    <Typography variant="caption" sx={{ml: 2}}>
+                                        {index + 1}. Bedingungsgruppe
+                                    </Typography>
+                                </Box>
+
+                                <CodeTabConditionSetEditor
+                                    element={element}
+                                    allElements={allElements}
+                                    conditionSet={cs}
+                                    onChange={updatedCs => {
+                                        onChange({
+                                            ...conditionSet,
+                                            conditionsSets: conditionSet.conditionsSets!.map(c => c !== cs ? c : updatedCs),
+                                        })
+                                    }}
+                                    shouldReturnString={shouldReturnString}
+                                />
+                            </Box>
+                        ))
+                    }
+                </Box>
             </Box>
         </Box>
     );

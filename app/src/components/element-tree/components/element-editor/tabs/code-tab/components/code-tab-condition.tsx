@@ -56,21 +56,24 @@ export function CodeTabCondition({
 
     return (
         <Box>
-            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                <Typography variant="caption">
-                    {index + 1}. Bedingung
-                </Typography>
-
-                <Button
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                <IconButton
                     size="small"
                     color="error"
-                    startIcon={
-                        <FontAwesomeIcon icon={faTrashCanXmark}/>
-                    }
                     onClick={onDelete}
                 >
-                    Bedingung löschen
-                </Button>
+                    <FontAwesomeIcon
+                        icon={faTrashCanXmark}
+                        size="sm"
+                    />
+                </IconButton>
+
+                <Typography
+                    variant="caption"
+                    sx={{ml: 2}}
+                >
+                    {index + 1}. Bedingung
+                </Typography>
             </Box>
 
             <Box sx={{display: 'flex'}}>
