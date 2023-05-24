@@ -8,7 +8,7 @@ import {
 import {faCloudUpload, faPlus} from '@fortawesome/pro-light-svg-icons';
 import {AppFooter} from '../../../components/app-footer/app-footer';
 import {Introductory} from '../../../components/introductory/introductory';
-import {ApplicationListItem} from './components/application-list-item/application-list-item';
+import {ApplicationListItem} from '../../../components/application-list-item/application-list-item';
 import {BoxLink} from '../../../components/box-link/box-link';
 import {AddApplicationDialog} from '../../../dialogs/add-application-dialog/add-application-dialog';
 import {ImportApplicationDialog} from '../../../dialogs/import-application-dialog/import-application-dialog';
@@ -142,7 +142,9 @@ export function ApplicationsOverviewPage() {
                 mode={AppMode.Staff}
             />
 
-            <Introductory/>
+            <Introductory
+                mode={AppMode.Staff}
+            />
 
             <div style={{backgroundColor: '#F3F3F3'}}>
                 <Container sx={{mb: 5, py: 4}}>

@@ -2,8 +2,8 @@ import React, {useCallback, useState} from 'react';
 import {Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
 import {format, isToday} from 'date-fns';
-import {ApplicationStatusNames} from '../../../../../data/application-status/application-status-names';
-import {ApplicationStatus} from '../../../../../data/application-status/application-status';
+import {ApplicationStatusNames} from '../../data/application-status/application-status-names';
+import {ApplicationStatus} from '../../data/application-status/application-status';
 import {Link} from 'react-router-dom';
 import {
     faArrowUpRightFromSquare,
@@ -16,14 +16,14 @@ import {
     faTrashCanXmark
 } from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {showNotImplementedMessage} from '../../../../../utils/show-not-implemented-message';
-import {ApplicationService} from '../../../../../services/application.service';
-import {Application} from '../../../../../models/entities/application';
-import {getColorPalette} from '../../../../../theming/themes';
+import {showNotImplementedMessage} from '../../utils/show-not-implemented-message';
+import {ApplicationService} from '../../services/application.service';
+import {Application} from '../../models/entities/application';
+import {getColorPalette} from '../../theming/themes';
 import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
 import strings from './application-list-item-strings.json';
-import {Localization} from '../../../../../locale/localization';
-import {downloadConfigFile} from "../../../../../utils/download-utils";
+import {Localization} from '../../locale/localization';
+import {downloadConfigFile} from "../../utils/download-utils";
 
 const __ = Localization(strings);
 

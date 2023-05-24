@@ -9,6 +9,7 @@ import {ApiConfig} from '../api-config';
 import {generateElementWithDefaultValues} from '../utils/generate-element-with-default-values';
 import {ApplicationStatus} from '../data/application-status/application-status';
 import {FileUploadElementItem} from "../models/elements/form/input/file-upload-element";
+import {ListApplication} from "../models/entities/list-application";
 
 
 class _ApplicationService extends CrudService<Application, 'applications', number> {
@@ -37,6 +38,11 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
     async clone(oldId: number, newSlug: string, newVersion: string, newTitle: string): Promise<ApiDetailsResponse<Application>> {
         const application = await this.retrieve(oldId);
         return await this.createNew(newSlug, newVersion, newTitle, application.root);
+    }
+
+    async listPublishedApplications(): Promise<ListApplication[]> {
+        const response: AxiosResponse = await axios.get(ApiConfig.address + '/public/applications', CrudService.getConfig());
+        return response.data;
     }
 
     async retrieveBySlug(slug: string, version: string): Promise<Application> {

@@ -105,7 +105,7 @@ export function AppFooter({mode}: AppFooterProps) {
                         color="#444444"
                     >
                         {
-                            mode === AppMode.Staff ? __.brandingStaff : __.brandingCustomer
+                            mode === AppMode.Staff ? __.brandingStaff : (mode === AppMode.Customer ? __.brandingCustomer : __.brandingCustomerDisplay)
                         }
                     </Typography>
                 </Box>

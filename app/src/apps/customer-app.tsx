@@ -1,15 +1,16 @@
 import React, {useEffect} from 'react';
 import {HashRouter, Route, Routes} from 'react-router-dom';
 import {ApplicationPage} from '../pages/customer-pages/application-page';
-import {fetchSystemConfig} from '../slices/system-config-slice';
+import {fetchPublicSystemConfig} from '../slices/system-config-slice';
 import {useDispatch} from 'react-redux';
+import {ListPage} from "../pages/customer-pages/list-page";
 
 
 function CustomerApp() {
     const dispatch = useDispatch();
 
     useEffect(() => {
-        dispatch(fetchSystemConfig());
+        dispatch(fetchPublicSystemConfig());
     }, [dispatch]);
 
     return (
@@ -18,6 +19,11 @@ function CustomerApp() {
                 <Route
                     path="/:slug/:version"
                     element={<ApplicationPage/>}
+                />
+
+                <Route
+                    path=""
+                    element={<ListPage/>}
                 />
             </Routes>
         </HashRouter>

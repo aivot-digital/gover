@@ -4,13 +4,14 @@
     "privacyLabel": "Privacy",
     "imprintLabel": "Imprint",
     "brandingStaff": "This tool was build by Aivot - the company for the digital transformation of the government",
-    "brandingCustomer": "This application was built with Gover – the foundation for modern digital governmental applications by Aivot"
+    "brandingCustomerDisplay": "This service was built with Gover – the foundation for modern digital governmental applications by Aivot"
   },
   "de": {
     "helpLabel": "Hilfe",
     "privacyLabel": "Datenschutz",
     "imprintLabel": "Impressum",
-    "brandingStaff": "Diese Anwendung wurde von Aivot gebaut - das Unternehmen für die digitale transfomation der Verwaltung",
-    "brandingCustomer": "Dieser Antrag wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot"
+    "brandingStaff": "Diese Anwendung wurde von Aivot gebaut - das Unternehmen für die digitale Transformation der Verwaltung",
+    "brandingCustomer": "Dieser Antrag wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot",
+    "brandingCustomerDisplay": "Dieses Angebot wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot"
   }
 }

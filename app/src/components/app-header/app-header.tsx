@@ -112,12 +112,14 @@ export function AppHeader({mode}: AppHeaderProps) {
                                 </div>
                             </Box>
                         </Box>
-                        <Box sx={{
-                            [theme.breakpoints.down('md')]: {
-                                ml: 'auto',
-                                mt: 2,
-                            },
-                        }}>
+                        <Box
+                            sx={{
+                                [theme.breakpoints.down('md')]: {
+                                    ml: 'auto',
+                                    mt: 2,
+                                },
+                            }}
+                        >
                             {
                                 mode === AppMode.Customer &&
                                 <Tooltip
@@ -135,38 +137,44 @@ export function AppHeader({mode}: AppHeaderProps) {
                                 </Tooltip>
                             }
 
-                            <Tooltip
-                                title={__.tooltipHelp}
-                            >
-                                <IconButton
-                                    color="primary"
-                                    component={mode === AppMode.Staff ? 'a' : 'button'}
-                                    href={mode === AppMode.Staff ? 'https://aivot.de/gover' : undefined}
-                                    target={mode === AppMode.Staff ? '_blank' : undefined}
-                                    onClick={mode === AppMode.Staff ? undefined : () => {
-                                        setShowHelp(true);
-                                    }}
+                            {
+                                mode !== AppMode.CustomerDisplay &&
+                                <Tooltip
+                                    title={__.tooltipHelp}
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faQuestionCircle}
-                                        size="lg"
-                                    />
-                                </IconButton>
-                            </Tooltip>
+                                    <IconButton
+                                        color="primary"
+                                        component={mode === AppMode.Staff ? 'a' : 'button'}
+                                        href={mode === AppMode.Staff ? 'https://aivot.de/gover' : undefined}
+                                        target={mode === AppMode.Staff ? '_blank' : undefined}
+                                        onClick={mode === AppMode.Staff ? undefined : () => {
+                                            setShowHelp(true);
+                                        }}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faQuestionCircle}
+                                            size="lg"
+                                        />
+                                    </IconButton>
+                                </Tooltip>
+                            }
 
-                            <Tooltip
-                                title={__.tooltipSettings}
-                            >
-                                <IconButton
-                                    color="primary"
-                                    onClick={handleOpenMenu}
+                            {
+                                mode !== AppMode.CustomerDisplay &&
+                                <Tooltip
+                                    title={__.tooltipSettings}
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faCog}
-                                        size="lg"
-                                    />
-                                </IconButton>
-                            </Tooltip>
+                                    <IconButton
+                                        color="primary"
+                                        onClick={handleOpenMenu}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faCog}
+                                            size="lg"
+                                        />
+                                    </IconButton>
+                                </Tooltip>
+                            }
                         </Box>
                     </Box>
                 </Container>

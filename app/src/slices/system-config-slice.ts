@@ -13,16 +13,29 @@ export const fetchSystemConfig = createAsyncThunk(
     }
 );
 
+export const fetchPublicSystemConfig = createAsyncThunk(
+    'systemConfig/fetchPublicSystemConfig',
+    async (_) => {
+        return await SystemConfigsService.listPublicSystemConfigs();
+    }
+);
+
 export const systemConfigSlice = createSlice({
     name: 'systemConfig',
     initialState,
     reducers: {},
     extraReducers: (builder) => {
-        builder.addCase(fetchSystemConfig.fulfilled, (state, action) => {
-            action.payload._embedded.systemConfigs.forEach(config => {
-                state[config.key] = config.value;
+        builder
+            .addCase(fetchSystemConfig.fulfilled, (state, action) => {
+                action.payload._embedded.systemConfigs.forEach(config => {
+                    state[config.key] = config.value;
+                });
+            })
+            .addCase(fetchPublicSystemConfig.fulfilled, (state, action) => {
+                action.payload.forEach(config => {
+                    state[config.key] = config.value;
+                });
             });
-        });
     },
 });
 

@@ -2,13 +2,11 @@ package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.ApplicationStatus;
 import de.aivot.GoverBackend.models.config.GoverConfig;
-import de.aivot.GoverBackend.models.entities.Application;
-import de.aivot.GoverBackend.models.entities.Department;
-import de.aivot.GoverBackend.models.entities.Destination;
-import de.aivot.GoverBackend.models.entities.User;
+import de.aivot.GoverBackend.models.entities.*;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.repositories.DestinationRepository;
+import de.aivot.GoverBackend.repositories.SystemConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.security.core.Authentication;
@@ -17,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
 import java.util.Optional;
 
 @RestController
@@ -25,14 +24,26 @@ public class ApplicationController {
     private final ApplicationRepository applicationRepository;
     private final DepartmentRepository departmentRepository;
     private final DestinationRepository destinationRepository;
+    private final SystemConfigRepository systemConfigRepository;
     private final GoverConfig goverConfig;
 
     @Autowired
-    public ApplicationController(ApplicationRepository applicationRepository, DepartmentRepository departmentRepository, DestinationRepository destinationRepository, GoverConfig goverConfig) {
+    public ApplicationController(ApplicationRepository applicationRepository, DepartmentRepository departmentRepository, DestinationRepository destinationRepository, SystemConfigRepository systemConfigRepository, GoverConfig goverConfig) {
         this.applicationRepository = applicationRepository;
         this.departmentRepository = departmentRepository;
         this.destinationRepository = destinationRepository;
+        this.systemConfigRepository = systemConfigRepository;
         this.goverConfig = goverConfig;
+    }
+
+    /**
+     * Fetch all published applications.
+     * @return A collection of all published applications.
+     */
+    @GetMapping("/api/public/applications")
+    public Collection<ListApplication> getApplicationList() {
+        var applicationResult = applicationRepository.findPublishedApplications();
+        return applicationResult.stream().map(ListApplication::new).toList();
     }
 
     /**
@@ -73,6 +84,11 @@ public class ApplicationController {
         throw new ResourceNotFoundException();
     }
 
+    /**
+     * Get the maximum allowed total file sizes of an application.
+     * @param applicationId The id of the application.
+     * @return The maximum allowed total file size.
+     */
     @GetMapping("/api/public/max-file-size/{applicationId}")
     public Integer getMaxFileSize(@PathVariable Long applicationId) {
         Optional<Application> application = applicationRepository.findById(applicationId);
@@ -92,8 +108,21 @@ public class ApplicationController {
         return 100;
     }
 
+    /**
+     * Get the sentry dns for the web app.
+     * @return The sentry dns for the web app.
+     */
     @GetMapping("/api/public/sentry-dns")
     public String getSentryDns() {
         return goverConfig.getSentryWebApp();
+    }
+
+    /**
+     * Get the sentry dns for the web app.
+     * @return The sentry dns for the web app.
+     */
+    @GetMapping("/api/public/system-configs")
+    public Collection<SystemConfig> getPublicSystemConfigs() {
+        return systemConfigRepository.findPublicSystemConfigs();
     }
 }

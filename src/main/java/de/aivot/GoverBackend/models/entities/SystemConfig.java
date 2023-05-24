@@ -24,6 +24,12 @@ public class SystemConfig {
     @UpdateTimestamp
     private LocalDateTime updated;
 
+    @PreUpdate
+    @PrePersist
+    public void setLastUpdated() {
+        isPublic = key.isPublic();
+    }
+
     public LocalDateTime getCreated() {
         return created;
     }

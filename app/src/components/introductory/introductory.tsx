@@ -8,12 +8,17 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {faXmarkCircle} from '@fortawesome/pro-light-svg-icons';
 import {Localization} from '../../locale/localization';
+import {AppMode} from "../../data/app-mode";
 
 const __ = Localization(strings);
 
 const dismissIntroStorageKey = '__dismiss_intro__'
 
-export function Introductory() {
+interface IntroductoryProps {
+    mode: AppMode;
+}
+
+export function Introductory({mode}: IntroductoryProps) {
     const theme = useTheme();
     const systemConfig = useAppSelector(state => state.systemConfig);
 
@@ -45,18 +50,22 @@ export function Introductory() {
                         backgroundColor: theme.palette.primary.dark,
                     }}
                 >
-                    <Box sx={{position: 'absolute', right: theme.spacing(11)}}>
-                        <Tooltip
-                            title={__.dismissTooltip}
-                        >
-                            <IconButton
-                                sx={{color: theme.palette.secondary.main}}
-                                onClick={onDismiss}
+                    {
+                        mode === AppMode.Staff &&
+                        <Box sx={{position: 'absolute', right: theme.spacing(11)}}>
+                            <Tooltip
+                                title={__.dismissTooltip}
                             >
-                                <FontAwesomeIcon icon={faXmarkCircle}/>
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
+                                <IconButton
+                                    sx={{color: theme.palette.secondary.main}}
+                                    onClick={onDismiss}
+                                >
+                                    <FontAwesomeIcon icon={faXmarkCircle}/>
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
+                    }
+
                     <Box>
                         <Typography
                             variant="h2"
@@ -76,74 +85,81 @@ export function Introductory() {
                             <span style={{color: theme.palette.secondary.main}}>{__.title}</span><br/>
                             {systemConfig[SystemConfigKeys.provider.name]}
                         </Typography>
-                        <Divider
-                            sx={{
-                                mt: 4,
-                                mb: 4,
-                                borderColor: 'var(--hw-secondary)',
-                            }}
-                        />
-                        <Typography
-                            variant={'h4'}
-                            fontSize={'1.125rem'}
-                            lineHeight={'1.25rem'}
-                            color={'white'}
-                            fontWeight={'normal'}
-                            onClick={showNotImplementedMessage}
-                            sx={[
-                                {
-                                    maxWidth: '480px',
-                                    display: 'flex',
-                                    justifyContent: 'flex-general-information',
-                                    mt: 2,
-                                    mb: 2,
-                                    transition: '200ms all ease-in-out',
-                                    cursor: 'pointer',
-                                },
-                                {
-                                    '&:hover': {
-                                        color: 'var(--hw-secondary)',
-                                    },
-                                }]}
-                        >
-                            <FontAwesomeIcon
-                                icon={faArrowRight}
-                                fixedWidth
-                                size={'xs'}
-                                style={{marginRight: '6px', flexShrink: 0}}
-                            />
-                            <span>{__.gettingStartedLink}</span>
-                        </Typography>
 
-                        <Typography
-                            variant={'h4'}
-                            fontSize={'1.125rem'}
-                            lineHeight={'1.25rem'}
-                            color={'white'}
-                            fontWeight={'normal'}
-                            onClick={showNotImplementedMessage}
-                            sx={[
-                                {
-                                    maxWidth: '480px',
-                                    display: 'flex',
-                                    justifyContent: 'flex-general-information',
-                                    transition: '200ms all ease-in-out',
-                                    cursor: 'pointer',
-                                },
-                                {
-                                    '&:hover': {
-                                        color: 'var(--hw-secondary)',
-                                    },
-                                }]}
-                        >
-                            <FontAwesomeIcon
-                                icon={faArrowUpLeft}
-                                fixedWidth
-                                size={'xs'}
-                                style={{marginRight: '6px', flexShrink: 0}}
-                            />
-                            <span>{__.newProcessLink}</span>
-                        </Typography>
+                        {
+                            mode === AppMode.Staff &&
+                            <>
+
+                                <Divider
+                                    sx={{
+                                        mt: 4,
+                                        mb: 4,
+                                        borderColor: 'var(--hw-secondary)',
+                                    }}
+                                />
+                                <Typography
+                                    variant={'h4'}
+                                    fontSize={'1.125rem'}
+                                    lineHeight={'1.25rem'}
+                                    color={'white'}
+                                    fontWeight={'normal'}
+                                    onClick={showNotImplementedMessage}
+                                    sx={[
+                                        {
+                                            maxWidth: '480px',
+                                            display: 'flex',
+                                            justifyContent: 'flex-general-information',
+                                            mt: 2,
+                                            mb: 2,
+                                            transition: '200ms all ease-in-out',
+                                            cursor: 'pointer',
+                                        },
+                                        {
+                                            '&:hover': {
+                                                color: 'var(--hw-secondary)',
+                                            },
+                                        }]}
+                                >
+                                    <FontAwesomeIcon
+                                        icon={faArrowRight}
+                                        fixedWidth
+                                        size={'xs'}
+                                        style={{marginRight: '6px', flexShrink: 0}}
+                                    />
+                                    <span>{__.gettingStartedLink}</span>
+                                </Typography>
+
+                                <Typography
+                                    variant={'h4'}
+                                    fontSize={'1.125rem'}
+                                    lineHeight={'1.25rem'}
+                                    color={'white'}
+                                    fontWeight={'normal'}
+                                    onClick={showNotImplementedMessage}
+                                    sx={[
+                                        {
+                                            maxWidth: '480px',
+                                            display: 'flex',
+                                            justifyContent: 'flex-general-information',
+                                            transition: '200ms all ease-in-out',
+                                            cursor: 'pointer',
+                                        },
+                                        {
+                                            '&:hover': {
+                                                color: 'var(--hw-secondary)',
+                                            },
+                                        }]}
+                                >
+                                    <FontAwesomeIcon
+                                        icon={faArrowUpLeft}
+                                        fixedWidth
+                                        size={'xs'}
+                                        style={{marginRight: '6px', flexShrink: 0}}
+                                    />
+                                    <span>{__.newProcessLink}</span>
+                                </Typography>
+                            </>
+                        }
                     </Box>
                 </Box>
             </Box>
