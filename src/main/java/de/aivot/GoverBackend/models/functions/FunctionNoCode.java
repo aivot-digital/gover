@@ -17,7 +17,10 @@ public class FunctionNoCode extends Function {
 
     @Override
     public FunctionResult evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
-        return new FunctionResult(getConditionSet().evaluate(customerInput));
+        if (conditionSet == null) {
+            return new FunctionResult(null);
+        }
+        return new FunctionResult(conditionSet.evaluate(customerInput));
     }
 
     public ConditionSet getConditionSet() {
