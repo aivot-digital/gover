@@ -39,6 +39,15 @@ export function SelectFieldComponent({
                     <i>Keine Auswahl</i>
                 </MenuItem>
             }
+
+            {
+                options.length === 0 &&
+                <MenuItem
+                    value={''}
+                >
+                    <i>Keine Optionen vorhanden</i>
+                </MenuItem>
+            }
             {
                 options
                     .map(option => (
