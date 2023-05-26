@@ -9,7 +9,7 @@ import {
     faDiamondExclamation,
     faListCheck,
     faMemoCircleCheck,
-    faPlusCircle, faQuestionCircle
+    faPlusCircle, faQuestionCircle, faCircleBolt,
 } from '@fortawesome/pro-light-svg-icons';
 import {ElementIcons} from '../../../../data/element-type/element-icons';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
@@ -35,6 +35,7 @@ import {isAnyElementWithChildren} from '../../../../models/elements/any-element-
 import {getStepIcon} from '../../../../data/step-icons';
 import {selectLoadedApplication} from '../../../../slices/app-slice';
 import {stringOrDefault} from "../../../../utils/string-utils";
+import {findNoCodeUsage} from "../../../../utils/find-no-code-usage";
 
 
 export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>) {
@@ -263,6 +264,14 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
                 tooltip: msg,
             });
         }
+    }
+
+    const noCodeUsages = root != null ? findNoCodeUsage(element, root) : [];
+    if (noCodeUsages.length > 0) {
+        icons.push({
+            icon: faCircleBolt,
+            tooltip: 'Von No-Code Funktion referenziert: ' + noCodeUsages.map(elem => generateComponentTitle(elem)).join(', '),
+        });
     }
 
     const functionStatus = getFunctionStatus(element);
