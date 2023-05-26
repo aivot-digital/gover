@@ -23,15 +23,15 @@ export function NumberFieldComponent({
         setValueBufferIsNan(false);
     }, []);
 
+    const dec = decimalPlaces ?? 0;
+
     const handleBlur = () => {
         if (valueBuffer != null && valueBuffer !== '') {
             let num = parseFloat(valueBuffer.replaceAll('.', '').replaceAll(',', '.'));
-            if (decimalPlaces != null) {
-                num = parseFloat(num.toFixed(decimalPlaces));
-            }
+            num = parseFloat(num.toFixed(dec));
             if (!isNaN(num)) {
                 onChange(num);
-                setValueBuffer(formatNumToGermanNum(num, decimalPlaces));
+                setValueBuffer(formatNumToGermanNum(num, dec));
                 setValueBufferIsNan(false);
             } else {
                 onChange(undefined);
@@ -64,7 +64,7 @@ export function NumberFieldComponent({
             }}
             error={error != null || valueBufferIsNan}
             helperText={error != null ? error : (valueBufferIsNan ? 'Bitte geben Sie eine gültige Zahl ein.' : hint)}
-            value={valueBuffer == null && value != null ? formatNumToGermanNum(value, decimalPlaces) : (valueBuffer ?? '')}
+            value={valueBuffer == null && value != null ? formatNumToGermanNum(value, dec) : (valueBuffer ?? '')}
             onChange={handleChange}
             onBlur={handleBlur}
             disabled={disabled ?? false}
