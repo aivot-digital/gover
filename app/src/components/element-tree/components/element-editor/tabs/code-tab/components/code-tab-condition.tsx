@@ -4,7 +4,7 @@ import {Box, IconButton, Tooltip, Typography} from "@mui/material";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faRefresh, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
 import {
-    ConditionOperator,
+    ConditionOperator, ConditionOperatorAdditionalHint,
     ConditionOperatorHint,
     ConditionOperatorIsUnary,
     ConditionOperatorLabel,
@@ -56,6 +56,7 @@ export function CodeTabCondition({
 
     const isUnaryOperator = cond.operator != null ? ConditionOperatorIsUnary[cond.operator] : true;
     const valueHelperText = referencedElement != null ? ConditionOperatorHint[referencedElement.type] : null;
+    const valueHelperText2 = cond.operator != null ? ConditionOperatorAdditionalHint[cond.operator] : null;
 
     return (
         <Box>
@@ -141,8 +142,9 @@ export function CodeTabCondition({
                                                         ...cond,
                                                         value: val != null ? formatNumToGermanNum(val, referencedElement.decimalPlaces) : '',
                                                     })}
-                                                    hint={valueHelperText ?? undefined}
-                                                    decimalPlaces={referencedElement.decimalPlaces}/>
+                                                    decimalPlaces={referencedElement.decimalPlaces}
+                                                    hint={valueHelperText ?? valueHelperText2 ?? undefined}
+                                                />
                                             ) : (
                                                 <TextFieldComponent
                                                     label="Wert"
@@ -152,7 +154,7 @@ export function CodeTabCondition({
                                                         ...cond,
                                                         value: val ?? '',
                                                     })}
-                                                    hint={valueHelperText ?? undefined}
+                                                    hint={valueHelperText ?? valueHelperText2 ?? undefined}
                                                 />
                                             )
                                         )

@@ -124,3 +124,28 @@ export const ConditionOperatorHint: ElementTypesMap<string | null> = {
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: null
 };
+
+export const ConditionOperatorAdditionalHint: {
+    [key in ConditionOperator]: string | null;
+} = {
+    [ConditionOperator.Equals]: null,
+    [ConditionOperator.EqualsIgnoreCase]: null,
+    [ConditionOperator.NotEquals]: null,
+    [ConditionOperator.NotEqualsIgnoreCase]: null,
+    [ConditionOperator.LessThan]: null,
+    [ConditionOperator.LessThanOrEqual]: null,
+    [ConditionOperator.GreaterThan]: null,
+    [ConditionOperator.GreaterThanOrEqual]: null,
+    [ConditionOperator.Includes]: null,
+    [ConditionOperator.NotIncludes]: null,
+    [ConditionOperator.StartsWith]: null,
+    [ConditionOperator.NotStartsWith]: null,
+    [ConditionOperator.EndsWith]: null,
+    [ConditionOperator.NotEndsWith]: null,
+    [ConditionOperator.MatchesPattern]: 'Das Muster muss als regulärer Ausdruck eingegeben werden.',
+    [ConditionOperator.NotMatchesPattern]: 'Das Muster muss als regulärer Ausdruck eingegeben werden.',
+    [ConditionOperator.IncludesPattern]: 'Das Muster muss als regulärer Ausdruck eingegeben werden.',
+    [ConditionOperator.NotIncludesPattern]: 'Das Muster muss als regulärer Ausdruck eingegeben werden.',
+    [ConditionOperator.Empty]: null,
+    [ConditionOperator.NotEmpty]: null,
+};
