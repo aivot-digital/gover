@@ -1,19 +1,21 @@
 import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
 import {isValid, parse, parseISO} from "date-fns";
-import {equal} from "assert";
+import {da} from "date-fns/locale";
 
 const dayRegex = /^\d\d\.\d\d\.\d\d\d\d$/;
-const dayThisMonthRegex = /^\d\d\.$/;
+const dayAnyMonthAnyYearRegex = /^\d\d\.$/;
 const monthRegex = /^\d\d\.\d\d\d\d$/;
-const monthThisYearRegex = /^\d\d\.\d\d\.$/;
+const monthAnyYearRegex = /^\d\d\.\d\d\.$/;
 const yearRegex = /^\d\d\d\d$/;
 
 const germanDateFormat = 'dd.MM.yyyy';
 
 enum Precision {
     day,
+    dayAnyMonthAnyYear,
     month,
+    dayAndMonthAnyYear,
     year,
     iso,
 }
@@ -33,9 +35,9 @@ function transformValue(val: any): [Date, Precision] | [null, null] {
             precision = Precision.day;
         }
 
-        else if (val.match(dayThisMonthRegex)) {
+        else if (val.match(dayAnyMonthAnyYearRegex)) {
             date = parse(val + today.getMonth() + '.' + today.getFullYear(), germanDateFormat, new Date());
-            precision = Precision.day;
+            precision = Precision.dayAnyMonthAnyYear;
         }
 
         else if (val.match(monthRegex)) {
@@ -43,9 +45,9 @@ function transformValue(val: any): [Date, Precision] | [null, null] {
             precision = Precision.month;
         }
 
-        else if (val.match(monthThisYearRegex)) {
+        else if (val.match(monthAnyYearRegex)) {
             date = parse(val + today.getFullYear(), germanDateFormat, new Date());
-            precision = Precision.month;
+            precision = Precision.dayAndMonthAnyYear;
         }
 
         else if (val.match(yearRegex)) {
@@ -72,7 +74,7 @@ enum DateDiff {
 
 function compareDate(d1: Date, d2: Date): [DateDiff, DateDiff, DateDiff] {
     return [
-        d1.getDay() === d2.getDay() ? DateDiff.Equal : (d1.getDay() < d2.getDay() ? DateDiff.Less : DateDiff.Greater),
+        d1.getDate() === d2.getDate() ? DateDiff.Equal : (d1.getDate() < d2.getDate() ? DateDiff.Less : DateDiff.Greater),
         d1.getMonth() === d2.getMonth() ? DateDiff.Equal : (d1.getMonth() < d2.getMonth() ? DateDiff.Less : DateDiff.Greater),
         d1.getFullYear() === d2.getFullYear() ? DateDiff.Equal : (d1.getFullYear() < d2.getFullYear() ? DateDiff.Less : DateDiff.Greater),
     ];
@@ -97,8 +99,12 @@ export const DateEvaluator: BaseEvaluator<string> = {
             case Precision.day:
             case Precision.iso:
                 return dayEq && monthEq && yearEq;
+            case Precision.dayAnyMonthAnyYear:
+                return dayEq;
             case Precision.month:
                 return monthEq && yearEq;
+            case Precision.dayAndMonthAnyYear:
+                return dayEq && monthEq;
             case Precision.year:
                 return yearEq;
         }
@@ -121,8 +127,12 @@ export const DateEvaluator: BaseEvaluator<string> = {
             case Precision.day:
             case Precision.iso:
                 return dayNeq || monthNeq || yearNeq;
+            case Precision.dayAnyMonthAnyYear:
+                return dayNeq;
             case Precision.month:
                 return monthNeq || yearNeq;
+            case Precision.dayAndMonthAnyYear:
+                return dayNeq || monthNeq;
             case Precision.year:
                 return yearNeq;
         }
@@ -156,11 +166,15 @@ export const DateEvaluator: BaseEvaluator<string> = {
                     (yearEqual && monthLess) ||
                     (yearEqual && monthEqual && dayLess)
                 );
+            case Precision.dayAnyMonthAnyYear:
+                return dayLess;
             case Precision.month:
                 return (
                     yearLess ||
                     (yearEqual && monthLess)
                 );
+            case Precision.dayAndMonthAnyYear:
+                return monthLess || (monthEqual && dayLess);
             case Precision.year:
                 return yearLess;
         }
@@ -194,11 +208,15 @@ export const DateEvaluator: BaseEvaluator<string> = {
                     (yearEqual && monthLess) ||
                     (yearEqual && monthEqual && (dayLess || dayEqual))
                 );
+            case Precision.dayAnyMonthAnyYear:
+                return dayLess || dayEqual;
             case Precision.month:
                 return (
                     yearLess ||
                     (yearEqual && (monthLess || monthEqual))
                 );
+            case Precision.dayAndMonthAnyYear:
+                return monthLess || (monthEqual && (dayLess || dayEqual));
             case Precision.year:
                 return yearLess || yearEqual;
         }
@@ -232,11 +250,15 @@ export const DateEvaluator: BaseEvaluator<string> = {
                     (yearEqual && monthGreater) ||
                     (yearEqual && monthEqual && dayGreater)
                 );
+            case Precision.dayAnyMonthAnyYear:
+                return dayGreater;
             case Precision.month:
                 return (
                     yearGreater ||
                     (yearEqual && monthGreater)
                 );
+            case Precision.dayAndMonthAnyYear:
+                return monthGreater || (monthEqual && dayGreater);
             case Precision.year:
                 return yearGreater;
         }
@@ -270,11 +292,15 @@ export const DateEvaluator: BaseEvaluator<string> = {
                     (yearEqual && monthGreater) ||
                     (yearEqual && monthEqual && (dayGreater || dayEqual))
                 );
+            case Precision.dayAnyMonthAnyYear:
+                return dayGreater || dayEqual;
             case Precision.month:
                 return (
                     yearGreater ||
                     (yearEqual && (monthGreater || monthEqual))
                 );
+            case Precision.dayAndMonthAnyYear:
+                return monthGreater || (monthEqual && (dayGreater || dayEqual));
             case Precision.year:
                 return yearGreater || yearEqual;
         }
