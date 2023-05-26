@@ -39,8 +39,6 @@ export function CodeTabNoCodeEditor({
         parent = parents[0];
     }
 
-    console.log(parents, parent);
-
     const allElements = (parent != null ? flattenElements(parent, true) : [])
         .filter(e => Evaluators[e.type] != null);
 

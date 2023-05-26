@@ -16,6 +16,8 @@ import {SelectFieldComponent} from "../../../../../../select-field/select-field-
 import {stringOrDefault} from "../../../../../../../utils/string-utils";
 import {generateComponentTitle} from "../../../../../../../utils/generate-component-title";
 import {TextFieldComponent} from "../../../../../../text-field/text-field-component";
+import {NumberFieldComponent} from "../../../../../../number-field/number-field-component";
+import {formatNumToGermanNum} from "../../../../../../../utils/format-german-numbers";
 
 interface CodeTabConditionProps {
     allElements: AnyElement[];
@@ -128,16 +130,32 @@ export function CodeTabCondition({
                                             availableValueOptions === null ||
                                             availableValueOptions.length === 0
                                         ) &&
-                                        <TextFieldComponent
-                                            label="Wert"
-                                            required
-                                            value={cond.value}
-                                            onChange={val => onChange({
-                                                ...cond,
-                                                value: val ?? '',
-                                            })}
-                                            hint={valueHelperText ?? undefined}
-                                        />
+                                        referencedElement != null &&
+                                        (
+                                            referencedElement.type === ElementType.Number ? (
+                                                <NumberFieldComponent
+                                                    label="Wert"
+                                                    required
+                                                    value={cond.value !== '' ? parseFloat(cond.value.replace('.', '').replace(',', '.')) : undefined}
+                                                    onChange={val => onChange({
+                                                        ...cond,
+                                                        value: val != null ? formatNumToGermanNum(val, referencedElement.decimalPlaces) : '',
+                                                    })}
+                                                    hint={valueHelperText ?? undefined}
+                                                    decimalPlaces={referencedElement.decimalPlaces}/>
+                                            ) : (
+                                                <TextFieldComponent
+                                                    label="Wert"
+                                                    required
+                                                    value={cond.value}
+                                                    onChange={val => onChange({
+                                                        ...cond,
+                                                        value: val ?? '',
+                                                    })}
+                                                    hint={valueHelperText ?? undefined}
+                                                />
+                                            )
+                                        )
                                     }
 
                                     {

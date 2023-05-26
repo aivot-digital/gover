@@ -18,6 +18,8 @@ export function NumberFieldComponent({
     const [valueBuffer, setValueBuffer] = useState<string>();
     const [valueBufferIsNan, setValueBufferIsNan] = useState(false);
 
+    console.log(value);
+
     const handleChange = useCallback(event => {
         setValueBuffer(event.target.value);
         setValueBufferIsNan(false);
@@ -38,8 +40,6 @@ export function NumberFieldComponent({
                 setValueBuffer('');
                 setValueBufferIsNan(true);
             }
-        } else {
-            onChange(undefined);
         }
     };
 
