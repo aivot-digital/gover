@@ -14,10 +14,11 @@ import {RadioFieldComponentSummary} from "../components/radio-field/radio-field.
 import {TableFieldComponentSummary} from "../components/table-field/table-field.component.summary";
 import {TimeFieldComponentSummary} from "../components/time-field/time-field.component.summary";
 import {FileUploadSummary} from "../components/file-upload-field/file-upload.summary";
+import {StepComponentSummary} from "../components/step/step.component.summary";
 
 const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.Root]: null,
-    [ElementType.Step]: null,
+    [ElementType.Step]: StepComponentSummary,
     [ElementType.Alert]: null,
     [ElementType.Image]: null,
     [ElementType.Container]: null,
