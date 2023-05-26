@@ -13,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class FileUploadField extends BaseInputElement<Collection<FileUploadFieldItem>> {
+public class FileUploadField extends BaseInputElement<Collection<Map<String, Object>>> {
     private Collection<String> extensions;
     private Boolean isMultifile;
     private Integer maxFiles;
@@ -34,7 +34,7 @@ public class FileUploadField extends BaseInputElement<Collection<FileUploadField
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null && Boolean.TRUE.equals(getRequired())) {
             throw new RequiredValidationException(this);
         }
@@ -55,7 +55,8 @@ public class FileUploadField extends BaseInputElement<Collection<FileUploadField
             }
 
             if (extensions != null) {
-                for (FileUploadFieldItem item : value) {
+                for (Map<String, Object> rawItem : value) {
+                    var item = new FileUploadFieldItem(rawItem);
                     String itemName = item.getName();
                     if (itemName != null) {
                         if (itemName.contains(".")) {
@@ -82,11 +83,11 @@ public class FileUploadField extends BaseInputElement<Collection<FileUploadField
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         if (value != null && !value.isEmpty()) {
-            List<FileUploadFieldItem> items = value.stream().toList();
+            List<FileUploadFieldItem> items = value.stream().map(FileUploadFieldItem::new).toList();
 
             fields.add(new ValuePdfRowDto(
                     getLabel(),
