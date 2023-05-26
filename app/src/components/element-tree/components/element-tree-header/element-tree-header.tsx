@@ -135,6 +135,7 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
             {
                 showEditor &&
                 <ElementEditor
+                    parents={[] /* Uppermost element so no parents here */}
                     element={props.element}
                     onSave={update => {
                         setShowEditor(false);

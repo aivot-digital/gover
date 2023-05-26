@@ -20,9 +20,13 @@ import {CodeTabNoCodeEditor} from "./components/code-tab-no-code-editor";
 import {ConditionOperator} from "../../../../../../data/condition-operator";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faEllipsisVertical, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
-import {isStringNotNullOrEmpty} from "../../../../../../utils/string-utils";
+import {RootElement} from "../../../../../../models/elements/root-element";
+import {StepElement} from "../../../../../../models/elements/steps/step-element";
+import {GroupLayout} from "../../../../../../models/elements/form/layout/group-layout";
+import {ReplicatingContainerLayout} from "../../../../../../models/elements/form/layout/replicating-container-layout";
 
 export type CodeTabProps = {
+    parents: (RootElement | StepElement | GroupLayout | ReplicatingContainerLayout)[];
     element: AnyElement;
     resultTitle: string;
     resultHint: string;
@@ -64,6 +68,7 @@ function newNoCodeFunction(func: Function | undefined, element: AnyElement): Fun
 }
 
 export function CodeTab({
+                            parents,
                             element,
                             resultTitle,
                             resultHint,
@@ -79,7 +84,6 @@ export function CodeTab({
     const handleClose = () => {
         setAnchorEl(null);
     };
-
 
     return (
         <Box sx={{m: 4}}>
@@ -301,6 +305,7 @@ export function CodeTab({
                             allowNoCode &&
                             func.conditionSet != null &&
                             <CodeTabNoCodeEditor
+                                parents={parents}
                                 element={element}
                                 func={func}
                                 onChange={onChange}

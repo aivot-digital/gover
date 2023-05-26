@@ -88,7 +88,7 @@ export function CodeTabCondition({
                             reference: val ?? '',
                         })}
                         options={allElements.map(elem => ({
-                            label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                            label: `${stringOrDefault(elem.name, generateComponentTitle(elem))} (${elem.id})`,
                             value: elem.id,
                         }))}
                     />
@@ -177,7 +177,7 @@ export function CodeTabCondition({
                                                     .filter(elem => elem.type === referencedElement?.type)
                                                     .map(elem => ({
                                                         value: elem.id,
-                                                        label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                                                        label: `${stringOrDefault(elem.name, generateComponentTitle(elem))} (${elem.id})`,
                                                     }))
                                             }
                                         />

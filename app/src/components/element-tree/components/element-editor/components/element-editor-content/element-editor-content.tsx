@@ -5,20 +5,16 @@ import {
     FormControl,
     FormControlLabel,
     FormHelperText,
-    IconButton,
     InputLabel,
     MenuItem,
     Select,
-    TextField,
-    Tooltip
+    TextField
 } from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faArrowsRotate} from '@fortawesome/pro-light-svg-icons';
 import {EditorDispatcher} from '../../../../../editor-dispatcher';
 import {CodeTab} from '../../tabs/code-tab/code-tab';
 import React from 'react';
 import {StructureTab} from '../../tabs/structure-tab/structure-tab';
-import {checkId, generateElementIdForType} from '../../../../../../utils/id-utils';
+import {checkId} from '../../../../../../utils/id-utils';
 import {TestTab} from '../../tabs/test-tab/test-tab';
 import {ElementType} from '../../../../../../data/element-type/element-type';
 import {selectLoadedApplication} from '../../../../../../slices/app-slice';
@@ -31,6 +27,7 @@ import {isAnyInputElement} from "../../../../../../models/elements/form/input/an
 import {TextFieldComponent} from "../../../../../text-field/text-field-component";
 
 export function ElementEditorContent<T extends AnyElement>({
+                                                               parents,
                                                                element,
                                                                currentTab,
                                                                additionalTabs,
@@ -55,7 +52,8 @@ export function ElementEditorContent<T extends AnyElement>({
                         label="ID (für Entwickler:innen)"
                         value={element.id ?? ''}
                         disabled
-                        onChange={_ => {}}
+                        onChange={_ => {
+                        }}
                     />
 
                     {
@@ -183,6 +181,7 @@ export function ElementEditorContent<T extends AnyElement>({
         case DefaultTabs.visibility:
             return (
                 <CodeTab
+                    parents={parents}
                     key="visibility"
                     resultTitle="Sichtbarkeit festlegen"
                     resultHint="Dieses Element ist sichtbar, wenn die folgende Funktion wahr ist:"
@@ -196,6 +195,7 @@ export function ElementEditorContent<T extends AnyElement>({
         case DefaultTabs.validation:
             return (
                 <CodeTab
+                    parents={parents}
                     key="validate"
                     resultTitle="Validierung durchführen"
                     resultHint="Dieses Element ist valide, wenn die folgende Funktion keine Meldung mit einem Validierungsproblem erzeugt:"
@@ -209,6 +209,7 @@ export function ElementEditorContent<T extends AnyElement>({
         case DefaultTabs.value:
             return (
                 <CodeTab
+                    parents={parents}
                     key="value"
                     resultTitle="Dynamischen Wert bestimmen"
                     resultHint="Dieses Element bekommt den Rückgabewert der folgenden Funktion:"
@@ -222,6 +223,7 @@ export function ElementEditorContent<T extends AnyElement>({
         case DefaultTabs.patch:
             return (
                 <CodeTab
+                    parents={parents}
                     key="patch"
                     resultTitle="Element aktualisieren"
                     resultHint="Dieses Element wird mit dem Rückgabewert der folgenden Funktion aktualisiert:"

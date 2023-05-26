@@ -1,14 +1,20 @@
 import {AnyElement} from "../../../../../../../models/elements/any-element";
-import {useAppSelector} from "../../../../../../../hooks/use-app-selector";
-import {selectLoadedApplication} from "../../../../../../../slices/app-slice";
 import {flattenElements} from "../../../../../../../utils/flatten-elements";
 import {CodeTabConditionSetEditor} from "./code-tab-condition-set-editor";
 import React from "react";
 import {ConditionSetOperator} from "../../../../../../../data/condition-set-operator";
 import Evaluators from "../../../../../../../evaluators";
 import {Function} from "../../../../../../../models/functions/function";
+import {RootElement} from "../../../../../../../models/elements/root-element";
+import {StepElement} from "../../../../../../../models/elements/steps/step-element";
+import {GroupLayout} from "../../../../../../../models/elements/form/layout/group-layout";
+import {
+    ReplicatingContainerLayout
+} from "../../../../../../../models/elements/form/layout/replicating-container-layout";
+import {ElementType} from "../../../../../../../data/element-type/element-type";
 
 interface CodeTabNoCodeEditorProps {
+    parents: (RootElement | StepElement | GroupLayout | ReplicatingContainerLayout)[];
     element: AnyElement;
     func: Function;
     onChange: (func: Function) => void;
@@ -16,14 +22,26 @@ interface CodeTabNoCodeEditorProps {
 }
 
 export function CodeTabNoCodeEditor({
+                                        parents,
                                         element,
                                         func,
                                         onChange,
                                         shouldReturnString,
                                     }: CodeTabNoCodeEditorProps) {
-    const application = useAppSelector(selectLoadedApplication);
+    let parent: AnyElement | null = null;
+    for (const par of [...parents].reverse()) {
+        if (par.type === ElementType.ReplicatingContainer) {
+            parent = par;
+            break;
+        }
+    }
+    if (parent == null) {
+        parent = parents[0];
+    }
 
-    const allElements = (application != null ? flattenElements(application.root) : [])
+    console.log(parents, parent);
+
+    const allElements = (parent != null ? flattenElements(parent, true) : [])
         .filter(e => Evaluators[e.type] != null);
 
     return (

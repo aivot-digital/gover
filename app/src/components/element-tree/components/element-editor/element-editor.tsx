@@ -109,6 +109,7 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
                     }}
                 >
                     <ElementEditorContent
+                        parents={props.parents}
                         element={updatedElement ?? props.element}
                         currentTab={currentTab}
                         additionalTabs={additionalTabs}

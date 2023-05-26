@@ -11,6 +11,7 @@ import {cloneElement} from "../../../../utils/clone-element";
 
 
 export function ElementTreeItemList<T extends AnyElementWithChildren>({
+                                                                          parents,
                                                                           element,
                                                                           isRootList,
                                                                           onPatch
@@ -39,6 +40,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>({
                         }}
                     >
                         <ElementTreeItem
+                            parents={[...parents, element]}
                             element={child}
                             onPatch={patch => {
                                 const updatedChildren = [...element.children];

@@ -12,7 +12,7 @@ import {AnyElement} from '../../../../models/elements/any-element';
 import {AddElementDialog} from '../../../../dialogs/add-element-dialog/add-element-dialog';
 import {ElementType} from '../../../../data/element-type/element-type';
 
-export function ElementTreeItem<T extends AnyElement>({element, onPatch, onDelete, onClone}: ElementTreeItemProps<T>) {
+export function ElementTreeItem<T extends AnyElement>({parents, element, onPatch, onDelete, onClone}: ElementTreeItemProps<T>) {
     const dispatch = useAppDispatch();
 
     const [expanded, setExpanded] = useState(false);
@@ -75,6 +75,7 @@ export function ElementTreeItem<T extends AnyElement>({element, onPatch, onDelet
                 isLayoutElement &&
                 expanded &&
                 <ElementTreeItemList
+                    parents={parents}
                     element={element}
                     onPatch={onPatch}
                 />
@@ -92,6 +93,7 @@ export function ElementTreeItem<T extends AnyElement>({element, onPatch, onDelet
             {
                 showEditor &&
                 <ElementEditor
+                    parents={parents}
                     element={element}
                     onSave={(update) => {
                         onPatch(update);

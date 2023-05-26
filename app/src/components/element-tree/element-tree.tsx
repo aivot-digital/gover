@@ -71,6 +71,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                         {
                             isRootElement(props.element) &&
                             <ElementTreeItem
+                                parents={[props.element]}
                                 element={props.element.introductionStep}
                                 onPatch={patch => {
                                     if (isRootElement(props.element)) {
@@ -93,6 +94,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                         }
 
                         <ElementTreeItemList
+                            parents={[]}
                             element={props.element}
                             onPatch={props.onPatch}
                             isRootList
@@ -101,6 +103,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                         {
                             isRootElement(props.element) &&
                             <ElementTreeItem
+                                parents={[props.element]}
                                 element={props.element.summaryStep}
                                 onPatch={patch => {
                                     if (isRootElement(props.element)) {
@@ -125,6 +128,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                         {
                             isRootElement(props.element) &&
                             <ElementTreeItem
+                                parents={[props.element]}
                                 element={props.element.submitStep}
                                 onPatch={patch => {
                                     if (isRootElement(props.element)) {
