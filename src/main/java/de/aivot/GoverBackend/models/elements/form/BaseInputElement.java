@@ -93,6 +93,10 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 }
             }
 
+            if (value instanceof Integer) {
+                value = (T) Double.valueOf(((Integer) value).doubleValue());
+            }
+
             validate(customerInput, value, idPrefix, scriptEngine);
 
             if (validate != null) {
