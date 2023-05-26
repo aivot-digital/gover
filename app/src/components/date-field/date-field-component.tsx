@@ -88,7 +88,7 @@ export function DateFieldComponent({
             adapterLocale={deLocale}
         >
             <DatePicker
-                label={label}
+                label={computedLabel}
 
                 minDate={minDate}
                 maxDate={maxDate}
