@@ -11,6 +11,8 @@ import {isAnyElementWithChildren} from '../../../../models/elements/any-element-
 import {AnyElement} from '../../../../models/elements/any-element';
 import {AddElementDialog} from '../../../../dialogs/add-element-dialog/add-element-dialog';
 import {ElementType} from '../../../../data/element-type/element-type';
+import {findNoCodeUsage} from "../../../../utils/find-no-code-usage";
+import {generateComponentTitle} from "../../../../utils/generate-component-title";
 
 export function ElementTreeItem<T extends AnyElement>({parents, element, onPatch, onDelete, onClone}: ElementTreeItemProps<T>) {
     const dispatch = useAppDispatch();
@@ -51,6 +53,17 @@ export function ElementTreeItem<T extends AnyElement>({parents, element, onPatch
             } as any)
             setShowAddDialog(false);
             setExpanded(true);
+        }
+    };
+
+    const handleDeleteElement = () => {
+        const usages = findNoCodeUsage(element, parents[0]);
+
+        if (usages.length > 0) {
+            alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${usages.map(u => generateComponentTitle(u)).join(', ')}`);
+        } else {
+            onDelete();
+            setShowEditor(false);
         }
     };
 
@@ -106,10 +119,7 @@ export function ElementTreeItem<T extends AnyElement>({parents, element, onPatch
                         element.type === ElementType.IntroductionStep ||
                         element.type === ElementType.SummaryStep ||
                         element.type === ElementType.SubmitStep
-                    ) ? undefined : () => {
-                        onDelete();
-                        setShowEditor(false);
-                    }}
+                    ) ? undefined : handleDeleteElement}
                     onClone={(
                         element.type === ElementType.IntroductionStep ||
                         element.type === ElementType.SummaryStep ||
