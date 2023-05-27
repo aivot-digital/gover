@@ -28,9 +28,9 @@ export const ConditionOperatorLabel: {
     [key in ConditionOperator]: string;
 } = {
     [ConditionOperator.Equals]: "gleich",
-    [ConditionOperator.EqualsIgnoreCase]: "gleich (ohne Groß-/Kleinschreibung)",
+    [ConditionOperator.EqualsIgnoreCase]: "gleich (beachtet keine Groß-/Kleinschreibung)",
     [ConditionOperator.NotEquals]: "ungleich",
-    [ConditionOperator.NotEqualsIgnoreCase]: "ungleich (ohne Groß-/Kleinschreibung)",
+    [ConditionOperator.NotEqualsIgnoreCase]: "ungleich (beachtet keine Groß-/Kleinschreibung)",
     [ConditionOperator.LessThan]: "kleiner als",
     [ConditionOperator.LessThanOrEqual]: "kleiner als oder gleich",
     [ConditionOperator.GreaterThan]: "größer als",
