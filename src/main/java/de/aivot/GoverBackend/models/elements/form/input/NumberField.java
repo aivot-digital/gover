@@ -10,8 +10,10 @@ import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -46,7 +48,11 @@ public class NumberField extends BaseInputElement<BigDecimal> {
         if (value != null) {
             int decimalPlaces = this.decimalPlaces != null ? this.decimalPlaces : 0;
 
-            displayValue = String.format("%." + decimalPlaces + "f", value);
+            Locale locale = Locale.GERMAN;
+            NumberFormat formatter = NumberFormat.getNumberInstance(locale);
+            formatter.setMinimumFractionDigits(decimalPlaces);
+            formatter.setMaximumFractionDigits(decimalPlaces);
+            displayValue = formatter.format(value);
 
             if (suffix != null) {
                 displayValue += " " + getSuffix();
