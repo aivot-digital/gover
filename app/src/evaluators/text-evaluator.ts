@@ -1,6 +1,6 @@
 import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
-import {isStringNullOrEmpty} from "../utils/string-utils";
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../utils/string-utils";
 
 
 export const TextEvaluator: BaseEvaluator<string> = {
@@ -84,6 +84,6 @@ export const TextEvaluator: BaseEvaluator<string> = {
         return isStringNullOrEmpty(valueA);
     },
     [ConditionOperator.NotEmpty]: (valueA, _) => {
-        return isStringNullOrEmpty(valueA);
+        return isStringNotNullOrEmpty(valueA);
     },
 };
