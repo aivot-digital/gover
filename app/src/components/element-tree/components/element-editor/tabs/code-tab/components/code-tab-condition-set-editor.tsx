@@ -14,7 +14,7 @@ interface CodeTabConditionSetEditorProps {
     conditionSet: ConditionSet;
     onChange: (cs: ConditionSet) => void;
     shouldReturnString: boolean;
-    supressConditionUnmetMessage?: boolean;
+    suppressConditionUnmetMessage?: boolean;
 }
 
 export function CodeTabConditionSetEditor({
@@ -23,7 +23,7 @@ export function CodeTabConditionSetEditor({
                                               conditionSet,
                                               onChange,
                                               shouldReturnString,
-                                              supressConditionUnmetMessage,
+                                              suppressConditionUnmetMessage,
                                           }: CodeTabConditionSetEditorProps) {
     return (
         <Box>
@@ -81,7 +81,7 @@ export function CodeTabConditionSetEditor({
             {
                 shouldReturnString &&
                 conditionSet.operator === ConditionSetOperator.Any &&
-                !supressConditionUnmetMessage &&
+                !suppressConditionUnmetMessage &&
                 <TextField
                     fullWidth
                     label="Fehlermeldung"
@@ -158,7 +158,7 @@ export function CodeTabConditionSetEditor({
                                 {
                                     shouldReturnString &&
                                     conditionSet.operator === ConditionSetOperator.All &&
-                                    !supressConditionUnmetMessage &&
+                                    !suppressConditionUnmetMessage &&
                                     <TextField
                                         label="Fehlermeldung, wenn diese Bedingung nicht wahr ist"
                                         value={cond.conditionUnmetMessage}
@@ -238,7 +238,7 @@ export function CodeTabConditionSetEditor({
                                         })
                                     }}
                                     shouldReturnString={shouldReturnString}
-                                    supressConditionUnmetMessage={conditionSet.operator === ConditionSetOperator.Any}
+                                    suppressConditionUnmetMessage={conditionSet.operator === ConditionSetOperator.Any}
                                 />
                             </Box>
                         ))

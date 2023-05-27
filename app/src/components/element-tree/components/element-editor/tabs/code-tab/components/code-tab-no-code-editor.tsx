@@ -12,6 +12,7 @@ import {
     ReplicatingContainerLayout
 } from "../../../../../../../models/elements/form/layout/replicating-container-layout";
 import {ElementType} from "../../../../../../../data/element-type/element-type";
+import {ConditionSet} from "../../../../../../../models/functions/conditions/condition-set";
 
 interface CodeTabNoCodeEditorProps {
     parents: (RootElement | StepElement | GroupLayout | ReplicatingContainerLayout)[];
@@ -42,6 +43,20 @@ export function CodeTabNoCodeEditor({
     const allElements = (parent != null ? flattenElements(parent, true) : [])
         .filter(e => Evaluators[e.type] != null);
 
+    const handleChange = (cs: ConditionSet) => {
+        if ((cs.conditions == null || cs.conditions.length === 0) && (cs.conditionsSets == null || cs.conditionsSets.length === 0)) {
+            onChange({
+                ...func,
+                conditionSet: undefined,
+            });
+        } else {
+            onChange({
+                ...func,
+                conditionSet: cs,
+            });
+        }
+    };
+
     return (
         <CodeTabConditionSetEditor
             element={element}
@@ -49,10 +64,7 @@ export function CodeTabNoCodeEditor({
             conditionSet={func.conditionSet ?? {
                 operator: ConditionSetOperator.Any,
             }}
-            onChange={cs => onChange({
-                ...func,
-                conditionSet: cs,
-            })}
+            onChange={handleChange}
             shouldReturnString={shouldReturnString}
         />
     );
