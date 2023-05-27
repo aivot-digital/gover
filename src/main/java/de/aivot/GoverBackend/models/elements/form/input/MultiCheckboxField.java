@@ -40,23 +40,23 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
-        if (options == null || options.isEmpty()) {
+        if (value == null || value.isEmpty()) {
             fields.add(new ValuePdfRowDto(
                     getLabel(),
                     "Keine Angaben"
             ));
         } else {
-            List<String> options = value.stream().toList();
+            List<String> vales = value.stream().toList();
 
             fields.add(new ValuePdfRowDto(
                     getLabel(),
-                    options.get(0)
+                    vales.get(0)
             ));
 
             for (int i = 1; i < options.size(); i++) {
                 fields.add(new ValuePdfRowDto(
                         "",
-                        options.get(i)
+                        vales.get(i)
                 ));
             }
         }
