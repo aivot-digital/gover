@@ -45,8 +45,8 @@ export const ConditionOperatorLabel: {
     [ConditionOperator.NotMatchesPattern]: "entspricht nicht Muster",
     [ConditionOperator.IncludesPattern]: "beinhaltet Muster",
     [ConditionOperator.NotIncludesPattern]: "beinhaltet nicht Muster",
-    [ConditionOperator.Empty]: "ist Leer",
-    [ConditionOperator.NotEmpty]: "ist nicht Leer",
+    [ConditionOperator.Empty]: "ist leer",
+    [ConditionOperator.NotEmpty]: "ist nicht leer",
 };
 
 export const ConditionOperatorIsUnary: {
