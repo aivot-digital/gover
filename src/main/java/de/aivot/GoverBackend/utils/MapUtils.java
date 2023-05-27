@@ -51,6 +51,20 @@ public class MapUtils {
         }
     }
 
+    public static Collection<String> getStringCollection(Map<String, Object> map, String key) {
+        Collection<?> items = get(map, key, Collection.class);
+        if (items != null) {
+            return items
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .filter(i -> i instanceof String)
+                    .map(i -> (String) i)
+                    .toList();
+        } else {
+            return null;
+        }
+    }
+
     public static String getString(Map<String, Object> map, String key) {
         return get(map, key, String.class);
     }

@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.models.elements.form.input;
 
+import de.aivot.GoverBackend.enums.ConditionOperator;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
@@ -24,18 +26,18 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     public void applyValues(Map<String, Object> values) {
         super.applyValues(values);
 
-        options = MapUtils.get(values, "options", Collection.class);
+        options = MapUtils.getStringCollection(values, "options");
         minimumRequiredOptions = MapUtils.getInteger(values, "minimumRequiredOptions");
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         testValuesInOptions(value);
         testRequiredOptionsMet(value);
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         if (options == null || options.isEmpty()) {
@@ -78,9 +80,32 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     }
 
     private void testRequiredOptionsMet(Collection<String> values) throws ValidationException {
-        if (minimumRequiredOptions != null && values.size() >= minimumRequiredOptions) {
+        if (minimumRequiredOptions != null && values.size() < minimumRequiredOptions) {
             throw new ValidationException(this, "Not enough options selected");
         }
+    }
+
+    @Override
+    public boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
+        if (referencedValue == null) {
+            return operator == ConditionOperator.Empty;
+        }
+
+        if (operator == ConditionOperator.NotEmpty) {
+            return true;
+        }
+
+        if (referencedValue instanceof Collection<?> cValA) {
+            if (comparedValue instanceof String sValueB) {
+                return switch (operator) {
+                    case Includes -> cValA.stream().anyMatch(sValueB::equals);
+                    case NotIncludes -> cValA.stream().noneMatch(sValueB::equals);
+                    default -> false;
+                };
+            }
+        }
+
+        return false;
     }
 
     public Collection<String> getOptions() {

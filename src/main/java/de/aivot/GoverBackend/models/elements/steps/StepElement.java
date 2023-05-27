@@ -2,17 +2,17 @@ package de.aivot.GoverBackend.models.elements.steps;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
+import de.aivot.GoverBackend.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.models.elements.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class StepElement extends BaseElement {
     private String title;
@@ -31,34 +31,62 @@ public class StepElement extends BaseElement {
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (children != null) {
             for (var child : children) {
-                child.patch(customerInput, idPrefix, scriptEngine);
-                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
-                    child.validate(customerInput, idPrefix, scriptEngine);
+                child.patch(root, customerInput, idPrefix, scriptEngine);
+                if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
+                    child.validate(root, customerInput, idPrefix, scriptEngine);
                 }
             }
         }
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
-        rows.add(new HeadlinePdfRowDto(title == null ? "Unbenannter Abschnitt" : title, 1));
+        rows.add(new HeadlinePdfRowDto(title == null ? "Unbenannter Abschnitt" : title, 2));
 
         if (children != null) {
             for (var child : children) {
-                child.patch(customerInput, idPrefix, scriptEngine);
-                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
-                    rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+                child.patch(root, customerInput, idPrefix, scriptEngine);
+                boolean childIsVisible = child.isVisible(root, customerInput, idPrefix, scriptEngine);
+                if (childIsVisible) {
+                    rows.addAll(child.toPdfRows(root, customerInput, idPrefix, scriptEngine));
                 }
             }
         }
 
         return rows;
     }
+
+    public Optional<BaseFormElement> findChild(String id) {
+        Optional<BaseFormElement> matchingChild = children
+                .stream()
+                .filter(s -> s.matches(id))
+                .findFirst();
+
+        if (matchingChild.isPresent()) {
+            return matchingChild;
+        }
+
+        return children
+                .stream()
+                .map(c -> {
+                    Optional<BaseFormElement> res = Optional.empty();
+                    if (c instanceof GroupLayout groupLayout) {
+                        res = groupLayout.findChild(id);
+                    } else if (c instanceof ReplicatingContainerLayout replicatingContainerLayout) {
+                        res = replicatingContainerLayout.findChild(id);
+                    }
+                    return res;
+                })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
 
     // region Getters & Setters
 

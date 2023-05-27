@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.models.elements.form.content;
 
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
@@ -11,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Headline extends BaseFormElement {
-    public final static int HEADLINE_SIZE_DEFAULT = 2;
-    public final static int HEADLINE_SIZE_SMALL = 2;
+    public final static int HEADLINE_SIZE_DEFAULT = 3;
+    public final static int HEADLINE_SIZE_SMALL = 4;
 
     private String content;
     private Boolean small;
@@ -29,7 +30,7 @@ public class Headline extends BaseFormElement {
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
         int size = getSmall() ? HEADLINE_SIZE_DEFAULT : HEADLINE_SIZE_SMALL;

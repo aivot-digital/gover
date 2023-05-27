@@ -137,10 +137,10 @@ export function CodeTabCondition({
                                                 <NumberFieldComponent
                                                     label="Wert"
                                                     required
-                                                    value={cond.value !== '' ? parseFloat(cond.value.replace('.', '').replace(',', '.')) : undefined}
+                                                    value={cond.value !== '' ? parseFloat(cond.value) : undefined}
                                                     onChange={val => onChange({
                                                         ...cond,
-                                                        value: val != null ? formatNumToGermanNum(val, referencedElement.decimalPlaces) : '',
+                                                        value: val != null ? val.toString() : '',
                                                     })}
                                                     decimalPlaces={referencedElement.decimalPlaces}
                                                     hint={valueHelperText ?? valueHelperText2 ?? undefined}

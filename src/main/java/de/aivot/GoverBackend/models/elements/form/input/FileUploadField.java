@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.models.elements.form.input;
 
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
@@ -27,14 +28,14 @@ public class FileUploadField extends BaseInputElement<Collection<Map<String, Obj
     public void applyValues(Map<String, Object> values) {
         super.applyValues(values);
 
-        extensions = MapUtils.get(values, "extensions", Collection.class);
+        extensions = MapUtils.getStringCollection(values, "extensions");
         isMultifile = MapUtils.getBoolean(values, "isMultifile");
         maxFiles = MapUtils.getInteger(values, "maxFiles");
         minFiles = MapUtils.getInteger(values, "minFiles");
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(RootElement root, Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null && Boolean.TRUE.equals(getRequired())) {
             throw new RequiredValidationException(this);
         }
@@ -83,7 +84,7 @@ public class FileUploadField extends BaseInputElement<Collection<Map<String, Obj
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         if (value != null && !value.isEmpty()) {

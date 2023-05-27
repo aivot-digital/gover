@@ -5,5 +5,5 @@ export interface Condition {
     reference: string;
     target?: string | null;
     value?: string | null;
-    conditionUnmetMessage?: string;
+    conditionUnmetMessage?: string | null;
 }

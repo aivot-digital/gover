@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.models.elements.form.layout;
 
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
@@ -10,10 +11,7 @@ import de.aivot.GoverBackend.utils.ElementResolver;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ReplicatingContainerLayout extends BaseInputElement<Collection<String>> {
     private Integer minimumRequiredSets;
@@ -40,7 +38,7 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -58,9 +56,9 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
                 for (var val : value) {
                     for (var child : children) {
                         String childId = getResolvedId(idPrefix) + "_" + val;
-                        child.patch(customerInput, childId, scriptEngine);
-                        if (child.isVisible(customerInput, childId, scriptEngine)) {
-                            child.validate(customerInput, childId, scriptEngine);
+                        child.patch(root, customerInput, childId, scriptEngine);
+                        if (child.isVisible(root, customerInput, childId, scriptEngine)) {
+                            child.validate(root, customerInput, childId, scriptEngine);
                         }
                     }
                 }
@@ -69,7 +67,7 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         if (value != null && !value.isEmpty()) {
@@ -84,15 +82,41 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
 
                 for (var child : children) {
                     String childId = getResolvedId(idPrefix) + "_" + val;
-                    child.patch(customerInput, childId, scriptEngine);
-                    if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
-                        fields.addAll(child.toPdfRows(customerInput, childId, scriptEngine));
+                    child.patch(root, customerInput, childId, scriptEngine);
+                    if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
+                        fields.addAll(child.toPdfRows(root, customerInput, childId, scriptEngine));
                     }
                 }
             }
         }
 
         return fields;
+    }
+
+    public Optional<BaseFormElement> findChild(String id) {
+        Optional<BaseFormElement> matchingChild = children
+                .stream()
+                .filter(s -> s.matches(id))
+                .findFirst();
+
+        if (matchingChild.isPresent()) {
+            return matchingChild;
+        }
+
+        return children
+                .stream()
+                .map(c -> {
+                    Optional<BaseFormElement> res = Optional.empty();
+                    if (c instanceof GroupLayout groupLayout) {
+                        res = groupLayout.findChild(id);
+                    } else if (c instanceof ReplicatingContainerLayout replicatingContainerLayout) {
+                        res = replicatingContainerLayout.findChild(id);
+                    }
+                    return res;
+                })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
     }
 
     //region Getters & Setters

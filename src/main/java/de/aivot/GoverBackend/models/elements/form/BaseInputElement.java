@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.models.elements.form;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.functions.Function;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
 import de.aivot.GoverBackend.models.functions.FunctionNoCode;
@@ -45,11 +46,11 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         computeValue = MapUtils.getApply(values, "computeValue", Map.class, FunctionCode::new);
     }
 
-    public Optional<T> getComputedValue(Map<String, Object> customerData, String idPrefix, ScriptEngine scriptEngine) {
+    public Optional<T> getComputedValue(RootElement root, Map<String, Object> customerData, String idPrefix, ScriptEngine scriptEngine) {
         if (computeValue == null) {
             return Optional.empty();
         }
-        FunctionResult computedValueResult = computeValue.evaluate(this, customerData, getResolvedId(idPrefix), scriptEngine);
+        FunctionResult computedValueResult = computeValue.evaluate(root, this, customerData, getResolvedId(idPrefix), scriptEngine);
         if (computedValueResult != null) {
             try {
                 return Optional.of((T) computedValueResult.getObjectValue());
@@ -62,8 +63,8 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
-        Object rawValue = getComputedValue(customerInput, idPrefix, scriptEngine).orElse(null);
+    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        Object rawValue = getComputedValue(root, customerInput, idPrefix, scriptEngine).orElse(null);
         if (rawValue == null) {
             rawValue = customerInput.get(getResolvedId(idPrefix));
         }
@@ -97,10 +98,10 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 value = (T) Double.valueOf(((Integer) value).doubleValue());
             }
 
-            validate(customerInput, value, idPrefix, scriptEngine);
+            validate(root, customerInput, value, idPrefix, scriptEngine);
 
             if (validate != null) {
-                FunctionResult funcResult = validate.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
+                FunctionResult funcResult = validate.evaluate(root, this, customerInput, getResolvedId(idPrefix), scriptEngine);
                 Boolean isInvalid = funcResult != null && funcResult.getBooleanValue();
                 if (isInvalid) {
                     throw new ValidationException(this, "Validation function failed with: " + funcResult.getStringValue());
@@ -109,26 +110,29 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         }
     }
 
-    public abstract void validate(Map<String, Object> customerInput, T value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException;
+    public abstract void validate(RootElement root, Map<String, Object> customerInput, T value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException;
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         String id = getId();
         if (idPrefix != null) {
             id = idPrefix + '_' + id;
         }
 
-        Optional<T> computedValue = getComputedValue(customerInput, idPrefix, scriptEngine);
+        Optional<T> computedValue = getComputedValue(root, customerInput, idPrefix, scriptEngine);
         Object rawValue = computedValue.isPresent() ? computedValue.get() :  customerInput.get(id);
         try {
+            if (rawValue != null && rawValue instanceof Integer intRawValue) {
+                rawValue = Double.valueOf(intRawValue.doubleValue());
+            }
             T value = (T) rawValue;
-            return toPdfRows(customerInput, value, idPrefix, scriptEngine);
+            return toPdfRows(root, customerInput, value, idPrefix, scriptEngine);
         } catch (ClassCastException e) {
             return new LinkedList<>();
         }
     }
 
-    public abstract List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, T value, String idPrefix, ScriptEngine scriptEngine);
+    public abstract List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, T value, String idPrefix, ScriptEngine scriptEngine);
 
     //region Getters & Setters
     public String getLabel() {

@@ -3,8 +3,10 @@ package de.aivot.GoverBackend.models.elements.form.input;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
+import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.pdf.TablePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
@@ -33,7 +35,7 @@ public class TableField extends BaseInputElement<List<Map<String, String>>> {
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(RootElement root, Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (Boolean.TRUE.equals(getRequired()) && value.isEmpty()) {
             throw new RequiredValidationException(this);
         }
@@ -68,7 +70,7 @@ public class TableField extends BaseInputElement<List<Map<String, String>>> {
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) {
         List<String> columnHeaders = new LinkedList<>();
 
         for (TableFieldColumnDefinition col : fields) {
@@ -82,8 +84,11 @@ public class TableField extends BaseInputElement<List<Map<String, String>>> {
                 List<String> fields = new LinkedList<>();
                 for (TableFieldColumnDefinition col : this.fields) {
                     String cellValue = row.get(col.getLabel());
-
-                    switch (col.getDatatype()) {
+                    TableColumnDataType colType = col.getDatatype();
+                    if (colType == null) {
+                        colType = TableColumnDataType.String;
+                    }
+                    switch (colType) {
                         case String -> {
                             fields.add(cellValue);
                         }
@@ -106,6 +111,7 @@ public class TableField extends BaseInputElement<List<Map<String, String>>> {
         }
 
         List<BasePdfRowDto> fields = new LinkedList<>();
+        fields.add(new HeadlinePdfRowDto(getLabel(), 5));
         fields.add(new TablePdfRowDto(getLabel(), columnHeaders, columnValues));
         return fields;
     }

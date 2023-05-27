@@ -1,6 +1,8 @@
 import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
 
+const defNumberRegex = /^[1-9][0-9]*?(\.[0-9]+)$/;
+
 function transformValue(val: any): number | null {
     if (val == null) {
         return null;
@@ -10,7 +12,11 @@ function transformValue(val: any): number | null {
         case 'number':
             return val;
         case 'string':
-            return parseFloat(val.replace('.', '').replace(',', '.'));
+            if (val.match(defNumberRegex)) {
+                return parseFloat(val);
+            } else {
+                return parseFloat(val.replace('.', '').replace(',', '.'));
+            }
         default:
             return null
     }

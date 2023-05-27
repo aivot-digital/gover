@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.models.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
@@ -29,7 +30,7 @@ public class FunctionCode extends Function {
     }
 
     @Override
-    public FunctionResult evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
+    public FunctionResult evaluate(RootElement rootElement, BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
         var jsCode = buildJsCode(element, customerInput, id);
 
         try {

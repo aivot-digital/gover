@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.pdf.ApplicationPdfDto;
 import de.aivot.GoverBackend.models.entities.Application;
 import de.aivot.GoverBackend.models.entities.Department;
@@ -92,9 +93,9 @@ public class SubmitController {
 
         if (fetchedApplication.isPresent()) {
             Application application = fetchedApplication.get();
-
+            RootElement root = application.getRoot();
             try {
-                application.getRoot().validate(customerData, null, scriptEngine);
+                root.validate(root, customerData, null, scriptEngine);
             } catch (ValidationException ex) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field " + ex.getElement().getId() + ": " + ex.getMessage());
             }

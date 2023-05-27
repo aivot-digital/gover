@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.models.elements;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.models.elements.steps.SubmitStepElement;
@@ -9,10 +10,7 @@ import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RootElement extends BaseElement {
     private String title;
@@ -73,33 +71,51 @@ public class RootElement extends BaseElement {
     }
 
     @Override
-    public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
-        introductionStep.validate(customerInput, idPrefix, scriptEngine);
-        summaryStep.validate(customerInput, idPrefix, scriptEngine);
-        submitStep.validate(customerInput, idPrefix, scriptEngine);
+    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        introductionStep.validate(this, customerInput, idPrefix, scriptEngine);
+        summaryStep.validate(this, customerInput, idPrefix, scriptEngine);
+        submitStep.validate(this, customerInput, idPrefix, scriptEngine);
 
         if (children != null) {
             for (var child : children) {
-                child.patch(customerInput, idPrefix, scriptEngine);
-                if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
-                    child.validate(customerInput, idPrefix, scriptEngine);
+                child.patch(this, customerInput, idPrefix, scriptEngine);
+                if (child.isVisible(this, customerInput, idPrefix, scriptEngine)) {
+                    child.validate(root, customerInput, idPrefix, scriptEngine);
                 }
             }
         }
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
         for (StepElement child : children) {
-            child.patch(customerInput, idPrefix, scriptEngine);
-            if (child.isVisible(customerInput, idPrefix, scriptEngine)) {
-                rows.addAll(child.toPdfRows(customerInput, idPrefix, scriptEngine));
+            child.patch(root, customerInput, idPrefix, scriptEngine);
+            if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
+                rows.addAll(child.toPdfRows(root, customerInput, idPrefix, scriptEngine));
             }
         }
 
         return rows;
+    }
+
+    public Optional<? extends BaseElement> findChild(String id) {
+        Optional<StepElement> matchingStep = children
+                .stream()
+                .filter(s -> s.matches(id))
+                .findFirst();
+
+        if (matchingStep.isPresent()) {
+            return matchingStep;
+        }
+
+        return children
+                .stream()
+                .map(s -> s.findChild(id))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
     }
 
     // region Getters & Setters

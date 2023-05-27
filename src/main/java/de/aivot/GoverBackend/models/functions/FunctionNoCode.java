@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.models.functions;
 
 import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.utils.MapUtils;
 
@@ -16,11 +17,11 @@ public class FunctionNoCode extends Function {
     }
 
     @Override
-    public FunctionResult evaluate(BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
+    public FunctionResult evaluate(RootElement root, BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
         if (conditionSet == null) {
             return new FunctionResult(null);
         }
-        return new FunctionResult(conditionSet.evaluate(customerInput));
+        return new FunctionResult(conditionSet.evaluate(root, customerInput));
     }
 
     public ConditionSet getConditionSet() {

@@ -1,9 +1,13 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
 import de.aivot.GoverBackend.enums.ConditionOperator;
+import de.aivot.GoverBackend.models.elements.BaseElement;
+import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.utils.MapUtils;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.PatternSyntaxException;
 
 public class Condition {
@@ -23,21 +27,82 @@ public class Condition {
         conditionUnmetMessage = MapUtils.getString(data, "conditionUnmetMessage");
     }
 
-    public String evaluate(Map<String, Object> customerInput) {
-        Object rawValA = customerInput.get(reference);
+    public String evaluate(RootElement root, Map<String, Object> customerInput) {
+        if (operator == null) {
+            return "Evaluation failed. No operator";
+        }
 
-        Object rawValB;
-        if (target != null) {
-            rawValB = customerInput.get(target);
+        if (reference == null) {
+            return "Evaluation failed. reference";
+        }
+
+        Optional<? extends BaseElement> optReferencedElement = root.findChild(reference);
+
+        if (optReferencedElement.isEmpty()) {
+            return conditionUnmetMessage != null ? conditionUnmetMessage : "Referenced element not found";
+        }
+
+        BaseElement referencedElement = optReferencedElement.get();
+        Object rawValA = customerInput.get(referencedElement.getId());
+
+        Object rawValB = null;
+        if (!operator.getUnary()) {
+            if (target != null) {
+                rawValB = customerInput.get(target);
+            } else {
+                rawValB = value;
+            }
+        }
+
+        boolean evaluationResult = referencedElement.evaluate(operator, rawValA, rawValB);
+        if (evaluationResult) {
+            return null;
         } else {
-            rawValB = value;
+            return conditionUnmetMessage != null ? conditionUnmetMessage : "Evaluation returned false";
         }
 
-        if (rawValA == null || rawValB == null) {
-            return conditionUnmetMessage;
-        }
-
-        boolean conditionMet = false;
+        /*
+        boolean conditionMet = switch (operator) {
+            case Equals -> compareEquals(rawValA, rawValB);
+            case NotEquals -> {
+            }
+            case LessThan -> {
+            }
+            case LessThanOrEqual -> {
+            }
+            case GreaterThan -> {
+            }
+            case GreaterThanOrEqual -> {
+            }
+            case Includes -> {
+            }
+            case NotIncludes -> {
+            }
+            case StartsWith -> {
+            }
+            case NotStartsWith -> {
+            }
+            case EndsWith -> {
+            }
+            case NotEndsWith -> {
+            }
+            case MatchesPattern -> {
+            }
+            case NotMatchesPattern -> {
+            }
+            case IncludesPattern -> {
+            }
+            case NotIncludesPattern -> {
+            }
+            case EqualsIgnoreCase -> {
+            }
+            case NotEqualsIgnoreCase -> {
+            }
+            case Empty -> {
+            }
+            case NotEmpty -> {
+            }
+        };
 
         if (rawValA instanceof String valA && rawValB instanceof String valB) {
             conditionMet = switch (operator) {
@@ -83,6 +148,9 @@ public class Condition {
                     }
                 }
 
+                case Empty -> valA.isEmpty();
+                case NotEmpty -> !valA.isEmpty();
+
                 default -> false;
             };
         } else if (rawValA instanceof Integer valA && rawValB instanceof Integer valB) {
@@ -109,9 +177,28 @@ public class Condition {
 
                 default -> false;
             };
+        } else if (rawValA instanceof Boolean valA) {
+            boolean valB = Boolean.FALSE;
+            if (rawValB instanceof Boolean) {
+                valB = (Boolean) rawValB;
+            } else if (rawValB instanceof String) {
+                valB = "Ja (True)".equals(rawValB);
+            }
+
+            conditionMet = switch (operator) {
+                case Equals -> valA == valB;
+                case NotEquals -> valA != valB;
+
+                case Empty -> !valA;
+                case NotEmpty -> valA;
+
+                default -> false;
+            };
         }
 
         return conditionMet ? null : conditionUnmetMessage;
+
+         */
     }
 
     public ConditionOperator getOperator() {

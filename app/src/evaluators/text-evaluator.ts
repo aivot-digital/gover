@@ -7,8 +7,14 @@ export const TextEvaluator: BaseEvaluator<string> = {
     [ConditionOperator.Equals]: (valueA, valueB) => {
         return valueA === valueB;
     },
+    [ConditionOperator.EqualsIgnoreCase]: (valueA, valueB) => {
+        return (valueA === valueB) || (valueA != null && typeof valueB === 'string' && valueA.toLowerCase() === valueB.toLowerCase());
+    },
     [ConditionOperator.NotEquals]: (valueA, valueB) => {
         return valueA !== valueB;
+    },
+    [ConditionOperator.NotEqualsIgnoreCase]: (valueA, valueB) => {
+        return (valueA !== valueB) || (valueA != null && typeof valueB === 'string' && valueA.toLowerCase() !== valueB.toLowerCase());
     },
 
     [ConditionOperator.Includes]: (valueA, valueB) => {

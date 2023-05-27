@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.models.elements;
 
+import de.aivot.GoverBackend.enums.ConditionOperator;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.models.functions.Function;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
 import de.aivot.GoverBackend.models.functions.FunctionNoCode;
 import de.aivot.GoverBackend.models.functions.FunctionResult;
+import de.aivot.GoverBackend.models.functions.conditions.Condition;
 import de.aivot.GoverBackend.models.lib.TestProtocolSet;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
@@ -43,36 +45,75 @@ public abstract class BaseElement {
         applyValues(values);
     }
 
-    public abstract void applyValues(Map<String, Object> values);
-
-    public void validate(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
-
+    public BaseElement(ElementType type, String id, String appVersion, String name, TestProtocolSet testProtocolSet, Function isVisible, FunctionCode patchElement) {
+        this.type = type;
+        this.id = id;
+        this.appVersion = appVersion;
+        this.name = name;
+        this.testProtocolSet = testProtocolSet;
+        this.isVisible = isVisible;
+        this.patchElement = patchElement;
     }
 
-    public boolean isVisible(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public abstract void applyValues(Map<String, Object> values);
+
+    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+        // Children should overwrite this if validation is necessary.
+    }
+
+    public boolean isVisible(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         if (isVisible == null) {
             return true;
         }
 
-        FunctionResult isVisibleResult = isVisible.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
-        return isVisibleResult.getBooleanValue();
+        FunctionResult isVisibleResult = isVisible.evaluate(root,this, customerInput, getResolvedId(idPrefix), scriptEngine);
+
+        if (isVisibleResult != null) {
+            return isVisibleResult.getObjectValue() == null;
+        }
+        return false;
     }
 
-    public void patch(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public void patch(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         if (patchElement == null) {
             return;
         }
-        FunctionResult patchElementResult = patchElement.evaluate(this, customerInput, getResolvedId(idPrefix), scriptEngine);
-        applyValues(patchElementResult.getJsonValue());
+        FunctionResult patchElementResult = patchElement.evaluate(root,this, customerInput, getResolvedId(idPrefix), scriptEngine);
+
+        if (patchElementResult != null) {
+            applyValues(patchElementResult.getJsonValue());
+        }
     }
 
-    public List<BasePdfRowDto> toPdfRows(Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         return new LinkedList<>();
     }
 
     protected String getResolvedId(String idPrefix) {
         return idPrefix != null ? idPrefix + "_" + id : id;
     }
+
+    public boolean matches(String id) {
+        return this.id.equals(id);
+    }
+
+    public boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
+        return false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // region Getters & Setters
 

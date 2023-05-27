@@ -1,7 +1,6 @@
 import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
 import {isValid, parse, parseISO} from "date-fns";
-import {da} from "date-fns/locale";
 
 const dayRegex = /^\d\d\.\d\d\.\d\d\d\d$/;
 const dayAnyMonthAnyYearRegex = /^\d\d\.$/;

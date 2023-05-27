@@ -7,40 +7,46 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum ConditionOperator implements Identifiable<Integer> {
-    Equals(0),
-    NotEquals(1),
+    Equals(0, false),
+    NotEquals(1, false),
 
-    LessThan(2),
-    LessThanOrEqual(3),
-    GreaterThan(4),
-    GreaterThanOrEqual(5),
+    LessThan(2, false),
+    LessThanOrEqual(3, false),
+    GreaterThan(4, false),
+    GreaterThanOrEqual(5, false),
 
-    Includes(6),
-    NotIncludes(7),
-    StartsWith(8),
-    NotStartsWith(9),
-    EndsWith(10),
-    NotEndsWith(11),
+    Includes(6, false),
+    NotIncludes(7, false),
+    StartsWith(8, false),
+    NotStartsWith(9, false),
+    EndsWith(10, false),
+    NotEndsWith(11, false),
 
-    MatchesPattern(12),
-    NotMatchesPattern(13),
-    IncludesPattern(14),
-    NotIncludesPattern(15),
-    EqualsIgnoreCase(16), // TODO: Implementieren
-    NotEqualsIgnoreCase(17), // TODO: Implementieren
-    Empty(18), // TODO: Implementieren
-    NotEmpty(19); // TODO: Implementieren
+    MatchesPattern(12, false),
+    NotMatchesPattern(13, false),
+    IncludesPattern(14, false),
+    NotIncludesPattern(15, false),
+    EqualsIgnoreCase(16, false), // TODO: Implementieren
+    NotEqualsIgnoreCase(17, false), // TODO: Implementieren
+    Empty(18, true), // TODO: Implementieren
+    NotEmpty(19, true); // TODO: Implementieren
 
     private final Integer key;
+    private final Boolean isUnary;
 
-    private ConditionOperator(Integer key) {
+    private ConditionOperator(Integer key, Boolean isUnary) {
         this.key = key;
+        this.isUnary = isUnary;
     }
 
     @Override
     @JsonValue
     public Integer getKey() {
         return key;
+    }
+
+    public Boolean getUnary() {
+        return isUnary;
     }
 
     @Override
