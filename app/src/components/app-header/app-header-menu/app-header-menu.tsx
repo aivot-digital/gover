@@ -15,6 +15,7 @@ import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
 import {UserRole} from "../../../data/user-role";
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {selectUser} from "../../../slices/user-slice";
+import {resetErrors} from "../../../slices/customer-input-errors-slice";
 
 const __ = Localization(strings);
 
@@ -97,6 +98,7 @@ const menuItems: MenuItem[] = [
         events: [
             resetUserInput,
             resetStepper,
+            resetErrors,
         ],
         adminOnly: false,
         icon: faSignOut,
