@@ -1,37 +1,35 @@
 import {ElementType} from '../data/element-type/element-type';
-import {RootElement} from '../models/elements/root-element';
-import {StepElement} from '../models/elements/steps/step-element';
-import {HeadlineElement} from '../models/elements/form/content/headline-element';
 import {ElementNames} from '../data/element-type/element-names';
-import {AlertElement} from '../models/elements/form/content/alert-element';
 import {SpacerElement} from '../models/elements/form/content/spacer-element';
-import {ReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
-import {AnyInputElement} from '../models/elements/form/input/any-input-element';
 import {AnyElement} from "../models/elements/any-element";
 import {isStringNotNullOrEmpty, stringOrDefault} from "./string-utils";
 
-export function generateComponentTitle(component: AnyElement) {
-    const elementName = ElementNames[component.type];
+
+export function generateComponentTitle(component: AnyElement): string {
+    if (isStringNotNullOrEmpty(component.name)) {
+        return component.name!;
+    }
+
+    const defaultElementDescriptor = ElementNames[component.type];
+
     switch (component.type) {
         case ElementType.Root:
-            return stringOrDefault((component as RootElement).title, 'Unbenannter Antrag');
+            return stringOrDefault(component.title, 'Unbenannter Antrag');
         case ElementType.Step:
-            return stringOrDefault((component as StepElement).title, 'Unbenannter Abschnitt');
+            return stringOrDefault(component.title, 'Unbenannter Abschnitt');
         case ElementType.Alert:
-            return stringOrDefault((component as AlertElement).title, elementName);
+            return stringOrDefault(component.title, defaultElementDescriptor);
         case ElementType.Container:
-            return ElementNames[component.type];
+            return defaultElementDescriptor;
         case ElementType.Headline:
-            return stringOrDefault((component as HeadlineElement).content, elementName);
-        case ElementType.ReplicatingContainer:
-            return stringOrDefault((component as ReplicatingContainerLayout).label, elementName);
+            return stringOrDefault(component.content, defaultElementDescriptor);
         case ElementType.Richtext:
-            return ElementNames[component.type];
+            return defaultElementDescriptor;
         case ElementType.Image:
-            return component.alt;
+            return stringOrDefault(component.alt, defaultElementDescriptor);
         case ElementType.Spacer:
             const height = (component as SpacerElement).height;
-            return isStringNotNullOrEmpty(height) ? `${elementName} (${height}px)` : elementName;
+            return isStringNotNullOrEmpty(height) ? `${defaultElementDescriptor} (${height}px)` : defaultElementDescriptor;
         case ElementType.Date:
         case ElementType.Table:
         case ElementType.Radio:
@@ -41,8 +39,12 @@ export function generateComponentTitle(component: AnyElement) {
         case ElementType.Time:
         case ElementType.Number:
         case ElementType.Text:
-            return stringOrDefault((component as AnyInputElement).label, elementName);
+        case ElementType.FileUpload:
+        case ElementType.ReplicatingContainer:
+            return stringOrDefault(component.label, defaultElementDescriptor);
         default:
-            return stringOrDefault(elementName, 'Unbekanntes Element');
+            return stringOrDefault(defaultElementDescriptor, 'Unbekanntes Element');
     }
+
+
 }

@@ -48,7 +48,7 @@ export function CodeTabConditionOperand(props: CodeTabConditionOperandProps) {
                     required
                     onChange={val => props.onChange(val ?? '')}
                     options={props.allElements.map(elem => ({
-                        label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                        label: generateComponentTitle(elem),
                         value: elem.id,
                     }))}
                 />
@@ -61,7 +61,7 @@ export function CodeTabConditionOperand(props: CodeTabConditionOperandProps) {
                     value={props.target}
                     onChange={val => props.onChangeTarget(val ?? '')}
                     options={props.allElements.map(elem => ({
-                        label: stringOrDefault(elem.name, generateComponentTitle(elem)),
+                        label: generateComponentTitle(elem),
                         value: elem.id,
                     }))}
                 />

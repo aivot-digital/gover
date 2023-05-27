@@ -89,7 +89,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     const theme = useTheme();
 
     const statusIcons = determineIcons(testMode, warnDuplicateIds, root, props.element);
-    const elementTitle = stringOrDefault(props.element.name, generateComponentTitle(props.element));
+    const elementTitle = generateComponentTitle(props.element);
     const titleCharLimit = testMode ? 30 : 40;
     const elementIcon = props.element.type === ElementType.Step ? getStepIcon(props.element) : ElementIcons[props.element.type];
 
@@ -270,7 +270,7 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
     if (noCodeUsages.length > 0) {
         icons.push({
             icon: faCircleBolt,
-            tooltip: 'Von No-Code Funktion referenziert: ' + noCodeUsages.map(elem => generateComponentTitle(elem)).join(', '),
+            tooltip: 'Von No-Code Funktion referenziert: ' + noCodeUsages.map(generateComponentTitle).join(', '),
         });
     }
 

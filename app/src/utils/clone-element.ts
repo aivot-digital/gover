@@ -23,7 +23,7 @@ function deepCloneElement<T extends AnyElement>(element: T): { clone: T, idMap: 
 
     const clone: T = JSON.parse(JSON.stringify(element));
     clone.id = newId;
-    clone.name = (element.name != null ? element.name : generateComponentTitle(element)) + ' (Kopie)';
+    clone.name = generateComponentTitle(element) + ' (Kopie)';
 
     if (isAnyElementWithChildren(clone)) {
         const clonedChildren = [];

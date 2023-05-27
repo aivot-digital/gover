@@ -146,7 +146,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
         case ElementType.Image:
             return {
                 id, type, appVersion,
-                alt: 'Aivot Logo',
+                alt: 'Bild',
                 src: 'https://aivot.de/img/aivot-logo.svg',
             };
         case ElementType.FileUpload:
