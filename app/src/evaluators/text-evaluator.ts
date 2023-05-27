@@ -14,7 +14,7 @@ export const TextEvaluator: BaseEvaluator<string> = {
         return valueA !== valueB;
     },
     [ConditionOperator.NotEqualsIgnoreCase]: (valueA, valueB) => {
-        return (valueA !== valueB) || (valueA != null && typeof valueB === 'string' && valueA.toLowerCase() !== valueB.toLowerCase());
+        return (valueA != null && valueA !== '' && valueA !== valueB) || (valueA != null && typeof valueB === 'string' && valueA.toLowerCase() !== valueB.toLowerCase());
     },
 
     [ConditionOperator.Includes]: (valueA, valueB) => {
