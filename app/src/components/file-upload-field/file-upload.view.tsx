@@ -265,10 +265,10 @@ export function FileUploadView({
                     error != null ||
                     element.hint != null ||
                     (
-                        element.minFiles &&
+                        element.minFiles != null &&
                         element.minFiles > 0
                     ) || (
-                        element.maxFiles &&
+                        element.maxFiles != null &&
                         element.maxFiles > 0
                     )
                 ) &&
@@ -288,10 +288,10 @@ export function FileUploadView({
 
                     {
                         ((
-                            element.minFiles &&
+                            element.minFiles != null &&
                             element.minFiles > 0
                         ) || (
-                            element.maxFiles &&
+                            element.maxFiles != null &&
                             element.maxFiles > 0
                         )) &&
                         <Typography
@@ -305,7 +305,7 @@ export function FileUploadView({
                                 element.minFiles === element.maxFiles ?
                                     'Genau' :
                                     (
-                                        element.minFiles != null && element.minFiles > 0 ?
+                                        (element.minFiles != null && element.minFiles > 0) ?
                                             'Mindestens' :
                                             'Höchstens'
                                     )
