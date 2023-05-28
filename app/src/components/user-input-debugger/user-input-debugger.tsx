@@ -11,6 +11,20 @@ import {format} from "date-fns";
 import {CustomerInput} from "../../models/customer-input";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../slices/snackbar-slice";
+import {isFileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
+
+function cleanCustomerInput(input: CustomerInput): CustomerInput {
+    const cleanedInput: CustomerInput = {};
+    for (const key of Object.keys(input)) {
+        const value = input[key];
+        if (Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
+
+        } else {
+            cleanedInput[key] = value;
+        }
+    }
+    return cleanedInput;
+}
 
 export function UserInputDebugger() {
     const dispatch = useAppDispatch();
@@ -23,7 +37,9 @@ export function UserInputDebugger() {
     }
 
     const handleExport = () => {
-        downloadObjectFile(`nutzereingaben-${app?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`, userInput);
+        const filename = `nutzereingaben-${app?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
+        const input =  cleanCustomerInput(userInput);
+        downloadObjectFile(filename, input);
     };
 
     const handleUpload = () => {
