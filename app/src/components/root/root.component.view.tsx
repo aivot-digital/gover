@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
 import {RootElement} from '../../models/elements/root-element';
-import {addError, resetErrors} from '../../slices/customer-input-errors-slice';
+import {addError, resetErrors, selectCustomerInputErrors} from '../../slices/customer-input-errors-slice';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {isElementValid} from '../../utils/is-element-valid';
 import {CustomStep} from './components/custom-step/custom-step';
@@ -25,7 +25,7 @@ import {AppHeader} from '../app-header/app-header';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedApplication} from '../../slices/app-slice';
-import {selectCustomerInput} from '../../slices/customer-input-slice';
+import {resetUserInput, selectCustomerInput} from '../../slices/customer-input-slice';
 import {nextStep, previousStep, selectCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
@@ -44,12 +44,26 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
     const customerData = useAppSelector(selectCustomerInput);
     const adminSettings = useAppSelector(state => state.adminSettings);
     const currentStep = useAppSelector(selectCurrentStep);
+    const errors = useAppSelector(selectCustomerInputErrors);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [pdfLink, setPdfLink] = useState('');
 
     const [validatedWithErrors, setValidatedWithErrors] = useState(false);
+
+    const steps = [
+        element.introductionStep,
+        ...(element.children ?? []).filter(elem => adminSettings.disableVisibility || isElementVisible(allElements, elem.id, elem, customerData)),
+        element.summaryStep,
+        element.submitStep,
+    ];
+
+    useEffect(() => {
+        if (validatedWithErrors && Object.keys(errors).length === 0) {
+            setValidatedWithErrors(false);
+        }
+    }, [errors]);
 
     const isCurrentPageValid = async () => {
         $debug.start('isCurrentPageValid');
@@ -95,7 +109,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                     .map(c => customerData[c])
                     .filter(c => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
                     .map(c => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
-                    .reduce((acc, size) => acc + size);
+                    .reduce((acc, size) => acc + size, 0);
                 if (totalFileSize > maxFileSizeBytes) {
                     dispatch(addError({
                         key: SummaryAttachmentsTooLargeKey,
@@ -146,12 +160,15 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                         setValidatedWithErrors(false);
                         setPdfLink(pdfLink);
                         dispatch(nextStep());
+                        dispatch(resetUserInput());
                         UserInputService.cleanUserInput(application);
                     } catch (error) {
                         console.error(error);
                         dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
                     }
-                    setIsSubmitting(false);
+                    setTimeout( () => {
+                        setIsSubmitting(false);
+                    }, 1000);
                 } else {
                     throw new Error('Cannot submit customer data: No application data loaded.');
                 }
@@ -169,13 +186,6 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
         $debug.end();
     }
 
-    const steps = [
-        element.introductionStep,
-        ...element.children,
-        element.summaryStep,
-        element.submitStep,
-    ];
-
     return (
         <>
             <AppHeader mode={AppMode.Customer}/>
@@ -190,7 +200,6 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                     >
                         {
                             steps
-                                .filter(step => isElementVisible(allElements, step.id, step, customerData))
                                 .map((step, index) => (
                                     <CustomStep
                                         key={index}
