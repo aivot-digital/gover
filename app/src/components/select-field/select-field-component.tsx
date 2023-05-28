@@ -13,6 +13,7 @@ export function SelectFieldComponent({
                                          onChange,
                                          options,
                                      }: SelectFieldComponentProps) {
+    const val = value ?? '';
     return (
         <TextField
             select
@@ -21,7 +22,7 @@ export function SelectFieldComponent({
             error={error != null}
             helperText={error != null ? error : hint}
             placeholder={placeholder}
-            value={value}
+            value={val}
             onChange={event => {
                 if (isStringNullOrEmpty(event.target.value)) {
                     onChange(undefined);
