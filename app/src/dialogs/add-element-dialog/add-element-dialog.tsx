@@ -80,7 +80,6 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
 export function AddElementDialog({parentType, onAddElement, onClose}: AddElementDialogProps) {
     const [presets, setPresets] = useState<Preset[]>([]);
     const [currentTab, setCurrentTab] = useState(0);
-    const [regenerateIds, setRegenerateIds] = useState(true);
 
     useEffect(() => {
         PresetsService.list()
@@ -90,7 +89,7 @@ export function AddElementDialog({parentType, onAddElement, onClose}: AddElement
     }, [parentType, setPresets]);
 
     const addPresetElement = (preset: Preset) => {
-        onAddElement(cloneElement(preset.root));
+        onAddElement(cloneElement(preset.root, true));
     };
 
     const childOptions = ElementChildOptions[parentType] ?? [];
@@ -182,22 +181,6 @@ export function AddElementDialog({parentType, onAddElement, onClose}: AddElement
             {
                 currentTab === 1 &&
                 <div>
-                    <Box
-                        sx={{
-                            px: 2,
-                            pt: 2,
-                        }}
-                    >
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={regenerateIds}
-                                    onChange={event => setRegenerateIds(event.target.checked)}
-                                />
-                            }
-                            label="IDs beim Einfügen neu generieren"
-                        />
-                    </Box>
                     {
                         (
                             presets.length > 0 ? (

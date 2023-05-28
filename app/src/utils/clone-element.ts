@@ -5,8 +5,8 @@ import {ConditionSet} from "../models/functions/conditions/condition-set";
 import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
 import {generateComponentTitle} from "./generate-component-title";
 
-export function cloneElement<T extends AnyElement>(element: T): T {
-    const {clone, idMap} = deepCloneElement(element);
+export function cloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): T {
+    const {clone, idMap} = deepCloneElement(element, skipSuffix);
     return fixNoCodeReferences(clone, idMap);
 }
 
@@ -14,7 +14,7 @@ type IdMap = {
     [key: string]: string;
 };
 
-function deepCloneElement<T extends AnyElement>(element: T): { clone: T, idMap: IdMap } {
+function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): { clone: T, idMap: IdMap } {
     const newId = generateElementIdForType(element.type);
 
     let idMap = {
@@ -23,7 +23,7 @@ function deepCloneElement<T extends AnyElement>(element: T): { clone: T, idMap: 
 
     const clone: T = JSON.parse(JSON.stringify(element));
     clone.id = newId;
-    clone.name = generateComponentTitle(element) + ' (Kopie)';
+    clone.name = generateComponentTitle(element) + (skipSuffix ? '' : ' (Kopie)');
 
     if (isAnyElementWithChildren(clone)) {
         const clonedChildren = [];
