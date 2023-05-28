@@ -11,12 +11,9 @@ import de.aivot.GoverBackend.pdf.TablePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class TableField extends BaseInputElement<List<Map<String, String>>> {
+public class TableField extends BaseInputElement<Collection<Map<String, String>>> {
     private Collection<TableFieldColumnDefinition> fields;
     private Integer maximumRows;
     private Integer minimumRequiredRows;
@@ -35,7 +32,20 @@ public class TableField extends BaseInputElement<List<Map<String, String>>> {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    protected Optional<Collection<Map<String, String>>> formatValue(Object value) {
+        Collection<Map<String, String>> res = new LinkedList<>();
+
+        if (value instanceof Collection<?> cValue) {
+            if (cValue instanceof Map<?,?> mValue) {
+                res.add((Map<String, String>) mValue);
+            }
+        }
+
+        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+    }
+
+    @Override
+    public void validate(RootElement root, Map<String, Object> customerInput, Collection<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (Boolean.TRUE.equals(getRequired()) && value.isEmpty()) {
             throw new RequiredValidationException(this);
         }
@@ -70,7 +80,7 @@ public class TableField extends BaseInputElement<List<Map<String, String>>> {
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, List<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) {
         List<String> columnHeaders = new LinkedList<>();
 
         for (TableFieldColumnDefinition col : fields) {

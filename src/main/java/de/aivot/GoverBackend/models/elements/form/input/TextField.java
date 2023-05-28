@@ -12,6 +12,7 @@ import javax.script.ScriptEngine;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.PatternSyntaxException;
 
 public class TextField extends BaseInputElement<String> {
@@ -30,6 +31,14 @@ public class TextField extends BaseInputElement<String> {
         placeholder = MapUtils.getString(values, "placeholder");
         isMultiline = MapUtils.getBoolean(values, "isMultiline");
         maxCharacters = MapUtils.getInteger(values, "maxCharacters");
+    }
+
+    @Override
+    protected Optional<String> formatValue(Object value) {
+        if (value instanceof String sValue) {
+            return Optional.of(sValue);
+        }
+        return Optional.empty();
     }
 
     @Override

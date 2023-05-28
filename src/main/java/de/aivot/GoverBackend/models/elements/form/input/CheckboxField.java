@@ -12,10 +12,16 @@ import javax.script.ScriptEngine;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class CheckboxField extends BaseInputElement<Boolean> {
     public CheckboxField(Map<String, Object> data) {
         super(data);
+    }
+
+    @Override
+    protected Optional<Boolean> formatValue(Object value) {
+        return Optional.of(Boolean.TRUE.equals(value));
     }
 
     @Override

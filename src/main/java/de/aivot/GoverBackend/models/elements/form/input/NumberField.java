@@ -11,13 +11,10 @@ import de.aivot.GoverBackend.utils.MapUtils;
 import javax.script.ScriptEngine;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
-public class NumberField extends BaseInputElement<BigDecimal> {
+public class NumberField extends BaseInputElement<Double> {
     private String placeholder;
     private Integer decimalPlaces;
     private String suffix;
@@ -36,11 +33,28 @@ public class NumberField extends BaseInputElement<BigDecimal> {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, BigDecimal value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    protected Optional<Double> formatValue(Object value) {
+        if (value instanceof Integer iValue) {
+            return Optional.of(Double.valueOf(iValue.doubleValue()));
+        }
+        if (value instanceof Double dValue) {
+            return Optional.of(dValue);
+        }
+        if (value instanceof Float fValue) {
+            return Optional.of(Double.valueOf(fValue.doubleValue()));
+        }
+        if (value instanceof BigDecimal bValue) {
+            return Optional.of(Double.valueOf(bValue.doubleValue()));
+        }
+        return Optional.empty();
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, BigDecimal value, String idPrefix, ScriptEngine scriptEngine) {
+    public void validate(RootElement root, Map<String, Object> customerInput, Double value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    }
+
+    @Override
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Double value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         String displayValue = "Keine Angaben";

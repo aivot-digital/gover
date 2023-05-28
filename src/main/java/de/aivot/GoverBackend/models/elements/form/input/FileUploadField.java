@@ -9,12 +9,9 @@ import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class FileUploadField extends BaseInputElement<Collection<Map<String, Object>>> {
+public class FileUploadField extends BaseInputElement<Collection<FileUploadFieldItem>> {
     private Collection<String> extensions;
     private Boolean isMultifile;
     private Integer maxFiles;
@@ -35,7 +32,22 @@ public class FileUploadField extends BaseInputElement<Collection<Map<String, Obj
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    protected Optional<Collection<FileUploadFieldItem>> formatValue(Object value) {
+        Collection<FileUploadFieldItem> res = new LinkedList<>();
+
+        if (value instanceof Collection<?> cValue) {
+            for (Object fValue : cValue) {
+                if (fValue instanceof Map<?,?> mValue) {
+                    res.add(new FileUploadFieldItem((Map<String, Object>) mValue));
+                }
+            }
+        }
+
+        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+    }
+
+    @Override
+    public void validate(RootElement root, Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null && Boolean.TRUE.equals(getRequired())) {
             throw new RequiredValidationException(this);
         }
@@ -56,8 +68,7 @@ public class FileUploadField extends BaseInputElement<Collection<Map<String, Obj
             }
 
             if (extensions != null) {
-                for (Map<String, Object> rawItem : value) {
-                    var item = new FileUploadFieldItem(rawItem);
+                for (FileUploadFieldItem item : value) {
                     String itemName = item.getName();
                     if (itemName != null) {
                         if (itemName.contains(".")) {
@@ -84,11 +95,11 @@ public class FileUploadField extends BaseInputElement<Collection<Map<String, Obj
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
         if (value != null && !value.isEmpty()) {
-            List<FileUploadFieldItem> items = value.stream().map(FileUploadFieldItem::new).toList();
+            List<FileUploadFieldItem> items = value.stream().toList();
 
             fields.add(new ValuePdfRowDto(
                     getLabel(),

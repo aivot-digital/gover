@@ -16,6 +16,7 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class TimeField extends BaseInputElement<String> {
@@ -23,6 +24,14 @@ public class TimeField extends BaseInputElement<String> {
 
     public TimeField(Map<String, Object> data) {
         super(data);
+    }
+
+    @Override
+    protected Optional<String> formatValue(Object value) {
+        if (value instanceof String sValue) {
+            return Optional.of(sValue);
+        }
+        return Optional.empty();
     }
 
     @Override

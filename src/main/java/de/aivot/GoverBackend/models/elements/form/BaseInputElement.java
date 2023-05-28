@@ -12,10 +12,7 @@ import de.aivot.GoverBackend.utils.StringUtils;
 
 import javax.script.ScriptEngine;
 import java.lang.reflect.Array;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public abstract class BaseInputElement<T> extends BaseFormElement {
     private String label;
@@ -52,11 +49,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         }
         FunctionResult computedValueResult = computeValue.evaluate(root, this, customerData, getResolvedId(idPrefix), scriptEngine);
         if (computedValueResult != null) {
-            try {
-                return Optional.of((T) computedValueResult.getObjectValue());
-            } catch (ClassCastException e) {
-                return Optional.empty();
-            }
+            return formatValue(computedValueResult.getObjectValue());
         } else {
             return Optional.empty();
         }
@@ -74,13 +67,13 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 throw new ValidationException(this, "Field is required but value was null");
             }
         } else {
-            T value;
+            Optional<T> optValue = formatValue(rawValue);
 
-            try {
-                value = (T) rawValue;
-            } catch (ClassCastException e) {
-                throw new ValidationException(this, "Cannot cast value type of field to excepted type: " + e.getMessage());
+            if (optValue.isEmpty()) {
+                throw new ValidationException(this, "Cannot cast value type of field to excepted type");
             }
+
+            T value = optValue.get();
 
             if (Boolean.TRUE.equals(required)) {
                 if (value instanceof String && StringUtils.isNullOrEmpty((String) value)) {
@@ -89,13 +82,9 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 if (value.getClass().isArray() && Array.getLength(value) == 0) {
                     throw new ValidationException(this, "Field is required but value was empty");
                 }
-                if (value instanceof List<?> && ((List<?>) value).isEmpty()) {
+                if (value instanceof Collection<?> && ((Collection<?>) value).isEmpty()) {
                     throw new ValidationException(this, "Field is required but value was empty");
                 }
-            }
-
-            if (value instanceof Integer) {
-                value = (T) Double.valueOf(((Integer) value).doubleValue());
             }
 
             validate(root, customerInput, value, idPrefix, scriptEngine);
@@ -120,19 +109,22 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         }
 
         Optional<T> computedValue = getComputedValue(root, customerInput, idPrefix, scriptEngine);
-        Object rawValue = computedValue.isPresent() ? computedValue.get() :  customerInput.get(id);
-        try {
-            if (rawValue != null && rawValue instanceof Integer intRawValue) {
-                rawValue = Double.valueOf(intRawValue.doubleValue());
-            }
-            T value = (T) rawValue;
-            return toPdfRows(root, customerInput, value, idPrefix, scriptEngine);
-        } catch (ClassCastException e) {
+        Object rawValue = computedValue.isPresent() ? computedValue.get() : customerInput.get(id);
+
+
+        Optional<T> optValue = formatValue(rawValue);
+
+        if (optValue.isEmpty()) {
             return new LinkedList<>();
         }
+
+        T value = optValue.get();
+        return toPdfRows(root, customerInput, value, idPrefix, scriptEngine);
     }
 
     public abstract List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, T value, String idPrefix, ScriptEngine scriptEngine);
+
+    protected abstract Optional<T> formatValue(Object value);
 
     //region Getters & Setters
     public String getLabel() {

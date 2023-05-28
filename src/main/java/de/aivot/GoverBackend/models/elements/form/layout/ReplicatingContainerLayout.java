@@ -38,6 +38,21 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
     }
 
     @Override
+    protected Optional<Collection<String>> formatValue(Object value) {
+        Collection<String> res = new LinkedList<>();
+
+        if (value instanceof Collection<?> cValue) {
+            for (Object item : cValue) {
+                if (item instanceof String sValue) {
+                    res.add(sValue);
+                }
+            }
+        }
+
+        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+    }
+
+    @Override
     public void validate(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null) {
             if (Boolean.TRUE.equals(getRequired())) {

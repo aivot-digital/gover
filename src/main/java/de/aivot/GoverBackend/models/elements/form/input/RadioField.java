@@ -9,10 +9,7 @@ import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RadioField extends BaseInputElement<String> {
     private Collection<String> options;
@@ -26,6 +23,14 @@ public class RadioField extends BaseInputElement<String> {
         super.applyValues(values);
 
         options = MapUtils.getStringCollection(values, "options");
+    }
+
+    @Override
+    protected Optional<String> formatValue(Object value) {
+        if (value instanceof String sValue) {
+            return Optional.of(sValue);
+        }
+        return Optional.empty();
     }
 
     @Override

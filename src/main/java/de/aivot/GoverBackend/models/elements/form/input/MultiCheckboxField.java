@@ -9,10 +9,7 @@ import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import javax.script.ScriptEngine;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     private Collection<String> options;
@@ -31,6 +28,19 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     }
 
     @Override
+    protected Optional<Collection<String>> formatValue(Object value) {
+        Collection<String> res = new LinkedList<>();
+        if (value instanceof Collection<?> cValue) {
+            for (Object val : cValue) {
+                if (val instanceof String sVal) {
+                    res.add(sVal);
+                }
+            }
+        }
+        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+    }
+
+    @Override
     public void validate(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
         testValuesInOptions(value);
         testRequiredOptionsMet(value);
@@ -46,17 +56,17 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
                     "Keine Angaben"
             ));
         } else {
-            List<String> vales = value.stream().toList();
+            List<String> values = value.stream().toList();
 
             fields.add(new ValuePdfRowDto(
                     getLabel(),
-                    vales.get(0)
+                    values.get(0)
             ));
 
-            for (int i = 1; i < options.size(); i++) {
+            for (int i = 1; i < values.size(); i++) {
                 fields.add(new ValuePdfRowDto(
                         "",
-                        vales.get(i)
+                        values.get(i)
                 ));
             }
         }
