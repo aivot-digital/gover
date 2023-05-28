@@ -38,7 +38,7 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
     }
 
     @Override
-    protected Optional<Collection<String>> formatValue(Object value) {
+    protected Collection<String> formatValue(Object value) {
         Collection<String> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
@@ -49,7 +49,7 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
             }
         }
 
-        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+        return res.isEmpty() ? null : res;
     }
 
     @Override

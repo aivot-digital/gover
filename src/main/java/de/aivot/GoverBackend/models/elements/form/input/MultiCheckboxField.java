@@ -28,7 +28,7 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     }
 
     @Override
-    protected Optional<Collection<String>> formatValue(Object value) {
+    protected Collection<String> formatValue(Object value) {
         Collection<String> res = new LinkedList<>();
         if (value instanceof Collection<?> cValue) {
             for (Object val : cValue) {
@@ -37,7 +37,7 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
                 }
             }
         }
-        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+        return res.isEmpty() ? null : res;
     }
 
     @Override

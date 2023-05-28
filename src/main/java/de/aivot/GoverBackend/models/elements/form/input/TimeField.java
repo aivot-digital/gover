@@ -27,11 +27,11 @@ public class TimeField extends BaseInputElement<String> {
     }
 
     @Override
-    protected Optional<String> formatValue(Object value) {
+    protected String formatValue(Object value) {
         if (value instanceof String sValue) {
-            return Optional.of(sValue);
+            return sValue;
         }
-        return Optional.empty();
+        return null;
     }
 
     @Override

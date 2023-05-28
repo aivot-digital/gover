@@ -49,7 +49,12 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         }
         FunctionResult computedValueResult = computeValue.evaluate(root, this, customerData, getResolvedId(idPrefix), scriptEngine);
         if (computedValueResult != null) {
-            return formatValue(computedValueResult.getObjectValue());
+            T formattedValue = formatValue(computedValueResult.getObjectValue());
+            if (formattedValue != null) {
+                return Optional.of(formattedValue);
+            } else {
+                return Optional.empty();
+            }
         } else {
             return Optional.empty();
         }
@@ -67,13 +72,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 throw new ValidationException(this, "Field is required but value was null");
             }
         } else {
-            Optional<T> optValue = formatValue(rawValue);
-
-            if (optValue.isEmpty()) {
-                throw new ValidationException(this, "Cannot cast value type of field to excepted type");
-            }
-
-            T value = optValue.get();
+            T value = formatValue(rawValue);
 
             if (Boolean.TRUE.equals(required)) {
                 if (value instanceof String && StringUtils.isNullOrEmpty((String) value)) {
@@ -111,20 +110,13 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         Optional<T> computedValue = getComputedValue(root, customerInput, idPrefix, scriptEngine);
         Object rawValue = computedValue.isPresent() ? computedValue.get() : customerInput.get(id);
 
-
-        Optional<T> optValue = formatValue(rawValue);
-
-        if (optValue.isEmpty()) {
-            return new LinkedList<>();
-        }
-
-        T value = optValue.get();
+        T value = formatValue(rawValue);
         return toPdfRows(root, customerInput, value, idPrefix, scriptEngine);
     }
 
     public abstract List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, T value, String idPrefix, ScriptEngine scriptEngine);
 
-    protected abstract Optional<T> formatValue(Object value);
+    protected abstract T formatValue(Object value);
 
     //region Getters & Setters
     public String getLabel() {

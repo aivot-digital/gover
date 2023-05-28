@@ -33,20 +33,20 @@ public class NumberField extends BaseInputElement<Double> {
     }
 
     @Override
-    protected Optional<Double> formatValue(Object value) {
+    protected Double formatValue(Object value) {
         if (value instanceof Integer iValue) {
-            return Optional.of(Double.valueOf(iValue.doubleValue()));
+            return Double.valueOf(iValue.doubleValue());
         }
         if (value instanceof Double dValue) {
-            return Optional.of(dValue);
+            return dValue;
         }
         if (value instanceof Float fValue) {
-            return Optional.of(Double.valueOf(fValue.doubleValue()));
+            return Double.valueOf(fValue.doubleValue());
         }
         if (value instanceof BigDecimal bValue) {
-            return Optional.of(Double.valueOf(bValue.doubleValue()));
+            return Double.valueOf(bValue.doubleValue());
         }
-        return Optional.empty();
+        return null;
     }
 
     @Override

@@ -32,7 +32,7 @@ public class FileUploadField extends BaseInputElement<Collection<FileUploadField
     }
 
     @Override
-    protected Optional<Collection<FileUploadFieldItem>> formatValue(Object value) {
+    protected Collection<FileUploadFieldItem> formatValue(Object value) {
         Collection<FileUploadFieldItem> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
@@ -43,7 +43,7 @@ public class FileUploadField extends BaseInputElement<Collection<FileUploadField
             }
         }
 
-        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+        return res.isEmpty() ? null : res;
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.models.elements.BaseElement;
 import de.aivot.GoverBackend.models.elements.RootElement;
 import de.aivot.GoverBackend.utils.MapUtils;
+import de.aivot.GoverBackend.utils.StringUtils;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -31,6 +32,10 @@ public class FunctionCode extends Function {
 
     @Override
     public FunctionResult evaluate(RootElement rootElement, BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
+        if (StringUtils.isNullOrEmpty(code)) {
+            return null;
+        }
+
         var jsCode = buildJsCode(element, customerInput, id);
 
         try {

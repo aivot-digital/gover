@@ -20,8 +20,8 @@ public class CheckboxField extends BaseInputElement<Boolean> {
     }
 
     @Override
-    protected Optional<Boolean> formatValue(Object value) {
-        return Optional.of(Boolean.TRUE.equals(value));
+    protected Boolean formatValue(Object value) {
+        return Boolean.valueOf(Boolean.TRUE.equals(value));
     }
 
     @Override

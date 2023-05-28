@@ -32,7 +32,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
     }
 
     @Override
-    protected Optional<Collection<Map<String, String>>> formatValue(Object value) {
+    protected Collection<Map<String, String>> formatValue(Object value) {
         Collection<Map<String, String>> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
@@ -41,7 +41,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
             }
         }
 
-        return res.isEmpty() ? Optional.empty() : Optional.of(res);
+        return res.isEmpty() ? null : res;
     }
 
     @Override
