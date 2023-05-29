@@ -35,7 +35,26 @@ import {FileUploadElementItem, isFileUploadElementItem} from "../../models/eleme
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from "../../views/base-view";
 
+const checkTimeoutMinMs = 2000;
 const submissionTimeoutMinMs = 3000;
+
+function withTimeout<T>(first: () => void, func: () => Promise<T>, after: (result: T) => void, timeout: number): Promise<void> {
+    first();
+
+    const start = new Date().getMilliseconds();
+
+    return new Promise(resolve => {
+        func()
+            .then(res => {
+                const deltaTime = new Date().getMilliseconds() - start;
+                const remainingTimeout = deltaTime >= timeout ? 1 : timeout - deltaTime;
+                setTimeout(() => {
+                    after(res);
+                    resolve();
+                }, remainingTimeout);
+            })
+    });
+}
 
 export function RootComponentView({allElements, element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
@@ -103,26 +122,40 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                 isValid = false;
             }
 
-            setIsLoading(true);
-            try {
-                const maxFileSizeMb = await ApplicationService.getMaxFileSize(application!);
-                const maxFileSizeBytes = maxFileSizeMb * 1000 * 1000;
-                const totalFileSize = Object.keys(customerData)
-                    .map(c => customerData[c])
-                    .filter(c => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
-                    .map(c => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
-                    .reduce((acc, size) => acc + size, 0);
-                if (totalFileSize > maxFileSizeBytes) {
-                    dispatch(addError({
-                        key: SummaryAttachmentsTooLargeKey,
-                        error: maxFileSizeMb.toFixed(0),
-                    }));
-                    isValid = false;
-                }
-            } catch (error) {
-                console.error(error);
+            if (isValid) {
+                await withTimeout<number | null>(
+                    () => setIsLoading(true),
+                    async () => {
+                        try {
+                            const maxFileSizeMb = await ApplicationService.getMaxFileSize(application!);
+                            const maxFileSizeBytes = maxFileSizeMb * 1000 * 1000;
+                            const totalFileSize = Object.keys(customerData)
+                                .map(c => customerData[c])
+                                .filter(c => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
+                                .map(c => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
+                                .reduce((acc, size) => acc + size, 0);
+                            if (totalFileSize > maxFileSizeBytes) {
+                                return (maxFileSizeMb);
+                            }
+                            return null;
+                        } catch (error) {
+                            console.error(error);
+                            dispatch(showErrorSnackbar('Der Maximalgröße der Anlagen konnte nicht korrekt überprüft werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                            return 0;
+                        }
+                    },
+                    (maxFileSizeMb) => {
+                        if (maxFileSizeMb != null && maxFileSizeMb != 0) {
+                            dispatch(addError({
+                                key: SummaryAttachmentsTooLargeKey,
+                                error: maxFileSizeMb.toFixed(0),
+                            }));
+                        }
+                        setIsLoading(false);
+                    },
+                    checkTimeoutMinMs,
+                );
             }
-            setIsLoading(false);
         } else if (currentStep === visibleChildSteps.length + 2) {
             $debug.log(`Testing ${ElementNames[ElementType.SubmitStep]}`);
 
@@ -156,27 +189,30 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
         if (currentPageValid) {
             if (currentStep === (allSteps.length - 1)) {
                 if (application != null) {
-                    setIsSubmitting(true);
-                    const submissionStartTimestamp = new Date().getMilliseconds();
-                    try {
-                        const pdfLink = await ApplicationService.submit(application, customerData);
-                        const deltaTime = new Date().getMilliseconds() - submissionStartTimestamp;
-                        setTimeout(() => {
-                            setValidatedWithErrors(false);
-                            setPdfLink(pdfLink);
-                            dispatch(nextStep());
-                            dispatch(resetUserInput());
-                            UserInputService.cleanUserInput(application);
+                    await withTimeout<string | null>(
+                        () => setIsSubmitting(true),
+                        async () => {
+                            try {
+                                return await ApplicationService.submit(application, customerData);
+                            } catch (error) {
+                                console.error(error);
+                                dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                                return null;
+                            }
+                        },
+                        (pdfLink) => {
+                            if (pdfLink != null) {
+                                setValidatedWithErrors(false);
+                                setPdfLink(pdfLink);
+                                dispatch(nextStep());
+                                dispatch(resetUserInput());
+                                UserInputService.cleanUserInput(application);
+                            }
+
                             setIsSubmitting(false);
-                        }, deltaTime >= submissionTimeoutMinMs ? 1 : submissionTimeoutMinMs - deltaTime);
-                    } catch (error) {
-                        console.error(error);
-                        const deltaTime = new Date().getMilliseconds() - submissionStartTimestamp;
-                        setTimeout(() => {
-                            dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
-                            setIsSubmitting(false);
-                        }, deltaTime >= submissionTimeoutMinMs ? 1 : submissionTimeoutMinMs - deltaTime);
-                    }
+                        },
+                        submissionTimeoutMinMs,
+                    );
                 } else {
                     throw new Error('Cannot submit customer data: No application data loaded.');
                 }
