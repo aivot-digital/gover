@@ -52,9 +52,11 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
 
     const [validatedWithErrors, setValidatedWithErrors] = useState(false);
 
-    const steps = [
+    const visibleChildSteps = (element.children ?? []).filter(elem => adminSettings.disableVisibility || isElementVisible(allElements, elem.id, elem, customerData));
+
+    const allSteps = [
         element.introductionStep,
-        ...(element.children ?? []).filter(elem => adminSettings.disableVisibility || isElementVisible(allElements, elem.id, elem, customerData)),
+        ...visibleChildSteps,
         element.summaryStep,
         element.submitStep,
     ];
@@ -74,8 +76,6 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
             return true;
         }
 
-        const steps = element.children ?? [];
-
         let isValid = true;
 
         if (currentStep === 0) {
@@ -89,7 +89,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
 
                 isValid = false;
             }
-        } else if (currentStep === steps.length + 1) {
+        } else if (currentStep === visibleChildSteps.length + 1) {
             $debug.log(`Testing ${ElementNames[ElementType.SummaryStep]}`);
 
             if (customerData[SummaryUserInputKey] == null || customerData[SummaryUserInputKey] === false) {
@@ -121,7 +121,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                 console.error(error);
             }
             setIsLoading(false);
-        } else if (currentStep === steps.length + 2) {
+        } else if (currentStep === visibleChildSteps.length + 2) {
             $debug.log(`Testing ${ElementNames[ElementType.SubmitStep]}`);
 
             if (customerData[SubmitHumanKey] == null || customerData[SubmitHumanKey] === false) {
@@ -133,7 +133,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                 isValid = false;
             }
         } else {
-            const step = steps[currentStep - 1];
+            const step = visibleChildSteps[currentStep - 1];
             if (step != null) {
                 isValid = isElementValid($debug, allElements, dispatch, step, customerData);
             }
@@ -152,7 +152,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
         const currentPageValid = await isCurrentPageValid();
 
         if (currentPageValid) {
-            if (currentStep === (steps.length - 1)) {
+            if (currentStep === (allSteps.length - 1)) {
                 if (application != null) {
                     setIsSubmitting(true);
                     try {
@@ -192,19 +192,19 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
 
             <Container sx={{mt: 5, mb: 5}}>
                 {
-                    currentStep < steps.length &&
+                    currentStep < allSteps.length &&
                     <Stepper
                         sx={{mt: 10, mb: 12, ml: '20px'}}
                         activeStep={currentStep}
                         orientation="vertical"
                     >
                         {
-                            steps
+                            allSteps
                                 .map((step, index) => (
                                     <CustomStep
                                         key={index}
                                         step={step}
-                                        nextLabel={index > 0 ? (index === steps.length - 1 ? 'Antrag verbindlich einreichen' : 'Weiter') : 'Antrag beginnen'}
+                                        nextLabel={index > 0 ? (index === allSteps.length - 1 ? 'Antrag verbindlich einreichen' : 'Weiter') : 'Antrag beginnen'}
                                         onNext={handleNextStep}
                                         previousLabel={index > 0 ? 'Zurück zum vorherigen Schritt' : undefined}
                                         onPrevious={() => {
@@ -226,7 +226,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                 }
 
                 {
-                    currentStep === steps.length &&
+                    currentStep === allSteps.length &&
                     <Stepper
                         sx={{mt: 10, mb: 12, ml: '20px'}}
                         orientation="vertical"
@@ -250,7 +250,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
             </Container>
 
             {
-                currentStep < steps.length &&
+                currentStep < allSteps.length &&
                 <Container
                     sx={{
                         textAlign: 'center',
