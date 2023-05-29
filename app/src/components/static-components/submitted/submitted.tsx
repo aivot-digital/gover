@@ -177,7 +177,7 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                     setMailInvalid(true);
                 }
             } else {
-                setPrivacyError('Sie müssen Ihr Einverständnis zum Versandt der E-Mail geben.');
+                setPrivacyError('Sie müssen Ihr Einverständnis zum Versand der E-Mail geben.');
             }
         }
     };
