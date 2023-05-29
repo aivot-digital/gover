@@ -15,7 +15,7 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({model, 
             container
             sx={{
                 borderBottom: "1px solid #D4D4D4",
-                py: 1
+                py: 1,
             }}
         >
             <Grid
@@ -27,7 +27,7 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({model, 
                     pr: 5,
                     [theme.breakpoints.up('md')]: {
                         textAlign: 'right',
-                    }
+                    },
                 }}
             >
                 <Typography
@@ -36,7 +36,7 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({model, 
                         fontWeight: 'bold',
                         [theme.breakpoints.up('md')]: {
                             fontWeight: 'normal',
-                        }
+                        },
                     }}
                 >
                     {model.label}
