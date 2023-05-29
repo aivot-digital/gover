@@ -137,11 +137,11 @@ public class TextField extends BaseInputElement<String> {
         this.placeholder = placeholder;
     }
 
-    public Boolean getMultiline() {
+    public Boolean getIsMultiline() {
         return isMultiline;
     }
 
-    public void setMultiline(Boolean multiline) {
+    public void setIsMultiline(Boolean multiline) {
         isMultiline = multiline;
     }
 
