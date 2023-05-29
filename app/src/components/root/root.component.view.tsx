@@ -161,7 +161,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                     try {
                         const pdfLink = await ApplicationService.submit(application, customerData);
                         const deltaTime = new Date().getMilliseconds() - submissionStartTimestamp;
-                        setTimeout( () => {
+                        setTimeout(() => {
                             setValidatedWithErrors(false);
                             setPdfLink(pdfLink);
                             dispatch(nextStep());
@@ -172,7 +172,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                     } catch (error) {
                         console.error(error);
                         const deltaTime = new Date().getMilliseconds() - submissionStartTimestamp;
-                        setTimeout( () => {
+                        setTimeout(() => {
                             dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
                             setIsSubmitting(false);
                         }, deltaTime >= submissionTimeoutMinMs ? 1 : submissionTimeoutMinMs - deltaTime);
@@ -185,10 +185,13 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                 dispatch(nextStep());
             }
         } else {
-            currentStep !== 0 &&
-            currentStep !== (element.children ?? []).length + 1 &&
-            currentStep !== (element.children ?? []).length + 2 &&
-            setValidatedWithErrors(true)
+            if (
+                currentStep !== 0 &&
+                currentStep !== visibleChildSteps.length + 1 &&
+                currentStep !== visibleChildSteps.length + 2
+            ) {
+                setValidatedWithErrors(true);
+            }
         }
 
         $debug.end();
