@@ -4,13 +4,6 @@ import {BaseEvaluator} from "./base-evaluator";
 const falseValue = 'Nein (False)';
 const trueValue = 'Ja (True)';
 
-function transformValue(val: any) {
-    if (typeof val === 'boolean') {
-        return val ? trueValue : falseValue;
-    }
-    return val;
-}
-
 export const CheckboxEvaluator: BaseEvaluator<boolean> = {
     [ConditionOperator.Equals]: (valueA, valueB) => {
         if (valueA == null && valueB == null) {

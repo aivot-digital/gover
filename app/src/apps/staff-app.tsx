@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useEffect} from 'react';
+import React, {FunctionComponent, useEffect, useState} from 'react';
 import {HashRouter, Route, Routes} from 'react-router-dom';
 import {ApplicationsOverviewPage} from '../pages/staff-pages/applications-overview-page/applications-overview-page';
 import {ApplicationEditorPage} from '../pages/staff-pages/application-editor-page/application-editor-page';
@@ -11,7 +11,7 @@ import {Settings} from '../pages/staff-pages/settings/settings';
 import {Profile} from '../pages/staff-pages/profile/profile';
 import {fetchSystemConfig, selectSystemConfigValue} from '../slices/system-config-slice';
 import {ProviderLinksOverview} from '../pages/staff-pages/provider-links-overview/provider-links-overview';
-import {Alert, Snackbar, Theme, ThemeProvider} from '@mui/material';
+import {Alert, Snackbar, Theme, ThemeProvider, Typography} from '@mui/material';
 import {createAppTheme} from '../theming/themes';
 import {SystemConfigKeys} from '../data/system-config-keys';
 import {PresetsOverview} from '../pages/staff-pages/presets-overview/presets-overview';
@@ -21,6 +21,7 @@ import {useAppSelector} from '../hooks/use-app-selector';
 import {resetSnackbar} from '../slices/snackbar-slice';
 import {logout, selectAuthenticationState} from '../slices/auth-slice';
 import {AuthState} from "../data/auth-state";
+import {InfoDialog} from "../dialogs/info-dialog/info-dialog";
 
 const routes: [string, FunctionComponent][] = [
     ['/', Login],
@@ -41,15 +42,21 @@ function StaffApp() {
     const theme = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
     const snackbar = useAppSelector(state => state.snackbar);
     const authState = useAppSelector(selectAuthenticationState);
+    const [showTimeout, setShowTimeout] = useState(false);
 
     useEffect(() => {
         axios.interceptors.response.use(response => {
             return response;
         }, error => {
-            console.error(error);
+            console.error('axios.interceptor', error);
             if (error.response.status === 401 && authState === AuthState.Authenticated) {
                 dispatch(logout());
             }
+
+            if (error.code === 'ECONNABORTED') {
+                setShowTimeout(true);
+            }
+
             return Promise.reject(error);
         });
 
@@ -77,6 +84,18 @@ function StaffApp() {
                     }
                 </Routes>
             </HashRouter>
+
+            <InfoDialog
+                open={showTimeout}
+                severity="error"
+                title="Serververbindung fehlgeschlagen"
+            >
+                <Typography>
+                    Die Verbindung mit dem Gover-Server ist fehlgeschlagen oder hat zu lange gedauert.
+                    Bitte laden Sie die Seite neu.
+                    Wenn das Problem weiterhin besteht, probieren Sie es später erneut oder wenden Sie sich an den Betreiber der Gover-Installation.
+                </Typography>
+            </InfoDialog>
 
             <Snackbar
                 open={snackbar.message != null}

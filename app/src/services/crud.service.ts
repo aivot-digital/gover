@@ -42,7 +42,7 @@ export class CrudService<T extends { id: number }, A extends string, I> {
     public static getConfig(): AxiosRequestConfig {
         const jwt = LocalStorageService.loadString(LocalstorageKey.JWT);
         return {
-            timeout: 1000,
+            timeout: 5000,
             headers: jwt != null ? {
                 Authorization: `Bearer ${jwt}`,
             } : undefined,
