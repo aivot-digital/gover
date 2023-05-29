@@ -106,7 +106,7 @@ public class SubmitController {
                 destination = destinationRepository.findById(Long.valueOf(destinationId));
             }
 
-            if (destination.isPresent() && destination.get().getMaxAttachmentMegaBytes() != null) {
+            if (files != null && files.length > 0 && destination.isPresent() && destination.get().getMaxAttachmentMegaBytes() != null) {
                 long filesTotalBytes = 0;
                 for (MultipartFile file : files) {
                     filesTotalBytes += file.getSize();
