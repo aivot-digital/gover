@@ -35,6 +35,8 @@ import {FileUploadElementItem, isFileUploadElementItem} from "../../models/eleme
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from "../../views/base-view";
 
+const submissionTimeoutMinMs = 3000;
+
 export function RootComponentView({allElements, element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
     const [$debug] = useLogging();
@@ -155,20 +157,26 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
             if (currentStep === (allSteps.length - 1)) {
                 if (application != null) {
                     setIsSubmitting(true);
+                    const submissionStartTimestamp = new Date().getMilliseconds();
                     try {
-                        const pdfLink = await ApplicationService.submit(application, customerData)
-                        setValidatedWithErrors(false);
-                        setPdfLink(pdfLink);
-                        dispatch(nextStep());
-                        dispatch(resetUserInput());
-                        UserInputService.cleanUserInput(application);
+                        const pdfLink = await ApplicationService.submit(application, customerData);
+                        const deltaTime = new Date().getMilliseconds() - submissionStartTimestamp;
+                        setTimeout( () => {
+                            setValidatedWithErrors(false);
+                            setPdfLink(pdfLink);
+                            dispatch(nextStep());
+                            dispatch(resetUserInput());
+                            UserInputService.cleanUserInput(application);
+                            setIsSubmitting(false);
+                        }, deltaTime >= submissionTimeoutMinMs ? 1 : submissionTimeoutMinMs - deltaTime);
                     } catch (error) {
                         console.error(error);
-                        dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                        const deltaTime = new Date().getMilliseconds() - submissionStartTimestamp;
+                        setTimeout( () => {
+                            dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                            setIsSubmitting(false);
+                        }, deltaTime >= submissionTimeoutMinMs ? 1 : submissionTimeoutMinMs - deltaTime);
                     }
-                    setTimeout( () => {
-                        setIsSubmitting(false);
-                    }, 1000);
                 } else {
                     throw new Error('Cannot submit customer data: No application data loaded.');
                 }
