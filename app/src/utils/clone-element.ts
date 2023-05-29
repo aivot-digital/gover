@@ -29,7 +29,7 @@ function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean
         const clonedChildren = [];
 
         for (const child of clone.children) {
-            const res = deepCloneElement(child);
+            const res = deepCloneElement(child, skipSuffix);
             for (const key of Object.keys(res.idMap)) {
                 idMap[key] = res.idMap[key];
             }
