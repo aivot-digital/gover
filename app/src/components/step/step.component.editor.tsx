@@ -8,16 +8,6 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
     return (
         <>
             <TextField
-                value={props.element.name ?? ''}
-                label="Interner Name"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    name: event.target.value,
-                })}
-            />
-
-            <TextField
                 value={props.element.title ?? ''}
                 label="Titel des Abschnitts"
                 fullWidth

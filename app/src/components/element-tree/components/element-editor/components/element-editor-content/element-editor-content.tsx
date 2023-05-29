@@ -58,46 +58,49 @@ export function ElementEditorContent<T extends AnyElement>({
 
                     {
                         element.type !== ElementType.Root &&
-                        element.type !== ElementType.Step &&
                         element.type !== ElementType.IntroductionStep &&
                         element.type !== ElementType.SummaryStep &&
                         element.type !== ElementType.SubmitStep &&
-                        <>
-                            <TextField
-                                label="Interner Name"
-                                value={element.name ?? ''}
-                                fullWidth
-                                margin="normal"
+                        <TextField
+                            label="Interner Name"
+                            value={element.name ?? ''}
+                            fullWidth
+                            margin="normal"
+                            onChange={event => {
+                                handleUpdate({name: event.target.value ?? ''});
+                            }}
+                            helperText="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und ihre Mitarbeiter einsehen"
+                        />
+                    }
+                    {
+                        element.type !== ElementType.Root &&
+                        element.type !== ElementType.IntroductionStep &&
+                        element.type !== ElementType.Step &&
+                        element.type !== ElementType.SummaryStep &&
+                        element.type !== ElementType.SubmitStep &&
+                        <FormControl fullWidth>
+                            <InputLabel id="width-label">
+                                Breite
+                            </InputLabel>
+                            <Select
+                                labelId="width-label"
+                                value={(element as AnyFormElement).weight ?? 12}
+                                label="Breite"
                                 onChange={event => {
-                                    handleUpdate({name: event.target.value ?? ''});
+                                    handleUpdate({weight: event.target.value ?? 12} as Partial<AnyElement>);
                                 }}
-                                helperText="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und ihre Mitarbeiter einsehen"
-                            />
-
-                            <FormControl fullWidth>
-                                <InputLabel id="width-label">
-                                    Breite
-                                </InputLabel>
-                                <Select
-                                    labelId="width-label"
-                                    value={(element as AnyFormElement).weight ?? 12}
-                                    label="Breite"
-                                    onChange={event => {
-                                        handleUpdate({weight: event.target.value ?? 12} as Partial<AnyElement>);
-                                    }}
-                                >
-                                    <MenuItem value={3}>25%</MenuItem>
-                                    <MenuItem value={4}>33%</MenuItem>
-                                    <MenuItem value={6}>50%</MenuItem>
-                                    <MenuItem value={8}>66%</MenuItem>
-                                    <MenuItem value={9}>75%</MenuItem>
-                                    <MenuItem value={12}>100%</MenuItem>
-                                </Select>
-                                <FormHelperText>
-                                    Bestimmen Sie die Breite des Anzeigeelements.
-                                </FormHelperText>
-                            </FormControl>
-                        </>
+                            >
+                                <MenuItem value={3}>25%</MenuItem>
+                                <MenuItem value={4}>33%</MenuItem>
+                                <MenuItem value={6}>50%</MenuItem>
+                                <MenuItem value={8}>66%</MenuItem>
+                                <MenuItem value={9}>75%</MenuItem>
+                                <MenuItem value={12}>100%</MenuItem>
+                            </Select>
+                            <FormHelperText>
+                                Bestimmen Sie die Breite des Anzeigeelements.
+                            </FormHelperText>
+                        </FormControl>
                     }
 
                     <Box sx={{m: 4}}/>
