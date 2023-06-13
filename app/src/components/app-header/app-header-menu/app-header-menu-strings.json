@@ -7,7 +7,7 @@
     "destinations": "Interfaces",
     "providerLinks": "Links",
     "signOut": "Sign out",
-    "deleteCustomerData": "Delete Data"
+    "deleteCustomerData": "Delete all data"
   },
   "de": {
     "profile": "Profil",
@@ -17,6 +17,6 @@
     "destinations": "Schnittstellen",
     "providerLinks": "Links",
     "signOut": "Abmelden",
-    "deleteCustomerData": "Daten löschen"
+    "deleteCustomerData": "Alle Antragsdaten löschen"
   }
 }

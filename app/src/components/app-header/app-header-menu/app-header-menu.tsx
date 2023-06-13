@@ -16,20 +16,35 @@ import {UserRole} from "../../../data/user-role";
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {selectUser} from "../../../slices/user-slice";
 import {resetErrors} from "../../../slices/customer-input-errors-slice";
+import {AppDispatch} from "../../../store";
 
 const __ = Localization(strings);
 
-type MenuItem = {
+type MenuItemDivider = {
     type: AppMode;
-} & ({
-    linkTo?: string,
+    divider: true;
+};
+
+function isMenuItemDivider(obj: any): obj is MenuItemDivider {
+    return obj != null && 'divider' in obj;
+}
+
+type MenuItemAction = {
+    type: AppMode;
     adminOnly: boolean,
     icon: IconDefinition,
     label: string,
+
+    linkTo?: string,
     events?: any[],
-} | {
-    divider: true;
-});
+    onClick?: (dispatch: AppDispatch) => void,
+};
+
+function isMenuItemAction(obj: any): obj is MenuItemAction {
+    return obj != null && 'label' in obj;
+}
+
+type MenuItem = MenuItemDivider | MenuItemAction;
 
 const menuItems: MenuItem[] = [
     // Staff Menu Items
@@ -95,11 +110,14 @@ const menuItems: MenuItem[] = [
 
     // Customer Menu Items
     {
-        events: [
-            resetUserInput,
-            resetStepper,
-            resetErrors,
-        ],
+        onClick: (dispatch) => {
+            const conf = window.confirm('Sollen wirklich alle Daten gelöscht werden?');
+            if (conf) {
+                dispatch(resetUserInput());
+                dispatch(resetStepper());
+                dispatch(resetErrors());
+            }
+        },
         adminOnly: false,
         icon: faSignOut,
         label: __.deleteCustomerData,
@@ -111,6 +129,73 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectUser);
 
+    const deriveMenuItem = (item: MenuItem, index: number) => {
+        if (isMenuItemDivider(item)) {
+            return (
+                <Divider key={index}/>
+            );
+        } else if (isMenuItemAction(item)) {
+            if (item.linkTo != null) {
+                return (
+                    <MenuItem
+                        key={index}
+                        component={Link}
+                        to={item.linkTo}
+                    >
+                        <ListItemIcon>
+                            <FontAwesomeIcon
+                                icon={item.icon}
+                            />
+                        </ListItemIcon>
+                        <ListItemText>
+                            {item.label}
+                        </ListItemText>
+                    </MenuItem>
+                );
+            } else if (item.events != null) {
+                return (
+                    <MenuItem
+                        key={index}
+                        onClick={() => {
+                            for (const evt of item.events!) {
+                                dispatch(evt());
+                            }
+                            props.onClose();
+                        }}
+                    >
+                        <ListItemIcon>
+                            <FontAwesomeIcon
+                                icon={item.icon}
+                            />
+                        </ListItemIcon>
+                        <ListItemText>
+                            {item.label}
+                        </ListItemText>
+                    </MenuItem>
+                );
+            } else if (item.onClick != null) {
+                return (
+                    <MenuItem
+                        key={index}
+                        onClick={() => {
+                            item.onClick!(dispatch);
+                            props.onClose();
+                        }}
+                    >
+                        <ListItemIcon>
+                            <FontAwesomeIcon
+                                icon={item.icon}
+                            />
+                        </ListItemIcon>
+                        <ListItemText>
+                            {item.label}
+                        </ListItemText>
+                    </MenuItem>
+                );
+            }
+        }
+    };
+
     return (
         <Menu
             anchorEl={props.anchorElement}
@@ -120,28 +205,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
             {
                 menuItems
                     .filter(mi => mi.type === props.mode && (!('adminOnly' in mi) || !mi.adminOnly || (user != null && user.role === UserRole.Admin)))
-                    .map((mi, index) => 'divider' in mi ? <Divider key={index}/> : (
-                        <MenuItem
-                            key={index}
-                            component={'linkTo' in mi ? Link : 'li'}
-                            to={'linkTo' in mi ? mi.linkTo : undefined}
-                            onClick={() => {
-                                if ('events' in mi && mi.events != null) {
-                                    mi.events.forEach(evt => dispatch(evt()));
-                                    props.onClose();
-                                }
-                            }}
-                        >
-                            <ListItemIcon>
-                                <FontAwesomeIcon
-                                    icon={mi.icon}
-                                />
-                            </ListItemIcon>
-                            <ListItemText>
-                                {mi.label}
-                            </ListItemText>
-                        </MenuItem>
-                    ))
+                    .map(deriveMenuItem)
             }
         </Menu>
     );
