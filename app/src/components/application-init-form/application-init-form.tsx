@@ -8,6 +8,7 @@ import {Application} from '../../models/entities/application';
 import {checkTitle} from '../../utils/check-title';
 import {checkSlugAndVersion} from '../../utils/check-slug-and-version';
 import {checkVersion} from '../../utils/check-version';
+import {TextFieldComponent} from "../text-field/text-field-component";
 
 const _ = Localization(strings);
 
@@ -27,20 +28,20 @@ export function ApplicationInitForm({application, onChange, errors}: Application
                 {_.titleHelper}
             </Typography>
 
-            <TextField
+            <TextFieldComponent
                 label={_.titleLabel}
                 placeholder={_.titlePlaceholder}
                 value={application.root.title ?? ''}
-                onChange={event => {
+                onChange={val => {
                     patch({
                         root: {
                             ...application.root,
-                            title: event.target.value,
+                            title: val,
                         }
                     });
                 }}
-                onBlur={() => {
-                    const title = application.root.title?.trim() ?? '';
+                onBlur={val => {
+                    const title = val != null ? val.trim() : '';
                     patch({
                         root: {
                             ...application.root,
@@ -53,10 +54,7 @@ export function ApplicationInitForm({application, onChange, errors}: Application
                         });
                     }
                 }}
-                error={errors.title != null}
-                helperText={errors.title}
-                sx={{mt: 3}}
-                fullWidth
+                error={errors.title}
             />
 
             <Typography
@@ -66,24 +64,21 @@ export function ApplicationInitForm({application, onChange, errors}: Application
                 {_.slugHelper}
             </Typography>
 
-            <TextField
+            <TextFieldComponent
                 label={_.slugLabel}
                 placeholder={_.slugPlaceholder}
                 value={application.slug}
-                onChange={event => {
+                onChange={val => {
                     patch({
-                        slug: event.target.value,
+                        slug: val,
                     });
                 }}
-                onBlur={() => {
+                onBlur={val => {
                     patch({
-                        slug: application.slug.trim().replace(/-\s*$/, ''),
+                        slug: val != null ? val.trim().replace(/-\s*$/, '') : '',
                     });
                 }}
-                sx={{mt: 3}}
-                fullWidth
-                error={errors.slug != null}
-                helperText={errors.slug}
+                error={errors.slug}
             />
 
             <Alert
@@ -101,24 +96,21 @@ export function ApplicationInitForm({application, onChange, errors}: Application
                 {_.versionHelper}
             </Typography>
 
-            <TextField
+            <TextFieldComponent
                 label={_.versionLabel}
                 placeholder={_.versionPlaceholder}
                 value={application.version}
-                onChange={event => {
+                onChange={val => {
                     patch({
-                        version: event.target.value,
+                        version: val,
                     });
                 }}
-                onBlur={() => {
+                onBlur={val => {
                     patch({
-                        version: application.version.trim(),
+                        version: val != null ? val.trim() : '',
                     });
                 }}
-                sx={{mt: 3}}
-                fullWidth
-                error={errors.version != null}
-                helperText={errors.version}
+                error={errors.version}
             />
 
             {
@@ -146,12 +138,12 @@ export function validateApplication(app: Application, otherApps: Application[]):
         errors.version = versionErrors[0];
     }
 
-    const slugErrors = checkSlugAndVersion(otherApps, app.slug, app.version);
-    if (slugErrors.length > 0) {
-        errors.slug = slugErrors[0];
-        if (errors.version == null) {
-            errors.version = slugErrors[0];
-        }
+    const {slugError, versionError} = checkSlugAndVersion(otherApps, app.slug, app.version);
+    if (slugError != null) {
+        errors.slug = slugError;
+    }
+    if (versionError != null) {
+        errors.version = versionError;
     }
 
     return errors;
