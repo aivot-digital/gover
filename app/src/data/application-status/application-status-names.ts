@@ -6,4 +6,5 @@ export const ApplicationStatusNames: {
     [ApplicationStatus.Drafted]: 'In Bearbeitung',
     [ApplicationStatus.InReview]: 'Wartet auf Freigabe',
     [ApplicationStatus.Published]: 'Veröffentlicht',
+    [ApplicationStatus.Revoked]: 'Zurückgezogen',
 }

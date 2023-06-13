@@ -1,7 +1,18 @@
 import React from 'react';
-import {Alert, Button, Checkbox, List, ListItem, ListItemText, Tooltip, Typography} from '@mui/material';
+import {
+    Alert,
+    AlertTitle,
+    Button,
+    Checkbox,
+    Dialog, Divider,
+    List,
+    ListItem,
+    ListItemText,
+    Tooltip,
+    Typography
+} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faPaperPlane} from '@fortawesome/pro-light-svg-icons';
+import {faPaperPlane, faPause} from '@fortawesome/pro-light-svg-icons';
 import {BaseEditorProps} from "../../editors/base-editor";
 import {RootElement} from "../../models/elements/root-element";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
@@ -21,6 +32,7 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
     const application = useAppSelector(selectLoadedApplication);
 
     const isPublished = application?.status === ApplicationStatus.Published;
+    const isRevoked = application?.status === ApplicationStatus.Revoked;
 
     const checklist: {
         label: string;
@@ -108,11 +120,68 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
 
             {
                 isPublished &&
+                <>
+                    <Alert
+                        severity='success'
+                    >
+                        Antrag Veröffentlicht
+                    </Alert>
+
+                    <Divider
+                        sx={{my: 8}}
+                    >
+                        Antrag zurückziehen
+                    </Divider>
+
+                    <Alert
+                        severity='warning'
+                        sx={{mb: 2}}
+                    >
+                        <AlertTitle>
+                            Antrag zurückziehen
+                        </AlertTitle>
+
+                        Sie können einen veröffentlichten Antrag jederzeit zurückziehen.
+                        Dieser wird dann nicht mehr ausgespielt.
+                        Sie können zurückgezogene Anträge jederzeit wieder veröffentlichen.
+                    </Alert>
+
+                    <Tooltip
+                        title="Jetzt zurückziehen"
+                    >
+                        <Button
+                            variant="outlined"
+                            endIcon={
+                                <FontAwesomeIcon icon={faPause}/>
+                            }
+                            color="warning"
+                            onClick={() => {
+                                if (application != null) {
+                                    dispatch(updateAppModel({
+                                        ...application,
+                                        status: ApplicationStatus.Revoked,
+                                    }));
+                                }
+                            }}
+                        >
+                            Antrag Zurückziehen
+                        </Button>
+                    </Tooltip>
+                </>
+            }
+
+            {
+                isRevoked &&
                 <Alert
-                    severity='success'
+                    severity='warning'
                     sx={{mb: 2}}
                 >
-                    Antrag Veröffentlicht
+                    <AlertTitle>
+                        Antrag zurückgezogen
+                    </AlertTitle>
+
+                    Sie haben den Antrag zurückgezogen.
+                    Sie können diesen Antrag jederzeit wieder veröffentlichen.
                 </Alert>
             }
 

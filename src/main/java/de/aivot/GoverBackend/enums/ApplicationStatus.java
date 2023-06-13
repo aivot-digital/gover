@@ -6,7 +6,8 @@ import de.aivot.GoverBackend.lib.Identifiable;
 public enum ApplicationStatus implements Identifiable<Integer> {
     Drafted(0),
     InReview(1),
-    Published(2);
+    Published(2),
+    Revoked(3);
 
     private final Integer key;
 
