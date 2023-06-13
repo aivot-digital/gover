@@ -4,18 +4,20 @@ import {
     Button,
     FormControl,
     FormHelperText,
-    FormLabel,
+    FormLabel, IconButton,
     Paper,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableRow,
-    TextField,
+    TextField, Tooltip,
     Typography
 } from "@mui/material";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faAdd, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
+import {faAdd, faArrowRightArrowLeft, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
+import {useState} from "react";
+import {TextFieldComponent} from "../text-field/text-field-component";
 
 interface StringListInputProps {
     label: string;
@@ -36,6 +38,8 @@ export function StringListInput({
                                     onChange,
                                     allowEmpty
                                 }: StringListInputProps) {
+    const [rawMode, setRawMode] = useState(false);
+    const [rawBuffer, setRawBuffer] = useState<string>();
     const isValueEmpty = !allowEmpty && (value == null || value.length === 0);
     const hasEmptyItem = value && value.some(val => val.trim().length === 0);
 
@@ -45,12 +49,30 @@ export function StringListInput({
             component={Paper}
             sx={{p: 2}}
         >
-            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                <FormLabel>
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                <Tooltip
+                    title="Modus umschalten"
+                >
+                    <IconButton
+                        size="small"
+                        onClick={() => setRawMode(!rawMode)}
+                    >
+                        <FontAwesomeIcon
+                            icon={faArrowRightArrowLeft}
+                        />
+                    </IconButton>
+                </Tooltip>
+
+                <FormLabel
+                    sx={{ml: 1}}
+                >
                     {label}
                 </FormLabel>
 
                 <Button
+                    sx={{
+                        ml: 'auto',
+                    }}
                     startIcon={
                         <FontAwesomeIcon
                             icon={faAdd}
@@ -75,7 +97,9 @@ export function StringListInput({
                     </Typography>
                 </Alert>
             }
+
             {
+                !rawMode &&
                 value &&
                 value.length > 0 &&
                 <TableContainer>
@@ -134,6 +158,21 @@ export function StringListInput({
                         </TableBody>
                     </Table>
                 </TableContainer>
+            }
+
+            {
+                rawMode &&
+                <TextFieldComponent
+                    label="Einträge"
+                    placeholder={'Option 1\nOption 2\nOption 3'}
+                    value={rawBuffer ?? (value ?? []).join('\n')}
+                    onChange={val => setRawBuffer(val ?? '')}
+                    onBlur={val => {
+                        setRawBuffer(undefined);
+                        onChange(val != null ? val.split('\n').map(l => l.trim()) : undefined);
+                    }}
+                    multiline
+                />
             }
 
             <FormHelperText sx={{mt: 2}}>

@@ -12,6 +12,7 @@ export function TextFieldComponent({
                                        hint,
                                        maxCharacters,
                                        onChange,
+                                       onBlur,
                                    }: TextFieldComponentProps) {
     return (
         <TextField
@@ -54,7 +55,11 @@ export function TextFieldComponent({
             onBlur={() => {
                 if (value != null) {
                     const trimmedValue = value.trim();
-                    onChange(trimmedValue.length === 0 ? undefined : trimmedValue);
+                    const blurValue = trimmedValue.length === 0 ? undefined : trimmedValue;
+                    onChange(blurValue);
+                    if (onBlur != null) {
+                        onBlur(blurValue);
+                    }
                 }
             }}
             inputProps={

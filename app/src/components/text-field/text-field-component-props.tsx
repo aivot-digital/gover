@@ -9,4 +9,5 @@ export interface TextFieldComponentProps {
     hint?: string;
     maxCharacters?: number;
     onChange: (val: string | undefined) => void;
+    onBlur?: (val: string | undefined) => void;
 }
