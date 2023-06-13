@@ -45,12 +45,12 @@ public class ConditionSet {
         this.conditionSetUnmetMessage = conditionSetUnmetMessage;
     }
 
-    public String evaluate(RootElement root, Map<String, Object> customerInput) {
+    public String evaluate(String idPrefix, RootElement root, Map<String, Object> customerInput) {
         return switch (operator) {
             case All -> {
                 if (conditions != null) {
                     for (var c : conditions) {
-                        var res = c.evaluate(root, customerInput);
+                        var res = c.evaluate(idPrefix, root, customerInput);
                         if (res != null) {
                             yield res;
                         }
@@ -59,7 +59,7 @@ public class ConditionSet {
 
                 if (conditionsSets != null) {
                     for (var c : conditionsSets) {
-                        var res = c.evaluate(root, customerInput);
+                        var res = c.evaluate(idPrefix, root, customerInput);
                         if (res != null) {
                             yield res;
                         }
@@ -69,7 +69,7 @@ public class ConditionSet {
                 yield null;
             }
             case Any -> {
-                boolean res = (conditions != null && conditions.stream().anyMatch(c -> c.evaluate(root, customerInput) == null)) || (conditionsSets != null && conditionsSets.stream().anyMatch(cs -> cs.evaluate(root, customerInput) == null));
+                boolean res = (conditions != null && conditions.stream().anyMatch(c -> c.evaluate(idPrefix, root, customerInput) == null)) || (conditionsSets != null && conditionsSets.stream().anyMatch(cs -> cs.evaluate(idPrefix, root, customerInput) == null));
                 if (!res) {
                     yield conditionSetUnmetMessage;
                 }

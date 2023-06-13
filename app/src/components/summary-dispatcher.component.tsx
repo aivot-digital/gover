@@ -10,6 +10,7 @@ import {evaluateFunction} from "../utils/evaluate-function";
 import {CustomerInput} from "../models/customer-input";
 import Summaries from "../summaries";
 import {BaseSummaryProps} from "../summaries/base-summary";
+import {resolveId} from "../utils/id-utils";
 
 interface DispatcherComponentProps<M extends AnyElement> {
     allElements: AnyElement[];
@@ -17,11 +18,11 @@ interface DispatcherComponentProps<M extends AnyElement> {
     idPrefix?: string;
 }
 
-function makeValue(allElements: AnyElement[], model: AnyElement, id: string, global?: CustomerInput): any | null | undefined {
+function makeValue(idPrefix: string | undefined, allElements: AnyElement[], model: AnyElement, id: string, global?: CustomerInput): any | null | undefined {
     if (isAnyInputElement(model) && model.computeValue != null) {
-        return evaluateFunction(allElements, model.computeValue, (global ?? {}), model, id, false);
+        return evaluateFunction(idPrefix, allElements, model.computeValue, (global ?? {}), model, id, false);
     }
-    return (model as any).value ?? (global ?? {})[id];
+    return (model as any).value ?? (global ?? {})[resolveId(id, idPrefix)];
 }
 
 export function SummaryDispatcherComponent<M extends AnyElement>({allElements, element, idPrefix}: DispatcherComponentProps<M>) {
@@ -32,13 +33,13 @@ export function SummaryDispatcherComponent<M extends AnyElement>({allElements, e
 
     const patchedModel = {
         ...element,
-        ...generateComponentPatch(allElements, id, element, customerInput),
+        ...generateComponentPatch(idPrefix, allElements, element.id, element, customerInput),
         id,
     };
 
-    const value = makeValue(allElements, patchedModel, id, customerInput);
+    const value = makeValue(idPrefix, allElements, patchedModel, element.id, customerInput);
 
-    const isVisible = disableVisibility || isElementVisible(allElements, id, element, customerInput);
+    const isVisible = disableVisibility || isElementVisible(idPrefix, allElements, element.id, element, customerInput);
 
     if (!isVisible) {
         return null;

@@ -25,7 +25,7 @@ public class CheckboxField extends BaseInputElement<Boolean> {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, Boolean value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Boolean value, ScriptEngine scriptEngine) throws ValidationException {
         if (Boolean.TRUE.equals(getRequired()) && !Boolean.TRUE.equals(value)) {
             throw new RequiredValidationException(this);
         }

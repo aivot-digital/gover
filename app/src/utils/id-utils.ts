@@ -73,3 +73,11 @@ export function generateElementIdForReplicatingContainerChild(): string {
 function generateElementId(prefix: string): string {
     return prefix + '_' + new Date().getTime().toFixed() + Math.floor((Math.random() + 0.1) * 1000).toFixed(0);
 }
+
+export function makeId(element: AnyElement, idPrefix?: string | null): string {
+    return idPrefix != null ? (idPrefix + element.id) : element.id;
+}
+
+export function resolveId(id: string, idPrefix?: string | null): string {
+    return idPrefix != null ? (idPrefix + id) : id;
+}

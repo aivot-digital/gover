@@ -95,7 +95,7 @@ public class SubmitController {
             Application application = fetchedApplication.get();
             RootElement root = application.getRoot();
             try {
-                root.validate(root, customerData, null, scriptEngine);
+                root.validate(null, root, customerData, scriptEngine);
             } catch (ValidationException ex) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Field " + ex.getElement().getId() + ": " + ex.getMessage());
             }

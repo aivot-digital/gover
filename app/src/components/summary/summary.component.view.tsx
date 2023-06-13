@@ -99,7 +99,7 @@ export function SummaryComponentView({allElements}: BaseViewProps<SummaryStepEle
 export function flattenElementsForSummary(allElements: AnyElement[], model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
     const id = idPrefix != null ? (idPrefix + model.id) : model.id;
 
-    const isVisible = isElementVisible(allElements, id, model, userInput);
+    const isVisible = isElementVisible(idPrefix, allElements, model.id, model, userInput);
 
     if (!isVisible) {
         return [];

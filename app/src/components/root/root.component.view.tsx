@@ -73,7 +73,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
 
     const [validatedWithErrors, setValidatedWithErrors] = useState(false);
 
-    const visibleChildSteps = (element.children ?? []).filter(elem => adminSettings.disableVisibility || isElementVisible(allElements, elem.id, elem, customerData));
+    const visibleChildSteps = (element.children ?? []).filter(elem => adminSettings.disableVisibility || isElementVisible(undefined, allElements, elem.id, elem, customerData));
 
     const generalInformationStepIndex = 0;
     const summaryStepIndex = visibleChildSteps.length + 1;
@@ -176,7 +176,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
         } else {
             const step = visibleChildSteps[currentStep - 1];
             if (step != null) {
-                isValid = isElementValid($debug, allElements, dispatch, step, customerData);
+                isValid = isElementValid($debug, undefined, allElements, dispatch, step, customerData);
             }
         }
 

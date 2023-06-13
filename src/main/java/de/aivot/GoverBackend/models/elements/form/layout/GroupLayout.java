@@ -25,12 +25,12 @@ public class GroupLayout extends BaseFormElement {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, ScriptEngine scriptEngine) throws ValidationException {
         if (children != null) {
             for (var child : children) {
-                child.patch(root, customerInput, idPrefix, scriptEngine);
-                if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
-                    child.validate(root, customerInput, idPrefix, scriptEngine);
+                child.patch(idPrefix, root, customerInput, scriptEngine);
+                if (child.isVisible(idPrefix, root, customerInput, scriptEngine)) {
+                    child.validate(idPrefix, root, customerInput, scriptEngine);
                 }
             }
         }
@@ -42,8 +42,8 @@ public class GroupLayout extends BaseFormElement {
 
         if (children != null) {
             for (var child : children) {
-                child.patch(root, customerInput, idPrefix, scriptEngine);
-                if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
+                child.patch(idPrefix, root, customerInput, scriptEngine);
+                if (child.isVisible(idPrefix, root, customerInput, scriptEngine)) {
                     rows.addAll(child.toPdfRows(root, customerInput, idPrefix, scriptEngine));
                 }
             }

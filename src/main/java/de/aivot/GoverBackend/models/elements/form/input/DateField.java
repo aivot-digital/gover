@@ -55,7 +55,7 @@ public class DateField extends BaseInputElement<String> {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, String value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, String value, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null && Boolean.TRUE.equals(getRequired())) {
             throw new RequiredValidationException(this);
         }

@@ -53,7 +53,7 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Collection<String> value, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -71,9 +71,9 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
                 for (var val : value) {
                     for (var child : children) {
                         String childId = getResolvedId(idPrefix) + "_" + val;
-                        child.patch(root, customerInput, childId, scriptEngine);
-                        if (child.isVisible(root, customerInput, childId, scriptEngine)) {
-                            child.validate(root, customerInput, childId, scriptEngine);
+                        child.patch(childId, root, customerInput, scriptEngine);
+                        if (child.isVisible(childId, root, customerInput, scriptEngine)) {
+                            child.validate(childId, root, customerInput, scriptEngine);
                         }
                     }
                 }
@@ -97,8 +97,8 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
 
                 for (var child : children) {
                     String childId = getResolvedId(idPrefix) + "_" + val;
-                    child.patch(root, customerInput, childId, scriptEngine);
-                    if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
+                    child.patch(childId, root, customerInput, scriptEngine);
+                    if (child.isVisible(childId, root, customerInput, scriptEngine)) {
                         fields.addAll(child.toPdfRows(root, customerInput, childId, scriptEngine));
                     }
                 }

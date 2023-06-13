@@ -13,15 +13,12 @@ import {selectDisableVisibility} from "../slices/admin-settings-slice";
 import {ErrorBoundary} from "./error-boundary/error-boundary";
 import {selectCustomerInputErrorValue} from "../slices/customer-input-errors-slice";
 import {useAppDispatch} from "../hooks/use-app-dispatch";
+import {makeId} from "../utils/id-utils";
 
 interface DispatcherComponentProps<M extends AnyElement> {
     allElements: AnyElement[];
     element: M;
     idPrefix?: string;
-}
-
-function makeId(element: AnyElement, idPrefix?: string | null): string {
-    return idPrefix != null ? (idPrefix + element.id) : element.id;
 }
 
 
@@ -38,7 +35,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>({
     const disableVisibility = useAppSelector(selectDisableVisibility);
     const error = useAppSelector(selectCustomerInputErrorValue(id));
 
-    const isVisible = disableVisibility || isElementVisible(allElements, id, element, userInputData);
+    const isVisible = disableVisibility || isElementVisible(idPrefix, allElements, element.id, element, userInputData);
 
     if (!isVisible) {
         return null;
@@ -51,11 +48,11 @@ export function ViewDispatcherComponent<M extends AnyElement, V>({
 
     const patchedModel = {
         ...element,
-        ...generateComponentPatch(allElements, id, element, userInputData),
+        ...generateComponentPatch(idPrefix, allElements, element.id, element, userInputData),
         id,
     };
 
-    const value = isAnyInputElement(element) ? (evaluateFunction(allElements, element.computeValue, userInputData, element, id, false) ?? userInputData[id]) : null;
+    const value = isAnyInputElement(element) ? (evaluateFunction(idPrefix, allElements, element.computeValue, userInputData, element, element.id, false) ?? userInputData[id]) : null;
 
     const viewProps: BaseViewProps<M, V> = {
         allElements: allElements,

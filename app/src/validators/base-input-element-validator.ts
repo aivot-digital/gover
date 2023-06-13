@@ -2,12 +2,11 @@ import {BaseValidator} from './base-validator';
 import {isElementVisible} from '../utils/is-element-visible';
 import {AnyInputElement} from "../models/elements/form/input/any-input-element";
 import {evaluateFunction} from "../utils/evaluate-function";
-import {CustomerInput} from "../models/customer-input";
 import {AnyElement} from "../models/elements/any-element";
 
 export abstract class BaseInputElementValidator<T, M extends AnyInputElement> extends BaseValidator<M> {
-    makeErrors(allElements: AnyElement[], id: string, comp: M, userInput: any): string | null {
-        const isVisible = isElementVisible(allElements, id, comp, userInput);
+    makeErrors(allElements: AnyElement[], idPrefix: string | undefined, id: string, comp: M, userInput: any): string | null {
+        const isVisible = isElementVisible(idPrefix, allElements, id, comp, userInput);
         if (!isVisible) {
             return null;
         }
@@ -25,7 +24,7 @@ export abstract class BaseInputElementValidator<T, M extends AnyInputElement> ex
 
         let error: string | null = null;
         try {
-            error = evaluateFunction(allElements, comp.validate, userInput, comp, id, false);
+            error = evaluateFunction(idPrefix, allElements, comp.validate, userInput, comp, id, false);
         } catch (err) {
             console.error('Failed to run validator of ID ' + id, err);
         }

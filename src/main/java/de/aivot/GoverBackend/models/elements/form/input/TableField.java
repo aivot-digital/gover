@@ -45,7 +45,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, Collection<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Collection<Map<String, String>> value, ScriptEngine scriptEngine) throws ValidationException {
         if (Boolean.TRUE.equals(getRequired()) && value.isEmpty()) {
             throw new RequiredValidationException(this);
         }

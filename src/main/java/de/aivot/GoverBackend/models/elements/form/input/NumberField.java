@@ -50,7 +50,7 @@ public class NumberField extends BaseInputElement<Double> {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, Double value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Double value, ScriptEngine scriptEngine) throws ValidationException {
     }
 
     @Override

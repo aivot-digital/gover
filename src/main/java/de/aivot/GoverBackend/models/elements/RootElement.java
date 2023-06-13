@@ -71,16 +71,16 @@ public class RootElement extends BaseElement {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
-        introductionStep.validate(this, customerInput, idPrefix, scriptEngine);
-        summaryStep.validate(this, customerInput, idPrefix, scriptEngine);
-        submitStep.validate(this, customerInput, idPrefix, scriptEngine);
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, ScriptEngine scriptEngine) throws ValidationException {
+        introductionStep.validate(idPrefix, this, customerInput, scriptEngine);
+        summaryStep.validate(idPrefix, this, customerInput, scriptEngine);
+        submitStep.validate(idPrefix, this, customerInput, scriptEngine);
 
         if (children != null) {
             for (var child : children) {
-                child.patch(this, customerInput, idPrefix, scriptEngine);
-                if (child.isVisible(this, customerInput, idPrefix, scriptEngine)) {
-                    child.validate(root, customerInput, idPrefix, scriptEngine);
+                child.patch(idPrefix, this, customerInput, scriptEngine);
+                if (child.isVisible(idPrefix, this, customerInput, scriptEngine)) {
+                    child.validate(idPrefix, root, customerInput, scriptEngine);
                 }
             }
         }
@@ -91,8 +91,8 @@ public class RootElement extends BaseElement {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
         for (StepElement child : children) {
-            child.patch(root, customerInput, idPrefix, scriptEngine);
-            if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
+            child.patch(idPrefix, root, customerInput, scriptEngine);
+            if (child.isVisible(idPrefix, root, customerInput, scriptEngine)) {
                 rows.addAll(child.toPdfRows(root, customerInput, idPrefix, scriptEngine));
             }
         }

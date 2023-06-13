@@ -31,12 +31,12 @@ public class StepElement extends BaseElement {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, ScriptEngine scriptEngine) throws ValidationException {
         if (children != null) {
             for (var child : children) {
-                child.patch(root, customerInput, idPrefix, scriptEngine);
-                if (child.isVisible(root, customerInput, idPrefix, scriptEngine)) {
-                    child.validate(root, customerInput, idPrefix, scriptEngine);
+                child.patch(idPrefix, root, customerInput, scriptEngine);
+                if (child.isVisible(idPrefix, root, customerInput, scriptEngine)) {
+                    child.validate(idPrefix, root, customerInput, scriptEngine);
                 }
             }
         }
@@ -50,8 +50,8 @@ public class StepElement extends BaseElement {
 
         if (children != null) {
             for (var child : children) {
-                child.patch(root, customerInput, idPrefix, scriptEngine);
-                boolean childIsVisible = child.isVisible(root, customerInput, idPrefix, scriptEngine);
+                child.patch(idPrefix, root, customerInput, scriptEngine);
+                boolean childIsVisible = child.isVisible(idPrefix, root, customerInput, scriptEngine);
                 if (childIsVisible) {
                     rows.addAll(child.toPdfRows(root, customerInput, idPrefix, scriptEngine));
                 }

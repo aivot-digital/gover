@@ -50,6 +50,7 @@ function newNoCodeFunc(id1: keyof typeof customerData, id2: keyof typeof custome
 }
 
 const evalAbbr = (allElements: AnyElement[], id1: keyof typeof customerData, id2: keyof typeof customerData) => evaluateFunction(
+    undefined,
     allElements,
     newNoCodeFunc(id1, id2),
     customerData,
@@ -59,7 +60,8 @@ const evalAbbr = (allElements: AnyElement[], id1: keyof typeof customerData, id2
 );
 
 test('test evaluate code function', () => {
-    const resTrue = evaluateFunction([], {
+    const resTrue = evaluateFunction(
+        undefined,[], {
         requirements: '',
         code: `
         function main(data, element, id) {
@@ -69,7 +71,8 @@ test('test evaluate code function', () => {
     }, customerData, element, 'boolean-id1', true);
     expect(resTrue).toBe(true);
 
-    const resFalse = evaluateFunction([],{
+    const resFalse = evaluateFunction(
+        undefined,[],{
         requirements: '',
         code: `
         function main(data, element, id) {

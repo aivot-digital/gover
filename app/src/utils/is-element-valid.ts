@@ -10,17 +10,24 @@ import {generateComponentPatch} from "./generate-component-patch";
 import {isAnyElementWithChildren} from "../models/elements/any-element-with-children";
 import Validators from "../validators";
 
-export function isElementValid($debug: Logger, allElements: AnyElement[], dispatch: Dispatch<any>, _comp: AnyElement, userInput: any, idPrefix?: string): boolean {
+export function isElementValid(
+    $debug: Logger,
+    idPrefix: string | undefined,
+    allElements: AnyElement[],
+    dispatch: Dispatch<any>,
+    _comp: AnyElement,
+    userInput: any
+): boolean {
     const id = idPrefix != null ? (idPrefix + _comp.id) : _comp.id;
 
     const comp = {
         ..._comp,
-        ...generateComponentPatch(allElements, id, _comp, userInput),
+        ...generateComponentPatch(idPrefix, allElements, _comp.id, _comp, userInput),
     }
 
     $debug.start(`Validating Element ${id}`);
 
-    if (!isElementVisible(allElements, id, comp, userInput)) {
+    if (!isElementVisible(idPrefix, allElements, _comp.id, comp, userInput)) {
         $debug.log(`Element ${id} is not visible and needs no validation`);
         $debug.end();
         return true;
@@ -31,7 +38,7 @@ export function isElementValid($debug: Logger, allElements: AnyElement[], dispat
     if (isAnyInputElement(comp)) {
         const validator: BaseValidator<AnyInputElement> | null = Validators[comp.type];
         if (validator != null) {
-            const error = validator.makeErrors(allElements, id, comp, userInput);
+            const error = validator.makeErrors(allElements, idPrefix, _comp.id, comp, userInput);
             if (error != null) {
                 isValid = false;
                 dispatch(addError({key: id, error}));
@@ -46,10 +53,10 @@ export function isElementValid($debug: Logger, allElements: AnyElement[], dispat
                 if (comp.type === ElementType.ReplicatingContainer) {
                     const values: string[] | null = userInput[id];
                     return (values ?? []).map(val =>
-                        isElementValid($debug, allElements, dispatch, child, userInput, `${id}_${val}_`)
+                        isElementValid($debug, `${id}_${val}_`, allElements, dispatch, child, userInput, )
                     ).every(val => val);
                 } else {
-                    return isElementValid($debug, allElements, dispatch, child, userInput, idPrefix);
+                    return isElementValid($debug, idPrefix, allElements, dispatch, child, userInput);
                 }
             })
             .every(val => val);

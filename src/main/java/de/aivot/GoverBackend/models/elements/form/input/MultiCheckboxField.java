@@ -41,7 +41,7 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Collection<String> value, ScriptEngine scriptEngine) throws ValidationException {
         testValuesInOptions(value);
         testRequiredOptionsMet(value);
     }

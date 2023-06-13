@@ -47,7 +47,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         if (computeValue == null) {
             return Optional.empty();
         }
-        FunctionResult computedValueResult = computeValue.evaluate(root, this, customerData, getResolvedId(idPrefix), scriptEngine);
+        FunctionResult computedValueResult = computeValue.evaluate(idPrefix, root, this, customerData, scriptEngine);
         if (computedValueResult != null) {
             T formattedValue = formatValue(computedValueResult.getObjectValue());
             if (formattedValue != null) {
@@ -61,7 +61,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, ScriptEngine scriptEngine) throws ValidationException {
         Object rawValue = getComputedValue(root, customerInput, idPrefix, scriptEngine).orElse(null);
         if (rawValue == null) {
             rawValue = customerInput.get(getResolvedId(idPrefix));
@@ -86,10 +86,10 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 }
             }
 
-            validate(root, customerInput, value, idPrefix, scriptEngine);
+            validate(idPrefix, root, customerInput, value, scriptEngine);
 
             if (validate != null) {
-                FunctionResult funcResult = validate.evaluate(root, this, customerInput, getResolvedId(idPrefix), scriptEngine);
+                FunctionResult funcResult = validate.evaluate(idPrefix, root, this, customerInput, scriptEngine);
                 Boolean isInvalid = funcResult != null && funcResult.getBooleanValue();
                 if (isInvalid) {
                     throw new ValidationException(this, "Validation function failed with: " + funcResult.getStringValue());
@@ -98,7 +98,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
         }
     }
 
-    public abstract void validate(RootElement root, Map<String, Object> customerInput, T value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException;
+    public abstract void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, T value, ScriptEngine scriptEngine) throws ValidationException;
 
     @Override
     public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {

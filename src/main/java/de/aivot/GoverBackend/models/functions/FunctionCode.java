@@ -31,12 +31,14 @@ public class FunctionCode extends Function {
     }
 
     @Override
-    public FunctionResult evaluate(RootElement rootElement, BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine) {
+    public FunctionResult evaluate(String idPrefix, RootElement rootElement, BaseElement element, Map<String, Object> customerInput, ScriptEngine scriptEngine) {
         if (StringUtils.isNullOrEmpty(code)) {
             return null;
         }
 
-        var jsCode = buildJsCode(element, customerInput, id);
+        String prefixedId = element.getResolvedId(idPrefix);
+
+        var jsCode = buildJsCode(element, customerInput, prefixedId);
 
         try {
             Object returnValue = scriptEngine.eval(jsCode);

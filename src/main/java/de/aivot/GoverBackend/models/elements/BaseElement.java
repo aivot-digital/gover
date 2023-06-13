@@ -57,16 +57,16 @@ public abstract class BaseElement {
 
     public abstract void applyValues(Map<String, Object> values);
 
-    public void validate(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, ScriptEngine scriptEngine) throws ValidationException {
         // Children should overwrite this if validation is necessary.
     }
 
-    public boolean isVisible(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public boolean isVisible(String idPrefix, RootElement root, Map<String, Object> customerInput, ScriptEngine scriptEngine) {
         if (isVisible == null) {
             return true;
         }
 
-        FunctionResult isVisibleResult = isVisible.evaluate(root,this, customerInput, getResolvedId(idPrefix), scriptEngine);
+        FunctionResult isVisibleResult = isVisible.evaluate(idPrefix, root,this, customerInput, scriptEngine);
 
         if (isVisibleResult != null) {
             return isVisibleResult.getObjectValue() == null;
@@ -74,11 +74,11 @@ public abstract class BaseElement {
         return false;
     }
 
-    public void patch(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
+    public void patch(String idPrefix, RootElement root, Map<String, Object> customerInput, ScriptEngine scriptEngine) {
         if (patchElement == null) {
             return;
         }
-        FunctionResult patchElementResult = patchElement.evaluate(root,this, customerInput, getResolvedId(idPrefix), scriptEngine);
+        FunctionResult patchElementResult = patchElement.evaluate(idPrefix, root,this, customerInput, scriptEngine);
 
         if (patchElementResult != null) {
             applyValues(patchElementResult.getJsonValue());
@@ -89,7 +89,7 @@ public abstract class BaseElement {
         return new LinkedList<>();
     }
 
-    protected String getResolvedId(String idPrefix) {
+    public String getResolvedId(String idPrefix) {
         return idPrefix != null ? idPrefix + "_" + id : id;
     }
 

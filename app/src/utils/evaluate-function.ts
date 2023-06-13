@@ -7,8 +7,10 @@ import {ConditionOperatorMessage} from "../data/condition-operator";
 import {isStringNotNullOrEmpty, stringOrDefault} from "./string-utils";
 import Evaluators from "../evaluators";
 import {Function as FunctionModel} from "../models/functions/function";
+import {makeId, resolveId} from "./id-utils";
 
 export function evaluateFunction(
+    idPrefix: string | undefined,
     allElements: AnyElement[],
     func: FunctionModel | undefined | null,
     customerInput: CustomerInput,
@@ -21,9 +23,9 @@ export function evaluateFunction(
     }
 
     if (isStringNotNullOrEmpty(func.code)) {
-        return evaluateFunctionCode(func, customerInput, element, id);
+        return evaluateFunctionCode(func, customerInput, element, resolveId(id, idPrefix));
     } else {
-        const ret = evaluateFunctionNoCode(allElements, func, customerInput);
+        const ret = evaluateFunctionNoCode(idPrefix, allElements, func, customerInput);
         return returnBoolean ? ret == null : ret;
     }
 }
@@ -42,14 +44,16 @@ function evaluateFunctionCode(func: FunctionModel, customerInput: CustomerInput,
 }
 
 function evaluateFunctionNoCode(
+    idPrefix: string | undefined,
     allElements: AnyElement[],
     func: FunctionModel,
     customerInput: CustomerInput
 ): string | null {
-    return func.conditionSet != null ? evaluateConditionSet(allElements, func.conditionSet, customerInput) : null;
+    return func.conditionSet != null ? evaluateConditionSet(idPrefix, allElements, func.conditionSet, customerInput) : null;
 }
 
 function evaluateConditionSet(
+    idPrefix: string | undefined,
     allElements: AnyElement[],
     conditionSet: ConditionSet,
     customerInput: CustomerInput
@@ -58,7 +62,7 @@ function evaluateConditionSet(
         case ConditionSetOperator.All:
             if (conditionSet.conditions != null) {
                 for (const cond of conditionSet.conditions) {
-                    const res = evaluateCondition(allElements, cond, customerInput);
+                    const res = evaluateCondition(idPrefix, allElements, cond, customerInput);
                     if (res != null) {
                         return stringOrDefault(conditionSet.conditionSetUnmetMessage, res);
                     }
@@ -66,7 +70,7 @@ function evaluateConditionSet(
             }
             if (conditionSet.conditionsSets != null) {
                 for (const condSet of conditionSet.conditionsSets) {
-                    const res = evaluateConditionSet(allElements, condSet, customerInput);
+                    const res = evaluateConditionSet(idPrefix, allElements, condSet, customerInput);
                     if (res != null) {
                         return stringOrDefault(conditionSet.conditionSetUnmetMessage, res);
                     }
@@ -75,8 +79,8 @@ function evaluateConditionSet(
             return null;
         case ConditionSetOperator.Any:
             if (
-                !(conditionSet.conditions ?? []).some(cond => evaluateCondition(allElements, cond, customerInput) == null) &&
-                !(conditionSet.conditionsSets ?? []).some(condSet => evaluateConditionSet(allElements, condSet, customerInput) == null)
+                !(conditionSet.conditions ?? []).some(cond => evaluateCondition(idPrefix, allElements, cond, customerInput) == null) &&
+                !(conditionSet.conditionsSets ?? []).some(condSet => evaluateConditionSet(idPrefix, allElements, condSet, customerInput) == null)
             ) {
                 return stringOrDefault(conditionSet.conditionSetUnmetMessage, 'Keine der Bedingungen ist erfüllt');
             }
@@ -84,7 +88,7 @@ function evaluateConditionSet(
     }
 }
 
-function evaluateCondition(allElements: AnyElement[], condition: Condition, customerInput: CustomerInput): string | null {
+function evaluateCondition(idPrefix: string | undefined, allElements: AnyElement[], condition: Condition, customerInput: CustomerInput): string | null {
     if (condition.operator == null) {
         console.log('No operator', condition);
         return null;
@@ -108,8 +112,8 @@ function evaluateCondition(allElements: AnyElement[], condition: Condition, cust
         return null;
     }
 
-    const referenceValue = customerInput[condition.reference];
-    const targetValue = condition.target != null ? customerInput[condition.target] : condition.value ?? '';
+    const referenceValue = customerInput[resolveId(condition.reference, idPrefix)];
+    const targetValue = condition.target != null ? customerInput[resolveId(condition.target, idPrefix)] : condition.value ?? '';
 
     if (operatorEvaluator(referenceValue, targetValue)) {
         return null;

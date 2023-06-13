@@ -14,7 +14,7 @@ public abstract class Function {
         requirements = MapUtils.getString(data, "requirements");
     }
 
-    public abstract FunctionResult evaluate(RootElement root, BaseElement element, Map<String, Object> customerInput, String id, ScriptEngine scriptEngine);
+    public abstract FunctionResult evaluate(String idPrefix, RootElement root, BaseElement element, Map<String, Object> customerInput, ScriptEngine scriptEngine);
 
     public String getRequirements() {
         return requirements;

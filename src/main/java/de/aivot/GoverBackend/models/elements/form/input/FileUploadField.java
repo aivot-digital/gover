@@ -47,7 +47,7 @@ public class FileUploadField extends BaseInputElement<Collection<FileUploadField
     }
 
     @Override
-    public void validate(RootElement root, Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, String idPrefix, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Collection<FileUploadFieldItem> value, ScriptEngine scriptEngine) throws ValidationException {
         if (value == null && Boolean.TRUE.equals(getRequired())) {
             throw new RequiredValidationException(this);
         }
