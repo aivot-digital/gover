@@ -75,6 +75,10 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
 
     const visibleChildSteps = (element.children ?? []).filter(elem => adminSettings.disableVisibility || isElementVisible(allElements, elem.id, elem, customerData));
 
+    const generalInformationStepIndex = 0;
+    const summaryStepIndex = visibleChildSteps.length + 1;
+    const submitStepIndex = summaryStepIndex + 1;
+
     const allSteps = [
         element.introductionStep,
         ...visibleChildSteps,
@@ -99,7 +103,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
 
         let isValid = true;
 
-        if (currentStep === 0) {
+        if (currentStep === generalInformationStepIndex) {
             $debug.log(`Testing ${ElementNames[ElementType.IntroductionStep]}`);
 
             if (customerData[PrivacyUserInputKey] == null || customerData[PrivacyUserInputKey] === false) {
@@ -110,7 +114,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
 
                 isValid = false;
             }
-        } else if (currentStep === visibleChildSteps.length + 1) {
+        } else if (currentStep === summaryStepIndex) {
             $debug.log(`Testing ${ElementNames[ElementType.SummaryStep]}`);
 
             if (customerData[SummaryUserInputKey] == null || customerData[SummaryUserInputKey] === false) {
@@ -150,13 +154,15 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                                 key: SummaryAttachmentsTooLargeKey,
                                 error: maxFileSizeMb.toFixed(0),
                             }));
+
+                            isValid = false;
                         }
                         setIsLoading(false);
                     },
                     checkTimeoutMinMs,
                 );
             }
-        } else if (currentStep === visibleChildSteps.length + 2) {
+        } else if (currentStep === submitStepIndex) {
             $debug.log(`Testing ${ElementNames[ElementType.SubmitStep]}`);
 
             if (customerData[SubmitHumanKey] == null || customerData[SubmitHumanKey] === false) {
