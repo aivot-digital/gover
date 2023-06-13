@@ -8,22 +8,20 @@ import {AppMode} from '../../data/app-mode';
 import {faCog, faQuestionCircle, faUniversalAccess} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {Localization} from '../../locale/localization';
-import {selectLoadedApplication} from '../../slices/app-slice';
+import {MetaDialog, selectLoadedApplication, showMetaDialog} from '../../slices/app-slice';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {AppHeaderMenu} from './app-header-menu/app-header-menu';
-import {AccessibilityDialog} from '../../dialogs/accessibility-dialog/accessibility-dialog';
-import {HelpDialog} from '../../dialogs/help-dialog/help.dialog';
 import {Logo} from '../static-components/logo/logo';
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
 
 const __ = Localization(strings);
 
 export function AppHeader({mode}: AppHeaderProps) {
+    const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const app = useAppSelector(selectLoadedApplication);
 
-    const [showAccessibility, setShowAccessibility] = useState(false);
-    const [showHelp, setShowHelp] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement>();
 
     let titleLine1 = __.goverAppTitle;
@@ -127,7 +125,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                                 >
                                     <IconButton
                                         color="primary"
-                                        onClick={() => setShowAccessibility(true)}
+                                        onClick={() => dispatch(showMetaDialog(MetaDialog.Accessibility))}
                                     >
                                         <FontAwesomeIcon
                                             icon={faUniversalAccess}
@@ -148,7 +146,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                                         href={mode === AppMode.Staff ? 'https://aivot.de/gover' : undefined}
                                         target={mode === AppMode.Staff ? '_blank' : undefined}
                                         onClick={mode === AppMode.Staff ? undefined : () => {
-                                            setShowHelp(true);
+                                            dispatch(showMetaDialog(MetaDialog.Help))
                                         }}
                                     >
                                         <FontAwesomeIcon
@@ -188,15 +186,6 @@ export function AppHeader({mode}: AppHeaderProps) {
                     anchorElement={menuAnchorEl}
                 />
             }
-
-            <AccessibilityDialog
-                onHide={() => setShowAccessibility(false)}
-                open={showAccessibility}
-            />
-            <HelpDialog
-                onHide={() => setShowHelp(false)}
-                open={showHelp}
-            />
         </>
     );
 }

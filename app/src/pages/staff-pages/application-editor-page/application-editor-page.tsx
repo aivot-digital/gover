@@ -3,15 +3,15 @@ import React, {useEffect, useState} from 'react';
 import {RootState} from '../../../store';
 import {
     clearAppModel,
-    fetchApplicationById,
+    fetchApplicationById, MetaDialog,
     selectApplicationLoadFailed,
-    selectLoadedApplication,
+    selectLoadedApplication, showMetaDialog,
     updateAppModel,
 } from '../../../slices/app-slice';
 import {
     LoadingPlaceholderComponentView
 } from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
-import {useParams} from 'react-router-dom';
+import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {createAppTheme} from '../../../theming/themes';
 import {NotFoundPage} from '../../../components/static-components/not-found-page/not-found-page';
@@ -44,11 +44,17 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementTree} from '../../../components/element-tree/element-tree';
 import {setCurrentStep} from '../../../slices/stepper-slice';
 import {flattenElements} from "../../../utils/flatten-elements";
+import {HelpDialog} from "../../../dialogs/help-dialog/help.dialog";
+import {PrivacyDialog} from "../../../dialogs/privacy-dialog/privacy-dialog";
+import {ImprintDialog} from "../../../dialogs/imprint-dialog/imprint-dialog";
+import {AccessibilityDialog} from "../../../dialogs/accessibility-dialog/accessibility-dialog";
 
 const _ = Localization(strings);
 
 export function ApplicationEditorPage() {
     useAuthGuard();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const metaDialogName = searchParams.get('dialog');
 
     const params = useParams();
     const dispatch = useAppDispatch();
@@ -58,6 +64,14 @@ export function ApplicationEditorPage() {
     const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
     const application = useAppSelector(selectLoadedApplication);
     const failedToLoad = useAppSelector(selectApplicationLoadFailed);
+    const metaDialog = useAppSelector(state => state.app.showMetaDialog);
+
+    useEffect(() => {
+        if (metaDialogName != null) {
+            dispatch(showMetaDialog(metaDialogName as MetaDialog));
+            setSearchParams({});
+        }
+    },[metaDialogName]);
 
     useEffect(() => {
         dispatch(clearAppModel());
@@ -192,6 +206,26 @@ export function ApplicationEditorPage() {
                 />
 
                 <UserInputDebugger/>
+
+                <HelpDialog
+                    onHide={() => dispatch(showMetaDialog(undefined))}
+                    open={metaDialog == MetaDialog.Help}
+                />
+
+                <PrivacyDialog
+                    onHide={() => dispatch(showMetaDialog(undefined))}
+                    open={metaDialog == MetaDialog.Privacy}
+                />
+
+                <ImprintDialog
+                    onHide={() => dispatch(showMetaDialog(undefined))}
+                    open={metaDialog == MetaDialog.Imprint}
+                />
+
+                <AccessibilityDialog
+                    onHide={() => dispatch(showMetaDialog(undefined))}
+                    open={metaDialog == MetaDialog.Accessibility}
+                />
             </ThemeProvider>
         );
     }

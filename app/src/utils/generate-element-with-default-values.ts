@@ -18,6 +18,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
                 introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
                 summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
                 submitStep: generateElementWithDefaultValues(ElementType.SubmitStep) as SubmitStepElement,
+                privacyText: 'Bitte beachten Sie die {privacy}Hinweise zum Datenschutz{/privacy}.',
             };
         case ElementType.Step:
             return {

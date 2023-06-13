@@ -4,6 +4,7 @@ import {BaseEditorProps} from "../../editors/base-editor";
 import {RootElement} from "../../models/elements/root-element";
 import {Department} from "../../models/entities/department";
 import {DepartmentsService} from "../../services/departments.service";
+import {TextFieldComponent} from "../text-field/text-field-component";
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>) {
     const [vendors, setVendors] = useState<Department[]>([]);
@@ -102,17 +103,22 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 Informationen zum Datenschutz
             </Typography>
 
-            <TextField
+            <TextFieldComponent
                 value={props.element.privacyText ?? ''}
                 label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
-                fullWidth
-                margin="normal"
                 multiline
-                rows={4}
-                onChange={event => props.onPatch({
-                    privacyText: event.target.value,
+                onChange={val => props.onPatch({
+                    privacyText: val,
                 })}
             />
+
+            <Typography>
+                Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten, umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Z.B.: <strong>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</strong>
+            </Typography>
         </>
     );
 }

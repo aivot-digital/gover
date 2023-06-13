@@ -9,17 +9,19 @@ import {FadingPaper} from '../static-components/fading-paper/fading-paper';
 import {Preamble} from '../static-components/preamble/preamble';
 import {Department} from '../../models/entities/department';
 import {DepartmentsService} from '../../services/departments.service';
-import {selectLoadedApplication} from '../../slices/app-slice';
+import {MetaDialog, selectLoadedApplication} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from "../../views/base-view";
+import {useLocation, useNavigate} from "react-router-dom";
 
 export const PrivacyUserInputKey = '__privacy__';
 
 export function GeneralInformationComponentView({allElements, element}: BaseViewProps<IntroductionStepElement, void>) {
     const application = useAppSelector(selectLoadedApplication);
     const theme = useTheme();
+    const location = useLocation();
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
     const [managingDepartment, setManagingDepartment] = useState<Department>();
@@ -266,13 +268,12 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                 <Box
                     sx={{maxWidth: '600px', mt: 1}}
                 >
-                    <ViewDispatcherComponent
-                        allElements={allElements}
-                        element={{
-                            id: 'privacyText',
-                            type: ElementType.Richtext,
-                            appVersion: ProjectPackage.version,
-                            content: application.root.privacyText,
+                    <Typography
+                        variant="body2"
+                        dangerouslySetInnerHTML={{
+                            __html: application.root.privacyText
+                                .replace('{privacy}', `<a href="/#${location.pathname}?dialog=${MetaDialog.Privacy}">`)
+                                .replace('{/privacy}', '</a>')
                         }}
                     />
                 </Box>
