@@ -27,6 +27,7 @@ export function CheckboxTree({options, value, onChange}: CheckboxTreeProps) {
                     />
                 ) : (
                     <CheckboxTreeItem
+                        key={opt.label}
                         item={opt}
                         value={value}
                         onChange={onChange}
