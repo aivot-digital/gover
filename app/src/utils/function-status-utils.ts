@@ -2,22 +2,42 @@ import {AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty} from "./string-utils";
 import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
 
-export function getFunctionStatus(comp: AnyElement): null | 'open' | 'fulfilled' | 'unnecessary' {
+export type FunctionStatus = 'todo' | 'done' | 'unnecessary';
+export type FunctionStatusItem = {
+    func: string;
+    status: FunctionStatus;
+}
+
+export function getFunctionStatus(comp: AnyElement): FunctionStatusItem[] {
+    const results: FunctionStatusItem[] = [];
+
     if (comp.isVisible != null) {
         const funcExists = isStringNotNullOrEmpty(comp.isVisible.code) || comp.isVisible.conditionSet != null;
         if (isStringNotNullOrEmpty(comp.isVisible.requirements)) {
-            return funcExists ? 'fulfilled' : 'open';
+            results.push({
+                func: 'Sichtbarkeit',
+                status: funcExists ? 'done' : 'todo',
+            });
         } else if (funcExists) {
-            return 'unnecessary';
+            results.push({
+                func: 'Sichtbarkeit',
+                status: 'unnecessary',
+            });
         }
     }
 
     if (comp.patchElement != null) {
         const funcExists = isStringNotNullOrEmpty(comp.patchElement.code);
         if (isStringNotNullOrEmpty(comp.patchElement.requirements)) {
-            return funcExists ? 'fulfilled' : 'open';
+            results.push({
+                func: 'Sichtbarkeit',
+                status: funcExists ? 'done' : 'todo',
+            });
         } else if (funcExists) {
-            return 'unnecessary';
+            results.push({
+                func: 'Sichtbarkeit',
+                status: 'unnecessary',
+            });
         }
     }
 
@@ -25,21 +45,33 @@ export function getFunctionStatus(comp: AnyElement): null | 'open' | 'fulfilled'
         if (comp.validate != null) {
             const funcExists = isStringNotNullOrEmpty(comp.validate.code) || comp.validate.conditionSet != null;
             if (isStringNotNullOrEmpty(comp.validate.requirements)) {
-                return funcExists ? 'fulfilled' : 'open';
+                results.push({
+                    func: 'Sichtbarkeit',
+                    status: funcExists ? 'done' : 'todo',
+                });
             } else if (funcExists) {
-                return 'unnecessary';
+                results.push({
+                    func: 'Sichtbarkeit',
+                    status: 'unnecessary',
+                });
             }
         }
 
         if (comp.computeValue != null) {
             const funcExists = isStringNotNullOrEmpty(comp.computeValue.requirements);
             if (isStringNotNullOrEmpty(comp.computeValue.requirements)) {
-                return funcExists ? 'fulfilled' : 'open';
+                results.push({
+                    func: 'Sichtbarkeit',
+                    status: funcExists ? 'done' : 'todo',
+                });
             } else if (funcExists) {
-                return 'unnecessary';
+                results.push({
+                    func: 'Sichtbarkeit',
+                    status: 'unnecessary',
+                });
             }
         }
     }
 
-    return null;
+    return results;
 }

@@ -50,7 +50,7 @@ export function TestTab<T extends AnyElement>({elementModel, onPatch}: TestTabPr
                 }
             </Box>
             {
-                getFunctionStatus(elementModel) != null &&
+                getFunctionStatus(elementModel).length > 0 &&
                 <Box>
                     <Typography
                         variant="h6"

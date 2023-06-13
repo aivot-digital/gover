@@ -223,10 +223,11 @@ interface TreeElementIcon {
 
 function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: RootElement | undefined, element: AnyElement): TreeElementIcon[] {
     const icons: TreeElementIcon[] = [];
+    const functionStatus = getFunctionStatus(element);
 
     if (useTestMode) {
         const professionalTestMissing = element.testProtocolSet?.professionalTest == null;
-        const technicalTestMissing = (getFunctionStatus(element) == null || getFunctionStatus(element) != 'fulfilled') && element.testProtocolSet?.technicalTest == null;
+        const technicalTestMissing = functionStatus.length > 0 && element.testProtocolSet?.technicalTest == null;
 
         if (professionalTestMissing) {
             icons.push({
@@ -274,24 +275,23 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
         });
     }
 
-    const functionStatus = getFunctionStatus(element);
-    if (functionStatus != null) {
-        if (functionStatus === 'fulfilled') {
+    if (functionStatus.length > 0) {
+        if (functionStatus.every(s => s.status === 'done')) {
             icons.push({
                 icon: faCircleF,
                 tooltip: 'Individuelle Funktionen definiert',
             });
-        } else if (functionStatus === 'unnecessary') {
-            icons.push({
-                color: 'error',
-                icon: faQuestionCircle,
-                tooltip: 'Individuelle Funktionen definiert aber keine Anforderung vorhanden',
-            });
-        } else {
+        } else if (functionStatus.some(s => s.status === 'todo')) {
             icons.push({
                 color: 'error',
                 icon: faCircleF,
                 tooltip: 'Individuelle Funktionen erforderlich',
+            });
+        } else if (functionStatus.some(s => s.status === 'unnecessary')) {
+            icons.push({
+                color: 'error',
+                icon: faQuestionCircle,
+                tooltip: 'Individuelle Funktionen definiert aber keine Anforderung vorhanden',
             });
         }
     }
