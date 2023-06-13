@@ -1,5 +1,5 @@
 import {DialogProps} from "@mui/material/Dialog/Dialog";
-import {Dialog, DialogContent, DialogTitle, Typography, useTheme} from "@mui/material";
+import {Box, Dialog, DialogContent, DialogTitle, Typography, useTheme} from "@mui/material";
 import {DialogTitleWithClose} from "../../components/static-components/dialog-title-with-close/dialog-title-with-close";
 import {faCheckCircle, faExclamationCircle, faInfoCircle} from "@fortawesome/pro-light-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -58,16 +58,18 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
                     onClose={onClose}
                     closeTooltip="Schließen"
                 >
-                    <>
+                    <Box sx={{display: 'flex', alignItems: 'center'}}>
                         <FontAwesomeIcon
                             icon={icon}
                             color={color}
                         />
 
-                        <Typography>
+                        <Typography
+                            sx={{ml: 2}}
+                        >
                             {title}
                         </Typography>
-                    </>
+                    </Box>
                 </DialogTitleWithClose>
             }
 

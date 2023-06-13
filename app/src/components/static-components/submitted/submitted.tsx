@@ -31,6 +31,7 @@ import {selectLoadedApplication} from '../../../slices/app-slice';
 import {validateEmail} from "../../../utils/validate-email";
 import {isStringNullOrEmpty} from "../../../utils/string-utils";
 import {AnyElement} from "../../../models/elements/any-element";
+import {InfoDialog} from "../../../dialogs/info-dialog/info-dialog";
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -164,6 +165,7 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
     const [privacyError, setPrivacyError] = useState<string>();
     const [mailInvalid, setMailInvalid] = useState(false);
     const [mailSent, setMailSent] = useState(false);
+    const [showMailSentDialog, setShowMailSentDialog] = useState(false);
 
     const sendApplicationCopyMail = () => {
         if (application != null) {
@@ -173,6 +175,7 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                     setMailSent(true);
                     setPrivacyError(undefined);
                     setMailInvalid(false);
+                    setShowMailSentDialog(true);
                 } else {
                     setMailInvalid(true);
                 }
@@ -343,6 +346,15 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                 // @ts-ignore
                 style={canvasStyles}
             />
+
+            <InfoDialog
+                title="E-Mail versendet"
+                severity="success"
+                open={showMailSentDialog}
+                onClose={() => setShowMailSentDialog(false)}
+            >
+                Eine E-Mail mit dem eingereichten Antrag wurde an die angegebene E-Mail-Adresse versendet.
+            </InfoDialog>
         </>
     );
 }
