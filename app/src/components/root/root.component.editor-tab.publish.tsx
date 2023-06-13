@@ -12,7 +12,7 @@ import {
     Typography
 } from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faPaperPlane, faPause} from '@fortawesome/pro-light-svg-icons';
+import {faPaperPlane, faPauseCircle} from '@fortawesome/pro-light-svg-icons';
 import {BaseEditorProps} from "../../editors/base-editor";
 import {RootElement} from "../../models/elements/root-element";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
@@ -152,7 +152,7 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                         <Button
                             variant="outlined"
                             endIcon={
-                                <FontAwesomeIcon icon={faPause}/>
+                                <FontAwesomeIcon icon={faPauseCircle}/>
                             }
                             color="warning"
                             onClick={() => {
