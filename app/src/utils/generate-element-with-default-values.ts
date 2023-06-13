@@ -14,6 +14,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
         case ElementType.Root:
             return {
                 id, type, appVersion,
+                headline: 'Ihr Neuer\nOnline-Antrag',
                 children: [],
                 introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
                 summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,

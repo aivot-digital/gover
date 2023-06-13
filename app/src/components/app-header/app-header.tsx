@@ -33,8 +33,8 @@ export function AppHeader({mode}: AppHeaderProps) {
             titleLine1 = appTitle[0] ?? '';
             titleLine2 = appTitle[1] ?? '';
         } else {
-            titleLine1 = app?.root.title ?? '';
-            titleLine2 = '';
+            titleLine1 = 'Keine Überschrift angegeben';
+            titleLine2 = 'Füge eine Überschrift hinzu';
         }
     }
 
