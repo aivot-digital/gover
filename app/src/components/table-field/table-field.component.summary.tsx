@@ -62,11 +62,13 @@ export function TableFieldComponentSummary({model, value}: BaseSummaryProps<Tabl
                                     </TableRow>
                                 )) :
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={(model.fields ?? []).length}
-                                    >
-                                        Keine Angabe
-                                    </TableCell>
+                                    {
+                                        (model.fields ?? []).map(field => (
+                                            <TableCell key={field.label}>
+                                                Keine Angaben
+                                            </TableCell>
+                                        ))
+                                    }
                                 </TableRow>
                         }
                     </TableBody>
