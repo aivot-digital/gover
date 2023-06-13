@@ -6,4 +6,7 @@ export const SystemConfigKeys = {
         host: 'SystemHost',
         theme: 'SystemTheme',
     },
+    gover: {
+        storeKey: 'GoverStoreKey',
+    },
 }

@@ -11,6 +11,8 @@ public enum SystemConfigKey {
 
     SystemHost("SystemHost", "https://gover.aivot.de", false),
     SystemTheme("SystemTheme", "0", true),
+
+    GoverStoreKey("GoverStoreKey", "", false),
     ;
 
     private final String key;
