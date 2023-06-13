@@ -18,8 +18,15 @@ import {ListHeader} from "../../components/list-header/list-header";
 import {AppFooter} from "../../components/app-footer/app-footer";
 import {Introductory} from "../../components/introductory/introductory";
 import {ApplicationListItemDisplay} from "../../components/application-list-item/application-list-item-display";
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
+import {resetUserInput} from "../../slices/customer-input-slice";
+import {resetErrors} from "../../slices/customer-input-errors-slice";
+import {resetStepper} from "../../slices/stepper-slice";
+import {clearAppModel} from "../../slices/app-slice";
+import {UserInputService} from "../../services/user-input.service";
 
 export function ListPage() {
+    const dispatch = useAppDispatch();
     const [failedToLoad, setFailedToLoad] = useState(false);
     const [applications, setApplications] = useState<ListApplication[]>();
     const [search, setSearch] = useState('');
@@ -29,11 +36,16 @@ export function ListPage() {
 
     useEffect(() => {
         ApplicationService.listPublishedApplications()
-            .then(setApplications)
+            .then(apps => setApplications(apps.sort()))
             .catch(err => {
                 console.error(err);
                 setFailedToLoad(true);
             });
+
+        dispatch(resetUserInput());
+        dispatch(resetErrors());
+        dispatch(resetStepper());
+        dispatch(clearAppModel());
     }, []);
 
     if (failedToLoad) {
@@ -41,7 +53,7 @@ export function ListPage() {
     } else if (applications == null) {
         return <LoadingPlaceholderComponentView/>;
     } else {
-        const filteredApplications = applications.filter(app => app.headline.toLowerCase().includes(search));
+        const filteredApplications = applications.filter(app => app.headline == null || app.headline.toLowerCase().includes(search));
 
         return (
             <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(systemTheme, baseTheme)}>
