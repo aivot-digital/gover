@@ -17,7 +17,7 @@ export function checkSlugAndVersion(applications: Application[], slug?: string, 
     }
 
     if (!/^[a-z0-9-]+$/.test(trimmedSlug)) {
-        errors.slugError = 'Das URL-Element des Antrages kann nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.';
+        errors.slugError = 'Das URL-Element des Antrages kann nur aus Kleinbuchstaben (ohne Umlaute), Zahlen und Bindestrichen bestehen.';
     }
 
     if (applications != null && applications?.some(app => app.slug === trimmedSlug && app.version === trimmedVersion)) {

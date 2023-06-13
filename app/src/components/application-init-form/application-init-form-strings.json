@@ -16,7 +16,7 @@
     "titleHelper": "Geben Sie einen Titel für den neuen Antrag ein. Dieser dient als interne Bezeichnung, ist jederzeit änderbar und für Antragstellende nicht sichtbar.",
     "titleLabel": "Titel des Antrages",
     "titlePlaceholder": "Hundsteueranmeldung",
-    "slugHelper": "Vergeben Sie die URL des Antrages. Unter dieser wird der Antrag für Antragstellende verfügbar sein. Technisch bedingt darf die URL nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.",
+    "slugHelper": "Vergeben Sie die URL des Antrages. Unter dieser wird der Antrag für Antragstellende verfügbar sein. Technisch bedingt darf die URL nur aus Kleinbuchstaben (ohne Umlaute), Zahlen und Bindestrichen bestehen.",
     "slugLabel": "URL-Element (Titel des Antrages innerhalb der URL)",
     "slugPlaceholder": "antrag-hundesteueranmeldung",
     "slugWarning": "Die URL kann später nicht mehr geändert werden!",

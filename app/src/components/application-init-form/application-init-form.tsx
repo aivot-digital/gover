@@ -24,6 +24,7 @@ export function ApplicationInitForm({application, onChange, errors}: Application
         <>
             <Typography
                 variant="body2"
+                sx={{mb: 2}}
             >
                 {_.titleHelper}
             </Typography>
@@ -59,7 +60,7 @@ export function ApplicationInitForm({application, onChange, errors}: Application
 
             <Typography
                 variant="body2"
-                sx={{mt: 3}}
+                sx={{mt: 4, mb: 2}}
             >
                 {_.slugHelper}
             </Typography>
@@ -91,7 +92,7 @@ export function ApplicationInitForm({application, onChange, errors}: Application
 
             <Typography
                 variant="body2"
-                sx={{mt: 3}}
+                sx={{mt: 4, mb: 2}}
             >
                 {_.versionHelper}
             </Typography>
