@@ -104,7 +104,7 @@ public class DateField extends BaseInputElement<String> {
             if (mode != null) {
                 switch (mode) {
                     case Year -> displayPattern = "yyyy";
-                    case Month -> displayPattern = "mm.yyyy";
+                    case Month -> displayPattern = "MM.yyyy";
                 }
             }
 
