@@ -10,6 +10,7 @@ import {SystemAssetsService} from '../../../services/system-assets.service';
 import {Localization} from '../../../locale/localization';
 import {authenticate, logout, selectAuthenticationState} from '../../../slices/auth-slice';
 import {AuthState} from "../../../data/auth-state";
+import { Logo } from '../../../components/static-components/logo/logo';
 
 const __ = Localization(strings);
 
@@ -57,12 +58,9 @@ export function Login() {
                     }}
                 >
                     <Box sx={{mb: 4}}>
-                        <img
-                            src={SystemAssetsService.getLogoLink()}
-                            alt={'Logo'}
+                        <Logo
                             width={200}
                             height={100}
-                            style={{objectFit: 'contain'}}
                         />
                     </Box>
                     <Typography
