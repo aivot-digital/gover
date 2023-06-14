@@ -74,7 +74,7 @@ public class MailService {
         }
 
         message.setFrom(goverConfig.getFromMail());
-        message.setSubject(subject);
+        message.setSubject(subject.replaceAll("\\r?\\n", " "));
         message.setText(textMessage);
 
         MimeBodyPart mimeBodyPart = new MimeBodyPart();
