@@ -11,7 +11,7 @@
         "roleLabel": "Role",
 
         "passwordTitle": "Password",
-        "passwordChangeTitle": "Password Overwrite",
+        "passwordChangeTitle": "Password overwrite",
         "passwordLabel": "Password",
         "retypePasswordLabel": "Retype password",
         "passwordLengthError": "The password must at least contain 6 characters.",
@@ -32,9 +32,9 @@
         "roleLabel": "Rolle",
 
         "passwordTitle": "Passwort",
-        "passwordChangeTitle": "Passwort Überschreiben",
+        "passwordChangeTitle": "Passwort überschreiben",
         "passwordLabel": "Passwort",
-        "retypePasswordLabel": "Passwort erneug eingeben",
+        "retypePasswordLabel": "Passwort erneut eingeben",
         "passwordLengthError": "Das Passwort muss mindestens 6 Zeichen haben.",
         "passwordMatchError": "Die Passwörter stimmen nicht überein.",
 
