@@ -56,6 +56,7 @@ export function ApplicationInitForm({application, onChange, errors}: Application
                     }
                 }}
                 error={errors.title}
+                maxCharacters={60}
             />
 
             <Typography
@@ -80,6 +81,7 @@ export function ApplicationInitForm({application, onChange, errors}: Application
                     });
                 }}
                 error={errors.slug}
+                maxCharacters={60}
             />
 
             <Alert
@@ -112,6 +114,7 @@ export function ApplicationInitForm({application, onChange, errors}: Application
                     });
                 }}
                 error={errors.version}
+                maxCharacters={11}
             />
 
             {
