@@ -1,13 +1,37 @@
 import React, {useEffect, useState} from 'react';
-import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
+import {
+    FormControl,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    TextField,
+    Tooltip,
+    Typography,
+    useTheme
+} from '@mui/material';
 import {BaseEditorProps} from "../../editors/base-editor";
 import {RootElement} from "../../models/elements/root-element";
 import {DepartmentsService} from "../../services/departments.service";
 import {Department} from "../../models/entities/department";
 import {Themes} from "../../theming/themes";
+import {SelectFieldComponent} from "../select-field/select-field-component";
+import {useAppSelector} from "../../hooks/use-app-selector";
+import {selectLoadedApplication} from "../../slices/app-slice";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faClipboard} from "@fortawesome/pro-light-svg-icons";
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
+import {showSuccessSnackbar} from "../../slices/snackbar-slice";
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
+    const dispatch = useAppDispatch();
+    const theme = useTheme();
+    const app = useAppSelector(selectLoadedApplication);
+
     const [departments, setDepartments] = useState<Department[]>([]);
+
+    const link = `${window.location.protocol}//${window.location.host}/#/${app?.slug}/${app?.version}`;
 
     useEffect(() => {
         DepartmentsService.list()
@@ -22,33 +46,54 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 variant="h6"
                 sx={{mt: 4}}
             >
+                Link des Antrags
+            </Typography>
+
+            <Paper
+                sx={{
+                    mt: 1,
+                    p: 2,
+                    backgroundColor: theme.palette.grey["50"],
+                    display: 'flex',
+                    alignItems: 'center'
+                }}
+            >
+                <Typography>
+                    <a href={link} target="_blank">{link}</a>
+                </Typography>
+
+                <Tooltip title="In die Zwischenablage kopieren">
+                    <IconButton
+                        sx={{ml: 'auto'}}
+                        size="small"
+                        onClick={() => {
+                            navigator.clipboard.writeText(link);
+                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                        }}
+                    >
+                        <FontAwesomeIcon icon={faClipboard}/>
+                    </IconButton>
+                </Tooltip>
+            </Paper>
+
+            <Typography
+                variant="h6"
+                sx={{mt: 4}}
+            >
                 Theme-Einstellung
             </Typography>
 
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Theme (Visuelles Erscheinungsbild)</InputLabel>
-                <Select
-                    value={props.element.theme ?? ''}
-                    label="Theme (Visuelles Erscheinungsbild)"
-                    onChange={event => props.onPatch({
-                        theme: event.target.value,
-                    })}
-                >
-                    {
-                        Themes.map(label => (
-                            <MenuItem
-                                key={label}
-                                value={label}
-                            >
-                                {label /* TODO: Localize theme names */}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+            <SelectFieldComponent
+                label="Theme (Visuelles Erscheinungsbild)"
+                value={props.element.theme}
+                onChange={val => props.onPatch({
+                    theme: val,
+                })}
+                options={Themes.map(label => ({
+                    label: label,
+                    value: label,
+                }))}
+            />
 
             <Typography
                 variant="h6"

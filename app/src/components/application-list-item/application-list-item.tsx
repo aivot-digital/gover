@@ -7,7 +7,7 @@ import {ApplicationStatus} from '../../data/application-status/application-statu
 import {Link} from 'react-router-dom';
 import {
     faArrowUpRightFromSquare,
-    faBars,
+    faBars, faClipboard,
     faClone,
     faEdit,
     faFileExport,
@@ -24,6 +24,8 @@ import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
 import strings from './application-list-item-strings.json';
 import {Localization} from '../../locale/localization';
 import {downloadConfigFile} from "../../utils/download-utils";
+import {showSuccessSnackbar} from "../../slices/snackbar-slice";
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
 
 const __ = Localization(strings);
 
@@ -38,6 +40,7 @@ export function ApplicationListItem({
                                         onClone,
                                         onDelete
                                     }: ApplicationListItemComponentViewProps) {
+    const dispatch = useAppDispatch();
     const [optionAnchorEl, setOptionAnchorEl] = useState<null | HTMLElement>(null);
     const showOptions = Boolean(optionAnchorEl);
 
@@ -161,6 +164,21 @@ export function ApplicationListItem({
                             </ListItemIcon>
                             <ListItemText>
                                 {__.openAsCustomerLabel}
+                            </ListItemText>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                const link = `${window.location.protocol}//${window.location.host}/#/${application.slug}/${application.version}`;
+                                navigator.clipboard.writeText(link);
+                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                handleCloseOptions();
+                            }}
+                        >
+                            <ListItemIcon>
+                                <FontAwesomeIcon icon={faClipboard}/>
+                            </ListItemIcon>
+                            <ListItemText>
+                                Link in Zwischenablage kopieren
                             </ListItemText>
                         </MenuItem>
                         <MenuItem onClick={showNotImplementedMessage}>
