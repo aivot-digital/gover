@@ -23,6 +23,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faClipboard} from "@fortawesome/pro-light-svg-icons";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showSuccessSnackbar} from "../../slices/snackbar-slice";
+import {TextFieldComponent} from "../text-field/text-field-component";
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
     const dispatch = useAppDispatch();
@@ -59,7 +60,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 }}
             >
                 <Typography>
-                    <a href={link} target="_blank">{link}</a>
+                    <a
+                        href={link}
+                        target="_blank"
+                    >{link}</a>
                 </Typography>
 
                 <Tooltip title="In die Zwischenablage kopieren">
@@ -102,35 +106,37 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 Über diesen Antrag
             </Typography>
 
-            <TextField
-                value={props.element.title ?? ''}
+            <TextFieldComponent
+                value={props.element.title}
                 label="Titel des Antrages"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    title: event.target.value,
+                onChange={val => props.onPatch({
+                    title: val,
                 })}
-                helperText="Der Titel dient als interne Bezeichnung und für Antragstellende nicht sichtbar."
+                hint="Der Titel dient als interne Bezeichnung und für Antragstellende nicht sichtbar."
+                maxCharacters={60}
             />
 
-            <TextField
-                value={props.element.headline ?? ''}
+            <TextFieldComponent
+                value={props.element.headline}
                 label="Überschrift des Antrages"
-                margin="normal"
-                rows={2}
                 multiline
-                helperText="Beschränkt auf zwei Zeilen, der Name des Programms sollte sich in Zeile 2 wiederfinden."
-                onChange={event => props.onPatch({
-                    headline: event.target.value.split('\n').slice(0, 2).join('\n'),
+                hint="Beschränkt auf zwei Zeilen, der Name des Programms sollte sich in Zeile 2 wiederfinden."
+                onChange={val => props.onPatch({
+                    headline: val,
                 })}
+                onBlur={val => props.onPatch({
+                    headline: val != null ? val.split('\n').map(l => l.trim()).slice(0, 2).join('\n') : undefined,
+                })}
+                maxCharacters={120}
             />
 
-            <TextField
-                value={props.element.tabTitle ?? ''}
+            <TextFieldComponent
+                value={props.element.tabTitle}
                 label="Titel des Browser-Tabs"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    tabTitle: event.target.value,
+                onChange={val => props.onPatch({
+                    tabTitle: val,
                 })}
+                maxCharacters={60}
             />
 
             <Typography
@@ -140,14 +146,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 Fristen
             </Typography>
 
-            <TextField
-                rows={2}
+            <TextFieldComponent
                 label="Antragsfristen"
-                margin="normal"
                 multiline
-                value={props.element.expiring ?? ''}
-                onChange={event => props.onPatch({
-                    expiring: event.target.value,
+                value={props.element.expiring}
+                onChange={val => props.onPatch({
+                    expiring: val,
                 })}
             />
 
@@ -158,37 +162,17 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 Mindest-Vertrauensniveau
             </Typography>
 
-            <FormControl
-                margin="normal"
-            >
-                <InputLabel>Mindest-Vertrauensniveau</InputLabel>
-                <Select
-                    label="Mindest-Vertrauensniveau"
-                    value={props.element.accessLevel ?? ''}
-                    onChange={event => props.onPatch({
-                        accessLevel: event.target.value,
-                    })}
-                >
-                    <MenuItem
-                        key={'Niedrig'}
-                        value={'Niedrig'}
-                    >
-                        Niedrig
-                    </MenuItem>
-                    <MenuItem
-                        key={'Mittel'}
-                        value={'Mittel'}
-                    >
-                        Mittel
-                    </MenuItem>
-                    <MenuItem
-                        key={'Hoch'}
-                        value={'Hoch'}
-                    >
-                        Hoch
-                    </MenuItem>
-                </Select>
-            </FormControl>
+            <SelectFieldComponent
+                label="Mindest-Vertrauensniveau"
+                value={props.element.accessLevel}
+                onChange={val => props.onPatch({
+                    accessLevel: val,
+                })}
+                options={['Niedrig', 'Mittel', 'Hoch'].map(key => ({
+                    label: key,
+                    value: key,
+                }))}
+            />
 
             <Typography
                 variant="h6"
@@ -197,55 +181,29 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 Kontakte
             </Typography>
 
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Fachlicher Support</InputLabel>
-                <Select
-                    label="Fachlicher Support"
-                    value={props.element.legalSupport ?? ''}
-                    onChange={event => props.onPatch({
-                        legalSupport: event.target.value as number,
-                    })}
-                >
-                    {
-                        departments.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+            <SelectFieldComponent
+                label="Fachlicher Support"
+                value={props.element.legalSupport != null ? props.element.legalSupport.toString() : undefined}
+                onChange={val => props.onPatch({
+                    legalSupport: val != null ? parseInt(val) : undefined,
+                })}
+                options={departments.map((vendor) => ({
+                    value: vendor.id.toString(),
+                    label: vendor.name,
+                }))}
+            />
 
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Technischer Support</InputLabel>
-                <Select
-                    label="Technischer Support"
-                    value={props.element.technicalSupport ?? ''}
-                    onChange={event => props.onPatch({
-                        technicalSupport: event.target.value as number,
-                    })}
-                >
-                    {
-                        departments.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+            <SelectFieldComponent
+                label="Technischer Support"
+                value={props.element.technicalSupport != null ? props.element.technicalSupport.toString() : undefined}
+                onChange={val => props.onPatch({
+                    technicalSupport: val != null ? parseInt(val) : undefined,
+                })}
+                options={departments.map((vendor) => ({
+                    value: vendor.id.toString(),
+                    label: vendor.name,
+                }))}
+            />
         </>
     );
 }
