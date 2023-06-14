@@ -34,27 +34,10 @@ import {ElementNames} from "../../data/element-type/element-names";
 import {FileUploadElementItem, isFileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from "../../views/base-view";
+import {withTimeout} from "../../utils/with-timeout";
 
 const checkTimeoutMinMs = 2000;
 const submissionTimeoutMinMs = 3000;
-
-function withTimeout<T>(first: () => void, func: () => Promise<T>, after: (result: T) => void, timeout: number): Promise<void> {
-    first();
-
-    const start = new Date().getMilliseconds();
-
-    return new Promise(resolve => {
-        func()
-            .then(res => {
-                const deltaTime = new Date().getMilliseconds() - start;
-                const remainingTimeout = deltaTime >= timeout ? 1 : timeout - deltaTime;
-                setTimeout(() => {
-                    after(res);
-                    resolve();
-                }, remainingTimeout);
-            })
-    });
-}
 
 export function RootComponentView({allElements, element}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();

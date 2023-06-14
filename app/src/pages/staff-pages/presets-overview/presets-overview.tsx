@@ -7,6 +7,9 @@ import strings from './presets-overview-strings.json';
 import {Localization} from '../../../locale/localization';
 import {generateElementIdForType} from "../../../utils/id-utils";
 import ProjectPackage from '../../../../package.json';
+import {faPaperPlane} from "@fortawesome/pro-light-svg-icons";
+import {PublishPresetDialog} from "../../../dialogs/publish-preset/publish-preset-dialog";
+import {useState} from "react";
 
 const _ = Localization(strings);
 
@@ -61,8 +64,34 @@ const PresetsOverviewConfig: DataOverviewProps<Preset> = {
     toPrimaryString: preset => preset.root.name ?? '',
 
     linkToEdit: (preset: Preset) => '/presets/edit/' + preset.id,
+
+    additionalActions: [
+        {
+            label: 'Veröffentlichen',
+            icon: faPaperPlane,
+            key: 'publish',
+        }
+    ],
 };
 
-export const PresetsOverview = () => (
-    <DataOverview {...PresetsOverviewConfig}/>
-);
+export function PresetsOverview() {
+    const [presetToPublish, setPresetToPublish] = useState<Preset>();
+
+    const handlePublish = (_: any, preset: Preset) => {
+        setPresetToPublish(preset);
+    };
+
+    return (
+        <>
+            <DataOverview
+                {...PresetsOverviewConfig}
+                onAdditionalAction={handlePublish}
+            />
+
+            <PublishPresetDialog
+                preset={presetToPublish}
+                onClose={() => setPresetToPublish(undefined)}
+            />
+        </>
+    );
+}

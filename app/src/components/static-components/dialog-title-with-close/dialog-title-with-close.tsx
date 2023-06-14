@@ -14,9 +14,18 @@ export const DialogTitleWithClose = (props: DialogTitleProps) => {
     const {children, onClose, closeTooltip, ...other} = props;
 
     return (
-        <DialogTitle sx={{m: 0, p: 2, pl: 2.8}} {...other}>
+        <DialogTitle
+            sx={{
+                m: 0,
+                p: 2,
+                pl: 2.8
+            }}
+            {...other}
+        >
             {children}
-            {onClose ? (
+
+            {
+                onClose &&
                 <Tooltip title={closeTooltip}>
                     <IconButton
                         aria-label="close"
@@ -34,7 +43,7 @@ export const DialogTitleWithClose = (props: DialogTitleProps) => {
                         />
                     </IconButton>
                 </Tooltip>
-            ) : null}
+            }
         </DialogTitle>
     );
 };

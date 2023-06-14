@@ -4,7 +4,7 @@ import {
     Box,
     Dialog,
     DialogContent,
-    FormControlLabel,
+    FormControlLabel, Grid, IconButton,
     List,
     ListItem,
     ListItemButton,
@@ -14,6 +14,7 @@ import {
     Switch,
     Tab,
     Tabs,
+    Tooltip,
 } from '@mui/material';
 import {AddElementDialogProps} from './add-element-dialog-props';
 import React, {useEffect, useState} from 'react';
@@ -25,95 +26,35 @@ import {PresetsService} from '../../services/presets.service';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 import {ElementType} from '../../data/element-type/element-type';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {faLayerPlus} from '@fortawesome/pro-light-svg-icons';
+import {faInfoCircle, faLayerPlus} from '@fortawesome/pro-light-svg-icons';
 import {ElementTypesMap} from '../../data/element-type/element-types-map';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {cloneElement} from "../../utils/clone-element";
+import {PresetTab} from "./tabs/preset-tab";
+import {ElementTab} from "./tabs/element-tab";
+import {ElementInfoTab} from "./tabs/element-info-tab";
+import {StoreTab} from "./tabs/store-tab";
+import {ModuleInfoTab} from "./tabs/module-info-tab";
 
-enum ElementTypeGroups {
-    Display,
-    Information,
-    Input,
-    DateTime,
-    Select,
-    Group,
-    Other
-}
-
-const elementTypeGroupsLabels: { [key in ElementTypeGroups]: string } = {
-    [ElementTypeGroups.Display]: 'Darstellung',
-    [ElementTypeGroups.Information]: 'Information',
-    [ElementTypeGroups.Select]: 'Auswahl',
-    [ElementTypeGroups.Input]: 'Eingabe',
-    [ElementTypeGroups.DateTime]: 'Datum und Zeit',
-    [ElementTypeGroups.Group]: 'Gruppierung',
-    [ElementTypeGroups.Other]: 'Sonstige',
-}
-
-const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
-    [ElementType.Alert]: ElementTypeGroups.Information,
-    [ElementType.Image]: ElementTypeGroups.Information,
-    [ElementType.Container]: ElementTypeGroups.Display,
-    [ElementType.Step]: null,
-    [ElementType.Root]: null,
-    [ElementType.Checkbox]: ElementTypeGroups.Select,
-    [ElementType.Date]: ElementTypeGroups.DateTime,
-    [ElementType.Headline]: ElementTypeGroups.Information,
-    [ElementType.MultiCheckbox]: ElementTypeGroups.Select,
-    [ElementType.Number]: ElementTypeGroups.Input,
-    [ElementType.ReplicatingContainer]: ElementTypeGroups.Input,
-    [ElementType.Richtext]: ElementTypeGroups.Information,
-    [ElementType.Radio]: ElementTypeGroups.Select,
-    [ElementType.Select]: ElementTypeGroups.Select,
-    [ElementType.Spacer]: ElementTypeGroups.Display,
-    [ElementType.Table]: ElementTypeGroups.Input,
-    [ElementType.Text]: ElementTypeGroups.Input,
-    [ElementType.Time]: ElementTypeGroups.DateTime,
-    [ElementType.FileUpload]: ElementTypeGroups.Input,
-
-    [ElementType.IntroductionStep]: null,
-    [ElementType.SummaryStep]: null,
-    [ElementType.SubmitStep]: null,
-    [ElementType.SubmittedStep]: null,
-}
 
 export function AddElementDialog({parentType, onAddElement, onClose}: AddElementDialogProps) {
-    const [presets, setPresets] = useState<Preset[]>([]);
     const [currentTab, setCurrentTab] = useState(0);
-
-    useEffect(() => {
-        PresetsService.list()
-            .then(response => {
-                setPresets(response._embedded.presets);
-            });
-    }, [parentType, setPresets]);
-
-    const addPresetElement = (preset: Preset) => {
-        onAddElement(cloneElement(preset.root, true));
-    };
-
-    const childOptions = ElementChildOptions[parentType] ?? [];
-
-    const optionGroups = childOptions.reduce((groups, child) => {
-        let childGroup = elementGroupMap[child] ?? ElementTypeGroups.Other;
-        const groupChildren = groups[childGroup] ?? [];
-        groupChildren.push(child);
-        groups[childGroup] = groupChildren;
-        return groups;
-    }, {} as { [key in ElementTypeGroups]?: ElementType[] });
+    const [showElementInfo, setShowElementInfo] = useState<ElementType>();
+    const [showModuleId, setShowModuleId] = useState<string>();
 
     return (
         <Dialog
             open={true}
             onClose={onClose}
             fullWidth
+            maxWidth="xl"
         >
             <DialogTitleWithClose
-                id={'add-component-dialog-title'}
+                id="add-component-dialog-title"
                 onClose={onClose}
                 closeTooltip="Schließen"
             >
-                {parentType === ElementType.Root ? 'Neuen Abschnitt hinzufügen' : 'Neues Element hinzufügen'}
+                Neues Element hinzufügen
             </DialogTitleWithClose>
 
             <Tabs
@@ -122,113 +63,100 @@ export function AddElementDialog({parentType, onAddElement, onClose}: AddElement
                 sx={{borderBottom: '1px solid #E0E0E0', mt: -1}}
             >
                 <Tab
-                    label={parentType === ElementType.Root ? 'Basis-Abschnitte' : 'Basis-Elemente'}
+                    label="Basis-Elemente"
                     value={0}
                 />
                 <Tab
                     label="Vorlagen"
                     value={1}
                 />
+                <Tab
+                    label="Gover Store"
+                    value={2}
+                />
             </Tabs>
 
-            {
-                currentTab === 0 &&
-                <List
-                    dense
+            <Grid container>
+                <Grid
+                    item
+                    xs={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}
                 >
-                    {
-                        Object.keys(ElementTypeGroups).map((groupString, index) => (
-                            (optionGroups[parseInt(groupString) as ElementTypeGroups] ?? []).length > 0 &&
-                            <React.Fragment key={index}>
-                                <ListSubheader
-                                    component="div"
-                                    id={'element-list-subheader-' + index}
-                                    sx={{pl: '26px', lineHeight: '30px', mt: 1, textTransform: 'uppercase'}}
-                                >
-                                    {elementTypeGroupsLabels[parseInt(groupString) as ElementTypeGroups]}
-                                </ListSubheader>
+                    <Box
+                        sx={{
+                            height: '50vh',
+                            overflowY: 'auto',
+                        }}
+                    >
+                        {
+                            currentTab === 0 &&
+                            <ElementTab
+                                parentType={parentType}
+                                onAddElement={onAddElement}
+                                showElementInfo={setShowElementInfo}
+                                highlightedElement={showElementInfo}
+                            />
+                        }
+                        {
+                            currentTab === 1 &&
+                            <PresetTab
+                                parentType={parentType}
+                                onAddElement={onAddElement}
+                            />
+                        }
+                        {
+                            currentTab === 2 &&
+                            <StoreTab
+                                parentType={parentType}
+                                onAddElement={onAddElement}
+                                showModuleId={setShowModuleId}
+                                hightlightedModuleId={showModuleId}
+                            />
+                        }
+                    </Box>
+                </Grid>
 
-                                {
-                                    (optionGroups[parseInt(groupString) as ElementTypeGroups] ?? []).map(type => (
-                                        <ListItem
-                                            key={type}
-                                            disablePadding
-                                        >
-                                            <ListItemButton
-                                                onClick={() => {
-                                                    const newElement = generateElementWithDefaultValues(type);
-                                                    if (newElement != null) {
-                                                        onAddElement(newElement);
-                                                    }
-                                                }}
-                                            >
-                                                <ListItemIcon sx={{pl: 1.5}}>
-                                                    <FontAwesomeIcon icon={ElementIcons[type]}/>
-                                                </ListItemIcon>
-                                                <ListItemText
-                                                    disableTypography
-                                                    primary={ElementNames[type]}
-                                                />
-                                            </ListItemButton>
-                                        </ListItem>
-                                    ))
-                                }
-                            </React.Fragment>
-                        ))
-                    }
-                </List>
-            }
-            {
-                currentTab === 1 &&
-                <div>
-                    {
-                        (
-                            presets.length > 0 ? (
-                                <List
-                                    dense
-                                >
-                                    {
-                                        presets
-                                            .map(preset => (
-                                                <ListItem
-                                                    key={preset.root.name}
-                                                    disablePadding
-                                                >
-                                                    <ListItemButton onClick={() => addPresetElement(preset)}>
-                                                        <ListItemIcon sx={{pl: 1.5}}>
-                                                            <FontAwesomeIcon icon={ElementIcons[ElementType.Container]}/>
-                                                        </ListItemIcon>
-                                                        <ListItemText
-                                                            disableTypography
-                                                            primary={preset.root.name}
-                                                        />
-                                                    </ListItemButton>
-                                                </ListItem>
-                                            ))
-                                    }
-                                </List>
-                            ) : (
-                                <DialogContent>
-                                    <Alert
-                                        severity="info"
-                                        variant={'outlined'}
-                                        iconMapping={{
-                                            info: <FontAwesomeIcon icon={faLayerPlus}/>,
-                                        }}
-                                    >
-                                        <AlertTitle>Es existieren noch keine Vorlagen</AlertTitle>
-                                        Sie können neue Vorlagen erstellen, in dem Sie bestehende Elemente oder
-                                        Abschnitte im
-                                        Bearbeitungs-Modus durch einen Klick auf die Schaltfläche "Als Vorlage
-                                        speichern" am
-                                        unteren Bildschirmrand hinzufügen.
-                                    </Alert>
-                                </DialogContent>
-                            )
-                        )
-                    }
-                </div>
-            }
+                {
+                    currentTab === 0 &&
+                    showElementInfo != null &&
+                    <Grid
+                        item
+                        xs={6}
+                    >
+                        <Box
+                            sx={{
+                                height: '50vh',
+                                overflowY: 'auto',
+                            }}
+                        >
+                            <ElementInfoTab
+                                type={showElementInfo}
+                                onClose={() => setShowElementInfo(undefined)}
+                            />
+                        </Box>
+                    </Grid>
+                }
+
+                {
+                    currentTab === 2 &&
+                    showModuleId != null &&
+                    <Grid
+                        item
+                        xs={6}
+                    >
+                        <Box
+                            sx={{
+                                height: '50vh',
+                                overflowY: 'auto',
+                            }}
+                        >
+                            <ModuleInfoTab
+                                moduleId={showModuleId}
+                                onClose={() => setShowModuleId(undefined)}
+                            />
+                        </Box>
+                    </Grid>
+                }
+            </Grid>
         </Dialog>
     );
 }

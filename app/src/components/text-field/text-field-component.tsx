@@ -16,7 +16,7 @@ export function TextFieldComponent({
                                    }: TextFieldComponentProps) {
     return (
         <TextField
-            label={label + (required ? ' *' : '')}
+            label={label}
             placeholder={placeholder}
             variant="outlined"
             fullWidth
@@ -68,6 +68,7 @@ export function TextFieldComponent({
                 } : undefined
             }
             disabled={disabled}
+            required={required}
         />
     );
 }

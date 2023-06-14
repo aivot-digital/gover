@@ -190,6 +190,27 @@ export function DataOverview<T extends { id: number }>(props: DataOverviewProps<
                                             sx={{mb: 2}}
                                             secondaryAction={
                                                 <Box>
+                                                    {
+                                                        props.additionalActions != null &&
+                                                        props.onAdditionalAction != null &&
+                                                        props.additionalActions.length > 0 &&
+                                                        props.additionalActions.map(act => (
+                                                            <Button
+                                                                key={act.key}
+                                                                onClick={() => props.onAdditionalAction!(act.key, item)}
+                                                                startIcon={
+                                                                    <FontAwesomeIcon
+                                                                        icon={act.icon}
+                                                                        style={{marginTop: '-2px'}}
+                                                                    />
+                                                                }
+                                                                sx={{ml: 2}}
+                                                            >
+                                                                {act.label}
+                                                            </Button>
+                                                        ))
+                                                    }
+
                                                     <Button
                                                         onClick={() => handleItemEdit(item)}
                                                         startIcon={
@@ -198,6 +219,7 @@ export function DataOverview<T extends { id: number }>(props: DataOverviewProps<
                                                                 style={{marginTop: '-2px'}}
                                                             />
                                                         }
+                                                        sx={{ml: 2}}
                                                     >
                                                         {_.editLabel}
                                                     </Button>

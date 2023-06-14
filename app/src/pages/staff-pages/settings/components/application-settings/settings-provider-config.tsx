@@ -31,6 +31,12 @@ const fields = [
         key: SystemConfigKeys.system.theme,
         options: Themes.map(label => [label, label]) as [string, string][], // TODO: Localize theme names
     },
+    'Gover Store',
+    {
+        label: 'Schlüssel für den Gover Store',
+        hint: 'Geben Sie hier ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare oder Vorlagen im Gover Store veröffentlichen wollen.',
+        key: SystemConfigKeys.gover.storeKey,
+    },
 ];
 
 export const SettingsProviderConfig = () => <SettingsGenericConfig fields={fields}/>;

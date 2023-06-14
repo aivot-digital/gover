@@ -1,3 +1,5 @@
+import {IconDefinition} from "@fortawesome/pro-duotone-svg-icons";
+
 export interface DataOverviewProps<T extends { id: number }> {
     title: string;
     searchPlaceholder: string;
@@ -19,6 +21,13 @@ export interface DataOverviewProps<T extends { id: number }> {
 
     linkToEdit?: (item: T) => string;
     fieldsToEdit?: (EditField<T> | string)[];
+
+    additionalActions?: {
+        label: string;
+        icon: IconDefinition;
+        key: string;
+    }[];
+    onAdditionalAction?: (key: string, item: T) => void;
 }
 
 export interface EditField<T> {
