@@ -11,10 +11,16 @@ import {isAnyElementWithChildren} from '../../../../models/elements/any-element-
 import {AnyElement} from '../../../../models/elements/any-element';
 import {AddElementDialog} from '../../../../dialogs/add-element-dialog/add-element-dialog';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {findNoCodeUsage} from "../../../../utils/find-no-code-usage";
+import {findNoCodeUsage, findNoCodeUsageOfChildren} from "../../../../utils/find-no-code-usage";
 import {generateComponentTitle} from "../../../../utils/generate-component-title";
 
-export function ElementTreeItem<T extends AnyElement>({parents, element, onPatch, onDelete, onClone}: ElementTreeItemProps<T>) {
+export function ElementTreeItem<T extends AnyElement>({
+                                                          parents,
+                                                          element,
+                                                          onPatch,
+                                                          onDelete,
+                                                          onClone
+                                                      }: ElementTreeItemProps<T>) {
     const dispatch = useAppDispatch();
 
     const [expanded, setExpanded] = useState(false);
@@ -57,14 +63,22 @@ export function ElementTreeItem<T extends AnyElement>({parents, element, onPatch
     };
 
     const handleDeleteElement = () => {
-        const usages = findNoCodeUsage(element, parents[0]);
-
-        if (usages.length > 0) {
-            alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${usages.map(u => generateComponentTitle(u)).join(', ')}`);
-        } else {
-            onDelete();
-            setShowEditor(false);
+        const directUsages = findNoCodeUsage(element, parents[0]);
+        if (directUsages.length > 0) {
+            alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${directUsages.map(u => generateComponentTitle(u)).join(', ')}`);
+            return
         }
+
+        if (isAnyElementWithChildren(element)) {
+            const childUsages = findNoCodeUsageOfChildren(element, parents[0]);
+            if (childUsages.length > 0) {
+                alert(`Dieses Element kann nicht gelöscht werden. Mindestens eins der Kind-Elemente wird von einer No-Code-Funktion referenziert.`);
+                return;
+            }
+        }
+
+        onDelete();
+        setShowEditor(false);
     };
 
     const isLayoutElement = isAnyElementWithChildren(element);

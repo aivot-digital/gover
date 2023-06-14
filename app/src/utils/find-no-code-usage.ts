@@ -1,8 +1,27 @@
 import {AnyElement} from "../models/elements/any-element";
 import {Function} from "../models/functions/function";
 import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
-import {isAnyElementWithChildren} from "../models/elements/any-element-with-children";
+import {AnyElementWithChildren, isAnyElementWithChildren} from "../models/elements/any-element-with-children";
 import {ConditionSet} from "../models/functions/conditions/condition-set";
+
+export function findNoCodeUsageOfChildren(target: AnyElementWithChildren, current: AnyElement): [AnyElement, AnyElement[]][] {
+    const found: [AnyElement, AnyElement[]][] = [];
+    for (const child of target.children) {
+        const usages = findNoCodeUsage(child, current);
+        if (usages.length > 0) {
+            found.push([
+                child,
+                usages,
+            ]);
+        }
+
+        if (isAnyElementWithChildren(child)) {
+            found.push(...findNoCodeUsageOfChildren(child, current));
+        }
+    }
+
+    return found;
+}
 
 export function findNoCodeUsage(target: AnyElement, current: AnyElement): AnyElement[] {
     const foundReferences: AnyElement[] = [];
