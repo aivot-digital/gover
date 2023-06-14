@@ -61,15 +61,14 @@ export function ElementEditorContent<T extends AnyElement>({
                         element.type !== ElementType.IntroductionStep &&
                         element.type !== ElementType.SummaryStep &&
                         element.type !== ElementType.SubmitStep &&
-                        <TextField
+                        <TextFieldComponent
                             label="Interner Name"
-                            value={element.name ?? ''}
-                            fullWidth
-                            margin="normal"
-                            onChange={event => {
-                                handleUpdate({name: event.target.value ?? ''});
+                            value={element.name}
+                            onChange={val => {
+                                handleUpdate({name: val});
                             }}
-                            helperText="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und ihre Mitarbeiter einsehen"
+                            hint="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und ihre Mitarbeiter:innen einsehen"
+                            maxCharacters={30}
                         />
                     }
                     {
