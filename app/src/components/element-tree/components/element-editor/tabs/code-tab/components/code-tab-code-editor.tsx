@@ -2,6 +2,7 @@ import React, {useCallback, useRef} from "react";
 import {Box, Typography} from "@mui/material";
 import Editor from "@monaco-editor/react";
 import {Function} from "../../../../../../../models/functions/function";
+import {AlertComponent} from "../../../../../../alert/alert-component";
 
 interface CodeTabCodeEditorProps {
     func: Function;
@@ -30,7 +31,7 @@ export function CodeTabCodeEditor({func, onChange}: CodeTabCodeEditorProps) {
 
             <Box sx={{mt: 2}}>
                 <Editor
-                    height="calc(100vh - 256px)"
+                    height="calc(100vh - 768px)"
                     defaultLanguage="javascript"
                     options={{
                         minimap: {
@@ -40,6 +41,12 @@ export function CodeTabCodeEditor({func, onChange}: CodeTabCodeEditorProps) {
                     onMount={handleEditorDidMount}
                 />
             </Box>
+
+            <AlertComponent
+                text="Bitte beachten Sie, dass Code immer eine main-Function haben muss."
+                title="Hinweis zum Code"
+                color="info"
+            />
         </>
     );
 }
