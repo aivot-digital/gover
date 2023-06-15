@@ -84,7 +84,6 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
 }
 
 function fixConditionSetReferences(cs: ConditionSet, idMap: IdMap): ConditionSet {
-    console.log(idMap, cs);
     return {
         ...cs,
         conditions: cs.conditions != null ? cs.conditions.map(c => ({

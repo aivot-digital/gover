@@ -117,7 +117,6 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>({
                         const updatedChildren = [...element.children];
                         // @ts-ignore
                         updatedChildren.push(droppedElement);
-                        console.log('Dropped at end', droppedElement);
                         // @ts-ignore
                         onPatch({
                             children: updatedChildren,

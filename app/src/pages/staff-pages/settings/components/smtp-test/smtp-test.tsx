@@ -30,7 +30,6 @@ export function SmtpTest() {
             }
         )
             .then(res => {
-                console.log(res);
                 if (res.data.result != null) {
                     setEmailTestResult(res.data.result);
                 } else {
@@ -38,7 +37,7 @@ export function SmtpTest() {
                 }
             })
             .catch(err => {
-                console.log(err);
+                console.error(err);
                 if (err.response != null && err.response.data != null && err.response.data.message != null) {
                     setEmailTestResult(err.response.data.message);
                 } else {

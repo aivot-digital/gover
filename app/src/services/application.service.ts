@@ -63,7 +63,6 @@ class _ApplicationService extends CrudService<Application, 'applications', numbe
 
         for (const fileSet of fileSets) {
             for (const file of fileSet) {
-                console.log(file);
                 const blob = await fetch(file.uri).then(r => r.blob());
                 data.append('files', blob, file.name);
             }

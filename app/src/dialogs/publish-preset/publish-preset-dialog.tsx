@@ -66,7 +66,7 @@ export function PublishPresetDialog(props: PublishPresetDialogProps) {
                         datenfeldId == null ? '' : datenfeldId,
                     )
                         .then(res => {
-                            console.log(res);
+                            // TODO: Lokale Vorlage mit GoverStoreId updaten
                             dispatch(showSuccessSnackbar('Vorlage erfolgreich als Baustein veröffentlicht.'));
                             return true;
                         })

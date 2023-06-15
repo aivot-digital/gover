@@ -90,25 +90,21 @@ function evaluateConditionSet(
 
 function evaluateCondition(idPrefix: string | undefined, allElements: AnyElement[], condition: Condition, customerInput: CustomerInput): string | null {
     if (condition.operator == null) {
-        console.log('No operator', condition);
         return null;
     }
 
     const referencedElement = allElements.find(elem => elem.id === condition.reference);
     if (referencedElement == null) {
-        console.log('No referencedElement', condition, allElements);
         return null;
     }
 
     const evaluator = Evaluators[referencedElement.type];
     if (evaluator == null) {
-        console.log('No evaluator', condition, referencedElement);
         return null;
     }
 
     const operatorEvaluator = evaluator[condition.operator];
     if (operatorEvaluator == null) {
-        console.log('No operatorEvaluator', condition, referencedElement);
         return null;
     }
 

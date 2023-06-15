@@ -21,7 +21,7 @@ export function ModuleInfoTab({moduleId, onClose}: { moduleId: string, onClose: 
             GoverStoreService.fetchModule(moduleId, storeKey)
                 .then(setModule)
                 .catch(err => {
-                    console.log(err);
+                    console.error(err);
                 });
         }
     }, [moduleId]);
