@@ -61,7 +61,25 @@ const eligibleEntities: CheckboxTreeOption[] = [
             'Wohnungseigentümergemeinschaften',
         ],
     },
-]
+];
+
+function orderEligiblePersons(value: string[]): string[] {
+    const flattenTreeOptions = (options: CheckboxTreeOption[]): string[] => {
+        const flattened: string[] = [];
+        for (const option of options) {
+            if (typeof option === 'string') {
+                flattened.push(option);
+            } else {
+                flattened.push(option.label);
+                flattened.push(...flattenTreeOptions(option.children));
+            }
+        }
+        return flattened;
+    }
+
+    return flattenTreeOptions(eligibleEntities)
+        .filter(opt => value.includes(opt));
+}
 
 export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
     const [vendors, setVendors] = useState<Department[]>([]);
@@ -196,7 +214,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     options={eligibleEntities}
                     value={props.element.eligiblePersons ?? []}
                     onChange={update => props.onPatch({
-                        eligiblePersons: update,
+                        eligiblePersons: orderEligiblePersons(update),
                     })}
                 />
             </FormGroup>
