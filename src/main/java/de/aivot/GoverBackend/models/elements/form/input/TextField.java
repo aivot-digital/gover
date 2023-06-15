@@ -54,7 +54,7 @@ public class TextField extends BaseInputElement<String> {
 
         fields.add(new ValuePdfRowDto(
                 getLabel(),
-                value != null ? value : "Keine Angaben"
+                (value != null ? value : "Keine Angaben").replaceAll("\\r?\\n", "<br/>")
         ));
 
         return fields;

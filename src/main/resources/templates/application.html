@@ -3,6 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            font-size: 100%;
+            font: inherit;
+            vertical-align: baseline;
+        }
+
         body {
             font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
@@ -16,21 +25,22 @@
         }
 
         .value-field {
-            width: 100%;
+            display: -webkit-box;
+            display: flex;
+            -webkit-box-align: start;
+            align-items: start;
             padding: 0.5em 0;
         }
 
         .value-field .label {
-            display: inline-block;
-            width: 45%;
+            width: 25%;
             font-weight: bold;
             text-align: right;
             padding-right: 0.5em;
         }
 
         .value-field .value {
-            display: inline-block;
-            width: 45%;
+            width: 75%;
             padding-left: 0.5em;
         }
 
@@ -61,7 +71,7 @@
 
     <div class="value-field" th:if="${#strings.equals(field.type, 'Value')}">
         <div class="label" th:text="${field.label}"></div>
-        <div class="value" th:text="${field.value}"></div>
+        <div class="value" th:utext="${field.value}"></div>
     </div>
 
     <table class="value-field" th:if="${#strings.equals(field.type, 'Table')}">
