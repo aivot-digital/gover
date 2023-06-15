@@ -13,7 +13,7 @@ export const TextFieldView: BaseView<TextFieldElement, string> = ({element, valu
             required={element.required}
             disabled={element.disabled}
             maxCharacters={element.maxCharacters}
-
+            minCharacters={element.minCharacters}
             value={value ?? undefined}
             onChange={val => setValue(val)}
         />

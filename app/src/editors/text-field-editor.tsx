@@ -16,6 +16,15 @@ export const TextFieldEditor: BaseEditor<TextFieldElement> = ({element, onPatch}
             />
 
             <NumberFieldComponent
+                label="Minimalanzahl an Zeichen"
+                value={element.minCharacters}
+                onChange={val => onPatch({
+                    minCharacters: val,
+                })}
+                hint="Geben Sie 0 oder nichts ein, um keine Minimalanzahl zu fordern."
+            />
+
+            <NumberFieldComponent
                 label="Maximalanzahl an Zeichen"
                 value={element.maxCharacters}
                 onChange={val => onPatch({

@@ -5,4 +5,5 @@ export interface TextFieldElement extends BaseInputElement<string, ElementType.T
     placeholder?: string;
     isMultiline?: boolean;
     maxCharacters?: number;
+    minCharacters?: number;
 }

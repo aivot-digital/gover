@@ -19,6 +19,7 @@ public class TextField extends BaseInputElement<String> {
     private String placeholder;
     private Boolean isMultiline;
     private Integer maxCharacters;
+    private Integer minCharacters;
 
     public TextField(Map<String, Object> data) {
         super(data);
@@ -31,6 +32,7 @@ public class TextField extends BaseInputElement<String> {
         placeholder = MapUtils.getString(values, "placeholder");
         isMultiline = MapUtils.getBoolean(values, "isMultiline");
         maxCharacters = MapUtils.getInteger(values, "maxCharacters");
+        minCharacters = MapUtils.getInteger(values, "minCharacters");
     }
 
     @Override
@@ -43,8 +45,12 @@ public class TextField extends BaseInputElement<String> {
 
     @Override
     public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, String value, ScriptEngine scriptEngine) throws ValidationException {
-        if (maxCharacters != null && value.length() > maxCharacters) {
+        if (maxCharacters != null && maxCharacters > 0 && value.length() > maxCharacters) {
             throw new ValidationException(this, "Too many characters");
+        }
+
+        if (minCharacters != null && minCharacters > 0 && value.length() < minCharacters) {
+            throw new ValidationException(this, "Too few characters");
         }
     }
 
@@ -151,5 +157,13 @@ public class TextField extends BaseInputElement<String> {
 
     public void setMaxCharacters(Integer maxCharacters) {
         this.maxCharacters = maxCharacters;
+    }
+
+    public Integer getMinCharacters() {
+        return minCharacters;
+    }
+
+    public void setMinCharacters(Integer minCharacters) {
+        this.minCharacters = minCharacters;
     }
 }

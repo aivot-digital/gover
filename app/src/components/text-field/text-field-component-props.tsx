@@ -8,6 +8,8 @@ export interface TextFieldComponentProps {
     error?: string;
     hint?: string;
     maxCharacters?: number;
+    minCharacters?: number;
+    rows?: number;
     onChange: (val: string | undefined) => void;
     onBlur?: (val: string | undefined) => void;
 }

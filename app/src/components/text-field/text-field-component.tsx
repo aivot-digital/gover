@@ -1,5 +1,6 @@
 import {Box, TextField} from '@mui/material';
 import {TextFieldComponentProps} from "./text-field-component-props";
+import {humanizeNumber} from "../../utils/huminization-utils";
 
 export function TextFieldComponent({
                                        label,
@@ -11,8 +12,10 @@ export function TextFieldComponent({
                                        error,
                                        hint,
                                        maxCharacters,
+                                       minCharacters,
                                        onChange,
                                        onBlur,
+                                       rows,
                                    }: TextFieldComponentProps) {
     return (
         <TextField
@@ -22,7 +25,7 @@ export function TextFieldComponent({
             fullWidth
             error={error != null}
             multiline={multiline}
-            rows={multiline ? 4 : undefined}
+            rows={multiline ? (rows ?? 4) : undefined}
             FormHelperTextProps={{
                 // @ts-ignore
                 component: 'div',
@@ -37,13 +40,27 @@ export function TextFieldComponent({
                     <Box>
                         {error != null ? error : hint}
                     </Box>
+
                     {
-                        maxCharacters != null && maxCharacters > 0 ?
-                            <Box sx={{ml: 3}}>
-                                {(value ?? '').length}/{maxCharacters}
-                            </Box>
-                            :
-                            <span/>
+                        maxCharacters != null &&
+                        maxCharacters > 0 &&
+                        (
+                            minCharacters == null ||
+                            minCharacters === 0 ||
+                            (value ?? '').length >= minCharacters
+                        ) &&
+                        <Box sx={{ml: 3}}>
+                            {(value ?? '').length}/{maxCharacters}
+                        </Box>
+                    }
+
+                    {
+                        minCharacters != null &&
+                        minCharacters > 0 &&
+                        (value ?? '').length < minCharacters &&
+                        <Box sx={{ml: 3}}>
+                            Noch {humanizeNumber(minCharacters - (value ?? '').length)} Zeichen
+                        </Box>
                     }
                 </Box>
             }
@@ -64,7 +81,7 @@ export function TextFieldComponent({
             }}
             inputProps={
                 maxCharacters ? {
-                    maxLength: maxCharacters
+                    maxLength: maxCharacters,
                 } : undefined
             }
             disabled={disabled}
