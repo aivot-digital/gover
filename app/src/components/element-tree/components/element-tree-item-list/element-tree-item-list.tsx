@@ -1,22 +1,51 @@
-import React from 'react';
+import React, {createRef, forwardRef, Ref, useImperativeHandle, useRef} from 'react';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {Box, Typography} from '@mui/material';
 import {ElementTreeItemDropTarget} from '../element-tree-item-drop-target/element-tree-item-drop-target';
-import {ElementTreeItem} from '../element-tree-item/element-tree-item';
+import {ElementTreeItem, ElementTreeItemRef} from '../element-tree-item/element-tree-item';
 import {ElementTreeItemListProps} from './element-tree-item-list-props';
 import {selectIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
 import {cloneElement} from "../../../../utils/clone-element";
 
+export interface ElementTreeItemListRef {
+    expand: () => void;
+    collapse: () => void;
+}
 
-export function ElementTreeItemList<T extends AnyElementWithChildren>({
-                                                                          parents,
-                                                                          element,
-                                                                          isRootList,
-                                                                          onPatch
-                                                                      }: ElementTreeItemListProps<T>) {
+function _ElementTreeItemList<T extends AnyElementWithChildren>({
+                                                                    parents,
+                                                                    element,
+                                                                    isRootList,
+                                                                    onPatch,
+                                                                }: ElementTreeItemListProps<T>,
+                                                                ref: Ref<ElementTreeItemListRef | undefined>,
+) {
     const isDraggingTreeElement = useAppSelector(selectIsDraggingTreeElement);
+
+    const treeItemRefs = useRef(element.children.map(() => createRef<ElementTreeItemRef>()));
+
+    useImperativeHandle(ref, () => ({
+        expand() {
+            if (treeItemRefs.current != null) {
+                for (const itemRef of treeItemRefs.current) {
+                    if (itemRef.current != null) {
+                        itemRef.current?.expand();
+                    }
+                }
+            }
+        },
+        collapse() {
+            if (treeItemRefs.current != null) {
+                for (const itemRef of treeItemRefs.current) {
+                    if (itemRef.current != null) {
+                        itemRef.current?.collapse();
+                    }
+                }
+            }
+        },
+    }));
 
     return (
         <Box
@@ -40,6 +69,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>({
                         }}
                     >
                         <ElementTreeItem
+                            ref={treeItemRefs.current[index]}
                             parents={[...parents, element]}
                             element={child}
                             onPatch={patch => {
@@ -137,3 +167,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>({
         </Box>
     );
 }
+
+export const ElementTreeItemList = forwardRef(_ElementTreeItemList) as React.FC<ElementTreeItemListProps<any> & {
+    ref?: Ref<ElementTreeItemListRef | undefined>
+}>;

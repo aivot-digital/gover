@@ -1,10 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React, {forwardRef, Ref, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {useDrag} from 'react-dnd';
 import {Box} from '@mui/material';
 import {setIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {ElementTreeItemTitle} from '../element-tree-item-title/element-tree-item-title';
-import {ElementTreeItemList} from '../element-tree-item-list/element-tree-item-list';
+import {ElementTreeItemList, ElementTreeItemListRef} from '../element-tree-item-list/element-tree-item-list';
 import {ElementEditor} from '../element-editor/element-editor';
 import {ElementTreeItemProps} from './element-tree-item-props';
 import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
@@ -14,18 +14,42 @@ import {ElementType} from '../../../../data/element-type/element-type';
 import {findNoCodeUsage, findNoCodeUsageOfChildren} from "../../../../utils/find-no-code-usage";
 import {generateComponentTitle} from "../../../../utils/generate-component-title";
 
-export function ElementTreeItem<T extends AnyElement>({
-                                                          parents,
-                                                          element,
-                                                          onPatch,
-                                                          onDelete,
-                                                          onClone
-                                                      }: ElementTreeItemProps<T>) {
+export interface ElementTreeItemRef {
+    expand: () => void;
+    collapse: () => void;
+}
+
+function _ElementTreeItem<T extends AnyElement>({
+                                                    parents,
+                                                    element,
+                                                    onPatch,
+                                                    onDelete,
+                                                    onClone,
+                                                }: ElementTreeItemProps<T>,
+                                                ref: Ref<ElementTreeItemRef | undefined>,
+) {
     const dispatch = useAppDispatch();
 
     const [expanded, setExpanded] = useState(false);
     const [showEditor, setShowEditor] = useState(false);
     const [showAddDialog, setShowAddDialog] = useState(false);
+
+    const treeItemListRef = useRef<ElementTreeItemListRef>();
+
+    useImperativeHandle(ref, () => ({
+        expand() {
+            setExpanded(true);
+            if (treeItemListRef.current != null) {
+                treeItemListRef.current?.expand();
+            }
+        },
+        collapse() {
+            setExpanded(false);
+            if (treeItemListRef.current != null) {
+                treeItemListRef.current?.collapse();
+            }
+        },
+    }));
 
     const [{isDragging}, drag] = useDrag(() => ({
         item: element,
@@ -105,6 +129,7 @@ export function ElementTreeItem<T extends AnyElement>({
                     parents={parents}
                     element={element}
                     onPatch={onPatch}
+                    ref={treeItemListRef}
                 />
             }
 
@@ -147,3 +172,7 @@ export function ElementTreeItem<T extends AnyElement>({
         </Box>
     );
 }
+
+export const ElementTreeItem = forwardRef(_ElementTreeItem) as React.FC<ElementTreeItemProps<any> & {
+    ref?: Ref<ElementTreeItemRef | undefined>
+}>;

@@ -1,6 +1,6 @@
 import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faGear, faListTree, faMessageCode} from '@fortawesome/pro-light-svg-icons';
+import {faGear, faListTree, faMessageCode, faArrowsFromLine, faArrowsToLine, faSearch} from '@fortawesome/pro-light-svg-icons';
 import {
     selectUseIdsInComponentTree,
     selectUseTestMode,
@@ -61,6 +61,33 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                 </Box>
 
                 <Box>
+                    <Tooltip
+                        title="Suchen"
+                        arrow
+                    >
+                        <IconButton onClick={props.onToggleSearch}>
+                            <FontAwesomeIcon icon={faSearch}/>
+                        </IconButton>
+                    </Tooltip>
+
+                    <Tooltip
+                        title="Alles ausklappen"
+                        arrow
+                    >
+                        <IconButton onClick={props.onExpandAll}>
+                            <FontAwesomeIcon icon={faArrowsFromLine}/>
+                        </IconButton>
+                    </Tooltip>
+
+                    <Tooltip
+                        title="Alles einklappen"
+                        arrow
+                    >
+                        <IconButton onClick={props.onCollapseAll}>
+                            <FontAwesomeIcon icon={faArrowsToLine}/>
+                        </IconButton>
+                    </Tooltip>
+
                     <Tooltip
                         title="Einstellungen für Entwickler:innen"
                         arrow

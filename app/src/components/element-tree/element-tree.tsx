@@ -1,14 +1,14 @@
-import React, {useState} from 'react';
-import {Box, Button, Divider, Typography} from '@mui/material';
+import React, {useRef, useState} from 'react';
+import {Box, Button, Divider, IconButton, Tooltip, Typography} from '@mui/material';
 import ProjectPackage from '../../../package.json';
 import GitInfo from '../../git-info.json';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 import {ElementTreeProps} from './element-tree-props';
 import {ElementTreeHeader} from './components/element-tree-header/element-tree-header';
-import {ElementTreeItemList} from './components/element-tree-item-list/element-tree-item-list';
+import {ElementTreeItemList, ElementTreeItemListRef} from './components/element-tree-item-list/element-tree-item-list';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faPlusCircle} from '@fortawesome/pro-light-svg-icons';
+import {faClose, faPlusCircle} from '@fortawesome/pro-light-svg-icons';
 import {ElementType} from '../../data/element-type/element-type';
 import {AddElementDialog} from '../../dialogs/add-element-dialog/add-element-dialog';
 import {AnyElement} from '../../models/elements/any-element';
@@ -16,9 +16,19 @@ import {AnyElementWithChildren} from '../../models/elements/any-element-with-chi
 import {ElementTreeItem} from './components/element-tree-item/element-tree-item';
 import {isRootElement, RootElement} from '../../models/elements/root-element';
 import {generateElementIdForType} from "../../utils/id-utils";
+import {SearchInput} from "../search-input/search-input";
+import {useAppSelector} from "../../hooks/use-app-selector";
+import {selectTreeElementSearch, setTreeElementSearch} from "../../slices/admin-settings-slice";
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
 
 export function ElementTree<T extends AnyElementWithChildren>(props: ElementTreeProps<T>) {
+    const dispatch = useAppDispatch();
+
     const [showAddDialog, setShowAddDialog] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
+
+    const treeElementSearch = useAppSelector(selectTreeElementSearch);
+    const treeItemListRef = useRef<ElementTreeItemListRef>();
 
     const handleAddElement = (element: AnyElement) => {
         props.onPatch({
@@ -42,6 +52,26 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
         }
     };
 
+    const handleExpandAll = () => {
+        if (treeItemListRef.current != null) {
+            treeItemListRef.current?.expand();
+        }
+    };
+    const handleCollapse = () => {
+        if (treeItemListRef.current != null) {
+            treeItemListRef.current?.collapse();
+        }
+    };
+
+    const handleToggleSearch = () => {
+        if (showSearch) {
+            dispatch(setTreeElementSearch(undefined));
+        } else {
+            handleExpandAll();
+        }
+        setShowSearch(!showSearch);
+    };
+
     return (
         <>
             <Box
@@ -56,7 +86,32 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                     <ElementTreeHeader
                         element={props.element}
                         onPatch={props.onPatch}
+                        onExpandAll={handleExpandAll}
+                        onCollapseAll={handleCollapse}
+                        onToggleSearch={handleToggleSearch}
                     />
+
+                    {
+                        showSearch &&
+                        <Box sx={{display: 'flex'}}>
+                            <Tooltip title="Suche schließen">
+                                <IconButton
+                                    onClick={handleToggleSearch}
+                                    size="small"
+                                >
+                                    <FontAwesomeIcon icon={faClose}/>
+                                </IconButton>
+                            </Tooltip>
+
+                            <Box sx={{flex: 1}}>
+                                <SearchInput
+                                    value={treeElementSearch ?? ''}
+                                    onChange={val => dispatch(setTreeElementSearch(val))}
+                                    placeholder="Element Suchen"
+                                />
+                            </Box>
+                        </Box>
+                    }
 
                     <Divider
                         sx={{
@@ -98,6 +153,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                             element={props.element}
                             onPatch={props.onPatch}
                             isRootList
+                            ref={treeItemListRef}
                         />
 
                         {

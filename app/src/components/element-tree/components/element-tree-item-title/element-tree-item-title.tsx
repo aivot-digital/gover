@@ -25,6 +25,7 @@ import {RootElement} from '../../../../models/elements/root-element';
 import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {
+    selectTreeElementSearch,
     selectUseIdsInComponentTree,
     selectUseTestMode,
     selectWarnDuplicateIds
@@ -38,11 +39,15 @@ import {stringOrDefault} from "../../../../utils/string-utils";
 import {findNoCodeUsage} from "../../../../utils/find-no-code-usage";
 
 
+const highlightOutlineStyle = '#86FFD388 solid 2px';
+const highlightBoxShadowStyle = '0px 4px 20px rgba(179, 242, 219, 0.5)';
+
 export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>) {
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
     const root = useAppSelector(selectLoadedApplication)?.root;
+    const treeElementSearch = useAppSelector(selectTreeElementSearch);
 
     const handleSelect = () => {
         if (document.activeElement instanceof HTMLElement) {
@@ -54,8 +59,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     const addHighlightElement = () => {
         const elem = document.getElementById(props.element.id);
         if (elem) {
-            elem.style.outline = '#86FFD388 solid 2px';
-            elem.style.boxShadow = '0px 4px 20px rgba(179, 242, 219, 0.5)';
+            elem.style.outline = highlightOutlineStyle;
+            elem.style.boxShadow = highlightBoxShadowStyle;
         }
     };
 
@@ -92,12 +97,17 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     const elementTitle = generateComponentTitle(props.element);
     const titleCharLimit = testMode ? 30 : 40;
     const elementIcon = props.element.type === ElementType.Step ? getStepIcon(props.element) : ElementIcons[props.element.type];
+    const matchesSearch = treeElementSearch != null && treeElementSearch.length > 2 && (elementTitle.toLowerCase().includes(treeElementSearch.toLowerCase()) || props.element.id.toLowerCase().includes(treeElementSearch.toLocaleLowerCase()));
 
     return (
         <div
             className={styles.listItem}
             onDoubleClick={handleSelect}
-            style={{display: 'flex'}}
+            style={{
+                display: 'flex',
+                outline: matchesSearch ? highlightOutlineStyle : undefined,
+                boxShadow: matchesSearch ? highlightBoxShadowStyle : undefined,
+            }}
             onMouseEnter={addHighlightElement}
             onMouseLeave={removeHighlightElement}
         >
