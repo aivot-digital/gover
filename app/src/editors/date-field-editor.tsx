@@ -35,9 +35,10 @@ export const DateFieldEditor: BaseEditor<DateFieldElement> = ({element, onPatch}
                 label="Das Datum muss in der Vergangenheit liegen"
                 value={element.mustBePast}
                 onChange={val => onPatch({
-                    mustBeFuture: false,
                     mustBePast: val,
                 })}
+                disabled={element.mustBeFuture}
+                hint={element.mustBeFuture ? 'Ein Datum kann nicht gleichzeitig in der Vergangenheit und Zukunft liegen.' : undefined}
             />
 
             <CheckboxFieldComponent
@@ -45,8 +46,9 @@ export const DateFieldEditor: BaseEditor<DateFieldElement> = ({element, onPatch}
                 value={element.mustBeFuture}
                 onChange={val => onPatch({
                     mustBeFuture: val,
-                    mustBePast: false,
                 })}
+                disabled={element.mustBePast}
+                hint={element.mustBePast ? 'Ein Datum kann nicht gleichzeitig in der Vergangenheit und Zukunft liegen.' : undefined}
             />
         </>
     );
