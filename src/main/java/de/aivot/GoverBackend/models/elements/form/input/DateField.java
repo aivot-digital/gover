@@ -144,63 +144,134 @@ public class DateField extends BaseInputElement<String> {
 
         if (referencedValue instanceof String sValA && comparedValue instanceof String sValB) {
             ZonedDateTime dValA = getDate(sValA);
-            ZonedDateTime dValB = getDate(sValB);
 
-            if (dValA == null || dValB == null) {
-                return false;
+            switch (operator) {
+                case YearsInPast -> {
+                    int iValB;
+                    try {
+                        iValB = Integer.parseInt(sValB);
+                    } catch (NumberFormatException ex) {
+                        return false;
+                    }
+                    var target = dValA.minusYears(iValB);
+                    return dValA.isBefore(target);
+                }
+                case MonthsInPast -> {
+                    int iValB;
+                    try {
+                        iValB = Integer.parseInt(sValB);
+                    } catch (NumberFormatException ex) {
+                        return false;
+                    }
+                    var target = dValA.minusMonths(iValB);
+                    return dValA.isBefore(target);
+                }
+                case DaysInPast -> {
+                    int iValB;
+                    try {
+                        iValB = Integer.parseInt(sValB);
+                    } catch (NumberFormatException ex) {
+                        return false;
+                    }
+                    var target = dValA.minusDays(iValB);
+                    return dValA.isBefore(target);
+                }
+
+                case YearsInFuture -> {
+                    int iValB;
+                    try {
+                        iValB = Integer.parseInt(sValB);
+                    } catch (NumberFormatException ex) {
+                        return false;
+                    }
+                    var target = dValA.plusYears(iValB);
+                    return dValA.isAfter(target);
+                }
+                case MonthsInFuture -> {
+                    int iValB;
+                    try {
+                        iValB = Integer.parseInt(sValB);
+                    } catch (NumberFormatException ex) {
+                        return false;
+                    }
+                    var target = dValA.plusMonths(iValB);
+                    return dValA.isAfter(target);
+                }
+                case DaysInFuture -> {
+                    int iValB;
+                    try {
+                        iValB = Integer.parseInt(sValB);
+                    } catch (NumberFormatException ex) {
+                        return false;
+                    }
+                    var target = dValA.plusDays(iValB);
+                    return dValA.isAfter(target);
+                }
+
+                default -> {
+                    ZonedDateTime dValB = getDate(sValB);
+
+                    if (dValA == null || dValB == null) {
+                        return false;
+                    }
+
+                    DateCompareResult res = new DateCompareResult(dValA, dValB);
+                    DatePrecision prec = getPrecising(sValA);
+
+                    return switch (operator) {
+                        case Equals -> switch (prec) {
+                            case iso, day -> res.dayEq() && res.monthEq() && res.yearEq();
+                            case dayAnyMonthAnyYear -> res.dayEq();
+                            case month -> res.monthEq() && res.yearEq();
+                            case dayAndMonthAnyYear -> res.dayEq() && res.monthEq();
+                            case year -> res.yearEq();
+                        };
+                        case NotEquals -> switch (prec) {
+                            case iso, day -> !(res.dayEq() && res.monthEq() && res.yearEq());
+                            case dayAnyMonthAnyYear -> !(res.dayEq());
+                            case month -> !(res.monthEq() && res.yearEq());
+                            case dayAndMonthAnyYear -> !(res.dayEq() && res.monthEq());
+                            case year -> !res.yearEq();
+                        };
+
+                        case LessThan -> switch (prec) {
+                            case iso, day ->
+                                    res.yearLt() || res.yearEq() && res.monthLt() || res.yearEq() && res.monthEq() && res.dayLt();
+                            case dayAnyMonthAnyYear -> res.dayLt();
+                            case month -> res.yearLt() || res.yearEq() && res.monthLt();
+                            case dayAndMonthAnyYear -> res.monthLt() || res.monthEq() && res.dayLt();
+                            case year -> res.yearLt();
+                        };
+                        case LessThanOrEqual -> switch (prec) {
+                            case iso, day ->
+                                    res.yearLt() || res.yearEq() && res.monthLt() || res.yearEq() && res.monthEq() && (res.dayEq() || res.dayLt());
+                            case dayAnyMonthAnyYear -> res.dayLt() || res.dayEq();
+                            case month -> res.yearLt() || res.yearEq() && (res.monthEq() || res.monthLt());
+                            case dayAndMonthAnyYear -> res.monthLt() || res.monthEq() && (res.dayEq() || res.dayLt());
+                            case year -> res.yearEq() || res.yearLt();
+                        };
+
+                        case GreaterThan -> switch (prec) {
+                            case iso, day ->
+                                    res.yearGt() || res.yearEq() && res.monthGt() || res.yearEq() && res.monthEq() && res.dayGt();
+                            case dayAnyMonthAnyYear -> res.dayGt();
+                            case month -> res.yearGt() || res.yearEq() && res.monthGt();
+                            case dayAndMonthAnyYear -> res.monthGt() || res.monthEq() && res.dayGt();
+                            case year -> res.yearGt();
+                        };
+                        case GreaterThanOrEqual -> switch (prec) {
+                            case iso, day ->
+                                    res.yearGt() || res.yearEq() && res.monthGt() || res.yearEq() && res.monthEq() && (res.dayEq() || res.dayGt());
+                            case dayAnyMonthAnyYear -> res.dayGt() || res.dayEq();
+                            case month -> res.yearGt() || res.yearEq() && (res.monthEq() || res.monthGt());
+                            case dayAndMonthAnyYear -> res.monthGt() || res.monthEq() && (res.dayEq() || res.dayGt());
+                            case year -> res.yearEq() || res.yearGt();
+                        };
+
+                        default -> false;
+                    };
+                }
             }
-
-            DateCompareResult res = new DateCompareResult(dValA, dValB);
-            DatePrecision prec = getPrecising(sValA);
-
-            return switch (operator) {
-                case Equals -> switch (prec) {
-                    case iso, day -> res.dayEq() && res.monthEq() && res.yearEq();
-                    case dayAnyMonthAnyYear -> res.dayEq();
-                    case month -> res.monthEq() && res.yearEq();
-                    case dayAndMonthAnyYear -> res.dayEq() && res.monthEq();
-                    case year -> res.yearEq();
-                };
-                case NotEquals -> switch (prec) {
-                    case iso, day -> !(res.dayEq() && res.monthEq() && res.yearEq());
-                    case dayAnyMonthAnyYear -> !(res.dayEq());
-                    case month -> !(res.monthEq() && res.yearEq());
-                    case dayAndMonthAnyYear -> !(res.dayEq() && res.monthEq());
-                    case year -> !res.yearEq();
-                };
-
-                case LessThan -> switch (prec) {
-                    case iso, day -> res.yearLt() || res.yearEq() && res.monthLt() || res.yearEq() && res.monthEq() && res.dayLt();
-                    case dayAnyMonthAnyYear -> res.dayLt();
-                    case month -> res.yearLt() || res.yearEq() && res.monthLt();
-                    case dayAndMonthAnyYear -> res.monthLt() || res.monthEq() && res.dayLt();
-                    case year -> res.yearLt();
-                };
-                case LessThanOrEqual -> switch (prec) {
-                    case iso, day -> res.yearLt() || res.yearEq() && res.monthLt() || res.yearEq() && res.monthEq() && (res.dayEq() || res.dayLt());
-                    case dayAnyMonthAnyYear -> res.dayLt() || res.dayEq();
-                    case month -> res.yearLt() || res.yearEq() && (res.monthEq() || res.monthLt());
-                    case dayAndMonthAnyYear -> res.monthLt() || res.monthEq() && (res.dayEq() || res.dayLt());
-                    case year -> res.yearEq() || res.yearLt();
-                };
-
-                case GreaterThan -> switch (prec) {
-                    case iso, day -> res.yearGt() || res.yearEq() && res.monthGt() || res.yearEq() && res.monthEq() && res.dayGt();
-                    case dayAnyMonthAnyYear -> res.dayGt();
-                    case month -> res.yearGt() || res.yearEq() && res.monthGt();
-                    case dayAndMonthAnyYear -> res.monthGt() || res.monthEq() && res.dayGt();
-                    case year -> res.yearGt();
-                };
-                case GreaterThanOrEqual -> switch (prec) {
-                    case iso, day -> res.yearGt() || res.yearEq() && res.monthGt() || res.yearEq() && res.monthEq() && (res.dayEq() || res.dayGt());
-                    case dayAnyMonthAnyYear -> res.dayGt() || res.dayEq();
-                    case month -> res.yearGt() || res.yearEq() && (res.monthEq() || res.monthGt());
-                    case dayAndMonthAnyYear -> res.monthGt() || res.monthEq() && (res.dayEq() || res.dayGt());
-                    case year -> res.yearEq() || res.yearGt();
-                };
-
-                default -> false;
-            };
         }
 
         return false;

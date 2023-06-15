@@ -1,6 +1,18 @@
 import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
-import {isValid, parse, parseISO} from "date-fns";
+import {
+    addDays,
+    addMonths,
+    addYears,
+    isAfter,
+    isBefore,
+    isValid,
+    parse,
+    parseISO,
+    subDays,
+    subMonths,
+    subYears
+} from "date-fns";
 
 const dayRegex = /^\d\d\.\d\d\.\d\d\d\d$/;
 const dayAnyMonthAnyYearRegex = /^\d\d\.$/;
@@ -310,5 +322,113 @@ export const DateEvaluator: BaseEvaluator<string> = {
     },
     [ConditionOperator.NotEmpty]: (valueA, _) => {
         return valueA != null;
+    },
+
+    [ConditionOperator.YearsInPast]: (valueA, valueB) => {
+        if (valueA == null || valueB == null) {
+            return false;
+        }
+
+        const years = parseInt(valueB);
+        if (isNaN(years)) {
+            return false;
+        }
+
+        const [valueADate,_] = transformValue(valueA);
+        if (valueADate == null) {
+            return false;
+        }
+
+        return isBefore(valueADate, subYears(new Date(), years));
+    },
+
+    [ConditionOperator.MonthsInPast]: (valueA, valueB) => {
+        if (valueA == null || valueB == null) {
+            return false;
+        }
+
+        const years = parseInt(valueB);
+        if (isNaN(years)) {
+            return false;
+        }
+
+        const [valueADate,_] = transformValue(valueA);
+        if (valueADate == null) {
+            return false;
+        }
+
+        return isBefore(valueADate, subMonths(new Date(), years));
+    },
+
+    [ConditionOperator.DaysInPast]: (valueA, valueB) => {
+        if (valueA == null || valueB == null) {
+            return false;
+        }
+
+        const years = parseInt(valueB);
+        if (isNaN(years)) {
+            return false;
+        }
+
+        const [valueADate,_] = transformValue(valueA);
+        if (valueADate == null) {
+            return false;
+        }
+
+        return isBefore(valueADate, subDays(new Date(), years));
+    },
+
+    [ConditionOperator.YearsInFuture]: (valueA, valueB) => {
+        if (valueA == null || valueB == null) {
+            return false;
+        }
+
+        const years = parseInt(valueB);
+        if (isNaN(years)) {
+            return false;
+        }
+
+        const [valueADate,_] = transformValue(valueA);
+        if (valueADate == null) {
+            return false;
+        }
+
+        return isAfter(valueADate, addYears(new Date(), years));
+    },
+
+    [ConditionOperator.MonthsInFuture]: (valueA, valueB) => {
+        if (valueA == null || valueB == null) {
+            return false;
+        }
+
+        const years = parseInt(valueB);
+        if (isNaN(years)) {
+            return false;
+        }
+
+        const [valueADate,_] = transformValue(valueA);
+        if (valueADate == null) {
+            return false;
+        }
+
+        return isAfter(valueADate, addMonths(new Date(), years));
+    },
+
+    [ConditionOperator.DaysInFuture]: (valueA, valueB) => {
+        if (valueA == null || valueB == null) {
+            return false;
+        }
+
+        const years = parseInt(valueB);
+        if (isNaN(years)) {
+            return false;
+        }
+
+        const [valueADate,_] = transformValue(valueA);
+        if (valueADate == null) {
+            return false;
+        }
+
+        return isAfter(valueADate, addDays(new Date(), years));
     },
 };

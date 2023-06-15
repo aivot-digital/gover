@@ -20,13 +20,25 @@ export enum ConditionOperator {
     NotMatchesPattern = 13,
     IncludesPattern = 14,
     NotIncludesPattern = 15,
-    Empty = 18, // TODO: Implement on server
-    NotEmpty = 19, // TODO: Implement on server
+    Empty = 18,
+    NotEmpty = 19,
+    YearsInPast = 20,
+    MonthsInPast = 21,
+    DaysInPast = 22,
+    YearsInFuture = 23,
+    MonthsInFuture = 24,
+    DaysInFuture = 25,
 }
 
-export const ConditionOperatorLabel: {
-    [key in ConditionOperator]: string;
-} = {
+type ConditionOperatorMap<T> = {
+    [key in ConditionOperator]: T;
+}
+
+type OptionalConditionOperatorMap<T> = {
+    [key in ConditionOperator]?: T;
+}
+
+export const ConditionOperatorLabel: ConditionOperatorMap<string> = {
     [ConditionOperator.Equals]: "gleich",
     [ConditionOperator.EqualsIgnoreCase]: "gleich (beachtet keine Groß-/Kleinschreibung)",
     [ConditionOperator.NotEquals]: "ungleich",
@@ -47,11 +59,15 @@ export const ConditionOperatorLabel: {
     [ConditionOperator.NotIncludesPattern]: "beinhaltet nicht Muster",
     [ConditionOperator.Empty]: "ist leer",
     [ConditionOperator.NotEmpty]: "ist nicht leer",
+    [ConditionOperator.YearsInPast]: "in der Vergangenheit (Jahre)",
+    [ConditionOperator.MonthsInPast]: "in der Vergangenheit (Monate)",
+    [ConditionOperator.DaysInPast]: "in der Vergangenheit (Tage)",
+    [ConditionOperator.YearsInFuture]: "in der Zukunft (Jahre)",
+    [ConditionOperator.MonthsInFuture]: "in der Zukunft (Monate)",
+    [ConditionOperator.DaysInFuture]: "in der Zukunft (Tage)",
 };
 
-export const ConditionOperatorIsUnary: {
-    [key in ConditionOperator]: boolean;
-} = {
+export const ConditionOperatorIsUnary: ConditionOperatorMap<boolean> = {
     [ConditionOperator.Equals]: false,
     [ConditionOperator.EqualsIgnoreCase]: false,
     [ConditionOperator.NotEquals]: false,
@@ -72,11 +88,15 @@ export const ConditionOperatorIsUnary: {
     [ConditionOperator.NotIncludesPattern]: false,
     [ConditionOperator.Empty]: true,
     [ConditionOperator.NotEmpty]: true,
+    [ConditionOperator.YearsInPast]:  false,
+    [ConditionOperator.MonthsInPast]:  false,
+    [ConditionOperator.DaysInPast]:  false,
+    [ConditionOperator.YearsInFuture]:  false,
+    [ConditionOperator.MonthsInFuture]:  false,
+    [ConditionOperator.DaysInFuture]:  false,
 };
 
-export const ConditionOperatorMessage: {
-    [key in ConditionOperator]: (valueA: any, valueB: any) => string;
-} = {
+export const ConditionOperatorMessage: ConditionOperatorMap<(valueA: any, valueB: any) => string> = {
     [ConditionOperator.Equals]: (valueA, valueB) => `${valueA} muss gleich ${valueB} sein.`,
     [ConditionOperator.EqualsIgnoreCase]: (valueA, valueB) => `${valueA} muss gleich ${valueB} sein.`,
     [ConditionOperator.NotEquals]: (valueA, valueB) => `${valueA} darf nicht gleich ${valueB} sein.`,
@@ -97,15 +117,34 @@ export const ConditionOperatorMessage: {
     [ConditionOperator.NotIncludesPattern]: (valueA, valueB) => `${valueA} darf das Muster ${valueB} nicht enthalten.`,
     [ConditionOperator.Empty]: (valueA, valueB) => `${valueA} muss ausgefüllt sein.`,
     [ConditionOperator.NotEmpty]: (valueA, valueB) => `${valueA} darf nicht ausgefüllt sein.`,
+    [ConditionOperator.YearsInPast]: (valueA, valueB) => `${valueA} muss ${valueB} Jahre in der Vergangenheit liegen.`,
+    [ConditionOperator.MonthsInPast]: (valueA, valueB) => `${valueA} muss ${valueB} Monate in der Vergangenheit liegen.`,
+    [ConditionOperator.DaysInPast]: (valueA, valueB) => `${valueA} muss ${valueB} Tage in der Vergangenheit liegen.`,
+    [ConditionOperator.YearsInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} Jahre in der Zukunft liegen.`,
+    [ConditionOperator.MonthsInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} Monate in der Zukunft liegen.`,
+    [ConditionOperator.DaysInFuture]: (valueA, valueB) => `${valueA} muss ${valueB} Tage in der Zukunft liegen.`,
 };
 
-export const ConditionOperatorHint: ElementTypesMap<string | null> = {
+export const ConditionOperatorHint: ElementTypesMap<OptionalConditionOperatorMap<string> | string | null> = {
     [ElementType.Root]: null,
     [ElementType.Step]: null,
     [ElementType.Alert]: null,
     [ElementType.Container]: null,
     [ElementType.Checkbox]: null,
-    [ElementType.Date]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
+    [ElementType.Date]: {
+        [ConditionOperator.Equals]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
+        [ConditionOperator.NotEquals]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
+        [ConditionOperator.LessThan]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
+        [ConditionOperator.LessThanOrEqual]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
+        [ConditionOperator.GreaterThan]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
+        [ConditionOperator.GreaterThanOrEqual]: 'Bitte im Format TT.MM.JJJJ / MM.JJJJ / JJJJ / TT.MM. / TT. eingeben.',
+        [ConditionOperator.YearsInPast]: 'Bitte Anzahl Jahre eingeben.',
+        [ConditionOperator.YearsInFuture]: 'Bitte Anzahl Jahre eingeben.',
+        [ConditionOperator.MonthsInPast]: 'Bitte Anzahl Monate eingeben.',
+        [ConditionOperator.MonthsInFuture]: 'Bitte Anzahl Monate eingeben.',
+        [ConditionOperator.DaysInPast]: 'Bitte Anzahl Tage eingeben.',
+        [ConditionOperator.DaysInPast]: 'Bitte Anzahl Tage eingeben.',
+    },
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: null,
     [ElementType.Number]: null,
@@ -125,9 +164,29 @@ export const ConditionOperatorHint: ElementTypesMap<string | null> = {
     [ElementType.FileUpload]: null
 };
 
-export const ConditionOperatorAdditionalHint: {
-    [key in ConditionOperator]: string | null;
-} = {
+export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {
+    if (elementType == null) {
+        return null;
+    }
+
+    const hint = ConditionOperatorHint[elementType];
+    if (hint == null || typeof hint === 'string') {
+        return hint;
+    }
+
+    if (operator == null) {
+        return null;
+    }
+
+    const detailedHint = hint[operator];
+    if (detailedHint != null) {
+        return detailedHint;
+    }
+
+    return ConditionOperatorAdditionalHint[operator];
+}
+
+export const ConditionOperatorAdditionalHint: ConditionOperatorMap<string | null> = {
     [ConditionOperator.Equals]: null,
     [ConditionOperator.EqualsIgnoreCase]: null,
     [ConditionOperator.NotEquals]: null,
@@ -148,4 +207,10 @@ export const ConditionOperatorAdditionalHint: {
     [ConditionOperator.NotIncludesPattern]: 'Das Muster muss als regulärer Ausdruck eingegeben werden, welcher sowohl für JavaScript als auch Java gültig ist.',
     [ConditionOperator.Empty]: null,
     [ConditionOperator.NotEmpty]: null,
+    [ConditionOperator.YearsInPast]: null,
+    [ConditionOperator.MonthsInPast]: null,
+    [ConditionOperator.DaysInPast]: null,
+    [ConditionOperator.YearsInFuture]: null,
+    [ConditionOperator.MonthsInFuture]: null,
+    [ConditionOperator.DaysInFuture]: null,
 };

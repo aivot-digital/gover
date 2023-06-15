@@ -26,10 +26,18 @@ public enum ConditionOperator implements Identifiable<Integer> {
     NotMatchesPattern(13, false),
     IncludesPattern(14, false),
     NotIncludesPattern(15, false),
-    EqualsIgnoreCase(16, false), // TODO: Implementieren
-    NotEqualsIgnoreCase(17, false), // TODO: Implementieren
-    Empty(18, true), // TODO: Implementieren
-    NotEmpty(19, true); // TODO: Implementieren
+    EqualsIgnoreCase(16, false),
+    NotEqualsIgnoreCase(17, false),
+
+    Empty(18, true),
+    NotEmpty(19, true),
+
+    YearsInPast(20, false), // TODO: Implement
+    MonthsInPast(21, false), // TODO: Implement
+    DaysInPast(22, false), // TODO: Implement
+    YearsInFuture(23, false), // TODO: Implement
+    MonthsInFuture(24, false), // TODO: Implement
+    DaysInFuture(25, false); // TODO: Implement
 
     private final Integer key;
     private final Boolean isUnary;

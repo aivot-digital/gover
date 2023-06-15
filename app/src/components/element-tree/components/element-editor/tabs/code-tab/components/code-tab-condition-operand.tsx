@@ -6,7 +6,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faRefresh} from "@fortawesome/pro-light-svg-icons";
 import React from "react";
 import {ElementType} from "../../../../../../../data/element-type/element-type";
-import {ConditionOperatorHint} from "../../../../../../../data/condition-operator";
+import {ConditionOperatorHint, getConditionOperatorHint} from "../../../../../../../data/condition-operator";
 import {SelectFieldComponent} from "../../../../../../select-field/select-field-component";
 import {TextFieldComponent} from "../../../../../../text-field/text-field-component";
 
@@ -31,7 +31,7 @@ type CodeTabConditionOperandProps = {
 
 export function CodeTabConditionOperand(props: CodeTabConditionOperandProps) {
 
-    const helperText = props.referenceType != null ? ConditionOperatorHint[props.referenceType] : null;
+    const helperText = getConditionOperatorHint(props.referenceType);
 
     return (
         <Box

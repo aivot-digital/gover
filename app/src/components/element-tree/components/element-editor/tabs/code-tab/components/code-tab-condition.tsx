@@ -7,7 +7,7 @@ import {
     ConditionOperator, ConditionOperatorAdditionalHint,
     ConditionOperatorHint,
     ConditionOperatorIsUnary,
-    ConditionOperatorLabel,
+    ConditionOperatorLabel, getConditionOperatorHint,
 } from "../../../../../../../data/condition-operator";
 import React from "react";
 import {ElementType} from "../../../../../../../data/element-type/element-type";
@@ -55,8 +55,7 @@ export function CodeTabCondition({
     }
 
     const isUnaryOperator = cond.operator != null ? ConditionOperatorIsUnary[cond.operator] : true;
-    const valueHelperText = referencedElement != null ? ConditionOperatorHint[referencedElement.type] : null;
-    const valueHelperText2 = cond.operator != null ? ConditionOperatorAdditionalHint[cond.operator] : null;
+    const valueHelperText = getConditionOperatorHint(referencedElement?.type, cond.operator);
 
     return (
         <Box>
@@ -143,7 +142,7 @@ export function CodeTabCondition({
                                                         value: val != null ? val.toString() : '',
                                                     })}
                                                     decimalPlaces={referencedElement.decimalPlaces}
-                                                    hint={valueHelperText ?? valueHelperText2 ?? undefined}
+                                                    hint={valueHelperText ?? undefined}
                                                 />
                                             ) : (
                                                 <TextFieldComponent
@@ -154,7 +153,7 @@ export function CodeTabCondition({
                                                         ...cond,
                                                         value: val ?? '',
                                                     })}
-                                                    hint={valueHelperText ?? valueHelperText2 ?? undefined}
+                                                    hint={valueHelperText ?? undefined}
                                                 />
                                             )
                                         )
