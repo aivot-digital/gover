@@ -97,26 +97,33 @@ export function SummaryComponentView({allElements}: BaseViewProps<SummaryStepEle
 }
 
 export function flattenElementsForSummary(allElements: AnyElement[], model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
-    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
-
     const isVisible = isElementVisible(idPrefix, allElements, model.id, model, userInput);
 
     if (!isVisible) {
         return [];
     }
 
-    let results: AnyElement[] = [];
+    const modelSummary = SummaryMap[model.type];
 
-    const Summary = SummaryMap[model.type];
-    if (Summary != null) {
-        results.push(model);
-    }
-
+    let childElements: AnyElement[] = [];
     if (model.type !== ElementType.ReplicatingContainer && isAnyElementWithChildren(model)) {
         for (const child of model.children) {
-            results = results.concat(flattenElementsForSummary(allElements, child, userInput, idPrefix));
+            childElements = childElements.concat(flattenElementsForSummary(allElements, child, userInput, idPrefix));
         }
     }
 
-    return results;
+    if (modelSummary != null) {
+        if (model.type === ElementType.Step && childElements.length === 0) {
+            return [];
+        }
+
+        return [
+            model,
+            ...childElements
+        ];
+    } else {
+        return [
+            ...childElements,
+        ];
+    }
 }
