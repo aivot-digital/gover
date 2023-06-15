@@ -71,6 +71,17 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
         handleClosePresetDialog();
     };
 
+    const handleClose = () => {
+        if (updatedElement != null) {
+            const conf = window.confirm('Sollen die Änderungen am Element wirklich verworfen werden?');
+            if (conf) {
+                props.onCancel();
+            }
+        } else {
+            props.onCancel();
+        }
+    };
+
     const editor = Editors[(updatedElement ?? props.element).type];
     const additionalTabs = editor?.additionalTabs ?? [];
 
@@ -83,7 +94,7 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
                     width: '66%',
                 },
             }}
-            onClose={props.onCancel}
+            onClose={handleClose}
         >
             <Box
                 sx={{
@@ -119,7 +130,7 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
 
                 <ElementEditorActions
                     onSave={handleSave}
-                    onCancel={props.onCancel}
+                    onCancel={handleClose}
                     onDelete={props.onDelete}
                     onSaveAsPreset={(updatedElement ?? props.element).type === ElementType.Container ? handleShowPresetDialog : undefined}
                     onClone={props.onClone}
