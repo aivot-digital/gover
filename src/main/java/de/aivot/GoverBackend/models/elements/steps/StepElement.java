@@ -46,7 +46,7 @@ public class StepElement extends BaseElement {
     public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> rows = new LinkedList<>();
 
-        rows.add(new HeadlinePdfRowDto(title == null ? "Unbenannter Abschnitt" : title, 2));
+
 
         if (children != null) {
             for (var child : children) {
@@ -57,6 +57,12 @@ public class StepElement extends BaseElement {
                 }
             }
         }
+
+        if (rows.isEmpty()) {
+            return new LinkedList<>();
+        }
+
+        rows.add(0, new HeadlinePdfRowDto(title == null ? "Unbenannter Abschnitt" : title, 2));
 
         return rows;
     }
