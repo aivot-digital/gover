@@ -1,6 +1,7 @@
 import React from 'react';
 import {
     Box,
+    Button,
     Dialog,
     DialogContent,
     FormControlLabel,
@@ -9,7 +10,7 @@ import {
     Switch,
     Typography
 } from '@mui/material';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {AppDispatch, RootState} from '../../store';
 import {
     AdminSettingsState,
@@ -22,6 +23,11 @@ import {DialogTitleWithClose} from '../../components/static-components/dialog-ti
 import {AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {Localization} from "../../locale/localization";
 import strings from "./admin-tools-dialog-strings.json";
+import {selectLoadedApplication} from "../../slices/app-slice";
+import {useAppSelector} from "../../hooks/use-app-selector";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faFileExport} from '@fortawesome/pro-light-svg-icons';
+import {downloadConfigFile} from "../../utils/download-utils";
 
 const _ = Localization(strings);
 
@@ -60,7 +66,8 @@ const switches: {
 export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
     const dispatch = useDispatch();
 
-    const adminSettings = useSelector((state: RootState) => state.adminSettings);
+    const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
+    const application = useAppSelector(selectLoadedApplication);
 
     return (
         <>
@@ -100,6 +107,20 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                                 </FormGroup>
                             ))
                         }
+                    </Box>
+
+                    <Box sx={{mt: 3}}>
+                        <Button
+                            fullWidth
+                            onClick={() => {
+                                downloadConfigFile(application);
+                            }}
+                            endIcon={
+                                <FontAwesomeIcon icon={faFileExport}/>
+                            }
+                        >
+                            Antrag als .gov-Datei exportieren
+                        </Button>
                     </Box>
                 </DialogContent>
             </Dialog>
