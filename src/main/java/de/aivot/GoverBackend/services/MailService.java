@@ -74,11 +74,11 @@ public class MailService {
         }
 
         message.setFrom(goverConfig.getFromMail());
-        message.setSubject(subject.replaceAll("\\r?\\n", " "));
-        message.setText(textMessage);
+        message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
+        message.setText(textMessage, "utf-8");
 
         MimeBodyPart mimeBodyPart = new MimeBodyPart();
-        mimeBodyPart.setContent(htmlMessage, "text/html;charset=utf-8");
+        mimeBodyPart.setContent(htmlMessage, "text/html; charset=utf-8");
 
         Multipart multipart = new MimeMultipart();
         multipart.addBodyPart(mimeBodyPart);
