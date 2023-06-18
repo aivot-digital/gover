@@ -56,19 +56,17 @@ public class MultiCheckboxField extends BaseInputElement<Collection<String>> {
                     "Keine Angaben"
             ));
         } else {
-            List<String> values = value.stream().toList();
+            StringBuilder sb = new StringBuilder();
+
+            for (String opt : value) {
+                sb.append(opt);
+                sb.append("<br/>");
+            }
 
             fields.add(new ValuePdfRowDto(
                     getLabel(),
-                    values.get(0)
+                    sb.toString()
             ));
-
-            for (int i = 1; i < values.size(); i++) {
-                fields.add(new ValuePdfRowDto(
-                        "",
-                        values.get(i)
-                ));
-            }
         }
 
         return fields;
