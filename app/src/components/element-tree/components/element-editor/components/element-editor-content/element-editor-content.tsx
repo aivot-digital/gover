@@ -67,7 +67,7 @@ export function ElementEditorContent<T extends AnyElement>({
                             onChange={val => {
                                 handleUpdate({name: val});
                             }}
-                            hint="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und ihre Mitarbeiter:innen einsehen"
+                            hint="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und Ihre Kolleg:innen einsehen"
                             maxCharacters={30}
                         />
                     }
