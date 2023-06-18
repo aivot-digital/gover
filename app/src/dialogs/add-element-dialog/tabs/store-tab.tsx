@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from "react";
-import {Preset} from "../../../models/entities/preset";
 import {cloneElement} from "../../../utils/clone-element";
 import {GoverStoreService, ListModule} from "../../../services/gover-store.service";
 import {BaseTabProps} from "./base-tab-props";
@@ -8,18 +7,18 @@ import {
 } from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
 import {
     Box,
-    DialogContent, Icon, IconButton,
+    DialogContent,
+    IconButton,
     List,
     ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
     Tooltip,
-    Typography, useTheme
+    Typography,
+    useTheme
 } from "@mui/material";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {ElementIcons} from "../../../data/element-type/element-icons";
-import {ElementType} from "../../../data/element-type/element-type";
 import {AlertComponent} from "../../../components/alert/alert-component";
 import {Link} from "react-router-dom";
 import {useAppSelector} from "../../../hooks/use-app-selector";
@@ -105,7 +104,7 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                 <List dense>
                     {
                         modules
-                            .filter(m => search == null || search.length < 3 || m.title.toLowerCase().includes(search.toLowerCase()))
+                            .filter(m => search == null || m.title.toLowerCase().includes(search.toLowerCase()))
                             .map(module => (
                                 <ListItem
                                     key={module.id}
@@ -128,6 +127,7 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                                             />
                                         </ListItemIcon>
                                         <ListItemText
+                                            disableTypography
                                             primary={
                                                 <Box sx={{display: 'flex', alignItems: 'center'}}>
                                                     {

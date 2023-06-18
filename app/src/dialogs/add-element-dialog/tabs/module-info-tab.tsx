@@ -5,7 +5,7 @@ import {faClose, faExternalLink, faLock} from "@fortawesome/pro-light-svg-icons"
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {selectSystemConfigValue} from "../../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../../data/system-config-keys";
-import {DetailModule, GoverStoreService, storeBaseUrl} from "../../../services/gover-store.service";
+import {DetailModule, GoverStoreService} from "../../../services/gover-store.service";
 import {
     LoadingPlaceholderComponentView
 } from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
@@ -114,7 +114,7 @@ export function ModuleInfoTab({moduleId, onClose}: { moduleId: string, onClose: 
                     </Box>
 
                     <Divider sx={{my: 4}}>
-                        Über
+                        Informationen
                     </Divider>
 
                     <Box>

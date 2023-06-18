@@ -34,7 +34,7 @@ const fields = [
     'Gover Store',
     {
         label: 'Schlüssel für den Gover Store',
-        hint: 'Geben Sie hier ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare oder Vorlagen im Gover Store veröffentlichen wollen.',
+        hint: 'Geben Sie hier Ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Gover Store veröffentlichen wollen.',
         key: SystemConfigKeys.gover.storeKey,
     },
 ];

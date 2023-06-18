@@ -1,34 +1,17 @@
 import React from "react";
-import {
-    Box, Checkbox,
-    DialogContent, Divider,
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    ListSubheader,
-    Tooltip, Typography
-} from "@mui/material";
+import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from "@mui/material";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faClose, faInfoCircle} from "@fortawesome/pro-light-svg-icons";
-import {generateElementWithDefaultValues} from "../../../utils/generate-element-with-default-values";
-import {ElementIcons} from "../../../data/element-type/element-icons";
+import {faClose} from "@fortawesome/pro-light-svg-icons";
 import {ElementNames} from "../../../data/element-type/element-names";
-import {BaseTabProps} from "./base-tab-props";
 import {ElementTypesMap} from "../../../data/element-type/element-types-map";
 import {ElementType} from "../../../data/element-type/element-type";
-import {ElementChildOptions} from "../../../data/element-type/element-child-options";
 import {AlertComponent} from "../../../components/alert/alert-component";
 import {CheckboxFieldComponent} from "../../../components/checkbox-field/checkbox-field-component";
-import {HeadlineComponentView} from "../../../components/headline/headline.component.view";
 import {HeadlineComponent} from "../../../components/headline/headline-component";
 import {DateFieldComponent} from "../../../components/date-field/date-field-component";
 import {DateFieldComponentModelMode} from "../../../models/elements/form/input/date-field-element";
 import {MultiCheckboxComponent} from "../../../components/multi-checkbox-field/multi-checkbox-component";
 import {NumberFieldComponent} from "../../../components/number-field/number-field-component";
-import {RadioFieldComponentView} from "../../../components/radio-field/radio-field.component.view";
 import {RadioFieldComponent} from "../../../components/radio-field/radio-field-component";
 import {SelectFieldComponent} from "../../../components/select-field/select-field-component";
 import {TextFieldComponent} from "../../../components/text-field/text-field-component";
@@ -37,9 +20,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
         <Box>
             <Typography>
-                Der Hinweis sollte genutzt werden, um Nutzer:innen wichtige Informationen zu vermitteln.
-                Hinweise können verschiedene Farben haben um die Gewichtung festzulegen.
-                Es gibt Erfolgs-Hinweise, Info-Hinweise, Warn-Hinweise und Fehler-Hinweise.
+                Das Hinweis-Element dient Ihnen dazu, den Nutzer:innen wichtige Informationen visuell hervorgehoben
+                zu vermitteln. Hinweise werden farblich unterschiedlich ausgezeichnet, um die Gewichtung
+                einer Information zu verdeutlichen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -77,22 +60,23 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Image]: (
         <Box>
             <Typography>
-                Mit dem Bild-Element könenn Sie Nutzer:innen Bilder anzeigen.
-                Bitte beachten Sie, dass Sie die Bilder auf Ihren eigenen Server hochladen laden müssen und im
-                Bild-Element nur die URL zum Bild angeben können.
+                Das Bild-Element dient Ihnen dazu, ein beliebiges Bild darzustellen.
+            </Typography>
+            <Typography sx={{mt: 2}}>
+                Bitte beachten Sie, dass Sie Bilder nur via URL einbinden können.
+                Das Bild muss also auf einem Server hochgeladen und über das Internet erreichbar sein.
             </Typography>
         </Box>
     ),
     [ElementType.Container]: (
         <Box>
             <Typography>
-                Mit der Gruppierung könenn Sie mehrere Elemente zusammenfassen.
-                Gruppierungen können als Vorlagen abgespeichert werden.
+                Das Gruppierungs-Element erlaubt es Ihnen, mehrere Elemente semantisch zusammenzufassen.
+                Dies sorgt für eine bessere Übersichtlichkeit und eine bessere Wartbarkeit.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Gruppierungen sollten immer verwendet werden, um Elemente semantisch zu gruppieren. So erhöhen Sie
-                langfristig die Wartbarkeit Ihrer Formulare.
+                Gruppierungen können zudem als Vorlagen abgespeichert werden.
             </Typography>
         </Box>
     ),
@@ -101,7 +85,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Checkbox]: (
         <Box>
             <Typography>
-                Mit der Checkbox können Sie einfache Bestätigungen von Ihren Nutzer:innen abfragen.
+                Das Checkbox (Ja/Nein)-Element ermöglicht Ihnen die Einholung einfacher Bestätigungen
+                Ihrer Nutzer:innen. Die Eingabe wird als boolscher Wert (Ja/Nein, True/False) verarbeitet.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -132,10 +117,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Date]: (
         <Box>
             <Typography>
-                Mit dem Datum können Sie Datumseingaben von Ihren Nutzer:innen abfragen.
-                Dabei können Sie aussteuern, ob Ihre Nutzer:innen einen bestimmten Tag, einen Monat oder nur ein Jahr
-                eingeben müssen. Sie können außerdem aussteuern, ob das Datum in der Vergangenheit oder Zukunft liegen
-                muss.
+                Das Datums-Element dient Ihnen dazu, Datumseingaben von Ihren Nutzer:innen entgegenzunehmen.
+                Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -178,12 +161,12 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Headline]: (
         <Box>
             <Typography>
-                Mit der Überschrift kann ein Abschnitt in sinnvolle Unterbereiche gegliedert werden.
+                Das Überschriften-Element unterstützt Sie dabei, einen Abschnitt in sinnvolle Unterbereiche zu gliedern.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Achten Sie darauf, dass kleine Überschriften immer unter normalen Überschriften stehen sollten.
-                Diese funktionieren dabei wie Kapitel in einem Abschnitt.
+                Achten Sie darauf, Überschriften semantisch korrekt zu benutzen, wenn diese direkt aufeinander folgen.
+                Eine kleine Überschrift steht somit immer unter einer großen Überschrift.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -192,7 +175,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <Box sx={{mt: 2}}>
                 <HeadlineComponent
-                    content="Normale Überschrift"
+                    content="Große Überschrift"
                     small={false}
                 />
             </Box>
@@ -208,9 +191,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.MultiCheckbox]: (
         <Box>
             <Typography>
-                Mit der Checkbox (Mehrfachauswahl) können Sie Ihren Nutzer:innen mehrere Auswahlmöglichkeiten bieten aus
-                denen diese eine oder mehrere Optionen wählen können. Sie haben außerdem die Möglichkeit eine
-                Mindestanzahl an ausgewählten Optionen zu fodern.
+                Das Checkbox (Mehrfachauswahl)-Element dient zur Abfrage einer oder mehrerer Möglichkeiten bei
+                Ihren Nutzer:innen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -232,8 +214,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Number]: (
         <Box>
             <Typography>
-                Mit dem Zahl-Element können Ihre Nutzer:innen Zahlen eingeben.
-                Sie haben die Möglichkeit die geforderten Dezimalstellen zu spezifizieren und eine Einheit anzugeben.
+                Das Zahl-Element ermöglicht Ihnen, numerische Eingaben von Nutzer:innen entgegenzunehmen.
+                Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -268,31 +250,35 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ReplicatingContainer]: (
         <Box>
             <Typography>
-                Mit der Strukturierten Listeneingabe können Sie mehrere Elemente zusammenfassen, die dann einen
-                Datensatz bilden. Nutzer:innen können dann mehrere dieser Datensätze hinzufügen.
-                So können Sie beispielsweise eine Liste der Hunde zur Hundesteueranmeldung abfragen wobei jeder Hund als
-                einzelner Datensatz vorliegt und aus den Elementen der Listeneingabe besteht.
+                Das Strukturierte Listeneingabe-Element ermöglicht Ihnen die wiederholte Abfrage von Datensätzen.
+                Ein Datensatz repräsentiert mehrere zusammengehörige Abfragen wie z.B. Vorname und Nachname.
+                So können Sie beispielsweise Angaben für mehrere Personen erheben, bei denen immer wieder
+                der Vorname und Nachname abgefragt wird.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Sie können für eine Strukturierten Listeneingabe eine Mindest- und Maximalanzahl von Datensätzen
-                fordern.
+                Die Anzahl an abzufragenden Datensätzen kann durch Sie festgelegt werden.
             </Typography>
         </Box>
     ),
     [ElementType.Richtext]: (
         <Box>
             <Typography>
-                Mit dem Fließtext-Element können Sie formattierten Text in Ihre Formulare einfügen.
-                So können Sie zusätzliche Informationen für Ihre Nutzer:innen aufbereiten und anzeigen.
+                Das Fließtext-Element ermöglicht Ihnen die Einbindung von formatiertem Text.
+                Auf diese Weise können Sie Nutzer:innen zusätzliche Informationen gezielt darstellen.
             </Typography>
         </Box>
     ),
     [ElementType.Radio]: (
         <Box>
             <Typography>
-                Mit dem Radio-Button (Einfachauswahl) können Sie Ihren Nutzer:innen mehrere Auswahlmöglichkeiten bieten,
-                aus denen diese genau eine Optionen wählen können.
+                Das Radio Button (Einfachauswahl)-Element dient zur Abfrage exakt einer Möglichkeit aus
+                mehreren Möglichkeiten.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Eine optische Alternative zum Radio-Button (Einfachauswahl)-Element stellt das
+                Dropdown (Einfachauswahl)-Element dar.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -336,8 +322,13 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Select]: (
         <Box>
             <Typography>
-                Mit dem Dropdown (Einfachauswahl) können Sie Ihren Nutzer:innen mehrere Auswahlmöglichkeiten bieten,
-                aus denen diese genau eine Optionen wählen können.
+                Das Dropdown (Einfachauswahl)-Element dient zur Abfrage exakt einer Möglichkeit aus
+                mehreren Möglichkeiten.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Eine optische Alternative zum Dropdown (Einfachauswahl)-Element stellt das
+                Radio-Button (Einfachauswahl)-Element dar.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -394,26 +385,26 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Spacer]: (
         <Box>
             <Typography>
-                Mit dem Abstands-Element können Sie ihre Abschnitte besser strukturieren.
-                Der Abstand wird vertikal eingefügt und kann so genutzt werden, Bereiche innerhalb eines Abschnitts
-                deutlicher von darüberliegenden Elementen zu trennen.
+                Das Abstands-Element fügt einen vertikalen optischen Platzhalter zwischen den darüber und darunter
+                liegenden Elementen ein. Es hilft Ihnen dabei, verschiedene Abfragen und/oder Informationen innerhalb
+                eines Abschnittes visuell deutlicher voneinander zu trennen.
             </Typography>
         </Box>
     ),
     [ElementType.Table]: (
         <Box>
             <Typography>
-                Mit dem Tabellen-Element können Sie Tabellendaten von Ihren Nutzer:innen abfragen.
-                Sie können die Spalten der Tabelle, sowie den Datentyp (Text/Zahl) der einzelnen Spalten festlegen.
-                Darüber hinaus können Sie die Mindest- und Maximalzahl an Zeilen definieren.
+                Das Tabellen-Element ermöglicht Ihnen das Entgegennehmen von Eingaben in tabellarischer Form.
+                Die Spalten und deren abgefragte Datenformate sind durch Sie einstellbar.
+                Ebenso können Sie Einstellungen zur Anzahl der Zeilen treffen.
             </Typography>
         </Box>
     ),
     [ElementType.Text]: (
         <Box>
             <Typography>
-                Mit dem Text-Element können Sie Texteingaben von Ihren Nutzer:innen abfragen.
-                Sie haben die Möglichkeit eine Maximalzahl von Zeichen festzusetzen und mehrzeiligen Text zuzulassen.
+                Das Text-Element ermöglicht Ihnen, Texteingaben von Nutzer:innen entgegenzunehmen.
+                Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -466,22 +457,27 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Time]: (
         <Box>
             <Typography>
-                Mit dem Zeit-Element können Sie Zeitangaben von Ihren Nutzer:innen abfragen.
+                Das Zeit-Element dient Ihnen dazu, Zeiteingaben von Ihren Nutzer:innen entgegenzunehmen.
+                Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
         </Box>
     ),
     [ElementType.FileUpload]: (
         <Box>
             <Typography>
-                Mit dem Anlagen-Element können Sie Ihren Nutzer:innen die Möglichkeit bieten, dem Formular Dateien
-                anzufügen. Sie können außerdem die Mindest- und Maximalzahl von hochzuladenden Anlagen bestimmen, sowie
-                die erlaubten Dateieindungen.
+                Das Anlagen-Element ermöglicht es Ihnen, hochzuladende Dokumente von Ihren Nutzer:innen
+                entgegenzunehmen. Welche Art von Anlagen (Dateiendungen) erlaubt sind und in welcher Anzahl,
+                können Sie festlegen.
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Bitte beachten Sie, dass aus technischen Limitierungen von Folgesystemen eine maximale Dateigröße von
-                10MB festgesetzt ist. Darüber hinaus wird die Summe der größen aller Dateien durch das in der gewählten
-                Schnittstelle festgesetzten Maximum für Anlagen limitiert.
+                Bitte beachten Sie, dass aus Gründen der technischen Limitierungen von Folgesystemen die maximale
+                Dateigröße pro Datei unveränderlich auf 10MB beschränkt ist.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Die maximale Gesamtgröße aller zu übertragenden Dateien ist abhängig von den in der verwendeten
+                Schnittstelle hinterlegten Einstellungen.
             </Typography>
         </Box>
     ),

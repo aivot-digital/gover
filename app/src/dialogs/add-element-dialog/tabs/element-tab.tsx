@@ -66,7 +66,10 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.SubmittedStep]: null,
 }
 
-export function ElementTab({parentType, onAddElement, showElementInfo, highlightedElement}: BaseTabProps & {showElementInfo: (type: ElementType) => void; highlightedElement?: ElementType;}) {
+export function ElementTab({parentType, onAddElement, showElementInfo, highlightedElement}: BaseTabProps & {
+    showElementInfo: (type: ElementType) => void;
+    highlightedElement?: ElementType;
+}) {
     const childOptions = ElementChildOptions[parentType] ?? [];
 
     const optionGroups = childOptions.reduce((groups, child) => {

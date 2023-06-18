@@ -43,7 +43,10 @@ export function PresetTab({parentType, onAddElement}: BaseTabProps) {
                 <Typography>
                     Sie können neue Vorlagen erstellen, in dem Sie bestehende Elemente im Bearbeitungs-Modus durch einen
                     Klick auf die Schaltfläche &bdquo;Als Vorlage speichern&rdquo; am unteren Bildschirmrand hinzufügen.
-                    Alternativ können Sie im Bereich <Link to="/presets" target="_blank">Vorlagen</Link> neue Vorlagen anlegen und bearbeiten.
+                    Alternativ können Sie im Bereich <Link
+                    to="/presets"
+                    target="_blank"
+                >Vorlagen</Link> neue Vorlagen anlegen und bearbeiten.
                 </Typography>
             </DialogContent>
         );
