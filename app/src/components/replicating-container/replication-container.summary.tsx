@@ -12,20 +12,25 @@ import {useSelector} from "react-redux";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {BaseSummaryProps} from "../../summaries/base-summary";
 
-export function ReplicationContainerSummary({allElements, model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
-    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
+export function ReplicationContainerSummary({
+                                                allElements,
+                                                model,
+                                                value,
+                                                idPrefix
+                                            }: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
+    const prefixedId = idPrefix != null ? (idPrefix + model.id) : model.id;
+
+    const values: string[] = value ?? [];
 
     const customerInput = useSelector(selectCustomerInput);
 
     const makeChildModels = (val: string) => {
         let childModels: AnyElement[] = [];
         for (const child of model.children ?? []) {
-            childModels = childModels.concat(flattenElementsForSummary(allElements, child, customerInput, `${id}_${val}_`));
+            childModels = childModels.concat(flattenElementsForSummary(allElements, child, customerInput, `${prefixedId}_${val}_`));
         }
         return childModels;
     };
-
-    const values: string[] = value ?? [];
 
     return (
         <>
@@ -89,7 +94,7 @@ export function ReplicationContainerSummary({allElements, model, value, idPrefix
                                 <Chip
                                     sx={{ml: -1}}
                                     size="small"
-                                    label={'Datensatz'}
+                                    label="Datensatz"
                                     variant="outlined"
                                 />
                             </Grid>
@@ -98,9 +103,9 @@ export function ReplicationContainerSummary({allElements, model, value, idPrefix
                             makeChildModels(val).map(child => (
                                 <SummaryDispatcherComponent
                                     allElements={allElements}
-                                    key={`${id}_${val}_${child.id}`}
+                                    key={`${prefixedId}_${val}_${child.id}`}
                                     element={child}
-                                    idPrefix={`${id}_${val}_`}
+                                    idPrefix={`${prefixedId}_${val}_`}
                                 />
                             ))
                         }
