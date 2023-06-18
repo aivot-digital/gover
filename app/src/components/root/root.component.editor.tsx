@@ -112,7 +112,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 onChange={val => props.onPatch({
                     title: val,
                 })}
-                hint="Der Titel dient als interne Bezeichnung und für Antragstellende nicht sichtbar."
+                hint="Vergeben Sie einen Titel für den Antrag um ihn besser identifizieren zu können. Diesen Titel können nur Sie und ihre Kolleg:innen einsehen."
                 maxCharacters={60}
             />
 
