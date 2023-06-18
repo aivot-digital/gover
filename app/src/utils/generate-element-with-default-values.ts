@@ -5,6 +5,7 @@ import {SubmitStepElement} from '../models/elements/steps/submit-step-element';
 import {AnyElement} from "../models/elements/any-element";
 import {generateElementIdForType} from "./id-utils";
 import ProjectPackage from '../../package.json';
+import {DateFieldComponentModelMode} from "../models/elements/form/input/date-field-element";
 
 export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
     const id = generateElementIdForType(type);
@@ -46,6 +47,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             return {
                 id, type, appVersion,
                 label: 'Datum',
+                mode: DateFieldComponentModelMode.Date,
             };
         case ElementType.Headline:
             return {

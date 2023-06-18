@@ -24,11 +24,12 @@ export const DateFieldEditor: BaseEditor<DateFieldElement> = ({element, onPatch}
         <>
             <SelectFieldComponent
                 label="Datums-Format"
-                value={element.mode}
+                value={element.mode ?? DateFieldComponentModelMode.Date}
                 onChange={val => onPatch({
                     mode: val as DateFieldComponentModelMode,
                 })}
                 options={modes}
+                required
             />
 
             <CheckboxFieldComponent
