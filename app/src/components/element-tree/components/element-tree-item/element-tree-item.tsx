@@ -88,7 +88,8 @@ function _ElementTreeItem<T extends AnyElement>({
 
     const handleDeleteElement = () => {
         const directUsages = findNoCodeUsage(element, parents[0]);
-        if (directUsages.length > 0) {
+
+        if (directUsages.length > 0 && !(directUsages.length === 1 && directUsages[0].id === element.id)) {
             alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${directUsages.map(u => generateComponentTitle(u)).join(', ')}`);
             return
         }
