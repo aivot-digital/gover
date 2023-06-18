@@ -8,6 +8,7 @@ import {isStringNotNullOrEmpty, stringOrDefault} from "./string-utils";
 import Evaluators from "../evaluators";
 import {Function as FunctionModel} from "../models/functions/function";
 import {makeId, resolveId} from "./id-utils";
+import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
 
 export function evaluateFunction(
     idPrefix: string | undefined,
@@ -109,6 +110,11 @@ function evaluateCondition(idPrefix: string | undefined, allElements: AnyElement
     }
 
     const referenceValue = customerInput[resolveId(condition.reference, idPrefix)];
+
+    if (referenceValue == null && isAnyInputElement(referencedElement) && !referencedElement.required) {
+        return null;
+    }
+
     const targetValue = condition.target != null ? customerInput[resolveId(condition.target, idPrefix)] : condition.value ?? '';
 
     if (operatorEvaluator(referenceValue, targetValue)) {
