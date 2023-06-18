@@ -54,7 +54,7 @@ public class TimeField extends BaseInputElement<String> {
         ZonedDateTime time = parseIsoDate(value);
 
         String valueText = time == null ? "Keine Angaben" : time.format(DateTimeFormatter
-                .ofPattern("hh:mm")
+                .ofPattern("HH:mm")
                 .withZone(zoneId)) + " Uhr";
 
         fields.add(new ValuePdfRowDto(
