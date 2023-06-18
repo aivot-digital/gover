@@ -10,6 +10,4 @@ export enum DateFieldComponentModelMode {
 export interface DateFieldElement extends BaseInputElement<string, ElementType.Date> {
     placeholder?: string;
     mode?: DateFieldComponentModelMode;
-    mustBePast?: boolean;
-    mustBeFuture?: boolean;
 }

@@ -1,6 +1,5 @@
-import {isFuture, isPast, isToday} from 'date-fns';
 import {BaseInputElementValidator} from "./base-input-element-validator";
-import {DateFieldComponentModelMode, DateFieldElement} from "../models/elements/form/input/date-field-element";
+import {DateFieldElement} from "../models/elements/form/input/date-field-element";
 
 export class DateFieldValidator extends BaseInputElementValidator<string, DateFieldElement> {
     protected checkEmpty(comp: DateFieldElement, value: string): boolean {
@@ -17,17 +16,6 @@ export class DateFieldValidator extends BaseInputElementValidator<string, DateFi
             const timestamp = Date.parse(value);
             if (isNaN(timestamp)) {
                 return 'Bitte geben Sie ein Datum im geforderten Format ein.'
-            }
-
-            const date = new Date(value);
-            if ((comp.mode == null || comp.mode === DateFieldComponentModelMode.Date) && comp.mustBeFuture) {
-                if (!isFuture(date)) {
-                    return 'Bitte geben Sie ein Datum ein, das in der Zukunft liegt.';
-                }
-            } else if ((comp.mode == null || comp.mode === DateFieldComponentModelMode.Date) && comp.mustBePast) {
-                if (isToday(date) || !isPast(date)) {
-                    return 'Bitte geben Sie ein Datum ein, das in der Vergangenheit liegt.';
-                }
             }
         }
 

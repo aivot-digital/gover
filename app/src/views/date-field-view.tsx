@@ -14,8 +14,6 @@ export const DateFieldView: BaseView<DateFieldElement, string> = ({setValue, ele
             required={element.required}
             hint={element.hint}
             mode={element.mode ?? DateFieldComponentModelMode.Date}
-            minDate={element.mustBeFuture ? new Date() : undefined}
-            maxDate={element.mustBePast ? new Date() : undefined}
         />
     );
 }

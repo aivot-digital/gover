@@ -29,8 +29,6 @@ public class DateField extends BaseInputElement<String> {
     private final static ZoneId zoneId = ZoneId.of("Europe/Paris");
     private String placeholder;
     private DateType mode;
-    private Boolean mustBePast;
-    private Boolean mustBeFuture;
 
     public DateField(Map<String, Object> data) {
         super(data);
@@ -42,8 +40,6 @@ public class DateField extends BaseInputElement<String> {
 
         placeholder = MapUtils.getString(values, "placeholder");
         mode = MapUtils.getEnum(values, "mode", String.class, DateType.values());
-        mustBePast = MapUtils.getBoolean(values, "mustBePast");
-        mustBeFuture = MapUtils.getBoolean(values, "mustBeFuture");
     }
 
     @Override
@@ -61,33 +57,14 @@ public class DateField extends BaseInputElement<String> {
         }
 
         if (value != null) {
-            LocalDate date;
             try {
                 var cleandDate = value;
                 if (value.contains("T")) {
                     cleandDate = value.split("T")[0];
                 }
-                date = LocalDate.parse(cleandDate);
+                LocalDate.parse(cleandDate);
             } catch (DateTimeParseException e) {
                 throw new ValidationException(this, "Failed to parse date:" + e.getMessage());
-            }
-            validateIsFuture(date);
-            validateIsPast(date);
-        }
-    }
-
-    private void validateIsFuture(LocalDate date) throws ValidationException {
-        if (Boolean.TRUE.equals(mustBeFuture)) {
-            if (!date.isAfter(LocalDate.now())) {
-                throw new ValidationException(this, "Must be future");
-            }
-        }
-    }
-
-    private void validateIsPast(LocalDate date) throws ValidationException {
-        if (Boolean.TRUE.equals(mustBePast)) {
-            if (!date.isBefore(LocalDate.now())) {
-                throw new ValidationException(this, "Must be past");
             }
         }
     }
@@ -407,24 +384,6 @@ public class DateField extends BaseInputElement<String> {
 
     public void setMode(DateType mode) {
         this.mode = mode;
-    }
-
-    @Nullable
-    public Boolean getMustBePast() {
-        return mustBePast;
-    }
-
-    public void setMustBePast(Boolean mustBePast) {
-        this.mustBePast = mustBePast;
-    }
-
-    @Nullable
-    public Boolean getMustBeFuture() {
-        return mustBeFuture;
-    }
-
-    public void setMustBeFuture(Boolean mustBeFuture) {
-        this.mustBeFuture = mustBeFuture;
     }
 
     //endregion
