@@ -21,6 +21,7 @@ export const TextFieldEditor: BaseEditor<TextFieldElement> = ({element, onPatch}
                 onChange={val => onPatch({
                     minCharacters: val,
                 })}
+                error={element.maxCharacters != null && element.minCharacters != null && element.minCharacters > element.maxCharacters ? 'Sie können nicht mehr minimale Zeichen fordern als maximale Zeichen.' : undefined}
                 hint="Geben Sie 0 oder nichts ein, um keine Minimalanzahl zu fordern."
             />
 
@@ -30,6 +31,7 @@ export const TextFieldEditor: BaseEditor<TextFieldElement> = ({element, onPatch}
                 onChange={val => onPatch({
                     maxCharacters: val,
                 })}
+                error={element.maxCharacters != null && element.minCharacters != null && element.maxCharacters < element.minCharacters ? 'Sie können nicht weniger maximale Zeichen fordern als minimal Zeichen.' : undefined}
                 hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
             />
 

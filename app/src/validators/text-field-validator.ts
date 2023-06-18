@@ -13,13 +13,24 @@ export class TextFieldValidator extends BaseInputElementValidator<string, TextFi
     }
 
     protected makeSpecificErrors(comp: TextFieldElement, value: string | undefined, userInput: any): string | null {
-        /*TODO: check for case of length 1 and length greater than 1*/
-        if (value != null && comp.maxCharacters != null && comp.maxCharacters > 0 && value.length > comp.maxCharacters) {
-            return `Bitte geben Sie weniger als ${humanizeNumber(comp.maxCharacters)} Zeichen ein.`
-        }
+        if (value != null) {
+            if (comp.maxCharacters != null && comp.maxCharacters > 0 && (comp.minCharacters == null || comp.minCharacters === 0)) {
+                if (value.length > comp.maxCharacters) {
+                    return `Bitte geben Sie weniger als ${humanizeNumber(comp.maxCharacters)} Zeichen ein.`;
+                }
+            }
 
-        if (value != null && comp.minCharacters != null && comp.minCharacters > 0 && value.length < comp.minCharacters) {
-            return `Bitte geben Sie mindestens ${humanizeNumber(comp.minCharacters)} Zeichen ein.`
+            if (comp.minCharacters != null && comp.minCharacters > 0 && (comp.maxCharacters == null || comp.maxCharacters === 0)) {
+                if (value.length < comp.minCharacters) {
+                    return `Bitte geben Sie mindestens ${humanizeNumber(comp.minCharacters)} Zeichen ein.`;
+                }
+            }
+
+            if (comp.maxCharacters != null && comp.maxCharacters > 0 && comp.minCharacters != null && comp.minCharacters > 0) {
+                if (value.length !== comp.maxCharacters) {
+                    return `Bitte geben Sie genau ${humanizeNumber(comp.maxCharacters)} Zeichen ein.`;
+                }
+            }
         }
 
         return null;
