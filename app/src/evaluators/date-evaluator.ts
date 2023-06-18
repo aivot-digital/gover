@@ -5,7 +5,7 @@ import {
     addMonths,
     addYears,
     isAfter,
-    isBefore,
+    isBefore, isSameDay,
     isValid,
     parse,
     parseISO,
@@ -339,7 +339,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        return isBefore(valueADate, subYears(new Date(), years));
+        const target = subYears(new Date(), years);
+        return isBefore(valueADate, target) || isSameDay(valueADate, target);
     },
 
     [ConditionOperator.MonthsInPast]: (valueA, valueB) => {
@@ -347,8 +348,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const years = parseInt(valueB);
-        if (isNaN(years)) {
+        const months = parseInt(valueB);
+        if (isNaN(months)) {
             return false;
         }
 
@@ -357,7 +358,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        return isBefore(valueADate, subMonths(new Date(), years));
+        const target = subMonths(new Date(), months);
+        return isBefore(valueADate, target) || isSameDay(valueADate, target);
     },
 
     [ConditionOperator.DaysInPast]: (valueA, valueB) => {
@@ -365,8 +367,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const years = parseInt(valueB);
-        if (isNaN(years)) {
+        const days = parseInt(valueB);
+        if (isNaN(days)) {
             return false;
         }
 
@@ -375,7 +377,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        return isBefore(valueADate, subDays(new Date(), years));
+        const target = subDays(new Date(), days);
+        return isBefore(valueADate, target) || isSameDay(valueADate, target);
     },
 
     [ConditionOperator.YearsInFuture]: (valueA, valueB) => {
@@ -393,7 +396,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        return isAfter(valueADate, addYears(new Date(), years));
+        const target = addYears(new Date(), years);
+        return isAfter(valueADate, target) || isSameDay(valueADate, target);
     },
 
     [ConditionOperator.MonthsInFuture]: (valueA, valueB) => {
@@ -401,8 +405,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const years = parseInt(valueB);
-        if (isNaN(years)) {
+        const months = parseInt(valueB);
+        if (isNaN(months)) {
             return false;
         }
 
@@ -411,7 +415,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        return isAfter(valueADate, addMonths(new Date(), years));
+        const target = addMonths(new Date(), months);
+        return isAfter(valueADate, target) || isSameDay(valueADate, target);
     },
 
     [ConditionOperator.DaysInFuture]: (valueA, valueB) => {
@@ -419,8 +424,8 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const years = parseInt(valueB);
-        if (isNaN(years)) {
+        const days = parseInt(valueB);
+        if (isNaN(days)) {
             return false;
         }
 
@@ -429,6 +434,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        return isAfter(valueADate, addDays(new Date(), years));
+        const target = addDays(new Date(), days)
+        return isAfter(valueADate, target) || isSameDay(valueADate, target);
     },
 };

@@ -131,7 +131,7 @@ public class DateField extends BaseInputElement<String> {
                         return false;
                     }
                     var target = dValA.minusYears(iValB);
-                    return dValA.isBefore(target);
+                    return dValA.isBefore(target) || isSameDay(dValA, target);
                 }
                 case MonthsInPast -> {
                     int iValB;
@@ -141,7 +141,7 @@ public class DateField extends BaseInputElement<String> {
                         return false;
                     }
                     var target = dValA.minusMonths(iValB);
-                    return dValA.isBefore(target);
+                    return dValA.isBefore(target) || isSameDay(dValA, target);
                 }
                 case DaysInPast -> {
                     int iValB;
@@ -151,7 +151,7 @@ public class DateField extends BaseInputElement<String> {
                         return false;
                     }
                     var target = dValA.minusDays(iValB);
-                    return dValA.isBefore(target);
+                    return dValA.isBefore(target) || isSameDay(dValA, target);
                 }
 
                 case YearsInFuture -> {
@@ -162,7 +162,7 @@ public class DateField extends BaseInputElement<String> {
                         return false;
                     }
                     var target = dValA.plusYears(iValB);
-                    return dValA.isAfter(target);
+                    return dValA.isAfter(target) || isSameDay(dValA, target);
                 }
                 case MonthsInFuture -> {
                     int iValB;
@@ -172,7 +172,7 @@ public class DateField extends BaseInputElement<String> {
                         return false;
                     }
                     var target = dValA.plusMonths(iValB);
-                    return dValA.isAfter(target);
+                    return dValA.isAfter(target) || isSameDay(dValA, target);
                 }
                 case DaysInFuture -> {
                     int iValB;
@@ -182,7 +182,7 @@ public class DateField extends BaseInputElement<String> {
                         return false;
                     }
                     var target = dValA.plusDays(iValB);
-                    return dValA.isAfter(target);
+                    return dValA.isAfter(target) || isSameDay(dValA, target);
                 }
 
                 default -> {
@@ -364,6 +364,14 @@ public class DateField extends BaseInputElement<String> {
         public boolean yearGt() {
             return yearRes > 0;
         }
+    }
+
+    private boolean isSameDay(ZonedDateTime d1, ZonedDateTime d2) {
+        return (
+                d1.getYear() == d2.getYear() &&
+                        d1.getMonth() == d2.getMonth() &&
+                        d1.getDayOfMonth() == d2.getDayOfMonth()
+        );
     }
 
     //region Getter & Setter
