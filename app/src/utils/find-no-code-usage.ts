@@ -23,39 +23,40 @@ export function findNoCodeUsageOfChildren(target: AnyElementWithChildren, curren
     return found;
 }
 
-export function findNoCodeUsage(target: AnyElement, current: AnyElement): AnyElement[] {
+export function findNoCodeUsage(elementToFindUsageFor: AnyElement, currentlyInspectedElement: AnyElement): AnyElement[] {
     const foundReferences: AnyElement[] = [];
 
-    let alreadyFound = false;
-    if (findNoCodeUsageInFunc(target, current.isVisible)) {
-        foundReferences.push(current);
-        alreadyFound=true;
-    }
-
-    if (!alreadyFound && isAnyInputElement(current)) {
-        if (findNoCodeUsageInFunc(target, current.validate)) {
-            foundReferences.push(current);
+    const referencedInVisibilityFunc = testTargetIsReferencedInFunc(elementToFindUsageFor, currentlyInspectedElement.isVisible);
+    if (referencedInVisibilityFunc) {
+        foundReferences.push(currentlyInspectedElement);
+    } else if (isAnyInputElement(currentlyInspectedElement)) {
+        if (testTargetIsReferencedInFunc(elementToFindUsageFor, currentlyInspectedElement.validate)) {
+            foundReferences.push(currentlyInspectedElement);
         }
     }
 
-    if (isAnyElementWithChildren(current)) {
-        for (const child of current.children) {
-            foundReferences.push(...findNoCodeUsage(target, child));
+    if (isAnyElementWithChildren(currentlyInspectedElement)) {
+        for (const child of currentlyInspectedElement.children) {
+            foundReferences.push(...findNoCodeUsage(elementToFindUsageFor, child));
         }
     }
 
     return foundReferences;
 }
 
-function findNoCodeUsageInFunc(target: AnyElement, func?: Function): boolean {
+
+/******************************** UTILS ********************************/
+
+
+function testTargetIsReferencedInFunc(target: AnyElement, func?: Function): boolean {
     if (func == null || func.conditionSet == null) {
         return false;
     }
 
-    return findNoCodeUsageInConditionSet(target, func.conditionSet);
+    return testTargetIsReferencedInConditionSet(target, func.conditionSet);
 }
 
-function findNoCodeUsageInConditionSet(target: AnyElement, conditionSet: ConditionSet): boolean {
+function testTargetIsReferencedInConditionSet(target: AnyElement, conditionSet: ConditionSet): boolean {
     if (conditionSet.conditions != null) {
         for (const cond of conditionSet.conditions) {
             if (cond.reference === target.id || cond.target === target.id) {
@@ -66,7 +67,7 @@ function findNoCodeUsageInConditionSet(target: AnyElement, conditionSet: Conditi
 
     if (conditionSet.conditionsSets != null) {
         for (const condSet of conditionSet.conditionsSets) {
-            if (findNoCodeUsageInConditionSet(target, condSet)) {
+            if (testTargetIsReferencedInConditionSet(target, condSet)) {
                 return true;
             }
         }

@@ -13,6 +13,7 @@ import {AddElementDialog} from '../../../../dialogs/add-element-dialog/add-eleme
 import {ElementType} from '../../../../data/element-type/element-type';
 import {findNoCodeUsage, findNoCodeUsageOfChildren} from "../../../../utils/find-no-code-usage";
 import {generateComponentTitle} from "../../../../utils/generate-component-title";
+import {isChildOf} from "../../../../utils/is-child-of";
 
 export interface ElementTreeItemRef {
     expand: () => void;
@@ -97,8 +98,11 @@ function _ElementTreeItem<T extends AnyElement>({
         if (isAnyElementWithChildren(element)) {
             const childUsages = findNoCodeUsageOfChildren(element, parents[0]);
             if (childUsages.length > 0) {
-                alert(`Dieses Element kann nicht gelöscht werden. Mindestens eins der Kind-Elemente wird von einer No-Code-Funktion referenziert.`);
-                return;
+                const allReferencesArechildrenOfElement = childUsages.every(([_, referencingElements]) => referencingElements.every(e => isChildOf(e, element)));
+                if (!allReferencesArechildrenOfElement) {
+                    alert(`Dieses Element kann nicht gelöscht werden. Mindestens eins der Kind-Elemente wird von einer No-Code-Funktion referenziert.`);
+                    return;
+                }
             }
         }
 
