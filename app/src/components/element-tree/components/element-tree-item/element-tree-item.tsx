@@ -1,10 +1,10 @@
-import React, {forwardRef, Ref, useEffect, useImperativeHandle, useRef, useState} from 'react';
+import React, {useEffect, useReducer, useState} from 'react';
 import {useDrag} from 'react-dnd';
 import {Box} from '@mui/material';
-import {setIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
+import {setExpandElementTree, setIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {ElementTreeItemTitle} from '../element-tree-item-title/element-tree-item-title';
-import {ElementTreeItemList, ElementTreeItemListRef} from '../element-tree-item-list/element-tree-item-list';
+import {ElementTreeItemList} from '../element-tree-item-list/element-tree-item-list';
 import {ElementEditor} from '../element-editor/element-editor';
 import {ElementTreeItemProps} from './element-tree-item-props';
 import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
@@ -14,43 +14,40 @@ import {ElementType} from '../../../../data/element-type/element-type';
 import {findNoCodeUsage, findNoCodeUsageOfChildren} from "../../../../utils/find-no-code-usage";
 import {generateComponentTitle} from "../../../../utils/generate-component-title";
 import {isChildOf} from "../../../../utils/is-child-of";
+import {useAppSelector} from "../../../../hooks/use-app-selector";
 
-export interface ElementTreeItemRef {
-    expand: () => void;
-    collapse: () => void;
-}
-
-function _ElementTreeItem<T extends AnyElement>({
-                                                    parents,
-                                                    element,
-                                                    onPatch,
-                                                    onDelete,
-                                                    onClone,
-                                                }: ElementTreeItemProps<T>,
-                                                ref: Ref<ElementTreeItemRef | undefined>,
+export function ElementTreeItem<T extends AnyElement>({
+                                                          parents,
+                                                          element,
+                                                          onPatch,
+                                                          onDelete,
+                                                          onClone,
+                                                      }: ElementTreeItemProps<T>
 ) {
     const dispatch = useAppDispatch();
+    const expandStatus = useAppSelector(state => state.adminSettings.expandElementTree);
 
-    const [expanded, setExpanded] = useState(false);
-    const [showEditor, setShowEditor] = useState(false);
-    const [showAddDialog, setShowAddDialog] = useState(false);
+    const [expanded, toggleExpanded] = useReducer(p => !p, false);
+    const [showEditor, toggleShowEditor] = useReducer(p => !p, false);
+    const [showAddDialog, toggleShowAddDialog] = useReducer(p => !p, false);
 
-    const treeItemListRef = useRef<ElementTreeItemListRef>();
+    const isLayoutElement = isAnyElementWithChildren(element);
 
-    useImperativeHandle(ref, () => ({
-        expand() {
-            setExpanded(true);
-            if (treeItemListRef.current != null) {
-                treeItemListRef.current?.expand();
-            }
-        },
-        collapse() {
-            setExpanded(false);
-            if (treeItemListRef.current != null) {
-                treeItemListRef.current?.collapse();
-            }
-        },
-    }));
+    useEffect(() => {
+        if (expandStatus === 'expanded' && !expanded) {
+            toggleExpanded();
+        } else if (expandStatus === 'collapsed' && expanded) {
+            toggleExpanded();
+        }
+    }, [expandStatus]);
+
+    useEffect(() => {
+        if (expanded && expandStatus === 'collapsed') {
+            dispatch(setExpandElementTree(undefined));
+        } else if (!expanded && expandStatus === 'expanded') {
+            dispatch(setExpandElementTree(undefined));
+        }
+    },[expanded]);
 
     const [{isDragging}, drag] = useDrag(() => ({
         item: element,
@@ -82,8 +79,10 @@ function _ElementTreeItem<T extends AnyElement>({
                     addedElement,
                 ],
             } as any)
-            setShowAddDialog(false);
-            setExpanded(true);
+            toggleShowAddDialog();
+            if (!expanded) {
+                toggleExpanded();
+            }
         }
     };
 
@@ -92,7 +91,7 @@ function _ElementTreeItem<T extends AnyElement>({
 
         if (directUsages.length > 0 && !(directUsages.length === 1 && directUsages[0].id === element.id)) {
             alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${directUsages.map(u => generateComponentTitle(u)).join(', ')}`);
-            return
+            return;
         }
 
         if (isAnyElementWithChildren(element)) {
@@ -107,10 +106,8 @@ function _ElementTreeItem<T extends AnyElement>({
         }
 
         onDelete();
-        setShowEditor(false);
+        toggleShowEditor();
     };
-
-    const isLayoutElement = isAnyElementWithChildren(element);
 
     return (
         <Box
@@ -119,12 +116,10 @@ function _ElementTreeItem<T extends AnyElement>({
         >
             <ElementTreeItemTitle
                 isExpanded={expanded}
-                onToggleExpanded={isLayoutElement ? () => setExpanded(!expanded) : undefined}
+                onToggleExpanded={isLayoutElement ? toggleExpanded : undefined}
                 element={element}
-                onShowAddDialog={isLayoutElement ? () => setShowAddDialog(true) : undefined}
-                onSelect={() => {
-                    setShowEditor(true);
-                }}
+                onShowAddDialog={isLayoutElement ? toggleShowAddDialog : undefined}
+                onSelect={toggleShowEditor}
             />
 
             {
@@ -134,7 +129,6 @@ function _ElementTreeItem<T extends AnyElement>({
                     parents={parents}
                     element={element}
                     onPatch={onPatch}
-                    ref={treeItemListRef}
                 />
             }
 
@@ -143,7 +137,7 @@ function _ElementTreeItem<T extends AnyElement>({
                 <AddElementDialog
                     parentType={element.type}
                     onAddElement={handleAddElement}
-                    onClose={() => setShowAddDialog(false)}
+                    onClose={toggleShowAddDialog}
                 />
             }
 
@@ -154,11 +148,9 @@ function _ElementTreeItem<T extends AnyElement>({
                     element={element}
                     onSave={(update) => {
                         onPatch(update);
-                        setShowEditor(false);
+                        toggleShowEditor();
                     }}
-                    onCancel={() => {
-                        setShowEditor(false);
-                    }}
+                    onCancel={toggleShowEditor}
                     onDelete={(
                         element.type === ElementType.IntroductionStep ||
                         element.type === ElementType.SummaryStep ||
@@ -170,14 +162,10 @@ function _ElementTreeItem<T extends AnyElement>({
                         element.type === ElementType.SubmitStep
                     ) ? undefined : () => {
                         onClone();
-                        setShowEditor(false);
+                        toggleShowEditor();
                     }}
                 />
             }
         </Box>
     );
 }
-
-export const ElementTreeItem = forwardRef(_ElementTreeItem) as React.FC<ElementTreeItemProps<any> & {
-    ref?: Ref<ElementTreeItemRef | undefined>
-}>;

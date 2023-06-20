@@ -1,10 +1,18 @@
 import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faGear, faListTree, faMessageCode, faArrowsFromLine, faArrowsToLine, faSearch} from '@fortawesome/pro-light-svg-icons';
+import {
+    faArrowsFromLine,
+    faArrowsToLine,
+    faGear,
+    faListTree,
+    faMessageCode,
+    faSearch
+} from '@fortawesome/pro-light-svg-icons';
 import {
     selectUseIdsInComponentTree,
     selectUseTestMode,
     selectWarnDuplicateIds,
+    setExpandElementTree,
     toggleIdsInComponentTree,
     toggleTestMode,
     toggleWarnDuplicateIds
@@ -74,7 +82,7 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles ausklappen"
                         arrow
                     >
-                        <IconButton onClick={props.onExpandAll}>
+                        <IconButton onClick={() => dispatch(setExpandElementTree('expanded'))}>
                             <FontAwesomeIcon icon={faArrowsFromLine}/>
                         </IconButton>
                     </Tooltip>
@@ -83,7 +91,7 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles einklappen"
                         arrow
                     >
-                        <IconButton onClick={props.onCollapseAll}>
+                        <IconButton onClick={() => dispatch(setExpandElementTree('collapsed'))}>
                             <FontAwesomeIcon icon={faArrowsToLine}/>
                         </IconButton>
                     </Tooltip>

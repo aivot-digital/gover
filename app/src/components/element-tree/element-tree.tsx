@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useState} from 'react';
 import {Box, Button, Divider, IconButton, Tooltip, Typography} from '@mui/material';
 import ProjectPackage from '../../../package.json';
 import GitInfo from '../../git-info.json';
@@ -6,7 +6,7 @@ import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 import {ElementTreeProps} from './element-tree-props';
 import {ElementTreeHeader} from './components/element-tree-header/element-tree-header';
-import {ElementTreeItemList, ElementTreeItemListRef} from './components/element-tree-item-list/element-tree-item-list';
+import {ElementTreeItemList} from './components/element-tree-item-list/element-tree-item-list';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faClose, faPlusCircle} from '@fortawesome/pro-light-svg-icons';
 import {ElementType} from '../../data/element-type/element-type';
@@ -18,7 +18,7 @@ import {isRootElement, RootElement} from '../../models/elements/root-element';
 import {generateElementIdForType} from "../../utils/id-utils";
 import {SearchInput} from "../search-input/search-input";
 import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectTreeElementSearch, setTreeElementSearch} from "../../slices/admin-settings-slice";
+import {selectTreeElementSearch, setExpandElementTree, setTreeElementSearch} from "../../slices/admin-settings-slice";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 
 export function ElementTree<T extends AnyElementWithChildren>(props: ElementTreeProps<T>) {
@@ -28,8 +28,6 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
     const [showSearch, setShowSearch] = useState(false);
 
     const treeElementSearch = useAppSelector(selectTreeElementSearch);
-    const treeItemListRef = useRef<ElementTreeItemListRef>();
-
     const handleAddElement = (element: AnyElement) => {
         props.onPatch({
             children: [
@@ -52,22 +50,11 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
         }
     };
 
-    const handleExpandAll = () => {
-        if (treeItemListRef.current != null) {
-            treeItemListRef.current?.expand();
-        }
-    };
-    const handleCollapse = () => {
-        if (treeItemListRef.current != null) {
-            treeItemListRef.current?.collapse();
-        }
-    };
-
     const handleToggleSearch = () => {
         if (showSearch) {
             dispatch(setTreeElementSearch(undefined));
         } else {
-            handleExpandAll();
+            dispatch(setExpandElementTree('expanded'));
         }
         setShowSearch(!showSearch);
     };
@@ -86,8 +73,6 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                     <ElementTreeHeader
                         element={props.element}
                         onPatch={props.onPatch}
-                        onExpandAll={handleExpandAll}
-                        onCollapseAll={handleCollapse}
                         onToggleSearch={handleToggleSearch}
                     />
 
@@ -153,7 +138,6 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                             element={props.element}
                             onPatch={props.onPatch}
                             isRootList
-                            ref={treeItemListRef}
                         />
 
                         {

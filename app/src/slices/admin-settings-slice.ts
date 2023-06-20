@@ -8,6 +8,7 @@ export interface AdminSettingsState {
     hideComponentTree: boolean;
     useTestMode: boolean;
     isDraggingTreeElement: boolean;
+    expandElementTree: undefined | 'expanded' | 'collapsed';
     showUserInput: boolean;
     warnDuplicateIds: boolean;
     showDebugOutput: boolean;
@@ -21,6 +22,7 @@ const initialState: AdminSettingsState = {
     hideComponentTree: false,
     useTestMode: false,
     isDraggingTreeElement: false,
+    expandElementTree: undefined,
     showUserInput: false,
     warnDuplicateIds: false,
     showDebugOutput: false,
@@ -66,6 +68,9 @@ const adminSettingsSlice = createSlice({
                 (state as any)[key] = (initialState as any)[key];
             }
         },
+        setExpandElementTree: (state, action: PayloadAction<undefined | 'expanded' | 'collapsed'>) => {
+            state.expandElementTree = action.payload;
+        },
     },
 });
 
@@ -81,6 +86,7 @@ export const {
     toggleShowDebugOutput,
     resetAdminSettings,
     setTreeElementSearch,
+    setExpandElementTree,
 } = adminSettingsSlice.actions;
 
 export const selectDisableVisibility = (state: RootState) => state.adminSettings.disableVisibility;
