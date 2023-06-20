@@ -56,6 +56,21 @@ export function ReplicationContainerSummary({
                         {model.label}
                     </Typography>
                 </Grid>
+
+                {
+                    values.length === 0 &&
+                    <Grid
+                        item
+                        xs={12}
+                        md={8}
+                    >
+                        <Typography
+                            variant="body2"
+                        >
+                            Keine Angaben
+                        </Typography>
+                    </Grid>
+                }
             </Grid>
 
             {

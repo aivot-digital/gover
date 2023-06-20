@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.models.elements.form.BaseInputElement;
 import de.aivot.GoverBackend.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
+import de.aivot.GoverBackend.pdf.ValuePdfRowDto;
 import de.aivot.GoverBackend.utils.ElementResolver;
 import de.aivot.GoverBackend.utils.MapUtils;
 
@@ -85,9 +86,9 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
     public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<String> value, String idPrefix, ScriptEngine scriptEngine) {
         List<BasePdfRowDto> fields = new LinkedList<>();
 
-        if (value != null && !value.isEmpty()) {
-            fields.add(new HeadlinePdfRowDto(getLabel(), 4));
+        fields.add(new HeadlinePdfRowDto(getLabel(), 4));
 
+        if (value != null && !value.isEmpty()) {
             List<String> values = value.stream().toList();
             for (int i = 0; i < value.size(); i++) {
                 String val = values.get(i);
@@ -103,6 +104,8 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
                     }
                 }
             }
+        } else {
+            fields.add(new ValuePdfRowDto("", "Keine Angaben"));
         }
 
         return fields;
