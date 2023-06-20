@@ -17,7 +17,7 @@ export function evaluateFunction(
     customerInput: CustomerInput,
     element: AnyElement,
     id: string,
-    returnBoolean: boolean
+    returnBoolean: boolean,
 ): any {
     if (func == null) {
         return null;
@@ -26,7 +26,7 @@ export function evaluateFunction(
     if (isStringNotNullOrEmpty(func.code)) {
         return evaluateFunctionCode(func, customerInput, element, resolveId(id, idPrefix));
     } else {
-        const ret = evaluateFunctionNoCode(idPrefix, allElements, func, customerInput);
+        const ret = evaluateFunctionNoCode(idPrefix, allElements, func, customerInput, returnBoolean);
         return returnBoolean ? ret == null : ret;
     }
 }
@@ -48,22 +48,24 @@ function evaluateFunctionNoCode(
     idPrefix: string | undefined,
     allElements: AnyElement[],
     func: FunctionModel,
-    customerInput: CustomerInput
+    customerInput: CustomerInput,
+    ignoreEmptyValues: boolean
 ): string | null {
-    return func.conditionSet != null ? evaluateConditionSet(idPrefix, allElements, func.conditionSet, customerInput) : null;
+    return func.conditionSet != null ? evaluateConditionSet(idPrefix, allElements, func.conditionSet, customerInput, ignoreEmptyValues) : null;
 }
 
 function evaluateConditionSet(
     idPrefix: string | undefined,
     allElements: AnyElement[],
     conditionSet: ConditionSet,
-    customerInput: CustomerInput
+    customerInput: CustomerInput,
+    ignoreEmptyValues: boolean
 ): string | null {
     switch (conditionSet.operator) {
         case ConditionSetOperator.All:
             if (conditionSet.conditions != null) {
                 for (const cond of conditionSet.conditions) {
-                    const res = evaluateCondition(idPrefix, allElements, cond, customerInput);
+                    const res = evaluateCondition(idPrefix, allElements, cond, customerInput, ignoreEmptyValues);
                     if (res != null) {
                         return stringOrDefault(conditionSet.conditionSetUnmetMessage, res);
                     }
@@ -71,7 +73,7 @@ function evaluateConditionSet(
             }
             if (conditionSet.conditionsSets != null) {
                 for (const condSet of conditionSet.conditionsSets) {
-                    const res = evaluateConditionSet(idPrefix, allElements, condSet, customerInput);
+                    const res = evaluateConditionSet(idPrefix, allElements, condSet, customerInput, ignoreEmptyValues);
                     if (res != null) {
                         return stringOrDefault(conditionSet.conditionSetUnmetMessage, res);
                     }
@@ -80,8 +82,8 @@ function evaluateConditionSet(
             return null;
         case ConditionSetOperator.Any:
             if (
-                !(conditionSet.conditions ?? []).some(cond => evaluateCondition(idPrefix, allElements, cond, customerInput) == null) &&
-                !(conditionSet.conditionsSets ?? []).some(condSet => evaluateConditionSet(idPrefix, allElements, condSet, customerInput) == null)
+                !(conditionSet.conditions ?? []).some(cond => evaluateCondition(idPrefix, allElements, cond, customerInput, ignoreEmptyValues) == null) &&
+                !(conditionSet.conditionsSets ?? []).some(condSet => evaluateConditionSet(idPrefix, allElements, condSet, customerInput, ignoreEmptyValues) == null)
             ) {
                 return stringOrDefault(conditionSet.conditionSetUnmetMessage, 'Keine der Bedingungen ist erfüllt');
             }
@@ -89,7 +91,7 @@ function evaluateConditionSet(
     }
 }
 
-function evaluateCondition(idPrefix: string | undefined, allElements: AnyElement[], condition: Condition, customerInput: CustomerInput): string | null {
+function evaluateCondition(idPrefix: string | undefined, allElements: AnyElement[], condition: Condition, customerInput: CustomerInput, ignoreEmptyValues: boolean): string | null {
     if (condition.operator == null) {
         return null;
     }
@@ -111,7 +113,7 @@ function evaluateCondition(idPrefix: string | undefined, allElements: AnyElement
 
     const referenceValue = customerInput[resolveId(condition.reference, idPrefix)];
 
-    if (referenceValue == null && isAnyInputElement(referencedElement) && !referencedElement.required) {
+    if (!ignoreEmptyValues && referenceValue == null && isAnyInputElement(referencedElement) && !referencedElement.required) {
         return null;
     }
 
