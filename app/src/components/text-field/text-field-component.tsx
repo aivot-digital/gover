@@ -59,7 +59,7 @@ export function TextFieldComponent({
                         minCharacters > 0 &&
                         (value ?? '').length < minCharacters &&
                         <Box sx={{ml: 3}}>
-                            Noch {humanizeNumber(minCharacters - (value ?? '').length)} Zeichen
+                            Noch mindestens {minCharacters - (value?.length ?? 0)} Zeichen
                         </Box>
                     }
                 </Box>
