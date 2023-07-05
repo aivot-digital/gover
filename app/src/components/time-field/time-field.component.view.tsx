@@ -1,10 +1,10 @@
 import {TextField} from '@mui/material';
-import {TimeFieldElement} from '../../models/elements/form-elements/input-elements/time-field-element';
+import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';
 import {useCallback} from 'react';
-import {BaseViewProps} from '../_lib/base-view-props';
+import {BaseViewProps} from "../../views/base-view";
 
 export function TimeFieldComponentView({element, value, error, setValue}: BaseViewProps<TimeFieldElement, string>) {
     const dateValue = value != null ? new Date(value) : null;
@@ -14,13 +14,13 @@ export function TimeFieldComponentView({element, value, error, setValue}: BaseVi
             if (changedValue != null) {
                 if (changedValue instanceof Date) {
                     if (isNaN(changedValue.getTime())) {
-                        setValue(null)
+                        setValue(undefined)
                     } else {
                         setValue(changedValue.toISOString() ?? '');
                     }
                 }
             } else {
-                setValue(null);
+                setValue(undefined);
             }
         }
     }, [element.id, setValue]);
@@ -40,7 +40,7 @@ export function TimeFieldComponentView({element, value, error, setValue}: BaseVi
                     <TextField
                         {...params}
                         error={error != null}
-                        placeholder="hh:mm"
+                        placeholder="HH:MM"
                         helperText={error != null ? error : element.hint}
                     />
                 )}

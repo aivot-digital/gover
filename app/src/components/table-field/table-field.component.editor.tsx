@@ -1,72 +1,25 @@
-import {Box, Button, Checkbox, FormControl, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
-import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form-elements/input-elements/table-field-element';
-import {BaseEditorProps} from '../_lib/base-editor-props';
+import {Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
+import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {faPlus} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {isNullOrEmpty} from '../../utils/is-null-or-empty';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement>) {
-    const columnLabelErrors = makeColumnLabelErrors(props.component.fields);
+    const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
     const minRequiredError = (
-        props.component.minimumRequiredRows != null &&
-        props.component.maximumRows != null &&
-        props.component.maximumRows > 0 &&
-        props.component.minimumRequiredRows > props.component.maximumRows
+        props.element.minimumRequiredRows != null &&
+        props.element.maximumRows != null &&
+        props.element.maximumRows > 0 &&
+        props.element.minimumRequiredRows > props.element.maximumRows
     );
 
     return (
         <>
-            <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
-            <FormControl>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={props.component.required ?? false}
-                        onChange={event => props.onPatch({
-                            required: event.target.checked,
-                            minimumRequiredRows: event.target.checked ? 1 : undefined,
-                        })}
-                    />
-                }
-                label="Pflichtangabe"
-            />
-            </FormControl>
-
-        <FormControl>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={props.component.disabled ?? false}
-                        onChange={event => props.onPatch({
-                            disabled: event.target.checked,
-                        })}
-                    />
-                }
-                label="Eingabe deaktiviert"
-            />
-        </FormControl>
-
             {
-                props.component.required &&
+                props.element.required &&
                 <TextField
-                    value={props.component.minimumRequiredRows?.toString() ?? ''}
+                    value={props.element.minimumRequiredRows?.toString() ?? ''}
                     label="Mindestanzahl der hinzuzufügenden Zeilen"
                     margin="normal"
                     helperText={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Mindestanzahl zu fordern'}
@@ -86,7 +39,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         });
                     }}
                     onBlur={() => {
-                        if (props.component.minimumRequiredRows == null || props.component.minimumRequiredRows === 0) {
+                        if (props.element.minimumRequiredRows == null || props.element.minimumRequiredRows === 0) {
                             props.onPatch({
                                 required: false,
                             });
@@ -97,7 +50,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
             }
 
             <TextField
-                value={props.component.maximumRows?.toString() ?? ''}
+                value={props.element.maximumRows?.toString() ?? ''}
                 label="Maximalanzahl der hinzuzufügenden Zeilen"
                 margin="normal"
                 helperText={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Maximalanzahl zu fordern.'}
@@ -126,9 +79,9 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 Spalten
             </Typography>
             {
-                (props.component.fields ?? []).map((column, index) => {
+                (props.element.fields ?? []).map((column, index) => {
                     const onChange = (patch: Partial<TableFieldComponentColumnModel>) => {
-                        const patchedList = [...(props.component.fields ?? [])];
+                        const patchedList = [...(props.element.fields ?? [])];
                         patchedList[index] = {
                             ...patchedList[index],
                             ...patch,
@@ -249,7 +202,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 <Button
                                     color="error"
                                     onClick={() => {
-                                        const updatedFields = [...(props.component.fields ?? [])];
+                                        const updatedFields = [...(props.element.fields ?? [])];
                                         updatedFields.splice(index, 1);
                                         props.onPatch({
                                             fields: updatedFields,
@@ -265,12 +218,12 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
             }
             <Button
                 sx={{mt: 2}}
-                startIcon={<FontAwesomeIcon icon={faPlus} />}
+                startIcon={<FontAwesomeIcon icon={faPlus}/>}
                 variant="contained"
                 onClick={() => {
                     props.onPatch({
                         fields: [
-                            ...(props.component.fields ?? []),
+                            ...(props.element.fields ?? []),
                             {
                                 label: 'Neue Spalte',
                                 datatype: 'string',
@@ -292,7 +245,7 @@ function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[]): (stri
     const errors: (string | null)[] = [];
     const labelSet = new Set<string>();
     for (const field of fields) {
-        if (isNullOrEmpty(field.label) || field.label.length < 3) {
+        if (isStringNullOrEmpty(field.label) || field.label.length < 3) {
             errors.push('Bitte geben Sie einen Titel mit mindestens drei Zeichen ein.');
         } else if (labelSet.has(field.label)) {
             errors.push('Eine Spalte mit diesem Titel existiert bereits. Bitte geben Sie einen einzigartigen Titel ein.');

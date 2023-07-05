@@ -1,38 +1,31 @@
-import React, {useCallback} from 'react';
+import React from 'react';
 import {
     Box,
     Button,
     Dialog,
     DialogContent,
-    Divider,
     FormControlLabel,
     FormGroup,
     FormHelperText,
     Switch,
     Typography
 } from '@mui/material';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {AppDispatch, RootState} from '../../store';
 import {
-    AdminSettingsState, toggleShowDebugOutput,
+    AdminSettingsState,
+    toggleShowDebugOutput,
     toggleShowUserInput,
     toggleValidation,
     toggleVisibility
 } from '../../slices/admin-settings-slice';
-import {faCode, faRefresh, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {resetUserInput} from '../../slices/customer-input-slice';
-import {CodeService} from '../../services/code.service';
 import {AdminToolsDialogProps} from './admin-tools-dialog-props';
-import {selectLoadedApplication} from '../../slices/app-slice';
-import {resetStepper} from '../../slices/stepper-slice';
-import {downloadTextFile} from '../../utils/download-text-file';
-import {showErrorSnackbar, showSuccessSnackbar} from "../../slices/snackbar-slice";
-import {Localization} from "../../locale/localization";
-import strings from "./admin-tools-dialog-strings.json";
-
-const _ = Localization(strings);
+import {selectLoadedApplication} from "../../slices/app-slice";
+import {useAppSelector} from "../../hooks/use-app-selector";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faFileExport} from '@fortawesome/pro-light-svg-icons';
+import {downloadConfigFile} from "../../utils/download-utils";
 
 const switches: {
     label: string;
@@ -41,26 +34,26 @@ const switches: {
     isActive: (settings: AdminSettingsState) => boolean;
 }[] = [
     {
-        label: _.validateSwitchLabel,
-        hint: _.validateSwitchHint,
+        label: 'Validierungen berücksichtigen',
+        hint: 'Deaktivieren Sie die Validierungen von Eingaben um schnell im Formular navigieren zu können ohne fehlerhafte Eingaben korrigieren zu müssen.',
         onToggle: dispatch => dispatch(toggleValidation()),
         isActive: settings => !settings.disableValidation,
     },
     {
-        label: _.visibilitySwitchLabel,
-        hint: _.visibilitySwitchHint,
+        label: 'Sichtbarkeiten berücksichtigen',
+        hint: 'Deaktivieren Sie die Sichtbarkeiten um alle Abschnitte und Elemente des Formulars jederzeit einsehen zu können.',
         onToggle: dispatch => dispatch(toggleVisibility()),
         isActive: settings => !settings.disableVisibility,
     },
     {
-        label: _.debugSwitchLabel,
-        hint: _.debugSwitchHint,
+        label: 'Debug-Ausgabe in der Konsole erlauben',
+        hint: 'Lassen Sie sich die Debug-Ausgaben in der JavaScript-Konsole anzeigen. Entwickler können so mögliche Probleme besser nachvollziehen.',
         onToggle: dispatch => dispatch(toggleShowDebugOutput()),
         isActive: settings => settings.showDebugOutput,
     },
     {
-        label: _.userInputSwitchLabel,
-        hint: _.userInputSwitchHint,
+        label: 'Nutzereingaben im Speicher anzeigen',
+        hint: 'Lassen Sie sich die aktuellen Nutzereingaben im Speicher anzeigen. Entwickler können so besser nachvollziehen, welche Eingaben getätigt wurden.',
         onToggle: dispatch => dispatch(toggleShowUserInput()),
         isActive: settings => settings.showUserInput,
     },
@@ -69,8 +62,8 @@ const switches: {
 export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
     const dispatch = useDispatch();
 
-    const application = useSelector(selectLoadedApplication);
-    const adminSettings = useSelector((state: RootState) => state.adminSettings);
+    const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
+    const application = useAppSelector(selectLoadedApplication);
 
     return (
         <>
@@ -80,16 +73,16 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                 fullWidth
             >
                 <DialogTitleWithClose
-                    id="admin-tools-dialog-title"
                     onClose={onClose}
-                    closeTooltip={_.close}
+                    closeTooltip="Schließen"
                 >
-                    {_.title}
+                    Admin-Werkzeuge für die Bearbeitung des Formulars
                 </DialogTitleWithClose>
 
                 <DialogContent>
                     <Typography variant="body1">
-                        {_.hint}
+                        Aktivieren oder Deaktivieren Sie ausgewählte Funktionen, um Ihnen die Bearbeitung Ihres
+                        Formulars einfacher zu gestalten.
                     </Typography>
 
                     <Box sx={{mt: 3}}>
@@ -112,89 +105,19 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                         }
                     </Box>
 
-                    <Divider sx={{my: 2, mt: 5}}/>
-
-                    <Typography variant="body1">
-                        Sie können die Eingaben in diesem Antrag zurücksetzen.
-                    </Typography>
-                    <Button
-                        sx={{my: 2}}
-                        startIcon={<FontAwesomeIcon
-                            icon={faTrashAlt}
-                            fixedWidth
-                            style={{marginTop: '-2px'}}
-                        />}
-                        size="large"
-                        variant="outlined"
-                        onClick={() => {
-                            dispatch(resetUserInput());
-                            dispatch(resetStepper());
-                            onClose();
-                        }}
-                    >
-                        Eingaben zurücksetzen
-                    </Button>
-
-                    <Divider sx={{my: 2}}/>
-
-                    <Typography variant="body1">
-                        Erzeugen Sie den Code neu, wenn Funktionen (z.B. für Validierungen) hinzugefügt oder geändert
-                        wurden.
-                    </Typography>
-                    <Button
-                        sx={{my: 2}}
-                        startIcon={<FontAwesomeIcon
-                            icon={faCode}
-                            fixedWidth
-                            style={{marginTop: '-2px'}}
-                        />}
-                        size="large"
-                        variant="outlined"
-                        onClick={() => {
-                            if (application) {
-                                const codeStubs = CodeService.createCodeStubs(application);
-                                downloadTextFile(
-                                    application.slug + '.js',
-                                    codeStubs,
-                                    'text/javascript'
-                                );
-                                onClose();
+                    <Box sx={{mt: 3}}>
+                        <Button
+                            fullWidth
+                            onClick={() => {
+                                downloadConfigFile(application);
+                            }}
+                            endIcon={
+                                <FontAwesomeIcon icon={faFileExport}/>
                             }
-                        }}
-                    >
-                        Erzeuge Code-Vorlage
-                    </Button>
-
-                    <Divider sx={{my: 2}}/>
-
-                    <Typography variant="body1">
-                        Laden Sie den Code für den Antrag neu.
-                        Dies ist nützlich, falls Entwickler den Code aktualisieren, während Sie den Antrag bearbeiten.
-                    </Typography>
-                    <Button
-                        sx={{my: 2}}
-                        startIcon={<FontAwesomeIcon
-                            icon={faRefresh}
-                            fixedWidth
-                            style={{marginTop: '-2px'}}
-                        />}
-                        size="large"
-                        variant="outlined"
-                        onClick={() => {
-                            if (application != null) {
-                                CodeService.loadCode(application.id)
-                                    .then(() => {
-                                        dispatch(showSuccessSnackbar('Code erfolgreich neu geladen.'));
-                                    })
-                                    .catch(err => {
-                                        console.error(err);
-                                        dispatch(showErrorSnackbar('Fehler beim Code neu laden.'));
-                                    });
-                            }
-                        }}
-                    >
-                        Code neu laden
-                    </Button>
+                        >
+                            Formular als .gov-Datei exportieren
+                        </Button>
+                    </Box>
                 </DialogContent>
             </Dialog>
         </>

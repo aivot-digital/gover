@@ -1,8 +1,6 @@
 import React from 'react';
 import {useSelector} from 'react-redux';
-import {SummaryStepElement} from '../../models/elements/step-elements/summary-step-element';
-import {BaseViewProps} from '../_lib/base-view-props';
-import {SummaryMap} from '../summary.map';
+import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import {ElementType} from '../../data/element-type/element-type';
 import {Alert, AlertTitle, Box, Typography} from '@mui/material';
@@ -10,17 +8,20 @@ import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {AnyElement} from '../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
-import {isComponentVisible} from "../../utils/is-component-visible";
+import {isElementVisible} from "../../utils/is-element-visible";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {CustomerInput} from "../../models/customer-input";
 import {selectCustomerInputErrorValue} from "../../slices/customer-input-errors-slice";
+import ProjectPackage from '../../../package.json';
+import {BaseViewProps} from "../../views/base-view";
+import SummaryMap from '../../summaries';
 
 export const SummaryUserInputKey = '__summary__';
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
 
 // TODO: Localization
 
-export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>) {
+export function SummaryComponentView({allElements}: BaseViewProps<SummaryStepElement, any>) {
     const application = useSelector(selectLoadedApplication);
     const customerInput = useSelector(selectCustomerInput);
     const summaryError = useSelector(selectCustomerInputErrorValue(SummaryAttachmentsTooLargeKey));
@@ -29,7 +30,7 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
         return null;
     }
 
-    const models = flattenElements(application.root, customerInput, undefined);
+    const models = flattenElementsForSummary(allElements, application.root, customerInput, undefined);
 
     return (
         <>
@@ -45,8 +46,9 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
             {
                 models.map((model, index) => (
                     <SummaryDispatcherComponent
+                        allElements={allElements}
                         key={model.id + index.toString()}
-                        model={model}
+                        element={model}
                     />
                 ))
             }
@@ -70,10 +72,12 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
 
             <Box>
                 <ViewDispatcherComponent
-                    model={{
+                    allElements={allElements}
+                    element={{
                         type: ElementType.Checkbox,
                         label: 'Ich habe die Zusammenfassung meines Antrages geprüft.',
-                        id: SummaryUserInputKey
+                        id: SummaryUserInputKey,
+                        appVersion: ProjectPackage.version,
                     }}
                 />
             </Box>
@@ -92,27 +96,34 @@ export function SummaryComponentView(_: BaseViewProps<SummaryStepElement, void>)
     );
 }
 
-export function flattenElements(model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
-    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
-
-    const isVisible = isComponentVisible(id, model, userInput);
+export function flattenElementsForSummary(allElements: AnyElement[], model: AnyElement, userInput: CustomerInput, idPrefix?: string): AnyElement[] {
+    const isVisible = isElementVisible(idPrefix, allElements, model.id, model, userInput);
 
     if (!isVisible) {
         return [];
     }
 
-    let results: AnyElement[] = [];
+    const modelSummary = SummaryMap[model.type];
 
-    const Summary = SummaryMap[model.type];
-    if (Summary != null) {
-        results.push(model);
-    }
-
+    let childElements: AnyElement[] = [];
     if (model.type !== ElementType.ReplicatingContainer && isAnyElementWithChildren(model)) {
         for (const child of model.children) {
-            results = results.concat(flattenElements(child, userInput, idPrefix));
+            childElements = childElements.concat(flattenElementsForSummary(allElements, child, userInput, idPrefix));
         }
     }
 
-    return results;
+    if (modelSummary != null) {
+        if (model.type === ElementType.Step && childElements.length === 0) {
+            return [];
+        }
+
+        return [
+            model,
+            ...childElements
+        ];
+    } else {
+        return [
+            ...childElements,
+        ];
+    }
 }

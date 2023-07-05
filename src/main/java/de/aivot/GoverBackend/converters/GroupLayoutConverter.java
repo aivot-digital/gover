@@ -1,0 +1,28 @@
+package de.aivot.GoverBackend.converters;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.models.elements.RootElement;
+import de.aivot.GoverBackend.models.elements.form.layout.GroupLayout;
+import org.json.JSONObject;
+
+import javax.persistence.AttributeConverter;
+import javax.persistence.Converter;
+
+@Converter
+public class GroupLayoutConverter implements AttributeConverter<GroupLayout, String> {
+    @Override
+    public String convertToDatabaseColumn(GroupLayout baseElement) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(baseElement);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public GroupLayout convertToEntityAttribute(String s) {
+        return new GroupLayout(new JSONObject(s).toMap());
+    }
+}

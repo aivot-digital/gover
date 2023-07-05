@@ -1,12 +1,18 @@
 package de.aivot.GoverBackend.services;
 
-import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.GoverConfig;
+import com.oracle.truffle.js.runtime.Strings;
+import de.aivot.GoverBackend.enums.MailTemplate;
+import de.aivot.GoverBackend.models.config.GoverConfig;
+import de.aivot.GoverBackend.models.entities.Application;
+import de.aivot.GoverBackend.models.entities.Destination;
+import de.aivot.GoverBackend.models.entities.Submission;
+import de.aivot.GoverBackend.models.entities.SubmissionAttachment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -23,35 +29,153 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class MailService {
+    private static final Logger logger = LoggerFactory.getLogger(MailService.class);
+
     private final GoverConfig goverConfig;
     private final JavaMailSender mailSender;
+    private final SubmissionStorageService submissionStorageService;
 
     @Autowired
-    public MailService(GoverConfig goverConfig, JavaMailSender mailSender) {
+    public MailService(GoverConfig goverConfig, JavaMailSender mailSender, SubmissionStorageService submissionStorageService) {
         this.goverConfig = goverConfig;
         this.mailSender = mailSender;
+        this.submissionStorageService = submissionStorageService;
     }
 
-    public void sendMail(String to, String subject, String textMessage, String htmlMessage) throws MessagingException, MailException, IOException {
-        sendMail(to, null, null, subject, textMessage, htmlMessage, new Path[]{}, new MultipartFile[]{});
+    public void sendApplicationCopyMail(String to, Submission submission) throws MessagingException, IOException, MailException {
+        Application application = submission.getApplication();
+
+        String title = application.getApplicationTitle();
+        String subject = Strings.format("Ihre Unterlagen für %s", title).toString();
+
+        Map<String, Object> mailData = new HashMap<>();
+        mailData.put("title", title);
+
+        String departmentName;
+        if (application.getManagingDepartment() != null) {
+            departmentName = application.getManagingDepartment().getName();
+        } else if (application.getResponsibleDepartment() != null) {
+            departmentName = application.getResponsibleDepartment().getName();
+        } else {
+            departmentName = "Ihre Dienststelle";
+        }
+        mailData.put("department", departmentName);
+
+        Path pdfPath = submissionStorageService.getSubmissionPdfPath(submission.getId());
+
+        sendMail(to, subject, MailTemplate.CustomerMail, mailData, List.of(pdfPath));
     }
 
-    public void sendMail(String to, String subject, String textMessage, String htmlMessage, Path... attachmentPaths) throws MessagingException, MailException, IOException {
-        sendMail(to, null, null, subject, textMessage, htmlMessage, attachmentPaths, new MultipartFile[]{});
+    public void sendDestinationMail(Submission submission, Collection<SubmissionAttachment> attachments) throws MessagingException, MailException, IOException {
+        Application application = submission.getApplication();
+        Destination destination = submission.getDestination();
+
+        Path pdfPath = submissionStorageService.getSubmissionPdfPath(submission.getId());
+
+        String title = application.getApplicationTitle();
+
+        Map<String, Object> mailData = new HashMap<>();
+        mailData.put("title", title);
+
+        String subject = Strings.format("Neuer Antrag: %s", title).toString();
+
+        String to = destination.getMailTo();
+        Optional<String> cc = destination.getMailCC() != null ? Optional.of(destination.getMailCC()) : Optional.empty();
+        Optional<String> bcc = destination.getMailBCC() != null ? Optional.of(destination.getMailBCC()) : Optional.empty();
+
+        List<Path> attachmentPaths = new LinkedList<>();
+        attachmentPaths.add(pdfPath);
+        for (var att : attachments) {
+            attachmentPaths.add(submissionStorageService.getSubmissionAttachmentPath(submission.getId(), att.getId()));
+        }
+
+        sendMail(
+                to,
+                cc,
+                bcc,
+                subject,
+                MailTemplate.DestinationMail,
+                mailData,
+                Optional.of(attachmentPaths)
+        );
     }
 
-    public void sendMail(String to, @Nullable String cc, @Nullable String bcc, String subject, String textMessage, String htmlMessage, Path[] attachmentPaths, MultipartFile[] attachmentFiles) throws MessagingException, MailException, IOException {
+    public void sendInfoMail(String title, String message) {
+        sendInfoMail(title, message, goverConfig.getReportMail());
+    }
 
+    public void sendInfoMail(String title, String message, String to) {
+        Map<String, Object> mailData = new HashMap<>();
+        mailData.put("title", title);
+        mailData.put("message", message);
+
+        String subject = "[Gover / " + goverConfig.getEnvironment() + "] Informationen";
+
+        try {
+            sendMail(to, subject, MailTemplate.SystemInfoMail, mailData);
+        } catch (MessagingException | MailException | IOException e) {
+            logger.error("Failed to send info admin mail", e);
+        }
+    }
+
+    public void sendExceptionMail(Exception exception) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        exception.printStackTrace(pw);
+        String sStackTrace = sw.toString();
+
+        Map<String, Object> mailData = new HashMap<>();
+        mailData.put("message", exception.getMessage());
+        mailData.put("stackTrace", sStackTrace);
+
+        String subject = "[Gover / " + goverConfig.getEnvironment() + "] Fehler im Betrieb";
+
+        try {
+            sendMail(goverConfig.getReportMail(), subject, MailTemplate.ExceptionMail, mailData);
+        } catch (MessagingException | MailException | IOException e) {
+            logger.error("Failed to send exception admin mail", e);
+        }
+    }
+
+    // region Utils
+
+    public void sendMail(
+            String to,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> data
+    ) throws MessagingException, MailException, IOException {
+        sendMail(to, Optional.empty(), Optional.empty(), subject, template, data, Optional.empty());
+    }
+
+    private void sendMail(
+            String to,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> data,
+            Collection<Path> attachmentPaths
+    ) throws MessagingException, MailException, IOException {
+        sendMail(to, Optional.empty(), Optional.empty(), subject, template, data, Optional.of(attachmentPaths));
+    }
+
+    private void sendMail(
+            String to,
+            Optional<String> cc,
+            Optional<String> bcc,
+            String subject,
+            MailTemplate template,
+            Map<String, Object> data,
+            Optional<Collection<Path>> attachmentPaths
+    ) throws MessagingException, MailException, IOException {
         InternetAddress[] mailToList = InternetAddress.parse(to);
-        InternetAddress[] mailCcList = cc != null ? InternetAddress.parse(cc) : null;
-        InternetAddress[] mailBccList = bcc != null ? InternetAddress.parse(bcc) : null;
 
         MimeMessage message = mailSender.createMimeMessage();
 
@@ -60,45 +184,41 @@ public class MailService {
                 mailToList
         );
 
-        if (mailCcList != null) {
+        if (cc.isPresent()) {
             message.setRecipients(
                     Message.RecipientType.CC,
-                    mailCcList
+                    InternetAddress.parse(cc.get())
             );
         }
-        if (mailBccList != null) {
+        if (bcc.isPresent()) {
             message.setRecipients(
                     Message.RecipientType.BCC,
-                    mailBccList
+                    InternetAddress.parse(bcc.get())
             );
         }
 
+        String textMessage = loadTemplate(template.getKey() + ".txt", data);
+        String htmlMessage = loadTemplate(template.getKey() + ".html", data);
+
         message.setFrom(goverConfig.getFromMail());
-        message.setSubject(subject);
-        message.setText(textMessage);
+        message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
+        message.setText(textMessage, "utf-8");
 
         MimeBodyPart mimeBodyPart = new MimeBodyPart();
-        mimeBodyPart.setContent(htmlMessage, "text/html;charset=utf-8");
+        mimeBodyPart.setContent(htmlMessage, "text/html; charset=utf-8");
 
         Multipart multipart = new MimeMultipart();
         multipart.addBodyPart(mimeBodyPart);
 
-        for (Path path : attachmentPaths) {
-            MimeBodyPart attachmentPart = new MimeBodyPart();
-            DataSource source = new FileDataSource(path.toFile());
-            attachmentPart.setDataHandler(new DataHandler(source));
-            attachmentPart.setDisposition(Part.ATTACHMENT);
-            attachmentPart.setFileName(path.getFileName().toString());
-            multipart.addBodyPart(attachmentPart);
-        }
-
-        for (MultipartFile file : attachmentFiles) {
-            MimeBodyPart attachmentPart = new MimeBodyPart();
-            DataSource source = new ByteArrayDataSource(file.getInputStream(), file.getContentType());
-            attachmentPart.setDataHandler(new DataHandler(source));
-            attachmentPart.setFileName(file.getOriginalFilename());
-            attachmentPart.setDisposition(Part.ATTACHMENT);
-            multipart.addBodyPart(attachmentPart);
+        if (attachmentPaths.isPresent()) {
+            for (Path path : attachmentPaths.get()) {
+                MimeBodyPart attachmentPart = new MimeBodyPart();
+                DataSource source = new FileDataSource(path.toFile());
+                attachmentPart.setDataHandler(new DataHandler(source));
+                attachmentPart.setDisposition(Part.ATTACHMENT);
+                attachmentPart.setFileName(path.getFileName().toString());
+                multipart.addBodyPart(attachmentPart);
+            }
         }
 
         message.setContent(multipart);
@@ -106,7 +226,7 @@ public class MailService {
         mailSender.send(message);
     }
 
-    public String loadTemplate(String templateName, Map<String, Object> data) {
+    public String loadTemplate(String template, Map<String, Object> data) {
         ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
         templateResolver.setPrefix("templates/mail/");
         templateResolver.setTemplateMode(TemplateMode.HTML);
@@ -117,6 +237,8 @@ public class MailService {
         Context context = new Context();
         context.setVariables(data);
 
-        return templateEngine.process(templateName, context);
+        return templateEngine.process(template, context);
     }
+
+    // endregion
 }

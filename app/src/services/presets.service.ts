@@ -1,4 +1,4 @@
-import {Preset} from '../models/preset';
-import {CrudService} from './crud.service';
+import {Preset} from '../models/entities/preset';
+import {ApiService} from "./api-service";
 
-export const PresetsService = new CrudService<Preset, 'presets', number>('presets');
+export const PresetsService = new ApiService<Preset, Preset, number>('presets');

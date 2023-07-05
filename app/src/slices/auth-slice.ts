@@ -1,6 +1,6 @@
 import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit'
-import {UsersService} from '../services/users.service';
-import {LocalStorageService} from '../services/local-storage.service';
+import {UsersService} from '../services/users-service';
+import {LocalStorageService} from '../services/local-storage-service';
 import {RootState} from '../store';
 import {AuthState} from "../data/auth-state";
 import {LocalstorageKey} from "../data/localstorage-key";

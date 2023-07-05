@@ -1,10 +1,12 @@
 package de.aivot.GoverBackend.repositories;
 
-import de.aivot.GoverBackend.models.Department;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import de.aivot.GoverBackend.models.entities.Department;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@RepositoryRestResource(collectionResourceRel = "departments", path = "departments")
-public interface DepartmentRepository extends PagingAndSortingRepository<Department, Long>, CrudRepository<Department, Long> {
+import java.util.Collection;
+import java.util.List;
+
+
+public interface DepartmentRepository extends JpaRepository<Department, Integer> {
+    Collection<Department> findAllByIdIn(List<Integer> ids);
 }

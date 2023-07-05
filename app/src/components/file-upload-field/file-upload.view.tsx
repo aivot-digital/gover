@@ -16,15 +16,14 @@ import {
 } from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCloudArrowUp, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
-import {BaseViewProps} from "../_lib/base-view-props";
 import {
     FileUploadElement,
     FileUploadElementItem
-} from "../../models/elements/form-elements/input-elements/file-upload-element";
-import {humanizeFileSize} from "../../utils/humanize-file-size";
-import {humanizeNumber, pluralize} from "../../utils/humanize-number-size";
+} from "../../models/elements/form/input/file-upload-element";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../slices/snackbar-slice";
+import {humanizeFileSize, humanizeNumber, pluralize} from "../../utils/huminization-utils";
+import { BaseViewProps } from '../../views/base-view';
 
 export function FileUploadView({
                                    element,
@@ -56,7 +55,7 @@ export function FileUploadView({
             if (index >= 0) {
                 const updatedFiles = [...value];
                 updatedFiles.splice(index, 1);
-                setValue(updatedFiles);
+                setValue(updatedFiles.length > 0 ? updatedFiles : undefined);
             }
         }
     };
@@ -87,7 +86,7 @@ export function FileUploadView({
             dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
         }
 
-        setValue(fileUploadItems);
+        setValue(fileUploadItems.length > 0 ? fileUploadItems : undefined);
     }
 
     const fileMaximumReached = (
@@ -266,10 +265,10 @@ export function FileUploadView({
                     error != null ||
                     element.hint != null ||
                     (
-                        element.minFiles &&
+                        element.minFiles != null &&
                         element.minFiles > 0
                     ) || (
-                        element.maxFiles &&
+                        element.maxFiles != null &&
                         element.maxFiles > 0
                     )
                 ) &&
@@ -289,10 +288,10 @@ export function FileUploadView({
 
                     {
                         ((
-                            element.minFiles &&
+                            element.minFiles != null &&
                             element.minFiles > 0
                         ) || (
-                            element.maxFiles &&
+                            element.maxFiles != null &&
                             element.maxFiles > 0
                         )) &&
                         <Typography
@@ -303,10 +302,10 @@ export function FileUploadView({
                             }}
                         >
                             {
-                                element.minFiles == element.maxFiles ?
+                                element.minFiles === element.maxFiles ?
                                     'Genau' :
                                     (
-                                        element.minFiles != null && element.minFiles > 0 ?
+                                        (element.minFiles != null && element.minFiles > 0) ?
                                             'Mindestens' :
                                             'Höchstens'
                                     )

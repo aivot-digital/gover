@@ -3,11 +3,15 @@ import {Box, IconButton, Typography} from '@mui/material';
 import {FileUploadProps} from './file-upload-props';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faTrashCanXmark, faUpload} from '@fortawesome/pro-light-svg-icons';
-import strings from './file-upload-strings.json';
-import {Localization} from '../../locale/localization';
 
-const __ = Localization(strings);
-
+/**
+ * @deprecated Use FieldUploadFieldComponent
+ * @param extensions
+ * @param multiple
+ * @param onChange
+ * @param value
+ * @constructor
+ */
 export function FileUpload({extensions, multiple, onChange, value}: FileUploadProps) {
     const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -95,7 +99,7 @@ export function FileUpload({extensions, multiple, onChange, value}: FileUploadPr
                         sx={{mt: 2}}
                         color="#ccc"
                     >
-                        {__.hint}
+                        Klicken Sie hier, um eine Datei für den Upload auszuwählen
                     </Typography>
                 </Box>
                 {
@@ -106,7 +110,7 @@ export function FileUpload({extensions, multiple, onChange, value}: FileUploadPr
                             variant="caption"
                             sx={{mt: 1}}
                         >
-                            {__.accept} {extensions.map(ext => '.' + ext).join(', ')}
+                            Akzeptierte Formate: {extensions.map(ext => '.' + ext).join(', ')}
                         </Typography>
                     </Box>
                 }

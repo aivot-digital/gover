@@ -1,71 +1,21 @@
-import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {RadioFieldElement} from '../../models/elements/form-elements/input-elements/radio-field-element';
-import {BaseEditorProps} from '../_lib/base-editor-props';
-import {normalizeLines, splitLineInputEvent} from '../../utils/split-line-input';
+import {RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
+import {StringListInput} from "../string-list-input/string-list-input";
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldElement>) {
     return (
         <>
-            <TextField
-                label="Titel"
-                margin="normal"
-                value={props.component.label ?? ''}
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
-                label="Hinweis"
-                margin="normal"
-                value={props.component.hint ?? ''}
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={(props.component.options ?? []).join('\n')}
+            <StringListInput
                 label="Optionen"
-                margin="normal"
-                multiline
-                rows={10}
-                helperText="Bitte geben Sie pro Zeile eine Option an."
-                onChange={event => props.onPatch({
-                    options: splitLineInputEvent(event),
+                addLabel="Option hinzufügen"
+                hint="Die Bürger:in kann genau eine dieser Optionen auswählen."
+                noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
+                value={props.element.options}
+                onChange={options => props.onPatch({
+                    options: options,
                 })}
-                onBlur={() => props.onPatch({
-                    options: normalizeLines(props.component.options),
-                })}
+                allowEmpty={false}
             />
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.required ?? false}
-                            onChange={event => props.onPatch({
-                                required: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Pflichtangabe"
-                />
-            </FormControl>
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.disabled ?? false}
-                            onChange={event => props.onPatch({
-                                disabled: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Eingabe deaktiviert"
-                />
-            </FormControl>
         </>
     );
 }

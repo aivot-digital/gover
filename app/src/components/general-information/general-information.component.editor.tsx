@@ -1,83 +1,87 @@
-import React, {useEffect, useState} from 'react';
-import {BaseEditorProps} from '../_lib/base-editor-props';
-import {IntroductionStepElement} from '../../models/elements/step-elements/introduction-step-element';
-import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
-import {Department} from "../../models/department";
-import {DepartmentsService} from "../../services/departments.service";
-import {isNullOrEmpty} from "../../utils/is-null-or-empty";
+import React from 'react';
+import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {FormGroup, InputLabel, TextField, Typography} from '@mui/material';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {CheckboxTree} from "../checkbox-tree/checkbox-tree";
+import {StringListInput} from "../string-list-input/string-list-input";
+import {CheckboxTreeOption} from "../checkbox-tree/checkbox-tree-option";
+import {BaseEditorProps} from "../../editors/base-editor";
+
+const eligibleEntities: CheckboxTreeOption[] = [
+    {
+        label: 'Rechtspersonen',
+        children: [
+            'Natürliche Personen',
+            {
+                label: 'Juristische Personen des öffentlichen Rechts',
+                children: [
+                    {
+                        label: 'Körperschaften',
+                        children: [
+                            'Gebietskörperschaften',
+                            'Verbandskörperschaften',
+                            'Personal- und Realkörperschaften',
+                        ],
+                    },
+                    'Anstalten des öffentlichen Rechts',
+                    'Öffentlich-rechtliche Stiftungen',
+                ],
+            },
+            {
+                label: 'Juristische Personen des privaten Rechts',
+                children: [
+                    'Vereine (e.V., a.V.)',
+                    'Aktiengesellschaften (AG)',
+                    'Kommanditgesellschaften auf Aktien (KGaA)',
+                    'Gesellschaften mit beschränkter Haftung (GmbH, UG)',
+                    'Eingetragene Genossenschaften (eG)',
+                    'Europäische Gesellschaften (SE)',
+                ],
+            },
+        ],
+    },
+    {
+        label: 'Personengesellschaften',
+        children: [
+            'Offene Handelsgesellschaften (OHG)',
+            'Kommanditgesellschaften (KG)',
+            'Gesellschaft bürgerlichen Rechts (GbR)',
+            'Partnerschaftsgesellschaften',
+            'Partenreedereien',
+            'Stille Gesellschaften',
+        ],
+    },
+    {
+        label: 'Gesamthandsgemeinschaften',
+        children: [
+            'Gütergemeinschaften',
+            'Erbengemeinschaften',
+            'Wohnungseigentümergemeinschaften',
+        ],
+    },
+];
+
+function orderEligiblePersons(value: string[]): string[] {
+    const flattenTreeOptions = (options: CheckboxTreeOption[]): string[] => {
+        const flattened: string[] = [];
+        for (const option of options) {
+            if (typeof option === 'string') {
+                flattened.push(option);
+            } else {
+                flattened.push(option.label);
+                flattened.push(...flattenTreeOptions(option.children));
+            }
+        }
+        return flattened;
+    }
+
+    return flattenTreeOptions(eligibleEntities)
+        .filter(opt => value.includes(opt));
+}
 
 export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
-    const [vendors, setVendors] = useState<Department[]>([]);
-
-    useEffect(() => {
-        DepartmentsService.list()
-            .then(data => {
-                setVendors(data._embedded.departments);
-            });
-    }, []);
-
     return (
         <>
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Zuständige Stelle</InputLabel>
-                <Select
-                    value={props.component.responsibleDepartment ?? ''}
-                    label="Zuständige Stelle"
-                    onChange={event => props.onPatch({
-                        responsibleDepartment: event.target.value as number,
-                    })}
-                >
-                    <MenuItem
-                        value={''}
-                    >
-                        <i>Keine Auswahl</i>
-                    </MenuItem>
-                    {
-                        vendors.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
-
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Bewirtschaftende Stelle</InputLabel>
-                <Select
-                    value={props.component.managingDepartment ?? ''}
-                    label="Bewirtschaftende Stelle"
-                    onChange={event => props.onPatch({
-                        managingDepartment: event.target.value as number,
-                    })}
-                >
-                    <MenuItem
-                        value={''}
-                    >
-                        <i>Keine Auswahl</i>
-                    </MenuItem>
-                    {
-                        vendors.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
-
             <Typography
                 variant="h6"
                 sx={{mt: 4}}
@@ -86,7 +90,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             </Typography>
 
             <TextField
-                value={props.component.initiativeName ?? ''}
+                value={props.element.initiativeName ?? ''}
                 label="Initiative"
                 margin="normal"
                 onChange={event => props.onPatch({
@@ -95,7 +99,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             />
 
             <TextField
-                value={props.component.initiativeLogoLink ?? ''}
+                value={props.element.initiativeLogoLink ?? ''}
                 label="Logo der Initiative"
                 margin="normal"
                 onChange={event => props.onPatch({
@@ -108,7 +112,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 label="URL zur Webseite der Initiative"
                 margin="normal"
                 helperText={'Das dargestellte Logo der Initiative verlinkt auf diese Webseite.'}
-                value={props.component.initiativeLink ?? ''}
+                value={props.element.initiativeLink ?? ''}
                 onChange={event => props.onPatch({
                     initiativeLink: event.target.value,
                 })}
@@ -122,10 +126,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
             </Typography>
 
             <TextField
-                value={props.component.teaserText ?? ''}
+                value={props.element.teaserText ?? ''}
                 label="Kurzbeschreibung"
                 margin="normal"
-                helperText={'Schildern Sie kurz und präzise den Antrag und dessen Zweck.'}
+                helperText="Schildern Sie kurz und präzise das Formular und dessen Zweck."
                 multiline
                 rows={4}
                 onChange={event => props.onPatch({
@@ -133,76 +137,64 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 })}
             />
 
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Antragsberechtigte</InputLabel>
-                <Select
-                    value={(props.component.eligiblePersons ?? []).join('')}
-                    label="Antragsberechtigte"
-                    onChange={event => props.onPatch({
-                        eligiblePersons: [event.target.value],
+            <FormGroup sx={{mt: 2}}>
+                <InputLabel sx={{mb: 1}}>Antragsberechtigte</InputLabel>
+                <CheckboxTree
+                    options={eligibleEntities}
+                    value={props.element.eligiblePersons ?? []}
+                    onChange={update => props.onPatch({
+                        eligiblePersons: orderEligiblePersons(update),
                     })}
-                >
-                    {
-                        [["Natürliche Personen", "Natürliche Personen"], ["Juristische Personen", "Juristische Personen"]].map(([value, label]) => (
-                            <MenuItem
-                                key={label}
-                                value={value}
-                            >
-                                {label}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+                />
+            </FormGroup>
 
             <TextField
-                value={(props.component.supportingDocuments ?? []).join('\n')}
-                label="Relevante Dokumente"
-                margin="normal"
-                multiline
-                rows={4}
-                onChange={event => props.onPatch({
-                    supportingDocuments: event.target.value.split('\n'),
-                })}
-                onBlur={() => props.onPatch({
-                    supportingDocuments: (props.component.supportingDocuments ?? []).filter(ln => !isNullOrEmpty(ln)),
-                })}
-                helperText="Dokumente, welche Antragsberechtigte vor Antragstellung lesen sollten. Bitte geben Sie pro Zeile ein Dokument an."
-            />
-
-            <TextField
-                value={(props.component.documentsToAttach ?? []).join('\n')}
-                label="Einzureichende Dokumente"
-                margin="normal"
-                multiline
-                rows={4}
-                onChange={event => props.onPatch({
-                    documentsToAttach: event.target.value.split('\n'),
-                })}
-                onBlur={() => props.onPatch({
-                    documentsToAttach: (props.component.documentsToAttach ?? []).filter(ln => !isNullOrEmpty(ln)),
-                })}
-                helperText="Dokumente, welche Antragsberechtigte einzureichen haben. Bitte geben Sie pro Zeile ein Dokument an."
-            />
-
-            <TextField
-                value={props.component.expectedCosts ?? ''}
+                value={props.element.expectedCosts ?? ''}
                 label="Gebühren des Antrages"
                 margin="normal"
                 onChange={event => props.onPatch({
                     expectedCosts: event.target.value,
                 })}
                 onBlur={() => {
-                    if (isNullOrEmpty(props.component.expectedCosts)) {
+                    if (isStringNullOrEmpty(props.element.expectedCosts)) {
                         props.onPatch({
                             expectedCosts: undefined,
                         });
                     }
                 }}
             />
+
+            <Typography
+                variant="h6"
+                sx={{mt: 4}}
+            >
+                Dokumente des Antrags
+            </Typography>
+
+            <StringListInput
+                label="Relevante Dokumente"
+                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
+                addLabel="Dokument hinzufügen"
+                noItemsHint="Keine relevanten Dokumente angegeben"
+                value={props.element.supportingDocuments}
+                onChange={supportingDocuments => props.onPatch({
+                    supportingDocuments: supportingDocuments,
+                })}
+                allowEmpty={true}
+            />
+
+            <StringListInput
+                label="Einzureichende Dokumente"
+                hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
+                addLabel="Dokument hinzufügen"
+                noItemsHint="Keine einzureichenden Dokumente angegeben"
+                value={props.element.documentsToAttach}
+                onChange={supportingDocuments => props.onPatch({
+                    documentsToAttach: supportingDocuments,
+                })}
+                allowEmpty={true}
+            />
+
         </>
     );
 }

@@ -1,51 +1,63 @@
 import React, {ComponentType} from 'react';
 import {useSelector} from 'react-redux';
-import {isComponentVisible} from '../utils/is-component-visible';
+import {isElementVisible} from '../utils/is-element-visible';
 import {generateComponentPatch} from '../utils/generate-component-patch';
-import {SummaryMap} from './summary.map';
-import {BaseSummaryProps} from './_lib/base-summary-props';
 import {selectCustomerInput} from '../slices/customer-input-slice';
 import {AnyElement} from '../models/elements/any-element';
 import {selectDisableVisibility} from "../slices/admin-settings-slice";
+import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
+import {evaluateFunction} from "../utils/evaluate-function";
+import {CustomerInput} from "../models/customer-input";
+import Summaries from "../summaries";
+import {BaseSummaryProps} from "../summaries/base-summary";
+import {resolveId} from "../utils/id-utils";
 
 interface DispatcherComponentProps<M extends AnyElement> {
-    model: M;
+    allElements: AnyElement[];
+    element: M;
     idPrefix?: string;
 }
 
-export function SummaryDispatcherComponent<M extends AnyElement>({model, idPrefix}: DispatcherComponentProps<M>) {
-    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
+function makeValue(idPrefix: string | undefined, allElements: AnyElement[], model: AnyElement, id: string, global?: CustomerInput): any | null | undefined {
+    if (isAnyInputElement(model) && model.computeValue != null) {
+        return evaluateFunction(idPrefix, allElements, model.computeValue, (global ?? {}), model, id, false);
+    }
+    return (model as any).value ?? (global ?? {})[resolveId(id, idPrefix)];
+}
+
+export function SummaryDispatcherComponent<M extends AnyElement>({allElements, element, idPrefix}: DispatcherComponentProps<M>) {
+    const prefixedId = idPrefix != null ? (idPrefix + element.id) : element.id;
 
     const customerInput = useSelector(selectCustomerInput);
     const disableVisibility = useSelector(selectDisableVisibility)
 
     const patchedModel = {
-        ...model,
-        ...generateComponentPatch(id, model, customerInput),
-        id,
+        ...element,
+        ...generateComponentPatch(idPrefix, allElements, element.id, element, customerInput),
     };
 
-    const value = (patchedModel as any).value ?? customerInput[id];
+    const value = makeValue(idPrefix, allElements, patchedModel, element.id, customerInput);
 
-    const isVisible = disableVisibility || isComponentVisible(id, model, customerInput);
+    const isVisible = disableVisibility || isElementVisible(idPrefix, allElements, element.id, element, customerInput);
 
     if (!isVisible) {
         return null;
     }
 
-    const Component: ComponentType<BaseSummaryProps<M>> = SummaryMap[model.type];
+    const Component: ComponentType<BaseSummaryProps<M, any>> | null = Summaries[element.type];
     if (Component == null) {
         return null;
     }
 
-    const viewProps: BaseSummaryProps<M> = {
+    const viewProps: BaseSummaryProps<M, any> = {
+        allElements: allElements,
         model: patchedModel,
         value,
         idPrefix,
     };
 
     return (
-        <div id={model.id}>
+        <div id={element.id}>
             <Component {...viewProps} />
         </div>
     );

@@ -1,10 +1,7 @@
 package de.aivot.GoverBackend.repositories;
 
-import de.aivot.GoverBackend.models.Destination;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import de.aivot.GoverBackend.models.entities.Destination;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@RepositoryRestResource(collectionResourceRel = "destinations", path = "destinations")
-public interface DestinationRepository extends PagingAndSortingRepository<Destination, Long>, CrudRepository<Destination, Long> {
+public interface DestinationRepository extends JpaRepository<Destination, Integer> {
 }

@@ -6,8 +6,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.sun.istack.Nullable;
-import de.aivot.GoverBackend.models.JwtConfig;
-import de.aivot.GoverBackend.models.User;
+import de.aivot.GoverBackend.models.config.JwtConfig;
+import de.aivot.GoverBackend.models.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,14 +34,13 @@ public class JwtService {
                 .create()
                 .withIssuer(ISSUER)
                 .withClaim("id", user.getId())
-                .withClaim("role", user.getId())
                 .withIssuedAt(issued)
                 .withExpiresAt(expired)
                 .sign(algorithm);
     }
 
     @Nullable
-    public Long validateToken(String token) {
+    public Integer validateToken(String token) {
         if (token == null || token.equals("null")) {
             return null;
         }
@@ -62,7 +61,7 @@ public class JwtService {
 
         Claim idClaim = jwt.getClaim("id");
         if (idClaim != null && !idClaim.isNull()) {
-            return idClaim.asLong();
+            return idClaim.asInt();
         }
 
         return null;

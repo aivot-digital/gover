@@ -1,6 +1,7 @@
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@mui/material';
-import {RadioFieldElement} from '../../models/elements/form-elements/input-elements/radio-field-element';
-import {BaseViewProps} from '../_lib/base-view-props';
+import {RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {BaseViewProps} from "../../views/base-view";
 
 export function RadioFieldComponentView({element, value, error, setValue}: BaseViewProps<RadioFieldElement, string>) {
     return (
@@ -18,8 +19,10 @@ export function RadioFieldComponentView({element, value, error, setValue}: BaseV
                 name="radio-buttons-group"
                 value={value ?? ''}
                 onChange={event => {
-                    if (element.id != null) {
-                        setValue(event.target.value);
+                    if (isStringNullOrEmpty(event.target.value)) {
+                        setValue(undefined);
+                    } else {
+                        setValue(event.target.value ?? '');
                     }
                 }}
             >

@@ -26,17 +26,24 @@ import {
 import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
 import {useSelector} from 'react-redux';
-import {isNullOrEmpty} from '../../../utils/is-null-or-empty';
-import {ApplicationService} from '../../../services/application.service';
+import {ApplicationService} from '../../../services/application-service';
 import {selectLoadedApplication} from '../../../slices/app-slice';
 import {validateEmail} from "../../../utils/validate-email";
+import {isStringNullOrEmpty} from "../../../utils/string-utils";
+import {AnyElement} from "../../../models/elements/any-element";
+import {InfoDialog} from "../../../dialogs/info-dialog/info-dialog";
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
 
 // TODO: Localization
 
-export function Submitted({pdfLink}: { pdfLink: string }) {
+interface SubmittedProps {
+    allElements: AnyElement[];
+    pdfLink: string;
+}
+
+export function Submitted({allElements, pdfLink}: SubmittedProps) {
     const application = useSelector(selectLoadedApplication);
     const submitStep = application?.root.submitStep;
     const theme = useTheme();
@@ -158,6 +165,7 @@ export function Submitted({pdfLink}: { pdfLink: string }) {
     const [privacyError, setPrivacyError] = useState<string>();
     const [mailInvalid, setMailInvalid] = useState(false);
     const [mailSent, setMailSent] = useState(false);
+    const [showMailSentDialog, setShowMailSentDialog] = useState(false);
 
     const sendApplicationCopyMail = () => {
         if (application != null) {
@@ -167,11 +175,12 @@ export function Submitted({pdfLink}: { pdfLink: string }) {
                     setMailSent(true);
                     setPrivacyError(undefined);
                     setMailInvalid(false);
+                    setShowMailSentDialog(true);
                 } else {
                     setMailInvalid(true);
                 }
             } else {
-                setPrivacyError('Sie müssen Ihr Einverständnis zum Versandt der E-Mail geben.');
+                setPrivacyError('Sie müssen Ihr Einverständnis zum Versand der E-Mail geben.');
             }
         }
     };
@@ -197,8 +206,9 @@ export function Submitted({pdfLink}: { pdfLink: string }) {
     return (
         <>
             {
-                !isNullOrEmpty(submitStep?.textPostSubmit) &&
+                !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
+                    allElements={allElements}
                     text={submitStep?.textPostSubmit ?? ''}
                 />
             }
@@ -336,6 +346,15 @@ export function Submitted({pdfLink}: { pdfLink: string }) {
                 // @ts-ignore
                 style={canvasStyles}
             />
+
+            <InfoDialog
+                title="E-Mail versendet"
+                severity="success"
+                open={showMailSentDialog}
+                onClose={() => setShowMailSentDialog(false)}
+            >
+                Eine E-Mail mit dem eingereichten Antrag wurde an die angegebene E-Mail-Adresse versendet.
+            </InfoDialog>
         </>
     );
 }

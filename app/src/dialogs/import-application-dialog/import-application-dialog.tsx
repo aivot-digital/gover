@@ -1,20 +1,18 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText} from '@mui/material';
 import React, {useState} from 'react';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Application} from '../../models/application';
-import {Localization} from '../../locale/localization';
-import strings from './import-application-dialog-strings.json';
 import {ImportApplicationDialogProps} from './import-application-dialog-props';
 import {FileUpload} from '../../components/file-upload/file-upload';
-import {ApplicationInitForm, validateApplication} from '../../components/application-init-form/application-init-form';
-import {ApplicationInitFormPropsErrors} from '../../components/application-init-form/application-init-form-props';
+import {Application} from "../../models/entities/application";
 
-const _ = Localization(strings);
 
 export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
-    const {applications, onHide, onImport, ...passTroughProps} = props;
-    const [applicationToImport, setApplicationToImport] = useState<Application>();
-    const [applicationToImportErrors, setApplicationToImportErrors] = useState<ApplicationInitFormPropsErrors>({});
+    const {
+        onClose,
+        onImport,
+        ...passTroughProps
+    } = props;
+
     const [importFailed, setImportFailed] = useState(false);
 
     const onFileSelect = (files: File[]) => {
@@ -26,14 +24,28 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
                 const value = evt.target?.result;
                 if (value != null) {
                     try {
-                        const parsedModel = JSON.parse(value.toString());
-                        setApplicationToImport(parsedModel);
+                        const parsedModel: Application = JSON.parse(value.toString());
+
+                        // Clear application
+                        parsedModel.destination = undefined;
+
+                        parsedModel.developingDepartment = 0;
+
+                        parsedModel.managingDepartment = undefined;
+                        parsedModel.responsibleDepartment = undefined;
+                        parsedModel.imprintDepartment = undefined;
+                        parsedModel.privacyDepartment = undefined;
+                        parsedModel.accessibilityDepartment = undefined;
+                        parsedModel.legalSupportDepartment = undefined;
+                        parsedModel.technicalSupportDepartment = undefined;
+
+                        onImport(parsedModel);
+                        handleClose();
                     } catch (err) {
                         setImportFailed(true);
                         return;
                     }
                 } else {
-
                     setImportFailed(true);
                     return;
                 }
@@ -49,24 +61,8 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
     };
 
     const handleClose = () => {
-        setApplicationToImport(undefined);
         setImportFailed(false);
-        props.onHide();
-    };
-
-    const handleImport = (navigateToEditAfterwards: boolean) => {
-        if (applicationToImport != null) {
-            setApplicationToImportErrors({});
-
-            const errors = validateApplication(applicationToImport, applications);
-            if (Object.keys(errors).length > 0) {
-                setApplicationToImportErrors(errors);
-                return;
-            }
-
-            props.onImport(applicationToImport, navigateToEditAfterwards);
-            handleClose();
-        }
+        onClose();
     };
 
     return (
@@ -76,39 +72,27 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
             fullWidth={true}
         >
             <DialogTitleWithClose
-                id="import-dialog-title"
                 onClose={handleClose}
-                closeTooltip={_.closeTooltip}
             >
-                {_.title}
+                Bestehendes Formular importieren
             </DialogTitleWithClose>
             <DialogContent>
 
-                {
-                    applicationToImport &&
-                    <ApplicationInitForm
-                        application={applicationToImport}
-                        onChange={setApplicationToImport}
-                        errors={applicationToImportErrors}
+                <DialogContentText>
+                    Importieren Sie einen bestehendes Formular im GOV-Format (*.gov).
+                </DialogContentText>
+                <Box
+                    sx={{
+                        mt: 2,
+                    }}
+                >
+                    <FileUpload
+                        onChange={onFileSelect}
+                        value={[]}
+                        extensions={['gov']}
                     />
-                }
-                {
-                    !applicationToImport &&
-                    <>
-                        <DialogContentText>
-                            {_.importHelper}
-                        </DialogContentText>
-                        <Box sx={{
-                            mt: 2,
-                        }}>
-                            <FileUpload
-                                onChange={onFileSelect}
-                                value={[]}
-                                extensions={['gov']}
-                            />
-                        </Box>
-                    </>
-                }
+                </Box>
+
                 {
                     importFailed &&
                     <Alert
@@ -117,7 +101,7 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
                         }}
                         severity="error"
                     >
-                        {_.importError}
+                        Die Datei konnte nicht importiert werden.
                     </Alert>
                 }
             </DialogContent>
@@ -129,28 +113,13 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
                 }}
             >
                 <Button
-                    onClick={() => handleImport(true)}
-                    disabled={applicationToImport == null}
-                    size="large"
-                    variant="outlined"
-                >
-                    {_.importEditLabel}
-                </Button>
-                <Button
-                    onClick={() => handleImport(false)}
-                    disabled={applicationToImport == null}
-                    size="large"
-                >
-                    {_.importLabel}
-                </Button>
-                <Button
                     onClick={handleClose}
                     sx={{
                         ml: 'auto!important',
                     }}
                     size="large"
                 >
-                    {_.cancelLabel}
+                    Abbrechen
                 </Button>
             </DialogActions>
         </Dialog>

@@ -1,32 +1,26 @@
 import React, {useState} from 'react';
 import {AppHeaderProps} from './app-header-props';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
-import strings from './app-header-strings.json';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {AppMode} from '../../data/app-mode';
 import {faCog, faQuestionCircle, faUniversalAccess} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {Localization} from '../../locale/localization';
-import {selectLoadedApplication} from '../../slices/app-slice';
+import {MetaDialog, selectLoadedApplication, showMetaDialog} from '../../slices/app-slice';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
-import {AppHeaderMenu} from './components/app-header-menu/app-header-menu';
-import {AccessibilityDialog} from '../../dialogs/accessibility-dialog/accessibility-dialog';
-import {HelpDialog} from '../../dialogs/help-dialog/help.dialog';
+import {AppHeaderMenu} from './app-header-menu/app-header-menu';
 import {Logo} from '../static-components/logo/logo';
-
-const __ = Localization(strings);
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
 
 export function AppHeader({mode}: AppHeaderProps) {
+    const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const app = useAppSelector(selectLoadedApplication);
 
-    const [showAccessibility, setShowAccessibility] = useState(false);
-    const [showHelp, setShowHelp] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement>();
 
-    let titleLine1 = __.goverAppTitle;
+    let titleLine1 = 'Online-Antrags-Management';
     let titleLine2 = name;
 
     if (mode === AppMode.Customer) {
@@ -35,8 +29,8 @@ export function AppHeader({mode}: AppHeaderProps) {
             titleLine1 = appTitle[0] ?? '';
             titleLine2 = appTitle[1] ?? '';
         } else {
-            titleLine1 = app?.root.title ?? '';
-            titleLine2 = '';
+            titleLine1 = 'Keine Überschrift angegeben';
+            titleLine2 = 'Füge eine Überschrift hinzu';
         }
     }
 
@@ -112,20 +106,22 @@ export function AppHeader({mode}: AppHeaderProps) {
                                 </div>
                             </Box>
                         </Box>
-                        <Box sx={{
-                            [theme.breakpoints.down('md')]: {
-                                ml: 'auto',
-                                mt: 2,
-                            },
-                        }}>
+                        <Box
+                            sx={{
+                                [theme.breakpoints.down('md')]: {
+                                    ml: 'auto',
+                                    mt: 2,
+                                },
+                            }}
+                        >
                             {
                                 mode === AppMode.Customer &&
                                 <Tooltip
-                                    title={__.tooltipAccessibility}
+                                    title="Barrierefreiheit"
                                 >
                                     <IconButton
                                         color="primary"
-                                        onClick={() => setShowAccessibility(true)}
+                                        onClick={() => dispatch(showMetaDialog(MetaDialog.Accessibility))}
                                     >
                                         <FontAwesomeIcon
                                             icon={faUniversalAccess}
@@ -135,38 +131,44 @@ export function AppHeader({mode}: AppHeaderProps) {
                                 </Tooltip>
                             }
 
-                            <Tooltip
-                                title={__.tooltipHelp}
-                            >
-                                <IconButton
-                                    color="primary"
-                                    component={mode === AppMode.Staff ? 'a' : 'button'}
-                                    href={mode === AppMode.Staff ? 'https://aivot.de/gover' : undefined}
-                                    target={mode === AppMode.Staff ? '_blank' : undefined}
-                                    onClick={mode === AppMode.Staff ? undefined : () => {
-                                        setShowHelp(true);
-                                    }}
+                            {
+                                mode !== AppMode.CustomerDisplay &&
+                                <Tooltip
+                                    title="Hilfe & FAQs"
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faQuestionCircle}
-                                        size="lg"
-                                    />
-                                </IconButton>
-                            </Tooltip>
+                                    <IconButton
+                                        color="primary"
+                                        component={mode === AppMode.Staff ? 'a' : 'button'}
+                                        href={mode === AppMode.Staff ? 'https://aivot.de/gover' : undefined}
+                                        target={mode === AppMode.Staff ? '_blank' : undefined}
+                                        onClick={mode === AppMode.Staff ? undefined : () => {
+                                            dispatch(showMetaDialog(MetaDialog.Help))
+                                        }}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faQuestionCircle}
+                                            size="lg"
+                                        />
+                                    </IconButton>
+                                </Tooltip>
+                            }
 
-                            <Tooltip
-                                title={__.tooltipSettings}
-                            >
-                                <IconButton
-                                    color="primary"
-                                    onClick={handleOpenMenu}
+                            {
+                                mode !== AppMode.CustomerDisplay &&
+                                <Tooltip
+                                    title="Eistellungen"
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faCog}
-                                        size="lg"
-                                    />
-                                </IconButton>
-                            </Tooltip>
+                                    <IconButton
+                                        color="primary"
+                                        onClick={handleOpenMenu}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faCog}
+                                            size="lg"
+                                        />
+                                    </IconButton>
+                                </Tooltip>
+                            }
                         </Box>
                     </Box>
                 </Container>
@@ -180,15 +182,6 @@ export function AppHeader({mode}: AppHeaderProps) {
                     anchorElement={menuAnchorEl}
                 />
             }
-
-            <AccessibilityDialog
-                onHide={() => setShowAccessibility(false)}
-                open={showAccessibility}
-            />
-            <HelpDialog
-                onHide={() => setShowHelp(false)}
-                open={showHelp}
-            />
         </>
     );
 }

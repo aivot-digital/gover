@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {BaseViewProps} from '../_lib/base-view-props';
-import {SubmitStepElement} from '../../models/elements/step-elements/submit-step-element';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../static-components/preamble/preamble';
 import {
     Box,
@@ -19,19 +18,18 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faFileArrowUp, faUserRobot} from '@fortawesome/pro-light-svg-icons';
 import {faShieldCheck} from '@fortawesome/pro-solid-svg-icons';
 import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
-import {isNullOrEmpty} from '../../utils/is-null-or-empty';
-import {Department} from '../../models/department';
-import {DepartmentsService} from '../../services/departments.service';
+import {Department} from '../../models/entities/department';
+import {DepartmentsService} from '../../services/departments-service';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectCustomerInputErrorValue} from '../../slices/customer-input-errors-slice';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {BaseViewProps} from "../../views/base-view";
 
 export const SubmitHumanKey = '__human__';
 
-// TODO: Localization
-
-export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, void>) {
+export function SubmitComponentView({allElements, element}: BaseViewProps<SubmitStepElement, void>) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
 
@@ -39,31 +37,34 @@ export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, 
     const isHuman = useAppSelector(selectCustomerInputValue(SubmitHumanKey));
     const error = useAppSelector(selectCustomerInputErrorValue(SubmitHumanKey));
 
-    const introductionStep = useAppSelector(selectLoadedApplication)?.root.introductionStep;
+    const application = useAppSelector(selectLoadedApplication);
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (introductionStep?.responsibleDepartment) {
-            DepartmentsService.retrieve(introductionStep.responsibleDepartment)
+        if (application?.responsibleDepartment) {
+            DepartmentsService
+                .retrieve(application.responsibleDepartment)
                 .then(setResponsibleDepartment);
         }
-        if (introductionStep?.managingDepartment) {
-            DepartmentsService.retrieve(introductionStep.managingDepartment)
+        if (application?.managingDepartment) {
+            DepartmentsService
+                .retrieve(application.managingDepartment)
                 .then(setManagingDepartment);
         }
-    }, [introductionStep]);
+    }, [application]);
 
-    if (introductionStep == null) {
+    if (application == null) {
         return null;
     }
 
     return (
         <>
             {
-                !isNullOrEmpty(element.textPreSubmit) &&
+                !isStringNullOrEmpty(element.textPreSubmit) &&
                 <Preamble
+                    allElements={allElements}
                     text={element.textPreSubmit ?? ''}
                 />
             }
@@ -72,7 +73,7 @@ export function SubmitComponentView({element}: BaseViewProps<SubmitStepElement, 
                 (
                     responsibleDepartment ||
                     managingDepartment ||
-                    !isNullOrEmpty(element.textProcessingTime) ||
+                    !isStringNullOrEmpty(element.textProcessingTime) ||
                     (element.documentsToReceive && element.documentsToReceive.length > 0)
                 ) &&
                 <FadingPaper>

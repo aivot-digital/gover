@@ -1,10 +1,18 @@
 import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faGear, faListTree, faMessageCode} from '@fortawesome/pro-light-svg-icons';
+import {
+    faArrowsFromLine,
+    faArrowsToLine,
+    faGear,
+    faListTree,
+    faMessageCode,
+    faSearch
+} from '@fortawesome/pro-light-svg-icons';
 import {
     selectUseIdsInComponentTree,
     selectUseTestMode,
     selectWarnDuplicateIds,
+    setExpandElementTree,
     toggleIdsInComponentTree,
     toggleTestMode,
     toggleWarnDuplicateIds
@@ -62,6 +70,33 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
 
                 <Box>
                     <Tooltip
+                        title="Suchen"
+                        arrow
+                    >
+                        <IconButton onClick={props.onToggleSearch}>
+                            <FontAwesomeIcon icon={faSearch}/>
+                        </IconButton>
+                    </Tooltip>
+
+                    <Tooltip
+                        title="Alles ausklappen"
+                        arrow
+                    >
+                        <IconButton onClick={() => dispatch(setExpandElementTree('expanded'))}>
+                            <FontAwesomeIcon icon={faArrowsFromLine}/>
+                        </IconButton>
+                    </Tooltip>
+
+                    <Tooltip
+                        title="Alles einklappen"
+                        arrow
+                    >
+                        <IconButton onClick={() => dispatch(setExpandElementTree('collapsed'))}>
+                            <FontAwesomeIcon icon={faArrowsToLine}/>
+                        </IconButton>
+                    </Tooltip>
+
+                    <Tooltip
                         title="Einstellungen für Entwickler:innen"
                         arrow
                     >
@@ -70,7 +105,7 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         </IconButton>
                     </Tooltip>
                     <Tooltip
-                        title="Antrag konfigurieren"
+                        title="Formular konfigurieren"
                         arrow
                     >
                         <IconButton
@@ -135,6 +170,7 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
             {
                 showEditor &&
                 <ElementEditor
+                    parents={[] /* Uppermost element so no parents here */}
                     element={props.element}
                     onSave={update => {
                         setShowEditor(false);

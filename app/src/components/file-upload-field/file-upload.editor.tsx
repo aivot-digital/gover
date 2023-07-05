@@ -1,38 +1,30 @@
-import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {BaseEditorProps} from '../_lib/base-editor-props';
-import {FileUploadElement} from "../../models/elements/form-elements/input-elements/file-upload-element";
-import {normalizeLines, splitLineInputEvent} from "../../utils/split-line-input";
+import {Checkbox, FormControl, FormControlLabel} from '@mui/material';
+import {FileUploadElement} from "../../models/elements/form/input/file-upload-element";
+import {BaseEditor} from "../../editors/base-editor";
+import {useEffect, useState} from "react";
+import {SystemService} from "../../services/system-service";
+import {NumberFieldComponent} from "../number-field/number-field-component";
+import {MultiCheckboxComponent} from "../multi-checkbox-field/multi-checkbox-component";
 
-export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
-    const invalidMinMax = props.component.minFiles != null && props.component.maxFiles != null && props.component.minFiles > props.component.maxFiles;
+export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatch}) => {
+    const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
+
+    useEffect(() => {
+        SystemService
+            .getFileExtensions()
+            .then(setAllowedExtensions);
+    }, []);
+
+    const invalidMinMax = element.minFiles != null && element.maxFiles != null && element.minFiles > element.maxFiles;
 
     return (
         <>
-            <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
             <FormControl>
                 <FormControlLabel
                     control={
                         <Checkbox
-                            checked={props.component.isMultifile ?? false}
-                            onChange={event => props.onPatch({
+                            checked={element.isMultifile ?? false}
+                            onChange={event => onPatch({
                                 isMultifile: event.target.checked,
                                 minFiles: undefined,
                                 maxFiles: undefined,
@@ -44,85 +36,47 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
             </FormControl>
 
             {
-                props.component.isMultifile &&
+                element.isMultifile &&
                 <>
-                    <TextField
-                        value={(props.component.minFiles ?? 0).toString()}
+                    <NumberFieldComponent
+                        value={element.minFiles}
                         label="Minimalzahl an Anlagen"
-                        fullWidth
-                        margin="normal"
-                        helperText={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : 'Geben Sie 0 ein, um keine Minimalzahl zu fordern.'}
-                        onChange={event => {
-                            const val = parseInt(event.target.value ?? '0');
-                            props.onPatch({
-                                minFiles: isNaN(val) ? 0 : val,
+                        hint="Geben Sie 0 ein, um keine Minimalzahl zu fordern."
+                        onChange={val => {
+                            onPatch({
+                                minFiles: val,
                             });
                         }}
-                        error={invalidMinMax}
+                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
                     />
 
-                    <TextField
-                        value={(props.component.maxFiles ?? 0).toString()}
+                    <NumberFieldComponent
+                        value={element.maxFiles}
                         label="Maximalanzahl an Anlagen"
-                        fullWidth
-                        margin="normal"
-                        helperText={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : 'Geben Sie 0 ein, um keine Maximalanzahl zu fordern.'}
-                        onChange={event => {
-                            const val = parseInt(event.target.value ?? '0');
-                            props.onPatch({
-                                maxFiles: isNaN(val) ? 0 : val,
+                        hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                        onChange={val => {
+                            onPatch({
+                                maxFiles: val,
                             });
                         }}
-                        error={invalidMinMax}
+                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
                     />
                 </>
             }
 
-
-            <TextField
-                value={(props.component.extensions ?? []).join('\n')}
+            <MultiCheckboxComponent
                 label="Erlaubte Dateiendungen"
-                fullWidth
-                multiline
-                rows={3}
-                margin="normal"
-                placeholder={'pdf\ndocx\ndoc'}
-                onChange={event => props.onPatch({
-                    extensions: splitLineInputEvent(event),
-                })}
-                onBlur={() => props.onPatch({
-                    extensions: normalizeLines(props.component.extensions),
-                })}
-                helperText="Bitte geben Sie pro Zeile eine Dateiendung ohne Punkt an. Wenn Sie keine Dateiendungen angeben, können alle Dateien hochgeladen werden."
+                value={element.extensions}
+                onChange={val => {
+                    onPatch({
+                        extensions: val,
+                    });
+                }}
+                hint="Die Bürger:in kann nur Dateien mit diesen Endungen hochladen."
+                error={element.extensions == null || element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
+                options={allowedExtensions ?? []}
+                required
             />
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.required ?? false}
-                            onChange={event => props.onPatch({
-                                required: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Pflichtangabe"
-                />
-            </FormControl>
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.disabled ?? false}
-                            onChange={event => props.onPatch({
-                                disabled: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Eingabe deaktiviert"
-                />
-            </FormControl>
         </>
     );
 }

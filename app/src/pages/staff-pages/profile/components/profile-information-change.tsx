@@ -1,16 +1,13 @@
-import {Alert, Button, TextField, Typography} from '@mui/material';
+import {Alert, Button, Typography} from '@mui/material';
 import React, {FormEvent, useCallback, useState} from 'react';
-import {User} from '../../../../models/user';
-import {UsersService} from '../../../../services/users.service';
+import {User} from '../../../../models/entities/user';
+import {UsersService} from '../../../../services/users-service';
 import {refreshUser, selectUser} from '../../../../slices/user-slice';
-import {isNullOrEmpty} from '../../../../utils/is-null-or-empty';
-import strings from './profile-information-change-strings.json';
-import {Localization} from '../../../../locale/localization';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {validateEmail} from "../../../../utils/validate-email";
+import {TextFieldComponent} from "../../../../components/text-field/text-field-component";
 
-const __ = Localization(strings);
 
 export function ProfileInformationChange() {
     const dispatch = useAppDispatch();
@@ -27,12 +24,12 @@ export function ProfileInformationChange() {
 
         if (user != null && editedUser != null) {
             if (editedUser.name.length < 4 || editedUser.name.length >= 32) {
-                setNameError(__.nameErrorLength);
+                setNameError('Bitte geben Sie einen Namen mit mehr als 4 und weniger als 32 Zeichen ein.');
                 return false;
             }
 
             if (!validateEmail(editedUser.email)) {
-                setEmailError(__.emailErrorInvalid);
+                setEmailError('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
                 return false;
             }
 
@@ -55,51 +52,47 @@ export function ProfileInformationChange() {
     return (
         <form onSubmit={handleSave}>
             <Typography variant="subtitle1">
-                {__.userDataTitle}
+                Benutzerdaten
             </Typography>
-            <TextField
-                label={__.nameLabel}
-                placeholder={__.namePlaceholder}
+
+            <TextFieldComponent
+                label="Name"
+                placeholder="Max Mustermann"
                 required
                 value={(editedUser ?? user).name}
-                onChange={event => {
+                onChange={val => {
                     setEditedUser({
                         ...(editedUser ?? user),
-                        name: event.target.value,
+                        name: val ?? '',
                     });
                     setNameError(undefined);
                     setUserChanged(false);
                 }}
-                helperText={nameError}
-                error={!isNullOrEmpty(nameError)}
+                error={nameError}
+                maxCharacters={32}
             />
-            <TextField
-                label={__.emailLabel}
-                placeholder={__.emailPlaceholder}
+
+            <TextFieldComponent
+                label="E-Mail"
+                placeholder="max.muster@gover.digital"
                 type="email"
                 required
                 value={(editedUser ?? user).email}
-                onChange={event => {
+                onChange={val => {
                     setEditedUser({
                         ...(editedUser ?? user),
-                        email: event.target.value,
+                        email: val ?? '',
                     });
                     setEmailError(undefined);
                     setUserChanged(false);
                 }}
-                helperText={emailError}
-                error={!isNullOrEmpty(emailError)}
-            />
-            <TextField
-                label={__.roleLabel}
-                value={(editedUser ?? user).role}
-                disabled
+                error={emailError}
             />
 
             {
                 userChanged &&
                 <Alert sx={{mt: 2}}>
-                    {__.changeSuccessful}
+                    Daten erfolgreich geändert!
                 </Alert>
             }
 
@@ -108,7 +101,7 @@ export function ProfileInformationChange() {
                 sx={{mt: 2}}
                 disabled={editedUser == null}
             >
-                {__.saveChangesLabel}
+                Änderungen Speichern
             </Button>
         </form>
     );

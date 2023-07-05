@@ -9,12 +9,12 @@ import {
     faDiamondExclamation,
     faListCheck,
     faMemoCircleCheck,
-    faPlusCircle
+    faPlusCircle, faQuestionCircle, faCircleBolt,
 } from '@fortawesome/pro-light-svg-icons';
 import {ElementIcons} from '../../../../data/element-type/element-icons';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
-import {checkId} from '../../../../utils/check-id';
-import {hasElementFunction} from '../../../../utils/has-element-function';
+import {checkId} from '../../../../utils/id-utils';
+import {getFunctionStatus} from '../../../../utils/function-status-utils';
 import React from 'react';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {ElementNames} from '../../../../data/element-type/element-names';
@@ -23,10 +23,9 @@ import Chip from '@mui/material/Chip';
 import {hasUntestedChild} from '../../../../utils/has-untested-child';
 import {RootElement} from '../../../../models/elements/root-element';
 import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
-import {hasElementFunctionRequirement} from '../../../../utils/has-element-function-requirement';
-import {stringOrDefault} from '../../../../utils/string-or-default';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {
+    selectTreeElementSearch,
     selectUseIdsInComponentTree,
     selectUseTestMode,
     selectWarnDuplicateIds
@@ -36,13 +35,19 @@ import {AnyElement} from '../../../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
 import {getStepIcon} from '../../../../data/step-icons';
 import {selectLoadedApplication} from '../../../../slices/app-slice';
+import {stringOrDefault} from "../../../../utils/string-utils";
+import {findNoCodeUsage} from "../../../../utils/find-no-code-usage";
 
+
+const highlightOutlineStyle = '#86FFD388 solid 2px';
+const highlightBoxShadowStyle = '0px 4px 20px rgba(179, 242, 219, 0.5)';
 
 export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>) {
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
     const root = useAppSelector(selectLoadedApplication)?.root;
+    const treeElementSearch = useAppSelector(selectTreeElementSearch);
 
     const handleSelect = () => {
         if (document.activeElement instanceof HTMLElement) {
@@ -54,8 +59,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     const addHighlightElement = () => {
         const elem = document.getElementById(props.element.id);
         if (elem) {
-            elem.style.outline = '#86FFD388 solid 2px';
-            elem.style.boxShadow = '0px 4px 20px rgba(179, 242, 219, 0.5)';
+            elem.style.outline = highlightOutlineStyle;
+            elem.style.boxShadow = highlightBoxShadowStyle;
         }
     };
 
@@ -89,15 +94,20 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     const theme = useTheme();
 
     const statusIcons = determineIcons(testMode, warnDuplicateIds, root, props.element);
-    const elementTitle = stringOrDefault(props.element.name, generateComponentTitle(props.element));
+    const elementTitle = generateComponentTitle(props.element);
     const titleCharLimit = testMode ? 30 : 40;
     const elementIcon = props.element.type === ElementType.Step ? getStepIcon(props.element) : ElementIcons[props.element.type];
+    const matchesSearch = treeElementSearch != null && treeElementSearch.length > 2 && (elementTitle.toLowerCase().includes(treeElementSearch.toLowerCase()) || props.element.id.toLowerCase().includes(treeElementSearch.toLocaleLowerCase()));
 
     return (
         <div
             className={styles.listItem}
             onDoubleClick={handleSelect}
-            style={{display: 'flex'}}
+            style={{
+                display: 'flex',
+                outline: matchesSearch ? highlightOutlineStyle : undefined,
+                boxShadow: matchesSearch ? highlightBoxShadowStyle : undefined,
+            }}
             onMouseEnter={addHighlightElement}
             onMouseLeave={removeHighlightElement}
         >
@@ -150,7 +160,6 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                 sx={{fontSize: '1rem', color: '#16191F'}}
             >
                 {
-
                     useIdsInComponentTree ?
                         props.element.id :
                         (
@@ -224,10 +233,11 @@ interface TreeElementIcon {
 
 function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: RootElement | undefined, element: AnyElement): TreeElementIcon[] {
     const icons: TreeElementIcon[] = [];
+    const functionStatus = getFunctionStatus(element);
 
     if (useTestMode) {
-        const professionalTestMissing = element.professionalTest == null;
-        const technicalTestMissing = hasElementFunction(element) && element.technicalTest == null;
+        const professionalTestMissing = element.testProtocolSet?.professionalTest == null;
+        const technicalTestMissing = functionStatus.length > 0 && element.testProtocolSet?.technicalTest == null;
 
         if (professionalTestMissing) {
             icons.push({
@@ -267,17 +277,33 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
         }
     }
 
-    if (hasElementFunction(element)) {
+    const noCodeUsages = root != null ? findNoCodeUsage(element, root) : [];
+    if (noCodeUsages.length > 0) {
         icons.push({
-            icon: faCircleF,
-            tooltip: 'Individuelle Funktionen definiert',
+            icon: faCircleBolt,
+            tooltip: 'Von No-Code Funktion referenziert: ' + noCodeUsages.map(generateComponentTitle).join(', '),
         });
-    } else if (hasElementFunctionRequirement(element)) {
-        icons.push({
-            color: 'error',
-            icon: faCircleF,
-            tooltip: 'Individuelle Funktionen erforderlich',
-        });
+    }
+
+    if (functionStatus.length > 0) {
+        if (functionStatus.every(s => s.status === 'done')) {
+            icons.push({
+                icon: faCircleF,
+                tooltip: 'Individuelle Funktionen definiert',
+            });
+        } else if (functionStatus.some(s => s.status === 'todo')) {
+            icons.push({
+                color: 'error',
+                icon: faCircleF,
+                tooltip: 'Individuelle Funktionen erforderlich',
+            });
+        } else if (functionStatus.some(s => s.status === 'unnecessary')) {
+            icons.push({
+                color: 'error',
+                icon: faQuestionCircle,
+                tooltip: 'Individuelle Funktionen definiert aber keine Anforderung vorhanden',
+            });
+        }
     }
 
     return icons;

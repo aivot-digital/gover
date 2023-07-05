@@ -36,12 +36,19 @@ export function ElementEditorTabs<T extends AnyElement>({component, currentTab, 
                 />
             }
             {
+                ElementIsInput[component.type] &&
+                <Tab
+                    label="Dynamischer Wert"
+                    value={DefaultTabs.value}
+                />
+            }
+            {
                 component.type !== ElementType.Root &&
                 component.type !== ElementType.IntroductionStep &&
                 component.type !== ElementType.SummaryStep &&
                 component.type !== ElementType.SubmitStep &&
                 <Tab
-                    label="Dynamische Werte"
+                    label="Dynamische Struktur"
                     value={DefaultTabs.patch}
                 />
             }

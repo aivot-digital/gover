@@ -1,15 +1,15 @@
-import {StepElement} from '../../models/elements/step-elements/step-element';
+import {StepElement} from '../../models/elements/steps/step-element';
 import {Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Select, TextField} from '@mui/material';
-import {BaseEditorProps} from '../_lib/base-editor-props';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {StepIcons} from '../../data/step-icons';
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
     return (
         <>
             <TextField
-                value={props.component.title ?? ''}
-                label="Name des Abschnitts"
+                value={props.element.title ?? ''}
+                label="Titel des Abschnitts"
                 fullWidth
                 margin="normal"
                 onChange={event => props.onPatch({
@@ -26,14 +26,17 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                 <Select
                     labelId="icon-select-label"
                     label="Icon"
-                    value={props.component.icon ?? null}
+                    value={props.element.icon ?? ''}
                     onChange={event => props.onPatch({
                         icon: event.target.value ?? '',
                     })}
                 >
                     {
                         StepIcons.map(stepIcon => (
-                            <MenuItem value={stepIcon.id}>
+                            <MenuItem
+                                key={stepIcon.id}
+                                value={stepIcon.id}
+                            >
                                 <Box sx={{display: 'flex', alignItems: 'center'}}>
                                     <ListItemIcon>
                                         <FontAwesomeIcon icon={stepIcon.def}/>

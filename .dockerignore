@@ -4,3 +4,6 @@
 ./target
 ./app/node_modules
 ./src/main/resources/static
+./.DS_Store
+/pg_data/
+*.tar

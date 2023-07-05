@@ -7,6 +7,8 @@ const initialState: {
     original?: AnyElement;
 } = {};
 
+// TODO: Check is rquired and remove
+
 const currentlyEditingElementSlice = createSlice({
     name: 'currentlyEditingElement',
     initialState,

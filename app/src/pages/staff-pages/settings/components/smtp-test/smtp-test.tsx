@@ -1,10 +1,7 @@
 import React, {FormEvent, useState} from 'react';
-import {Alert, AlertTitle, Box, Button, TextField, Typography, CircularProgress} from '@mui/material';
-import axios from "axios";
-import {ApiConfig} from "../../../../../api-config";
-import {CrudService} from "../../../../../services/crud.service";
+import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
+import {SystemService} from "../../../../../services/system-service";
 
-const smtpTestAddress = `${ApiConfig.address}/system/test-smtp`;
 
 export function SmtpTest() {
     const [targetEmail, setTargetEmail] = useState('');
@@ -15,30 +12,19 @@ export function SmtpTest() {
         event.preventDefault();
         event.stopPropagation();
 
-        const testPayload = {
-            targetMail: targetEmail,
-        };
-
         setIsSending(true);
         setEmailTestResult(undefined);
 
-        axios.post(
-            smtpTestAddress,
-            testPayload, {
-                ...CrudService.getConfig(),
-                timeout: 1000 * 60 * 5 // Set 5 Minutes Timeout
-            }
-        )
+        SystemService.testSmtp(targetEmail)
             .then(res => {
-                console.log(res);
-                if (res.data.result != null) {
-                    setEmailTestResult(res.data.result);
+                if (res.result != null) {
+                    setEmailTestResult(res.result);
                 } else {
                     setEmailTestResult(true);
                 }
             })
             .catch(err => {
-                console.log(err);
+                console.error(err);
                 if (err.response != null && err.response.data != null && err.response.data.message != null) {
                     setEmailTestResult(err.response.data.message);
                 } else {

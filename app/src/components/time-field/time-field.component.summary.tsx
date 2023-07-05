@@ -1,9 +1,9 @@
-import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Grid, Typography} from '@mui/material';
-import {TimeFieldElement} from '../../models/elements/form-elements/input-elements/time-field-element';
+import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
 import {format} from 'date-fns';
+import { BaseSummaryProps } from '../../summaries/base-summary';
 
-export function TimeFieldComponentSummary({model, value}: BaseSummaryProps<TimeFieldElement>) {
+export function TimeFieldComponentSummary({model, value}: BaseSummaryProps<TimeFieldElement, string>) {
     const date = value != null && value.length > 0 && new Date(value);
 
     return (

@@ -8,9 +8,11 @@ export interface AdminSettingsState {
     hideComponentTree: boolean;
     useTestMode: boolean;
     isDraggingTreeElement: boolean;
+    expandElementTree: undefined | 'expanded' | 'collapsed';
     showUserInput: boolean;
     warnDuplicateIds: boolean;
     showDebugOutput: boolean;
+    treeElementSearch?: string;
 }
 
 const initialState: AdminSettingsState = {
@@ -20,9 +22,11 @@ const initialState: AdminSettingsState = {
     hideComponentTree: false,
     useTestMode: false,
     isDraggingTreeElement: false,
+    expandElementTree: undefined,
     showUserInput: false,
     warnDuplicateIds: false,
     showDebugOutput: false,
+    treeElementSearch: undefined,
 };
 
 const adminSettingsSlice = createSlice({
@@ -56,10 +60,16 @@ const adminSettingsSlice = createSlice({
         toggleShowDebugOutput: (state) => {
             state.showDebugOutput = !state.showDebugOutput;
         },
+        setTreeElementSearch: (state, action: PayloadAction<string | undefined>) => {
+            state.treeElementSearch = action.payload;
+        },
         resetAdminSettings: (state) => {
             for (const key of Object.keys(initialState)) {
                 (state as any)[key] = (initialState as any)[key];
             }
+        },
+        setExpandElementTree: (state, action: PayloadAction<undefined | 'expanded' | 'collapsed'>) => {
+            state.expandElementTree = action.payload;
         },
     },
 });
@@ -75,6 +85,8 @@ export const {
     toggleWarnDuplicateIds,
     toggleShowDebugOutput,
     resetAdminSettings,
+    setTreeElementSearch,
+    setExpandElementTree,
 } = adminSettingsSlice.actions;
 
 export const selectDisableVisibility = (state: RootState) => state.adminSettings.disableVisibility;
@@ -86,5 +98,6 @@ export const selectIsDraggingTreeElement = (state: RootState) => state.adminSett
 export const selectShowUserInput = (state: RootState) => state.adminSettings.showUserInput;
 export const selectWarnDuplicateIds = (state: RootState) => state.adminSettings.warnDuplicateIds;
 export const selectShowDebugOutput = (state: RootState) => state.adminSettings.showDebugOutput;
+export const selectTreeElementSearch = (state: RootState) => state.adminSettings.treeElementSearch;
 
 export const adminSettingsReducer = adminSettingsSlice.reducer;

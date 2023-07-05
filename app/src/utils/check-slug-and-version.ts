@@ -1,21 +1,29 @@
-import {Application} from '../models/application';
+import {Application} from "../models/entities/application";
+import {ListApplication} from "../models/entities/list-application";
 
-export function checkSlugAndVersion(applications: Application[], slug?: string, version?: string): string[] {
-    const errors: string[] = [];
+export function checkSlugAndVersion(applications: Application[] | ListApplication[], slug?: string, version?: string): {
+    slugError?: string;
+    versionError?: string;
+} {
+    const errors: {
+        slugError?: string;
+        versionError?: string;
+    } = {};
 
     const trimmedSlug = slug?.trim() ?? '';
     const trimmedVersion = version?.trim() ?? '';
 
     if (trimmedSlug.length < 3) {
-        errors.push('Das URL-Element des Antrages muss aus mindestens 3 Zeichen bestehen.');
+        errors.slugError = 'Das URL-Element des Formulars muss aus mindestens 3 Zeichen bestehen.';
     }
 
     if (!/^[a-z0-9-]+$/.test(trimmedSlug)) {
-        errors.push('Das URL-Element des Antrages kann nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.');
+        errors.slugError = 'Das URL-Element des Formulars kann nur aus Kleinbuchstaben (ohne Umlaute), Zahlen und Bindestrichen bestehen.';
     }
 
     if (applications != null && applications?.some(app => app.slug === trimmedSlug && app.version === trimmedVersion)) {
-        errors.push('Es existiert bereits ein Antrag mit diesem URL-Element und dieser Version.');
+        errors.slugError = 'Es existiert bereits ein Formular mit diesem URL-Element und dieser Version.';
+        errors.versionError = 'Es existiert bereits ein Formular mit diesem URL-Element und dieser Version.';
     }
 
     return errors;

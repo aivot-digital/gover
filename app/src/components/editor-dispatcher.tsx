@@ -1,25 +1,24 @@
 import React from 'react';
-import {EditorMap, EditorType, EditorTypeSet, isEditorTypeSet} from './editor.map';
-import {BaseEditorProps} from './_lib/base-editor-props';
 import {EditorDispatcherProps} from './editor-dispatcher-props';
 import {AnyElement} from '../models/elements/any-element';
+import Editors from "../editors";
+import {BaseEditorProps} from "../editors/base-editor";
 
 export function EditorDispatcher<T extends AnyElement>({onPatch, props, additionalTabIndex}: EditorDispatcherProps<T>) {
-    let Component: EditorType | EditorTypeSet = EditorMap[props.type];
-    if (Component == null) {
+    let editorSet = Editors[props.type];
+    if (editorSet == null) {
         return null;
     }
 
-    if (isEditorTypeSet(Component)) {
-        if (additionalTabIndex != null && Component.additionalTabs.length > additionalTabIndex) {
-            Component = Component.additionalTabs[additionalTabIndex].editor;
-        } else {
-            Component = Component.root;
-        }
+    let Component = null;
+    if (additionalTabIndex != null && editorSet.additionalTabs != null && editorSet.additionalTabs.length > additionalTabIndex) {
+        Component = editorSet.additionalTabs[additionalTabIndex].editor;
+    } else {
+        Component = editorSet.default;
     }
 
     const editorProps: BaseEditorProps<T> = {
-        component: props,
+        element: props,
         onPatch,
     }
 

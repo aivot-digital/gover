@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {TimeFieldElement} from '../../models/elements/form-elements/input-elements/time-field-element';
+import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
 
 export class TimeFieldComponentValidator extends BaseInputElementValidator<string, TimeFieldElement> {
     protected checkEmpty(comp: TimeFieldElement, value: string): boolean {

@@ -10,17 +10,17 @@ import {
     DialogTitle,
     Typography
 } from '@mui/material';
-import {UserInputService} from '../../services/user-input.service';
+import {UserInputService} from '../../services/user-input-service';
 import {useDispatch} from 'react-redux';
 import {setUserInput} from '../../slices/customer-input-slice';
 import {format} from 'date-fns';
 import {faArrowRotateLeft, faFileImport} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {PrivacyUserInputKey} from '../../components/general-information/general-information.component.view';
-import {Application} from '../../models/application';
+import {Application} from '../../models/entities/application';
 import {Logo} from '../../components/static-components/logo/logo';
 import {CustomerInput} from "../../models/customer-input";
-import {isFileUploadElementItem} from "../../models/elements/form-elements/input-elements/file-upload-element";
+import {isFileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
 
 interface LoadUserInputDialogProps {
     application: Application;

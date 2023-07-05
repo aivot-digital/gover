@@ -1,13 +1,13 @@
 import {Alert, Button, TextField, Typography} from '@mui/material';
 import React, {FormEvent, useCallback, useState} from 'react';
-import {UsersService} from '../../../../services/users.service';
-import {isNullOrEmpty} from '../../../../utils/is-null-or-empty';
-import strings from './profile-password-change-strings.json';
-import {Localization} from '../../../../locale/localization';
+import {UsersService} from '../../../../services/users-service';
+import {isStringNullOrEmpty} from "../../../../utils/string-utils";
+import {useAppSelector} from "../../../../hooks/use-app-selector";
+import {selectUser} from "../../../../slices/user-slice";
 
-const __ = Localization(strings);
 
 export function ProfilePasswordChange() {
+    const user = useAppSelector(selectUser);
     const [newPassword, setNewPassword] = useState('');
     const [newPassword2, setNewPassword2] = useState('');
 
@@ -17,19 +17,26 @@ export function ProfilePasswordChange() {
     const handlePasswordSet = useCallback((event: FormEvent) => {
         event.preventDefault();
 
+        if (user == null) {
+            return false;
+        }
+
         if (newPassword !== newPassword2) {
-            setPasswordError(__.passwordErrorNotMatching);
+            setPasswordError('Die beiden Passwörter stimmen nicht überein');
             return false;
         }
         if (newPassword.length < 6) {
-            setPasswordError(__.passwordErrorLength);
+            setPasswordError('Das Passwort muss aus mindestens 6 Zeichen bestehen');
             return false;
         }
 
         setPasswordError(undefined);
-        UsersService.setPassword(newPassword)
+        UsersService.update(user.id, {
+            ...user,
+            password: newPassword,
+        })
             .catch(err => {
-                setPasswordError(__.passwordErrorFailed);
+                setPasswordError('Passwort konnte nicht gesetzt werden');
                 console.error(err);
             });
         setNewPassword('');
@@ -43,10 +50,10 @@ export function ProfilePasswordChange() {
     return (
         <form onSubmit={handlePasswordSet}>
             <Typography variant="subtitle1">
-                {__.passwordTitle}
+                Passwort
             </Typography>
             <TextField
-                label={__.passwordLabel}
+                label="Passwort"
                 type="password"
                 value={newPassword}
                 required
@@ -56,10 +63,10 @@ export function ProfilePasswordChange() {
                     setPasswordError(undefined);
                 }}
                 helperText={passwordError}
-                error={!isNullOrEmpty(passwordError)}
+                error={!isStringNullOrEmpty(passwordError)}
             />
             <TextField
-                label={__.retypePasswordLabel}
+                label="Passwort erneut eingeben"
                 type="password"
                 value={newPassword2}
                 required
@@ -69,13 +76,13 @@ export function ProfilePasswordChange() {
                     setPasswordError(undefined);
                 }}
                 helperText={passwordError}
-                error={!isNullOrEmpty(passwordError)}
+                error={!isStringNullOrEmpty(passwordError)}
             />
 
             {
                 passwordChanged &&
                 <Alert sx={{mt: 2}}>
-                    {__.passwordChangeSuccess}
+                    Passwort erfolgreich geändert!
                 </Alert>
             }
 
@@ -84,7 +91,7 @@ export function ProfilePasswordChange() {
                 sx={{mt: 2}}
                 disabled={newPassword.length === 0}
             >
-                {__.changePasswordLabel}
+                Passwort ändern
             </Button>
         </form>
     );

@@ -1,16 +1,17 @@
 import {BaseValidator} from './base-validator';
-import {isComponentVisible} from '../utils/is-component-visible';
-import {loadValidityFunction} from '../utils/load-function';
-import {AnyInputElement} from '../models/elements/form-elements/input-elements/any-input-element';
+import {isElementVisible} from '../utils/is-element-visible';
+import {AnyInputElement} from "../models/elements/form/input/any-input-element";
+import {evaluateFunction} from "../utils/evaluate-function";
+import {AnyElement} from "../models/elements/any-element";
 
 export abstract class BaseInputElementValidator<T, M extends AnyInputElement> extends BaseValidator<M> {
-    makeErrors(id: string, comp: M, userInput: any): string | null {
-        const isVisible = isComponentVisible(id, comp, userInput);
+    makeErrors(allElements: AnyElement[], idPrefix: string | undefined, id: string, comp: M, userInput: any): string | null {
+        const isVisible = isElementVisible(idPrefix, allElements, id, comp, userInput);
         if (!isVisible) {
             return null;
         }
 
-        const value: T | undefined = userInput[id] ?? comp.value;
+        const value: T | undefined = userInput[id]; // TODO: Compute value ?? comp.computeValue;
 
         if (comp.required && (value == null || this.checkEmpty(comp, value))) {
             return this.getEmptyErrorText(comp);
@@ -21,18 +22,14 @@ export abstract class BaseInputElementValidator<T, M extends AnyInputElement> ex
             return specificError;
         }
 
-        const func = loadValidityFunction(comp);
-        if (func != null) {
-            try {
-                const error: string | null = func(userInput, comp, id);
-                if (error != null) {
-                    return error;
-                }
-            } catch (err) {
-                console.error('Failed to run validator of ID ' + id, err);
-            }
+        let error: string | null = null;
+        try {
+            error = evaluateFunction(idPrefix, allElements, comp.validate, userInput, comp, id, false);
+        } catch (err) {
+            console.error('Failed to run validator of ID ' + id, err);
         }
-        return null;
+
+        return error;
     }
 
     protected abstract makeSpecificErrors(comp: M, value: T | undefined, userInput: any): string | null;

@@ -2,23 +2,43 @@ import React from 'react';
 import {AppToolbarProps} from './app-toolbar-props';
 import {AppBar, Box, IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faArrowLeft} from '@fortawesome/pro-light-svg-icons';
-import {Link} from 'react-router-dom';
+import {faArrowLeft, faHome} from '@fortawesome/pro-light-svg-icons';
+import {Link, useNavigate} from 'react-router-dom';
 
-export function AppToolbar({title, parentPath, actions, noPlaceholder}: AppToolbarProps) {
+export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
+    const navigate = useNavigate();
+
     return (
         <>
             <AppBar position="fixed">
                 <Toolbar color="primary">
-                    <IconButton
-                        size="small"
-                        edge="start"
-                        component={Link}
-                        to={parentPath}
-                        color="inherit"
-                    >
-                        <FontAwesomeIcon icon={faArrowLeft}/>
-                    </IconButton>
+                    <Tooltip title="Zur Startseite">
+                        <IconButton
+                            size="small"
+                            edge="start"
+                            component={Link}
+                            to="/overview"
+                            color="inherit"
+                        >
+                            <FontAwesomeIcon icon={faHome}/>
+                        </IconButton>
+                    </Tooltip>
+
+
+                    <Tooltip title="Schritt Zurück">
+                        <IconButton
+                            size="small"
+                            edge="start"
+                            onClick={() => navigate(-1)}
+                            color="inherit"
+                            sx={{
+                                ml: 1,
+                            }}
+                        >
+                            <FontAwesomeIcon icon={faArrowLeft}/>
+                        </IconButton>
+                    </Tooltip>
+
                     <Typography
                         variant="h6"
                         component="div"

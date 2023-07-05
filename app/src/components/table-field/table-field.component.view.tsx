@@ -1,9 +1,9 @@
 import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
-import {TableFieldElement} from '../../models/elements/form-elements/input-elements/table-field-element';
+import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {DataGrid, GridColumns, GridRenderCellParams, GridSelectionModel} from '@mui/x-data-grid';
 import {useCallback, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
-import {BaseViewProps} from '../_lib/base-view-props';
+import {BaseViewProps} from "../../views/base-view";
 
 export function TableFieldComponentView({element, value, error, setValue}: BaseViewProps<TableFieldElement, any[]>) {
     const [selectionModel, setSelectionModel] = useState<GridSelectionModel>();
@@ -28,7 +28,8 @@ export function TableFieldComponentView({element, value, error, setValue}: BaseV
 
     const handleDelete = useCallback(() => {
         if (element.id != null && selectionModel != null) {
-            setValue((value ?? []).filter((_: any, index: number) => !selectionModel.includes(index)));
+            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectionModel.includes(index));
+            setValue(updatedRows.length > 0 ? updatedRows : undefined);
             setSelectionModel(undefined);
         }
     }, [element.id, selectionModel, setValue, value]);

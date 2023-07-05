@@ -1,5 +1,0 @@
-export interface ProviderLink {
-    id: number;
-    text: string;
-    link: string;
-}

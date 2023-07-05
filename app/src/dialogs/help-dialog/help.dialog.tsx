@@ -1,5 +1,5 @@
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography} from '@mui/material';
-import {BoxLinkComponentView} from '../../components/box-link/box-link.component.view';
+import {BoxLink} from '../../components/box-link/box-link';
 import React, {useEffect, useState} from 'react';
 import {styled} from '@mui/material/styles';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
@@ -8,17 +8,12 @@ import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import MuiAccordion, {AccordionProps} from '@mui/material/Accordion';
 import MuiAccordionSummary, {AccordionSummaryProps,} from '@mui/material/AccordionSummary';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Department} from '../../models/department';
+import {Department} from '../../models/entities/department';
 import {useSelector} from 'react-redux';
-import {DepartmentsService} from '../../services/departments.service';
+import {DepartmentsService} from '../../services/departments-service';
 import {HelpDialogProps} from './help-dialog-props';
-import {Localization} from '../../locale/localization';
-import strings from './help-dialog-strings.json';
 import {selectLoadedApplication} from '../../slices/app-slice';
 
-const _ = Localization(strings);
-
-// TODO: Localize
 
 export function HelpDialog(props: HelpDialogProps) {
     const application = useSelector(selectLoadedApplication);
@@ -27,13 +22,16 @@ export function HelpDialog(props: HelpDialogProps) {
 
     useEffect(() => {
         if (application != null) {
-            if (technicalDepartment == null && application.root.technicalSupport != null) {
-                DepartmentsService.retrieve(application.root.technicalSupport)
-                    .then(department => setTechnicalDepartment(department));
+            if (technicalDepartment == null && application.technicalSupportDepartment != null) {
+                DepartmentsService
+                    .retrieve(application.technicalSupportDepartment)
+                    .then(setTechnicalDepartment);
             }
-            if (specialDepartment == null && application.root.legalSupport != null) {
-                DepartmentsService.retrieve(application.root.legalSupport)
-                    .then(department => setSpecialDepartment(department));
+
+            if (specialDepartment == null && application.legalSupportDepartment != null) {
+                DepartmentsService
+                    .retrieve(application.legalSupportDepartment)
+                    .then(setSpecialDepartment);
             }
         }
     }, [application, technicalDepartment, specialDepartment]);
@@ -43,15 +41,13 @@ export function HelpDialog(props: HelpDialogProps) {
             open={props.open}
             maxWidth="md"
             scroll="paper"
-            onBackdropClick={props.onHide}
+            onClose={props.onHide}
             fullWidth={true}
         >
             <DialogTitleWithClose
-                id="help-dialog-title"
                 onClose={props.onHide}
-                closeTooltip={_.close}
             >
-                {_.title}
+                Hilfe für diesen Antrag
             </DialogTitleWithClose>
             <DialogContent>
 
@@ -64,23 +60,23 @@ export function HelpDialog(props: HelpDialogProps) {
                         item
                         xs={6}
                     >
-                        <BoxLinkComponentView
-                            link={`mailto:${specialDepartment?.specialSupportAddress}?subject=Fachlicher Support: ${application?.root.title}`}
+                        <BoxLink
+                            link={`mailto:${specialDepartment?.specialSupportAddress}?subject=Fachlicher Support: ${application?.title}`}
                         >
                             <span>Fachlicher Support</span><br/>
                             Unterstützung zum Inhalt <br/>und Ausfüllen des Antrages
-                        </BoxLinkComponentView>
+                        </BoxLink>
                     </Grid>
                     <Grid
                         item
                         xs={6}
                     >
-                        <BoxLinkComponentView
-                            link={`mailto:${technicalDepartment?.technicalSupportAddress}?subject=Technischer Support: ${application?.root.title}`}
+                        <BoxLink
+                            link={`mailto:${technicalDepartment?.technicalSupportAddress}?subject=Technischer Support: ${application?.title}`}
                         >
                             <span>Technischer Support</span><br/>
                             Unterstützung bei technischen Problemen und Fehlern
-                        </BoxLinkComponentView>
+                        </BoxLink>
                     </Grid>
                 </Grid>
 
@@ -230,7 +226,9 @@ const Accordion = styled((props: AccordionProps) => (
     <MuiAccordion
         disableGutters
         elevation={0}
-        square {...props} />
+        square
+        {...props}
+    />
 ))(({theme}) => ({
     border: `1px solid ${theme.palette.primary.dark}`,
     '&:not(:last-child)': {

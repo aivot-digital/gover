@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
 
-  gover-database:
+  database:
     image: postgres
     restart: always
     environment:
@@ -11,18 +11,45 @@ services:
       POSTGRES_DB: gover
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - ./pg_data:/var/lib/postgresql/data
+
+  clamav:
+    image: clamav/clamav
+    restart: always
 
   gover:
-    image: aivot-digital/gover
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - gover-database
+      - database
+      - clamav
     restart: always
     volumes:
-      - ./media:/app/media
-      - ./config:/app/config:ro
+      - ./data:/app/data
+    environment:
+      GOVER_DB_HOST: database
+      GOVER_DB_PORT: 5432
+      GOVER_DB_DATABASE: gover
+      GOVER_DB_USERNAME: gover
+      GOVER_DB_PASSWORD: gover
+
+      GOVER_CLAM_HOST: clamav
+      GOVER_CLAM_PORT: 3310
+
+      GOVER_SMTP_HOST: smtp.domain.de
+      GOVER_SMTP_PORT: 465
+      GOVER_SMTP_USERNAME: your_smtp_username
+      GOVER_SMTP_PASSWORD: your_smtp_password
+
+      GOVER_LOG_LEVEL: WARN
+      GOVER_JWT_SECRET: not-so-secret-key-plz-change-me
+      GOVER_FROM_MAIL: '"Gover" <noreply@domain.de>'
+      GOVER_REPORT_MAIL: admin@domain.de
+      GOVER_SENTRY_SERVER: your-sentry-server-project-dsn
+      GOVER_SENTRY_WEB_APP: your-sentry-web-project-dsn
+      GOVER_ENVIRONMENT: Local
+      GOVER_FILE_EXTENSIONS: pdf, docx, xlsx
+      GOVER_CONTENT_TYPES: application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
     ports:
-      - "8080:8080"
+      - "8080:8080/tcp"

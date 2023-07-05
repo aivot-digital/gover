@@ -1,5 +1,5 @@
-import {SpacerElement} from '../../models/elements/form-elements/content-elements/spacer-element';
-import {BaseViewProps} from '../_lib/base-view-props';
+import {SpacerElement} from '../../models/elements/form/content/spacer-element';
+import {BaseViewProps} from "../../views/base-view";
 
 export function SpacerComponentView({element}: BaseViewProps<SpacerElement, void>) {
     return (

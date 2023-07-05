@@ -1,28 +1,27 @@
-import {
-    ReplicatingContainerElement
-} from '../../models/elements/form-elements/layout-elements/replicating-container-element';
+import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {Box, Button, FormHelperText, FormLabel, Grid, Typography} from '@mui/material';
-import {stringOrDefault} from '../../utils/string-or-default';
 import {faPlusCircle, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {BaseViewProps} from '../_lib/base-view-props';
 import {useCallback, useEffect} from 'react';
-import {generateElementId} from '../../utils/generate-element-id';
+import {stringOrDefault} from "../../utils/string-utils";
+import {generateElementIdForReplicatingContainerChild, generateElementIdForType} from "../../utils/id-utils";
+import {BaseViewProps} from "../../views/base-view";
 
 export function ReplicatingContainerView({
+                                             allElements,
                                              setValue,
                                              element,
                                              value
-                                         }: BaseViewProps<ReplicatingContainerElement, string[]>) {
+                                         }: BaseViewProps<ReplicatingContainerLayout, string[]>) {
     useEffect(() => {
         if (element.minimumRequiredSets != null && element.minimumRequiredSets > 0 && (value == null || value.length < element.minimumRequiredSets)) {
-            setValue(Array.from({length: element.minimumRequiredSets}, (_, i) => generateElementId(i.toString())));
+            setValue(Array.from({length: element.minimumRequiredSets}, () => generateElementIdForReplicatingContainerChild()));
         }
     }, [setValue, value, element]);
 
     const handleAdd = useCallback(() => {
-        setValue([...(value ?? []), generateElementId('')]);
+        setValue([...(value ?? []), generateElementIdForReplicatingContainerChild()]);
     }, [setValue, value]);
 
     const handleDelete = useCallback((id: string) => {
@@ -92,8 +91,9 @@ export function ReplicatingContainerView({
                             {
                                 (element.children ?? []).map((child, childIndex) => (
                                     <ViewDispatcherComponent
+                                        allElements={allElements}
                                         key={childIndex}
-                                        model={child}
+                                        element={child}
                                         idPrefix={`${element.id}_${val}_`}
                                     />
                                 ))

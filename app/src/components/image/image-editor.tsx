@@ -1,12 +1,12 @@
 import {TextField} from '@mui/material';
-import {BaseEditorProps} from '../_lib/base-editor-props';
-import {ImageElement} from '../../models/elements/form-elements/content-elements/image-element';
+import {ImageElement} from '../../models/elements/form/content/image-element';
+import {BaseEditorProps} from "../../editors/base-editor";
 
 export function ImageEditor(props: BaseEditorProps<ImageElement>) {
     return (
         <>
             <TextField
-                value={props.component.src ?? ''}
+                value={props.element.src ?? ''}
                 label="Url"
                 fullWidth
                 margin="normal"
@@ -17,7 +17,7 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
 
 
             <TextField
-                value={props.component.alt ?? ''}
+                value={props.element.alt ?? ''}
                 label="Alt-Text"
                 fullWidth
                 margin="normal"

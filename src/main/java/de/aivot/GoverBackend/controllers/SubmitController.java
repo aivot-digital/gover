@@ -1,189 +1,347 @@
 package de.aivot.GoverBackend.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import de.aivot.GoverBackend.dtos.ApplicationDto;
-import de.aivot.GoverBackend.exceptions.ScriptRequiredException;
-import de.aivot.GoverBackend.models.Application;
-import de.aivot.GoverBackend.models.Department;
-import de.aivot.GoverBackend.models.Destination;
-import de.aivot.GoverBackend.models.SendCopyRequest;
+import de.aivot.GoverBackend.enums.ApplicationStatus;
+import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.dtos.CustomerSubmissionCopyRequestDto;
+import de.aivot.GoverBackend.models.dtos.SubmissionListDto;
+import de.aivot.GoverBackend.models.elements.RootElement;
+import de.aivot.GoverBackend.models.entities.*;
+import de.aivot.GoverBackend.pdf.ApplicationPdfDto;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
-import de.aivot.GoverBackend.repositories.DepartmentRepository;
-import de.aivot.GoverBackend.repositories.DestinationRepository;
+import de.aivot.GoverBackend.repositories.DepartmentMembershipRepository;
+import de.aivot.GoverBackend.repositories.SubmissionAttachmentRepository;
+import de.aivot.GoverBackend.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.services.*;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.mail.MessagingException;
-import javax.script.ScriptException;
+import javax.script.ScriptEngine;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @RestController
-@CrossOrigin
 public class SubmitController {
     private final ApplicationRepository applicationRepository;
-    private final DestinationRepository destinationRepository;
-    private final DepartmentRepository departmentRepository;
+    private final SubmissionRepository submissionRepository;
+    private final SubmissionAttachmentRepository submissionAttachmentRepository;
+    private final DepartmentMembershipRepository departmentMembershipRepository;
+    private final AVService avService;
     private final PdfService pdfService;
     private final DestinationSubmitService destinationSubmitService;
-    private final CustomerMailService customerMailService;
-    private final ScriptService scriptService;
-    private final SystemMailService systemMailService;
-    private final BlobService blobService;
+    private final MailService mailService;
+    private final SubmissionStorageService submissionStorageService;
 
     @Autowired
-    public SubmitController(ApplicationRepository applicationRepository, DestinationRepository destinationRepository, DepartmentRepository departmentRepository, PdfService pdfService, DestinationSubmitService destinationSubmitService, CustomerMailService customerMailService, ScriptService scriptService, SystemMailService systemMailService, BlobService blobService) {
+    public SubmitController(
+            ApplicationRepository applicationRepository,
+            SubmissionRepository submissionRepository,
+            SubmissionAttachmentRepository submissionAttachmentRepository,
+            DepartmentMembershipRepository departmentMembershipRepository,
+            AVService avService,
+            PdfService pdfService,
+            DestinationSubmitService destinationSubmitService,
+            MailService mailService,
+            SubmissionStorageService submissionStorageService) {
         this.applicationRepository = applicationRepository;
-        this.destinationRepository = destinationRepository;
-        this.departmentRepository = departmentRepository;
+        this.submissionRepository = submissionRepository;
+        this.submissionAttachmentRepository = submissionAttachmentRepository;
+        this.departmentMembershipRepository = departmentMembershipRepository;
+        this.avService = avService;
         this.pdfService = pdfService;
         this.destinationSubmitService = destinationSubmitService;
-        this.customerMailService = customerMailService;
-        this.scriptService = scriptService;
-        this.systemMailService = systemMailService;
-        this.blobService = blobService;
+        this.mailService = mailService;
+        this.submissionStorageService = submissionStorageService;
     }
 
     @GetMapping("/api/public/prints/{uuid}")
-    public ResponseEntity<Resource> getCode(@PathVariable String uuid) {
-        Path path = blobService.getPrintPdfPath(uuid);
+    public ResponseEntity<Resource> getPrint(@PathVariable String uuid) {
+        Optional<Submission> optSubmission = submissionRepository.findById(uuid);
+
+        if (optSubmission.isEmpty()) {
+            throw new ResourceNotFoundException();
+        }
+        Submission submission = optSubmission.get();
+
+        testSubmissionExpired(submission);
+
+        // Get the path to the generated pdf
+        Path path = submissionStorageService.getSubmissionPdfPath(submission.getId());
+
+        // Get pointer to the pdf file resource
+        Resource resource;
         try {
-            Resource resource = new UrlResource(path.toUri());
-            if (resource.exists() || resource.isReadable()) {
-                HttpHeaders responseHeaders = new HttpHeaders();
-                responseHeaders.setContentType(MediaType.APPLICATION_PDF);
-                responseHeaders.set("filename", uuid + ".pdf");
-                return ResponseEntity
-                        .ok()
-                        .headers(responseHeaders)
-                        .body(resource);
-            }
+            resource = new UrlResource(path.toUri());
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-        throw new ResourceNotFoundException();
+
+        // Check resource exists and is readable
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new ResourceNotFoundException();
+        }
+
+        // Create content disposition
+        ContentDisposition contentDisposition = ContentDisposition
+                .builder("inline")
+                .filename(submission.getApplication().getTitle() + ".pdf")
+                .build();
+
+        // Respond resource
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.APPLICATION_PDF);
+        responseHeaders.setContentDisposition(contentDisposition);
+
+        return ResponseEntity
+                .ok()
+                .headers(responseHeaders)
+                .body(resource);
     }
 
     @PostMapping("/api/public/submit/{applicationId}")
-    public String submit(@PathVariable Long applicationId, @RequestParam(value = "inputs") String inputs, @RequestParam(value = "files", required = false) MultipartFile[] files) {
-        Optional<Application> application = applicationRepository.findById(applicationId);
+    public SubmissionListDto submit(
+            Authentication authentication,
+            @PathVariable Integer applicationId,
+            @RequestParam(value = "inputs", required = true) String inputs,
+            @RequestParam(value = "files", required = false) MultipartFile[] files
+    ) {
+        // Fetch application
+        Optional<Application> fetchedApplication = applicationRepository.findById(applicationId);
 
-        Map<String, Object> customerData = new JSONObject(inputs).toMap();
+        if (fetchedApplication.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "No form with this version and slug"
+            );
+        }
+        Application application = fetchedApplication.get();
 
-        if (application.isPresent()) {
-            String validationError;
-            try {
-                validationError = scriptService.validateApplication(application.get(), customerData);
-            } catch (ScriptRequiredException | ScriptException | JsonProcessingException e) {
-                systemMailService.sendExceptionMail(e);
-                throw new RuntimeException(e);
-            }
-
-            if (validationError != null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationError);
-            }
-
-            Integer destinationId = (Integer) application.get().getRoot().get("destination");
-            Optional<Destination> destination = Optional.empty();
-            if (destinationId != null) {
-                destination = destinationRepository.findById(Long.valueOf(destinationId));
-            }
-
-            if (destination.isPresent() && destination.get().getMaxAttachmentMegaBytes() != null) {
-                long filesTotalBytes = 0;
-                for (MultipartFile file : files) {
-                    filesTotalBytes += file.getSize();
-                }
-                long allowedTotalBytes = destination.get().getMaxAttachmentMegaBytes() * 1000 * 1000;
-                if (filesTotalBytes > allowedTotalBytes) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Exceeded max allowed file size of destination");
-                }
-            }
-
-            ApplicationDto applicationDto;
-            try {
-                applicationDto = new ApplicationDto(application.get(), customerData, scriptService);
-            } catch (ScriptRequiredException | ScriptException | JsonProcessingException e) {
-                systemMailService.sendExceptionMail(e);
-                throw new RuntimeException(e);
-            }
-
-            String pdfUuid;
-            try {
-                pdfUuid = pdfService.generatePdf(application.get(), applicationDto);
-            } catch (IOException | InterruptedException e) {
-                systemMailService.sendExceptionMail(e);
-                throw new RuntimeException(e);
-            }
-
-            if (destination.isPresent()) {
-                try {
-                    destinationSubmitService.handleSubmit(destination.get(), application.get(), customerData, blobService.getPrintPdfPath(pdfUuid).toString(), files != null ? files : new MultipartFile[]{});
-                } catch (IOException | InterruptedException | MessagingException e) {
-                    systemMailService.sendExceptionMail(e);
-                    throw new RuntimeException(e);
-                }
-            }
-
-            return "/api/public/prints/" + pdfUuid;
+        // Test application published or user authenticated
+        if (application.getStatus() != ApplicationStatus.Published && (authentication == null || !authentication.isAuthenticated())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Requested form is not published"
+            );
         }
 
-        throw new ResourceNotFoundException();
+        // Test files for viruses
+        if (files != null) {
+            for (var file : files) {
+                if (!file.isEmpty()) {
+                    boolean fileExtensionAndContentTypeClean = avService.testContentTypeAndExtension(file);
+                    if (!fileExtensionAndContentTypeClean) {
+                        throw new ResponseStatusException(
+                                HttpStatus.NOT_ACCEPTABLE,
+                                "Extension or ContentType not allowed " + file.getOriginalFilename()
+                        );
+                    }
+
+                    try {
+                        if (!avService.testFile(file)) {
+                            throw new ResponseStatusException(
+                                    HttpStatus.NOT_ACCEPTABLE,
+                                    "Virus detected in " + file.getOriginalFilename()
+                            );
+                        }
+                    } catch (IOException ex) {
+                        throw new RuntimeException("Failed to check file integrity", ex);
+                    }
+                }
+            }
+        }
+
+        // Get Destination
+        Destination destination = application.getDestination();
+
+        if (files != null && files.length > 0 && destination != null && destination.getMaxAttachmentMegaBytes() != null) {
+            long filesTotalBytes = 0;
+            for (MultipartFile file : files) {
+                filesTotalBytes += file.getSize();
+            }
+            long allowedTotalBytes = destination.getMaxAttachmentMegaBytes() * 1000 * 1000;
+            if (filesTotalBytes > allowedTotalBytes) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Exceeded max allowed file size of destination"
+                );
+            }
+        }
+
+        // Initialize script engine
+        ScriptEngine scriptEngine = ScriptService.getEngine();
+
+        // Get customer input
+        Map<String, Object> customerInput = new JSONObject(inputs).toMap();
+
+        // Get root element
+        RootElement root = application.getRoot();
+
+        // Validate customer input
+        try {
+            root.validate(null, root, customerInput, scriptEngine);
+        } catch (ValidationException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Validation failed for field " + ex.getElement().getId() + ": " + ex.getMessage()
+            );
+        }
+
+        // Create application pdf dto
+        ApplicationPdfDto applicationDto = new ApplicationPdfDto(application, customerInput, scriptEngine);
+
+        // Prepare submission directory
+        String submissionId = UUID.randomUUID().toString();
+        try {
+            submissionStorageService.initSubmission(submissionId);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Generate print
+        try {
+            pdfService.generatePdf(application, applicationDto, submissionId);
+        } catch (IOException | InterruptedException e) {
+            mailService.sendExceptionMail(e);
+            throw new RuntimeException(e);
+        }
+
+        // Create submission
+        Submission submission = new Submission();
+        submission.setId(submissionId);
+        submission.setCreated(LocalDateTime.now());
+        submission.setApplication(application);
+        submission.setAssignee(null);
+        submission.setCustomerInput(customerInput);
+        if (application.getDestination() != null) {
+            submission.setDestination(application.getDestination());
+        }
+        submissionRepository.save(submission);
+
+        // Save attachments to submission folder
+        List<SubmissionAttachment> attachments = new LinkedList<>();
+        if (files != null) {
+            for (var file : files) {
+                if (!file.isEmpty()) {
+                    String attachmentId = UUID.randomUUID().toString();
+                    Path filePath = submissionStorageService.getSubmissionAttachmentPath(submissionId, attachmentId);
+                    try {
+                        file.transferTo(filePath);
+                        file.getInputStream().close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    SubmissionAttachment attachment = new SubmissionAttachment();
+                    attachment.setId(attachmentId);
+                    attachment.setSubmission(submission);
+
+                    if (file.getOriginalFilename() != null) {
+                        if (file.getOriginalFilename().length() > 255) {
+                            attachment.setFilename(file.getOriginalFilename().substring(0, 255));
+                        } else {
+                            attachment.setFilename(file.getOriginalFilename());
+                        }
+                    } else {
+                        attachment.setFilename(submissionId);
+                    }
+
+                    attachments.add(submissionAttachmentRepository.save(attachment));
+                }
+            }
+        }
+
+        if (destination != null) {
+            try {
+                destinationSubmitService.handleSubmit(
+                        submission,
+                        attachments
+                );
+                submission.setDestinationSuccess(true);
+                submission.setArchived(LocalDateTime.now());
+                submissionRepository.save(submission);
+            } catch (IOException | InterruptedException | MessagingException e) {
+                submission.setDestinationSuccess(false);
+                submission.setArchived(null);
+                submissionRepository.save(submission);
+                mailService.sendExceptionMail(e);
+            }
+        } else {
+            Collection<DepartmentMembership> usersToNotify;
+
+            if (application.getManagingDepartment() != null) {
+                usersToNotify = departmentMembershipRepository
+                        .findAllByDepartmentId(application.getManagingDepartment().getId());
+            } else if (application.getResponsibleDepartment() != null) {
+                usersToNotify = departmentMembershipRepository
+                        .findAllByDepartmentId(application.getResponsibleDepartment().getId());
+            } else {
+                usersToNotify = null;
+            }
+
+            if (usersToNotify != null) {
+                usersToNotify
+                        .stream()
+                        .map(DepartmentMembership::getUser)
+                        .filter(User::isActive)
+                        .forEach(user -> {
+                            mailService.sendInfoMail(
+                                    "Neuer Online-Antrag für " + application.getTitle(),
+                                    "In Gover ist ein neuer Antrag für das Formular \"" + application.getTitle() + "\" eingegangen.",
+                                    user.getEmail()
+                            );
+                        });
+            }
+        }
+
+        return new SubmissionListDto(submission);
     }
 
-    @PostMapping("/api/public/send-copy/{applicationId}")
-    public ResponseEntity<HttpStatus> sendCopy(@PathVariable Long applicationId, @RequestBody SendCopyRequest sendCopyRequest) {
-        Optional<Application> application = applicationRepository.findById(applicationId);
-        if (application.isPresent()) {
-            Map<String, Object> introStep = (Map<String, Object>) application.get().getRoot().get("introductionStep");
+    @PostMapping("/api/public/send-copy/{submissionId}")
+    public ResponseEntity<HttpStatus> sendCopy(@PathVariable String submissionId, @RequestBody CustomerSubmissionCopyRequestDto customerSubmissionCopyRequestDto) {
+        Optional<Submission> optSubmission = submissionRepository.findById(submissionId);
 
-            Object storedDepartmentId = introStep.get("managingDepartment");
-            if (storedDepartmentId == null || (storedDepartmentId instanceof String && ((String) storedDepartmentId).isEmpty())) {
-                storedDepartmentId = introStep.get("responsibleDepartment");
-            }
-
-            Long departmentId = null;
-            if (storedDepartmentId != null) {
-                if (storedDepartmentId instanceof String) {
-                    departmentId = Long.valueOf((String) storedDepartmentId);
-                } else if (storedDepartmentId instanceof Integer) {
-                    departmentId = Long.valueOf((Integer) storedDepartmentId);
-                } else if (storedDepartmentId instanceof Long) {
-                    departmentId = (Long) storedDepartmentId;
-                }
-            }
-
-            Department department = null;
-            if (departmentId != null) {
-                Optional<Department> _department = departmentRepository.findById(departmentId);
-                if (_department.isPresent()) {
-                    department = _department.get();
-                }
-            }
-
-            try {
-                customerMailService.sendApplicationCopyMail(sendCopyRequest.getEmail(), application.get(), department, sendCopyRequest.getPdfLink());
-            } catch (IOException e) {
-                systemMailService.sendExceptionMail(e);
-                throw new RuntimeException(e);
-            } catch (MessagingException e) {
-                throw new RuntimeException(e);
-            }
+        if (optSubmission.isEmpty()) {
+            throw new ResourceNotFoundException();
         }
+        Submission submission = optSubmission.get();
+
+        testSubmissionExpired(submission);
+
+        try {
+            mailService.sendApplicationCopyMail(customerSubmissionCopyRequestDto.getEmail(), submission);
+        } catch (IOException e) {
+            mailService.sendExceptionMail(e);
+            throw new RuntimeException(e);
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
+
         return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    private void testSubmissionExpired(Submission submission) {
+        Integer accessHours;
+        if (submission.getApplication().getCustomerAccessHours() != null) {
+            accessHours = submission.getApplication().getCustomerAccessHours();
+        } else {
+            accessHours = 4;
+        }
+
+        LocalDateTime expirationTimestamp = submission.getCreated().plusHours(accessHours);
+        LocalDateTime currentTimestamp = LocalDateTime.now();
+        if (currentTimestamp.isAfter(expirationTimestamp)) {
+            throw new ResourceNotFoundException();
+        }
     }
 }

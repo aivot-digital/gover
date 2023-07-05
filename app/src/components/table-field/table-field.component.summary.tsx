@@ -1,9 +1,10 @@
-import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Table, TableCell, TableContainer, TableHead, TableRow, Typography, TableBody, Grid} from '@mui/material';
-import {TableFieldElement} from '../../models/elements/form-elements/input-elements/table-field-element';
+import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
+import {BaseSummaryProps} from "../../summaries/base-summary";
 
-export function TableFieldComponentSummary({model, value}: BaseSummaryProps<TableFieldElement>) {
+// TODO: Value Type
+export function TableFieldComponentSummary({model, value}: BaseSummaryProps<TableFieldElement, any>) {
     return (
         <>
             <Grid
@@ -61,11 +62,13 @@ export function TableFieldComponentSummary({model, value}: BaseSummaryProps<Tabl
                                     </TableRow>
                                 )) :
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={(model.fields ?? []).length}
-                                    >
-                                        Keine Angabe
-                                    </TableCell>
+                                    {
+                                        (model.fields ?? []).map(field => (
+                                            <TableCell key={field.label}>
+                                                Keine Angaben
+                                            </TableCell>
+                                        ))
+                                    }
                                 </TableRow>
                         }
                     </TableBody>

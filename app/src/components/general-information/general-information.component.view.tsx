@@ -4,28 +4,35 @@ import {ElementType} from '../../data/element-type/element-type';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faFileArrowUp, faFileLines, faUser} from '@fortawesome/pro-light-svg-icons';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {IntroductionStepElement} from '../../models/elements/step-elements/introduction-step-element';
-import {BaseViewProps} from '../_lib/base-view-props';
+import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../static-components/fading-paper/fading-paper';
 import {Preamble} from '../static-components/preamble/preamble';
-import {Department} from '../../models/department';
-import {DepartmentsService} from '../../services/departments.service';
-import {selectLoadedApplication} from '../../slices/app-slice';
+import {Department} from '../../models/entities/department';
+import {DepartmentsService} from '../../services/departments-service';
+import {MetaDialog, selectLoadedApplication} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {isNullOrEmpty} from "../../utils/is-null-or-empty";
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import ProjectPackage from '../../../package.json';
+import {BaseViewProps} from "../../views/base-view";
+import {useLocation, useNavigate} from "react-router-dom";
+import {selectSystemConfigValue} from "../../slices/system-config-slice";
+import {SystemConfigKeys} from "../../data/system-config-keys";
 
 export const PrivacyUserInputKey = '__privacy__';
 
-export function GeneralInformationComponentView({element}: BaseViewProps<IntroductionStepElement, void>) {
+export function GeneralInformationComponentView({allElements, element}: BaseViewProps<IntroductionStepElement, void>) {
     const application = useAppSelector(selectLoadedApplication);
+    const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const theme = useTheme();
+    const location = useLocation();
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (element.responsibleDepartment != null && (element.responsibleDepartment as any) !== '') {
-            DepartmentsService.retrieve(element.responsibleDepartment)
+        if (application != null && application.responsibleDepartment != null) {
+            DepartmentsService
+                .retrieve(application.responsibleDepartment)
                 .then(setResponsibleDepartment);
         } else {
             setResponsibleDepartment(undefined);
@@ -33,8 +40,9 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
     }, [element]);
 
     useEffect(() => {
-        if (element.managingDepartment != null && (element.managingDepartment as any) !== '') {
-            DepartmentsService.retrieve(element.managingDepartment)
+        if (application != null && application.managingDepartment != null) {
+            DepartmentsService
+                .retrieve(application.managingDepartment)
                 .then(setManagingDepartment);
         } else {
             setManagingDepartment(undefined);
@@ -44,6 +52,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
     return (
         <>
             <Preamble
+                allElements={allElements}
                 text={element.teaserText ?? ''}
             />
 
@@ -54,8 +63,8 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                     (element.eligiblePersons && element.eligiblePersons.length > 0) ||
                     (element.supportingDocuments && element.supportingDocuments.length > 0) ||
                     (element.documentsToAttach && element.documentsToAttach.length > 0) ||
-                    !isNullOrEmpty(application?.root.expiring) ||
-                    !isNullOrEmpty(element.expectedCosts)
+                    !isStringNullOrEmpty(application?.root.expiring) ||
+                    !isStringNullOrEmpty(element.expectedCosts)
                 ) &&
                 <FadingPaper>
                     {
@@ -71,6 +80,12 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                                 component="pre"
                                 variant="body2"
                             >
+                                {
+                                    isStringNotNullOrEmpty(providerName) &&
+                                    <>
+                                        {providerName}<br/>
+                                    </>
+                                }
                                 {responsibleDepartment.name}<br/>
                                 {responsibleDepartment.address}
                             </Typography>
@@ -90,6 +105,12 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                                 component="pre"
                                 variant="body2"
                             >
+                                {
+                                    isStringNotNullOrEmpty(providerName) &&
+                                    <>
+                                        {providerName}<br/>
+                                    </>
+                                }
                                 {managingDepartment.name}<br/>
                                 {managingDepartment.address}
                             </Typography>
@@ -208,7 +229,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                     }
 
                     {
-                        !isNullOrEmpty(application?.root.expiring) &&
+                        !isStringNullOrEmpty(application?.root.expiring) &&
                         <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
                             <Typography
                                 variant="subtitle1"
@@ -226,7 +247,7 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                     }
 
                     {
-                        !isNullOrEmpty(element.expectedCosts) &&
+                        !isStringNullOrEmpty(element.expectedCosts) &&
                         <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
                             <Typography
                                 variant="subtitle1"
@@ -264,11 +285,12 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
                 <Box
                     sx={{maxWidth: '600px', mt: 1}}
                 >
-                    <ViewDispatcherComponent
-                        model={{
-                            id: 'privacyText',
-                            type: ElementType.Richtext,
-                            content: application.root.privacyText,
+                    <Typography
+                        variant="body2"
+                        dangerouslySetInnerHTML={{
+                            __html: application.root.privacyText
+                                .replace('{privacy}', `<a href="/#${location.pathname}?dialog=${MetaDialog.Privacy}">`)
+                                .replace('{/privacy}', '</a>')
                         }}
                     />
                 </Box>
@@ -276,8 +298,10 @@ export function GeneralInformationComponentView({element}: BaseViewProps<Introdu
 
             <Box>
                 <ViewDispatcherComponent
-                    model={{
+                    allElements={allElements}
+                    element={{
                         type: ElementType.Checkbox,
+                        appVersion: ProjectPackage.version,
                         label: 'Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen.',
                         id: PrivacyUserInputKey,
                         required: true,

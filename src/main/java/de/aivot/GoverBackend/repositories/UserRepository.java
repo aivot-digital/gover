@@ -1,16 +1,19 @@
 package de.aivot.GoverBackend.repositories;
 
-import de.aivot.GoverBackend.enums.UserRole;
-import de.aivot.GoverBackend.models.User;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import de.aivot.GoverBackend.models.entities.User;
+import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.Optional;
 
-@RepositoryRestResource(collectionResourceRel = "users", path = "users")
-public interface UserRepository extends PagingAndSortingRepository<User, Long>, CrudRepository<User, Long> {
-    Optional<User> findByEmail(String email);
+public interface UserRepository extends JpaRepository<User, Integer> {
+    Optional<User> getByEmail(String email);
 
-    boolean existsByRole(UserRole role);
+    boolean existsByEmail(String email);
+
+    Collection<User> findAllByOrderByEmail();
+    
+    Collection<User> findAllByAdminOrderByEmail(Boolean admin);
+
+    boolean existsByAdminIsTrue();
 }

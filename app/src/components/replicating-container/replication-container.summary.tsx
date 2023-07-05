@@ -1,9 +1,8 @@
-import {BaseSummaryProps} from '../_lib/base-summary-props';
 import {Box, Chip, Grid, Typography} from '@mui/material';
 import {
-    ReplicatingContainerElement
-} from '../../models/elements/form-elements/layout-elements/replicating-container-element';
-import {flattenElements} from '../summary/summary.component.view';
+    ReplicatingContainerLayout
+} from '../../models/elements/form/layout/replicating-container-layout';
+import {flattenElementsForSummary} from '../summary/summary.component.view';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
 import {faTurnDown} from '@fortawesome/pro-light-svg-icons';
@@ -11,21 +10,27 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {AnyElement} from '../../models/elements/any-element';
 import {useSelector} from "react-redux";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
+import {BaseSummaryProps} from "../../summaries/base-summary";
 
-export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummaryProps<ReplicatingContainerElement>) {
-    const id = idPrefix != null ? (idPrefix + model.id) : model.id;
+export function ReplicationContainerSummary({
+                                                allElements,
+                                                model,
+                                                value,
+                                                idPrefix
+                                            }: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
+    const prefixedId = idPrefix != null ? (idPrefix + model.id) : model.id;
+
+    const values: string[] = value ?? [];
 
     const customerInput = useSelector(selectCustomerInput);
 
     const makeChildModels = (val: string) => {
         let childModels: AnyElement[] = [];
         for (const child of model.children ?? []) {
-            childModels = childModels.concat(flattenElements(child, customerInput, `${id}_${val}_`));
+            childModels = childModels.concat(flattenElementsForSummary(allElements, child, customerInput, `${prefixedId}_${val}_`));
         }
         return childModels;
     };
-
-    const values: string[] = value ?? [];
 
     return (
         <>
@@ -51,6 +56,21 @@ export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummar
                         {model.label}
                     </Typography>
                 </Grid>
+
+                {
+                    values.length === 0 &&
+                    <Grid
+                        item
+                        xs={12}
+                        md={8}
+                    >
+                        <Typography
+                            variant="body2"
+                        >
+                            Keine Angaben
+                        </Typography>
+                    </Grid>
+                }
             </Grid>
 
             {
@@ -89,7 +109,7 @@ export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummar
                                 <Chip
                                     sx={{ml: -1}}
                                     size="small"
-                                    label={'Datensatz'}
+                                    label="Datensatz"
                                     variant="outlined"
                                 />
                             </Grid>
@@ -97,9 +117,10 @@ export function ReplicationContainerSummary({model, value, idPrefix}: BaseSummar
                         {
                             makeChildModels(val).map(child => (
                                 <SummaryDispatcherComponent
-                                    key={`${id}_${val}_${child.id}`}
-                                    model={child}
-                                    idPrefix={`${id}_${val}_`}
+                                    allElements={allElements}
+                                    key={`${prefixedId}_${val}_${child.id}`}
+                                    element={child}
+                                    idPrefix={`${prefixedId}_${val}_`}
                                 />
                             ))
                         }

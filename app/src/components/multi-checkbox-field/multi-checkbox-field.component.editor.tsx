@@ -1,113 +1,42 @@
-import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
-import {
-    MultiCheckboxFieldElement
-} from '../../models/elements/form-elements/input-elements/multi-checkbox-field-element';
-import {BaseEditorProps} from '../_lib/base-editor-props';
-import {normalizeLines, splitLineInputEvent} from '../../utils/split-line-input';
+import {MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
+import {StringListInput} from "../string-list-input/string-list-input";
+import {BaseEditorProps} from "../../editors/base-editor";
+import {NumberFieldComponent} from "../number-field/number-field-component";
 
 export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement>) {
     const minRequiredError = (
-        props.component.minimumRequiredOptions != null &&
-        props.component.options != null &&
-        props.component.minimumRequiredOptions > props.component.options.length
+        props.element.minimumRequiredOptions != null &&
+        props.element.options != null &&
+        props.element.minimumRequiredOptions > props.element.options.length
     );
 
     return (
         <>
-            <TextField
-                value={props.component.label ?? ''}
-                label="Titel"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    label: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={props.component.hint ?? ''}
-                label="Hinweis"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    hint: event.target.value,
-                })}
-            />
-
-            <TextField
-                value={(props.component.options ?? []).join('\n')}
+            <StringListInput
                 label="Optionen"
-                margin="normal"
-                multiline
-                rows={10}
-                helperText="Bitte geben Sie pro Zeile eine Option an."
-                onChange={event => props.onPatch({
-                    options: splitLineInputEvent(event),
+                addLabel="Option hinzufügen"
+                hint="Die Bürger:in kann eine oder mehrere dieser Optionen auswählen."
+                noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
+                value={props.element.options}
+                onChange={options => props.onPatch({
+                    options: options,
                 })}
-                onBlur={() => props.onPatch({
-                    options: normalizeLines(props.component.options),
-                })}
+                allowEmpty={false}
             />
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.required ?? false}
-                            onChange={event => props.onPatch({
-                                required: event.target.checked,
-                                minimumRequiredOptions: event.target.checked ? 1 : undefined,
-                            })}
-                        />
-                    }
-                    label="Pflichtangabe"
-                />
-            </FormControl>
 
             {
-                props.component.required &&
-                <FormControl>
-                    <TextField
-                        value={props.component.minimumRequiredOptions?.toString() ?? ''}
-                        label="Erforderliche Mindestanzahl"
-                        helperText={minRequiredError ? 'Sie fordern mehr Optionen als Sie angegeben haben.' : 'Geben Sie 0 ein, um keine Mindestanzahl zu fordern.'}
-                        onChange={event => {
-                            if (event.target.value === '') {
-                                props.onPatch({
-                                    minimumRequiredOptions: undefined,
-                                });
-                                return;
-                            }
-                            let val = parseInt(event.target.value ?? '0');
-                            if (isNaN(val)) {
-                                val = 0;
-                            }
-                            props.onPatch({
-                                minimumRequiredOptions: val,
-                            });
-                        }}
-                        onBlur={() => {
-                            if (props.component.minimumRequiredOptions == null || props.component.minimumRequiredOptions === 0) {
-                                props.onPatch({
-                                    required: false,
-                                });
-                            }
-                        }}
-                        error={minRequiredError}
-                    />
-                </FormControl>
-            }
-
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.component.disabled ?? false}
-                            onChange={event => props.onPatch({
-                                disabled: event.target.checked,
-                            })}
-                        />
-                    }
-                    label="Eingabe deaktiviert"
+                props.element.required &&
+                <NumberFieldComponent
+                    label="Erforderliche Mindestanzahl"
+                    value={props.element.minimumRequiredOptions ?? 1}
+                    onChange={val => props.onPatch({
+                        required: val === 0 ? false : props.element.required,
+                        minimumRequiredOptions: val === 0 ? undefined : val,
+                    })}
+                    error={minRequiredError ? 'Sie fordern mehr Optionen als Sie definiert haben.' : undefined}
+                    hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
                 />
-            </FormControl>
+            }
         </>
     );
 }
