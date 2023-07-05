@@ -1,14 +1,16 @@
-import axios from 'axios';
-import {CrudService} from './crud.service';
-import {User} from "../models/entities/user";
-import {RootElement} from "../models/elements/root-element";
 import {GroupLayout} from "../models/elements/form/layout/group-layout";
+import {StoreListResponse} from "../models/entities/store-list-response";
+import {StoreListForm} from "../models/entities/store-list-form";
+import {StoreCreateForm} from "../models/entities/store-create-form";
+import {StoreListModule} from "../models/entities/store-list-module";
+import {StoreDetailModule} from "../models/entities/store-detail-module";
+import {StoreCreateModule} from "../models/entities/store-create-module";
 
 export const storeBaseUrl = 'https://store.gover.digital/api/';
 
 class _GoverStoreService {
-    async listForms(page: number, search: string | undefined, key: string | undefined): Promise<any> {
-        const resp = await axios.get(
+    async listForms(page: number, search?: string, key?: string): Promise<StoreListResponse<StoreListForm>> {
+        const resp = await fetch(
             `${storeBaseUrl}forms/?page=${page}&size=20&search=${search ?? ''}`,
             key != null ? {
                 headers: {
@@ -16,41 +18,28 @@ class _GoverStoreService {
                 },
             } : undefined
         );
-        return resp.data;
+        return resp.json();
     }
 
     async publishForm(
         key: string,
-        root: RootElement,
-        version: string,
-        title: string,
-        description: string,
-        descriptionShort: string,
-        isPublic: boolean,
-        leikaIds: string[],
+        form: StoreCreateForm,
     ): Promise<any> {
-        const resp = await axios.post(
-            storeBaseUrl + 'forms/',
+        const resp = await fetch(
+            `${storeBaseUrl}forms/`,
             {
-                version: version,
-                title: title,
-                description: description,
-                description_short: descriptionShort,
-                is_public: isPublic,
-                leika_ids: leikaIds,
-                gover_root: root,
-            },
-            {
+                method: 'POST',
+                body: JSON.stringify(form),
                 headers: {
                     Authorization: key,
                 },
             }
         );
-        return resp.data;
+        return resp.json();
     }
 
-    async listModules(page: number, search: string | undefined, key: string | undefined): Promise<ListModule[]> {
-        const resp = await axios.get(
+    async listModules(page: number, search?: string, key?: string): Promise<StoreListResponse<StoreListModule>> {
+        const resp = await fetch(
             `${storeBaseUrl}modules/?page=${page}&size=999&search=${search ?? ''}`,
             key != null ? {
                 headers: {
@@ -58,11 +47,11 @@ class _GoverStoreService {
                 },
             } : undefined
         );
-        return resp.data.items;
+        return resp.json();
     }
 
-    async fetchModule(id: string, key: string | undefined): Promise<DetailModule> {
-        const resp = await axios.get(
+    async fetchModule(id: string, key?: string): Promise<StoreDetailModule> {
+        const resp = await fetch(
             `${storeBaseUrl}modules/${id}/`,
             key != null ? {
                 headers: {
@@ -70,11 +59,11 @@ class _GoverStoreService {
                 },
             } : undefined
         );
-        return resp.data;
+        return await resp.json();
     }
 
     async fetchModuleCode(id: string, version: string, key: string | undefined): Promise<GroupLayout> {
-        const resp = await axios.get(
+        const resp = await fetch(
             `${storeBaseUrl}modules/${id}/${version}/`,
             key != null ? {
                 headers: {
@@ -82,64 +71,26 @@ class _GoverStoreService {
                 },
             } : undefined
         );
-        return resp.data;
+        return await resp.json();
     }
 
     async publishModule(
         key: string,
-        root: GroupLayout,
-        version: string,
-        title: string,
-        description: string,
-        descriptionShort: string,
-        isPublic: boolean,
-        datenfeldId: string,
-    ): Promise<DetailModule> {
-        const resp = await axios.post(
-            storeBaseUrl + 'modules/',
+        module: StoreCreateModule,
+    ): Promise<StoreDetailModule> {
+        const resp = await fetch(
+            `${storeBaseUrl}modules/`,
             {
-                version: version,
-                title: title,
-                description: description,
-                description_short: descriptionShort,
-                is_public: isPublic,
-                datenfeld_id: datenfeldId,
-                gover_root: root,
-            },
-            {
+                method: 'POST',
+                body: JSON.stringify(module),
                 headers: {
                     Authorization: key,
                 },
             }
         );
-        return resp.data;
+        return resp.json();
     }
 }
 
 
 export const GoverStoreService = new _GoverStoreService();
-
-export interface ListModule {
-    current_version: string;
-    datenfeld_id: string;
-    description_short: string;
-    id: string;
-    is_public: boolean;
-    organization: string;
-    organization_id: string;
-    title: string;
-}
-
-export interface DetailModule {
-    id: string;
-    organization: string;
-    organization_id: string;
-    title: string;
-    description_short: string;
-    is_public: boolean;
-    current_version: string;
-    datenfeld_id: string;
-    description: string;
-    recent_changes: string;
-    versions: string[];
-}

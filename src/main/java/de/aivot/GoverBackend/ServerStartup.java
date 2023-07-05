@@ -2,12 +2,12 @@ package de.aivot.GoverBackend;
 
 import com.oracle.truffle.js.runtime.Strings;
 import com.sun.istack.NotNull;
-import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
-import de.aivot.GoverBackend.services.BlobService;
-import de.aivot.GoverBackend.services.SystemMailService;
+import de.aivot.GoverBackend.services.AssetStorageService;
+import de.aivot.GoverBackend.services.MailService;
+import de.aivot.GoverBackend.services.SubmissionStorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.sentry.Sentry;
 import org.slf4j.Logger;
@@ -25,17 +25,25 @@ import java.io.IOException;
 public class ServerStartup implements ApplicationListener<ApplicationReadyEvent> {
     private static final Logger logger = LoggerFactory.getLogger(ServerStartup.class);
     private final UserRepository userRepository;
-    private final SystemMailService systemMailService;
-    private final BlobService blobService;
+    private final MailService mailService;
+    private final SubmissionStorageService submissionStorageService;
+    private final AssetStorageService assetStorageService;
     private final GoverConfig goverConfig;
 
     private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Autowired
-    public ServerStartup(UserRepository userRepository, SystemMailService systemMailService, BlobService blobService, GoverConfig goverConfig) {
+    public ServerStartup(
+            UserRepository userRepository,
+            MailService mailService,
+            SubmissionStorageService submissionStorageService,
+            AssetStorageService assetStorageService,
+            GoverConfig goverConfig
+    ) {
         this.userRepository = userRepository;
-        this.systemMailService = systemMailService;
-        this.blobService = blobService;
+        this.mailService = mailService;
+        this.submissionStorageService = submissionStorageService;
+        this.assetStorageService = assetStorageService;
         this.goverConfig = goverConfig;
     }
 
@@ -44,36 +52,7 @@ public class ServerStartup implements ApplicationListener<ApplicationReadyEvent>
         setupSentry();
 
         createInitialAdminUser();
-
-        try {
-            blobService.init();
-        } catch (IOException e) {
-            logger.error("Failed to prepare storage", e);
-            systemMailService.sendExceptionMail(e);
-        }
-    }
-
-    private void createInitialAdminUser() {
-        boolean adminExists = userRepository.existsByRole(UserRole.Admin);
-        if (!adminExists) {
-            String initialEmail = "admin@gover.aivot.de";
-            String initialPassword = StringUtils.generateRandomString(12);
-
-            User newAdmin = new User();
-            newAdmin.setName("Default Admin User");
-            newAdmin.setEmail(initialEmail);
-            newAdmin.setActive(true);
-            newAdmin.setRole(UserRole.Admin);
-            newAdmin.setPassword(passwordEncoder.encode(initialPassword));
-            userRepository.save(newAdmin);
-
-            logger.info("Created default admin with email \"{}\" and password \"{}\"", initialEmail, initialPassword);
-
-            systemMailService.sendInfoMail(
-                    "Created a default admin",
-                    Strings.format("E-Mail: %s Password: %s", initialEmail, initialPassword).toString()
-            );
-        }
+        initializeStorages();
     }
 
     private void setupSentry() {
@@ -81,7 +60,49 @@ public class ServerStartup implements ApplicationListener<ApplicationReadyEvent>
             logger.info("Starting server with Sentry: {}.", goverConfig.getSentryServer());
             Sentry.init(options -> options.setDsn(goverConfig.getSentryServer()));
         } else {
-            logger.info("Starting server without Sentry.");
+            logger.warn("Starting server without Sentry.");
+        }
+    }
+
+    private void createInitialAdminUser() {
+        boolean adminExists = userRepository.existsByAdminIsTrue();
+        if (!adminExists) {
+            String initialEmail = "admin@gover.digital";
+            String initialPassword = StringUtils.generateRandomString(12);
+
+            User newAdmin = new User();
+            newAdmin.setName("Default Admin User");
+            newAdmin.setEmail(initialEmail);
+            newAdmin.setActive(true);
+            newAdmin.setAdmin(true);
+            newAdmin.setPassword(passwordEncoder.encode(initialPassword));
+            userRepository.save(newAdmin);
+
+            logger.warn("Created default admin with email \"{}\" and password \"{}\"", initialEmail, initialPassword);
+
+            mailService.sendInfoMail(
+                    "Standard-Administrator erstellt",
+                    Strings.format("E-Mail: %s Password: %s",
+                            initialEmail,
+                            initialPassword
+                    ).toString()
+            );
+        }
+    }
+
+    private void initializeStorages() {
+        try {
+            assetStorageService.init();
+        } catch (IOException e) {
+            logger.error("Failed to prepare asset storage", e);
+            mailService.sendExceptionMail(e);
+        }
+
+        try {
+            submissionStorageService.initRoot();
+        } catch (IOException e) {
+            logger.error("Failed to prepare submission storage", e);
+            mailService.sendExceptionMail(e);
         }
     }
 }

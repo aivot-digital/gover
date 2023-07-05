@@ -18,9 +18,11 @@ interface RichTextEditorComponentViewProps {
     label?: string;
     value: string;
     onChange: (text: string) => void;
+    required?: boolean;
+    error?: string;
 }
 
-export function RichTextEditorComponentView({value, onChange, label}: RichTextEditorComponentViewProps) {
+export function RichTextEditorComponentView({value, onChange, label, required, error}: RichTextEditorComponentViewProps) {
     const onChangeCallback = useEventCallback(({editor}: any) => {
         if (editor.isEmpty) {
             onChange('');
@@ -63,7 +65,7 @@ export function RichTextEditorComponentView({value, onChange, label}: RichTextEd
             {
                 label &&
                 <Typography sx={{mb: 2}}>
-                    {label}
+                    {label} {required ? ' *' : ''}
                 </Typography>
             }
             <RichTextEditorMenuComponentView editor={editor}/>
@@ -79,6 +81,13 @@ export function RichTextEditorComponentView({value, onChange, label}: RichTextEd
             >
                 <EditorContent editor={editor}/>
             </Paper>
+
+            {
+                error != null &&
+                <Typography variant="caption" color="error">
+                    {error}
+                </Typography>
+            }
         </>
     );
 }

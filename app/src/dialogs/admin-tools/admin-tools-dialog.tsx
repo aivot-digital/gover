@@ -21,15 +21,11 @@ import {
 } from '../../slices/admin-settings-slice';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {AdminToolsDialogProps} from './admin-tools-dialog-props';
-import {Localization} from "../../locale/localization";
-import strings from "./admin-tools-dialog-strings.json";
 import {selectLoadedApplication} from "../../slices/app-slice";
 import {useAppSelector} from "../../hooks/use-app-selector";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFileExport} from '@fortawesome/pro-light-svg-icons';
 import {downloadConfigFile} from "../../utils/download-utils";
-
-const _ = Localization(strings);
 
 const switches: {
     label: string;
@@ -38,26 +34,26 @@ const switches: {
     isActive: (settings: AdminSettingsState) => boolean;
 }[] = [
     {
-        label: _.validateSwitchLabel,
-        hint: _.validateSwitchHint,
+        label: 'Validierungen berücksichtigen',
+        hint: 'Deaktivieren Sie die Validierungen von Eingaben um schnell im Formular navigieren zu können ohne fehlerhafte Eingaben korrigieren zu müssen.',
         onToggle: dispatch => dispatch(toggleValidation()),
         isActive: settings => !settings.disableValidation,
     },
     {
-        label: _.visibilitySwitchLabel,
-        hint: _.visibilitySwitchHint,
+        label: 'Sichtbarkeiten berücksichtigen',
+        hint: 'Deaktivieren Sie die Sichtbarkeiten um alle Abschnitte und Elemente des Formulars jederzeit einsehen zu können.',
         onToggle: dispatch => dispatch(toggleVisibility()),
         isActive: settings => !settings.disableVisibility,
     },
     {
-        label: _.debugSwitchLabel,
-        hint: _.debugSwitchHint,
+        label: 'Debug-Ausgabe in der Konsole erlauben',
+        hint: 'Lassen Sie sich die Debug-Ausgaben in der JavaScript-Konsole anzeigen. Entwickler können so mögliche Probleme besser nachvollziehen.',
         onToggle: dispatch => dispatch(toggleShowDebugOutput()),
         isActive: settings => settings.showDebugOutput,
     },
     {
-        label: _.userInputSwitchLabel,
-        hint: _.userInputSwitchHint,
+        label: 'Nutzereingaben im Speicher anzeigen',
+        hint: 'Lassen Sie sich die aktuellen Nutzereingaben im Speicher anzeigen. Entwickler können so besser nachvollziehen, welche Eingaben getätigt wurden.',
         onToggle: dispatch => dispatch(toggleShowUserInput()),
         isActive: settings => settings.showUserInput,
     },
@@ -77,16 +73,16 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                 fullWidth
             >
                 <DialogTitleWithClose
-                    id="admin-tools-dialog-title"
                     onClose={onClose}
-                    closeTooltip={_.close}
+                    closeTooltip="Schließen"
                 >
-                    {_.title}
+                    Admin-Werkzeuge für die Bearbeitung des Formulars
                 </DialogTitleWithClose>
 
                 <DialogContent>
                     <Typography variant="body1">
-                        {_.hint}
+                        Aktivieren oder Deaktivieren Sie ausgewählte Funktionen, um Ihnen die Bearbeitung Ihres
+                        Formulars einfacher zu gestalten.
                     </Typography>
 
                     <Box sx={{mt: 3}}>
@@ -119,7 +115,7 @@ export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
                                 <FontAwesomeIcon icon={faFileExport}/>
                             }
                         >
-                            Antrag als .gov-Datei exportieren
+                            Formular als .gov-Datei exportieren
                         </Button>
                     </Box>
                 </DialogContent>

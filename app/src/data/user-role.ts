@@ -1,15 +1,15 @@
 export enum UserRole {
-    Editor = "Editor",
-    Publisher = "Publisher",
-    Admin = "Admin",
+    Editor = 0,
+    Publisher = 1,
+    Admin = 2,
 }
 
 export const UserRoleLabels: {
     [key in UserRole]: string;
 } = {
-    [UserRole.Admin]: 'Admin',
-    [UserRole.Publisher]: 'Veröffentlicher',
-    [UserRole.Editor]: 'Bearbeiter',
+    [UserRole.Admin]: 'Fachbereichs-Administrator:in',
+    [UserRole.Publisher]: 'Veröffentlicher:in',
+    [UserRole.Editor]: 'Bearbeiter:in',
 };
 
 export const UserRoleLevels: {

@@ -7,4 +7,6 @@ export interface Department {
     accessibility: string;
     technicalSupportAddress: string;
     specialSupportAddress: string;
+    created: string;
+    updated: string;
 }

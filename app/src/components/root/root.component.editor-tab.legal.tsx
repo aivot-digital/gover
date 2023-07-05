@@ -1,20 +1,43 @@
 import React, {useEffect, useState} from 'react';
-import {FormControl, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
+import {Typography} from '@mui/material';
 import {BaseEditorProps} from "../../editors/base-editor";
 import {RootElement} from "../../models/elements/root-element";
 import {Department} from "../../models/entities/department";
-import {DepartmentsService} from "../../services/departments.service";
+import {DepartmentsService} from "../../services/departments-service";
 import {TextFieldComponent} from "../text-field/text-field-component";
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
+import {useAppSelector} from "../../hooks/use-app-selector";
+import {selectLoadedApplication, updateAppModel} from "../../slices/app-slice";
+import {Application} from "../../models/entities/application";
+import {SelectFieldComponent} from "../select-field/select-field-component";
+import {NumberFieldComponent} from "../number-field/number-field-component";
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>) {
-    const [vendors, setVendors] = useState<Department[]>([]);
+    const dispatch = useAppDispatch();
+    const application = useAppSelector(selectLoadedApplication);
+    const [departments, setDepartments] = useState<Department[]>([]);
 
     useEffect(() => {
-        DepartmentsService.list()
-            .then(data => {
-                setVendors(data._embedded.departments);
-            });
+        DepartmentsService
+            .list()
+            .then(setDepartments);
     }, []);
+
+    const patchApplication = (patch: Partial<Application>) => {
+        if (application == null) {
+            return;
+        }
+
+        dispatch(updateAppModel({
+            ...application,
+            ...patch,
+        }));
+    }
+
+    const departmentOptions = departments.map((department) => ({
+        value: department.id.toString(),
+        label: department.name,
+    }));
 
     return (
         <>
@@ -24,77 +47,32 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 Rechtliches
             </Typography>
 
-            <FormControl
-                margin="normal"
-            >
-                <InputLabel>Text für Impressum</InputLabel>
-                <Select
-                    label="Text für Impressum"
-                    value={props.element.imprint ?? ''}
-                    onChange={event => props.onPatch({
-                        imprint: event.target.value as number,
-                    })}
-                >
-                    {
-                        vendors.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+            <SelectFieldComponent
+                label="Text für das Impressum"
+                value={application?.imprintDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    imprintDepartment: val != null ? parseInt(val) : undefined,
+                })}
+                options={departmentOptions}
+            />
 
-            <FormControl
-                margin="normal"
-            >
-                <InputLabel>Text für Datenschutzerklärung</InputLabel>
-                <Select
-                    label="Text für Datenschutzerklärung"
-                    value={props.element.privacy ?? ''}
-                    onChange={event => props.onPatch({
-                        privacy: event.target.value as number,
-                    })}
-                >
-                    {
-                        vendors.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+            <SelectFieldComponent
+                label="Text für die Datenschutzerklärung"
+                value={application?.privacyDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    privacyDepartment: val != null ? parseInt(val) : undefined,
+                })}
+                options={departmentOptions}
+            />
 
-            <FormControl
-                margin="normal"
-            >
-                <InputLabel>Text für Erklärung der Barrierefreiheit</InputLabel>
-                <Select
-                    label="Text für Erklärung der Barrierefreiheit"
-                    value={props.element.accessibility ?? ''}
-                    onChange={event => props.onPatch({
-                        accessibility: event.target.value as number,
-                    })}
-                >
-                    {
-                        vendors.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
+            <SelectFieldComponent
+                label="Text für die Erklärung der Barrierefreiheit"
+                value={application?.accessibilityDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    accessibilityDepartment: val != null ? parseInt(val) : undefined,
+                })}
+                options={departmentOptions}
+            />
 
             <Typography
                 variant="h6"
@@ -113,12 +91,45 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
             />
 
             <Typography>
-                Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten, umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}.
+                Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten,
+                umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}.
             </Typography>
 
             <Typography sx={{mt: 2}}>
                 Z.B.: <strong>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</strong>
             </Typography>
+
+
+            <Typography
+                variant="h6"
+                sx={{mt: 4}}
+            >
+                Lösch- und Zugriffsfristen
+            </Typography>
+
+            <NumberFieldComponent
+                label="Löschfrist in Wochen"
+                hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie -1 ein um Anträge nicht zu löschen."
+                placeholder="2"
+                value={application?.submissionDeletionWeeks ?? undefined}
+                onChange={val => patchApplication({
+                    submissionDeletionWeeks: val,
+                })}
+                decimalPlaces={0}
+                suffix="Wochen"
+            />
+
+            <NumberFieldComponent
+                label="Zugriffsfrist in Stunden"
+                hint="Die Zeit in Stunden, in der Bürger:innen noch auf die von ihnen gestellten Anträge zugreifen und diese herunterladen können."
+                placeholder="4"
+                value={application?.customerAccessHours ?? undefined}
+                onChange={val => patchApplication({
+                    customerAccessHours: val,
+                })}
+                decimalPlaces={0}
+                suffix="Stunden"
+            />
         </>
     );
 }

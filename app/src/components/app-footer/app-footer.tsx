@@ -1,19 +1,15 @@
 import React from 'react';
 import {Box, Button, Container, SxProps, Typography, useTheme} from '@mui/material';
-import {SystemAssetsService} from '../../services/system-assets.service';
 import {AppFooterProps} from './app-footer-props';
 import {AppMode} from '../../data/app-mode';
-import strings from './app-footer-strings.json';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faQuestionCircle} from '@fortawesome/pro-light-svg-icons';
-import {Localization} from '../../locale/localization';
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {MetaDialog, showMetaDialog} from "../../slices/app-slice";
 import {useAppSelector} from "../../hooks/use-app-selector";
 import {selectSystemConfigValue} from "../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../data/system-config-keys";
-
-const __ = Localization(strings);
+import {AssetService} from "../../services/asset-service";
 
 const buttonStyle: SxProps = {
     color: '#16191F',
@@ -26,6 +22,7 @@ export function AppFooter({mode}: AppFooterProps) {
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
+    const logo = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.logo));
 
     return (
         <Box sx={{boxShadow: 'inset 0px 10px 10px rgba(0, 0, 0, 0.12)'}}>
@@ -44,7 +41,7 @@ export function AppFooter({mode}: AppFooterProps) {
                     }}
                 >
                     <img
-                        src={SystemAssetsService.getLogoLink()}
+                        src={AssetService.getLink(logo)}
                         alt={name}
                         width={200}
                         height={100}
@@ -64,21 +61,21 @@ export function AppFooter({mode}: AppFooterProps) {
                                     size="large"
                                     onClick={() => dispatch(showMetaDialog(MetaDialog.Help))}
                                 >
-                                    {__.helpLabel}
+                                    Hilfe
                                 </Button>
                                 <Button
                                     sx={buttonStyle}
                                     size="large"
                                     onClick={() => dispatch(showMetaDialog(MetaDialog.Privacy))}
                                 >
-                                    {__.privacyLabel}
+                                    Datenschutz
                                 </Button>
                                 <Button
                                     sx={buttonStyle}
                                     size="large"
                                     onClick={() => dispatch(showMetaDialog(MetaDialog.Imprint))}
                                 >
-                                    {__.imprintLabel}
+                                    Impressum
                                 </Button>
                             </Box>
                         }
@@ -100,7 +97,13 @@ export function AppFooter({mode}: AppFooterProps) {
                     color="#444444"
                 >
                     {
-                        mode === AppMode.Staff ? __.brandingStaff : (mode === AppMode.Customer ? __.brandingCustomer : __.brandingCustomerDisplay)
+                        mode === AppMode.Staff ?
+                            'Diese Anwendung wurde von Aivot gebaut - das Unternehmen für die digitale Transformation der Verwaltung' :
+                            (
+                                mode === AppMode.Customer ?
+                                    'Dieses Formular wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot' :
+                                    'Dieses Angebot wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot'
+                            )
                     }
                 </Typography>
             </Box>

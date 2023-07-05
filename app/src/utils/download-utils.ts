@@ -1,12 +1,18 @@
 import {Application} from "../models/entities/application";
 
 export function downloadTextFile(filename: string, content: string, mimetype: string): void {
-    const a = document.createElement('a');
     const file = new Blob([content], {type: mimetype});
-    a.href = URL.createObjectURL(file);
+    downloadBlobFile(filename, file);
+}
+
+export function downloadBlobFile(filename: string, blob: Blob): void {
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = filename;
     a.click();
     a.remove();
+    URL.revokeObjectURL(url);
 }
 
 export function downloadObjectFile(filename: string, obj: any): void {

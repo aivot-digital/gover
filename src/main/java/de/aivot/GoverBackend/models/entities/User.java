@@ -1,42 +1,66 @@
 package de.aivot.GoverBackend.models.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.enums.UserRole;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
 public class User {
     @Id
-    @GeneratedValue
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_id_seq")
+    @SequenceGenerator(name = "users_id_seq", allocationSize = 1)
+    private Integer id;
+
+    @NotNull
+    @Column(length = 96)
     @NotBlank(message = "Name cannot be blank")
     private String name;
-    @Column(unique = true)
+
+    @NotNull
+    @Column(unique = true, length = 255)
     @NotBlank(message = "Email cannot be blank")
     private String email;
-    @ColumnDefault("'$2a$12$kXa3Hpd3906c1lQ3Yd2kPOOvKRNeqTyuqKQkb5YL9RIKxX4cLLXa.'")
+
+    @NotNull
+    @NotBlank(message = "Password cannot be blank")
     private String password;
+
+    @NotNull
     @ColumnDefault("TRUE")
-    private boolean isActive;
-    @ColumnDefault("0")
-    private UserRole role;
-    @CreationTimestamp
+    private boolean active;
+
+    @NotNull
+    @ColumnDefault("FALSE")
+    private boolean admin;
+
+    @NotNull
     private LocalDateTime created;
-    @UpdateTimestamp
+
+    @NotNull
     private LocalDateTime updated;
 
-    public Long getId() {
+    @PrePersist
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
+    // region Getters & Setters
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -56,30 +80,28 @@ public class User {
         this.email = email;
     }
 
-    @JsonIgnore
     public String getPassword() {
         return password;
     }
 
-    @JsonIgnore
     public void setPassword(String password) {
         this.password = password;
     }
 
     public boolean isActive() {
-        return isActive;
+        return active;
     }
 
     public void setActive(boolean active) {
-        isActive = active;
+        this.active = active;
     }
 
-    public UserRole getRole() {
-        return role;
+    public boolean isAdmin() {
+        return admin;
     }
 
-    public void setRole(UserRole role) {
-        this.role = role;
+    public void setAdmin(boolean admin) {
+        this.admin = admin;
     }
 
     public LocalDateTime getCreated() {
@@ -97,4 +119,6 @@ public class User {
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
     }
+
+    // endregion
 }

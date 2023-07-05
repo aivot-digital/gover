@@ -1,35 +1,8 @@
-import {
-    Alert,
-    AlertTitle,
-    Box,
-    Dialog,
-    DialogContent,
-    FormControlLabel, Grid, IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    ListSubheader,
-    Switch,
-    Tab,
-    Tabs,
-    Tooltip,
-} from '@mui/material';
+import {Box, Dialog, Grid, Tab, Tabs,} from '@mui/material';
 import {AddElementDialogProps} from './add-element-dialog-props';
-import React, {useEffect, useState} from 'react';
-import {ElementChildOptions} from '../../data/element-type/element-child-options';
-import {ElementIcons} from '../../data/element-type/element-icons';
-import {ElementNames} from '../../data/element-type/element-names';
-import {Preset} from '../../models/entities/preset';
-import {PresetsService} from '../../services/presets.service';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
+import React, {useState} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {faInfoCircle, faLayerPlus} from '@fortawesome/pro-light-svg-icons';
-import {ElementTypesMap} from '../../data/element-type/element-types-map';
-import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
-import {cloneElement} from "../../utils/clone-element";
 import {PresetTab} from "./tabs/preset-tab";
 import {ElementTab} from "./tabs/element-tab";
 import {ElementInfoTab} from "./tabs/element-info-tab";
@@ -50,7 +23,6 @@ export function AddElementDialog({parentType, onAddElement, onClose}: AddElement
             maxWidth="xl"
         >
             <DialogTitleWithClose
-                id="add-component-dialog-title"
                 onClose={onClose}
                 closeTooltip="Schließen"
             >

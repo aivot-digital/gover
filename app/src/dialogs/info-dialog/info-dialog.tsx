@@ -54,9 +54,7 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
             {
                 onClose != null &&
                 <DialogTitleWithClose
-                    id="info-dialog-title"
                     onClose={onClose}
-                    closeTooltip="Schließen"
                 >
                     <Box sx={{display: 'flex', alignItems: 'center'}}>
                         <FontAwesomeIcon

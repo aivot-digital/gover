@@ -1,40 +1,72 @@
 import React, {FunctionComponent, useEffect, useState} from 'react';
-import {HashRouter, Route, Routes} from 'react-router-dom';
-import {ApplicationsOverviewPage} from '../pages/staff-pages/applications-overview-page/applications-overview-page';
-import {ApplicationEditorPage} from '../pages/staff-pages/application-editor-page/application-editor-page';
+import {createHashRouter, RouterProvider} from 'react-router-dom';
+import {ApplicationListPage} from '../pages/staff-pages/application-pages/application-list-page';
+import {ApplicationEditorPage} from '../pages/staff-pages/application-pages/application-editor-page';
 import {Login} from '../pages/staff-pages/login/login';
-import {DepartmentsOverview} from '../pages/staff-pages/departments-overview/departments-overview';
-import {DestinationsOverview} from '../pages/staff-pages/destinations-overview/destinations-overview';
-import {refreshUser,} from '../slices/user-slice';
-import axios from 'axios';
+import {refreshMemberships, refreshUser, selectUser,} from '../slices/user-slice';
 import {Settings} from '../pages/staff-pages/settings/settings';
 import {Profile} from '../pages/staff-pages/profile/profile';
 import {fetchSystemConfig, selectSystemConfigValue} from '../slices/system-config-slice';
-import {ProviderLinksOverview} from '../pages/staff-pages/provider-links-overview/provider-links-overview';
 import {Alert, Snackbar, Theme, ThemeProvider, Typography} from '@mui/material';
 import {createAppTheme} from '../theming/themes';
 import {SystemConfigKeys} from '../data/system-config-keys';
-import {PresetsOverview} from '../pages/staff-pages/presets-overview/presets-overview';
-import {PresetEditorPage} from '../pages/staff-pages/preset-editor-page/preset-editor-page';
+import {PresetListPage} from '../pages/staff-pages/preset-pages/preset-list-page';
+import {PresetEditPage} from '../pages/staff-pages/preset-pages/preset-edit-page';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {resetSnackbar} from '../slices/snackbar-slice';
 import {logout, selectAuthenticationState} from '../slices/auth-slice';
 import {AuthState} from "../data/auth-state";
 import {InfoDialog} from "../dialogs/info-dialog/info-dialog";
+import {UserListPage} from "../pages/staff-pages/user-pages/user-list-page";
+import {UserEditPage} from "../pages/staff-pages/user-pages/user-edit-page";
+import {DepartmentListPage} from "../pages/staff-pages/department-pages/department-list-page";
+import {DepartmentEditPage} from "../pages/staff-pages/department-pages/department-edit-page";
+import {SubmissionListPage} from "../pages/staff-pages/submission-pages/submission-list-page";
+import {SubmissionEditPage} from "../pages/staff-pages/submission-pages/submission-edit-page";
+import {DestinationListPage} from "../pages/staff-pages/destination-pages/destination-list-page";
+import {DestinationEditPage} from "../pages/staff-pages/destination-pages/destination-edit-page";
+import {ProviderLinkListPage} from "../pages/staff-pages/provider-link-pages/provider-link-list-page";
+import {ProviderLinkEditPage} from "../pages/staff-pages/provider-link-pages/provider-link-edit-page";
+import {AssetListPage} from "../pages/staff-pages/asset-pages/asset-list-page";
+import {AssetEditPage} from "../pages/staff-pages/asset-pages/asset-edit-page";
 
 const routes: [string, FunctionComponent][] = [
     ['/', Login],
-    ['/overview', ApplicationsOverviewPage],
-    ['/presets', PresetsOverview],
-    ['/presets/edit/:id', PresetEditorPage],
-    ['/vendors', DepartmentsOverview],
-    ['/destinations', DestinationsOverview],
+    ['/overview', ApplicationListPage],
+
+    ['/presets', PresetListPage],
+    ['/presets/edit/:id', PresetEditPage],
+
+    ['/departments', DepartmentListPage],
+    ['/departments/:id', DepartmentEditPage],
+
+    ['/destinations', DestinationListPage],
+    ['/destinations/:id', DestinationEditPage],
+
     ['/settings', Settings],
-    ['/provider-links', ProviderLinksOverview],
     ['/profile', Profile],
     ['/edit/:id', ApplicationEditorPage],
+
+    ['/users', UserListPage],
+    ['/users/:id', UserEditPage],
+
+    ['/provider-links', ProviderLinkListPage],
+    ['/provider-links/:id', ProviderLinkEditPage],
+
+    ['/submissions/:id', SubmissionListPage],
+    ['/submissions/:applicationId/:id', SubmissionEditPage],
+
+    ['/assets', AssetListPage],
+    ['/assets/:name', AssetEditPage],
 ];
+
+const router = createHashRouter(
+    routes.map(([path, View]) => ({
+        path: path,
+        element: <View/>
+    }))
+);
 
 function StaffApp() {
     const dispatch = useAppDispatch();
@@ -42,26 +74,33 @@ function StaffApp() {
     const theme = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
     const snackbar = useAppSelector(state => state.snackbar);
     const authState = useAppSelector(selectAuthenticationState);
+    const user = useAppSelector(selectUser);
     const [showTimeout, setShowTimeout] = useState(false);
 
     useEffect(() => {
-        axios.interceptors.response.use(response => {
-            return response;
-        }, error => {
-            console.error('axios.interceptor', error);
-            if (error.response.status === 401 && authState === AuthState.Authenticated) {
+        const originalFetch = window.fetch;
+        window.fetch = async (
+            info: RequestInfo | URL,
+            init?: RequestInit,
+        ): Promise<Response> => {
+            let response: Response;
+            try {
+                response = await originalFetch(info, init);
+            } catch (err: any) {
+                if (err.name === 'AbortError') {
+                    setShowTimeout(true);
+                    throw err;
+                } else {
+                    throw err;
+                }
+            }
+
+            if (response.status === 401 && authState === AuthState.Authenticated) {
                 dispatch(logout());
             }
 
-            if (error.code === 'ECONNABORTED') {
-                setShowTimeout(true);
-            }
-
-            return Promise.reject(error);
-        });
-
-        dispatch(fetchSystemConfig());
-        dispatch(refreshUser());
+            return response;
+        };
     }, [dispatch]);
 
     useEffect(() => {
@@ -69,21 +108,15 @@ function StaffApp() {
         dispatch(refreshUser());
     }, [authState, dispatch]);
 
+    useEffect(() => {
+        if (user != null) {
+            dispatch(refreshMemberships(user));
+        }
+    }, [user, dispatch]);
+
     return (
         <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(theme, baseTheme)}>
-            <HashRouter>
-                <Routes>
-                    {
-                        routes.map(([path, component]) => (
-                            <Route
-                                key={path}
-                                path={path}
-                                element={React.createElement(component)}
-                            />
-                        ))
-                    }
-                </Routes>
-            </HashRouter>
+            <RouterProvider router={router}/>
 
             <InfoDialog
                 open={showTimeout}
@@ -93,7 +126,8 @@ function StaffApp() {
                 <Typography>
                     Die Verbindung mit dem Gover-Server ist fehlgeschlagen oder hat zu lange gedauert.
                     Bitte laden Sie die Seite neu.
-                    Wenn das Problem weiterhin besteht, probieren Sie es später erneut oder wenden Sie sich an den Betreiber der Gover-Installation.
+                    Wenn das Problem weiterhin besteht, probieren Sie es später erneut oder wenden Sie sich an den
+                    Betreiber der Gover-Installation.
                 </Typography>
             </InfoDialog>
 

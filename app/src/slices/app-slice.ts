@@ -1,5 +1,5 @@
 import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit'
-import {ApplicationService} from '../services/application.service';
+import {ApplicationService} from '../services/application-service';
 import {RootState} from '../store';
 import {Application} from "../models/entities/application";
 
@@ -27,7 +27,7 @@ export const fetchApplicationById = createAsyncThunk(
 export const fetchApplicationBySlug = createAsyncThunk(
     'app/fetchApplicationBySlug',
     async (req: { slug: string, version: string }, _) => {
-        return await ApplicationService.retrieveBySlug(req.slug, req.version);
+        return await ApplicationService.retrievePublic(req.slug, req.version);
     }
 );
 

@@ -17,8 +17,8 @@ import {SubmitHumanKey} from '../submit/submit.component.view';
 import {
     ProcessingDataLoaderComponentView
 } from '../static-components/processing-data-loader/processing-data-loader.component.view';
-import {UserInputService} from '../../services/user-input.service';
-import {ApplicationService} from '../../services/application.service';
+import {UserInputService} from '../../services/user-input-service';
+import {ApplicationService} from '../../services/application-service';
 import {AppFooter} from '../app-footer/app-footer';
 import {AppMode} from '../../data/app-mode';
 import {AppHeader} from '../app-header/app-header';
@@ -35,6 +35,7 @@ import {FileUploadElementItem, isFileUploadElementItem} from "../../models/eleme
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from "../../views/base-view";
 import {withTimeout} from "../../utils/with-timeout";
+import {SubmissionListDto} from "../../models/entities/submission-list-dto";
 
 const checkTimeoutMinMs = 2000;
 const submissionTimeoutMinMs = 3000;
@@ -114,15 +115,15 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                     () => setIsLoading(true),
                     async () => {
                         try {
-                            const maxFileSizeMb = await ApplicationService.getMaxFileSize(application!);
-                            const maxFileSizeBytes = maxFileSizeMb * 1000 * 1000;
+                            const {maxFileSize} = await ApplicationService.getMaxFileSize(application!);
+                            const maxFileSizeBytes = maxFileSize * 1000 * 1000;
                             const totalFileSize = Object.keys(customerData)
                                 .map(c => customerData[c])
                                 .filter(c => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
                                 .map(c => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
                                 .reduce((acc, size) => acc + size, 0);
                             if (totalFileSize > maxFileSizeBytes) {
-                                return (maxFileSizeMb);
+                                return (maxFileSize);
                             }
                             return null;
                         } catch (error) {
@@ -178,7 +179,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
         if (currentPageValid) {
             if (currentStep === (allSteps.length - 1)) {
                 if (application != null) {
-                    await withTimeout<string | null>(
+                    await withTimeout<SubmissionListDto | null>(
                         () => setIsSubmitting(true),
                         async () => {
                             try {
@@ -189,10 +190,10 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                                 return null;
                             }
                         },
-                        (pdfLink) => {
-                            if (pdfLink != null) {
+                        (submission) => {
+                            if (submission != null) {
                                 setValidatedWithErrors(false);
-                                setPdfLink(pdfLink);
+                                setPdfLink(`/api/public/prints/${submission.id}`);
                                 dispatch(nextStep());
                                 dispatch(resetUserInput());
                                 UserInputService.cleanUserInput(application);

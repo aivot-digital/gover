@@ -12,22 +12,27 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 
 @Component
 public class PdfService {
-    private final BlobService blobService;
+    private final SubmissionStorageService submissionStorageService;
 
     @Autowired
-    public PdfService(BlobService blobService) {
-        this.blobService = blobService;
+    public PdfService(
+            SubmissionStorageService submissionStorageService
+    ) {
+        this.submissionStorageService = submissionStorageService;
     }
 
 
-    public String generatePdf(Application application, ApplicationPdfDto applicationDto) throws IOException, InterruptedException {
-        String uuid = UUID.randomUUID().toString();
-        Path pathHtml = blobService.getPrintHtmlPath(uuid);
-        Path pathPdf = blobService.getPrintPdfPath(uuid);
+    public void generatePdf(
+            Application application,
+            ApplicationPdfDto applicationDto,
+            String uuid
+    ) throws IOException, InterruptedException {
+        submissionStorageService.initSubmission(uuid);
+        Path pathHtml = submissionStorageService.getSubmissionHtmlPath(uuid);
+        Path pathPdf = submissionStorageService.getSubmissionPdfPath(uuid);
 
         String template = loadTemplate(applicationDto);
         Files.writeString(pathHtml, template);
@@ -58,8 +63,6 @@ public class PdfService {
         generateToPdf.waitFor();
 
         Files.delete(pathHtml);
-
-        return uuid;
     }
 
     private String loadTemplate(ApplicationPdfDto applicationDto) {

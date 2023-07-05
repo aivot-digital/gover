@@ -5,6 +5,8 @@ export interface Destination {
     id: number;
     name: string;
     type: DestinationType;
+    created: string;
+    updated: string;
 
     mailTo?: string;
     mailCC?: string;

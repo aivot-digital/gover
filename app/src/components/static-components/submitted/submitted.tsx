@@ -26,7 +26,7 @@ import {
 import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
 import {useSelector} from 'react-redux';
-import {ApplicationService} from '../../../services/application.service';
+import {ApplicationService} from '../../../services/application-service';
 import {selectLoadedApplication} from '../../../slices/app-slice';
 import {validateEmail} from "../../../utils/validate-email";
 import {isStringNullOrEmpty} from "../../../utils/string-utils";

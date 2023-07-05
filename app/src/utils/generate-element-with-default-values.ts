@@ -15,7 +15,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
         case ElementType.Root:
             return {
                 id, type, appVersion,
-                headline: 'Ihr Neuer\nOnline-Antrag',
+                headline: 'Ihr Neues\nOnline-Formular',
                 children: [],
                 introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
                 summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
@@ -157,6 +157,7 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             return {
                 id, type, appVersion,
                 label: 'Anlage(n)',
+                extensions: ['pdf'],
             };
     }
 }

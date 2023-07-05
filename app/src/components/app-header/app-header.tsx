@@ -1,20 +1,16 @@
 import React, {useState} from 'react';
 import {AppHeaderProps} from './app-header-props';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
-import strings from './app-header-strings.json';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {AppMode} from '../../data/app-mode';
 import {faCog, faQuestionCircle, faUniversalAccess} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {Localization} from '../../locale/localization';
 import {MetaDialog, selectLoadedApplication, showMetaDialog} from '../../slices/app-slice';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {AppHeaderMenu} from './app-header-menu/app-header-menu';
 import {Logo} from '../static-components/logo/logo';
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
-
-const __ = Localization(strings);
 
 export function AppHeader({mode}: AppHeaderProps) {
     const dispatch = useAppDispatch();
@@ -24,7 +20,7 @@ export function AppHeader({mode}: AppHeaderProps) {
 
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement>();
 
-    let titleLine1 = __.goverAppTitle;
+    let titleLine1 = 'Online-Antrags-Management';
     let titleLine2 = name;
 
     if (mode === AppMode.Customer) {
@@ -121,7 +117,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                             {
                                 mode === AppMode.Customer &&
                                 <Tooltip
-                                    title={__.tooltipAccessibility}
+                                    title="Barrierefreiheit"
                                 >
                                     <IconButton
                                         color="primary"
@@ -138,7 +134,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                             {
                                 mode !== AppMode.CustomerDisplay &&
                                 <Tooltip
-                                    title={__.tooltipHelp}
+                                    title="Hilfe & FAQs"
                                 >
                                     <IconButton
                                         color="primary"
@@ -160,7 +156,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                             {
                                 mode !== AppMode.CustomerDisplay &&
                                 <Tooltip
-                                    title={__.tooltipSettings}
+                                    title="Eistellungen"
                                 >
                                     <IconButton
                                         color="primary"

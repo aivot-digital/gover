@@ -2,15 +2,11 @@ import {Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {Department} from '../../models/entities/department';
-import {DepartmentsService} from '../../services/departments.service';
+import {DepartmentsService} from '../../services/departments-service';
 import {useSelector} from 'react-redux';
 import {selectLoadedApplication} from '../../slices/app-slice';
-import {Localization} from '../../locale/localization';
-import strings from './imprint-dialog-strings.json';
 import {ImprintDialogProps} from './imprint-dialog-props';
 
-
-const _ = Localization(strings);
 
 export function ImprintDialog(props: ImprintDialogProps) {
     const application = useSelector(selectLoadedApplication);
@@ -18,8 +14,9 @@ export function ImprintDialog(props: ImprintDialogProps) {
     const [department, setDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (application != null && application.root.imprint != null && department == null) {
-            DepartmentsService.retrieve(application.root.imprint)
+        if (application?.imprintDepartment != null) {
+            DepartmentsService
+                .retrieve(application.imprintDepartment)
                 .then(setDepartment);
         }
     }, [application, department]);
@@ -33,11 +30,9 @@ export function ImprintDialog(props: ImprintDialogProps) {
             fullWidth={true}
         >
             <DialogTitleWithClose
-                id="imprint-dialog-title"
                 onClose={props.onHide}
-                closeTooltip={_.close}
             >
-                {_.title}
+                Impressum
             </DialogTitleWithClose>
             <DialogContent
                 dangerouslySetInnerHTML={{__html: department?.imprint ?? ''}}
@@ -49,7 +44,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
                     sx={{mr: 2, mb: 2}}
                     variant="outlined"
                 >
-                    {_.close}
+                    Impressum schließen
                 </Button>
             </DialogActions>
         </Dialog>

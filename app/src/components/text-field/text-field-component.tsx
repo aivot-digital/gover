@@ -16,10 +16,12 @@ export function TextFieldComponent({
                                        onChange,
                                        onBlur,
                                        rows,
+                                       type,
                                    }: TextFieldComponentProps) {
     return (
         <TextField
             label={label}
+            type={type}
             placeholder={placeholder}
             variant="outlined"
             fullWidth

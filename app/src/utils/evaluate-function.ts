@@ -7,7 +7,7 @@ import {ConditionOperatorMessage} from "../data/condition-operator";
 import {isStringNotNullOrEmpty, stringOrDefault} from "./string-utils";
 import Evaluators from "../evaluators";
 import {Function as FunctionModel} from "../models/functions/function";
-import {makeId, resolveId} from "./id-utils";
+import {resolveId} from "./id-utils";
 import {isAnyInputElement} from "../models/elements/form/input/any-input-element";
 
 export function evaluateFunction(

@@ -13,6 +13,7 @@
 
 ### Docker ###
 /data/
+/pg_data/
 
 ### Frontend ###
 /app/node_modules/
@@ -26,3 +27,4 @@
 
 ### Project ###
 /build.sh
+*.tar

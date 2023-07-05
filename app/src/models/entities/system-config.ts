@@ -1,5 +1,7 @@
 export interface SystemConfig {
-    id: number;
     key: string;
     value: string;
+    publicConfig: boolean;
+    created: string;
+    updated: string;
 }

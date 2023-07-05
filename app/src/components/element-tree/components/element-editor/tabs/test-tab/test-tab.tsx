@@ -3,7 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {useSelector} from 'react-redux';
 import {format} from 'date-fns';
 import {User} from '../../../../../../models/entities/user';
-import {UsersService} from '../../../../../../services/users.service';
+import {UsersService} from '../../../../../../services/users-service';
 import {getFunctionStatus} from '../../../../../../utils/function-status-utils';
 import {UserRole} from '../../../../../../data/user-role';
 import {selectUser} from '../../../../../../slices/user-slice';
@@ -100,10 +100,13 @@ function TestProtocol(protocol: TestProtocolModel) {
                 } else {
                     setUser({
                         id: protocol.userId,
-                        name: 'Unbekannter Nutzer',
+                        name: 'Inaktiver Nutzer',
                         email: '',
+                        password: '',
                         active: false,
-                        role: UserRole.Editor,
+                        admin: false,
+                        created: '',
+                        updated: '',
                     });
                 }
             });

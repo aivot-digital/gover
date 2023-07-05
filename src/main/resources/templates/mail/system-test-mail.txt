@@ -1,0 +1,3 @@
+[Gover] SMTP-Test
+
+Der Test der SMTP-Verbindung war erfolgreich!

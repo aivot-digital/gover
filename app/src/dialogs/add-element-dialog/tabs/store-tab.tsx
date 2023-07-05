@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {cloneElement} from "../../../utils/clone-element";
-import {GoverStoreService, ListModule} from "../../../services/gover-store.service";
+import {GoverStoreService} from "../../../services/gover-store.service";
 import {BaseTabProps} from "./base-tab-props";
 import {
     LoadingPlaceholderComponentView
@@ -26,6 +26,7 @@ import {selectSystemConfigValue} from "../../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../../data/system-config-keys";
 import {faCubes, faInfoCircle, faLock} from "@fortawesome/pro-light-svg-icons";
 import {TextFieldComponent} from "../../../components/text-field/text-field-component";
+import {StoreListModule} from "../../../models/entities/store-list-module";
 
 export function StoreTab({parentType, onAddElement, showModuleId, hightlightedModuleId}: BaseTabProps & {
     showModuleId: (id: string) => void;
@@ -33,17 +34,17 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
 }) {
     const theme = useTheme();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
-    const [modules, setModules] = useState<ListModule[]>();
+    const [modules, setModules] = useState<StoreListModule[]>();
     const [search, setSearch] = useState<string>();
 
     useEffect(() => {
         GoverStoreService.listModules(0, '', storeKey)
-            .then(modules => {
-                setModules(modules);
+            .then(res => {
+                setModules(res.items);
             });
     }, [parentType, setModules]);
 
-    const addModuleElement = (module: ListModule) => {
+    const addModuleElement = (module: StoreListModule) => {
         GoverStoreService.fetchModuleCode(module.id, module.current_version, storeKey)
             .then(group => {
                 onAddElement(cloneElement(group, true));

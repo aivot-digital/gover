@@ -1,29 +1,19 @@
 import React, {useEffect, useState} from 'react';
-import {
-    FormControl,
-    IconButton,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    TextField,
-    Tooltip,
-    Typography,
-    useTheme
-} from '@mui/material';
+import {IconButton, Paper, Tooltip, Typography, useTheme} from '@mui/material';
 import {BaseEditorProps} from "../../editors/base-editor";
 import {RootElement} from "../../models/elements/root-element";
-import {DepartmentsService} from "../../services/departments.service";
+import {DepartmentsService} from "../../services/departments-service";
 import {Department} from "../../models/entities/department";
 import {Themes} from "../../theming/themes";
 import {SelectFieldComponent} from "../select-field/select-field-component";
 import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectLoadedApplication} from "../../slices/app-slice";
+import {selectLoadedApplication, updateAppModel} from "../../slices/app-slice";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faClipboard} from "@fortawesome/pro-light-svg-icons";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showSuccessSnackbar} from "../../slices/snackbar-slice";
 import {TextFieldComponent} from "../text-field/text-field-component";
+import {Application} from "../../models/entities/application";
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
     const dispatch = useAppDispatch();
@@ -32,14 +22,29 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
     const [departments, setDepartments] = useState<Department[]>([]);
 
+    useEffect(() => {
+        DepartmentsService
+            .list()
+            .then(setDepartments);
+    }, []);
+
+    const patchApplication = (patch: Partial<Application>) => {
+        if (app == null) {
+            return;
+        }
+
+        dispatch(updateAppModel({
+            ...app,
+            ...patch,
+        }));
+    }
+
     const link = `${window.location.protocol}//${window.location.host}/#/${app?.slug}/${app?.version}`;
 
-    useEffect(() => {
-        DepartmentsService.list()
-            .then(data => {
-                setDepartments(data._embedded.departments);
-            });
-    }, []);
+    const departmentOptions = departments.map((department) => ({
+        value: department.id.toString(),
+        label: department.name,
+    }));
 
     return (
         <>
@@ -47,7 +52,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 variant="h6"
                 sx={{mt: 4}}
             >
-                Link des Antrags
+                Link des Formulars
             </Typography>
 
             <Paper
@@ -84,6 +89,41 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 variant="h6"
                 sx={{mt: 4}}
             >
+                Zuständige Fachbereiche
+            </Typography>
+
+            <SelectFieldComponent
+                label="Entwickelnder Fachbereich"
+                value={app?.developingDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    developingDepartment: val != null ? parseInt(val) : undefined,
+                })}
+                options={departmentOptions}
+                required
+            />
+
+            <SelectFieldComponent
+                label="Zuständiger Fachbereich"
+                value={app?.responsibleDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    responsibleDepartment: val != null ? parseInt(val) : undefined,
+                })}
+                options={departmentOptions}
+            />
+
+            <SelectFieldComponent
+                label="Bewirtschaftender Fachbereich"
+                value={app?.managingDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    managingDepartment: val != null ? parseInt(val) : undefined,
+                })}
+                options={departmentOptions}
+            />
+
+            <Typography
+                variant="h6"
+                sx={{mt: 4}}
+            >
                 Theme-Einstellung
             </Typography>
 
@@ -103,22 +143,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 variant="h6"
                 sx={{mt: 4}}
             >
-                Über diesen Antrag
+                Über dieses Formular
             </Typography>
 
             <TextFieldComponent
-                value={props.element.title}
-                label="Titel des Antrages"
-                onChange={val => props.onPatch({
-                    title: val,
-                })}
-                hint="Vergeben Sie einen Titel für den Antrag um ihn besser identifizieren zu können. Diesen Titel können nur Sie und Ihre Kolleg:innen einsehen."
-                maxCharacters={60}
-            />
-
-            <TextFieldComponent
                 value={props.element.headline}
-                label="Überschrift des Antrages"
+                label="Überschrift des Formulars"
                 multiline
                 hint="Beschränkt auf zwei Zeilen, der Name des Programms sollte sich in Zeile 2 wiederfinden."
                 onChange={val => props.onPatch({
@@ -183,26 +213,20 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <SelectFieldComponent
                 label="Fachlicher Support"
-                value={props.element.legalSupport != null ? props.element.legalSupport.toString() : undefined}
-                onChange={val => props.onPatch({
-                    legalSupport: val != null ? parseInt(val) : undefined,
+                value={app?.legalSupportDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    legalSupportDepartment: val != null ? parseInt(val) : undefined,
                 })}
-                options={departments.map((vendor) => ({
-                    value: vendor.id.toString(),
-                    label: vendor.name,
-                }))}
+                options={departmentOptions}
             />
 
             <SelectFieldComponent
                 label="Technischer Support"
-                value={props.element.technicalSupport != null ? props.element.technicalSupport.toString() : undefined}
-                onChange={val => props.onPatch({
-                    technicalSupport: val != null ? parseInt(val) : undefined,
+                value={app?.technicalSupportDepartment?.toString() ?? undefined}
+                onChange={val => patchApplication({
+                    technicalSupportDepartment: val != null ? parseInt(val) : undefined,
                 })}
-                options={departments.map((vendor) => ({
-                    value: vendor.id.toString(),
-                    label: vendor.name,
-                }))}
+                options={departmentOptions}
             />
         </>
     );

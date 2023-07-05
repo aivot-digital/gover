@@ -39,40 +39,35 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
         done: boolean;
     }[] = [
         {
-            label: 'Schnittstelle eingerichtet',
-            done: element.destination != null,
-        },
-
-        {
             label: 'Fachlicher Support eingerichtet',
-            done: element.legalSupport != null,
+            done: application?.legalSupportDepartment != null,
         },
         {
             label: 'Technischer Support eingerichtet',
-            done: element.legalSupport != null,
+            done: application?.technicalSupportDepartment != null,
         },
 
 
         {
             label: 'Impressum eingerichtet',
-            done: element.imprint != null,
+            done: application?.imprintDepartment != null,
         },
         {
             label: 'Datenschutzerklärung eingerichtet',
-            done: element.imprint != null,
+            done: application?.privacyDepartment != null,
         },
         {
             label: 'Barrierefreiheitserklärung eingerichtet',
-            done: element.imprint != null,
+            done: application?.accessibilityDepartment != null,
         },
 
         {
             label: 'Zuständige und/oder bewirtschaftende Stelle eingerichtet',
-            done: element.introductionStep.responsibleDepartment != null || element.introductionStep.managingDepartment != null,
+            done: application?.responsibleDepartment != null || application?.managingDepartment != null,
         },
 
         {
-            label: 'Der Antrag wurde technisch und fachlich geprüft',
+            label: 'Das Formular wurde technisch und fachlich geprüft',
             done: (
                 isElementTested(element) &&
                 isElementTested(element.introductionStep) &&
@@ -90,13 +85,13 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
             <Typography
                 variant="h6"
             >
-                Antrag Veröffentlichen
+                Formular Veröffentlichen
             </Typography>
 
             <Typography
                 variant="body1"
             >
-                Bevor ein Antrag veröffentlicht werden kann, müssen die folgenden Punkte erfüllt sein.
+                Bevor ein Formular veröffentlicht werden kann, müssen die folgenden Punkte erfüllt sein.
             </Typography>
 
             <List sx={{my: 2}}>
@@ -124,13 +119,13 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                     <Alert
                         severity='success'
                     >
-                        Antrag Veröffentlicht
+                        Formular Veröffentlicht
                     </Alert>
 
                     <Divider
                         sx={{my: 8}}
                     >
-                        Antrag zurückziehen
+                        Formular zurückziehen
                     </Divider>
 
                     <Alert
@@ -138,12 +133,12 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                         sx={{mb: 2}}
                     >
                         <AlertTitle>
-                            Antrag zurückziehen
+                            Formular zurückziehen
                         </AlertTitle>
 
-                        Sie können einen veröffentlichten Antrag jederzeit zurückziehen.
+                        Sie können einen veröffentlichtes Formular jederzeit zurückziehen.
                         Dieser wird dann nicht mehr ausgespielt.
-                        Sie können zurückgezogene Anträge jederzeit wieder veröffentlichen.
+                        Sie können zurückgezogene Formulare jederzeit wieder veröffentlichen.
                     </Alert>
 
                     <Tooltip
@@ -164,7 +159,7 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                                 }
                             }}
                         >
-                            Antrag Zurückziehen
+                            Formular Zurückziehen
                         </Button>
                     </Tooltip>
                 </>
@@ -177,11 +172,11 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                     sx={{mb: 2}}
                 >
                     <AlertTitle>
-                        Antrag zurückgezogen
+                        Formular zurückgezogen
                     </AlertTitle>
 
-                    Sie haben den Antrag zurückgezogen.
-                    Sie können diesen Antrag jederzeit wieder veröffentlichen.
+                    Sie haben das Formular zurückgezogen.
+                    Sie können dieses Formular jederzeit wieder veröffentlichen.
                 </Alert>
             }
 
@@ -210,7 +205,7 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                             }
                         }}
                     >
-                        Antrag Veröffentlichen
+                        Formular Veröffentlichen
                     </Button>
                 </span>
                 </Tooltip>

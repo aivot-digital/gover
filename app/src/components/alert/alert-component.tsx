@@ -1,7 +1,8 @@
 import {Alert, AlertTitle} from '@mui/material';
 import {AlertComponentProps} from "./alert-component-props";
+import {PropsWithChildren} from "react";
 
-export function AlertComponent({title, text, color}: AlertComponentProps) {
+export function AlertComponent({title, text, color, children}: PropsWithChildren<AlertComponentProps>) {
     return (
         <Alert
             severity={color ?? 'info'}
@@ -16,6 +17,7 @@ export function AlertComponent({title, text, color}: AlertComponentProps) {
                 </AlertTitle>
             }
             {text}
+            {children}
         </Alert>
     );
 }

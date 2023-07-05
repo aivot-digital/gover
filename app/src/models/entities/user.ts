@@ -1,10 +1,10 @@
-import {UserRole} from "../../data/user-role";
-
-
 export interface User {
     id: number;
     name: string;
     email: string;
+    password: string;
     active: boolean;
-    role: UserRole;
+    admin: boolean;
+    created: string;
+    updated: string;
 }

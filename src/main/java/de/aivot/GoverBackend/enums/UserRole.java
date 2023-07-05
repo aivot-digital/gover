@@ -3,20 +3,20 @@ package de.aivot.GoverBackend.enums;
 import com.fasterxml.jackson.annotation.JsonValue;
 import de.aivot.GoverBackend.lib.Identifiable;
 
-public enum UserRole implements Identifiable<String> {
-    Editor("Editor"),
-    Publisher("Publisher"),
-    Admin("Admin");
+public enum UserRole implements Identifiable<Integer> {
+    Editor(0),
+    Publisher(1),
+    Admin(2);
 
-    private final String key;
+    private final Integer key;
 
-    private UserRole(String key) {
+    private UserRole(Integer key) {
         this.key = key;
     }
 
     @Override
     @JsonValue
-    public String getKey() {
+    public Integer getKey() {
         return key;
     }
 

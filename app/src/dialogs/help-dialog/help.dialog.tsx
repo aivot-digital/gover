@@ -10,15 +10,10 @@ import MuiAccordionSummary, {AccordionSummaryProps,} from '@mui/material/Accordi
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {Department} from '../../models/entities/department';
 import {useSelector} from 'react-redux';
-import {DepartmentsService} from '../../services/departments.service';
+import {DepartmentsService} from '../../services/departments-service';
 import {HelpDialogProps} from './help-dialog-props';
-import {Localization} from '../../locale/localization';
-import strings from './help-dialog-strings.json';
 import {selectLoadedApplication} from '../../slices/app-slice';
 
-const _ = Localization(strings);
-
-// TODO: Localize
 
 export function HelpDialog(props: HelpDialogProps) {
     const application = useSelector(selectLoadedApplication);
@@ -27,13 +22,16 @@ export function HelpDialog(props: HelpDialogProps) {
 
     useEffect(() => {
         if (application != null) {
-            if (technicalDepartment == null && application.root.technicalSupport != null) {
-                DepartmentsService.retrieve(application.root.technicalSupport)
-                    .then(department => setTechnicalDepartment(department));
+            if (technicalDepartment == null && application.technicalSupportDepartment != null) {
+                DepartmentsService
+                    .retrieve(application.technicalSupportDepartment)
+                    .then(setTechnicalDepartment);
             }
-            if (specialDepartment == null && application.root.legalSupport != null) {
-                DepartmentsService.retrieve(application.root.legalSupport)
-                    .then(department => setSpecialDepartment(department));
+
+            if (specialDepartment == null && application.legalSupportDepartment != null) {
+                DepartmentsService
+                    .retrieve(application.legalSupportDepartment)
+                    .then(setSpecialDepartment);
             }
         }
     }, [application, technicalDepartment, specialDepartment]);
@@ -47,11 +45,9 @@ export function HelpDialog(props: HelpDialogProps) {
             fullWidth={true}
         >
             <DialogTitleWithClose
-                id="help-dialog-title"
                 onClose={props.onHide}
-                closeTooltip={_.close}
             >
-                {_.title}
+                Hilfe für diesen Antrag
             </DialogTitleWithClose>
             <DialogContent>
 
@@ -65,7 +61,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         xs={6}
                     >
                         <BoxLink
-                            link={`mailto:${specialDepartment?.specialSupportAddress}?subject=Fachlicher Support: ${application?.root.title}`}
+                            link={`mailto:${specialDepartment?.specialSupportAddress}?subject=Fachlicher Support: ${application?.title}`}
                         >
                             <span>Fachlicher Support</span><br/>
                             Unterstützung zum Inhalt <br/>und Ausfüllen des Antrages
@@ -76,7 +72,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         xs={6}
                     >
                         <BoxLink
-                            link={`mailto:${technicalDepartment?.technicalSupportAddress}?subject=Technischer Support: ${application?.root.title}`}
+                            link={`mailto:${technicalDepartment?.technicalSupportAddress}?subject=Technischer Support: ${application?.title}`}
                         >
                             <span>Technischer Support</span><br/>
                             Unterstützung bei technischen Problemen und Fehlern
@@ -230,7 +226,9 @@ const Accordion = styled((props: AccordionProps) => (
     <MuiAccordion
         disableGutters
         elevation={0}
-        square {...props} />
+        square
+        {...props}
+    />
 ))(({theme}) => ({
     border: `1px solid ${theme.palette.primary.dark}`,
     '&:not(:last-child)': {

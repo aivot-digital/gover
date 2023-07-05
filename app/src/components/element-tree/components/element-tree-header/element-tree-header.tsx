@@ -105,7 +105,7 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         </IconButton>
                     </Tooltip>
                     <Tooltip
-                        title="Antrag konfigurieren"
+                        title="Formular konfigurieren"
                         arrow
                     >
                         <IconButton

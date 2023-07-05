@@ -1,6 +1,6 @@
 import {useSelector} from 'react-redux';
 import React, {useEffect} from 'react';
-import {UserInputService} from '../../../services/user-input.service';
+import {UserInputService} from '../../../services/user-input-service';
 import {Application} from '../../../models/entities/application';
 import {selectCustomerInput} from '../../../slices/customer-input-slice';
 

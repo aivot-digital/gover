@@ -4,15 +4,15 @@ import com.sun.istack.Nullable;
 
 public class SetPasswordRequest {
     @Nullable
-    private Long userId;
+    private Integer userId;
     private String password;
 
     @Nullable
-    public Long getUserId() {
+    public Integer getUserId() {
         return userId;
     }
 
-    public void setUserId(@Nullable Long userId) {
+    public void setUserId(Integer userId) {
         this.userId = userId;
     }
 

@@ -1,13 +1,8 @@
 package de.aivot.GoverBackend.models.entities;
 
 import de.aivot.GoverBackend.enums.DestinationType;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -16,15 +11,23 @@ import java.time.LocalDateTime;
 @Table(name = "destinations")
 public class Destination {
     @Id
-    @GeneratedValue
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "destinations_id_seq")
+    @SequenceGenerator(name = "destinations_id_seq", allocationSize = 1)
+    private Integer id;
+
+    @NotNull
+    @Column(length = 96)
     @NotBlank(message = "Name cannot be blank")
     private String name;
-    @NotNull(message = "Type cannot be blank")
+
+    @NotNull
+    @Column(length = 96)
     private DestinationType type;
-    @CreationTimestamp
+
+    @NotNull
     private LocalDateTime created;
-    @UpdateTimestamp
+
+    @NotNull
     private LocalDateTime updated;
 
     private String mailTo;
@@ -36,13 +39,24 @@ public class Destination {
 
     private Integer maxAttachmentMegaBytes;
 
+    @PrePersist
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
     //region Getters & Setters
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -60,6 +74,22 @@ public class Destination {
 
     public void setType(DestinationType type) {
         this.type = type;
+    }
+
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public void setCreated(LocalDateTime created) {
+        this.created = created;
+    }
+
+    public LocalDateTime getUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(LocalDateTime updated) {
+        this.updated = updated;
     }
 
     public String getMailTo() {
@@ -100,22 +130,6 @@ public class Destination {
 
     public void setAuthorizationHeader(String authorizationHeader) {
         this.authorizationHeader = authorizationHeader;
-    }
-
-    public LocalDateTime getCreated() {
-        return created;
-    }
-
-    public void setCreated(LocalDateTime created) {
-        this.created = created;
-    }
-
-    public LocalDateTime getUpdated() {
-        return updated;
-    }
-
-    public void setUpdated(LocalDateTime updated) {
-        this.updated = updated;
     }
 
     public Integer getMaxAttachmentMegaBytes() {

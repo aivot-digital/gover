@@ -8,7 +8,7 @@ export const ElementNames: ElementTypesMap<string> = {
     [ElementType.Container]: 'Gruppierung',
     [ElementType.Date]: 'Datum',
     [ElementType.Step]: 'Abschnitt',
-    [ElementType.Root]: 'Antrag',
+    [ElementType.Root]: 'Formular',
     [ElementType.Headline]: 'Überschrift',
     [ElementType.MultiCheckbox]: 'Checkbox (Mehrfachauswahl)',
     [ElementType.Number]: 'Zahl',

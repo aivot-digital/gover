@@ -9,10 +9,10 @@ export function NotFoundPage() {
                 sx={{mt: 8}}
             >
                 <AlertTitle>
-                    Antrag nicht gefunden
+                    Formular nicht gefunden
                 </AlertTitle>
                 <Typography>
-                    Der von Ihnen aufgerufene Antrag konnte nicht gefunden werden.
+                    Das von Ihnen aufgerufene Formular konnte nicht gefunden werden.
                 </Typography>
             </Alert>
         </Container>

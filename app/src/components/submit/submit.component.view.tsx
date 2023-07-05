@@ -19,7 +19,7 @@ import {faFileArrowUp, faUserRobot} from '@fortawesome/pro-light-svg-icons';
 import {faShieldCheck} from '@fortawesome/pro-solid-svg-icons';
 import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
 import {Department} from '../../models/entities/department';
-import {DepartmentsService} from '../../services/departments.service';
+import {DepartmentsService} from '../../services/departments-service';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectCustomerInputErrorValue} from '../../slices/customer-input-errors-slice';
 import {selectLoadedApplication} from '../../slices/app-slice';
@@ -29,8 +29,6 @@ import {BaseViewProps} from "../../views/base-view";
 
 export const SubmitHumanKey = '__human__';
 
-// TODO: Localization
-
 export function SubmitComponentView({allElements, element}: BaseViewProps<SubmitStepElement, void>) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
@@ -39,23 +37,25 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
     const isHuman = useAppSelector(selectCustomerInputValue(SubmitHumanKey));
     const error = useAppSelector(selectCustomerInputErrorValue(SubmitHumanKey));
 
-    const introductionStep = useAppSelector(selectLoadedApplication)?.root.introductionStep;
+    const application = useAppSelector(selectLoadedApplication);
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (introductionStep?.responsibleDepartment) {
-            DepartmentsService.retrieve(introductionStep.responsibleDepartment)
+        if (application?.responsibleDepartment) {
+            DepartmentsService
+                .retrieve(application.responsibleDepartment)
                 .then(setResponsibleDepartment);
         }
-        if (introductionStep?.managingDepartment) {
-            DepartmentsService.retrieve(introductionStep.managingDepartment)
+        if (application?.managingDepartment) {
+            DepartmentsService
+                .retrieve(application.managingDepartment)
                 .then(setManagingDepartment);
         }
-    }, [introductionStep]);
+    }, [application]);
 
-    if (introductionStep == null) {
+    if (application == null) {
         return null;
     }
 

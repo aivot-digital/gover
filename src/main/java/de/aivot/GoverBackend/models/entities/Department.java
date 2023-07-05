@@ -1,8 +1,5 @@
 package de.aivot.GoverBackend.models.entities;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -12,35 +9,68 @@ import java.time.LocalDateTime;
 @Table(name = "departments")
 public class Department {
     @Id
-    @GeneratedValue
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "departments_id_seq")
+    @SequenceGenerator(name = "departments_id_seq", allocationSize = 1)
+    private Integer id;
+
+    @NotNull
+    @Column(length = 96)
     @NotBlank(message = "Name cannot be blank")
     private String name;
+
+    @NotNull
+    @Column(length = 255)
     @NotNull(message = "Address cannot be blank")
     private String address;
+
+    @NotNull
     @Column(columnDefinition = "TEXT")
-    @NotNull(message = "Imprint cannot be blank")
+    @NotBlank(message = "Imprint cannot be blank")
     private String imprint;
+
+    @NotNull
     @Column(columnDefinition = "TEXT")
-    @NotNull(message = "Privacy cannot be blank")
+    @NotBlank(message = "Privacy cannot be blank")
     private String privacy;
+
+    @NotNull
     @Column(columnDefinition = "TEXT")
-    @NotNull(message = "Accessibility cannot be blank")
+    @NotBlank(message = "Accessibility cannot be blank")
     private String accessibility;
-    @NotNull(message = "TechnicalSupportAddress cannot be blank")
+
+    @NotNull
+    @Column(length = 255)
+    @NotBlank(message = "TechnicalSupportAddress cannot be blank")
     private String technicalSupportAddress;
-    @NotNull(message = "SpecialSupportAddress cannot be blank")
+    @NotNull
+    @Column(length = 255)
+    @NotBlank(message = "SpecialSupportAddress cannot be blank")
     private String specialSupportAddress;
-    @CreationTimestamp
+
+    @NotNull
     private LocalDateTime created;
-    @UpdateTimestamp
+
+    @NotNull
     private LocalDateTime updated;
 
-    public Long getId() {
+    @PrePersist
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
+    // region Getters & Setters
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -115,4 +145,7 @@ public class Department {
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
     }
+
+
+    // endregion
 }

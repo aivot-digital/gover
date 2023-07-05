@@ -1,10 +1,7 @@
 package de.aivot.GoverBackend.repositories;
 
 import de.aivot.GoverBackend.models.entities.ProviderLink;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@RepositoryRestResource(collectionResourceRel = "providerLinks", path = "provider-links")
-public interface ProviderLinkRepository extends PagingAndSortingRepository<ProviderLink, Long>, CrudRepository<ProviderLink, Long> {
+public interface ProviderLinkRepository extends JpaRepository<ProviderLink, Integer> {
 }

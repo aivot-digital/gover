@@ -13,7 +13,6 @@ import javax.script.ScriptEngine;
 import java.util.*;
 
 public class RootElement extends BaseElement {
-    private String title;
     private String headline;
     private String tabTitle;
     private String theme;
@@ -22,16 +21,7 @@ public class RootElement extends BaseElement {
     private String expiring;
     private String accessLevel;
 
-    private Integer legalSupport;
-    private Integer technicalSupport;
-
-    private Integer imprint;
-    private Integer privacy;
-    private Integer accessibility;
-
     private String privacyText;
-
-    private Integer destination;
 
     private IntroductionStepElement introductionStep;
     private SummaryStepElement summaryStep;
@@ -43,7 +33,6 @@ public class RootElement extends BaseElement {
 
     @Override
     public void applyValues(Map<String, Object> values) {
-        title = MapUtils.getString(values, "title");
         headline = MapUtils.getString(values, "headline");
         tabTitle = MapUtils.getString(values, "tabTitle");
         theme = MapUtils.getString(values, "theme");
@@ -54,16 +43,7 @@ public class RootElement extends BaseElement {
         expiring = MapUtils.getString(values, "expiring");
         accessLevel = MapUtils.getString(values, "accessLevel");
 
-        legalSupport = MapUtils.getInteger(values, "legalSupport");
-        technicalSupport = MapUtils.getInteger(values, "technicalSupport");
-
-        privacy = MapUtils.getInteger(values, "privacy");
-        imprint = MapUtils.getInteger(values, "imprint");
-        accessibility = MapUtils.getInteger(values, "accessibility");
-
         privacyText = MapUtils.getString(values, "privacyText");
-
-        destination = MapUtils.getInteger(values, "destination");
 
         introductionStep = MapUtils.getApply(values, "introductionStep", Map.class, IntroductionStepElement::new);
         summaryStep = MapUtils.getApply(values, "summaryStep", Map.class, SummaryStepElement::new);
@@ -118,15 +98,29 @@ public class RootElement extends BaseElement {
                 .findFirst();
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null) {
+            return false;
+        }
+
+        if (obj instanceof RootElement rObj) {
+            return rObj.getId().equals(getId());
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
+
     // region Getters & Setters
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
 
     public String getHeadline() {
         return headline;
@@ -176,46 +170,6 @@ public class RootElement extends BaseElement {
         this.accessLevel = accessLevel;
     }
 
-    public Integer getLegalSupport() {
-        return legalSupport;
-    }
-
-    public void setLegalSupport(Integer legalSupport) {
-        this.legalSupport = legalSupport;
-    }
-
-    public Integer getTechnicalSupport() {
-        return technicalSupport;
-    }
-
-    public void setTechnicalSupport(Integer technicalSupport) {
-        this.technicalSupport = technicalSupport;
-    }
-
-    public Integer getImprint() {
-        return imprint;
-    }
-
-    public void setImprint(Integer imprint) {
-        this.imprint = imprint;
-    }
-
-    public Integer getPrivacy() {
-        return privacy;
-    }
-
-    public void setPrivacy(Integer privacy) {
-        this.privacy = privacy;
-    }
-
-    public Integer getAccessibility() {
-        return accessibility;
-    }
-
-    public void setAccessibility(Integer accessibility) {
-        this.accessibility = accessibility;
-    }
-
     public String getPrivacyText() {
         return privacyText;
     }
@@ -223,15 +177,6 @@ public class RootElement extends BaseElement {
     public void setPrivacyText(String privacyText) {
         this.privacyText = privacyText;
     }
-
-    public Integer getDestination() {
-        return destination;
-    }
-
-    public void setDestination(Integer destination) {
-        this.destination = destination;
-    }
-
 
     public IntroductionStepElement getIntroductionStep() {
         return introductionStep;

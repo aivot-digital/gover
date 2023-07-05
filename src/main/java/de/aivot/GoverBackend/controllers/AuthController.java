@@ -1,42 +1,36 @@
 package de.aivot.GoverBackend.controllers;
 
-import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.exceptions.LoginFailedException;
 import de.aivot.GoverBackend.models.auth.AuthCredentials;
 import de.aivot.GoverBackend.models.auth.AuthResponse;
-import de.aivot.GoverBackend.models.auth.SetPasswordRequest;
 import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.repositories.UserRepository;
 import de.aivot.GoverBackend.services.JwtService;
+import de.aivot.GoverBackend.services.PasswordService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Objects;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin
 public class AuthController {
-    private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
     @Autowired
-    public AuthController(UserRepository userRepository, JwtService jwtService) {
+    public AuthController(
+            UserRepository userRepository,
+            JwtService jwtService
+    ) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
     }
 
     @PostMapping("/api/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthCredentials credentials) {
-        Optional<User> foundUser = userRepository.findByEmail(credentials.getEmail());
+    public AuthResponse login(@RequestBody AuthCredentials credentials) {
+        Optional<User> foundUser = userRepository.getByEmail(credentials.getEmail());
 
         if (foundUser.isEmpty()) {
             throw new LoginFailedException("Invalid email or password");
@@ -48,50 +42,13 @@ public class AuthController {
             throw new LoginFailedException("Inactive user");
         }
 
-        if (passwordEncoder.matches(credentials.getPassword(), user.getPassword())) {
+        if (PasswordService.testPassword(credentials.getPassword(), user.getPassword())) {
             String token = jwtService.generateToken(user);
             AuthResponse authResponse = new AuthResponse();
             authResponse.setJwtToken(token);
-            return ResponseEntity.ok(authResponse);
+            return authResponse;
         } else {
             throw new LoginFailedException("Invalid email or password");
         }
-    }
-
-    @GetMapping("/api/profile")
-    public ResponseEntity<User> getProfile(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
-        if (user == null) {
-            throw new ResourceNotFoundException();
-        }
-        if (!user.isActive()) {
-            throw new AccessDeniedException("Inactive user");
-        }
-        return ResponseEntity.ok(user);
-    }
-
-    @PostMapping("/api/profile/set-password")
-    public ResponseEntity<HttpStatus> setPassword(Authentication authentication, @RequestBody SetPasswordRequest setPasswordRequest) {
-        User requester = (User) authentication.getPrincipal();
-
-        Long userId = setPasswordRequest.getUserId() != null ? setPasswordRequest.getUserId() : requester.getId();
-
-        Optional<User> foundUser = userRepository.findById(userId);
-
-        if (foundUser.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
-
-        User user = foundUser.get();
-
-        if (!Objects.equals(user.getId(), requester.getId()) && requester.getRole() != UserRole.Admin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        }
-
-        String newPassword = passwordEncoder.encode(setPasswordRequest.getPassword());
-        user.setPassword(newPassword);
-        userRepository.save(user);
-
-        return ResponseEntity.ok(HttpStatus.OK);
     }
 }

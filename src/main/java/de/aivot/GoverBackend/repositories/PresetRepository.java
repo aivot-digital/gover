@@ -1,10 +1,7 @@
 package de.aivot.GoverBackend.repositories;
 
 import de.aivot.GoverBackend.models.entities.Preset;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@RepositoryRestResource(collectionResourceRel = "presets", path = "presets")
-public interface PresetRepository extends PagingAndSortingRepository<Preset, Long>, CrudRepository<Preset, Long> {
+public interface PresetRepository extends JpaRepository<Preset, Integer> {
 }

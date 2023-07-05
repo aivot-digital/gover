@@ -10,7 +10,7 @@ import {
     DialogTitle,
     Typography
 } from '@mui/material';
-import {UserInputService} from '../../services/user-input.service';
+import {UserInputService} from '../../services/user-input-service';
 import {useDispatch} from 'react-redux';
 import {setUserInput} from '../../slices/customer-input-slice';
 import {format} from 'date-fns';

@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.models.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
 @ConfigurationProperties(prefix = "gover")
 public class GoverConfig {
@@ -11,6 +13,11 @@ public class GoverConfig {
     private String sentryServer;
     private String sentryWebApp;
     private String environment;
+    private List<String> fileExtensions;
+    private List<String> contentTypes;
+
+    
+    // region Getters & Setters
 
     public String getFromMail() {
         return fromMail;
@@ -51,4 +58,23 @@ public class GoverConfig {
     public void setEnvironment(String environment) {
         this.environment = environment;
     }
+
+    public List<String> getFileExtensions() {
+        return fileExtensions;
+    }
+
+    public void setFileExtensions(List<String> fileExtensions) {
+        this.fileExtensions = fileExtensions;
+    }
+
+    public List<String> getContentTypes() {
+        return contentTypes;
+    }
+
+    public void setContentTypes(List<String> contentTypes) {
+        this.contentTypes = contentTypes;
+    }
+
+
+    // endregion
 }

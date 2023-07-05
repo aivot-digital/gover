@@ -1,18 +1,15 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Box, Container, Divider, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faArrowRight, faArrowUpLeft} from '@fortawesome/pro-solid-svg-icons';
 import {showNotImplementedMessage} from '../../utils/show-not-implemented-message';
-import strings from './introductory-strings.json';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {faXmarkCircle} from '@fortawesome/pro-light-svg-icons';
-import {Localization} from '../../locale/localization';
 import {AppMode} from "../../data/app-mode";
+import {LocalStorageService} from "../../services/local-storage-service";
+import {LocalstorageKey} from "../../data/localstorage-key";
 
-const __ = Localization(strings);
-
-const dismissIntroStorageKey = '__dismiss_intro__'
 
 interface IntroductoryProps {
     mode: AppMode;
@@ -22,15 +19,12 @@ export function Introductory({mode}: IntroductoryProps) {
     const theme = useTheme();
     const systemConfig = useAppSelector(state => state.systemConfig);
 
-    const [show, setShow] = useState(false);
+    const [show, setShow] = useState(!LocalStorageService.loadFlag(LocalstorageKey.IntoDismissed));
 
-    useEffect(() => {
-        setShow(localStorage.getItem(dismissIntroStorageKey) == null);
-    }, []);
 
     const onDismiss = () => {
         setShow(false);
-        localStorage.setItem(dismissIntroStorageKey, 'true');
+        LocalStorageService.storeFlag(LocalstorageKey.IntoDismissed, true);
     }
 
     if (!show) {
@@ -54,7 +48,7 @@ export function Introductory({mode}: IntroductoryProps) {
                         mode === AppMode.Staff &&
                         <Box sx={{position: 'absolute', right: theme.spacing(11)}}>
                             <Tooltip
-                                title={__.dismissTooltip}
+                                title="Blende diese Meldung aus"
                             >
                                 <IconButton
                                     sx={{color: theme.palette.secondary.main}}
@@ -72,7 +66,7 @@ export function Introductory({mode}: IntroductoryProps) {
                             fontSize={'1.75rem'}
                             color={'white'}
                         >
-                            {__.caption}
+                            Herzlich willkommen!
                         </Typography>
                         <Typography
                             variant="h2"
@@ -82,7 +76,9 @@ export function Introductory({mode}: IntroductoryProps) {
                             color={'white'}
                             sx={{mt: 2}}
                         >
-                            <span style={{color: theme.palette.secondary.main}}>{__.title}</span><br/>
+                            <span style={{color: theme.palette.secondary.main}}>
+                                Das neue Online-Antrags-Management
+                            </span><br/>
                             {systemConfig[SystemConfigKeys.provider.name]}
                         </Typography>
 
@@ -126,7 +122,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                         size={'xs'}
                                         style={{marginRight: '6px', flexShrink: 0}}
                                     />
-                                    <span>{__.gettingStartedLink}</span>
+                                    <span>Zur Benutzereinführung (inkl. Video-Kurs)</span>
                                 </Typography>
 
                                 <Typography
@@ -156,7 +152,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                         size={'xs'}
                                         style={{marginRight: '6px', flexShrink: 0}}
                                     />
-                                    <span>{__.newProcessLink}</span>
+                                    <span>Alles neu – was jetzt? Die neuen Arbeitsabläufe und Prozessschritte für Online-Formulare einfach erklärt</span>
                                 </Typography>
                             </>
                         }

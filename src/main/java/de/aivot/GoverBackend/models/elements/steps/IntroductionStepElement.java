@@ -12,8 +12,6 @@ public class IntroductionStepElement extends BaseElement {
     private String initiativeLink;
     private String teaserText;
     private String organization;
-    private Integer responsibleDepartment;
-    private Integer managingDepartment;
     private Collection<String> eligiblePersons;
     private Collection<String> supportingDocuments;
     private Collection<String> documentsToAttach;
@@ -30,8 +28,6 @@ public class IntroductionStepElement extends BaseElement {
         initiativeLink = MapUtils.getString(values, "initiativeLink");
         teaserText = MapUtils.getString(values, "teaserText");
         organization = MapUtils.getString(values, "organization");
-        responsibleDepartment = MapUtils.getInteger(values, "responsibleDepartment");
-        managingDepartment = MapUtils.getInteger(values, "managingDepartment");
         eligiblePersons = MapUtils.get(values, "eligiblePersons", Collection.class);
         supportingDocuments = MapUtils.get(values, "supportingDocuments", Collection.class);
         documentsToAttach = MapUtils.get(values, "documentsToAttach", Collection.class);
@@ -78,22 +74,6 @@ public class IntroductionStepElement extends BaseElement {
 
     public void setOrganization(String organization) {
         this.organization = organization;
-    }
-
-    public Integer getResponsibleDepartment() {
-        return responsibleDepartment;
-    }
-
-    public void setResponsibleDepartment(Integer responsibleDepartment) {
-        this.responsibleDepartment = responsibleDepartment;
-    }
-
-    public Integer getManagingDepartment() {
-        return managingDepartment;
-    }
-
-    public void setManagingDepartment(Integer managingDepartment) {
-        this.managingDepartment = managingDepartment;
     }
 
     public Collection<String> getEligiblePersons() {

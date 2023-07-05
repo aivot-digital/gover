@@ -17,10 +17,9 @@ export function PresetTab({parentType, onAddElement}: BaseTabProps) {
     const [presets, setPresets] = useState<Preset[]>();
 
     useEffect(() => {
-        PresetsService.list()
-            .then(response => {
-                setPresets(response._embedded.presets);
-            });
+        PresetsService
+            .list()
+            .then(setPresets);
     }, [parentType, setPresets]);
 
     const addPresetElement = (preset: Preset) => {

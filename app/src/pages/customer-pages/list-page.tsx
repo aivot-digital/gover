@@ -7,35 +7,33 @@ import {createAppTheme} from '../../theming/themes';
 import {NotFoundPage} from '../../components/static-components/not-found-page/not-found-page';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {ListApplication} from "../../models/entities/list-application";
+import {PublicListApplication} from "../../models/entities/public-list-application";
 import {selectSystemConfigValue} from "../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../data/system-config-keys";
-import {ApplicationService} from "../../services/application.service";
+import {ApplicationService} from "../../services/application-service";
 import {AppHeader} from "../../components/app-header/app-header";
 import {AppMode} from "../../data/app-mode";
-import {Link} from "react-router-dom";
 import {ListHeader} from "../../components/list-header/list-header";
 import {AppFooter} from "../../components/app-footer/app-footer";
 import {Introductory} from "../../components/introductory/introductory";
-import {ApplicationListItemDisplay} from "../../components/application-list-item/application-list-item-display";
+import {ApplicationListItemPublic} from "../../components/application-list-item/application-list-item-public";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {resetUserInput} from "../../slices/customer-input-slice";
 import {resetErrors} from "../../slices/customer-input-errors-slice";
 import {resetStepper} from "../../slices/stepper-slice";
 import {clearAppModel} from "../../slices/app-slice";
-import {UserInputService} from "../../services/user-input.service";
 
 export function ListPage() {
     const dispatch = useAppDispatch();
     const [failedToLoad, setFailedToLoad] = useState(false);
-    const [applications, setApplications] = useState<ListApplication[]>();
+    const [applications, setApplications] = useState<PublicListApplication[]>();
     const [search, setSearch] = useState('');
 
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const systemTheme = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     useEffect(() => {
-        ApplicationService.listPublishedApplications()
+        ApplicationService.listPublic()
             .then(apps => setApplications(apps.sort()))
             .catch(err => {
                 console.error(err);
@@ -92,7 +90,7 @@ export function ListPage() {
                             <List>
                                 {
                                     filteredApplications.map(app => (
-                                        <ApplicationListItemDisplay
+                                        <ApplicationListItemPublic
                                             key={app.slug + app.version}
                                             application={app}
                                         />

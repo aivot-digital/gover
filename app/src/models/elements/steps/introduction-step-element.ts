@@ -9,8 +9,6 @@ export interface IntroductionStepElement extends BaseElement<ElementType.Introdu
     teaserText?: string;
 
     organization?: string;
-    responsibleDepartment?: number;
-    managingDepartment?: number;
 
     eligiblePersons?: string[];
     supportingDocuments?: string[];

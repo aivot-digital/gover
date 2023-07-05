@@ -1,13 +1,6 @@
 package de.aivot.GoverBackend.models.entities;
 
-import de.aivot.GoverBackend.enums.DestinationType;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
@@ -16,22 +9,44 @@ import java.time.LocalDateTime;
 @Table(name = "provider_links")
 public class ProviderLink {
     @Id
-    @GeneratedValue
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "provider_links_id_seq")
+    @SequenceGenerator(name = "provider_links_id_seq", allocationSize = 1)
+    private Integer id;
+
+    @NotNull
+    @Column(length = 128)
     @NotBlank(message = "Text cannot be blank")
     private String text;
+
+    @NotNull
+    @Column(length = 128)
     @NotNull(message = "Link cannot be blank")
     private String link;
-    @CreationTimestamp
+
+    @NotNull
     private LocalDateTime created;
-    @UpdateTimestamp
+
+    @NotNull
     private LocalDateTime updated;
 
-    public Long getId() {
+    @PrePersist
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
+    // region Getters & Setters
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -66,4 +81,7 @@ public class ProviderLink {
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
     }
+
+
+    // endregion
 }

@@ -1,9 +1,20 @@
-import {Checkbox, FormControl, FormControlLabel, TextField} from '@mui/material';
+import {Checkbox, FormControl, FormControlLabel} from '@mui/material';
 import {FileUploadElement} from "../../models/elements/form/input/file-upload-element";
-import {StringListInput} from "../string-list-input/string-list-input";
 import {BaseEditor} from "../../editors/base-editor";
+import {useEffect, useState} from "react";
+import {SystemService} from "../../services/system-service";
+import {NumberFieldComponent} from "../number-field/number-field-component";
+import {MultiCheckboxComponent} from "../multi-checkbox-field/multi-checkbox-component";
 
 export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatch}) => {
+    const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
+
+    useEffect(() => {
+        SystemService
+            .getFileExtensions()
+            .then(setAllowedExtensions);
+    }, []);
+
     const invalidMinMax = element.minFiles != null && element.maxFiles != null && element.minFiles > element.maxFiles;
 
     return (
@@ -27,48 +38,44 @@ export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatc
             {
                 element.isMultifile &&
                 <>
-                    <TextField
-                        value={(element.minFiles ?? 0).toString()}
+                    <NumberFieldComponent
+                        value={element.minFiles}
                         label="Minimalzahl an Anlagen"
-                        fullWidth
-                        margin="normal"
-                        helperText={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : 'Geben Sie 0 ein, um keine Minimalzahl zu fordern.'}
-                        onChange={event => {
-                            const val = parseInt(event.target.value ?? '0');
+                        hint="Geben Sie 0 ein, um keine Minimalzahl zu fordern."
+                        onChange={val => {
                             onPatch({
-                                minFiles: isNaN(val) ? 0 : val,
+                                minFiles: val,
                             });
                         }}
-                        error={invalidMinMax}
+                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
                     />
 
-                    <TextField
-                        value={(element.maxFiles ?? 0).toString()}
+                    <NumberFieldComponent
+                        value={element.maxFiles}
                         label="Maximalanzahl an Anlagen"
-                        fullWidth
-                        margin="normal"
-                        helperText={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : 'Geben Sie 0 ein, um keine Maximalanzahl zu fordern.'}
-                        onChange={event => {
-                            const val = parseInt(event.target.value ?? '0');
+                        hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                        onChange={val => {
                             onPatch({
-                                maxFiles: isNaN(val) ? 0 : val,
+                                maxFiles: val,
                             });
                         }}
-                        error={invalidMinMax}
+                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
                     />
                 </>
             }
 
-            <StringListInput
+            <MultiCheckboxComponent
                 label="Erlaubte Dateiendungen"
-                addLabel="Dateiendung hinzufügen"
-                hint="Die Bürger:in kann nur Dateien mit diesen Endungen hochladen. Gebe Sie die Endung ohne Punkt an. Z.B. pdf."
-                noItemsHint="Keine Endungen hinzugefügt. Bürger:innen können Dateien mit beliebiger Endung hochladen."
                 value={element.extensions}
-                onChange={extensions => onPatch({
-                    extensions: extensions,
-                })}
-                allowEmpty={true}
+                onChange={val => {
+                    onPatch({
+                        extensions: val,
+                    });
+                }}
+                hint="Die Bürger:in kann nur Dateien mit diesen Endungen hochladen."
+                error={element.extensions == null || element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
+                options={allowedExtensions ?? []}
+                required
             />
         </>
     );

@@ -1,33 +1,68 @@
 package de.aivot.GoverBackend.models.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.enums.SystemConfigKey;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "system_configs")
 public class SystemConfig {
     @Id
-    private SystemConfigKey key;
-    @NotBlank(message = "Value cannot be blank")
+    @Column(length = 64)
+    private String key;
+
+    @NotNull
+    @Column(length = 96)
     private String value;
+
+    @NotNull
     @ColumnDefault("FALSE")
-    private boolean isPublic;
-    @CreationTimestamp
+    private boolean publicConfig;
+
+    @NotNull
     private LocalDateTime created;
-    @UpdateTimestamp
+
+    @NotNull
     private LocalDateTime updated;
 
-    @PreUpdate
     @PrePersist
-    public void setLastUpdated() {
-        isPublic = key.isPublic();
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
+    // region Getters & Setters
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public boolean isPublicConfig() {
+        return publicConfig;
+    }
+
+    public void setPublicConfig(boolean publicConfig) {
+        this.publicConfig = publicConfig;
     }
 
     public LocalDateTime getCreated() {
@@ -46,29 +81,6 @@ public class SystemConfig {
         this.updated = updated;
     }
 
-    public SystemConfigKey getKey() {
-        return key;
-    }
 
-    public void setKey(SystemConfigKey key) {
-        this.key = key;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    @JsonIgnore
-    public boolean isPublic() {
-        return isPublic;
-    }
-
-    @JsonIgnore
-    public void setPublic(boolean aPublic) {
-        isPublic = aPublic;
-    }
+    // endregion
 }

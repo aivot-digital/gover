@@ -1,8 +1,6 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {FormControl, FormGroup, InputLabel, MenuItem, Select, TextField, Typography} from '@mui/material';
-import {Department} from "../../models/entities/department";
-import {DepartmentsService} from "../../services/departments.service";
+import {FormGroup, InputLabel, TextField, Typography} from '@mui/material';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
 import {CheckboxTree} from "../checkbox-tree/checkbox-tree";
 import {StringListInput} from "../string-list-input/string-list-input";
@@ -82,77 +80,8 @@ function orderEligiblePersons(value: string[]): string[] {
 }
 
 export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
-    const [vendors, setVendors] = useState<Department[]>([]);
-
-    useEffect(() => {
-        DepartmentsService.list()
-            .then(data => {
-                setVendors(data._embedded.departments);
-            });
-    }, []);
-
     return (
         <>
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Zuständige Stelle</InputLabel>
-                <Select
-                    value={props.element.responsibleDepartment ?? ''}
-                    label="Zuständige Stelle"
-                    onChange={event => props.onPatch({
-                        responsibleDepartment: event.target.value as number,
-                    })}
-                >
-                    <MenuItem
-                        value={''}
-                    >
-                        <i>Keine Auswahl</i>
-                    </MenuItem>
-                    {
-                        vendors.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
-
-            <FormControl
-                fullWidth
-                margin="normal"
-            >
-                <InputLabel>Bewirtschaftende Stelle</InputLabel>
-                <Select
-                    value={props.element.managingDepartment ?? ''}
-                    label="Bewirtschaftende Stelle"
-                    onChange={event => props.onPatch({
-                        managingDepartment: event.target.value as number,
-                    })}
-                >
-                    <MenuItem
-                        value={''}
-                    >
-                        <i>Keine Auswahl</i>
-                    </MenuItem>
-                    {
-                        vendors.map((vendor) => (
-                            <MenuItem
-                                key={vendor.id}
-                                value={vendor.id}
-                            >
-                                {vendor.name}
-                            </MenuItem>
-                        ))
-                    }
-                </Select>
-            </FormControl>
-
             <Typography
                 variant="h6"
                 sx={{mt: 4}}
@@ -200,7 +129,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 value={props.element.teaserText ?? ''}
                 label="Kurzbeschreibung"
                 margin="normal"
-                helperText="Schildern Sie kurz und präzise den Antrag und dessen Zweck."
+                helperText="Schildern Sie kurz und präzise das Formular und dessen Zweck."
                 multiline
                 rows={4}
                 onChange={event => props.onPatch({

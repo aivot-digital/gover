@@ -89,6 +89,11 @@
             <artifactId>sentry-spring-boot-starter</artifactId>
             <version>6.18.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>9.19.4</version>
+        </dependency>
     </dependencies>
 
     <build>

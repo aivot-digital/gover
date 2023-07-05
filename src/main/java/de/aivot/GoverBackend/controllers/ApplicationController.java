@@ -1,128 +1,340 @@
 package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.ApplicationStatus;
-import de.aivot.GoverBackend.models.config.GoverConfig;
+import de.aivot.GoverBackend.models.dtos.*;
 import de.aivot.GoverBackend.models.entities.*;
-import de.aivot.GoverBackend.repositories.ApplicationRepository;
-import de.aivot.GoverBackend.repositories.DepartmentRepository;
-import de.aivot.GoverBackend.repositories.DestinationRepository;
-import de.aivot.GoverBackend.repositories.SystemConfigRepository;
+import de.aivot.GoverBackend.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin
 public class ApplicationController {
     private final ApplicationRepository applicationRepository;
+    private final AccessibleApplicationRepository accessibleApplicationRepository;
+    private final AccessibleDepartmentRepository accessibleDepartmentRepository;
     private final DepartmentRepository departmentRepository;
     private final DestinationRepository destinationRepository;
-    private final SystemConfigRepository systemConfigRepository;
-    private final GoverConfig goverConfig;
 
     @Autowired
-    public ApplicationController(ApplicationRepository applicationRepository, DepartmentRepository departmentRepository, DestinationRepository destinationRepository, SystemConfigRepository systemConfigRepository, GoverConfig goverConfig) {
+    public ApplicationController(
+            ApplicationRepository applicationRepository,
+            AccessibleApplicationRepository accessibleApplicationRepository,
+            AccessibleDepartmentRepository accessibleDepartmentRepository,
+            DepartmentRepository departmentRepository,
+            DestinationRepository destinationRepository
+    ) {
         this.applicationRepository = applicationRepository;
+        this.accessibleApplicationRepository = accessibleApplicationRepository;
+        this.accessibleDepartmentRepository = accessibleDepartmentRepository;
         this.departmentRepository = departmentRepository;
         this.destinationRepository = destinationRepository;
-        this.systemConfigRepository = systemConfigRepository;
-        this.goverConfig = goverConfig;
     }
 
-    /**
-     * Fetch all published applications.
-     * @return A collection of all published applications.
-     */
+    @GetMapping("/api/applications")
+    public Collection<ApplicationListDto> list(
+            Authentication authentication
+    ) {
+        User requester = (User) authentication.getPrincipal();
+
+        Collection<Application> applications;
+        if (requester.isAdmin()) {
+            applications = applicationRepository
+                    .findAll();
+        } else {
+            var accessibleIds = accessibleApplicationRepository
+                    .findAllByKey_UserId(requester.getId())
+                    .stream()
+                    .map(acc -> acc.getKey().getApplicationId())
+                    .toList();
+            applications = applicationRepository
+                    .findAllByIdIn(accessibleIds);
+        }
+
+        return applications
+                .stream()
+                .map(ApplicationListDto::new)
+                .toList();
+    }
+
     @GetMapping("/api/public/applications")
-    public Collection<ListApplication> getApplicationList() {
-        var applicationResult = applicationRepository.findPublishedApplications();
-        return applicationResult.stream().map(ListApplication::new).toList();
+    public Collection<ApplicationListPublicDto> listPublic() {
+        return applicationRepository
+                .findAllByStatus(ApplicationStatus.Published)
+                .stream()
+                .map(ApplicationListPublicDto::valueOf)
+                .toList();
     }
 
-    /**
-     * Fetch a single application based on the slug and version. Not published applications are only served to authenticated users.
-     * @param authentication Optional authentication object of the current user.
-     * @param slug The slug of the application.
-     * @param version The version of the application
-     * @return The desired application or a resource not found exception.
-     */
-    @GetMapping("/api/public/applications/{slug}/{version}")
-    public Application getApplication(Authentication authentication, @PathVariable String slug, @PathVariable String version) {
-        User user = authentication != null ? (User) authentication.getPrincipal() : null;
-        var applicationResult = applicationRepository.getBySlugAndVersion(slug, version);
+    @PostMapping("/api/applications")
+    public ApplicationDetailsMinimalDto create(
+            Authentication authentication,
+            @RequestBody ApplicationDetailsFullDto newApp
+    ) {
+        var requester = (User) authentication.getPrincipal();
 
-        if (applicationResult.isPresent()) {
-            var application = applicationResult.get();
-            if (user != null || (application.getStatus() == ApplicationStatus.Published)) {
-                return application;
+        if (!requester.isAdmin()) {
+            boolean membershipExists = accessibleDepartmentRepository
+                    .existsByDepartmentIdAndUserId(newApp.getDevelopingDepartment(), requester.getId());
+            if (!membershipExists) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
             }
         }
 
-        throw new ResourceNotFoundException();
-    }
-
-    /**
-     * Get a department by its id.
-     * @param id The id of the department to fetch.
-     * @return The desired department or a resource not found exception.
-     */
-    @GetMapping("/api/public/departments/{id}")
-    public Department getDepartment(@PathVariable Long id) {
-        var department = departmentRepository.findById(id);
-
-        if (department.isPresent()) {
-            return department.get();
+        boolean exists = applicationRepository.existsBySlugAndVersion(newApp.getSlug(), newApp.getVersion());
+        if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
-        throw new ResourceNotFoundException();
+        var application = new Application();
+        application.setSlug(newApp.getSlug());
+        application.setVersion(newApp.getVersion());
+        application.setTitle(newApp.getTitle());
+        application.setStatus(newApp.getStatus());
+        application.setRoot(newApp.getRoot());
+        application.setSubmissionDeletionWeeks(newApp.getSubmissionDeletionWeeks());
+        application.setCustomerAccessHours(newApp.getCustomerAccessHours());
+
+        if (newApp.getDestination() != null) {
+            destinationRepository
+                    .findById(newApp.getDestination())
+                    .ifPresent(application::setDestination);
+        }
+
+        if (newApp.getLegalSupportDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getLegalSupportDepartment())
+                    .ifPresent(application::setLegalSupportDepartment);
+        }
+
+        if (newApp.getTechnicalSupportDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getTechnicalSupportDepartment())
+                    .ifPresent(application::setTechnicalSupportDepartment);
+        }
+
+        if (newApp.getImprintDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getImprintDepartment())
+                    .ifPresent(application::setImprintDepartment);
+        }
+
+        if (newApp.getPrivacyDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getPrivacyDepartment())
+                    .ifPresent(application::setPrivacyDepartment);
+        }
+
+        if (newApp.getAccessibilityDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getAccessibilityDepartment())
+                    .ifPresent(application::setAccessibilityDepartment);
+        }
+
+        if (newApp.getDevelopingDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getDevelopingDepartment())
+                    .ifPresent(application::setDevelopingDepartment);
+        }
+
+        if (newApp.getManagingDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getManagingDepartment())
+                    .ifPresent(application::setManagingDepartment);
+        }
+
+        if (newApp.getResponsibleDepartment() != null) {
+            departmentRepository
+                    .findById(newApp.getResponsibleDepartment())
+                    .ifPresent(application::setResponsibleDepartment);
+        }
+
+        var createdApplication = applicationRepository.save(application);
+        return new ApplicationDetailsMinimalDto(createdApplication);
     }
 
-    /**
-     * Get the maximum allowed total file sizes of an application.
-     * @param applicationId The id of the application.
-     * @return The maximum allowed total file size.
-     */
+    @GetMapping("/api/applications/{id}")
+    public ApplicationDetailsFullDto retrieve(
+            Authentication authentication,
+            @PathVariable Integer id
+    ) {
+        var requester = (User) authentication.getPrincipal();
+
+        if (!requester.isAdmin()) {
+            boolean membershipExists = accessibleApplicationRepository
+                    .existsByKey_ApplicationIdAndKey_UserId(id, requester.getId());
+            if (!membershipExists) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+        }
+
+        return applicationRepository
+                .findById(id)
+                .map(ApplicationDetailsFullDto::new)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/api/public/applications/{slug}/{version}")
+    public ApplicationDetailsFullDto retrievePublic(
+            Authentication authentication,
+            @PathVariable String slug,
+            @PathVariable String version
+    ) {
+        var user = authentication != null ? (User) authentication.getPrincipal() : null;
+        var applicationResult = applicationRepository.getBySlugAndVersion(slug, version);
+
+        if (applicationResult.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        var application = applicationResult.get();
+
+        if (application.getStatus() == ApplicationStatus.Published || user != null) {
+            return new ApplicationDetailsFullDto(application);
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PutMapping("/api/applications/{id}")
+    public ApplicationDetailsFullDto update(
+            Authentication authentication,
+            @PathVariable Integer id,
+            @RequestBody ApplicationDetailsFullDto updatedApp
+    ) {
+        var requester = (User) authentication.getPrincipal();
+        var optApp = applicationRepository.findById(id);
+
+        if (optApp.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        var existingApp = optApp.get();
+
+        if (existingApp.getStatus() == ApplicationStatus.Published && updatedApp.getStatus() != ApplicationStatus.Revoked) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
+        if (!requester.isAdmin()) {
+            boolean membershipExists = accessibleDepartmentRepository
+                    .existsByDepartmentIdAndUserId(
+                            existingApp.getDevelopingDepartment().getId(),
+                            requester.getId()
+                    );
+            if (!membershipExists) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            }
+        }
+
+        if (existingApp.getStatus() == ApplicationStatus.Published && updatedApp.getStatus() == ApplicationStatus.Revoked) {
+            existingApp.setStatus(ApplicationStatus.Revoked);
+        } else if (existingApp.getStatus() == ApplicationStatus.Revoked && updatedApp.getStatus() == ApplicationStatus.Published) {
+            existingApp.setStatus(ApplicationStatus.Published);
+        } else {
+            existingApp.setStatus(updatedApp.getStatus());
+            existingApp.setRoot(updatedApp.getRoot());
+            existingApp.setSubmissionDeletionWeeks(updatedApp.getSubmissionDeletionWeeks());
+            existingApp.setCustomerAccessHours(updatedApp.getCustomerAccessHours());
+
+            if (updatedApp.getDestination() != null) {
+                destinationRepository
+                        .findById(updatedApp.getDestination())
+                        .ifPresent(existingApp::setDestination);
+            }
+
+            if (updatedApp.getLegalSupportDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getLegalSupportDepartment())
+                        .ifPresent(existingApp::setLegalSupportDepartment);
+            }
+
+            if (updatedApp.getTechnicalSupportDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getTechnicalSupportDepartment())
+                        .ifPresent(existingApp::setTechnicalSupportDepartment);
+            }
+
+            if (updatedApp.getImprintDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getImprintDepartment())
+                        .ifPresent(existingApp::setImprintDepartment);
+            }
+
+            if (updatedApp.getPrivacyDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getPrivacyDepartment())
+                        .ifPresent(existingApp::setPrivacyDepartment);
+            }
+
+            if (updatedApp.getAccessibilityDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getAccessibilityDepartment())
+                        .ifPresent(existingApp::setAccessibilityDepartment);
+            }
+
+            if (updatedApp.getManagingDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getManagingDepartment())
+                        .ifPresent(existingApp::setManagingDepartment);
+            }
+
+            if (updatedApp.getResponsibleDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getResponsibleDepartment())
+                        .ifPresent(existingApp::setResponsibleDepartment);
+            }
+        }
+
+        var savedApplication = applicationRepository.save(existingApp);
+        return new ApplicationDetailsFullDto(savedApplication);
+    }
+
+    @DeleteMapping("/api/applications/{id}")
+    public void destroy(
+            Authentication authentication,
+            @PathVariable Integer id
+    ) {
+        var requester = (User) authentication.getPrincipal();
+
+        if (!requester.isAdmin()) {
+            boolean membershipExists = accessibleDepartmentRepository
+                    .existsByDepartmentIdAndUserId(
+                            id,
+                            requester.getId()
+                    );
+            if (!membershipExists) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            }
+        }
+
+        Optional<Application> app = applicationRepository.findById(id);
+        if (app.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        applicationRepository.delete(app.get());
+    }
+
     @GetMapping("/api/public/max-file-size/{applicationId}")
-    public Integer getMaxFileSize(@PathVariable Long applicationId) {
+    public MaxFileSizeDto getMaxFileSize(@PathVariable Integer applicationId) {
         Optional<Application> application = applicationRepository.findById(applicationId);
 
+        MaxFileSizeDto maxFileSizeDto = new MaxFileSizeDto();
+        maxFileSizeDto.setMaxFileSize(100);
+
         if (application.isPresent()) {
-            Integer destinationId = application.get().getRoot().getDestination();
-            if (destinationId != null) {
-                Optional<Destination> destination = destinationRepository.findById(Long.valueOf(destinationId));
-                if (destination.isPresent()) {
-                    if (destination.get().getMaxAttachmentMegaBytes() != null) {
-                        return destination.get().getMaxAttachmentMegaBytes();
-                    }
+            Destination destination = application.get().getDestination();
+            if (destination != null) {
+                if (destination.getMaxAttachmentMegaBytes() != null) {
+                    maxFileSizeDto.setMaxFileSize(destination.getMaxAttachmentMegaBytes());
                 }
             }
         }
 
-        return 100;
-    }
-
-    /**
-     * Get the sentry dns for the web app.
-     * @return The sentry dns for the web app.
-     */
-    @GetMapping("/api/public/sentry-dns")
-    public String getSentryDns() {
-        return goverConfig.getSentryWebApp();
-    }
-
-    /**
-     * Get the sentry dns for the web app.
-     * @return The sentry dns for the web app.
-     */
-    @GetMapping("/api/public/system-configs")
-    public Collection<SystemConfig> getPublicSystemConfigs() {
-        return systemConfigRepository.findPublicSystemConfigs();
+        return maxFileSizeDto;
     }
 }

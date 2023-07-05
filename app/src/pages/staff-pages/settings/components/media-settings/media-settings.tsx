@@ -1,59 +1,45 @@
-import {Alert, AlertTitle, Box, Button, Typography} from '@mui/material';
-import React, {useState} from 'react';
-import {ApiConfig} from '../../../../../api-config';
-import {SystemAssetKeys} from '../../../../../data/system-asset-keys';
-import axios from 'axios';
-import {CrudService} from '../../../../../services/crud.service';
-import {SystemAssetsService} from '../../../../../services/system-assets.service';
-import strings from './media-settings-strings.json';
-import {FileUpload} from '../../../../../components/file-upload/file-upload';
-import {Localization} from '../../../../../locale/localization';
+import {Box, Button, Typography} from '@mui/material';
+import React, {useReducer} from 'react';
+import {useAppSelector} from "../../../../../hooks/use-app-selector";
+import {fetchSystemConfig, selectSystemConfigValue} from "../../../../../slices/system-config-slice";
+import {SystemConfigKeys} from "../../../../../data/system-config-keys";
+import {AssetService} from "../../../../../services/asset-service";
+import {SelectAssetDialog} from "../../../../../dialogs/select-asset-dialog/select-asset-dialog";
+import {SystemConfigsService} from "../../../../../services/system-configs-service";
+import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
 
-const __ = Localization(strings);
 
 export function MediaSettings() {
-    const [faviconToUpload, setFaviconToUpload] = useState<File[]>([]);
-    const [faviconKey, setFaviconKey] = useState(SystemAssetKeys.provider.favicon);
-    const [faviconUploadSuccessful, setFaviconUploadSuccessful] = useState(false);
+    const dispatch = useAppDispatch();
 
-    const [logoToUpload, setLogoToUpload] = useState<File[]>([]);
-    const [logoKey, setLogoKey] = useState(SystemAssetKeys.provider.favicon);
-    const [logoUploadSuccessful, setLogoUploadSuccessful] = useState(false);
+    const [showFaviconSelect, toggleFaviconSelect] = useReducer(p => !p, false);
+    const [showLogoSelect, toggleLogoSelect] = useReducer(p => !p, false);
 
-    const upload = (assetKey: string) => {
-        let files: File[] = [];
-        switch (assetKey) {
-            case SystemAssetKeys.provider.favicon:
-                files = faviconToUpload;
-                break;
-            case SystemAssetKeys.provider.logo:
-                files = logoToUpload;
-                break;
-        }
+    const faviconConfigKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.favicon));
+    const logoConfigKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.logo));
 
-        if (files.length > 0) {
-            const file = files[0];
+    const handleSetFavicon = (favicon: string) => {
+        SystemConfigsService.update(SystemConfigKeys.system.favicon, {
+            key: SystemConfigKeys.system.favicon,
+            value: favicon,
+            publicConfig: true,
+            created: '',
+            updated: '',
+        });
+        toggleFaviconSelect();
+        dispatch(fetchSystemConfig());
+    };
 
-            if (file != null) {
-                const formData = new FormData();
-                formData.set('file', file);
-                axios.post(ApiConfig.address + '/system-assets/' + assetKey, formData, CrudService.getConfig())
-                    .then(() => {
-                        switch (assetKey) {
-                            case SystemAssetKeys.provider.favicon:
-                                setFaviconUploadSuccessful(true);
-                                setFaviconToUpload([]);
-                                setFaviconKey(Date.now().toString());
-                                break;
-                            case SystemAssetKeys.provider.logo:
-                                setLogoUploadSuccessful(true);
-                                setLogoToUpload([]);
-                                setLogoKey(Date.now().toString());
-                                break;
-                        }
-                    });
-            }
-        }
+    const handleSetLogo = (logo: string) => {
+        SystemConfigsService.update(SystemConfigKeys.system.logo, {
+            key: SystemConfigKeys.system.logo,
+            value: logo,
+            publicConfig: true,
+            created: '',
+            updated: '',
+        });
+        toggleLogoSelect();
+        dispatch(fetchSystemConfig());
     };
 
     return (
@@ -66,37 +52,22 @@ export function MediaSettings() {
                     Favicon
                 </Typography>
 
-                <Box sx={{mb: 2}}>
-                    <img
-                        src={SystemAssetsService.getFaviconLink() + '?' + faviconKey}
-                        alt="Favicon"
-                    />
-                </Box>
-
-                <FileUpload
-                    extensions={['ico']}
-                    value={faviconToUpload}
-                    onChange={setFaviconToUpload}
-                />
-
                 {
-                    faviconUploadSuccessful &&
-                    <Alert
-                        sx={{mt: 2}}
-                        severity="success"
-                        onClose={() => setFaviconUploadSuccessful(false)}
-                    >
-                        <AlertTitle>{__.uploadSuccessTitle}</AlertTitle>
-                        {__.uploadSuccessMessage}
-                    </Alert>
+                    faviconConfigKey != null &&
+                    <Box sx={{mb: 2}}>
+                        <img
+                            src={AssetService.getLink(faviconConfigKey)}
+                            alt="Favicon"
+                        />
+                    </Box>
                 }
+
 
                 <Button
                     sx={{mt: 2}}
-                    onClick={() => upload(SystemAssetKeys.provider.favicon)}
-                    disabled={faviconToUpload.length === 0}
+                    onClick={toggleFaviconSelect}
                 >
-                    {__.upload}
+                    Auswählen
                 </Button>
             </Box>
 
@@ -108,39 +79,37 @@ export function MediaSettings() {
                     Logo
                 </Typography>
 
-                <Box sx={{mb: 2}}>
-                    <img
-                        src={SystemAssetsService.getLogoLink() + '?' + logoKey}
-                        alt="Logo"
-                    />
-                </Box>
-
-                <FileUpload
-                    extensions={['png']}
-                    value={logoToUpload}
-                    onChange={setLogoToUpload}
-                />
-
                 {
-                    logoUploadSuccessful &&
-                    <Alert
-                        sx={{mt: 2}}
-                        severity="success"
-                        onClose={() => setLogoUploadSuccessful(false)}
-                    >
-                        <AlertTitle>{__.uploadSuccessTitle}</AlertTitle>
-                        {__.uploadSuccessMessage}
-                    </Alert>
+                    logoConfigKey != null &&
+                    <Box sx={{mb: 2}}>
+                        <img
+                            src={AssetService.getLink(logoConfigKey)}
+                            alt="Logo"
+                        />
+                    </Box>
                 }
 
                 <Button
                     sx={{mt: 2}}
-                    onClick={() => upload(SystemAssetKeys.provider.logo)}
-                    disabled={logoToUpload.length === 0}
+                    onClick={toggleLogoSelect}
                 >
-                    {__.upload}
+                    Hochladen
                 </Button>
             </Box>
+
+            <SelectAssetDialog
+                title="Favicon auswählen"
+                show={showFaviconSelect}
+                onSelect={handleSetFavicon}
+                onCancel={toggleFaviconSelect}
+            />
+
+            <SelectAssetDialog
+                title="Logo auswählen"
+                show={showLogoSelect}
+                onSelect={handleSetLogo}
+                onCancel={toggleLogoSelect}
+            />
         </>
     );
 }

@@ -5,14 +5,9 @@ import {MetaElement} from '../../../components/meta-element/meta-element';
 import {useDispatch, useSelector} from 'react-redux';
 import {faArrowRightToBracket} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import strings from './login-strings.json';
-import {SystemAssetsService} from '../../../services/system-assets.service';
-import {Localization} from '../../../locale/localization';
 import {authenticate, logout, selectAuthenticationState} from '../../../slices/auth-slice';
 import {AuthState} from "../../../data/auth-state";
-import { Logo } from '../../../components/static-components/logo/logo';
-
-const __ = Localization(strings);
+import {Logo} from '../../../components/static-components/logo/logo';
 
 export function Login() {
     const dispatch = useDispatch();
@@ -44,7 +39,7 @@ export function Login() {
     return (
         <>
             <MetaElement
-                title="Login"
+                title="Anmelden"
             />
 
             <Container sx={{mt: 5}}>
@@ -63,18 +58,21 @@ export function Login() {
                             height={100}
                         />
                     </Box>
+
                     <Typography
                         variant="h5"
                         color="primary"
                     >
-                        {__.title}
+                        Bitte melden Sie sich an
                     </Typography>
+
                     <Typography
                         variant="body2"
                         sx={{mt: 1}}
                     >
-                        {__.subtitle}
+                        Zur Nutzung dieser Anwendung ist ein Benutzer-Account notwendig.
                     </Typography>
+
                     <Box sx={{mt: 1, mb: 5}}>
                         <form
                             onSubmit={handleAuthenticate}
@@ -84,9 +82,9 @@ export function Login() {
                                 value={email}
                                 onChange={event => setEmail(event.target.value)}
                                 type="email"
-                                label={__.emailLabel}
-                                placeholder={__.emailPlaceholder}
-                                helperText={authState === AuthState.AuthenticationFailed && __.signInError}
+                                label="E-Mail-Adresse"
+                                placeholder="max.muster@gover.digital"
+                                helperText={authState === AuthState.AuthenticationFailed && "Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort"}
                                 error={authState === AuthState.AuthenticationFailed}
                                 disabled={isAuthenticating}
                             />
@@ -94,8 +92,8 @@ export function Login() {
                                 value={password}
                                 onChange={event => setPassword(event.target.value)}
                                 type="password"
-                                label={__.passwordLabel}
-                                helperText={authState === AuthState.AuthenticationFailed && __.signInError}
+                                label="Passwort"
+                                helperText={authState === AuthState.AuthenticationFailed && "Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort"}
                                 error={authState === AuthState.AuthenticationFailed}
                                 disabled={isAuthenticating}
                             />
@@ -113,10 +111,11 @@ export function Login() {
                                 }
                                 disabled={isAuthenticating}
                             >
-                                {__.signInLabel}
+                                Jetzt Anmelden
                             </Button>
                         </form>
-                    </Box></Box>
+                    </Box>
+                </Box>
             </Container>
         </>
     );

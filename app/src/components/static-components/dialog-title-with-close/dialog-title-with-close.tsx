@@ -4,10 +4,9 @@ import {faXmark} from '@fortawesome/pro-regular-svg-icons';
 import React from 'react';
 
 interface DialogTitleProps {
-    id: string;
     children?: React.ReactNode;
     onClose: () => void;
-    closeTooltip: string;
+    closeTooltip?: string;
 }
 
 export const DialogTitleWithClose = (props: DialogTitleProps) => {
@@ -26,7 +25,7 @@ export const DialogTitleWithClose = (props: DialogTitleProps) => {
 
             {
                 onClose &&
-                <Tooltip title={closeTooltip}>
+                <Tooltip title={closeTooltip ?? 'Schließen'}>
                     <IconButton
                         aria-label="close"
                         onClick={onClose}

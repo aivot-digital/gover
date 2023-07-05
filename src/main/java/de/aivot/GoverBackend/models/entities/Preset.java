@@ -2,36 +2,54 @@ package de.aivot.GoverBackend.models.entities;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.converters.*;
+import de.aivot.GoverBackend.converters.GroupLayoutConverter;
+import de.aivot.GoverBackend.converters.JacksonGroupLayoutDeserializer;
+import de.aivot.GoverBackend.converters.JacksonGroupLayoutSerializer;
 import de.aivot.GoverBackend.models.elements.form.layout.GroupLayout;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Entity
 @Table(name = "presets")
 public class Preset {
     @Id
-    @GeneratedValue
-    private Long id;
-    @Lob
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "presets_id_seq")
+    @SequenceGenerator(name = "presets_id_seq", allocationSize = 1)
+    private Integer id;
+
+    @NotNull
     @Convert(converter = GroupLayoutConverter.class)
     @JsonSerialize(converter = JacksonGroupLayoutSerializer.class)
     @JsonDeserialize(converter = JacksonGroupLayoutDeserializer.class)
+    @Column(columnDefinition = "jsonb")
     private GroupLayout root;
-    @CreationTimestamp
+
+    @NotNull
     private LocalDateTime created;
-    @UpdateTimestamp
+
+    @NotNull
     private LocalDateTime updated;
 
-    public Long getId() {
+    @PrePersist
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
+    // region Getters & Setters
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -58,4 +76,6 @@ public class Preset {
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
     }
+
+    // endregion
 }

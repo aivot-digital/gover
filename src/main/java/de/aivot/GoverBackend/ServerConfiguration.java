@@ -16,6 +16,7 @@ public class ServerConfiguration implements RepositoryRestConfigurer {
                 .allowedMethods("OPTIONS", "HEAD", "GET", "PUT", "POST", "DELETE", "PATCH")
                 .allowedHeaders("*");
 
+        /*
         config.exposeIdsFor(
                 Application.class,
                 Department.class,
@@ -25,5 +26,7 @@ public class ServerConfiguration implements RepositoryRestConfigurer {
                 SystemConfig.class,
                 ProviderLink.class
         );
+
+         */
     }
 }

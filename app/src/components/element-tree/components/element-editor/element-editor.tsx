@@ -55,10 +55,13 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
     const handleSavePreset = (presetName: string) => {
         if (props.element.type === ElementType.Container) {
             PresetsService.create({
+                id: 0,
                 root: {
                     ...props.element,
                     name: presetName,
                 },
+                created: '',
+                updated: '',
             })
                 .then(() => {
                     dispatch(showSuccessSnackbar('Preset Saved!'));

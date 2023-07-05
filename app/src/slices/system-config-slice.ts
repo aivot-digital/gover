@@ -1,10 +1,13 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit'
-import {SystemConfigsService} from '../services/system-configs.service';
+import {SystemConfigsService} from '../services/system-configs-service';
 import {RootState} from '../store';
 
-const initialState: {
+
+export type SystemConfigMap = {
     [key: string]: string;
-} = {};
+}
+
+const initialState: SystemConfigMap = {};
 
 export const fetchSystemConfig = createAsyncThunk(
     'systemConfig/fetchSystemConfig',
@@ -27,7 +30,7 @@ export const systemConfigSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchSystemConfig.fulfilled, (state, action) => {
-                action.payload._embedded.systemConfigs.forEach(config => {
+                action.payload.forEach(config => {
                     state[config.key] = config.value;
                 });
             })

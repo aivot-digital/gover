@@ -5,15 +5,16 @@ import {faClose, faExternalLink, faLock} from "@fortawesome/pro-light-svg-icons"
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {selectSystemConfigValue} from "../../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../../data/system-config-keys";
-import {DetailModule, GoverStoreService} from "../../../services/gover-store.service";
+import {GoverStoreService} from "../../../services/gover-store.service";
 import {
     LoadingPlaceholderComponentView
 } from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
 import {isStringNotNullOrEmpty} from "../../../utils/string-utils";
+import {StoreDetailModule} from "../../../models/entities/store-detail-module";
 
 
 export function ModuleInfoTab({moduleId, onClose}: { moduleId: string, onClose: () => void }) {
-    const [module, setModule] = useState<DetailModule>();
+    const [module, setModule] = useState<StoreDetailModule>();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
 
     useEffect(() => {

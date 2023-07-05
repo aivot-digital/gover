@@ -3,7 +3,10 @@ import React from 'react';
 import ProjectPackage from '../../../package.json';
 import gitInfo from '../../git-info.json';
 import {useTheme} from '@mui/material';
-import {SystemAssetsService} from '../../services/system-assets.service';
+import {useAppSelector} from "../../hooks/use-app-selector";
+import {selectSystemConfigValue} from "../../slices/system-config-slice";
+import {SystemConfigKeys} from "../../data/system-config-keys";
+import {AssetService} from "../../services/asset-service";
 
 interface MetaElementProps {
     title?: string;
@@ -11,6 +14,8 @@ interface MetaElementProps {
 
 export function MetaElement({title}: MetaElementProps) {
     const theme = useTheme();
+
+    const favicon = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.favicon));
 
     const colorVariables = Object.entries({
         'primary': theme.palette.primary.main,
@@ -42,7 +47,7 @@ export function MetaElement({title}: MetaElementProps) {
             />
             <link
                 rel="icon"
-                href={SystemAssetsService.getFaviconLink()}
+                href={AssetService.getLink(favicon)}
             />
             <meta charSet="utf-8"/>
             {
