@@ -7,4 +7,5 @@ export interface SubmissionListDto {
     fileNumber: string | null;
     destination: number | null;
     destinationSuccess: boolean | null;
+    isTestSubmission: boolean;
 }

@@ -3,7 +3,6 @@ import React, { type FormEvent, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
 import { FileUpload } from '../../../components/file-upload/file-upload';
 import { AssetService } from '../../../services/asset-service';
@@ -11,12 +10,11 @@ import { showErrorSnackbar } from '../../../slices/snackbar-slice';
 
 export function AssetEditPage(): JSX.Element {
     useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
 
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const { name } = useParams();
+    const {name} = useParams();
 
     const [file, setFile] = useState<File[]>([]);
     const [isBusy, setIsBusy] = useState(false);
@@ -39,7 +37,7 @@ export function AssetEditPage(): JSX.Element {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Datei konnte nicht hochgeladen werden.'));
+                dispatch(showErrorSnackbar('Die von Ihnen hochgeladene Datei weist die Signatur eines Virus auf und wurde abgelehnt. Probieren Sie eine andere Datei.'));
                 setIsBusy(false);
             });
     };
@@ -71,7 +69,7 @@ export function AssetEditPage(): JSX.Element {
                 <form onSubmit={ handleSubmit }>
                     <Typography
                         variant="h6"
-                        sx={ { mb: 4 } }
+                        sx={ {mb: 4} }
                     >
                         Neue Anlage hochladen
                     </Typography>
@@ -82,7 +80,7 @@ export function AssetEditPage(): JSX.Element {
                         multiple={ false }
                     />
 
-                    <Box sx={ { mt: 4 } }>
+                    <Box sx={ {mt: 4} }>
                         <Button
                             type="submit"
                             disabled={ file.length === 0 }
@@ -108,7 +106,7 @@ export function AssetEditPage(): JSX.Element {
                         </a>
                     </Typography>
 
-                    <Box sx={ { mt: 4 } }>
+                    <Box sx={ {mt: 4} }>
                         <Button
                             color="error"
                             onClick={ handleDelete }

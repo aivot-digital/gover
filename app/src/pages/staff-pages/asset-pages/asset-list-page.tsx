@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { faPlus } from '@fortawesome/pro-light-svg-icons';
 import { type GridColDef } from '@mui/x-data-grid';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { AssetService } from '../../../services/asset-service';
 import { delayPromise } from '../../../utils/with-delay';
@@ -42,7 +41,6 @@ const columns: Array<GridColDef<Asset>> = [
 
 export function AssetListPage(): JSX.Element {
     useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
 
     const dispatch = useAppDispatch();
     const navigate = useNavigate();

@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Grid, type Theme, ThemeProvider } from '@mui/material';
+import { Container, Grid, ThemeProvider } from '@mui/material';
 import {
     LoadingPlaceholderComponentView,
 } from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ViewDispatcherComponent } from '../../../components/view-dispatcher.component';
-import { createAppTheme, createDefaultAppTheme } from '../../../theming/themes';
+import { createDefaultAppTheme } from '../../../theming/themes';
 import { NotFoundPage } from '../../../components/static-components/not-found-page/not-found-page';
 import { MetaElement } from '../../../components/meta-element/meta-element';
 import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import { AppToolbar } from '../../../components/app-toolbar/app-toolbar';
-import { useAppSelector } from '../../../hooks/use-app-selector';
 import { PresetsService } from '../../../services/presets.service';
 import { type Preset } from '../../../models/entities/preset';
-import { selectSystemConfigValue } from '../../../slices/system-config-slice';
-import { SystemConfigKeys } from '../../../data/system-config-keys';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
 import { ElementTree } from '../../../components/element-tree/element-tree';
@@ -28,8 +25,6 @@ export function PresetEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const params = useParams();
-
-    const defaultTheme = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const [preset, setPreset] = useState<Preset>();
     const [failedToLoad, setFailedToLoad] = useState<boolean>();
@@ -53,7 +48,7 @@ export function PresetEditPage(): JSX.Element {
             PresetsService.update(preset.id, preset)
                 .catch((err) => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Failed to save preset'));
+                    dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
                 });
         }
     }, [preset]);
@@ -70,7 +65,7 @@ export function PresetEditPage(): JSX.Element {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Vorlage konnte nicht gelöscht werden.'));
+                dispatch(showErrorSnackbar('Vorlage konnte nicht gelöscht werden'));
             });
     };
 
@@ -80,7 +75,10 @@ export function PresetEditPage(): JSX.Element {
                 <AppToolbar
                     title="Nicht gefunden"
                 />
-                <NotFoundPage/>
+                <NotFoundPage
+                    title="Vorlage nicht gefunden"
+                    msg="Die von Ihnen aufgerufene Vorlage konnte nicht gefunden werden."
+                />
             </>
         );
     } else if (preset == null) {
@@ -89,33 +87,33 @@ export function PresetEditPage(): JSX.Element {
         const allElements = flattenElements(preset.root);
 
         return (
-            <ThemeProvider theme={createDefaultAppTheme}>
+            <ThemeProvider theme={ createDefaultAppTheme }>
                 <MetaElement
-                    title={`Vorlagen-Editor - ${ preset.root.name ?? '' }`}
+                    title={ `Vorlagen-Editor - ${ preset.root.name ?? '' }` }
                 />
 
                 <AppToolbar
-                    title={preset.root.name ?? ''}
-                    noPlaceholder={true}
-                    actions={[{
+                    title={ preset.root.name ?? '' }
+                    noPlaceholder={ true }
+                    actions={ [{
                         icon: faTrashAlt,
                         tooltip: 'Vorlage löschen',
                         onClick: () => {
                             setConfirmDelete(() => handleDelete);
                         },
-                    }]}
+                    }] }
                 />
 
                 <Grid
                     container
-                    sx={{
+                    sx={ {
                         minHeight: '100vh',
-                    }}
+                    } }
                 >
                     <Grid
                         item
-                        xs={4}
-                        sx={{
+                        xs={ 4 }
+                        sx={ {
                             pt: 8,
                             px: 2,
                             boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
@@ -123,11 +121,11 @@ export function PresetEditPage(): JSX.Element {
                             overflowY: 'scroll',
                             borderRight: '1px solid #E0E7E0',
                             position: 'relative',
-                        }}
+                        } }
                     >
                         <ElementTree
-                            element={preset.root}
-                            onPatch={(patch) => {
+                            element={ preset.root }
+                            onPatch={ (patch) => {
                                 setPreset({
                                     ...preset,
                                     root: {
@@ -135,23 +133,23 @@ export function PresetEditPage(): JSX.Element {
                                         ...patch,
                                     },
                                 });
-                            }}
+                            } }
                         />
                     </Grid>
 
                     <Grid
                         item
-                        xs={8}
-                        sx={{
+                        xs={ 8 }
+                        sx={ {
                             pt: 8,
                             height: '100vh',
                             overflowY: 'scroll',
-                        }}
+                        } }
                     >
                         <Container>
                             <ViewDispatcherComponent
-                                allElements={allElements}
-                                element={preset.root}
+                                allElements={ allElements }
+                                element={ preset.root }
                             />
                         </Container>
                     </Grid>
@@ -159,10 +157,12 @@ export function PresetEditPage(): JSX.Element {
 
                 <ConfirmDialog
                     title="Vorlage wirklich löschen"
-                    onConfirm={confirmDelete}
-                    onCancel={() => {setConfirmDelete(undefined);}}
+                    onConfirm={ confirmDelete }
+                    onCancel={ () => {
+                        setConfirmDelete(undefined);
+                    } }
                 >
-                    Sind Sie sicher, dass Sie die Vorlage <strong>{preset.root.name}</strong> wirklich löschen wollen?
+                    Sind Sie sicher, dass Sie die Vorlage <strong>{ preset.root.name }</strong> wirklich löschen wollen?
                     Bitte beachten Sie, dass dies <u>nicht rückgängig</u> gemacht werden kann!
                 </ConfirmDialog>
             </ThemeProvider>

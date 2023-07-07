@@ -22,6 +22,8 @@ public class SubmissionListDto {
 
     private Boolean destinationSuccess;
 
+    private Boolean isTestSubmission;
+
     public SubmissionListDto() {
     }
 
@@ -38,6 +40,7 @@ public class SubmissionListDto {
             destination = submission.getDestination().getId();
         }
         destinationSuccess = submission.getDestinationSuccess();
+        isTestSubmission = submission.getIsTestSubmission();
     }
 
     // region Getters & Setters
@@ -106,6 +109,13 @@ public class SubmissionListDto {
         this.destinationSuccess = destinationSuccess;
     }
 
+    public Boolean getIsTestSubmission() {
+        return isTestSubmission;
+    }
 
-    // endregion
+    public void setIsTestSubmission(Boolean testSubmission) {
+        isTestSubmission = testSubmission;
+    }
+
+// endregion
 }

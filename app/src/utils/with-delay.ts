@@ -3,7 +3,7 @@
  * @param func
  * @param delay
  */
-export async function withDelay<T> (func: () => Promise<T>, delay: number): Promise<T> {
+export async function withDelay<T>(func: () => Promise<T>, delay: number): Promise<T> {
     const start = new Date().getMilliseconds();
     const res: T = await func();
 
@@ -13,7 +13,7 @@ export async function withDelay<T> (func: () => Promise<T>, delay: number): Prom
     }
     const remainingDelay = delay - deltaTime;
 
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
         setTimeout(() => {
             resolve();
         }, remainingDelay);
@@ -22,7 +22,7 @@ export async function withDelay<T> (func: () => Promise<T>, delay: number): Prom
     return res;
 }
 
-export async function delayPromise<T> (promise: Promise<T>, delay?: number): Promise<T> {
+export async function delayPromise<T>(promise: Promise<T>, delay?: number): Promise<T> {
     const _delay = delay ?? 1000;
     const start = new Date().getMilliseconds();
     const res: T = await promise;
@@ -33,7 +33,7 @@ export async function delayPromise<T> (promise: Promise<T>, delay?: number): Pro
     }
     const remainingDelay = _delay - deltaTime;
 
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
         setTimeout(() => {
             resolve();
         }, remainingDelay);

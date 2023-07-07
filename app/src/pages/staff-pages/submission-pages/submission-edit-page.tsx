@@ -35,17 +35,13 @@ import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
 import { useChangeBlocker } from '../../../hooks/use-change-blocker';
 import { delayPromise } from '../../../utils/with-delay';
 
-async function fetchData(formId: string | undefined, submissionId: string | undefined): Promise<{
-    form: Application
-    submission: SubmissionDetailsDto
-    attachments: SubmissionAttachmentListDto[]
-    destination?: Destination
-    users: SelectFieldComponentOption[]
+async function fetchData(formId: string, submissionId: string): Promise<{
+    form: Application;
+    submission: SubmissionDetailsDto;
+    attachments: SubmissionAttachmentListDto[];
+    destination?: Destination;
+    users: SelectFieldComponentOption[];
 }> {
-    if (formId == null || submissionId == null) {
-        throw new Error('Missing formId or submissionId');
-    }
-
     const form = await ApplicationService.retrieve(parseInt(formId));
 
     const submission = await SubmissionService.retrieve(form.id, submissionId);
@@ -120,7 +116,7 @@ export function SubmissionEditPage(): JSX.Element {
     const hasChanged = useChangeBlocker(originalSubmission, editedSubmission);
 
     useEffect(() => {
-        if (applicationId != null) {
+        if (applicationId != null && id != null) {
             setIsLoading(true);
             setIsNotFound(false);
 
@@ -141,7 +137,7 @@ export function SubmissionEditPage(): JSX.Element {
                     setIsLoading(false);
                 });
         }
-    }, [applicationId]);
+    }, [applicationId, id]);
 
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();

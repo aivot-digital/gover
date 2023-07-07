@@ -16,6 +16,7 @@ import {
     faFilePen,
     faFileZipper,
     faUserEdit,
+    faVialCircleCheck,
 } from '@fortawesome/pro-light-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { LocalStorageService } from '../../../services/local-storage-service';
@@ -31,10 +32,11 @@ import { isStringNotNullOrEmpty } from '../../../utils/string-utils';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { delayPromise } from '../../../utils/with-delay';
 import { filterItems } from '../../../utils/filter-items';
+import Tooltip from '@mui/material/Tooltip';
 
 type Submission = SubmissionListDto & {
-    resolvedAssignee?: User
-    resolvedDestination?: Destination
+    resolvedAssignee?: User;
+    resolvedDestination?: Destination;
 };
 
 const columns: Array<GridColDef<Submission>> = [
@@ -42,16 +44,31 @@ const columns: Array<GridColDef<Submission>> = [
         field: 'status',
         headerName: 'Status',
         renderCell: (params) => (
-            <Chip
-                label={ determineLabel(params.row) }
-                icon={ <FontAwesomeIcon icon={ determineIcon(params.row) }/> }
-                color={ determineColor(params.row) }
-                variant="outlined"
-                sx={ {
-                    px: 4,
-                    width: '16em',
-                } }
-            />
+            <>
+                <Chip
+                    label={ determineLabel(params.row) }
+                    icon={ <FontAwesomeIcon icon={ determineIcon(params.row) }/> }
+                    color={ determineColor(params.row) }
+                    variant="outlined"
+                    sx={ {
+                        px: 4,
+                        width: '16em',
+                    } }
+                />
+
+                {
+                    params.row.isTestSubmission &&
+                    <Tooltip title="Test-Antrag">
+                        <Box
+                            sx={ {
+                                ml: 2,
+                            } }
+                        >
+                            <FontAwesomeIcon icon={ faVialCircleCheck }/>
+                        </Box>
+                    </Tooltip>
+                }
+            </>
         ),
         valueGetter: (params) => determineLabel(params.row),
         flex: 1,
@@ -157,8 +174,12 @@ export function SubmissionListPage(): JSX.Element {
             setSubmissionLoadingError(undefined);
 
             delayPromise(SubmissionService.list(id, includeArchived, onlyAssigned ? user.id : undefined))
-                .then(async (submissions) => await Promise.all(submissions.map(resolveSubmission)))
-                .then(setSubmissions)
+                .then((submissions) => {
+                    return Promise.all(submissions.map(resolveSubmission));
+                })
+                .then((submissions) => {
+                    setSubmissions(submissions);
+                })
                 .catch((err) => {
                     console.error(err);
                     setSubmissionLoadingError('Die Liste der Anträge konnte nicht geladen werden.');
@@ -167,7 +188,7 @@ export function SubmissionListPage(): JSX.Element {
                     setIsSubmissionsLoading(false);
                 });
         }
-    }, [id, includeArchived, onlyAssigned]);
+    }, [id, user, includeArchived, onlyAssigned]);
 
     const handleToggleIncludeArchived = (_: ChangeEvent<HTMLInputElement>, checked: boolean): void => {
         setIncludeArchived(checked);
@@ -188,7 +209,7 @@ export function SubmissionListPage(): JSX.Element {
             is404={ isFormNotFound }
             error={ submissionLoadingError }
 
-            rows={ filteredSubmissions ?? [] }
+            rows={ filteredSubmissions }
             columns={ columns }
             onRowClick={ (sub) => {
                 navigate(`/submissions/${ sub.application }/${ sub.id }`);
