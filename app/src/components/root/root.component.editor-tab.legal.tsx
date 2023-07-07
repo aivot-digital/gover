@@ -1,16 +1,16 @@
-import React, {useEffect, useState} from 'react';
-import {Typography} from '@mui/material';
-import {BaseEditorProps} from "../../editors/base-editor";
-import {RootElement} from "../../models/elements/root-element";
-import {Department} from "../../models/entities/department";
-import {DepartmentsService} from "../../services/departments-service";
-import {TextFieldComponent} from "../text-field/text-field-component";
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectLoadedApplication, updateAppModel} from "../../slices/app-slice";
-import {Application} from "../../models/entities/application";
-import {SelectFieldComponent} from "../select-field/select-field-component";
-import {NumberFieldComponent} from "../number-field/number-field-component";
+import React, { useEffect, useState } from 'react';
+import { Typography } from '@mui/material';
+import { type BaseEditorProps } from '../../editors/base-editor';
+import { type RootElement } from '../../models/elements/root-element';
+import { type Department } from '../../models/entities/department';
+import { DepartmentsService } from '../../services/departments-service';
+import { TextFieldComponent } from '../text-field/text-field-component';
+import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import { useAppSelector } from '../../hooks/use-app-selector';
+import { selectLoadedApplication, updateAppModel } from '../../slices/app-slice';
+import { type Application } from '../../models/entities/application';
+import { SelectFieldComponent } from '../select-field/select-field-component';
+import { NumberFieldComponent } from '../number-field/number-field-component';
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>) {
     const dispatch = useAppDispatch();
@@ -32,7 +32,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
             ...application,
             ...patch,
         }));
-    }
+    };
 
     const departmentOptions = departments.map((department) => ({
         value: department.id.toString(),
@@ -50,33 +50,39 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
             <SelectFieldComponent
                 label="Text für das Impressum"
                 value={application?.imprintDepartment?.toString() ?? undefined}
-                onChange={val => patchApplication({
-                    imprintDepartment: val != null ? parseInt(val) : undefined,
-                })}
+                onChange={(val) => {
+                    patchApplication({
+                        imprintDepartment: val != null ? parseInt(val) : undefined,
+                    });
+                }}
                 options={departmentOptions}
             />
 
             <SelectFieldComponent
                 label="Text für die Datenschutzerklärung"
                 value={application?.privacyDepartment?.toString() ?? undefined}
-                onChange={val => patchApplication({
-                    privacyDepartment: val != null ? parseInt(val) : undefined,
-                })}
+                onChange={(val) => {
+                    patchApplication({
+                        privacyDepartment: val != null ? parseInt(val) : undefined,
+                    });
+                }}
                 options={departmentOptions}
             />
 
             <SelectFieldComponent
                 label="Text für die Erklärung der Barrierefreiheit"
                 value={application?.accessibilityDepartment?.toString() ?? undefined}
-                onChange={val => patchApplication({
-                    accessibilityDepartment: val != null ? parseInt(val) : undefined,
-                })}
+                onChange={(val) => {
+                    patchApplication({
+                        accessibilityDepartment: val != null ? parseInt(val) : undefined,
+                    });
+                }}
                 options={departmentOptions}
             />
 
             <Typography
                 variant="h6"
-                sx={{mt: 4}}
+                sx={{ mt: 4 }}
             >
                 Informationen zum Datenschutz
             </Typography>
@@ -85,9 +91,11 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 value={props.element.privacyText ?? ''}
                 label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
                 multiline
-                onChange={val => props.onPatch({
-                    privacyText: val,
-                })}
+                onChange={(val) => {
+                    props.onPatch({
+                        privacyText: val,
+                    });
+                }}
             />
 
             <Typography>
@@ -95,14 +103,14 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}.
             </Typography>
 
-            <Typography sx={{mt: 2}}>
+            <Typography sx={{ mt: 2 }}>
                 Z.B.: <strong>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</strong>
             </Typography>
 
 
             <Typography
                 variant="h6"
-                sx={{mt: 4}}
+                sx={{ mt: 4 }}
             >
                 Lösch- und Zugriffsfristen
             </Typography>
@@ -112,21 +120,25 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie -1 ein um Anträge nicht zu löschen."
                 placeholder="2"
                 value={application?.submissionDeletionWeeks ?? undefined}
-                onChange={val => patchApplication({
-                    submissionDeletionWeeks: val,
-                })}
+                onChange={(val) => {
+                    patchApplication({
+                        submissionDeletionWeeks: val,
+                    });
+                }}
                 decimalPlaces={0}
                 suffix="Wochen"
             />
 
             <NumberFieldComponent
                 label="Zugriffsfrist in Stunden"
-                hint="Die Zeit in Stunden, in der Bürger:innen noch auf die von ihnen gestellten Anträge zugreifen und diese herunterladen können."
+                hint="Die Zeit in Stunden, in der Nutzer:innen noch auf die von Ihnen gestellten Anträge zugreifen und diese herunterladen können."
                 placeholder="4"
                 value={application?.customerAccessHours ?? undefined}
-                onChange={val => patchApplication({
-                    customerAccessHours: val,
-                })}
+                onChange={(val) => {
+                    patchApplication({
+                        customerAccessHours: val,
+                    });
+                }}
                 decimalPlaces={0}
                 suffix="Stunden"
             />

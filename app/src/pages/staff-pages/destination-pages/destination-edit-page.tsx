@@ -176,7 +176,7 @@ export function DestinationEditPage(): JSX.Element {
             <TextFieldComponent
                 label="Name"
                 placeholder="Neue Schnittstelle"
-                hint="Der Name wird in der Antragsentwicklung angezeigt und identifiziert diese Schnittstelle."
+                hint="Der Name wird in der Formularentwicklung angezeigt und identifiziert diese Schnittstelle."
                 value={ editedDest?.name }
                 onChange={ (val) => {
                     handlePatch({
@@ -310,9 +310,9 @@ export function DestinationEditPage(): JSX.Element {
             </Divider>
 
             <NumberFieldComponent
-                label="Maximale gesamtgröße der Anlagen (MB)"
+                label="Maximale Gesamtgröße der Anlagen (MB)"
                 placeholder="20"
-                hint="Die maximale gesamtgröße der Anlagen in Megabyte. Sollten die Anlagen einer Antragsteller:in diese überschreiten, kann ein Antrag für diese Schnittstelle nicht abgesendet werden."
+                hint="Die maximale Gesamtgröße der Anlagen in Megabyte. Sollten die Anlagen einer Antragsteller:in diese überschreiten, kann ein Antrag für diese Schnittstelle nicht abgesendet werden."
                 value={ editedDest?.maxAttachmentMegaBytes }
                 onChange={ (val) => {
                     handlePatch({

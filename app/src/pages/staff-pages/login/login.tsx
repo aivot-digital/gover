@@ -84,7 +84,7 @@ export function Login(): JSX.Element {
                                 type="email"
                                 label="E-Mail-Adresse"
                                 placeholder="max.muster@gover.digital"
-                                helperText={authState === AuthState.AuthenticationFailed && 'Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort'}
+                                helperText={authState === AuthState.AuthenticationFailed && 'Es existiert keine Benutzer:in mit dieser Kombination aus E-Mail-Adresse und Passwort'}
                                 error={authState === AuthState.AuthenticationFailed}
                                 disabled={isAuthenticating}
                             />
@@ -93,7 +93,7 @@ export function Login(): JSX.Element {
                                 onChange={(event) => {setPassword(event.target.value);}}
                                 type="password"
                                 label="Passwort"
-                                helperText={authState === AuthState.AuthenticationFailed && 'Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort'}
+                                helperText={authState === AuthState.AuthenticationFailed && 'Es existiert keine Benutzer:in mit dieser Kombination aus E-Mail-Adresse und Passwort'}
                                 error={authState === AuthState.AuthenticationFailed}
                                 disabled={isAuthenticating}
                             />

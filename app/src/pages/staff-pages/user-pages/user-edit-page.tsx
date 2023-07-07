@@ -192,14 +192,14 @@ export function UserEditPage(): JSX.Element {
             />
 
             <CheckboxFieldComponent
-                label="Globale-Administrator:in"
+                label="Globale Administrator:in"
                 value={ editedUser?.admin ?? false }
                 onChange={ (val) => {
                     handlePatch({
                         admin: val,
                     });
                 } }
-                hint="Globale-Administrator:innen können Benutze:innen und Fachbereiche verwalten und haben Zugriff auf alle Fachbereiche, Formulare und Anträge."
+                hint="Globale Administrator:innen können Benutzer:innen und Fachbereiche verwalten. Sie haben systemweiten Zugriff auf alle Fachbereiche, Formulare und Anträge."
             />
 
             <CheckboxFieldComponent
@@ -210,7 +210,7 @@ export function UserEditPage(): JSX.Element {
                         active: val,
                     });
                 } }
-                hint="Deaktivieren sie Benutze:innen damit diese sich nicht mehr anmelden können."
+                hint="Deaktivieren Sie Benutzer:innen damit diese sich nicht mehr anmelden können."
             />
 
             <Divider sx={ { my: 4 } }>

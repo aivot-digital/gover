@@ -9,7 +9,7 @@ import { UserRole } from '../../../data/user-role';
 import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
 import { type Department } from '../../../models/entities/department';
 import { DepartmentsService } from '../../../services/departments-service';
-import { withDelay } from '../../../utils/with-delay';
+import { delayPromise, withDelay } from '../../../utils/with-delay';
 import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { shallowEquals } from '../../../utils/equality-utils';
@@ -55,10 +55,7 @@ export function DepartmentEditPage(): JSX.Element {
             setDepartment(newDepartment);
             setIsBusy(false);
         } else {
-            withDelay(
-                async () => await DepartmentsService.retrieve(parseInt(id)),
-                1000,
-            )
+            delayPromise(DepartmentsService.retrieve(parseInt(id)))
                 .then((user) => {
                     setOriginalDepartment(user);
                     setDepartment(user);
@@ -92,6 +89,11 @@ export function DepartmentEditPage(): JSX.Element {
                     .then((createdDepartment) => {
                         dispatch(showSuccessSnackbar('Fachbereich erfolgreich erstellt!'));
                         navigate(`/departments/${ createdDepartment.id }`);
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Fachbereich konnte nicht gespeichert werden!'));
+                        setIsBusy(false);
                     });
             } else {
                 DepartmentsService
@@ -100,6 +102,11 @@ export function DepartmentEditPage(): JSX.Element {
                         setOriginalDepartment(updatedDepartment);
                         setDepartment(updatedDepartment);
                         dispatch(showSuccessSnackbar('Fachbereich erfolgreich gespeichert!'));
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Fachbereich konnte nicht gespeichert werden!'));
+                        setIsBusy(false);
                     });
             }
         }
@@ -162,12 +169,12 @@ export function DepartmentEditPage(): JSX.Element {
                 department != null &&
                 currentTab === 0 &&
                 <EditDepartmentPageCommonTab
-                    department={department}
-                    hasChanged={hasChanged}
-                    onChange={handleChange}
-                    onSave={handleSave}
-                    onReset={handleReset}
-                    onDelete={handleDelete}
+                    department={ department }
+                    hasChanged={ hasChanged }
+                    onChange={ handleChange }
+                    onSave={ handleSave }
+                    onReset={ handleReset }
+                    onDelete={ handleDelete }
                 />
             }
 
@@ -176,7 +183,7 @@ export function DepartmentEditPage(): JSX.Element {
                 department.id !== 0 &&
                 currentTab === 1 &&
                 <EditDepartmentPageMembersTab
-                    department={department}
+                    department={ department }
                 />
             }
         </PageWrapper>

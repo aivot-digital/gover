@@ -19,7 +19,7 @@ interface EditDepartmentPageCommonTabProps {
     onDelete: () => void;
 }
 
-export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabProps): JSX.Element {
+export function EditDepartmentPageCommonTab(props: EditDepartmentPageCommonTabProps): JSX.Element {
     const [errors, setErrors] = useState<Errors>({});
 
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
@@ -99,7 +99,7 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
                     error={ errors.address }
                 />
 
-                <Divider sx={ { my: 4 } }>
+                <Divider sx={ {my: 4} }>
                     Kontakt-Email-Adressen
                 </Divider>
 
@@ -131,11 +131,11 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
                     error={ errors.technicalSupportAddress }
                 />
 
-                <Divider sx={ { my: 4 } }>
+                <Divider sx={ {my: 4} }>
                     Rechtliche Informationen
                 </Divider>
 
-                <Box sx={ { mb: 3 } }>
+                <Box sx={ {mb: 3} }>
                     <RichTextEditorComponentView
                         label="Impressum"
                         value={ props.department.imprint }
@@ -149,7 +149,7 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
                     />
                 </Box>
 
-                <Box sx={ { mb: 3 } }>
+                <Box sx={ {mb: 3} }>
                     <RichTextEditorComponentView
                         label="Datenschutzerklärung"
                         value={ props.department.privacy }
@@ -163,7 +163,7 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
                     />
                 </Box>
 
-                <Box sx={ { mb: 3 } }>
+                <Box sx={ {mb: 3} }>
                     <RichTextEditorComponentView
                         label="Barrierefreiheitserklärung"
                         value={ props.department.accessibility }
@@ -177,7 +177,7 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
                     />
                 </Box>
 
-                <Box sx={ { mt: 4, display: 'flex' } }>
+                <Box sx={ {mt: 4, display: 'flex'} }>
                     <Button
                         type="submit"
                         disabled={ !props.hasChanged }
@@ -186,7 +186,7 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
                     </Button>
 
                     <Button
-                        sx={ { ml: 2 } }
+                        sx={ {ml: 2} }
                         type="reset"
                         color="error"
                         onClick={ props.onReset }
@@ -198,7 +198,7 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
                     {
                         props.department.id !== 0 &&
                         <Button
-                            sx={ { ml: 'auto' } }
+                            sx={ {ml: 'auto'} }
                             color="error"
                             type="button"
                             onClick={ () => {
@@ -220,7 +220,9 @@ export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabP
             >
                 Sind Sie sicher, dass Sie den Fachbereich <strong>{ props.department.name }</strong> wirklich löschen
                 wollen? Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.<br/>
-                Es werden <u>alle Anträge</u>, die von diesem Fachbereich entwickelt wurden gelöscht.
+                Es werden alle Formulare und eingegangenen Anträge, in denen der
+                Fachbereich <strong>{ props.department.name }</strong> als entwickelnder Fachbereich geführt wird,
+                gelöscht.
             </ConfirmDialog>
         </>
     );
