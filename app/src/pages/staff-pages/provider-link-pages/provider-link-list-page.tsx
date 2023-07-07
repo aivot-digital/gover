@@ -1,15 +1,15 @@
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {faPlus,} from "@fortawesome/pro-light-svg-icons";
-import {GridColDef} from "@mui/x-data-grid";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import {ProviderLinksService} from "../../../services/provider-links-service";
-import {ProviderLink} from "../../../models/entities/provider-link";
+import { useAuthGuard } from '../../../hooks/use-auth-guard';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { faPlus } from '@fortawesome/pro-light-svg-icons';
+import { type GridColDef } from '@mui/x-data-grid';
+import { useUserGuard } from '../../../hooks/use-user-guard';
+import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
+import { ProviderLinksService } from '../../../services/provider-links-service';
+import { type ProviderLink } from '../../../models/entities/provider-link';
+import { filterItems } from '../../../utils/filter-items';
 
-
-const columns: GridColDef<ProviderLink>[] = [
+const columns: Array<GridColDef<ProviderLink>> = [
     {
         field: 'text',
         headerName: 'Text',
@@ -22,44 +22,57 @@ const columns: GridColDef<ProviderLink>[] = [
     },
 ];
 
-
-export function ProviderLinkListPage() {
+export function ProviderLinkListPage(): JSX.Element {
     useAuthGuard();
-    useUserGuard(user => user?.admin ?? false);
+    useUserGuard((user) => user?.admin ?? false);
 
     const navigate = useNavigate();
 
     const [search, setSearch] = useState('');
-    const [destinations, setDestinations] = useState<ProviderLink[]>();
-
+    const [links, setLinks] = useState<ProviderLink[]>();
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadError, setLoadError] = useState<string>();
 
     useEffect(() => {
+        setIsLoading(true);
+        setLoadError(undefined);
+
         ProviderLinksService
             .list()
-            .then(setDestinations);
+            .then(setLinks)
+            .catch((err) => {
+                console.error(err);
+                setLoadError('Die Liste der Links konnte nicht geladen werden.');
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
     }, []);
 
-    const filtered = destinations != null ? destinations.filter(dest => dest.text.toLowerCase().includes(search.toLowerCase())) : undefined;
+    const filtered = filterItems(links, 'text', search);
 
     return (
         <TablePageWrapper
             title="Links"
-            isLoading={filtered == null}
+            isLoading={ isLoading }
+            error={ loadError }
 
-            columns={columns}
-            rows={filtered ?? []}
-            onRowClick={dest => navigate(`/provider-links/${dest.id}`)}
+            columns={ columns }
+            rows={ filtered ?? [] }
+            onRowClick={ (dest) => {
+                navigate(`/provider-links/${ dest.id }`);
+            } }
 
-            search={search}
+            search={ search }
             searchPlaceholder="Link suchen..."
-            onSearchChange={setSearch}
+            onSearchChange={ setSearch }
 
-            actions={[{
+            actions={ [{
                 label: 'Neuer Link',
                 icon: faPlus,
                 tooltip: 'Neuen Link anlegen',
-                onClick: () => navigate(`/provider-links/new`),
-            }]}
+                link: '/provider-links/new',
+            }] }
         />
     );
 }

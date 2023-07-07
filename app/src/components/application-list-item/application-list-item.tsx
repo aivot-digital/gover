@@ -19,7 +19,6 @@ import {
 } from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {ApplicationService} from '../../services/application-service';
-import {getColorPalette} from '../../theming/themes';
 import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
 import {downloadConfigFile} from "../../utils/download-utils";
 import {showSuccessSnackbar} from "../../slices/snackbar-slice";
@@ -98,7 +97,6 @@ export function ApplicationListItem({
                 <FontAwesomeIcon
                     icon={faFileText}
                     size="2x"
-                    color={(getColorPalette(application.theme).primary as SimplePaletteColorOptions).main}
                 />
             </Box>
             <Box

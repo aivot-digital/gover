@@ -1,87 +1,60 @@
-import React, {FormEvent, useEffect, useState} from "react";
-import {Box, Button, Divider, Skeleton} from "@mui/material";
-import {TextFieldComponent} from "../../../../components/text-field/text-field-component";
-import {validateEmail} from "../../../../utils/validate-email";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {showSuccessSnackbar} from "../../../../slices/snackbar-slice";
-import {Department} from "../../../../models/entities/department";
-import {DepartmentsService} from "../../../../services/departments-service";
-import {RichTextEditorComponentView} from "../../../../components/richt-text-editor/rich-text-editor.component.view";
-import {useNavigate} from "react-router-dom";
-import {ConfirmDialog} from "../../../../dialogs/confirm-dialog/confirm-dialog";
+import React, { type FormEvent, useState } from 'react';
+import { Box, Button, Divider } from '@mui/material';
+import { TextFieldComponent } from '../../../../components/text-field/text-field-component';
+import { validateEmail } from '../../../../utils/validate-email';
+import { type Department } from '../../../../models/entities/department';
+import { RichTextEditorComponentView } from '../../../../components/richt-text-editor/rich-text-editor.component.view';
+import { ConfirmDialog } from '../../../../dialogs/confirm-dialog/confirm-dialog';
 
 type Errors = {
     [key in keyof Department]?: string;
+};
+
+interface EditDepartmentPageCommonTabProps {
+    department: Department;
+    hasChanged: boolean;
+    onChange: (dep: Partial<Department>) => void;
+    onSave: () => void;
+    onReset: () => void;
+    onDelete: () => void;
 }
 
-export function EditDepartmentPageCommonTab({id}: { id: string }) {
-    const dispatch = useAppDispatch();
-    const navigate = useNavigate();
-
-    const [originalDepartment, setOriginalDepartment] = useState<Department>();
-    const [department, setDepartment] = useState<Department>();
+export function EditDepartmentPageCommonTab (props: EditDepartmentPageCommonTabProps): JSX.Element {
     const [errors, setErrors] = useState<Errors>({});
 
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
 
-    useEffect(() => {
-        if (id === 'new') {
-            const newDepartment: Department = {
-                id: 0,
-                name: '',
-                address: '',
-                accessibility: '',
-                imprint: '',
-                privacy: '',
-                specialSupportAddress: '',
-                technicalSupportAddress: '',
-                created: '',
-                updated: '',
-            };
-            setOriginalDepartment(newDepartment);
-            setDepartment(newDepartment);
-        } else {
-            DepartmentsService
-                .retrieve(parseInt(id))
-                .then(user => {
-                    setOriginalDepartment(user);
-                    setDepartment(user);
-                });
-        }
-    }, [id]);
-
-    const handleSubmit = (event: FormEvent) => {
+    const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
-        event.stopPropagation();
 
-        if (department != null) {
+        if (props.department != null) {
             const errors: Errors = {};
 
-            if (department.name.length < 3) {
+            if (props.department.name.length < 3) {
                 errors.name = 'Bitte geben Sie mindestens 3 Zeichen ein';
             }
 
-            if (department.address.length === 0) {
+            if (props.department.address.length === 0) {
                 errors.address = 'Bitte geben Sie eine Adresse ein';
             }
 
-            if (!validateEmail(department.specialSupportAddress)) {
+            if (!validateEmail(props.department.specialSupportAddress)) {
                 errors.specialSupportAddress = 'Bitte geben Sie eine gültige E-Mail-Adresse ein';
             }
 
-            if (!validateEmail(department.technicalSupportAddress)) {
+            if (!validateEmail(props.department.technicalSupportAddress)) {
                 errors.technicalSupportAddress = 'Bitte geben Sie eine gültige E-Mail-Adresse ein';
             }
 
-            if (department.imprint.length === 0) {
+            if (props.department.imprint.length === 0) {
                 errors.imprint = 'Bitte geben Sie ein Impressum an';
             }
 
-            if (department.privacy.length === 0) {
+            if (props.department.privacy.length === 0) {
                 errors.privacy = 'Bitte geben Sie eine Datenschutzerklärung an';
             }
 
-            if (department.accessibility.length === 0) {
+            if (props.department.accessibility.length === 0) {
                 errors.accessibility = 'Bitte geben Sie eine Barrierefreiheitserklärung an';
             }
 
@@ -89,187 +62,164 @@ export function EditDepartmentPageCommonTab({id}: { id: string }) {
                 setErrors(errors);
             } else {
                 setErrors({});
-
-                if (department.id === 0) {
-                    DepartmentsService
-                        .create(department)
-                        .then(createdDepartment => {
-                            dispatch(showSuccessSnackbar('Fachbereich erfolgreich erstellt!'));
-                            navigate(`/departments/${createdDepartment.id}`);
-                        });
-                } else {
-                    DepartmentsService
-                        .update(department.id, department)
-                        .then(updatedDepartment => {
-                            setOriginalDepartment(updatedDepartment);
-                            setDepartment(updatedDepartment);
-                            dispatch(showSuccessSnackbar('Fachbereich erfolgreich gespeichert!'));
-                        });
-                }
+                props.onSave();
             }
         }
-
-
-        return false;
     };
 
     return (
         <>
-
-            {
-                department == null &&
-                <Skeleton variant="rectangular"/>
-            }
-
-            {
-                department != null &&
-                <form onSubmit={handleSubmit}>
-                    <TextFieldComponent
-                        label="Name des Fachbereichs"
-                        value={department.name}
-                        onChange={val => setDepartment({
-                            ...department,
+            <form onSubmit={ handleSubmit }>
+                <TextFieldComponent
+                    label="Name des Fachbereichs"
+                    value={ props.department.name }
+                    onChange={ val => {
+                        props.onChange({
                             name: val ?? '',
-                        })}
-                        required
-                        maxCharacters={96}
-                        minCharacters={3}
-                        error={errors.name}
-                    />
+                        });
+                    } }
+                    required
+                    maxCharacters={ 96 }
+                    minCharacters={ 3 }
+                    error={ errors.name }
+                />
 
-                    <TextFieldComponent
-                        label="Adresse des Fachbereichs"
-                        value={department.address}
-                        onChange={val => setDepartment({
-                            ...department,
+                <TextFieldComponent
+                    label="Adresse des Fachbereichs"
+                    value={ props.department.address }
+                    onChange={ val => {
+                        props.onChange({
                             address: val ?? '',
-                        })}
-                        required
-                        maxCharacters={255}
-                        multiline
-                        rows={3}
-                        error={errors.address}
-                    />
+                        });
+                    } }
+                    required
+                    maxCharacters={ 255 }
+                    multiline
+                    rows={ 3 }
+                    error={ errors.address }
+                />
 
-                    <Divider sx={{my: 4}}>
-                        Kontakt-Email-Adressen
-                    </Divider>
+                <Divider sx={ { my: 4 } }>
+                    Kontakt-Email-Adressen
+                </Divider>
 
-                    <TextFieldComponent
-                        label="Kontakt-Email-Adresse fachliche Unterstützung"
-                        type="email"
-                        value={department.specialSupportAddress}
-                        onChange={val => setDepartment({
-                            ...department,
+                <TextFieldComponent
+                    label="Kontakt-Email-Adresse fachliche Unterstützung"
+                    type="email"
+                    value={ props.department.specialSupportAddress }
+                    onChange={ val => {
+                        props.onChange({
                             specialSupportAddress: val ?? '',
-                        })}
-                        required
-                        maxCharacters={255}
-                        error={errors.specialSupportAddress}
-                    />
+                        });
+                    } }
+                    required
+                    maxCharacters={ 255 }
+                    error={ errors.specialSupportAddress }
+                />
 
-                    <TextFieldComponent
-                        label="Kontakt-Email-Adresse technische Unterstützung"
-                        type="email"
-                        value={department.technicalSupportAddress}
-                        onChange={val => setDepartment({
-                            ...department,
+                <TextFieldComponent
+                    label="Kontakt-Email-Adresse technische Unterstützung"
+                    type="email"
+                    value={ props.department.technicalSupportAddress }
+                    onChange={ val => {
+                        props.onChange({
                             technicalSupportAddress: val ?? '',
-                        })}
-                        required
-                        maxCharacters={255}
-                        error={errors.technicalSupportAddress}
-                    />
+                        });
+                    } }
+                    required
+                    maxCharacters={ 255 }
+                    error={ errors.technicalSupportAddress }
+                />
 
-                    <Divider sx={{my: 4}}>
-                        Rechtliche Informationen
-                    </Divider>
+                <Divider sx={ { my: 4 } }>
+                    Rechtliche Informationen
+                </Divider>
 
-                    <Box sx={{mb: 3}}>
-                        <RichTextEditorComponentView
-                            label="Impressum"
-                            value={department.imprint}
-                            onChange={val => setDepartment({
-                                ...department,
+                <Box sx={ { mb: 3 } }>
+                    <RichTextEditorComponentView
+                        label="Impressum"
+                        value={ props.department.imprint }
+                        onChange={ val => {
+                            props.onChange({
                                 imprint: val,
-                            })}
-                            required
-                            error={errors.imprint}
-                        />
-                    </Box>
+                            });
+                        } }
+                        required
+                        error={ errors.imprint }
+                    />
+                </Box>
 
-                    <Box sx={{mb: 3}}>
-                        <RichTextEditorComponentView
-                            label="Datenschutzerklärung"
-                            value={department.privacy}
-                            onChange={val => setDepartment({
-                                ...department,
+                <Box sx={ { mb: 3 } }>
+                    <RichTextEditorComponentView
+                        label="Datenschutzerklärung"
+                        value={ props.department.privacy }
+                        onChange={ val => {
+                            props.onChange({
                                 privacy: val,
-                            })}
-                            required
-                            error={errors.privacy}
-                        />
-                    </Box>
+                            });
+                        } }
+                        required
+                        error={ errors.privacy }
+                    />
+                </Box>
 
-                    <Box sx={{mb: 3}}>
-                        <RichTextEditorComponentView
-                            label="Barrierefreiheitserklärung"
-                            value={department.accessibility}
-                            onChange={val => setDepartment({
-                                ...department,
+                <Box sx={ { mb: 3 } }>
+                    <RichTextEditorComponentView
+                        label="Barrierefreiheitserklärung"
+                        value={ props.department.accessibility }
+                        onChange={ val => {
+                            props.onChange({
                                 accessibility: val,
-                            })}
-                            required
-                            error={errors.accessibility}
-                        />
-                    </Box>
+                            });
+                        } }
+                        required
+                        error={ errors.accessibility }
+                    />
+                </Box>
 
-                    <Box sx={{mt: 4, display: 'flex'}}>
-                        <Button
-                            type="submit"
-                        >
-                            Speichern
-                        </Button>
+                <Box sx={ { mt: 4, display: 'flex' } }>
+                    <Button
+                        type="submit"
+                        disabled={ !props.hasChanged }
+                    >
+                        Speichern
+                    </Button>
 
+                    <Button
+                        sx={ { ml: 2 } }
+                        type="reset"
+                        color="error"
+                        onClick={ props.onReset }
+                        disabled={ !props.hasChanged }
+                    >
+                        Zurücksetzen
+                    </Button>
+
+                    {
+                        props.department.id !== 0 &&
                         <Button
-                            sx={{ml: 2}}
-                            type="reset"
+                            sx={ { ml: 'auto' } }
                             color="error"
-                            onClick={() => {
-                                setDepartment(originalDepartment!);
-                                setErrors({});
-                            }}
+                            type="button"
+                            onClick={ () => {
+                                setConfirmDelete(() => props.onDelete);
+                            } }
                         >
-                            Zurücksetzen
+                            Löschen
                         </Button>
-
-                        {
-                            id !== 'new' &&
-                            <Button
-                                sx={{ml: 'auto'}}
-                                color="error"
-                                type="button"
-                                onClick={() => {
-                                    setConfirmDelete(() => () => {
-                                        DepartmentsService.destroy(department?.id);
-                                        navigate('/departments');
-                                    })
-                                }}
-                            >
-                                Löschen
-                            </Button>
-                        }
-                    </Box>
-                </form>
-            }
+                    }
+                </Box>
+            </form>
 
             <ConfirmDialog
                 title="Fachbereich wirklich löschen"
-                onConfirm={confirmDelete}
-                onCancel={() => setConfirmDelete(undefined)}
+                onConfirm={ confirmDelete }
+                onCancel={ () => {
+                    setConfirmDelete(undefined);
+                } }
             >
-                Sind Sie sicher, dass Sie den Fachbereich <strong>{department?.name}</strong> wirklich löschen wollen?
-                Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.<br/>
+                Sind Sie sicher, dass Sie den Fachbereich <strong>{ props.department.name }</strong> wirklich löschen
+                wollen? Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.<br/>
                 Es werden <u>alle Anträge</u>, die von diesem Fachbereich entwickelt wurden gelöscht.
             </ConfirmDialog>
         </>

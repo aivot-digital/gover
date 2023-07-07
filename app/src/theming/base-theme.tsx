@@ -1,13 +1,14 @@
-import {createTheme} from '@mui/material';
-import {deDE} from '@mui/x-data-grid';
-import {deDE as coreDeDE} from '@mui/material/locale';
+import React from 'react';
+import { createTheme } from '@mui/material';
+import { deDE } from '@mui/x-data-grid';
+import { deDE as coreDeDE } from '@mui/material/locale';
 import {
     faCircleCheck,
     faCircleExclamation,
     faCircleInfo,
-    faTriangleExclamation
+    faTriangleExclamation,
 } from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const fontStackNoto = ['"Noto Sans"',
     '-apple-system',
@@ -49,7 +50,6 @@ const fontStackFranziska = ['"Franziska"',
 ].join(',');
 
 export const BaseTheme = createTheme({
-    // ...Themes(Ministry.Innen),
     shape: {
         borderRadius: 0,
     },
@@ -59,7 +59,7 @@ export const BaseTheme = createTheme({
             fontFamily: fontStackRocGrotesk,
             fontWeight: 700,
             fontSize: '1.75rem',
-            lineHeight: '2rem'
+            lineHeight: '2rem',
         },
         h2: {
             fontFamily: fontStackRocGrotesk,
@@ -133,14 +133,14 @@ export const BaseTheme = createTheme({
             },
             defaultProps: {
                 disableElevation: true,
-            }
+            },
         },
         MuiStepContent: {
             styleOverrides: {
                 root: {
                     paddingTop: '1em',
                     paddingLeft: '45px',
-                    marginLeft: '20px'
+                    marginLeft: '20px',
                 },
             },
         },
@@ -148,30 +148,30 @@ export const BaseTheme = createTheme({
             styleOverrides: {
                 root: {
                     marginLeft: '20px',
-                    display: 'none'
+                    display: 'none',
                 },
             },
         },
         MuiStepLabel: {
             styleOverrides: {
                 iconContainer: {
-                    color: 'rgba(0, 0, 0, 0.4)'
+                    color: 'rgba(0, 0, 0, 0.4)',
                 },
                 label: {
-                    fontFamily: fontStackRocGrotesk,
-                    fontWeight: 500,
-                    fontSize: '1.3125rem',
-                    paddingTop: '4px',
-                    marginLeft: '15px',
+                    'fontFamily': fontStackRocGrotesk,
+                    'fontWeight': 500,
+                    'fontSize': '1.3125rem',
+                    'paddingTop': '4px',
+                    'marginLeft': '15px',
                     '&.Mui-completed': {
                         '.completed-step-suffix': {
                             display: 'inline-block',
-                        }
+                        },
                     },
                     '.completed-step-suffix': {
                         display: 'none',
                     },
-                    color: 'rgba(0, 0, 0, 0.4)'
+                    'color': 'rgba(0, 0, 0, 0.4)',
                 },
             },
         },
@@ -212,7 +212,7 @@ export const BaseTheme = createTheme({
                     fontFamily: fontStackRocGrotesk,
                     fontWeight: 500,
                     fontSize: '1.125rem',
-                    marginBottom: '.125rem'
+                    marginBottom: '.125rem',
                 },
             },
         },
@@ -221,13 +221,13 @@ export const BaseTheme = createTheme({
                 root: {
                     '&.Mui-disabled': {
                         backgroundColor: '#F8F8F8',
-                        cursor: 'not-allowed'
+                        cursor: 'not-allowed',
                     },
                 },
                 input: {
                     '&.Mui-disabled': {
                         backgroundColor: '#F8F8F8',
-                        cursor: 'not-allowed'
+                        cursor: 'not-allowed',
                     },
                 },
             },
@@ -236,7 +236,7 @@ export const BaseTheme = createTheme({
             styleOverrides: {
                 root: {
                     '&.Mui-disabled': {
-                        cursor: 'not-allowed'
+                        cursor: 'not-allowed',
                     },
                 },
             },

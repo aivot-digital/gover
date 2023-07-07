@@ -1,5 +1,5 @@
-import {ApplicationStatus} from "../../data/application-status/application-status";
-import {RootElement} from "../elements/root-element";
+import { type ApplicationStatus } from '../../data/application-status/application-status';
+import { type RootElement } from '../elements/root-element';
 
 
 export interface Application {
@@ -24,6 +24,8 @@ export interface Application {
 
     customerAccessHours?: number | null;
     submissionDeletionWeeks?: number | null;
+
+    theme?: number | null;
 
     created: string;
     updated: string;

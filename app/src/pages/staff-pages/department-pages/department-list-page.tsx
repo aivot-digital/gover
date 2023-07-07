@@ -1,18 +1,18 @@
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {faPlus} from "@fortawesome/pro-light-svg-icons";
-import {useNavigate} from "react-router-dom";
-import {Department} from "../../../models/entities/department";
-import {DepartmentsService} from "../../../services/departments-service";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {UserRole} from "../../../data/user-role";
-import {useAppSelector} from "../../../hooks/use-app-selector";
-import {selectUser} from "../../../slices/user-slice";
-import {GridColDef} from "@mui/x-data-grid";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
+import { useAuthGuard } from '../../../hooks/use-auth-guard';
+import React, { useEffect, useState } from 'react';
+import { faPlus } from '@fortawesome/pro-light-svg-icons';
+import { useNavigate } from 'react-router-dom';
+import { type Department } from '../../../models/entities/department';
+import { DepartmentsService } from '../../../services/departments-service';
+import { useUserGuard } from '../../../hooks/use-user-guard';
+import { UserRole } from '../../../data/user-role';
+import { useAppSelector } from '../../../hooks/use-app-selector';
+import { selectUser } from '../../../slices/user-slice';
+import { type GridColDef } from '@mui/x-data-grid';
+import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
+import { delayPromise } from '../../../utils/with-delay';
 
-
-const columns: GridColDef<Department>[] = [
+const columns: Array<GridColDef<Department>> = [
     {
         field: 'name',
         headerName: 'Name',
@@ -20,10 +20,12 @@ const columns: GridColDef<Department>[] = [
     },
 ];
 
-
-export function DepartmentListPage() {
+export function DepartmentListPage(): JSX.Element {
     useAuthGuard();
-    useUserGuard((user, memberships) => (user != null && user.admin) || (memberships != null && memberships.some(mem => mem.role === UserRole.Admin)));
+    useUserGuard((user, memberships) => (
+        (user?.admin ?? false) ||
+        (memberships?.some((mem) => mem.role === UserRole.Admin) ?? false)
+    ));
 
     const navigate = useNavigate();
 
@@ -32,47 +34,65 @@ export function DepartmentListPage() {
     const [search, setSearch] = useState('');
     const [departments, setDepartments] = useState<Department[]>();
 
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadError, setLoadError] = useState<string>();
+
     useEffect(() => {
         if (user != null) {
-            if (user.admin) {
-                DepartmentsService
-                    .list()
-                    .then(setDepartments);
-            } else {
-                DepartmentsService
-                    .list({
-                        member: 'true',
-                        roleId: UserRole.Admin,
-                    })
-                    .then(setDepartments);
-            }
+            setIsLoading(true);
+            setLoadError(undefined);
+
+            const filter = user.admin ?
+                undefined :
+                {
+                    member: 'true',
+                    roleId: UserRole.Admin,
+                };
+
+            delayPromise(DepartmentsService.list(filter))
+                .then(setDepartments)
+                .catch((err) => {
+                    console.error(err);
+                    setLoadError('Die Liste der Fachbereiche konnte nicht geladen werden.');
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
         }
     }, [user]);
 
-    const filteredDepartments = departments == null ? undefined : departments
-        .filter(dep => dep.name.toLowerCase().includes(search.toLowerCase()));
+    const filteredDepartments = departments == null ?
+        undefined :
+        departments
+            .filter((dep) => dep.name.toLowerCase().includes(search.toLowerCase()));
 
     return (
         <TablePageWrapper
-            title="Fachbereichsverwaltung"
-            isLoading={filteredDepartments == null}
+            title="Fachbereiche"
+            isLoading={ isLoading }
+            error={ loadError }
 
-            search={search}
-            onSearchChange={setSearch}
+            search={ search }
+            onSearchChange={ setSearch }
             searchPlaceholder="Fachbereich suchen..."
 
-            rows={filteredDepartments ?? []}
-            columns={columns}
-            onRowClick={dep => navigate(`/departments/${dep.id}`)}
+            rows={ filteredDepartments ?? [] }
+            columns={ columns }
+            onRowClick={ (dep) => {
+                navigate(`/departments/${ dep.id }`);
+            } }
 
             actions={
-                user != null &&
-                user.admin ? [{
-                    label: 'Fachbereich hinzufügen',
-                    icon: faPlus,
-                    onClick: () => navigate('/departments/new'),
-                    tooltip: 'Neuen Fachbereich hinzufügen',
-                }] : []
+                (user?.admin ?? false) ?
+                    [{
+                        label: 'Fachbereich hinzufügen',
+                        icon: faPlus,
+                        onClick: () => {
+                            navigate('/departments/new');
+                        },
+                        tooltip: 'Neuen Fachbereich hinzufügen',
+                    }] :
+                    []
             }
         />
     );

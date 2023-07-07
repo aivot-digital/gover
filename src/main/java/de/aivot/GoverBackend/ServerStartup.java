@@ -58,7 +58,11 @@ public class ServerStartup implements ApplicationListener<ApplicationReadyEvent>
     private void setupSentry() {
         if (!goverConfig.getSentryServer().isBlank()) {
             logger.info("Starting server with Sentry: {}.", goverConfig.getSentryServer());
-            Sentry.init(options -> options.setDsn(goverConfig.getSentryServer()));
+            Sentry.init(options -> {
+                options.setDsn(goverConfig.getSentryServer());
+                options.setEnvironment(goverConfig.getEnvironment());
+                options.setTracesSampleRate(0.1);
+            });
         } else {
             logger.warn("Starting server without Sentry.");
         }

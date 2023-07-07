@@ -2,9 +2,7 @@ package de.aivot.GoverBackend.models.entities;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.converters.GroupLayoutConverter;
-import de.aivot.GoverBackend.converters.JacksonGroupLayoutDeserializer;
-import de.aivot.GoverBackend.converters.JacksonGroupLayoutSerializer;
+import de.aivot.GoverBackend.converters.*;
 import de.aivot.GoverBackend.models.elements.form.layout.GroupLayout;
 
 import javax.persistence.*;

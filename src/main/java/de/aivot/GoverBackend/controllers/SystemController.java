@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.models.dtos.TestSmtpDto;
 import de.aivot.GoverBackend.permissions.IsAdmin;
 import de.aivot.GoverBackend.services.MailService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,7 +34,10 @@ public class SystemController {
 
     @IsAdmin
     @PostMapping("/api/system/test-smtp")
-    public SmtpResultDto testSmtp(@RequestBody TestSmtpDto payload) {
+    public SmtpResultDto testSmtp(
+            Authentication authentication,
+            @RequestBody TestSmtpDto payload
+    ) {
         var result = new SmtpResultDto();
 
         try {
@@ -53,6 +57,11 @@ public class SystemController {
     @GetMapping("/api/public/sentry-dns")
     public List<String> getSentryDns() {
         return List.of(goverConfig.getSentryWebApp());
+    }
+
+    @GetMapping("/api/public/environment")
+    public List<String> getEnvironment() {
+        return List.of(goverConfig.getEnvironment());
     }
 
     @GetMapping("/api/system/file-extensions")

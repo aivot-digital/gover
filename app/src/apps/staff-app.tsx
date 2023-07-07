@@ -1,37 +1,38 @@
-import React, {FunctionComponent, useEffect, useState} from 'react';
-import {createHashRouter, RouterProvider} from 'react-router-dom';
-import {ApplicationListPage} from '../pages/staff-pages/application-pages/application-list-page';
-import {ApplicationEditorPage} from '../pages/staff-pages/application-pages/application-editor-page';
-import {Login} from '../pages/staff-pages/login/login';
-import {refreshMemberships, refreshUser, selectUser,} from '../slices/user-slice';
-import {Settings} from '../pages/staff-pages/settings/settings';
-import {Profile} from '../pages/staff-pages/profile/profile';
-import {fetchSystemConfig, selectSystemConfigValue} from '../slices/system-config-slice';
-import {Alert, Snackbar, Theme, ThemeProvider, Typography} from '@mui/material';
-import {createAppTheme} from '../theming/themes';
-import {SystemConfigKeys} from '../data/system-config-keys';
-import {PresetListPage} from '../pages/staff-pages/preset-pages/preset-list-page';
-import {PresetEditPage} from '../pages/staff-pages/preset-pages/preset-edit-page';
-import {useAppDispatch} from '../hooks/use-app-dispatch';
-import {useAppSelector} from '../hooks/use-app-selector';
-import {resetSnackbar} from '../slices/snackbar-slice';
-import {logout, selectAuthenticationState} from '../slices/auth-slice';
-import {AuthState} from "../data/auth-state";
-import {InfoDialog} from "../dialogs/info-dialog/info-dialog";
-import {UserListPage} from "../pages/staff-pages/user-pages/user-list-page";
-import {UserEditPage} from "../pages/staff-pages/user-pages/user-edit-page";
-import {DepartmentListPage} from "../pages/staff-pages/department-pages/department-list-page";
-import {DepartmentEditPage} from "../pages/staff-pages/department-pages/department-edit-page";
-import {SubmissionListPage} from "../pages/staff-pages/submission-pages/submission-list-page";
-import {SubmissionEditPage} from "../pages/staff-pages/submission-pages/submission-edit-page";
-import {DestinationListPage} from "../pages/staff-pages/destination-pages/destination-list-page";
-import {DestinationEditPage} from "../pages/staff-pages/destination-pages/destination-edit-page";
-import {ProviderLinkListPage} from "../pages/staff-pages/provider-link-pages/provider-link-list-page";
-import {ProviderLinkEditPage} from "../pages/staff-pages/provider-link-pages/provider-link-edit-page";
-import {AssetListPage} from "../pages/staff-pages/asset-pages/asset-list-page";
-import {AssetEditPage} from "../pages/staff-pages/asset-pages/asset-edit-page";
+import React, { type FunctionComponent, useEffect, useState } from 'react';
+import { createHashRouter, RouterProvider } from 'react-router-dom';
+import { ApplicationListPage } from '../pages/staff-pages/application-pages/application-list-page';
+import { ApplicationEditorPage } from '../pages/staff-pages/application-pages/application-editor-page';
+import { Login } from '../pages/staff-pages/login/login';
+import { refreshMemberships, refreshUser, selectUser } from '../slices/user-slice';
+import { Settings } from '../pages/staff-pages/settings/settings';
+import { Profile } from '../pages/staff-pages/profile/profile';
+import { fetchSystemConfig } from '../slices/system-config-slice';
+import { Alert, Snackbar, ThemeProvider, Typography } from '@mui/material';
+import { createDefaultAppTheme } from '../theming/themes';
+import { PresetListPage } from '../pages/staff-pages/preset-pages/preset-list-page';
+import { PresetEditPage } from '../pages/staff-pages/preset-pages/preset-edit-page';
+import { useAppDispatch } from '../hooks/use-app-dispatch';
+import { useAppSelector } from '../hooks/use-app-selector';
+import { resetSnackbar } from '../slices/snackbar-slice';
+import { logout, selectAuthenticationState } from '../slices/auth-slice';
+import { AuthState } from '../data/auth-state';
+import { InfoDialog } from '../dialogs/info-dialog/info-dialog';
+import { UserListPage } from '../pages/staff-pages/user-pages/user-list-page';
+import { UserEditPage } from '../pages/staff-pages/user-pages/user-edit-page';
+import { DepartmentListPage } from '../pages/staff-pages/department-pages/department-list-page';
+import { DepartmentEditPage } from '../pages/staff-pages/department-pages/department-edit-page';
+import { SubmissionListPage } from '../pages/staff-pages/submission-pages/submission-list-page';
+import { SubmissionEditPage } from '../pages/staff-pages/submission-pages/submission-edit-page';
+import { DestinationListPage } from '../pages/staff-pages/destination-pages/destination-list-page';
+import { DestinationEditPage } from '../pages/staff-pages/destination-pages/destination-edit-page';
+import { ProviderLinkListPage } from '../pages/staff-pages/provider-link-pages/provider-link-list-page';
+import { ProviderLinkEditPage } from '../pages/staff-pages/provider-link-pages/provider-link-edit-page';
+import { AssetListPage } from '../pages/staff-pages/asset-pages/asset-list-page';
+import { AssetEditPage } from '../pages/staff-pages/asset-pages/asset-edit-page';
+import { ThemeListPage } from '../pages/staff-pages/theme-pages/theme-list-page';
+import { ThemeEditPage } from '../pages/staff-pages/theme-pages/theme-edit-page';
 
-const routes: [string, FunctionComponent][] = [
+const routes: Array<[string, FunctionComponent]> = [
     ['/', Login],
     ['/overview', ApplicationListPage],
 
@@ -59,20 +60,22 @@ const routes: [string, FunctionComponent][] = [
 
     ['/assets', AssetListPage],
     ['/assets/:name', AssetEditPage],
+
+    ['/themes', ThemeListPage],
+    ['/themes/:id', ThemeEditPage],
 ];
 
 const router = createHashRouter(
     routes.map(([path, View]) => ({
-        path: path,
-        element: <View/>
-    }))
+        path,
+        element: <View/>,
+    })),
 );
 
-function StaffApp() {
+function StaffApp(): JSX.Element {
     const dispatch = useAppDispatch();
 
-    const theme = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
-    const snackbar = useAppSelector(state => state.snackbar);
+    const snackbar = useAppSelector((state) => state.snackbar);
     const authState = useAppSelector(selectAuthenticationState);
     const user = useAppSelector(selectUser);
     const [showTimeout, setShowTimeout] = useState(false);
@@ -115,11 +118,11 @@ function StaffApp() {
     }, [user, dispatch]);
 
     return (
-        <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(theme, baseTheme)}>
-            <RouterProvider router={router}/>
+        <ThemeProvider theme={ createDefaultAppTheme }>
+            <RouterProvider router={ router }/>
 
             <InfoDialog
-                open={showTimeout}
+                open={ showTimeout }
                 severity="error"
                 title="Serververbindung fehlgeschlagen"
             >
@@ -132,16 +135,16 @@ function StaffApp() {
             </InfoDialog>
 
             <Snackbar
-                open={snackbar.message != null}
-                autoHideDuration={6000}
-                onClose={() => dispatch(resetSnackbar())}
+                open={ snackbar.message != null }
+                autoHideDuration={ 6000 }
+                onClose={ () => dispatch(resetSnackbar()) }
             >
                 <Alert
-                    onClose={() => dispatch(resetSnackbar())}
-                    severity={snackbar.severity}
-                    sx={{width: '100%'}}
+                    onClose={ () => dispatch(resetSnackbar()) }
+                    severity={ snackbar.severity }
+                    sx={ {width: '100%'} }
                 >
-                    {snackbar.message}
+                    { snackbar.message }
                 </Alert>
             </Snackbar>
         </ThemeProvider>

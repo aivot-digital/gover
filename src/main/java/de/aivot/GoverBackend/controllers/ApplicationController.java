@@ -20,6 +20,7 @@ public class ApplicationController {
     private final AccessibleDepartmentRepository accessibleDepartmentRepository;
     private final DepartmentRepository departmentRepository;
     private final DestinationRepository destinationRepository;
+    private final ThemeRepository themeRepository;
 
     @Autowired
     public ApplicationController(
@@ -27,13 +28,14 @@ public class ApplicationController {
             AccessibleApplicationRepository accessibleApplicationRepository,
             AccessibleDepartmentRepository accessibleDepartmentRepository,
             DepartmentRepository departmentRepository,
-            DestinationRepository destinationRepository
-    ) {
+            DestinationRepository destinationRepository,
+            ThemeRepository themeRepository) {
         this.applicationRepository = applicationRepository;
         this.accessibleApplicationRepository = accessibleApplicationRepository;
         this.accessibleDepartmentRepository = accessibleDepartmentRepository;
         this.departmentRepository = departmentRepository;
         this.destinationRepository = destinationRepository;
+        this.themeRepository = themeRepository;
     }
 
     @GetMapping("/api/applications")
@@ -152,6 +154,12 @@ public class ApplicationController {
             departmentRepository
                     .findById(newApp.getResponsibleDepartment())
                     .ifPresent(application::setResponsibleDepartment);
+        }
+
+        if (newApp.getTheme() != null) {
+            themeRepository
+                    .findById(newApp.getTheme())
+                    .ifPresent(application::setTheme);
         }
 
         var createdApplication = applicationRepository.save(application);
@@ -286,6 +294,12 @@ public class ApplicationController {
                 departmentRepository
                         .findById(updatedApp.getResponsibleDepartment())
                         .ifPresent(existingApp::setResponsibleDepartment);
+            }
+
+            if (updatedApp.getTheme() != null) {
+                themeRepository
+                        .findById(updatedApp.getTheme())
+                        .ifPresent(existingApp::setTheme);
             }
         }
 

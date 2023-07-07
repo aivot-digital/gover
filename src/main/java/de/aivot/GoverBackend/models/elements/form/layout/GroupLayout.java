@@ -78,28 +78,6 @@ public class GroupLayout extends BaseFormElement {
                 .findFirst();
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj == null) {
-            return false;
-        }
-
-        if (obj instanceof GroupLayout gObj) {
-            return gObj.getId().equals(getId());
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return getId().hashCode();
-    }
-
     public Collection<BaseFormElement> getChildren() {
         return children;
     }

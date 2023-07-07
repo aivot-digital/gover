@@ -10,7 +10,7 @@ public class ApplicationListDto {
     private String slug;
     private String version;
     private String headline;
-    private String theme;
+    private Integer theme;
     private String title;
     private ApplicationStatus status;
     private Integer developingDepartment;
@@ -27,7 +27,9 @@ public class ApplicationListDto {
         slug = app.getSlug();
         version = app.getVersion();
         headline = app.getRoot().getHeadline();
-        theme = app.getRoot().getTheme();
+        if (app.getTheme() != null) {
+            theme = app.getTheme().getId();
+        }
         title = app.getTitle();
         status = app.getStatus();
         developingDepartment = app.getDevelopingDepartment().getId();
@@ -75,11 +77,11 @@ public class ApplicationListDto {
         this.headline = headline;
     }
 
-    public String getTheme() {
+    public Integer getTheme() {
         return theme;
     }
 
-    public void setTheme(String theme) {
+    public void setTheme(Integer theme) {
         this.theme = theme;
     }
 

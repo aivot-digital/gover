@@ -12,6 +12,7 @@ public class ApplicationDetailsMinimalDto extends ApplicationListDto {
     private Integer accessibilityDepartment;
     private Integer customerAccessHours;
     private Integer submissionDeletionWeeks;
+    private Integer theme;
 
     public ApplicationDetailsMinimalDto() {
     }
@@ -109,5 +110,6 @@ public class ApplicationDetailsMinimalDto extends ApplicationListDto {
     public void setSubmissionDeletionWeeks(Integer submissionDeletionWeeks) {
         this.submissionDeletionWeeks = submissionDeletionWeeks;
     }
-// endregion
+
+    // endregion
 }

@@ -14,7 +14,8 @@ public class RootElementConverter implements AttributeConverter<RootElement, Str
     public String convertToDatabaseColumn(RootElement baseElement) {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            return mapper.writeValueAsString(baseElement);
+            var res = mapper.writeValueAsString(baseElement);
+            return res;
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -22,6 +23,7 @@ public class RootElementConverter implements AttributeConverter<RootElement, Str
 
     @Override
     public RootElement convertToEntityAttribute(String s) {
-        return new RootElement(new JSONObject(s).toMap());
+        var elem = new RootElement(new JSONObject(s).toMap());
+        return elem;
     }
 }

@@ -1,15 +1,15 @@
-import {Box, Button, Container, TextField, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {MetaElement} from '../../../components/meta-element/meta-element';
-import {useDispatch, useSelector} from 'react-redux';
-import {faArrowRightToBracket} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {authenticate, logout, selectAuthenticationState} from '../../../slices/auth-slice';
-import {AuthState} from "../../../data/auth-state";
-import {Logo} from '../../../components/static-components/logo/logo';
+import { Box, Button, Container, TextField, Typography } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MetaElement } from '../../../components/meta-element/meta-element';
+import { useDispatch, useSelector } from 'react-redux';
+import { faArrowRightToBracket } from '@fortawesome/pro-light-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { authenticate, logout, selectAuthenticationState } from '../../../slices/auth-slice';
+import { AuthState } from '../../../data/auth-state';
+import { Logo } from '../../../components/static-components/logo/logo';
 
-export function Login() {
+export function Login(): JSX.Element {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const authState = useSelector(selectAuthenticationState);
@@ -28,12 +28,12 @@ export function Login() {
         }
     }, [navigate, authState]);
 
-    const handleAuthenticate = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleAuthenticate = (event: React.FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
+
         dispatch(logout());
-        dispatch(authenticate({email: email.trim(), password}));
+        dispatch(authenticate({ email: email.trim(), password }));
         setIsAuthenticating(true);
-        return false;
     };
 
     return (
@@ -42,17 +42,17 @@ export function Login() {
                 title="Anmelden"
             />
 
-            <Container sx={{mt: 5}}>
+            <Container sx={{ mt: 5 }}>
                 <Box
                     sx={{
                         px: 11,
                         py: 9,
                         mt: 5,
                         mb: 8,
-                        border: '1px solid #efefef'
+                        border: '1px solid #efefef',
                     }}
                 >
-                    <Box sx={{mb: 4}}>
+                    <Box sx={{ mb: 4 }}>
                         <Logo
                             width={200}
                             height={100}
@@ -68,45 +68,45 @@ export function Login() {
 
                     <Typography
                         variant="body2"
-                        sx={{mt: 1}}
+                        sx={{ mt: 1 }}
                     >
                         Zur Nutzung dieser Anwendung ist ein Benutzer-Account notwendig.
                     </Typography>
 
-                    <Box sx={{mt: 1, mb: 5}}>
+                    <Box sx={{ mt: 1, mb: 5 }}>
                         <form
                             onSubmit={handleAuthenticate}
-                            style={{maxWidth: '600px'}}
+                            style={{ maxWidth: '600px' }}
                         >
                             <TextField
                                 value={email}
-                                onChange={event => setEmail(event.target.value)}
+                                onChange={(event) => {setEmail(event.target.value);}}
                                 type="email"
                                 label="E-Mail-Adresse"
                                 placeholder="max.muster@gover.digital"
-                                helperText={authState === AuthState.AuthenticationFailed && "Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort"}
+                                helperText={authState === AuthState.AuthenticationFailed && 'Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort'}
                                 error={authState === AuthState.AuthenticationFailed}
                                 disabled={isAuthenticating}
                             />
                             <TextField
                                 value={password}
-                                onChange={event => setPassword(event.target.value)}
+                                onChange={(event) => {setPassword(event.target.value);}}
                                 type="password"
                                 label="Passwort"
-                                helperText={authState === AuthState.AuthenticationFailed && "Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort"}
+                                helperText={authState === AuthState.AuthenticationFailed && 'Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort'}
                                 error={authState === AuthState.AuthenticationFailed}
                                 disabled={isAuthenticating}
                             />
                             <Button
                                 type="submit"
-                                sx={{mt: 2}}
+                                sx={{ mt: 2 }}
                                 variant="contained"
                                 size={'large'}
                                 startIcon={
                                     <FontAwesomeIcon
                                         icon={faArrowRightToBracket}
                                         fixedWidth
-                                        style={{marginTop: '-2px', marginRight: '4px'}}
+                                        style={{ marginTop: '-2px', marginRight: '4px' }}
                                     />
                                 }
                                 disabled={isAuthenticating}

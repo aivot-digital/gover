@@ -1,35 +1,110 @@
-import React, {FormEvent, useEffect, useState} from "react";
-import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from "@mui/material";
-import {Link, useParams} from "react-router-dom";
-import {Application} from "../../../models/entities/application";
-import {SubmissionDetailsDto} from "../../../models/entities/submission-details-dto";
-import {ApplicationService} from "../../../services/application-service";
-import {SubmissionService} from "../../../services/submission-service";
-import {format, parseISO} from "date-fns";
-import {faArrowsRotate, faFileDownload, faFilePdf, faFileZipper} from "@fortawesome/pro-light-svg-icons";
-import {TextFieldComponent} from "../../../components/text-field/text-field-component";
-import {SelectFieldComponent} from "../../../components/select-field/select-field-component";
-import {UsersService} from "../../../services/users-service";
-import {SelectFieldComponentOption} from "../../../components/select-field/select-field-component-option";
-import {User} from "../../../models/entities/user";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {SubmissionAttachmentListDto} from "../../../models/entities/submission-attachment-list-dto";
-import {downloadBlobFile} from "../../../utils/download-utils";
-import {useAppDispatch} from "../../../hooks/use-app-dispatch";
-import {showErrorSnackbar, showSuccessSnackbar} from "../../../slices/snackbar-slice";
-import {AlertComponent} from "../../../components/alert/alert-component";
-import {Destination} from "../../../models/entities/destination";
-import {DestinationsService} from "../../../services/destinations-service";
-import {PageWrapper} from "../../../components/page-wrapper/page-wrapper";
-import {ConfirmDialog} from "../../../dialogs/confirm-dialog/confirm-dialog";
-import {useChangeBlocker} from "../../../hooks/use-change-blocker";
+import React, { type FormEvent, useEffect, useState } from 'react';
+import {
+    Box,
+    Button,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
+} from '@mui/material';
+import { Link, useParams } from 'react-router-dom';
+import { type Application } from '../../../models/entities/application';
+import { type SubmissionDetailsDto } from '../../../models/entities/submission-details-dto';
+import { ApplicationService } from '../../../services/application-service';
+import { SubmissionService } from '../../../services/submission-service';
+import { format, parseISO } from 'date-fns';
+import { faArrowsRotate, faFileDownload, faFilePdf, faFileZipper } from '@fortawesome/pro-light-svg-icons';
+import { TextFieldComponent } from '../../../components/text-field/text-field-component';
+import { SelectFieldComponent } from '../../../components/select-field/select-field-component';
+import { UsersService } from '../../../services/users-service';
+import { type SelectFieldComponentOption } from '../../../components/select-field/select-field-component-option';
+import { type User } from '../../../models/entities/user';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { type SubmissionAttachmentListDto } from '../../../models/entities/submission-attachment-list-dto';
+import { downloadBlobFile } from '../../../utils/download-utils';
+import { useAppDispatch } from '../../../hooks/use-app-dispatch';
+import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
+import { AlertComponent } from '../../../components/alert/alert-component';
+import { type Destination } from '../../../models/entities/destination';
+import { DestinationsService } from '../../../services/destinations-service';
+import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
+import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
+import { useChangeBlocker } from '../../../hooks/use-change-blocker';
+import { delayPromise } from '../../../utils/with-delay';
 
-export function SubmissionEditPage() {
+async function fetchData(formId: string | undefined, submissionId: string | undefined): Promise<{
+    form: Application
+    submission: SubmissionDetailsDto
+    attachments: SubmissionAttachmentListDto[]
+    destination?: Destination
+    users: SelectFieldComponentOption[]
+}> {
+    if (formId == null || submissionId == null) {
+        throw new Error('Missing formId or submissionId');
+    }
+
+    const form = await ApplicationService.retrieve(parseInt(formId));
+
+    const submission = await SubmissionService.retrieve(form.id, submissionId);
+
+    const attachments = await SubmissionService.retrieveAttachments(form.id, submissionId);
+
+    let destination: Destination | undefined;
+    if (submission.destination != null) {
+        destination = await DestinationsService.retrieve(submission.destination);
+    }
+
+    const fetchUserPromises: Array<Promise<User[]>> = [
+        UsersService.list({ admin: 'true' }),
+    ];
+
+    if (form.responsibleDepartment != null) {
+        fetchUserPromises.push(
+            UsersService.list({ department: form.responsibleDepartment }),
+        );
+    }
+
+    if (form.managingDepartment != null) {
+        fetchUserPromises.push(
+            UsersService.list({ department: form.managingDepartment }),
+        );
+    }
+
+    const users = await Promise
+        .all(fetchUserPromises)
+        .then((res) => res
+            .reduce((acc, currentValue) => {
+                for (const val of currentValue) {
+                    const skipVal = acc.some((o) => o.id === val.id);
+                    if (!skipVal) {
+                        acc.push(val);
+                    }
+                }
+                return acc;
+            }, []))
+        .then((users) => users.map((user) => ({
+            value: user.id.toString(),
+            label: user.name + (user.admin ? ' (Globaler Administrator)' : ''),
+        })));
+
+    return {
+        form,
+        submission,
+        attachments,
+        destination,
+        users,
+    };
+}
+
+export function SubmissionEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
 
-    const {applicationId, id} = useParams();
+    const { applicationId, id } = useParams();
 
-    const [application, setApplication] = useState<Application>();
+    const [form, setForm] = useState<Application>();
     const [destination, setDestination] = useState<Destination>();
     const [attachments, setAttachments] = useState<SubmissionAttachmentListDto[]>();
     const [userOptions, setUserOptions] = useState<SelectFieldComponentOption[]>();
@@ -39,170 +114,177 @@ export function SubmissionEditPage() {
 
     const [confirmArchive, setConfirmArchive] = useState<() => void>();
 
+    const [isLoading, setIsLoading] = useState(false);
+    const [isNotFound, setIsNotFound] = useState(false);
+
     const hasChanged = useChangeBlocker(originalSubmission, editedSubmission);
 
     useEffect(() => {
         if (applicationId != null) {
-            ApplicationService
-                .retrieve(parseInt(applicationId))
-                .then(setApplication);
+            setIsLoading(true);
+            setIsNotFound(false);
+
+            delayPromise(fetchData(applicationId, id))
+                .then((res) => {
+                    setForm(res.form);
+                    setOriginalSubmission(res.submission);
+                    setEditedSubmission(res.submission);
+                    setAttachments(res.attachments);
+                    setDestination(res.destination);
+                    setUserOptions(res.users);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    setIsNotFound(true);
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
         }
     }, [applicationId]);
 
-    useEffect(() => {
-        if (applicationId != null && id != null) {
-            SubmissionService
-                .retrieve(parseInt(applicationId), id)
-                .then(sub => {
-                    setEditedSubmission(sub);
-                    setOriginalSubmission(sub);
-                });
-
-            SubmissionService
-                .retrieveAttachments(parseInt(applicationId), id)
-                .then(setAttachments);
-        }
-    }, [applicationId, id]);
-
-    useEffect(() => {
-        if (application != null) {
-            const fetchPromises: Promise<User[]>[] = [
-                UsersService.list({admin: 'true'}),
-            ];
-
-            if (application.responsibleDepartment != null) {
-                fetchPromises.push(
-                    UsersService
-                        .list({department: application.responsibleDepartment})
-                );
-            }
-
-            if (application.managingDepartment != null) {
-                fetchPromises.push(
-                    UsersService
-                        .list({department: application.managingDepartment})
-                );
-            }
-
-            Promise
-                .all(fetchPromises)
-                .then(res => res
-                    .reduce((acc, currentValue) => {
-                        for (const val of currentValue) {
-                            const skipVal = acc.some(o => o.id === val.id);
-                            if (!skipVal) {
-                                acc.push(val);
-                            }
-                        }
-                        return acc;
-                    }, []))
-                .then(users => users.map(user => ({
-                    value: user.id.toString(),
-                    label: user.name + (user.admin ? ' (Globaler Administrator)' : ''),
-                })))
-                .then(setUserOptions);
-        }
-    }, [application]);
-
-    useEffect(() => {
-        if (editedSubmission != null && editedSubmission.destination != null && (destination == null || destination.id !== editedSubmission.destination)) {
-            DestinationsService
-                .retrieve(editedSubmission.destination)
-                .then(setDestination);
-        }
-    }, [editedSubmission, destination]);
-
-    const handleSubmit = (event: FormEvent) => {
+    const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
 
-        if (application != null && editedSubmission != null) {
+        if (form != null && editedSubmission != null) {
+            setIsLoading(true);
+
             SubmissionService
-                .update(application.id, editedSubmission.id, editedSubmission)
-                .then(savedSubmission => {
+                .update(form.id, editedSubmission.id, editedSubmission)
+                .then((savedSubmission) => {
                     dispatch(showSuccessSnackbar('Antrag erfolgreich gespeichert'));
                     setOriginalSubmission(savedSubmission);
                     setEditedSubmission(savedSubmission);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Antrag konnte nicht gespeichert werden'));
+                })
+                .finally(() => {
+                    setIsLoading(false);
                 });
         }
     };
 
-    const handleArchive = () => {
-        if (application != null && editedSubmission != null) {
+    const handleArchive = (): void => {
+        if (form != null && editedSubmission != null) {
             setConfirmArchive(() => () => {
                 const archivedSubmission = {
                     ...editedSubmission,
                     archived: new Date().toISOString(),
-                }
+                };
+
+                setIsLoading(true);
                 SubmissionService
-                    .update(application.id, editedSubmission.id, archivedSubmission)
+                    .update(form.id, editedSubmission.id, archivedSubmission)
                     .then(() => {
+                        setOriginalSubmission(archivedSubmission);
+                        setEditedSubmission(archivedSubmission);
+                        setConfirmArchive(undefined);
                         dispatch(showSuccessSnackbar('Antrag erfolgreich archiviert'));
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Antrag konnte nicht archiviert werden'));
+                    })
+                    .finally(() => {
+                        setIsLoading(false);
                     });
-                setOriginalSubmission(archivedSubmission);
-                setEditedSubmission(archivedSubmission);
-                setConfirmArchive(undefined);
             });
         }
     };
 
-    const handleResendDestination = () => {
-        if (application != null && editedSubmission != null) {
+    const handleResendDestination = (): void => {
+        if (form != null && editedSubmission != null) {
+            setIsLoading(true);
+
             SubmissionService
-                .resentDestination(application.id, editedSubmission.id)
-                .then(resentSubmission => {
+                .resentDestination(form.id, editedSubmission.id)
+                .then((resentSubmission) => {
                     setOriginalSubmission(resentSubmission);
                     setEditedSubmission(resentSubmission);
                 })
-                .catch(() => {
+                .catch((err) => {
+                    console.error(err);
                     dispatch(showErrorSnackbar('Erneutes Übertragen des Antrags fehlgeschlagen'));
+                })
+                .finally(() => {
+                    setIsLoading(false);
                 });
         }
     };
 
-    const handleDownloadPrint = () => {
-        if (application != null && editedSubmission != null) {
+    const handleDownloadPrint = (): void => {
+        if (form != null && editedSubmission != null) {
+            setIsLoading(true);
+
             SubmissionService
-                .downloadPdf(application.id, editedSubmission.id)
-                .then(res => downloadBlobFile(`${application.title}.pdf`, res));
+                .downloadPdf(form.id, editedSubmission.id)
+                .then((res) => {
+                    downloadBlobFile(`${ form.title }.pdf`, res);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('PDF konnte nicht heruntergeladen werden'));
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
         }
     };
 
-    const handleDownloadAttachment = (att: SubmissionAttachmentListDto) => {
-        if (application != null && editedSubmission != null) {
+    const handleDownloadAttachment = (att: SubmissionAttachmentListDto): void => {
+        if (form != null && editedSubmission != null) {
+            setIsLoading(true);
+
             SubmissionService
-                .downloadAttachment(application.id, editedSubmission.id, att.id)
-                .then(res => downloadBlobFile(att.filename, res));
+                .downloadAttachment(form.id, editedSubmission.id, att.id)
+                .then((res) => {
+                    downloadBlobFile(att.filename, res);
+                })
+                .catch((err) => {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Anlage konnte nicht heruntergeladen werden'));
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
         }
     };
 
     const created = editedSubmission != null ? parseISO(editedSubmission.created) : undefined;
     const archived = editedSubmission?.archived != null ? parseISO(editedSubmission.archived) : undefined;
-    const title = `Antrage - ${application?.title} - ${editedSubmission?.fileNumber ?? format(created ?? new Date(), 'dd.MM.yyyy - HH:mm')}`;
+    const title = `Antrage - ${ form?.title ?? '' } - ${ editedSubmission?.fileNumber ?? format(created ?? new Date(), 'dd.MM.yyyy - HH:mm') }`;
 
     return (
         <PageWrapper
-            title={title}
-            isLoading={application == null || editedSubmission == null || userOptions == null || attachments == null}
-            toolbarActions={archived == null && editedSubmission?.destination == null ? [
-                {
-                    icon: faFileZipper,
-                    tooltip: 'Antrag abschließen',
-                    onClick: handleArchive,
-                },
-            ] : (editedSubmission?.destination != null && !editedSubmission?.destinationSuccess ? [
-                {
-                    icon: faArrowsRotate,
-                    tooltip: 'Erneut übertragen',
-                    onClick: handleResendDestination,
-                },
-            ] : undefined)}
+            title={ title }
+            isLoading={ isLoading }
+            is404={ isNotFound }
+            toolbarActions={ archived == null && editedSubmission?.destination == null ?
+                [
+                    {
+                        icon: faFileZipper,
+                        tooltip: 'Antrag abschließen',
+                        onClick: handleArchive,
+                    },
+                ] :
+                (editedSubmission?.destination != null && !(editedSubmission?.destinationSuccess ?? true) ?
+                    [
+                        {
+                            icon: faArrowsRotate,
+                            tooltip: 'Erneut übertragen',
+                            onClick: handleResendDestination,
+                        },
+                    ] :
+                    undefined) }
         >
 
             {
                 editedSubmission?.destination == null &&
                 editedSubmission?.assignee == null &&
                 <Box
-                    sx={{mb: 4}}
+                    sx={ { mb: 4 } }
                 >
                     <AlertComponent
                         title="Noch nicht in Bearbeitung"
@@ -216,11 +298,11 @@ export function SubmissionEditPage() {
                 editedSubmission?.destination == null &&
                 archived != null &&
                 <Box
-                    sx={{mb: 4}}
+                    sx={ { mb: 4 } }
                 >
                     <AlertComponent
                         title="Abgeschlossener Vorgang"
-                        text={`Dieser Antrag wurde am ${format(archived, 'dd.MM.yyyy')} um ${format(archived, 'HH:mm')} Uhr abgeschlossen.`}
+                        text={ `Dieser Antrag wurde am ${ format(archived, 'dd.MM.yyyy') } um ${ format(archived, 'HH:mm') } Uhr abgeschlossen.` }
                         color="warning"
                     />
                 </Box>
@@ -228,34 +310,34 @@ export function SubmissionEditPage() {
 
             {
                 editedSubmission?.destination != null &&
-                editedSubmission?.destinationSuccess &&
+                (editedSubmission?.destinationSuccess ?? false) &&
                 archived != null &&
                 <Box
-                    sx={{mb: 4}}
+                    sx={ { mb: 4 } }
                 >
                     <AlertComponent
                         title="An Schnittstelle übertragen"
                         color="success"
                     >
-                        Dieser Antrag wurde am {format(archived, 'dd.MM.yyyy')} um {format(archived, 'HH:mm')} Uhr
+                        Dieser Antrag wurde am { format(archived, 'dd.MM.yyyy') } um { format(archived, 'HH:mm') } Uhr
                         erfolgreich an die
-                        Schnittstelle <Link to={`/destinations/${destination?.id}`}>{destination?.name}</Link> übertragen.
+                        Schnittstelle <Link to={ `/destinations/${ destination?.id ?? 0 }` }>{ destination?.name }</Link> übertragen.
                     </AlertComponent>
                 </Box>
             }
 
             {
                 editedSubmission?.destination != null &&
-                !editedSubmission?.destinationSuccess &&
+                !(editedSubmission?.destinationSuccess ?? false) &&
                 <Box
-                    sx={{mb: 4}}
+                    sx={ { mb: 4 } }
                 >
                     <AlertComponent
                         title="Übertragung fehlgeschlagen"
                         color="error"
                     >
                         Dieser Antrag konnte nicht an die
-                        Schnittstelle <Link to={`/destinations/${destination?.id}`}>{destination?.name}</Link> übertragen
+                        Schnittstelle <Link to={ `/destinations/${ destination?.id ?? 0 }` }>{ destination?.name }</Link> übertragen
                         werden.
                         Bitte überprüfen Sie die Schnittstelle und probieren Sie es erneut.
                     </AlertComponent>
@@ -264,7 +346,7 @@ export function SubmissionEditPage() {
 
             <Typography
                 variant="h6"
-                sx={{mb: 2}}
+                sx={ { mb: 2 } }
             >
                 Antragsinformationen
             </Typography>
@@ -277,7 +359,7 @@ export function SubmissionEditPage() {
                                 Eingangsdatum
                             </TableCell>
                             <TableCell>
-                                {created && format(created, 'dd.MM.yyyy')}
+                                { (created != null) && format(created, 'dd.MM.yyyy') }
                             </TableCell>
                         </TableRow>
 
@@ -286,7 +368,7 @@ export function SubmissionEditPage() {
                                 Eingangsuhrzeit
                             </TableCell>
                             <TableCell>
-                                {created && format(created, 'HH:mm')} Uhr
+                                { (created != null) && format(created, 'HH:mm') } Uhr
                             </TableCell>
                         </TableRow>
                     </TableBody>
@@ -295,43 +377,53 @@ export function SubmissionEditPage() {
 
             {
                 editedSubmission?.destination == null &&
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={ handleSubmit }>
                     <Typography
                         variant="h6"
-                        sx={{mt: 4, mb: 2}}
+                        sx={ { mt: 4, mb: 2 } }
                     >
                         Bearbeitungsinformationen
                     </Typography>
 
                     <TextFieldComponent
                         label="Aktenzeichen"
-                        value={editedSubmission?.fileNumber ?? undefined}
-                        onChange={val => setEditedSubmission({
-                            ...editedSubmission!,
-                            fileNumber: val ?? null,
-                        })}
+                        value={ editedSubmission?.fileNumber ?? undefined }
+                        onChange={ (val) => {
+                            if (editedSubmission == null) {
+                                return;
+                            }
+                            setEditedSubmission({
+                                ...editedSubmission,
+                                fileNumber: val ?? null,
+                            });
+                        } }
                         required
-                        disabled={archived != null}
+                        disabled={ archived != null }
                     />
 
                     <SelectFieldComponent
                         label="Zuständige Mitarbeiter:in"
-                        value={editedSubmission?.assignee?.toString() ?? undefined}
-                        onChange={val => setEditedSubmission({
-                            ...editedSubmission!,
-                            assignee: val != null ? parseInt(val) : null,
-                        })}
-                        options={userOptions ?? []}
+                        value={ editedSubmission?.assignee?.toString() ?? undefined }
+                        onChange={ (val) => {
+                            if (editedSubmission == null) {
+                                return;
+                            }
+                            setEditedSubmission({
+                                ...editedSubmission,
+                                assignee: val != null ? parseInt(val) : null,
+                            });
+                        } }
+                        options={ userOptions ?? [] }
                         required
-                        disabled={archived != null}
+                        disabled={ archived != null }
                     />
 
                     {
                         editedSubmission?.archived == null &&
-                        <Box sx={{mt: 2}}>
+                        <Box sx={ { mt: 2 } }>
                             <Button
                                 type="submit"
-                                disabled={!hasChanged}
+                                disabled={ !hasChanged }
                             >
                                 Speichern
                             </Button>
@@ -339,9 +431,11 @@ export function SubmissionEditPage() {
                             <Button
                                 type="reset"
                                 color="error"
-                                disabled={!hasChanged}
-                                onClick={() => setEditedSubmission(JSON.parse(JSON.stringify(originalSubmission)))}
-                                sx={{ml: 2}}
+                                disabled={ !hasChanged }
+                                onClick={ () => {
+                                    setEditedSubmission(JSON.parse(JSON.stringify(originalSubmission)));
+                                } }
+                                sx={ { ml: 2 } }
                             >
                                 Zurücksetzen
                             </Button>
@@ -352,16 +446,16 @@ export function SubmissionEditPage() {
 
             <Typography
                 variant="h6"
-                sx={{mt: 4, mb: 2}}
+                sx={ { mt: 4, mb: 2 } }
             >
                 Antrag
             </Typography>
 
             <Button
-                onClick={handleDownloadPrint}
+                onClick={ handleDownloadPrint }
                 endIcon={
                     <FontAwesomeIcon
-                        icon={faFilePdf}
+                        icon={ faFilePdf }
                     />
                 }
             >
@@ -374,7 +468,7 @@ export function SubmissionEditPage() {
                 <>
                     <Typography
                         variant="h6"
-                        sx={{mt: 4, mb: 2}}
+                        sx={ { mt: 4, mb: 2 } }
                     >
                         Anlagen
                     </Typography>
@@ -392,16 +486,18 @@ export function SubmissionEditPage() {
 
                             <TableBody>
                                 {
-                                    attachments.map(att => (
-                                        <TableRow key={att.id}>
+                                    attachments.map((att) => (
+                                        <TableRow key={ att.id }>
                                             <TableCell>
-                                                {att.filename}
+                                                { att.filename }
                                             </TableCell>
                                             <TableCell>
                                                 <Button
-                                                    onClick={() => handleDownloadAttachment(att)}
+                                                    onClick={ () => {
+                                                        handleDownloadAttachment(att);
+                                                    } }
                                                     endIcon={
-                                                        <FontAwesomeIcon icon={faFileDownload}/>
+                                                        <FontAwesomeIcon icon={ faFileDownload }/>
                                                     }
                                                 >
                                                     Herunterladen
@@ -418,8 +514,10 @@ export function SubmissionEditPage() {
 
             <ConfirmDialog
                 title="Antrag archivieren"
-                onConfirm={confirmArchive}
-                onCancel={() => setConfirmArchive(undefined)}
+                onConfirm={ confirmArchive }
+                onCancel={ () => {
+                    setConfirmArchive(undefined);
+                } }
             >
                 Sind Sie sicher, dass Sie den Antrag archivieren wollen? Dies kann nicht rückgängig gemacht werden.
             </ConfirmDialog>

@@ -1,18 +1,21 @@
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {faPlus,} from "@fortawesome/pro-light-svg-icons";
-import {GridColDef} from "@mui/x-data-grid";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import {AssetService} from "../../../services/asset-service";
+import { useAuthGuard } from '../../../hooks/use-auth-guard';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { faPlus } from '@fortawesome/pro-light-svg-icons';
+import { type GridColDef } from '@mui/x-data-grid';
+import { useUserGuard } from '../../../hooks/use-user-guard';
+import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
+import { AssetService } from '../../../services/asset-service';
+import { delayPromise } from '../../../utils/with-delay';
+import { showErrorSnackbar } from '../../../slices/snackbar-slice';
+import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 
 interface Asset {
     id: string;
     link: string;
 }
 
-const columns: GridColDef<Asset>[] = [
+const columns: Array<GridColDef<Asset>> = [
     {
         field: 'id',
         headerName: 'Name',
@@ -22,60 +25,74 @@ const columns: GridColDef<Asset>[] = [
         field: 'link',
         headerName: 'Link',
         flex: 1,
-        renderCell: params => (
+        renderCell: (params) => (
             <a
-                href={params.row.link}
+                href={ params.row.link }
                 target="_blank"
-                onClick={event => event.stopPropagation()}
+                onClick={ (event) => {
+                    event.stopPropagation();
+                } }
+                rel="noreferrer"
             >
-                {params.row.link}
+                { params.row.link }
             </a>
-        )
+        ),
     },
 ];
 
-
-export function AssetListPage() {
+export function AssetListPage(): JSX.Element {
     useAuthGuard();
-    useUserGuard(user => user?.admin ?? false);
+    useUserGuard((user) => user?.admin ?? false);
 
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
     const [search, setSearch] = useState('');
     const [assets, setAssets] = useState<Asset[]>();
-
+    const [isBusy, setIsBusy] = useState(false);
 
     useEffect(() => {
-        AssetService
-            .list()
-            .then(ass => ass.map(name => ({
+        setIsBusy(true);
+        delayPromise(AssetService.list())
+            .then((ass) => ass.map((name) => ({
                 id: name,
                 link: AssetService.getLink(name),
             })))
-            .then(setAssets);
+            .then(setAssets)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Die Liste der Dokumente & Medieninhalte konnte nicht geladen werden.'));
+            })
+            .finally(() => {
+                setIsBusy(false);
+            });
     }, []);
 
-    const filtered = assets != null ? assets.filter(ass => ass.id.toLowerCase().includes(search.toLowerCase())) : undefined;
+    const filtered = assets != null ? assets.filter((ass) => ass.id.toLowerCase().includes(search.toLowerCase())) : undefined;
 
     return (
         <TablePageWrapper
-            title="Anlagen"
-            isLoading={filtered == null}
+            title="Dokumente & Medieninhalte"
+            isLoading={ isBusy }
 
-            columns={columns}
-            rows={filtered ?? []}
-            onRowClick={ass => navigate(`/assets/${ass.id}`)}
+            columns={ columns }
+            rows={ filtered ?? [] }
+            onRowClick={ (ass) => {
+                navigate(`/assets/${ ass.id }`);
+            } }
 
-            search={search}
-            searchPlaceholder="Anlage suchen..."
-            onSearchChange={setSearch}
+            search={ search }
+            searchPlaceholder="Suchen..."
+            onSearchChange={ setSearch }
 
-            actions={[{
-                label: 'Neue Anlage',
+            actions={ [{
+                label: 'Dokument/Medieninhalt hinzufügen',
                 icon: faPlus,
-                tooltip: 'Neue Anlage anlegen',
-                onClick: () => navigate(`/assets/new`),
-            }]}
+                tooltip: 'Neues Dokument oder neuen Medieninhalt anlegen',
+                onClick: () => {
+                    navigate('/assets/new');
+                },
+            }] }
         />
     );
 }

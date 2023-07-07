@@ -1,9 +1,5 @@
 package de.aivot.GoverBackend.models.entities;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.converters.JacksonRootElementDeserializer;
-import de.aivot.GoverBackend.converters.JacksonRootElementSerializer;
 import de.aivot.GoverBackend.converters.RootElementConverter;
 import de.aivot.GoverBackend.enums.ApplicationStatus;
 import de.aivot.GoverBackend.models.elements.RootElement;
@@ -49,8 +45,6 @@ public class Application {
 
     @NotNull
     @Convert(converter = RootElementConverter.class)
-    @JsonSerialize(converter = JacksonRootElementSerializer.class)
-    @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
     @Column(columnDefinition = "jsonb")
     private RootElement root;
 
@@ -81,6 +75,9 @@ public class Application {
 
     @ManyToOne
     private Department responsibleDepartment;
+
+    @ManyToOne
+    private Theme theme;
 
     @NotNull
     private LocalDateTime created;
@@ -250,6 +247,14 @@ public class Application {
 
     public void setResponsibleDepartment(Department responsibleDepartment) {
         this.responsibleDepartment = responsibleDepartment;
+    }
+
+    public Theme getTheme() {
+        return theme;
+    }
+
+    public void setTheme(Theme theme) {
+        this.theme = theme;
     }
 
     public LocalDateTime getCreated() {

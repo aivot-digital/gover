@@ -1,0 +1,22 @@
+version: '3.1'
+
+services:
+
+  database:
+    image: 'postgres'
+    restart: 'always'
+    environment:
+      POSTGRES_PASSWORD: 'gover'
+      POSTGRES_USER: 'gover'
+      POSTGRES_DB: 'gover'
+      PGDATA: '/var/lib/postgresql/data/pgdata'
+    volumes:
+      - './pg_data:/var/lib/postgresql/data'
+    ports:
+      - '5432:5432'
+
+  clamav:
+    image: 'clamav/clamav'
+    restart: 'always'
+    ports:
+      - '3310:3310'

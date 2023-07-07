@@ -1,25 +1,27 @@
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {FormEvent, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
-import {Box, Button, Typography} from "@mui/material";
-import {useAppDispatch} from "../../../hooks/use-app-dispatch";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {PageWrapper} from "../../../components/page-wrapper/page-wrapper";
-import {FileUpload} from "../../../components/file-upload/file-upload";
-import {AssetService} from "../../../services/asset-service";
+import { useAuthGuard } from '../../../hooks/use-auth-guard';
+import React, { type FormEvent, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Box, Button, Typography } from '@mui/material';
+import { useAppDispatch } from '../../../hooks/use-app-dispatch';
+import { useUserGuard } from '../../../hooks/use-user-guard';
+import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
+import { FileUpload } from '../../../components/file-upload/file-upload';
+import { AssetService } from '../../../services/asset-service';
+import { showErrorSnackbar } from '../../../slices/snackbar-slice';
 
-export function AssetEditPage() {
+export function AssetEditPage(): JSX.Element {
     useAuthGuard();
-    useUserGuard(user => user != null && user.admin);
+    useUserGuard((user) => user?.admin ?? false);
 
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const {name} = useParams();
+    const { name } = useParams();
 
     const [file, setFile] = useState<File[]>([]);
-    const [isUploading, setIsUploading] = useState(false);
+    const [isBusy, setIsBusy] = useState(false);
 
-    const handleSubmit = (event: FormEvent) => {
+    const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
 
         if (file.length === 0) {
@@ -28,45 +30,62 @@ export function AssetEditPage() {
 
         const form = new FormData();
         form.set('file', file[0]);
-        setIsUploading(true);
+
+        setIsBusy(true);
         AssetService
             .create(form)
-            .then(() => navigate('/assets'));
+            .then(() => {
+                navigate('/assets');
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Datei konnte nicht hochgeladen werden.'));
+                setIsBusy(false);
+            });
     };
 
-    const handleDelete = () => {
+    const handleDelete = (): void => {
         if (name != null) {
-            AssetService.destroy(name);
-            navigate('/assets');
+            setIsBusy(true);
+            AssetService
+                .destroy(name)
+                .then(() => {
+                    navigate('/assets');
+                })
+                .catch((err) => {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Datei konnte nicht gelöscht werden.'));
+                    setIsBusy(false);
+                });
         }
     };
 
     return (
         <PageWrapper
-            title="Anlage bearbeiten"
-            isLoading={isUploading}
+            title="Dokument / Medieninhalt bearbeiten"
+            isLoading={ isBusy }
         >
             {
                 name != null &&
                 name === 'new' &&
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={ handleSubmit }>
                     <Typography
                         variant="h6"
-                        sx={{mb: 4}}
+                        sx={ { mb: 4 } }
                     >
                         Neue Anlage hochladen
                     </Typography>
 
                     <FileUpload
-                        value={file}
-                        onChange={setFile}
-                        multiple={false}
+                        value={ file }
+                        onChange={ setFile }
+                        multiple={ false }
                     />
 
-                    <Box sx={{mt: 4}}>
+                    <Box sx={ { mt: 4 } }>
                         <Button
                             type="submit"
-                            disabled={file.length === 0}
+                            disabled={ file.length === 0 }
                         >
                             Hochladen
                         </Button>
@@ -78,19 +97,23 @@ export function AssetEditPage() {
                 name != null &&
                 name !== 'new' &&
                 <Box>
-                    <a
-                        href={AssetService.getLink(name)}
-                        target="_blank"
-                    >
-                        {AssetService.getLink(name)}
-                    </a>
+                    <Typography>
+                        Link zum Dokument / Medieninhalt:&nbsp;
+                        <a
+                            href={ AssetService.getLink(name) }
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            { AssetService.getLink(name) }
+                        </a>
+                    </Typography>
 
-                    <Box sx={{mt: 4}}>
+                    <Box sx={ { mt: 4 } }>
                         <Button
                             color="error"
-                            onClick={handleDelete}
+                            onClick={ handleDelete }
                         >
-                            Anlage Löschen
+                            Dokument / Medieninhalt Löschen
                         </Button>
                     </Box>
                 </Box>

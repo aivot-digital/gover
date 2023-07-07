@@ -1,6 +1,6 @@
-import {Grid, Theme, ThemeProvider} from '@mui/material';
-import React, {useEffect, useState} from 'react';
-import {RootState} from '../../../store';
+import { Grid, ThemeProvider, type Theme as MuiTheme } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { type RootState } from '../../../store';
 import {
     clearAppModel,
     fetchApplicationById,
@@ -11,23 +11,23 @@ import {
     updateAppModel,
 } from '../../../slices/app-slice';
 import {
-    LoadingPlaceholderComponentView
+    LoadingPlaceholderComponentView,
 } from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
-import {useParams, useSearchParams} from 'react-router-dom';
-import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
-import {createAppTheme} from '../../../theming/themes';
-import {NotFoundPage} from '../../../components/static-components/not-found-page/not-found-page';
-import {MetaElement} from '../../../components/meta-element/meta-element';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { ViewDispatcherComponent } from '../../../components/view-dispatcher.component';
+import { createAppTheme } from '../../../theming/themes';
+import { NotFoundPage } from '../../../components/static-components/not-found-page/not-found-page';
+import { MetaElement } from '../../../components/meta-element/meta-element';
 import {
     resetAdminSettings,
     toggleComponentTree,
     toggleValidation,
-    toggleVisibility
+    toggleVisibility,
 } from '../../../slices/admin-settings-slice';
-import {resetUserInput} from '../../../slices/customer-input-slice';
-import {UserInputDebugger} from '../../../components/user-input-debugger/user-input-debugger';
-import {useAuthGuard} from '../../../hooks/use-auth-guard';
-import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
+import { resetUserInput } from '../../../slices/customer-input-slice';
+import { UserInputDebugger } from '../../../components/user-input-debugger/user-input-debugger';
+import { useAuthGuard } from '../../../hooks/use-auth-guard';
+import { AppToolbar } from '../../../components/app-toolbar/app-toolbar';
 import {
     faDisplay,
     faDisplaySlash,
@@ -36,20 +36,22 @@ import {
     faEyeSlash,
     faScrewdriverWrench,
     faText,
-    faTextSlash
+    faTextSlash,
 } from '@fortawesome/pro-light-svg-icons';
-import {AdminToolsDialog} from '../../../dialogs/admin-tools/admin-tools-dialog';
-import {useAppSelector} from '../../../hooks/use-app-selector';
-import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {ElementTree} from '../../../components/element-tree/element-tree';
-import {setCurrentStep} from '../../../slices/stepper-slice';
-import {flattenElements} from "../../../utils/flatten-elements";
-import {HelpDialog} from "../../../dialogs/help-dialog/help.dialog";
-import {PrivacyDialog} from "../../../dialogs/privacy-dialog/privacy-dialog";
-import {ImprintDialog} from "../../../dialogs/imprint-dialog/imprint-dialog";
-import {AccessibilityDialog} from "../../../dialogs/accessibility-dialog/accessibility-dialog";
+import { AdminToolsDialog } from '../../../dialogs/admin-tools/admin-tools-dialog';
+import { useAppSelector } from '../../../hooks/use-app-selector';
+import { useAppDispatch } from '../../../hooks/use-app-dispatch';
+import { ElementTree } from '../../../components/element-tree/element-tree';
+import { setCurrentStep } from '../../../slices/stepper-slice';
+import { flattenElements } from '../../../utils/flatten-elements';
+import { HelpDialog } from '../../../dialogs/help-dialog/help.dialog';
+import { PrivacyDialog } from '../../../dialogs/privacy-dialog/privacy-dialog';
+import { ImprintDialog } from '../../../dialogs/imprint-dialog/imprint-dialog';
+import { AccessibilityDialog } from '../../../dialogs/accessibility-dialog/accessibility-dialog';
+import { ThemesService } from '../../../services/themes-service';
+import { type Theme } from '../../../models/entities/theme';
 
-export function ApplicationEditorPage() {
+export function ApplicationEditorPage(): JSX.Element {
     useAuthGuard();
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = searchParams.get('dialog');
@@ -62,7 +64,9 @@ export function ApplicationEditorPage() {
     const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
     const application = useAppSelector(selectLoadedApplication);
     const failedToLoad = useAppSelector(selectApplicationLoadFailed);
-    const metaDialog = useAppSelector(state => state.app.showMetaDialog);
+    const metaDialog = useAppSelector((state) => state.app.showMetaDialog);
+
+    const [theme, setTheme] = useState<Theme>();
 
     useEffect(() => {
         if (metaDialogName != null) {
@@ -77,10 +81,21 @@ export function ApplicationEditorPage() {
         dispatch(resetUserInput());
         dispatch(setCurrentStep(0));
         if (params.id != null) {
-            const id = parseInt(params.id)
+            const id = parseInt(params.id);
             dispatch(fetchApplicationById(id));
         }
     }, [params.id, dispatch]);
+
+    useEffect(() => {
+        if (application != null && application.theme != null) {
+            ThemesService
+                .retrieve(application.theme)
+                .then(setTheme)
+                .catch((err) => {
+                    console.error(err);
+                });
+        }
+    }, [application]);
 
     if (failedToLoad) {
         return (
@@ -91,21 +106,21 @@ export function ApplicationEditorPage() {
 
                 <NotFoundPage/>
             </>
-        )
+        );
     } else if (application == null) {
         return <LoadingPlaceholderComponentView/>;
     } else {
         const allElements = flattenElements(application.root);
 
         return (
-            <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(application?.root.theme, baseTheme)}>
+            <ThemeProvider theme={ (baseTheme: MuiTheme) => createAppTheme(theme, baseTheme) }>
                 <MetaElement
-                    title={`Editor - ${application.title}`}
+                    title={ `Editor - ${ application.title }` }
                 />
 
                 <AppToolbar
-                    title={application.title}
-                    actions={[
+                    title={ application.title }
+                    actions={ [
                         {
                             tooltip: adminSettings.disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
                             icon: adminSettings.disableValidation ? faText : faTextSlash,
@@ -138,25 +153,25 @@ export function ApplicationEditorPage() {
                         {
                             tooltip: 'Formular als Antragsteller:in öffnen (in neuem Tab)',
                             icon: faExternalLink,
-                            href: `/#/${application.slug ?? ''}/${application.version ?? ''}`,
+                            href: `/#/${ application.slug ?? '' }/${ application.version ?? '' }`,
                         },
-                    ]}
-                    noPlaceholder={true}
+                    ] }
+                    noPlaceholder={ true }
                 />
 
 
                 <Grid
                     container
-                    sx={{
+                    sx={ {
                         minHeight: '100vh',
-                    }}
+                    } }
                 >
                     {
                         !adminSettings.hideComponentTree &&
                         <Grid
                             item
-                            xs={4}
-                            sx={{
+                            xs={ 4 }
+                            sx={ {
                                 pt: 8,
                                 px: 2,
                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
@@ -164,64 +179,66 @@ export function ApplicationEditorPage() {
                                 overflowY: 'scroll',
                                 borderRight: '1px solid #E0E7E0',
                                 position: 'relative',
-                            }}
+                            } }
                         >
                             <ElementTree
-                                element={application.root}
-                                onPatch={patch => {
+                                element={ application.root }
+                                onPatch={ (patch) => {
                                     dispatch(updateAppModel({
                                         ...application,
                                         root: {
                                             ...application?.root,
                                             ...patch,
-                                        }
+                                        },
                                     }));
-                                }}
+                                } }
                             />
                         </Grid>
                     }
 
                     <Grid
                         item
-                        xs={adminSettings.hideComponentTree ? 12 : 8}
-                        sx={{
+                        xs={ adminSettings.hideComponentTree ? 12 : 8 }
+                        sx={ {
                             pt: 8,
                             height: '100vh',
                             overflowY: 'scroll',
-                        }}
+                        } }
                     >
                         <ViewDispatcherComponent
-                            allElements={allElements}
-                            element={application.root}
+                            allElements={ allElements }
+                            element={ application.root }
                         />
                     </Grid>
                 </Grid>
 
                 <AdminToolsDialog
-                    open={showAdminTools}
-                    onClose={() => setShowAdminTools(false)}
+                    open={ showAdminTools }
+                    onClose={ () => {
+                        setShowAdminTools(false);
+                    } }
                 />
 
                 <UserInputDebugger/>
 
                 <HelpDialog
-                    onHide={() => dispatch(showMetaDialog(undefined))}
-                    open={metaDialog == MetaDialog.Help}
+                    onHide={ () => dispatch(showMetaDialog(undefined)) }
+                    open={ metaDialog === MetaDialog.Help }
                 />
 
                 <PrivacyDialog
-                    onHide={() => dispatch(showMetaDialog(undefined))}
-                    open={metaDialog == MetaDialog.Privacy}
+                    onHide={ () => dispatch(showMetaDialog(undefined)) }
+                    open={ metaDialog === MetaDialog.Privacy }
                 />
 
                 <ImprintDialog
-                    onHide={() => dispatch(showMetaDialog(undefined))}
-                    open={metaDialog == MetaDialog.Imprint}
+                    onHide={ () => dispatch(showMetaDialog(undefined)) }
+                    open={ metaDialog === MetaDialog.Imprint }
                 />
 
                 <AccessibilityDialog
-                    onHide={() => dispatch(showMetaDialog(undefined))}
-                    open={metaDialog == MetaDialog.Accessibility}
+                    onHide={ () => dispatch(showMetaDialog(undefined)) }
+                    open={ metaDialog === MetaDialog.Accessibility }
                 />
             </ThemeProvider>
         );

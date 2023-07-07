@@ -1,31 +1,30 @@
-import React, {FormEvent, useState} from 'react';
-import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
-import {SystemService} from "../../../../../services/system-service";
+import React, { type FormEvent, useState } from 'react';
+import { Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
+import { SystemService } from '../../../../../services/system-service';
 
 
-export function SmtpTest() {
+export function SmtpTest(): JSX.Element {
     const [targetEmail, setTargetEmail] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [emailTestResult, setEmailTestResult] = useState<true | string>();
 
-    const handleSubmit = (event: FormEvent) => {
+    const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
-        event.stopPropagation();
 
         setIsSending(true);
         setEmailTestResult(undefined);
 
         SystemService.testSmtp(targetEmail)
-            .then(res => {
+            .then((res) => {
                 if (res.result != null) {
                     setEmailTestResult(res.result);
                 } else {
                     setEmailTestResult(true);
                 }
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error(err);
-                if (err.response != null && err.response.data != null && err.response.data.message != null) {
+                if (err.response?.data?.message != null) {
                     setEmailTestResult(err.response.data.message);
                 } else {
                     setEmailTestResult(err.message);
@@ -53,7 +52,7 @@ export function SmtpTest() {
                 isSending &&
                 <Alert
                     severity="info"
-                    sx={{mt: 2}}
+                    sx={{ mt: 2 }}
                 >
                     <AlertTitle>
                         Teste E-Mail-Versand
@@ -71,7 +70,7 @@ export function SmtpTest() {
                             size="2em"
                         />
 
-                        <Typography sx={{ml: 2}}>
+                        <Typography sx={{ ml: 2 }}>
                             Der Test der verbindung läuft aktuell. Schließen Sie diese Seite nicht. Der Test kann bis zu
                             5 Minuten dauern.
                         </Typography>
@@ -84,7 +83,7 @@ export function SmtpTest() {
                 emailTestResult === true &&
                 <Alert
                     severity="success"
-                    sx={{mt: 2}}
+                    sx={{ mt: 2 }}
                 >
                     <AlertTitle>
                         Test erfolgreich!
@@ -100,7 +99,7 @@ export function SmtpTest() {
                 emailTestResult !== true &&
                 <Alert
                     severity="error"
-                    sx={{mt: 2}}
+                    sx={{ mt: 2 }}
                 >
                     <AlertTitle>
                         Versand fehlgeschlagen!
@@ -113,7 +112,7 @@ export function SmtpTest() {
 
                     <Typography
                         variant="subtitle2"
-                        sx={{mt: 2}}
+                        sx={{ mt: 2 }}
                     >
                         Fehlerbericht
                     </Typography>
@@ -136,8 +135,8 @@ export function SmtpTest() {
                         type="email"
                         placeholder="max.muster@mail.de"
                         value={targetEmail}
-                        onChange={event => setTargetEmail(event.target.value)}
-                        onBlur={() => setTargetEmail(targetEmail.trim())}
+                        onChange={(event) => {setTargetEmail(event.target.value);}}
+                        onBlur={() => {setTargetEmail(targetEmail.trim());}}
                         disabled={isSending}
                         required
                     />

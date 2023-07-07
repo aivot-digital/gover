@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.converters;
 
 import com.fasterxml.jackson.databind.util.StdConverter;
 import de.aivot.GoverBackend.models.elements.RootElement;
-import org.json.JSONObject;
 
 import java.util.Map;
 

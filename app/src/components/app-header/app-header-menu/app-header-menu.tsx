@@ -1,53 +1,55 @@
 import React from 'react';
-import {AppHeaderMenuProps} from './app-header-menu-props';
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
+import { type AppHeaderMenuProps } from './app-header-menu-props';
+import { Divider, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
 import {
     faBracketsCurly,
     faBuilding,
-    faCopy, faFile,
+    faCopy,
+    faFile,
     faLink,
     faSignOut,
     faUser,
-    faUsers
+    faUsers,
+    faCogs,
+    faPalette,
 } from '@fortawesome/pro-light-svg-icons';
-import {AppMode} from '../../../data/app-mode';
-import {resetUserInput} from '../../../slices/customer-input-slice';
-import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {resetStepper} from '../../../slices/stepper-slice';
-import {Link} from 'react-router-dom';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {logout} from '../../../slices/auth-slice';
-import {useAppSelector} from "../../../hooks/use-app-selector";
-import {selectMemberships, selectUser} from "../../../slices/user-slice";
-import {resetErrors} from "../../../slices/customer-input-errors-slice";
-import {IconProp} from "@fortawesome/fontawesome-svg-core";
-import {UserRole} from "../../../data/user-role";
+import { AppMode } from '../../../data/app-mode';
+import { resetUserInput } from '../../../slices/customer-input-slice';
+import { useAppDispatch } from '../../../hooks/use-app-dispatch';
+import { resetStepper } from '../../../slices/stepper-slice';
+import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { logout } from '../../../slices/auth-slice';
+import { useAppSelector } from '../../../hooks/use-app-selector';
+import { selectMemberships, selectUser } from '../../../slices/user-slice';
+import { resetErrors } from '../../../slices/customer-input-errors-slice';
+import { type IconProp } from '@fortawesome/fontawesome-svg-core';
+import { UserRole } from '../../../data/user-role';
 
-
-export function AppHeaderMenu(props: AppHeaderMenuProps) {
+export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
 
     return (
         <Menu
-            anchorEl={props.anchorElement}
-            open={props.anchorElement != null}
-            onClose={props.onClose}
+            anchorEl={ props.anchorElement }
+            open={ props.anchorElement != null }
+            onClose={ props.onClose }
         >
             {
                 props.mode === AppMode.Customer &&
                 <ActionMenuItem
                     label="Alle Antragsdaten löschen"
-                    icon={faSignOut}
-                    onClick={() => {
+                    icon={ faSignOut }
+                    onClick={ () => {
                         const conf = window.confirm('Sollen wirklich alle Daten gelöscht werden?');
                         if (conf) {
                             dispatch(resetUserInput());
                             dispatch(resetStepper());
                             dispatch(resetErrors());
                         }
-                    }}
+                    } }
                 />
             }
 
@@ -55,27 +57,27 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 props.mode === AppMode.Staff &&
                 <LinkMenuItem
                     label="Profil"
-                    icon={faUser}
+                    icon={ faUser }
                     to="/profile"
                 />
             }
 
             {
                 props.mode === AppMode.Staff &&
-                user?.admin &&
+                (user?.admin ?? false) &&
                 <LinkMenuItem
                     label="Einstellungen"
-                    icon={faUser}
+                    icon={ faCogs }
                     to="/settings"
                 />
             }
 
             {
                 props.mode === AppMode.Staff &&
-                user?.admin &&
+                (user?.admin ?? false) &&
                 <LinkMenuItem
-                    label="Benutzerverwaltung"
-                    icon={faUsers}
+                    label="Mitarbeiter:innen"
+                    icon={ faUsers }
                     to="/users"
                 />
             }
@@ -83,22 +85,21 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
             {
                 props.mode === AppMode.Staff &&
                 (
-                    user?.admin ||
-                    memberships?.some(mem => mem.role === UserRole.Admin)
+                    (user?.admin ?? false) ||
+                    (memberships?.some((mem) => mem.role === UserRole.Admin) ?? false)
                 ) &&
                 <LinkMenuItem
-                    label="Fachbereichsverwaltung"
-                    icon={faBuilding}
+                    label="Fachbereiche"
+                    icon={ faBuilding }
                     to="/departments"
                 />
             }
 
             {
                 props.mode === AppMode.Staff &&
-                user?.admin &&
                 <LinkMenuItem
-                    label="Anlagen"
-                    icon={faFile}
+                    label="Dokumente & Medieninhalte"
+                    icon={ faFile }
                     to="/assets"
                 />
             }
@@ -112,28 +113,38 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 props.mode === AppMode.Staff &&
                 <LinkMenuItem
                     label="Vorlagen"
-                    icon={faCopy}
+                    icon={ faCopy }
                     to="/presets"
                 />
             }
 
             {
                 props.mode === AppMode.Staff &&
-                user?.admin &&
+                (user?.admin ?? false) &&
                 <LinkMenuItem
                     label="Schnittstellen"
-                    icon={faBracketsCurly}
+                    icon={ faBracketsCurly }
                     to="/destinations"
                 />
             }
 
             {
                 props.mode === AppMode.Staff &&
-                user?.admin &&
+                (user?.admin ?? false) &&
                 <LinkMenuItem
                     label="Links"
-                    icon={faLink}
+                    icon={ faLink }
                     to="/provider-links"
+                />
+            }
+
+            {
+                props.mode === AppMode.Staff &&
+                (user?.admin ?? false) &&
+                <LinkMenuItem
+                    label="Farbpaletten"
+                    icon={ faPalette }
+                    to="/themes"
                 />
             }
 
@@ -146,46 +157,46 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 props.mode === AppMode.Staff &&
                 <ActionMenuItem
                     label="Abmelden"
-                    icon={faSignOut}
-                    onClick={() => {
+                    icon={ faSignOut }
+                    onClick={ () => {
                         dispatch(logout());
-                    }}
+                    } }
                 />
             }
         </Menu>
     );
 }
 
-function LinkMenuItem({to, icon, label}: { to: string, icon: IconProp, label: string }) {
+function LinkMenuItem({ to, icon, label }: { to: string, icon: IconProp, label: string }): JSX.Element {
     return (
         <MenuItem
-            component={Link}
-            to={to}
+            component={ Link }
+            to={ to }
         >
             <ListItemIcon>
                 <FontAwesomeIcon
-                    icon={icon}
+                    icon={ icon }
                 />
             </ListItemIcon>
             <ListItemText>
-                {label}
+                { label }
             </ListItemText>
         </MenuItem>
     );
 }
 
-function ActionMenuItem({onClick, icon, label}: { onClick: () => void, icon: IconProp, label: string }) {
+function ActionMenuItem({ onClick, icon, label }: { onClick: () => void, icon: IconProp, label: string }): JSX.Element {
     return (
         <MenuItem
-            onClick={onClick}
+            onClick={ onClick }
         >
             <ListItemIcon>
                 <FontAwesomeIcon
-                    icon={icon}
+                    icon={ icon }
                 />
             </ListItemIcon>
             <ListItemText>
-                {label}
+                { label }
             </ListItemText>
         </MenuItem>
     );

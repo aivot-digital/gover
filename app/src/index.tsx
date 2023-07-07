@@ -1,21 +1,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import reportWebVitals from './reportWebVitals';
-import {ThemeProvider} from '@mui/material';
-import {BaseTheme} from './theming/base-theme';
-import {Provider as StoreProvide} from 'react-redux';
-import {store} from './store';
+import { Provider as StoreProvide } from 'react-redux';
+import { store } from './store';
 
 import './index.scss';
+import { ThemeProvider } from '@mui/material';
+import { BaseTheme } from './theming/base-theme';
 
-function importAppTarget() {
+async function importAppTarget() {
     if (process.env.REACT_APP_BUILD_TARGET === 'customer') {
-        return import('./apps/customer-app');
+        return await import('./apps/customer-app');
     } else if (process.env.REACT_APP_BUILD_TARGET === 'staff') {
-        return import('./apps/staff-app');
+        return await import('./apps/staff-app');
     } else {
-        return Promise.reject(
-            new Error("No such build target: " + process.env.REACT_APP_BUILD_TARGET)
+        return await Promise.reject(
+            new Error(`No such build target: ${ process.env.REACT_APP_BUILD_TARGET ?? 'undefined' }`),
         );
     }
 }
@@ -24,16 +24,15 @@ importAppTarget()
     .then(({default: Environment}) => {
         ReactDOM.render(
             <React.StrictMode>
-                <StoreProvide store={store}>
-                    <ThemeProvider theme={BaseTheme}>
+                <ThemeProvider theme={ BaseTheme }>
+                    <StoreProvide store={ store }>
                         <Environment/>
-                    </ThemeProvider>
-                </StoreProvide>
+                    </StoreProvide>
+                </ThemeProvider>
             </React.StrictMode>,
-            document.getElementById('root')
+            document.getElementById('root'),
         );
     });
-
 
 // If you want to start measuring performance in your root, pass a function
 // to log results (for example: reportWebVitals(console.log))
