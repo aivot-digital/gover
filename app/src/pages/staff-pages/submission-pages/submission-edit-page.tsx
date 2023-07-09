@@ -164,8 +164,12 @@ export function SubmissionEditPage(): JSX.Element {
                     setEditedSubmission(savedSubmission);
                 })
                 .catch((err) => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Antrag konnte nicht gespeichert werden'));
+                    if (err.response?.status === 409) {
+                        dispatch(showErrorSnackbar('Der Antrag wurde bereits archiviert'));
+                    } else {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Antrag konnte nicht gespeichert werden'));
+                    }
                 })
                 .finally(() => {
                     setIsLoading(false);
