@@ -55,20 +55,20 @@ async function fetchData(formId: string, submissionId: string): Promise<{
 
     const fetchUserPromises: Array<Promise<User[]>> = [
         UsersService
-            .list({ admin: 'true' }),
+            .list({admin: 'true'}),
     ];
 
     if (form.responsibleDepartment != null) {
         fetchUserPromises.push(
             UsersService
-                .list({ department: form.responsibleDepartment }),
+                .list({department: form.responsibleDepartment}),
         );
     }
 
     if (form.managingDepartment != null) {
         fetchUserPromises.push(
             UsersService
-                .list({ department: form.managingDepartment }),
+                .list({department: form.managingDepartment}),
         );
     }
 
@@ -109,7 +109,7 @@ async function fetchData(formId: string, submissionId: string): Promise<{
 export function SubmissionEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
 
-    const { applicationId, id } = useParams();
+    const {applicationId, id} = useParams();
 
     const [form, setForm] = useState<Application>();
     const [destination, setDestination] = useState<Destination>();
@@ -191,8 +191,12 @@ export function SubmissionEditPage(): JSX.Element {
                         dispatch(showSuccessSnackbar('Antrag erfolgreich archiviert'));
                     })
                     .catch((err) => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Antrag konnte nicht archiviert werden'));
+                        if (err.response?.status === 409) {
+                            dispatch(showErrorSnackbar('Der Antrag wurde bereits archiviert'));
+                        } else {
+                            console.error(err);
+                            dispatch(showErrorSnackbar('Antrag konnte nicht archiviert werden'));
+                        }
                     })
                     .finally(() => {
                         setIsLoading(false);
@@ -289,7 +293,7 @@ export function SubmissionEditPage(): JSX.Element {
             {
                 (editedSubmission?.isTestSubmission ?? false) &&
                 <Box
-                    sx={ { mb: 4 } }
+                    sx={ {mb: 4} }
                 >
                     <AlertComponent
                         title="Test-Antrag"
@@ -303,7 +307,7 @@ export function SubmissionEditPage(): JSX.Element {
                 editedSubmission?.destination == null &&
                 editedSubmission?.assignee == null &&
                 <Box
-                    sx={ { mb: 4 } }
+                    sx={ {mb: 4} }
                 >
                     <AlertComponent
                         title="Noch nicht in Bearbeitung"
@@ -317,7 +321,7 @@ export function SubmissionEditPage(): JSX.Element {
                 editedSubmission?.destination == null &&
                 archived != null &&
                 <Box
-                    sx={ { mb: 4 } }
+                    sx={ {mb: 4} }
                 >
                     <AlertComponent
                         title="Abgeschlossener Vorgang"
@@ -332,7 +336,7 @@ export function SubmissionEditPage(): JSX.Element {
                 (editedSubmission?.destinationSuccess ?? false) &&
                 archived != null &&
                 <Box
-                    sx={ { mb: 4 } }
+                    sx={ {mb: 4} }
                 >
                     <AlertComponent
                         title="An Schnittstelle übertragen"
@@ -349,7 +353,7 @@ export function SubmissionEditPage(): JSX.Element {
                 editedSubmission?.destination != null &&
                 !(editedSubmission?.destinationSuccess ?? false) &&
                 <Box
-                    sx={ { mb: 4 } }
+                    sx={ {mb: 4} }
                 >
                     <AlertComponent
                         title="Übertragung fehlgeschlagen"
@@ -365,7 +369,7 @@ export function SubmissionEditPage(): JSX.Element {
 
             <Typography
                 variant="h6"
-                sx={ { mb: 2 } }
+                sx={ {mb: 2} }
             >
                 Antragsinformationen
             </Typography>
@@ -399,7 +403,7 @@ export function SubmissionEditPage(): JSX.Element {
                 <form onSubmit={ handleSubmit }>
                     <Typography
                         variant="h6"
-                        sx={ { mt: 4, mb: 2 } }
+                        sx={ {mt: 4, mb: 2} }
                     >
                         Bearbeitungsinformationen
                     </Typography>
@@ -437,7 +441,7 @@ export function SubmissionEditPage(): JSX.Element {
 
                     {
                         editedSubmission?.archived == null &&
-                        <Box sx={ { mt: 2 } }>
+                        <Box sx={ {mt: 2} }>
                             <Button
                                 type="submit"
                                 disabled={ !hasChanged }
@@ -452,7 +456,7 @@ export function SubmissionEditPage(): JSX.Element {
                                 onClick={ () => {
                                     setEditedSubmission(JSON.parse(JSON.stringify(originalSubmission)));
                                 } }
-                                sx={ { ml: 2 } }
+                                sx={ {ml: 2} }
                             >
                                 Zurücksetzen
                             </Button>
@@ -463,7 +467,7 @@ export function SubmissionEditPage(): JSX.Element {
 
             <Typography
                 variant="h6"
-                sx={ { mt: 4, mb: 2 } }
+                sx={ {mt: 4, mb: 2} }
             >
                 Antrag
             </Typography>
@@ -485,7 +489,7 @@ export function SubmissionEditPage(): JSX.Element {
                 <>
                     <Typography
                         variant="h6"
-                        sx={ { mt: 4, mb: 2 } }
+                        sx={ {mt: 4, mb: 2} }
                     >
                         Anlagen
                     </Typography>

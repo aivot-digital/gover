@@ -183,6 +183,10 @@ public class SubmissionController {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
+        if (sub.getArchived() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
         var attachments = submissionAttachmentRepository
                 .findAllBySubmissionId(sub.getId());
 
