@@ -89,7 +89,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
 
         List<List<String>> columnValues = new LinkedList<>();
 
-        if (value != null) {
+        if (value != null && !value.isEmpty()) {
             for (Map<String, String> row : value) {
                 List<String> fields = new LinkedList<>();
                 for (TableFieldColumnDefinition col : this.fields) {
@@ -118,6 +118,12 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
                 }
                 columnValues.add(fields);
             }
+        } else {
+            List<String> emptyRow = new LinkedList<>();
+            for (TableFieldColumnDefinition col : this.fields) {
+                emptyRow.add("Keine Angaben");
+            }
+            columnValues.add(emptyRow);
         }
 
         List<BasePdfRowDto> fields = new LinkedList<>();
