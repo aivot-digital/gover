@@ -67,14 +67,7 @@ export function ApplicationListItem({
     };
 
     const handleDelete = () => {
-        if (application.title != null && application.title.length > 0) {
-            const res = prompt(`Sind Sie sicher, dass sie den Antrag "${application.title}" löschen möchten? Bitte geben Sie den Titel des Antrages ("${application.title}") zur Bestätigung der Löschung ein.`);
-            if (res != null && res.trim() === application.title) {
-                onDelete(application);
-            }
-        } else {
-            onDelete(application);
-        }
+        onDelete(application);
         handleCloseOptions();
     };
 
@@ -208,7 +201,7 @@ export function ApplicationListItem({
                                 <FontAwesomeIcon icon={faClone}/>
                             </ListItemIcon>
                             <ListItemText>
-                                Antrag Duplizieren
+                                Formular duplizieren
                             </ListItemText>
                         </MenuItem>
 
@@ -221,7 +214,7 @@ export function ApplicationListItem({
                                 <FontAwesomeIcon icon={faArrowUpRightFromSquare}/>
                             </ListItemIcon>
                             <ListItemText>
-                                Antrag als Antragsteller:in öffnen (in neuem Tab)
+                                Formular als Antragsteller:in öffnen (in neuem Tab)
                             </ListItemText>
                         </MenuItem>
 
@@ -229,7 +222,7 @@ export function ApplicationListItem({
                             onClick={() => {
                                 const link = `${window.location.protocol}//${window.location.host}/#/${application.slug}/${application.version}`;
                                 navigator.clipboard.writeText(link);
-                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert!'));
                                 handleCloseOptions();
                             }}
                         >
@@ -237,7 +230,7 @@ export function ApplicationListItem({
                                 <FontAwesomeIcon icon={faClipboard}/>
                             </ListItemIcon>
                             <ListItemText>
-                                Link in Zwischenablage kopieren
+                                Formularlink in Zwischenablage kopieren
                             </ListItemText>
                         </MenuItem>
 
@@ -248,7 +241,7 @@ export function ApplicationListItem({
                                     <FontAwesomeIcon icon={faFileExport}/>
                                 </ListItemIcon>
                                 <ListItemText>
-                                    Antrag als .gov-Datei exportieren
+                                    Formular exportieren
                                 </ListItemText>
                             </MenuItem>
                         }
@@ -260,7 +253,7 @@ export function ApplicationListItem({
                                     <FontAwesomeIcon icon={faTrashCanXmark}/>
                                 </ListItemIcon>
                                 <ListItemText>
-                                    Antrag löschen
+                                    Formular löschen
                                 </ListItemText>
                             </MenuItem>
                         }

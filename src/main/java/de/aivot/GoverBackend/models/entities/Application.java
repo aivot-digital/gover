@@ -48,35 +48,35 @@ public class Application {
     @Column(columnDefinition = "jsonb")
     private RootElement root;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Destination destination;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department legalSupportDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department technicalSupportDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department imprintDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department privacyDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department accessibilityDepartment;
 
     @NotNull
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department developingDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department managingDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department responsibleDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Theme theme;
 
     @NotNull

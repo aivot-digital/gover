@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -22,6 +23,8 @@ public class ApplicationController {
     private final DestinationRepository destinationRepository;
     private final ThemeRepository themeRepository;
 
+    private final SubmissionRepository submissionRepository;
+
     @Autowired
     public ApplicationController(
             ApplicationRepository applicationRepository,
@@ -29,30 +32,46 @@ public class ApplicationController {
             AccessibleDepartmentRepository accessibleDepartmentRepository,
             DepartmentRepository departmentRepository,
             DestinationRepository destinationRepository,
-            ThemeRepository themeRepository) {
+            ThemeRepository themeRepository, SubmissionRepository submissionRepository) {
         this.applicationRepository = applicationRepository;
         this.accessibleApplicationRepository = accessibleApplicationRepository;
         this.accessibleDepartmentRepository = accessibleDepartmentRepository;
         this.departmentRepository = departmentRepository;
         this.destinationRepository = destinationRepository;
         this.themeRepository = themeRepository;
+        this.submissionRepository = submissionRepository;
     }
 
     @GetMapping("/api/applications")
     public Collection<ApplicationListDto> list(
-            Authentication authentication
+            Authentication authentication,
+            @RequestParam(required = false) Integer department
     ) {
         User requester = (User) authentication.getPrincipal();
 
         Collection<Application> applications;
         if (requester.isAdmin()) {
-            applications = applicationRepository
-                    .findAll();
+            if (department != null) {
+                applications = applicationRepository
+                        .findAllByDevelopingDepartmentId(department);
+            } else {
+                applications = applicationRepository
+                        .findAll();
+            }
         } else {
-            var accessibleIds = accessibleApplicationRepository
-                    .findAllByKey_UserId(requester.getId())
+            Collection<AccessibleApplication> accessibleApplications;
+            if (department != null) {
+                accessibleApplications = accessibleApplicationRepository
+                        .findAllByKey_UserIdAndKey_DepartmentId(requester.getId(), department);
+            } else {
+                accessibleApplications = accessibleApplicationRepository
+                        .findAllByKey_UserId(requester.getId());
+            }
+
+            var accessibleIds = accessibleApplications
                     .stream()
-                    .map(acc -> acc.getKey().getApplicationId())
+                    .map(AccessibleApplication::getKey)
+                    .map(AccessibleApplication.AccessibleApplicationKey::getApplicationId)
                     .toList();
             applications = applicationRepository
                     .findAllByIdIn(accessibleIds);
@@ -90,6 +109,11 @@ public class ApplicationController {
 
         boolean exists = applicationRepository.existsBySlugAndVersion(newApp.getSlug(), newApp.getVersion());
         if (exists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
+        boolean inSameDepartment = applicationRepository.existsBySlugAndDevelopingDepartment_Id(newApp.getSlug(), newApp.getDevelopingDepartment());
+        if (!inSameDepartment) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
@@ -314,10 +338,15 @@ public class ApplicationController {
     ) {
         var requester = (User) authentication.getPrincipal();
 
+        Optional<Application> app = applicationRepository.findById(id);
+        if (app.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
         if (!requester.isAdmin()) {
             boolean membershipExists = accessibleDepartmentRepository
                     .existsByDepartmentIdAndUserId(
-                            id,
+                            app.get().getId(),
                             requester.getId()
                     );
             if (!membershipExists) {
@@ -325,9 +354,8 @@ public class ApplicationController {
             }
         }
 
-        Optional<Application> app = applicationRepository.findById(id);
-        if (app.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (submissionRepository.existsByApplication_IdAndArchivedIsNull(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
         applicationRepository.delete(app.get());

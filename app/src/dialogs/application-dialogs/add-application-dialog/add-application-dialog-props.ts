@@ -1,6 +1,6 @@
 import {DialogProps} from '@mui/material/Dialog/Dialog';
-import {Application} from '../../models/entities/application';
-import {ListApplication} from "../../models/entities/list-application";
+import {Application} from '../../../models/entities/application';
+import {ListApplication} from "../../../models/entities/list-application";
 
 export interface AddApplicationDialogProps extends DialogProps {
     applicationToBaseOn?: Application;

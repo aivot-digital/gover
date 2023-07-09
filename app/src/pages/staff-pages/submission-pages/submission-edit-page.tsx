@@ -54,18 +54,29 @@ async function fetchData(formId: string, submissionId: string): Promise<{
     }
 
     const fetchUserPromises: Array<Promise<User[]>> = [
-        UsersService.list({ admin: 'true' }),
+        UsersService
+            .list({ admin: 'true' }),
     ];
 
     if (form.responsibleDepartment != null) {
         fetchUserPromises.push(
-            UsersService.list({ department: form.responsibleDepartment }),
+            UsersService
+                .list({ department: form.responsibleDepartment }),
         );
     }
 
     if (form.managingDepartment != null) {
         fetchUserPromises.push(
-            UsersService.list({ department: form.managingDepartment }),
+            UsersService
+                .list({ department: form.managingDepartment }),
+        );
+    }
+
+    if (submission.assignee != null) {
+        fetchUserPromises.push(
+            UsersService
+                .retrieve(submission.assignee)
+                .then((res) => [res]),
         );
     }
 
@@ -250,11 +261,11 @@ export function SubmissionEditPage(): JSX.Element {
 
     const created = editedSubmission != null ? parseISO(editedSubmission.created) : undefined;
     const archived = editedSubmission?.archived != null ? parseISO(editedSubmission.archived) : undefined;
-    const title = `Antrage - ${ form?.title ?? '' } - ${ editedSubmission?.fileNumber ?? format(created ?? new Date(), 'dd.MM.yyyy - HH:mm') }`;
+    const title = `Antrag - ${ form?.title ?? '' } - ${ editedSubmission?.fileNumber ?? format(created ?? new Date(), 'dd.MM.yyyy - HH:mm') }`;
 
     return (
         <PageWrapper
-            title={ title }
+            title={ isLoading ? 'Lade...' : (isNotFound ? 'Nicht gefunden' : title) }
             isLoading={ isLoading }
             is404={ isNotFound }
             toolbarActions={ archived == null && editedSubmission?.destination == null ?
@@ -275,6 +286,18 @@ export function SubmissionEditPage(): JSX.Element {
                     ] :
                     undefined) }
         >
+            {
+                (editedSubmission?.isTestSubmission ?? false) &&
+                <Box
+                    sx={ { mb: 4 } }
+                >
+                    <AlertComponent
+                        title="Test-Antrag"
+                        text="Bei diesem Antrag handelt es sich im einen Test-Antrag. Der Antrag wurde für ein Formular abgesendet, dass noch nicht veröffentlicht wurde."
+                        color="info"
+                    />
+                </Box>
+            }
 
             {
                 editedSubmission?.destination == null &&
@@ -393,7 +416,6 @@ export function SubmissionEditPage(): JSX.Element {
                                 fileNumber: val ?? null,
                             });
                         } }
-                        required
                         disabled={ archived != null }
                     />
 
@@ -410,7 +432,6 @@ export function SubmissionEditPage(): JSX.Element {
                             });
                         } }
                         options={ userOptions ?? [] }
-                        required
                         disabled={ archived != null }
                     />
 

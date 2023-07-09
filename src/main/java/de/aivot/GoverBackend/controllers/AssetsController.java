@@ -91,10 +91,10 @@ public class AssetsController {
         try {
             var isClean = avService.testFile(file);
             if (!isClean) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.CONFLICT);
             }
         } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            throw new RuntimeException(e);
         }
 
         String filename = file.getOriginalFilename();

@@ -2,23 +2,23 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, Typography } from 
 import React, { useEffect, useState } from 'react';
 import {
     DialogTitleWithClose
-} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import { Application } from '../../models/entities/application';
-import { ElementType } from '../../data/element-type/element-type';
+} from '../../../components/static-components/dialog-title-with-close/dialog-title-with-close';
+import { Application } from '../../../models/entities/application';
+import { ElementType } from '../../../data/element-type/element-type';
 import { AddApplicationDialogProps } from './add-application-dialog-props';
-import { ApplicationStatus } from "../../data/application-status/application-status";
-import { generateElementWithDefaultValues } from "../../utils/generate-element-with-default-values";
-import { RootElement } from "../../models/elements/root-element";
-import { TextFieldComponent } from "../../components/text-field/text-field-component";
-import { slugify } from "../../utils/slugify";
-import { checkTitle } from "../../utils/check-title";
-import { checkVersion } from "../../utils/version-utils";
-import { checkSlugAndVersion } from "../../utils/check-slug-and-version";
-import { Department } from "../../models/entities/department";
-import { DepartmentsService } from "../../services/departments-service";
-import { SelectFieldComponent } from "../../components/select-field/select-field-component";
-import { useAppSelector } from "../../hooks/use-app-selector";
-import { selectMemberships, selectUser } from "../../slices/user-slice";
+import { ApplicationStatus } from "../../../data/application-status/application-status";
+import { generateElementWithDefaultValues } from "../../../utils/generate-element-with-default-values";
+import { RootElement } from "../../../models/elements/root-element";
+import { TextFieldComponent } from "../../../components/text-field/text-field-component";
+import { slugify } from "../../../utils/slugify";
+import { checkTitle } from "../../../utils/check-title";
+import { checkVersion } from "../../../utils/version-utils";
+import { checkSlugAndVersion } from "../../../utils/check-slug-and-version";
+import { Department } from "../../../models/entities/department";
+import { DepartmentsService } from "../../../services/departments-service";
+import { SelectFieldComponent } from "../../../components/select-field/select-field-component";
+import { useAppSelector } from "../../../hooks/use-app-selector";
+import { selectMemberships, selectUser } from "../../../slices/user-slice";
 
 
 type ErrorsType = {
@@ -200,8 +200,8 @@ export function AddApplicationDialog(props: AddApplicationDialogProps) {
                     variant="body2"
                     sx={ {mt: 4, mb: 2} }
                 >
-                    Vergeben Sie einen Titel für den Antrag um ihn besser identifizieren zu können. Diesen Titel können
-                    nur Sie und ihre Kolleg:innen einsehen.
+                    Vergeben Sie einen Titel für das Formular um es besser identifizieren zu können.
+                    Diesen Titel können nur Sie und ihre Kolleg:innen einsehen.
                 </Typography>
 
                 <TextFieldComponent
@@ -261,7 +261,7 @@ export function AddApplicationDialog(props: AddApplicationDialogProps) {
                     variant="body2"
                     sx={ {mt: 4, mb: 2} }
                 >
-                    Vergeben Sie die Version des Antrages. Unter dieser wird der Antrag für Antragstellende verfügbar
+                    Vergeben Sie die Version des Formulars. Unter dieser wird das Formular für Antragstellende verfügbar
                     sein. Achten Sie darauf, dass Sie dem Schema der semantischen Versionierung folgen.
                     Die Version besteht aus drei Zahlen, die jeweils durch einen Punkt getrennt werden. Die erste Zahl
                     gibt die Hauptversion (Major) an und sollte nur bei tiefgreifenden Änderungen erhöht werden. Die
@@ -270,7 +270,7 @@ export function AddApplicationDialog(props: AddApplicationDialogProps) {
                 </Typography>
 
                 <TextFieldComponent
-                    label="Version des Antrags"
+                    label="Version des Formulars"
                     placeholder="1.0.0"
                     value={ application.version }
                     onChange={ val => {

@@ -1,4 +1,4 @@
-import { Box, Container, Grid, Typography } from '@mui/material';
+import { Box, Container } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { ApplicationService } from '../../../services/application-service';
 import { useNavigate } from 'react-router-dom';
@@ -8,13 +8,14 @@ import {
 import { faCloudUpload, faPlus } from '@fortawesome/pro-light-svg-icons';
 import { AppFooter } from '../../../components/app-footer/app-footer';
 import { Introductory } from '../../../components/introductory/introductory';
-import { BoxLink } from '../../../components/box-link/box-link';
-import { AddApplicationDialog } from '../../../dialogs/add-application-dialog/add-application-dialog';
-import { ImportApplicationDialog } from '../../../dialogs/import-application-dialog/import-application-dialog';
+import {
+    AddApplicationDialog
+} from '../../../dialogs/application-dialogs/add-application-dialog/add-application-dialog';
+import {
+    ImportApplicationDialog
+} from '../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
 import { MetaElement } from '../../../components/meta-element/meta-element';
 import { type Application } from '../../../models/entities/application';
-import { type ProviderLink } from '../../../models/entities/provider-link';
-import { ProviderLinksService } from '../../../services/provider-links-service';
 import { AppHeader } from '../../../components/app-header/app-header';
 import { AppMode } from '../../../data/app-mode';
 import { ListHeader } from '../../../components/list-header/list-header';
@@ -33,6 +34,10 @@ import { ApplicationListItemGroup } from '../../../components/application-list-i
 import { selectMemberships } from '../../../slices/user-slice';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
+import {
+    DeleteApplicationDialog
+} from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
+import { ProviderLinks } from './components/provider-links';
 
 function groupApplications(applications: ListApplication[]): ListApplicationGroup[] {
     const appMap = new Map<string, ListApplication[]>();
@@ -56,14 +61,13 @@ function groupApplications(applications: ListApplication[]): ListApplicationGrou
         .sort((g1, g2) => g1.slug.localeCompare(g2.slug));
 }
 
-export function ApplicationListPage() {
+export function ApplicationListPage(): JSX.Element {
     useAuthGuard();
 
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
     const [applications, setApplications] = useState<ListApplication[]>();
-    const [providerLinks, setProviderLinks] = useState<ProviderLink[]>();
     const [search, setSearch] = useState<string>('');
 
     const [showAddApplicationDialog, setShowAddApplicationDialog] = useState(false);
@@ -72,6 +76,7 @@ export function ApplicationListPage() {
     const [applicationToClone, setApplicationToClone] = useState<Application>();
     const [applicationToImport, setApplicationToImport] = useState<Application>();
     const [applicationToUpgrade, setApplicationToUpgrade] = useState<Application>();
+    const [applicationToDelete, setApplicationToDelete] = useState<ListApplication>();
 
     const memberships = useAppSelector(selectMemberships);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -79,10 +84,10 @@ export function ApplicationListPage() {
     useEffect(() => {
         ApplicationService
             .list()
-            .then(setApplications);
-        ProviderLinksService
-            .list()
-            .then(setProviderLinks);
+            .then(setApplications)
+            .catch((err) => {
+                console.error(err);
+            });
     }, []);
 
     const handleAdd = (application: Application, navigateToEditAfterwards: boolean) => {
@@ -91,7 +96,7 @@ export function ApplicationListPage() {
                 .create(application)
                 .then((createdApplication) => {
                     if (navigateToEditAfterwards) {
-                        navigate('/edit/' + createdApplication.id);
+                        navigate(`/edit/${ createdApplication.id }`);
                     } else {
                         setApplications([
                             createdApplication,
@@ -107,14 +112,6 @@ export function ApplicationListPage() {
                         console.error(err);
                     }
                 });
-        }
-    };
-
-    const handleApplicationDelete = (appToDelete: ListApplication) => {
-        if (applications != null) {
-            ApplicationService
-                .destroy(appToDelete.id);
-            setApplications(applications.filter((app) => app.id !== appToDelete.id));
         }
     };
 
@@ -158,8 +155,8 @@ export function ApplicationListPage() {
                 mode={ AppMode.Staff }
             />
 
-            <div style={ { backgroundColor: '#F3F3F3' } }>
-                <Container sx={ { mb: 5, py: 4 } }>
+            <Box sx={ {backgroundColor: '#F3F3F3'} }>
+                <Container sx={ {mb: 5, py: 4} }>
                     <Box
                         sx={ {
                             mt: 3,
@@ -175,23 +172,29 @@ export function ApplicationListPage() {
                                 {
                                     label: 'Neues Formular',
                                     icon: faPlus,
-                                    onClick: () => {setShowAddApplicationDialog(true);},
+                                    onClick: () => {
+                                        setShowAddApplicationDialog(true);
+                                    },
                                 },
                                 {
                                     tooltip: 'Formular importieren',
                                     icon: faCloudUpload,
-                                    onClick: () => {setShowImportApplicationDialog(true);},
+                                    onClick: () => {
+                                        setShowImportApplicationDialog(true);
+                                    },
                                 },
                             ] }
                         />
                     </Box>
-                    <Box sx={ { mt: 3, mb: 5 } }>
+                    <Box sx={ {mt: 3, mb: 5} }>
                         {
                             applications.length === 0 &&
                             <EmptyDataListPlaceholder
                                 helperText="Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!"
                                 addText="Neues Formular"
-                                onAdd={ () => {setShowAddApplicationDialog(true);} }
+                                onAdd={ () => {
+                                    setShowAddApplicationDialog(true);
+                                } }
                             />
                         }
                         {
@@ -211,7 +214,7 @@ export function ApplicationListPage() {
                                                 key={ group.slug }
                                                 group={ group }
                                                 onClone={ handleApplicationClone }
-                                                onDelete={ handleApplicationDelete }
+                                                onDelete={ setApplicationToDelete }
                                                 onNewVersion={ handleApplicationNewVersion }
                                                 memberships={ memberships }
                                             />
@@ -221,59 +224,11 @@ export function ApplicationListPage() {
                         }
                     </Box>
                 </Container>
-            </div>
+            </Box>
 
-            <Container sx={ { mt: 10, mb: 12 } }>
-                <Typography
-                    variant={ 'h5' }
-                    sx={ { fontSize: '1.75rem' } }
-                >
-                    Service und Unterstützung
-                </Typography>
-                <Grid
-                    container
-                    spacing={ 4 }
-                    sx={ { mt: -2 } }
-                >
-                    <Grid
-                        item
-                        xs={ 12 }
-                        md={ 6 }
-                    >
-                        <BoxLink link="https://aivot.de/gover">
-                            <span>Über Gover</span>
-                            <br/>
-                            Hilfen, Anleitungen und FAQs
-                        </BoxLink>
-                    </Grid>
-                    {
-                        providerLinks != null &&
-                        providerLinks.map(({ link, text }) => (
-                            <Grid
-                                key={ text }
-                                item
-                                xs={ 12 }
-                                md={ 6 }
-                            >
-                                <BoxLink link={ link }>
-                                    {
-                                        text
-                                            .split('\n')
-                                            .map((line, index) =>
-                                                index === 0 ?
-                                                    <React.Fragment key={ index }>
-                                                        <span>{ line }</span>
-                                                        <br/></React.Fragment> :
-                                                    <React.Fragment key={ index }>{ line }<br/></React.Fragment>,
-                                            )
-                                    }
-                                </BoxLink>
-                            </Grid>
-                        ))
-                    }
-                </Grid>
+            <Container sx={ {mt: 10, mb: 12} }>
+                <ProviderLinks/>
             </Container>
-
 
             <AppFooter mode={ AppMode.Staff }/>
 
@@ -293,9 +248,23 @@ export function ApplicationListPage() {
 
             <ImportApplicationDialog
                 open={ showImportApplicationDialog }
-                onClose={ () => {setShowImportApplicationDialog(false);} }
+                onClose={ () => {
+                    setShowImportApplicationDialog(false);
+                } }
                 onImport={ setApplicationToImport }
+            />
+
+            <DeleteApplicationDialog
+                application={ applicationToDelete }
+                onDelete={ () => {
+                    setApplications(applications.filter((app) => app.id !== applicationToDelete?.id));
+                    setApplicationToDelete(undefined);
+                } }
+                onCancel={ () => {
+                    setApplicationToDelete(undefined);
+                } }
             />
         </>
     );
 }
+

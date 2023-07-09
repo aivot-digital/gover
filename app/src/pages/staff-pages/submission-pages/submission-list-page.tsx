@@ -141,6 +141,7 @@ export function SubmissionListPage(): JSX.Element {
 
     const [includeArchived, setIncludeArchived] = useState(LocalStorageService.loadFlag(LocalstorageKey.SubmissionsIncludeArchived));
     const [onlyAssigned, setOnlyAssigned] = useState(LocalStorageService.loadFlag(LocalstorageKey.SubmissionsOnlyAssigned));
+    const [includeTest, setIncludeTest] = useState(LocalStorageService.loadFlag(LocalstorageKey.SubmissionsIncludeTest));
 
     const [isFormLoading, setIsFormLoading] = useState(false);
     const [isFormNotFound, setIsFormNotFound] = useState(false);
@@ -173,7 +174,7 @@ export function SubmissionListPage(): JSX.Element {
             setIsSubmissionsLoading(true);
             setSubmissionLoadingError(undefined);
 
-            delayPromise(SubmissionService.list(id, includeArchived, onlyAssigned ? user.id : undefined))
+            delayPromise(SubmissionService.list(id, includeArchived, includeTest,onlyAssigned ? user.id : undefined))
                 .then((submissions) => {
                     return Promise.all(submissions.map(resolveSubmission));
                 })
@@ -188,7 +189,7 @@ export function SubmissionListPage(): JSX.Element {
                     setIsSubmissionsLoading(false);
                 });
         }
-    }, [id, user, includeArchived, onlyAssigned]);
+    }, [id, user, includeArchived, onlyAssigned, includeTest]);
 
     const handleToggleIncludeArchived = (_: ChangeEvent<HTMLInputElement>, checked: boolean): void => {
         setIncludeArchived(checked);
@@ -200,6 +201,11 @@ export function SubmissionListPage(): JSX.Element {
         LocalStorageService.storeFlag(LocalstorageKey.SubmissionsOnlyAssigned, checked);
     };
 
+    const handleToggleIncludeTest = (_: ChangeEvent<HTMLInputElement>, checked: boolean): void => {
+        setIncludeTest(checked);
+        LocalStorageService.storeFlag(LocalstorageKey.SubmissionsIncludeTest, checked);
+    };
+
     const filteredSubmissions = filterItems(submissions, 'fileNumber', search);
 
     return (
@@ -207,7 +213,7 @@ export function SubmissionListPage(): JSX.Element {
             title={ `Anträge - ${ form?.title ?? '' }` }
             isLoading={ isFormLoading || isSubmissionsLoading }
             is404={ isFormNotFound }
-            error={ submissionLoadingError }
+            error={ !isFormNotFound ? submissionLoadingError : undefined }
 
             rows={ filteredSubmissions }
             columns={ columns }
@@ -234,7 +240,17 @@ export function SubmissionListPage(): JSX.Element {
                             onChange={ handleToggleIncludeArchived }
                         />
                     }
-                    label="Abgeschlosse Vorgänge anzeigen"
+                    label="Inklusive abgeschlossener Vorgänge anzeigen"
+                />
+
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={ includeTest }
+                            onChange={ handleToggleIncludeTest }
+                        />
+                    }
+                    label="Inklusive Test-Vorgänge anzeigen"
                 />
 
                 <FormControlLabel
@@ -244,7 +260,7 @@ export function SubmissionListPage(): JSX.Element {
                             onChange={ handleToggleOnlyAssigned }
                         />
                     }
-                    label="Mir zugewiesene Vorgänge anzeigen"
+                    label="Nur mir zugewiesene Vorgänge anzeigen"
                     sx={ { mr: 'auto' } }
                 />
             </Box>

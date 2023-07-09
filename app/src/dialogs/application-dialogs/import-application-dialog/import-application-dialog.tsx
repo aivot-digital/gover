@@ -1,9 +1,9 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText} from '@mui/material';
 import React, {useState} from 'react';
-import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
+import {DialogTitleWithClose} from '../../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {ImportApplicationDialogProps} from './import-application-dialog-props';
-import {FileUpload} from '../../components/file-upload/file-upload';
-import {Application} from "../../models/entities/application";
+import {FileUpload} from '../../../components/file-upload/file-upload';
+import {Application} from "../../../models/entities/application";
 
 
 export function ImportApplicationDialog(props: ImportApplicationDialogProps) {

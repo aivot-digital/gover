@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.models.entities.Theme;
 import de.aivot.GoverBackend.permissions.IsAdmin;
+import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.ThemeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,10 +16,12 @@ import java.util.Optional;
 @RestController
 public class ThemeController {
     private final ThemeRepository repository;
+    private final ApplicationRepository applicationRepository;
 
     @Autowired
-    public ThemeController(ThemeRepository repository) {
+    public ThemeController(ThemeRepository repository, ApplicationRepository applicationRepository) {
         this.repository = repository;
+        this.applicationRepository = applicationRepository;
     }
 
     @GetMapping("/api/themes")
@@ -83,6 +86,10 @@ public class ThemeController {
         Optional<Theme> optLink = repository.findById(id);
         if (optLink.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        if (applicationRepository.existsByTheme_Id(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
         repository.delete(optLink.get());
