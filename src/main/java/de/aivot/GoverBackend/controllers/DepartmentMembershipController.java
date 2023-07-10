@@ -113,6 +113,36 @@ public class DepartmentMembershipController {
         return DepartmentMembershipDto.valueOf(membershipRepository.save(membership));
     }
 
+    @PutMapping("/api/department-memberships/{id}")
+    public DepartmentMembershipDto update(
+            Authentication authentication,
+            @PathVariable Integer id,
+            @RequestBody DepartmentMembershipDto updatedMembership
+    ) {
+        var requester = (User) authentication.getPrincipal();
+
+        Optional<DepartmentMembership> membershipToUpdate = membershipRepository.findById(id);
+        if (membershipToUpdate.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        var membership = membershipToUpdate.get();
+
+        if (!requester.isAdmin()) {
+            boolean isAdminMember = accessibleDepartmentRepository.existsByDepartmentIdAndUserIdAndRole(
+                    membership.getDepartment().getId(),
+                    requester.getId(),
+                    UserRole.Admin
+            );
+            if (!isAdminMember) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            }
+        }
+
+        membership.setRole(updatedMembership.getRole());
+
+        return DepartmentMembershipDto.valueOf(membershipRepository.save(membership));
+    }
+
     @DeleteMapping("/api/department-memberships/{id}")
     public void destroy(
             Authentication authentication,

@@ -41,12 +41,7 @@ public class SystemController {
         var result = new SmtpResultDto();
 
         try {
-            mailService.sendMail(
-                    payload.getTargetMail(),
-                    "[Gover] SMTP-Test",
-                    MailTemplate.SmtpTestMail,
-                    new HashMap<>()
-            );
+            mailService.sendTestMail(payload.getTargetMail());
         } catch (MessagingException | IOException e) {
             result.setResult(e.getMessage());
         }

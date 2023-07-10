@@ -1,13 +1,12 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { faPlus } from '@fortawesome/pro-light-svg-icons';
 import { type GridColDef } from '@mui/x-data-grid';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { filterItems } from '../../../utils/filter-items';
 import { ThemesService } from '../../../services/themes-service';
 import { type Theme } from '../../../models/entities/theme';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 const columns: Array<GridColDef<Theme>> = [
     {
@@ -18,8 +17,7 @@ const columns: Array<GridColDef<Theme>> = [
 ];
 
 export function ThemeListPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const navigate = useNavigate();
 

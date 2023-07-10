@@ -15,6 +15,7 @@ public class GoverConfig {
     private String environment;
     private List<String> fileExtensions;
     private List<String> contentTypes;
+    private String hostname;
 
     
     // region Getters & Setters
@@ -73,6 +74,14 @@ public class GoverConfig {
 
     public void setContentTypes(List<String> contentTypes) {
         this.contentTypes = contentTypes;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
     }
 
 

@@ -1,0 +1,9 @@
+Hallo,
+
+für das Online-Formular [(${title})] [(${version})] ist ein neuer Online-Antrag eingegangen.
+
+Mehr Informationen zu dem eingegangenen Antrag finden Sie unter [(${hostname})]/[(${applicationId})]/[(${submissionId})].
+
+
+Diese E-Mail ist automatisch generiert.
+Bitte nicht antworten.

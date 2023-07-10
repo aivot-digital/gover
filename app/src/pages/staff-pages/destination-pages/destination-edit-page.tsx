@@ -1,4 +1,3 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Divider } from '@mui/material';
@@ -6,7 +5,6 @@ import { TextFieldComponent } from '../../../components/text-field/text-field-co
 import { validateEmail } from '../../../utils/validate-email';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { type Destination } from '../../../models/entities/destination';
 import { DestinationType } from '../../../data/destination-type/destination-type';
 import { DestinationsService } from '../../../services/destinations-service';
@@ -15,14 +13,14 @@ import { NumberFieldComponent } from '../../../components/number-field/number-fi
 import { useChangeBlocker } from '../../../hooks/use-change-blocker';
 import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page-wrapper';
 import { isStringNotNullOrEmpty, isStringNullOrEmpty } from '../../../utils/string-utils';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 type Errors = {
     [key in keyof Destination]?: string;
 };
 
 export function DestinationEditPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const dispatch = useAppDispatch();
     const navigate = useNavigate();

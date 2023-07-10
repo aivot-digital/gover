@@ -9,10 +9,10 @@ import { faCloudUpload, faPlus } from '@fortawesome/pro-light-svg-icons';
 import { AppFooter } from '../../../components/app-footer/app-footer';
 import { Introductory } from '../../../components/introductory/introductory';
 import {
-    AddApplicationDialog
+    AddApplicationDialog,
 } from '../../../dialogs/application-dialogs/add-application-dialog/add-application-dialog';
 import {
-    ImportApplicationDialog
+    ImportApplicationDialog,
 } from '../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
 import { MetaElement } from '../../../components/meta-element/meta-element';
 import { type Application } from '../../../models/entities/application';
@@ -23,7 +23,6 @@ import { EmptyDataListPlaceholder } from '../../../components/empty-data-list-pl
 import {
     EmptySearchDataListPlaceholder,
 } from '../../../components/empty-search-data-list-placeholder/empty-search-data-list-placeholder';
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import { useAppSelector } from '../../../hooks/use-app-selector';
 import { selectSystemConfigValue } from '../../../slices/system-config-slice';
 import { SystemConfigKeys } from '../../../data/system-config-keys';
@@ -35,7 +34,7 @@ import { selectMemberships } from '../../../slices/user-slice';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
 import {
-    DeleteApplicationDialog
+    DeleteApplicationDialog,
 } from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 import { ProviderLinks } from './components/provider-links';
 
@@ -62,8 +61,6 @@ function groupApplications(applications: ListApplication[]): ListApplicationGrou
 }
 
 export function ApplicationListPage(): JSX.Element {
-    useAuthGuard();
-
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 

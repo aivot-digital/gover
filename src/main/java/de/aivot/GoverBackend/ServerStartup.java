@@ -84,12 +84,10 @@ public class ServerStartup implements ApplicationListener<ApplicationReadyEvent>
 
             logger.warn("Created default admin with email \"{}\" and password \"{}\"", initialEmail, initialPassword);
 
-            mailService.sendInfoMail(
-                    "Standard-Administrator erstellt",
-                    Strings.format("E-Mail: %s Password: %s",
-                            initialEmail,
-                            initialPassword
-                    ).toString()
+            mailService.sendUserCreatedEmail(
+                    initialEmail,
+                    initialPassword,
+                    goverConfig.getReportMail()
             );
         }
     }

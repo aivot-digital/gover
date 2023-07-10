@@ -1,16 +1,15 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { faPlus } from '@fortawesome/pro-light-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import { type Department } from '../../../models/entities/department';
 import { DepartmentsService } from '../../../services/departments-service';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { UserRole } from '../../../data/user-role';
 import { useAppSelector } from '../../../hooks/use-app-selector';
 import { selectUser } from '../../../slices/user-slice';
 import { type GridColDef } from '@mui/x-data-grid';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { delayPromise } from '../../../utils/with-delay';
+import { useAdminMembershipGuard } from '../../../hooks/use-admin-membership-guard';
 
 const columns: Array<GridColDef<Department>> = [
     {
@@ -21,11 +20,7 @@ const columns: Array<GridColDef<Department>> = [
 ];
 
 export function DepartmentListPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user, memberships) => (
-        (user?.admin ?? false) ||
-        (memberships?.some((mem) => mem.role === UserRole.Admin) ?? false)
-    ));
+    useAdminMembershipGuard();
 
     const navigate = useNavigate();
 

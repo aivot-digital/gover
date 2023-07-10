@@ -1,4 +1,3 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { faPlus } from '@fortawesome/pro-light-svg-icons';
@@ -6,10 +5,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { type Destination } from '../../../models/entities/destination';
 import { DestinationsService } from '../../../services/destinations-service';
 import { type GridColDef } from '@mui/x-data-grid';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { DestinationType, DestinationTypeIcons } from '../../../data/destination-type/destination-type';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { filterItems } from '../../../utils/filter-items';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 const columns: Array<GridColDef<Destination>> = [
     {
@@ -18,10 +17,10 @@ const columns: Array<GridColDef<Destination>> = [
         renderCell: (params) => (
             <>
                 <FontAwesomeIcon
-                    icon={DestinationTypeIcons[params.row.type]}
-                    style={{ marginRight: '1em' }}
+                    icon={ DestinationTypeIcons[params.row.type] }
+                    style={ {marginRight: '1em'} }
                 />
-                {params.row.type}
+                { params.row.type }
             </>
         ),
         flex: 1,
@@ -41,8 +40,7 @@ const columns: Array<GridColDef<Destination>> = [
 
 
 export function DestinationListPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const navigate = useNavigate();
 
@@ -72,23 +70,25 @@ export function DestinationListPage(): JSX.Element {
     return (
         <TablePageWrapper
             title="Schnittstellen"
-            isLoading={isLoading}
-            error={loadError}
+            isLoading={ isLoading }
+            error={ loadError }
 
-            columns={columns}
-            rows={filtered ?? []}
-            onRowClick={(dest) => {navigate(`/destinations/${ dest.id }`);}}
+            columns={ columns }
+            rows={ filtered ?? [] }
+            onRowClick={ (dest) => {
+                navigate(`/destinations/${ dest.id }`);
+            } }
 
-            search={search}
+            search={ search }
             searchPlaceholder="Schnittstelle suchen..."
-            onSearchChange={setSearch}
+            onSearchChange={ setSearch }
 
-            actions={[{
+            actions={ [{
                 label: 'Neue Schnittstelle',
                 icon: faPlus,
                 tooltip: 'Neue Schnittstelle anlegen',
                 link: '/destinations/new',
-            }]}
+            }] }
         />
     );
 }

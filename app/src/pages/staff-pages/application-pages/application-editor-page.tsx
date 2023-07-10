@@ -1,4 +1,4 @@
-import { Grid, ThemeProvider, type Theme as MuiTheme } from '@mui/material';
+import { Grid, type Theme as MuiTheme, ThemeProvider } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { type RootState } from '../../../store';
 import {
@@ -26,7 +26,6 @@ import {
 } from '../../../slices/admin-settings-slice';
 import { resetUserInput } from '../../../slices/customer-input-slice';
 import { UserInputDebugger } from '../../../components/user-input-debugger/user-input-debugger';
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import { AppToolbar } from '../../../components/app-toolbar/app-toolbar';
 import {
     faDisplay,
@@ -52,7 +51,6 @@ import { ThemesService } from '../../../services/themes-service';
 import { type Theme } from '../../../models/entities/theme';
 
 export function ApplicationEditorPage(): JSX.Element {
-    useAuthGuard();
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = searchParams.get('dialog');
 

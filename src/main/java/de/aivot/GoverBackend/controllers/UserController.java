@@ -16,46 +16,57 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @RestController
 public class UserController {
-    private final UserRepository repository;
+    private final UserRepository userRepository;
     private final DepartmentMembershipRepository departmentMembershipRepository;
     private final MailService mailService;
 
     @Autowired
     public UserController(
-            UserRepository repository,
+            UserRepository userRepository,
             DepartmentMembershipRepository departmentMembershipRepository,
             MailService mailService
     ) {
-        this.repository = repository;
+        this.userRepository = userRepository;
         this.departmentMembershipRepository = departmentMembershipRepository;
         this.mailService = mailService;
     }
 
     @GetMapping("/api/users")
     public Collection<User> list(
-            @RequestParam(required = false) Boolean admin,
-            @RequestParam(required = false) Integer department
+            @RequestParam(required = false) Integer department,
+            @RequestParam(required = false, defaultValue = "false") Boolean onlyAdmins,
+            @RequestParam(required = false, defaultValue = "true") Boolean excludeInactive
     ) {
-        Collection<User> users;
+        Stream<User> users;
+
         if (department != null) {
             users = departmentMembershipRepository
                     .findAllByDepartmentId(department)
                     .stream()
-                    .map(DepartmentMembership::getUser)
-                    .toList();
-        } else if (admin != null) {
-            users = repository
-                    .findAllByAdminOrderByEmail(Boolean.TRUE.equals(admin));
-        } else  {
-            users = repository
-                    .findAllByOrderByEmail();
+                    .map(DepartmentMembership::getUser);
+
+        } else {
+            users = userRepository
+                    .findAll()
+                    .stream();
+
+        }
+
+        if (onlyAdmins) {
+            users = users
+                    .filter(User::isAdmin);
+        }
+
+        if (excludeInactive) {
+            users = users
+                    .filter(User::isActive);
         }
 
         return users
-                .stream()
                 .peek(u -> u.setPassword("")) // Empty all password
                 .toList();
     }
@@ -64,10 +75,9 @@ public class UserController {
     @PostMapping("/api/users")
     public User create(
             Authentication authentication,
-            @RequestBody User newUser,
-            @RequestParam(required = false) Boolean notify
+            @RequestBody User newUser
     ) {
-        boolean userExists = repository.existsByEmail(newUser.getEmail());
+        boolean userExists = userRepository.existsByEmail(newUser.getEmail());
         if (userExists) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
@@ -76,16 +86,14 @@ public class UserController {
         String clearPassword = newUser.getPassword();
         newUser.setPassword(PasswordService.encodePassword(newUser.getPassword()));
 
-        User createdUser = repository.save(newUser);
+        User createdUser = userRepository.save(newUser);
         createdUser.setPassword(""); // Empty password
 
-        if (Boolean.TRUE.equals(notify)) {
-            mailService.sendInfoMail(
-                    "Benutzerkonto angelegt",
-                    "Für Sie wurde ein neues Gover-Benutzerkonto angelegt. Verwenden Sie die E-Mail-Adresse \"" + createdUser.getEmail() + "\" und das Passwort \"" + clearPassword + "\" um sich anzumelden.",
-                    createdUser.getEmail()
-            );
-        }
+        mailService.sendUserCreatedEmail(
+                createdUser.getEmail(),
+                clearPassword,
+                createdUser.getEmail()
+        );
 
         return createdUser;
     }
@@ -100,7 +108,7 @@ public class UserController {
     @GetMapping("/api/users/{id}")
     public User retrieve(@PathVariable Integer id) {
 
-        return repository
+        return userRepository
                 .findById(id)
                 .map(user -> {
                     user.setPassword("");
@@ -117,13 +125,13 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
 
-        Optional<User> user = repository.findById(id);
+        Optional<User> user = userRepository.findById(id);
         if (user.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 
         if (!user.get().getEmail().equals(updatedUser.getEmail())) {
-            boolean userExists = repository.existsByEmail(updatedUser.getEmail());
+            boolean userExists = userRepository.existsByEmail(updatedUser.getEmail());
             if (userExists) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT);
             }
@@ -147,7 +155,7 @@ public class UserController {
             existingUser.setPassword(PasswordService.encodePassword(updatedUser.getPassword()));
         }
 
-        User savedUser = repository.save(existingUser);
+        User savedUser = userRepository.save(existingUser);
         savedUser.setPassword(""); // Empty password
         return savedUser;
     }
@@ -158,7 +166,7 @@ public class UserController {
             Authentication authentication,
             @PathVariable Integer id
     ) {
-        Optional<User> optUser = repository.findById(id);
+        Optional<User> optUser = userRepository.findById(id);
         if (optUser.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
@@ -167,6 +175,6 @@ public class UserController {
         user.setActive(false);
         user.setName("Inaktiver Nutzer");
         user.setEmail("inaktiv." + StringUtils.generateRandomString(16) + "@gover.digital");
-        repository.save(user);
+        userRepository.save(user);
     }
 }

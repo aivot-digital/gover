@@ -1,13 +1,12 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { faPlus } from '@fortawesome/pro-light-svg-icons';
 import { type GridColDef } from '@mui/x-data-grid';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { ProviderLinksService } from '../../../services/provider-links-service';
 import { type ProviderLink } from '../../../models/entities/provider-link';
 import { filterItems } from '../../../utils/filter-items';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 const columns: Array<GridColDef<ProviderLink>> = [
     {
@@ -23,8 +22,7 @@ const columns: Array<GridColDef<ProviderLink>> = [
 ];
 
 export function ProviderLinkListPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const navigate = useNavigate();
 

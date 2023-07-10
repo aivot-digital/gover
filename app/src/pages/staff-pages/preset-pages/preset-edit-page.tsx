@@ -8,7 +8,6 @@ import { ViewDispatcherComponent } from '../../../components/view-dispatcher.com
 import { createDefaultAppTheme } from '../../../theming/themes';
 import { NotFoundPage } from '../../../components/static-components/not-found-page/not-found-page';
 import { MetaElement } from '../../../components/meta-element/meta-element';
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import { AppToolbar } from '../../../components/app-toolbar/app-toolbar';
 import { PresetsService } from '../../../services/presets.service';
 import { type Preset } from '../../../models/entities/preset';
@@ -20,8 +19,6 @@ import { faTrashAlt } from '@fortawesome/pro-light-svg-icons';
 import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
 
 export function PresetEditPage(): JSX.Element {
-    useAuthGuard();
-
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const params = useParams();

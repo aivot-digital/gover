@@ -1,10 +1,8 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TextFieldComponent } from '../../../components/text-field/text-field-component';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { useChangeBlocker } from '../../../hooks/use-change-blocker';
 import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page-wrapper';
 import { delayPromise } from '../../../utils/with-delay';
@@ -12,10 +10,10 @@ import { type Theme } from '../../../models/entities/theme';
 import { ThemesService } from '../../../services/themes-service';
 import { Box, Grid, Typography } from '@mui/material';
 import { SketchPicker } from 'react-color';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 export function ThemeEditPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const navigate = useNavigate();
     const dispatch = useAppDispatch();

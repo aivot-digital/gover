@@ -1,4 +1,3 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { type User } from '../../../models/entities/user';
@@ -9,10 +8,11 @@ import { CheckboxFieldComponent } from '../../../components/checkbox-field/check
 import { validateEmail } from '../../../utils/validate-email';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { useChangeBlocker } from '../../../hooks/use-change-blocker';
 import { delayPromise } from '../../../utils/with-delay';
 import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page-wrapper';
+import { AlertComponent } from '../../../components/alert/alert-component';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 type Errors = {
     [key in keyof User]?: string;
@@ -41,8 +41,7 @@ function validateUser(user: User, retypedPassword: string): Errors {
 }
 
 export function UserEditPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const dispatch = useAppDispatch();
 
@@ -157,7 +156,7 @@ export function UserEditPage(): JSX.Element {
             onSave={ handleSave }
             onReset={ (editedUser?.id ?? 0) !== 0 ? handleReset : undefined }
         >
-            <Divider sx={ { mb: 4 } }>
+            <Divider sx={ {mb: 4} }>
                 Allgemein
             </Divider>
 
@@ -213,7 +212,7 @@ export function UserEditPage(): JSX.Element {
                 hint="Deaktivieren Sie Benutzer:innen damit diese sich nicht mehr anmelden können."
             />
 
-            <Divider sx={ { my: 4 } }>
+            <Divider sx={ {my: 4} }>
                 Passwort { editedUser?.id !== 0 ? 'überschreiben' : '' }
             </Divider>
 
@@ -244,6 +243,17 @@ export function UserEditPage(): JSX.Element {
                 minCharacters={ 8 }
                 error={ errors.password }
             />
+
+            {
+                editedUser?.id === 0 &&
+                <AlertComponent
+                    color="info"
+                    title="Versand der Einladung"
+                >
+                    Bitte beachten Sie, nach dem Speichern der Mitarbeiter:in automatisch eine E-Mail mit den
+                    Login-Daten an die angegebene E-Mail-Adresse versendet wird.
+                </AlertComponent>
+            }
         </FormPageWrapper>
     );
 }

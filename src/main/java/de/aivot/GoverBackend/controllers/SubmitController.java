@@ -287,7 +287,8 @@ public class SubmitController {
                 usersToNotify = departmentMembershipRepository
                         .findAllByDepartmentId(application.getResponsibleDepartment().getId());
             } else {
-                usersToNotify = null;
+                usersToNotify  = departmentMembershipRepository
+                        .findAllByDepartmentId(application.getDevelopingDepartment().getId());
             }
 
             if (usersToNotify != null) {
@@ -296,9 +297,9 @@ public class SubmitController {
                         .map(DepartmentMembership::getUser)
                         .filter(User::isActive)
                         .forEach(user -> {
-                            mailService.sendInfoMail(
-                                    (application.getStatus() != ApplicationStatus.Published ? "[Test] " : "") + "Neuer Online-Antrag für " + application.getTitle(),
-                                    "In Gover ist ein neuer Antrag für das Formular \"" + application.getTitle() + "\" eingegangen.",
+                            mailService.sendNewSubmissionMail(
+                                    application,
+                                    submission,
                                     user.getEmail()
                             );
                         });

@@ -57,7 +57,7 @@ async function fetchData(formId: string, submissionId: string): Promise<{
     const fetchUserPromises: Array<Promise<User[]>> = [
         UsersService
             .list({
-                admin: 'true',
+                onlyAdmins: 'true',
             }),
     ];
 

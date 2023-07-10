@@ -1,5 +1,4 @@
 import React, { type ChangeEvent, useEffect, useState } from 'react';
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import { Box, Chip, FormControlLabel, Switch } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ApplicationService } from '../../../services/application-service';
@@ -99,7 +98,7 @@ const columns: Array<GridColDef<Submission>> = [
                     params.row.destination != null &&
                     <FontAwesomeIcon
                         icon={ faBracketsCurly }
-                        style={ { marginRight: '0.5em' } }
+                        style={ {marginRight: '0.5em'} }
                     />
                 }
 
@@ -107,7 +106,7 @@ const columns: Array<GridColDef<Submission>> = [
                     params.row.assignee != null &&
                     <FontAwesomeIcon
                         icon={ faUserEdit }
-                        style={ { marginRight: '0.5em' } }
+                        style={ {marginRight: '0.5em'} }
                     />
                 }
 
@@ -132,8 +131,6 @@ const columns: Array<GridColDef<Submission>> = [
 ];
 
 export function SubmissionListPage(): JSX.Element {
-    useAuthGuard();
-
     const navigate = useNavigate();
     const strId = useParams().id;
     const id = strId != null ? parseInt(strId) : undefined;
@@ -174,7 +171,7 @@ export function SubmissionListPage(): JSX.Element {
             setIsSubmissionsLoading(true);
             setSubmissionLoadingError(undefined);
 
-            delayPromise(SubmissionService.list(id, includeArchived, includeTest,onlyAssigned ? user.id : undefined))
+            delayPromise(SubmissionService.list(id, includeArchived, includeTest, onlyAssigned ? user.id : undefined))
                 .then((submissions) => {
                     return Promise.all(submissions.map(resolveSubmission));
                 })
@@ -266,7 +263,7 @@ export function SubmissionListPage(): JSX.Element {
                         />
                     }
                     label="Nur mir zugewiesene Vorgänge anzeigen"
-                    sx={ { mr: 'auto' } }
+                    sx={ {mr: 'auto'} }
                 />
             </Box>
         </TablePageWrapper>

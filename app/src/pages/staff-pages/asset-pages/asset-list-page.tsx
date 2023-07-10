@@ -1,4 +1,3 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { faPlus } from '@fortawesome/pro-light-svg-icons';
@@ -8,6 +7,7 @@ import { AssetService } from '../../../services/asset-service';
 import { delayPromise } from '../../../utils/with-delay';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 interface Asset {
     id: string;
@@ -40,7 +40,7 @@ const columns: Array<GridColDef<Asset>> = [
 ];
 
 export function AssetListPage(): JSX.Element {
-    useAuthGuard();
+    useAdminGuard();
 
     const dispatch = useAppDispatch();
     const navigate = useNavigate();

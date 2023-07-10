@@ -1,30 +1,24 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Tab, Tabs } from '@mui/material';
 import { EditDepartmentPageCommonTab } from './tabs/edit-department-page-common-tab';
 import { EditDepartmentPageMembersTab } from './tabs/edit-department-page-members-tab';
-import { useUserGuard } from '../../../hooks/use-user-guard';
-import { UserRole } from '../../../data/user-role';
 import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
 import { type Department } from '../../../models/entities/department';
 import { DepartmentsService } from '../../../services/departments-service';
-import { delayPromise, withDelay } from '../../../utils/with-delay';
+import { delayPromise } from '../../../utils/with-delay';
 import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { shallowEquals } from '../../../utils/equality-utils';
+import { useMembershipGuard } from '../../../hooks/use-membership-guard';
 
 export function DepartmentEditPage(): JSX.Element {
-    const { id } = useParams();
+    const {id} = useParams();
+
+    useMembershipGuard(parseInt(id ?? ''));
 
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-
-    useAuthGuard();
-    useUserGuard((user, memberships) => (
-        (user?.admin ?? false) ||
-        (memberships != null && id != null && memberships.some((mem) => mem.department === parseInt(id) && mem.role === UserRole.Admin))
-    ));
 
     const [originalDepartment, setOriginalDepartment] = useState<Department>();
     const [department, setDepartment] = useState<Department>();

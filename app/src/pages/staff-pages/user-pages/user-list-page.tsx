@@ -1,16 +1,21 @@
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import React, { useEffect, useState } from 'react';
 import { type User } from '../../../models/entities/user';
 import { UsersService } from '../../../services/users-service';
 import { faPlus } from '@fortawesome/pro-light-svg-icons';
 import { useNavigate } from 'react-router-dom';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { type GridColDef } from '@mui/x-data-grid';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { delayPromise } from '../../../utils/with-delay';
 import { filterItems } from '../../../utils/filter-items';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
+import { Box, FormControlLabel, Switch } from '@mui/material';
 
 const columns: Array<GridColDef<User>> = [
+    {
+        field: 'active',
+        type: 'boolean',
+        headerName: 'Aktiv',
+    },
     {
         field: 'name',
         headerName: 'Name',
@@ -30,13 +35,14 @@ const columns: Array<GridColDef<User>> = [
 ];
 
 export function UserListPage(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const navigate = useNavigate();
 
     const [search, setSearch] = useState('');
     const [users, setUsers] = useState<User[]>();
+
+    const [includeInactive, setIncludeInactive] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
     const [loadingError, setLoadingError] = useState<string>();
@@ -45,7 +51,9 @@ export function UserListPage(): JSX.Element {
         setIsLoading(true);
         setLoadingError(undefined);
 
-        delayPromise(UsersService.list())
+        delayPromise(UsersService.list({
+            excludeInactive: (!includeInactive).toString(),
+        }))
             .then(setUsers)
             .catch((err) => {
                 console.error(err);
@@ -54,7 +62,7 @@ export function UserListPage(): JSX.Element {
             .finally(() => {
                 setIsLoading(false);
             });
-    }, []);
+    }, [includeInactive]);
 
     const filteredUsers = filterItems(users, 'name', search);
 
@@ -80,6 +88,25 @@ export function UserListPage(): JSX.Element {
                 link: '/users/new',
                 tooltip: 'Neue Mitarbeiter:in hinzufügen',
             }] }
-        />
+        >
+            <Box
+                sx={ {
+                    display: 'flex',
+                    my: 2,
+                } }
+            >
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={ includeInactive }
+                            onChange={ event => {
+                                setIncludeInactive(event.target.checked);
+                            } }
+                        />
+                    }
+                    label="Inklusive inaktiver Mitarbeiter:innen anzeigen"
+                />
+            </Box>
+        </TablePageWrapper>
     );
 }

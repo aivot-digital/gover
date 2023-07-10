@@ -1,16 +1,14 @@
 import { Box, Tab, Tabs } from '@mui/material';
 import React, { useState } from 'react';
-import { useAuthGuard } from '../../../hooks/use-auth-guard';
 import { MediaSettings } from './components/media-settings/media-settings';
 import { SystemInformation } from './components/system-information/system-information';
 import { SmtpTest } from './components/smtp-test/smtp-test';
 import { ApplicationSettings } from './components/application-settings/application-settings';
-import { useUserGuard } from '../../../hooks/use-user-guard';
 import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
+import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 export function Settings(): JSX.Element {
-    useAuthGuard();
-    useUserGuard((user) => user?.admin ?? false);
+    useAdminGuard();
 
     const [currentTab, setCurrentTab] = useState(0);
 
