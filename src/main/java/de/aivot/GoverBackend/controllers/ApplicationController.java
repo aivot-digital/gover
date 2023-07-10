@@ -112,9 +112,12 @@ public class ApplicationController {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
-        boolean inSameDepartment = applicationRepository.existsBySlugAndDevelopingDepartment_Id(newApp.getSlug(), newApp.getDevelopingDepartment());
-        if (!inSameDepartment) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        boolean slugExists = applicationRepository.existsBySlug(newApp.getSlug());
+        if (slugExists) {
+            boolean inSameDepartment = applicationRepository.existsBySlugAndDevelopingDepartment_Id(newApp.getSlug(), newApp.getDevelopingDepartment());
+            if (!inSameDepartment) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT);
+            }
         }
 
         var application = new Application();
