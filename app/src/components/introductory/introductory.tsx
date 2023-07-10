@@ -19,12 +19,12 @@ export function Introductory({mode}: IntroductoryProps) {
     const theme = useTheme();
     const systemConfig = useAppSelector(state => state.systemConfig);
 
-    const [show, setShow] = useState(!LocalStorageService.loadFlag(LocalstorageKey.IntoDismissed));
+    const [show, setShow] = useState(!LocalStorageService.loadFlag(LocalstorageKey.IntroDismissed));
 
 
     const onDismiss = () => {
         setShow(false);
-        LocalStorageService.storeFlag(LocalstorageKey.IntoDismissed, true);
+        LocalStorageService.storeFlag(LocalstorageKey.IntroDismissed, true);
     }
 
     if (!show) {

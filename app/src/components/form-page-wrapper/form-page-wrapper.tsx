@@ -20,6 +20,7 @@ export function FormPageWrapper (props: PropsWithChildren<FormPageWrapperProps>)
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
+        event.stopPropagation()
         onSave();
     };
 

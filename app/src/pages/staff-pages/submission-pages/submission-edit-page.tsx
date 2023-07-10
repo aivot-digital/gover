@@ -55,20 +55,26 @@ async function fetchData(formId: string, submissionId: string): Promise<{
 
     const fetchUserPromises: Array<Promise<User[]>> = [
         UsersService
-            .list({admin: 'true'}),
+            .list({
+                admin: 'true',
+            }),
     ];
 
     if (form.responsibleDepartment != null) {
         fetchUserPromises.push(
             UsersService
-                .list({department: form.responsibleDepartment}),
+                .list({
+                    department: form.responsibleDepartment,
+                }),
         );
     }
 
     if (form.managingDepartment != null) {
         fetchUserPromises.push(
             UsersService
-                .list({department: form.managingDepartment}),
+                .list({
+                    department: form.managingDepartment,
+                }),
         );
     }
 
@@ -109,7 +115,10 @@ async function fetchData(formId: string, submissionId: string): Promise<{
 export function SubmissionEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
 
-    const {applicationId, id} = useParams();
+    const {
+        applicationId,
+        id,
+    } = useParams();
 
     const [form, setForm] = useState<Application>();
     const [destination, setDestination] = useState<Destination>();
@@ -538,13 +547,14 @@ export function SubmissionEditPage(): JSX.Element {
             }
 
             <ConfirmDialog
-                title="Antrag archivieren"
+                title="Vorgang abschließen"
                 onConfirm={ confirmArchive }
                 onCancel={ () => {
                     setConfirmArchive(undefined);
                 } }
             >
-                Sind Sie sicher, dass Sie den Antrag archivieren wollen? Dies kann nicht rückgängig gemacht werden.
+                Sind Sie sicher, dass Sie den Vorgang abschließen wollen? Der Vorgang kann danach nicht wieder in
+                Bearbeitung genommen werden.
             </ConfirmDialog>
         </PageWrapper>
     );

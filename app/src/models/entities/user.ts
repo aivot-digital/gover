@@ -8,3 +8,19 @@ export interface User {
     created: string;
     updated: string;
 }
+
+export interface AnonymousUser extends User {
+    id: -1;
+}
+
+export function isAnonymousUser(user: User): user is AnonymousUser {
+    return user.id === -1;
+}
+
+export interface InvalidUser extends User {
+    id: -2;
+}
+
+export function isInvalidUser(user: User): user is InvalidUser {
+    return user.id === -2;
+}

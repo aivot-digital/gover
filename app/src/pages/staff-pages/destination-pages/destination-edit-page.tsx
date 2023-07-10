@@ -154,8 +154,13 @@ export function DestinationEditPage(): JSX.Element {
                     navigate('/destinations');
                 })
                 .catch((err) => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Schnittstelle konnte nicht gelöscht werden'));
+                    if (err.response?.status === 409) {
+                        dispatch(showErrorSnackbar('Schnittstelle wird noch verwendet und kann nicht gelöscht werden'));
+                    } else {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Schnittstelle konnte nicht gelöscht werden'));
+                    }
+
                     setIsLoading(false);
                 });
         }
