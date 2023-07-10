@@ -10,8 +10,8 @@ import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page
 import { delayPromise } from '../../../utils/with-delay';
 import { type Theme } from '../../../models/entities/theme';
 import { ThemesService } from '../../../services/themes-service';
-import { Grid, Typography } from '@mui/material';
-import Twitter from 'react-color/lib/components/twitter/Twitter';
+import { Box, Grid, Typography } from '@mui/material';
+import { SketchPicker } from 'react-color';
 
 export function ThemeEditPage(): JSX.Element {
     useAuthGuard();
@@ -123,7 +123,7 @@ export function ThemeEditPage(): JSX.Element {
 
     return (
         <FormPageWrapper
-            title="Link bearbeiten"
+            title="Farbpalette bearbeiten"
             isLoading={ isLoading }
             is404={ isNotFound }
             hasChanged={ hasChanged }
@@ -147,8 +147,11 @@ export function ThemeEditPage(): JSX.Element {
 
             <Grid
                 container
-                spacing={ 2 }
-                sx={{mt: 2}}
+                columnSpacing={ 2 }
+                rowSpacing={ 4 }
+                sx={ {
+                    mt: 2,
+                } }
             >
                 <ColorPicker
                     label="Pimärfarbe"
@@ -236,21 +239,39 @@ function ColorPicker({label, value, onChange}: {
             md={ 6 }
             lg={ 4 }
         >
-            <Typography
-                variant="subtitle1"
-                component="h2"
+            <Box
                 sx={ {
                     mb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
                 } }
             >
-                { label }
-            </Typography>
-            <Twitter
+                <Box
+                    sx={ {
+                        mr: 1,
+                        width: '1em',
+                        height: '1em',
+                        borderRadius: '100%',
+                        backgroundColor: value,
+                    } }
+                />
+
+                <Typography
+                    variant="subtitle1"
+                    component="h2"
+                >
+                    { label }
+                </Typography>
+            </Box>
+
+            <SketchPicker
                 color={ value }
                 onChange={ (color) => {
                     onChange(color.hex);
                 } }
-                colors={[
+                disableAlpha={ true }
+                width="256px"
+                presetColors={ [
                     '#113a8d',
                     '#d73234',
                     '#60865e',
@@ -261,7 +282,7 @@ function ColorPicker({label, value, onChange}: {
                     '#D18D23',
                     '#1D7C9C',
                     '#449456',
-                ]}
+                ] }
             />
         </Grid>
     );
