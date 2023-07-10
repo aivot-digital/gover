@@ -138,11 +138,11 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 variant="h6"
                 sx={ { mt: 4 } }
             >
-                Theme-Einstellung
+                Farbschemata-Einstellung
             </Typography>
 
             <SelectFieldComponent
-                label="Theme (Visuelles Erscheinungsbild)"
+                label="Farbschema (Visuelles Erscheinungsbild)"
                 value={ app?.theme?.toString() ?? undefined }
                 onChange={ (val) => {
                     patchApplication({

@@ -8,7 +8,7 @@ import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page
 import { delayPromise } from '../../../utils/with-delay';
 import { type Theme } from '../../../models/entities/theme';
 import { ThemesService } from '../../../services/themes-service';
-import { Box, Grid, Typography } from '@mui/material';
+import { Box, Divider, Grid, Typography } from '@mui/material';
 import { SketchPicker } from 'react-color';
 import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
@@ -121,7 +121,7 @@ export function ThemeEditPage(): JSX.Element {
 
     return (
         <FormPageWrapper
-            title="Farbpalette bearbeiten"
+            title="Farbschema bearbeiten"
             isLoading={ isLoading }
             is404={ isNotFound }
             hasChanged={ hasChanged }
@@ -130,9 +130,9 @@ export function ThemeEditPage(): JSX.Element {
             onDelete={ (editedTheme?.id ?? 0) !== 0 ? handleDelete : undefined }
         >
             <TextFieldComponent
-                label="Name der Farbpalette"
-                placeholder="Neue Farbpalette"
-                hint="Der Name der Farbpalette. Wird nur Ihren Mitarbeiter:innen angezeigt."
+                label="Name des Farbschemas"
+                placeholder="Neues Farbschema"
+                hint="Der Name des Farbschemas. Dieser wird nur Ihren Mitarbeiter:innen angezeigt."
                 value={ editedTheme?.name }
                 onChange={ (val) => {
                     handlePatch({
@@ -180,7 +180,19 @@ export function ThemeEditPage(): JSX.Element {
                         });
                     } }
                 />
+            </Grid>
 
+            <Divider
+                sx={ {
+                    my: 8,
+                } }
+            />
+
+            <Grid
+                container
+                columnSpacing={ 2 }
+                rowSpacing={ 4 }
+            >
                 <ColorPicker
                     label="Fehlerfarbe"
                     value={ editedTheme?.error }

@@ -46,7 +46,7 @@ export function ThemeListPage(): JSX.Element {
 
     return (
         <TablePageWrapper
-            title="Farbpaletten"
+            title="Farbschemata"
             isLoading={ isLoading }
             error={ loadError }
 
@@ -57,13 +57,13 @@ export function ThemeListPage(): JSX.Element {
             } }
 
             search={ search }
-            searchPlaceholder="Farbpalette suchen..."
+            searchPlaceholder="Farbschema suchen..."
             onSearchChange={ setSearch }
 
             actions={ [{
-                label: 'Neue Farbpalette',
+                label: 'Neues Farbschema',
                 icon: faPlus,
-                tooltip: 'Neue Farbpalette anlegen',
+                tooltip: 'Neues Farbschema anlegen',
                 link: '/themes/new',
             }] }
         />

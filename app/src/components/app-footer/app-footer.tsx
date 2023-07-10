@@ -10,6 +10,7 @@ import {useAppSelector} from "../../hooks/use-app-selector";
 import {selectSystemConfigValue} from "../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../data/system-config-keys";
 import {AssetService} from "../../services/asset-service";
+import { Logo } from '../static-components/logo/logo';
 
 const buttonStyle: SxProps = {
     color: '#16191F',
@@ -37,15 +38,12 @@ export function AppFooter({mode}: AppFooterProps) {
                         [theme.breakpoints.down('md')]: {
                             flexDirection: 'column',
                             alignItems: 'flex-start',
-                        }
+                        },
                     }}
                 >
-                    <img
-                        src={AssetService.getLink(logo)}
-                        alt={name}
+                    <Logo
                         width={200}
                         height={100}
-                        style={{objectFit: 'contain'}}
                     />
 
                     <Box>

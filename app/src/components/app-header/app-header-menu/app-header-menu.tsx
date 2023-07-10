@@ -141,7 +141,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                 props.mode === AppMode.Staff &&
                 (user?.admin ?? false) &&
                 <LinkMenuItem
-                    label="Farbpaletten"
+                    label="Farbschemata"
                     icon={ faPalette }
                     to="/themes"
                 />

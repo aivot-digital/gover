@@ -45,7 +45,7 @@ export function AssetListPage(): JSX.Element {
     const [search, setSearch] = useState('');
     const [assets, setAssets] = useState<Asset[]>();
     const [isBusy, setIsBusy] = useState(false);
-
+    
     useEffect(() => {
         setIsBusy(true);
         delayPromise(AssetService.list())

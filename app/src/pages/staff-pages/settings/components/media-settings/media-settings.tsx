@@ -9,6 +9,8 @@ import { SystemConfigsService } from '../../../../../services/system-configs-ser
 import { useAppDispatch } from '../../../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../../../slices/snackbar-slice';
 
+const logoPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
+
 export function MediaSettings(): JSX.Element {
     const dispatch = useAppDispatch();
 
@@ -80,7 +82,7 @@ export function MediaSettings(): JSX.Element {
                         } }
                     >
                         <img
-                            src={ AssetService.getLink(faviconConfigKey) }
+                            src={ logoPrefix + AssetService.getLink(faviconConfigKey) }
                             alt="Favicon"
                         />
                     </Box>
@@ -98,7 +100,7 @@ export function MediaSettings(): JSX.Element {
 
             <Box
                 sx={ {
-                    mt: 2,
+                    mt: 8,
                 } }
             >
                 <Typography
@@ -118,7 +120,7 @@ export function MediaSettings(): JSX.Element {
                         } }
                     >
                         <img
-                            src={ AssetService.getLink(logoConfigKey) }
+                            src={ logoPrefix + AssetService.getLink(logoConfigKey) }
                             alt="Logo"
                         />
                     </Box>
