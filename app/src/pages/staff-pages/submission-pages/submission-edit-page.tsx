@@ -34,6 +34,7 @@ import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
 import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
 import { useChangeBlocker } from '../../../hooks/use-change-blocker';
 import { delayPromise } from '../../../utils/with-delay';
+import { isStringNotNullOrEmpty } from '../../../utils/string-utils';
 
 async function fetchData(formId: string, submissionId: string): Promise<{
     form: Application;
@@ -278,7 +279,14 @@ export function SubmissionEditPage(): JSX.Element {
 
     const created = editedSubmission != null ? parseISO(editedSubmission.created) : undefined;
     const archived = editedSubmission?.archived != null ? parseISO(editedSubmission.archived) : undefined;
-    const title = `Antrag - ${ form?.title ?? '' } - ${ editedSubmission?.fileNumber ?? format(created ?? new Date(), 'dd.MM.yyyy - HH:mm') }`;
+
+    let title = 'Antrag';
+    if (form != null) {
+        title += ` - ${ form.title } - ${ form.version }`;
+        if (isStringNotNullOrEmpty(editedSubmission?.fileNumber)) {
+            title += ` - ${ editedSubmission?.fileNumber ?? '' }`;
+        }
+    }
 
     return (
         <PageWrapper

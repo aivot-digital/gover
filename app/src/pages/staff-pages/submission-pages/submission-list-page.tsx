@@ -208,9 +208,14 @@ export function SubmissionListPage(): JSX.Element {
 
     const filteredSubmissions = filterItems(submissions, 'fileNumber', search);
 
+    let title = 'Anträge';
+    if (form != null) {
+        title += ` - ${ form.title } - ${ form.version }`;
+    }
+
     return (
         <TablePageWrapper
-            title={ `Anträge - ${ form?.title ?? '' }` }
+            title={ title }
             isLoading={ isFormLoading || isSubmissionsLoading }
             is404={ isFormNotFound }
             error={ !isFormNotFound ? submissionLoadingError : undefined }
