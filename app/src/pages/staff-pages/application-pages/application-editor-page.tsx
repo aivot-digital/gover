@@ -115,11 +115,11 @@ export function ApplicationEditorPage(): JSX.Element {
         return (
             <ThemeProvider theme={ (baseTheme: MuiTheme) => createAppTheme(theme, baseTheme) }>
                 <MetaElement
-                    title={ `Editor - ${ application.title }` }
+                    title={ `Editor - ${ application.title } - ${ application.version }` }
                 />
 
                 <AppToolbar
-                    title={ application.title }
+                    title={ `${ application.title } - ${ application.version }` }
                     actions={ [
                         {
                             tooltip: adminSettings.disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
