@@ -6,11 +6,8 @@ import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
 import { FileUpload } from '../../../components/file-upload/file-upload';
 import { AssetService } from '../../../services/asset-service';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
-import { useAdminGuard } from '../../../hooks/use-admin-guard';
 
 export function AssetEditPage(): JSX.Element {
-    useAdminGuard();
-
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
