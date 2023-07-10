@@ -1,22 +1,22 @@
-import {Box, Drawer,} from '@mui/material';
-import React, {useState} from 'react';
-import {PresetsService} from '../../../../services/presets.service';
-import {AddPresetDialog} from '../../../../dialogs/add-preset/add-preset.dialog';
-import {DefaultTabs} from './data/default-tabs';
-import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectUseTestMode} from '../../../../slices/admin-settings-slice';
-import {ElementEditorTabs} from './components/element-editor-tabs';
-import {ElementEditorContent} from './components/element-editor-content/element-editor-content';
-import {ElementEditorActions} from './components/element-editor-actions/element-editor-actions';
-import {ElementEditorProps} from './element-editor-props';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {AnyElement} from '../../../../models/elements/any-element';
-import {ElementType} from '../../../../data/element-type/element-type';
+import { Box, Drawer } from '@mui/material';
+import React, { useState } from 'react';
+import { PresetsService } from '../../../../services/presets.service';
+import { AddPresetDialog } from '../../../../dialogs/add-preset/add-preset.dialog';
+import { DefaultTabs } from './data/default-tabs';
+import { useAppDispatch } from '../../../../hooks/use-app-dispatch';
+import { useAppSelector } from '../../../../hooks/use-app-selector';
+import { selectUseTestMode } from '../../../../slices/admin-settings-slice';
+import { ElementEditorTabs } from './components/element-editor-tabs';
+import { ElementEditorContent } from './components/element-editor-content/element-editor-content';
+import { ElementEditorActions } from './components/element-editor-actions/element-editor-actions';
+import { ElementEditorProps } from './element-editor-props';
+import { showErrorSnackbar, showSuccessSnackbar } from '../../../../slices/snackbar-slice';
+import { AnyElement } from '../../../../models/elements/any-element';
+import { ElementType } from '../../../../data/element-type/element-type';
 import ProjectPackage from '../../../../../package.json';
-import Editors from "../../../../editors";
+import Editors from '../../../../editors';
 
-export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>) {
+export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const testMode = useAppSelector(selectUseTestMode);
@@ -91,58 +91,58 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
     return (
         <Drawer
             anchor="right"
-            open={true}
-            PaperProps={{
+            open={ true }
+            PaperProps={ {
                 sx: {
                     width: '66%',
                 },
-            }}
-            onClose={handleClose}
+            } }
+            onClose={ handleClose }
         >
             <Box
-                sx={{
+                sx={ {
                     height: '100vh',
                     display: 'flex',
                     flexDirection: 'column',
-                }}
+                } }
             >
 
                 <ElementEditorTabs
-                    component={updatedElement ?? props.element}
-                    additionalTabs={additionalTabs}
-                    currentTab={currentTab}
-                    onTabChange={handleSetCurrentTab}
+                    component={ updatedElement ?? props.element }
+                    additionalTabs={ additionalTabs }
+                    currentTab={ currentTab }
+                    onTabChange={ handleSetCurrentTab }
                 />
 
                 <Box
-                    sx={{
+                    sx={ {
                         flex: '1',
                         overflowY: 'scroll',
                         borderTop: '1px solid #E0E0E0',
                         pb: 4,
-                    }}
+                    } }
                 >
                     <ElementEditorContent
-                        parents={props.parents}
-                        element={updatedElement ?? props.element}
-                        currentTab={currentTab}
-                        additionalTabs={additionalTabs}
-                        onChange={handleChange}
+                        parents={ props.parents }
+                        element={ updatedElement ?? props.element }
+                        currentTab={ currentTab }
+                        additionalTabs={ additionalTabs }
+                        onChange={ handleChange }
                     />
                 </Box>
 
                 <ElementEditorActions
-                    onSave={handleSave}
-                    onCancel={handleClose}
-                    onDelete={props.onDelete}
-                    onSaveAsPreset={(updatedElement ?? props.element).type === ElementType.Container ? handleShowPresetDialog : undefined}
-                    onClone={props.onClone}
+                    onSave={ handleSave }
+                    onCancel={ handleClose }
+                    onDelete={ props.onDelete }
+                    onSaveAsPreset={ (updatedElement ?? props.element).type === ElementType.Container ? handleShowPresetDialog : undefined }
+                    onClone={ props.onClone }
                 />
 
                 <AddPresetDialog
-                    open={showCreatePresetDialog}
-                    onSavePreset={handleSavePreset}
-                    onClose={handleClosePresetDialog}
+                    open={ showCreatePresetDialog }
+                    onSavePreset={ handleSavePreset }
+                    onClose={ handleClosePresetDialog }
                 />
             </Box>
         </Drawer>
