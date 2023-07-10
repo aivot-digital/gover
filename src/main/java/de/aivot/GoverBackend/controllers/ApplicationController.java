@@ -275,6 +275,12 @@ public class ApplicationController {
             existingApp.setSubmissionDeletionWeeks(updatedApp.getSubmissionDeletionWeeks());
             existingApp.setCustomerAccessHours(updatedApp.getCustomerAccessHours());
 
+            if (updatedApp.getDevelopingDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getDevelopingDepartment())
+                        .ifPresent(existingApp::setDevelopingDepartment);
+            }
+
             if (updatedApp.getDestination() != null) {
                 destinationRepository
                         .findById(updatedApp.getDestination())
