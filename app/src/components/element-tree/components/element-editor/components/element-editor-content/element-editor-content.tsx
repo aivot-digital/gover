@@ -37,6 +37,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                             isVisible: updatedFunc,
                         });
                     } }
+                    editable={ props.editable }
                 />
             );
         case DefaultTabs.validation:
@@ -56,6 +57,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                             validate: updatedFunc,
                         });
                     } }
+                    editable={ props.editable }
                 />
             );
         case DefaultTabs.value:
@@ -75,6 +77,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                             computeValue: updatedFunc,
                         });
                     } }
+                    editable={ props.editable }
                 />
             );
         case DefaultTabs.patch:
@@ -95,6 +98,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                             patchElement: updatedFunc,
                         });
                     } }
+                    editable={ props.editable }
                 />
             );
         case DefaultTabs.structure:
@@ -104,6 +108,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                     onChange={ (struct) => {
                         props.onChange(struct);
                     } }
+                    editable={ props.editable }
                 />
             );
         case DefaultTabs.test:
@@ -117,6 +122,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                             testProtocolSet: updatedTestProtocolSet,
                         });
                     } }
+                    editable={ props.editable }
                 />
             );
         default:
@@ -133,6 +139,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                             additionalTabIndex={ props.additionalTabs.findIndex((add) => props.currentTab === add.label) }
                             application={ props.application }
                             onPatchApplication={ props.onChangeApplication }
+                            editable={ props.editable }
                         />
                     </Box>
                 );
@@ -173,6 +180,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                     } }
                     hint="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und Ihre Kolleg:innen einsehen"
                     maxCharacters={ 30 }
+                    disabled={ !props.editable }
                 />
             }
 
@@ -218,6 +226,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                         },
                     ] }
                     hint="Bestimmen Sie die Breite des Anzeigeelements."
+                    disabled={ !props.editable }
                 />
             }
 
@@ -240,6 +249,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                             });
                         } }
                         hint="Dieser Text wird den Bürger:innen im Antrag angezeigt."
+                        disabled={ !props.editable }
                     />
 
                     <TextFieldComponent
@@ -252,6 +262,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                             });
                         } }
                         hint="Der Hinweis sollte genutzt werden, um den Bürger:innen weitere Informationen über die Eingabe zu geben."
+                        disabled={ !props.editable }
                     />
 
                     <CheckboxFieldComponent
@@ -265,6 +276,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                             });
                         } }
                         hint={ (props.element.disabled === true) ? 'Deaktivierte Eingaben können keine Pflichtangaben sein.' : undefined }
+                        disabled={ !props.editable }
                     />
 
                     <CheckboxFieldComponent
@@ -278,6 +290,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                             });
                         } }
                         hint={ (props.element.disabled === true) ? 'Pflichtangaben können nicht deaktiviert werden.' : undefined }
+                        disabled={ !props.editable }
                     />
                 </>
             }
@@ -287,6 +300,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                 onPatch={ props.onChange }
                 application={ props.application }
                 onPatchApplication={ props.onChangeApplication }
+                editable={ props.editable }
             />
         </Box>
     );

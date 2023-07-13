@@ -46,6 +46,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                     });
                 } }
                 options={ departmentOptions }
+                disabled={ !props.editable }
             />
 
             <SelectFieldComponent
@@ -57,6 +58,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                     });
                 } }
                 options={ departmentOptions }
+                disabled={ !props.editable }
             />
 
             <SelectFieldComponent
@@ -68,6 +70,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                     });
                 } }
                 options={ departmentOptions }
+                disabled={ !props.editable }
             />
 
             <Typography
@@ -88,6 +91,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                         privacyText: val,
                     });
                 } }
+                disabled={ !props.editable }
             />
 
             <Typography>
@@ -126,6 +130,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 } }
                 decimalPlaces={ 0 }
                 suffix="Wochen"
+                disabled={ !props.editable }
             />
 
             <NumberFieldComponent
@@ -140,6 +145,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 } }
                 decimalPlaces={ 0 }
                 suffix="Stunden"
+                disabled={ !props.editable }
             />
         </>
     );

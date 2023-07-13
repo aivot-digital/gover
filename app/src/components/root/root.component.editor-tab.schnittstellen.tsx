@@ -46,6 +46,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                         value: destination.id.toString(),
                         label: destination.name,
                     })) }
+                    disabled={ !props.editable }
                 />
             }
 

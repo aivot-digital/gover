@@ -8,7 +8,7 @@ import { type AnyElement } from '../../../../../../models/elements/any-element';
 import { useAppDispatch } from '../../../../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../../../../slices/snackbar-slice';
 
-export function StructureTab<T extends AnyElement>({ elementModel, onChange }: StructureTabProps<T>): JSX.Element {
+export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const editorRef = useRef<any>();
@@ -18,28 +18,28 @@ export function StructureTab<T extends AnyElement>({ elementModel, onChange }: S
         editorRef.current = editor;
     }, [editorRef]);
 
-    const handleToggleEditable = (event: ChangeEvent<HTMLInputElement>) => {
+    const handleToggleEditable = (event: ChangeEvent<HTMLInputElement>): void => {
         if (event.target.checked) {
             const confirmed = window.confirm('Sind Sie sicher, dass Sie die Elementstruktur manuell überschreiben möchten? DIES IST EINE GEFÄHRLICHE OPERATION UND SOLLTE NUR VON ENTWICKLER:INNEN DURCHGEFÜHRT WERDEN!');
-            if (confirmed && editorRef.current) {
+            if (confirmed && editorRef.current != null) {
                 setEditable(true);
             }
         } else {
             const confirmed = window.confirm('Sind Sie sicher, dass Sie die Änderungen verwerfen möchten?');
-            if (confirmed && editorRef.current) {
+            if (confirmed && editorRef.current != null) {
                 setEditable(false);
-                editorRef.current.setValue(JSON.stringify(elementModel, null, 4));
+                editorRef.current.setValue(JSON.stringify(props.elementModel, null, 4));
             }
         }
     };
 
-    const handleSaveChanges = () => {
-        if (editorRef.current) {
+    const handleSaveChanges = (): void => {
+        if (editorRef.current != null) {
             const struct = editorRef.current.getValue();
-            if (struct && struct.length > 0) {
+            if (struct != null && struct.length > 0) {
                 try {
                     const newStruct = JSON.parse(struct);
-                    onChange(newStruct);
+                    props.onChange(newStruct);
                     setEditable(false);
                 } catch (e) {
                     console.error(e);
@@ -50,43 +50,52 @@ export function StructureTab<T extends AnyElement>({ elementModel, onChange }: S
     };
 
     return (
-        <Box sx={{ my: 4 }}>
-            <Box sx={{
-                ml: 8,
-                mr: 2,
-                mb: 2,
-                display: 'flex',
-                justifyContent: 'space-between',
-            }}>
-                <FormControlLabel
-                    control={<Switch checked={editable} onChange={handleToggleEditable}/>}
-                    label="Struktur manuell überschreiben"
-                />
-                <Button
-                    startIcon={<FontAwesomeIcon
-                        icon={faSave}
-                        style={{ marginTop: '-2px' }}
-                        fixedWidth
-                    />}
-                    disabled={!editable}
-                    variant="outlined"
-                    onClick={handleSaveChanges}
+        <Box sx={ {my: 4} }>
+            {
+                props.editable &&
+                <Box
+                    sx={ {
+                        ml: 8,
+                        mr: 2,
+                        mb: 2,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                    } }
                 >
-                Struktur anwenden
-                </Button>
-            </Box>
+                    <FormControlLabel
+                        control={ <Switch
+                            checked={ editable }
+                            onChange={ handleToggleEditable }
+                        /> }
+                        label="Struktur manuell überschreiben"
+                    />
+                    <Button
+                        startIcon={ <FontAwesomeIcon
+                            icon={ faSave }
+                            style={ {marginTop: '-2px'} }
+                            fixedWidth
+                        /> }
+                        disabled={ !editable }
+                        variant="outlined"
+                        onClick={ handleSaveChanges }
+                    >
+                        Struktur anwenden
+                    </Button>
+                </Box>
+
+            }
 
             <Editor
                 height="calc(100vh - 256px)"
                 defaultLanguage="json"
-                value={JSON.stringify(elementModel, null, 4)}
-                options={{
+                value={ JSON.stringify(props.elementModel, null, 4) }
+                options={ {
                     minimap: {
                         enabled: false,
                     },
                     readOnly: !editable,
-                }}
-                onMount={handleEditorDidMount}
+                } }
+                onMount={ handleEditorDidMount }
             />
         </Box>
     );

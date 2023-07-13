@@ -9,4 +9,6 @@ export interface EditorDispatcherProps<T extends AnyElement> {
     onPatchApplication: (path: Partial<Application>) => void;
 
     additionalTabIndex?: number;
+
+    editable: boolean;
 }

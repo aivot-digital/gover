@@ -40,6 +40,7 @@ import { ProviderLinks } from './components/provider-links';
 import { Department } from '../../../models/entities/department';
 import { DepartmentsService } from '../../../services/departments-service';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ApplicationStatus } from '../../../data/application-status/application-status';
 
 function groupApplications(applications: ListApplication[]): ListApplicationGroup[] {
     const appMap = new Map<string, ListApplication[]>();
@@ -127,13 +128,23 @@ export function ApplicationListPage(): JSX.Element {
     const handleApplicationClone = (appToClone: ListApplication): void => {
         ApplicationService
             .retrieve(appToClone.id)
-            .then(setApplicationToClone);
+            .then((app) => {
+                setApplicationToUpgrade({
+                    ...app,
+                    status: ApplicationStatus.Drafted,
+                });
+            });
     };
 
     const handleApplicationNewVersion = (appToClone: ListApplication): void => {
         ApplicationService
             .retrieve(appToClone.id)
-            .then(setApplicationToUpgrade);
+            .then((app) => {
+                setApplicationToUpgrade({
+                    ...app,
+                    status: ApplicationStatus.Drafted,
+                });
+            });
     };
 
     if (applications == null) {

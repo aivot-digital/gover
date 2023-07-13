@@ -1,6 +1,6 @@
 import styles from './element-tree-item-title.module.scss';
-import {Box, IconButton, Tooltip, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import { Box, IconButton, Tooltip, Typography } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBinaryCircleCheck,
     faChevronDown,
@@ -11,32 +11,32 @@ import {
     faMemoCircleCheck,
     faPlusCircle, faQuestionCircle, faCircleBolt,
 } from '@fortawesome/pro-light-svg-icons';
-import {ElementIcons} from '../../../../data/element-type/element-icons';
-import {generateComponentTitle} from '../../../../utils/generate-component-title';
-import {checkId} from '../../../../utils/id-utils';
-import {getFunctionStatus} from '../../../../utils/function-status-utils';
+import { ElementIcons } from '../../../../data/element-type/element-icons';
+import { generateComponentTitle } from '../../../../utils/generate-component-title';
+import { checkId } from '../../../../utils/id-utils';
+import { getFunctionStatus } from '../../../../utils/function-status-utils';
 import React from 'react';
-import {ElementType} from '../../../../data/element-type/element-type';
-import {ElementNames} from '../../../../data/element-type/element-names';
-import {useTheme} from '@mui/material/styles';
+import { ElementType } from '../../../../data/element-type/element-type';
+import { ElementNames } from '../../../../data/element-type/element-names';
+import { useTheme } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
-import {hasUntestedChild} from '../../../../utils/has-untested-child';
-import {RootElement} from '../../../../models/elements/root-element';
-import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
+import { hasUntestedChild } from '../../../../utils/has-untested-child';
+import { type RootElement } from '../../../../models/elements/root-element';
+import { type IconDefinition } from '@fortawesome/pro-duotone-svg-icons';
+import { useAppSelector } from '../../../../hooks/use-app-selector';
 import {
     selectTreeElementSearch,
     selectUseIdsInComponentTree,
     selectUseTestMode,
-    selectWarnDuplicateIds
+    selectWarnDuplicateIds,
 } from '../../../../slices/admin-settings-slice';
-import {ElementTreeItemTitleProps} from './element-tree-item-title-props';
-import {AnyElement} from '../../../../models/elements/any-element';
-import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
-import {getStepIcon} from '../../../../data/step-icons';
-import {selectLoadedApplication} from '../../../../slices/app-slice';
-import {stringOrDefault} from "../../../../utils/string-utils";
-import {findNoCodeUsage} from "../../../../utils/find-no-code-usage";
+import { type ElementTreeItemTitleProps } from './element-tree-item-title-props';
+import { type AnyElement } from '../../../../models/elements/any-element';
+import { isAnyElementWithChildren } from '../../../../models/elements/any-element-with-children';
+import { getStepIcon } from '../../../../data/step-icons';
+import { selectLoadedApplication } from '../../../../slices/app-slice';
+import { stringOrDefault } from '../../../../utils/string-utils';
+import { findNoCodeUsage } from '../../../../utils/find-no-code-usage';
 
 
 const highlightOutlineStyle = '#86FFD388 solid 2px';
@@ -58,7 +58,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
 
     const addHighlightElement = () => {
         const elem = document.getElementById(props.element.id);
-        if (elem) {
+        if (elem != null) {
             elem.style.outline = highlightOutlineStyle;
             elem.style.boxShadow = highlightBoxShadowStyle;
         }
@@ -66,17 +66,17 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
 
     const removeHighlightElement = () => {
         const elem = document.getElementById(props.element.id);
-        if (elem) {
+        if (elem != null) {
             elem.style.outline = 'none';
             elem.style.boxShadow = 'none';
         }
     };
 
     const handleToggleExpand = (event?: React.MouseEvent<HTMLElement>) => {
-        if (props.onToggleExpanded) {
+        if (props.onToggleExpanded != null) {
             props.onToggleExpanded();
         }
-        if (event) {
+        if (event != null) {
             event.stopPropagation();
             event.preventDefault();
         }
@@ -84,7 +84,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     };
 
     const preventBubble = (event?: React.MouseEvent<HTMLElement>) => {
-        if (event) {
+        if (event != null) {
             event.stopPropagation();
             event.preventDefault();
         }
@@ -101,63 +101,68 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
 
     return (
         <div
-            className={styles.listItem}
-            onDoubleClick={handleSelect}
-            style={{
+            className={ styles.listItem }
+            onDoubleClick={ handleSelect }
+            style={ {
                 display: 'flex',
                 outline: matchesSearch ? highlightOutlineStyle : undefined,
                 boxShadow: matchesSearch ? highlightBoxShadowStyle : undefined,
-            }}
-            onMouseEnter={addHighlightElement}
-            onMouseLeave={removeHighlightElement}
+            } }
+            onMouseEnter={ addHighlightElement }
+            onMouseLeave={ removeHighlightElement }
         >
             {
-                props.onToggleExpanded ? (
-                    <IconButton
-                        onClick={handleToggleExpand}
-                        onDoubleClick={preventBubble}
-                        size={'small'}
-                        sx={{mr: 1}}
-                    >
-                        <Typography
-                            component="span"
-                            sx={{
-                                width: '18px',
-                                height: '18px',
-                                display: 'inline-block',
-                                textAlign: 'center'
-                            }}
+                (props.onToggleExpanded != null) ?
+                    (
+                        <IconButton
+                            onClick={ handleToggleExpand }
+                            onDoubleClick={ preventBubble }
+                            size={ 'small' }
+                            sx={ { mr: 1 } }
                         >
-                            <FontAwesomeIcon
-                                icon={props.isExpanded ? faChevronDown : faChevronRight}
-                                size={'1x'}
-                            />
-                        </Typography>
-                    </IconButton>
-                ) : <Box sx={{pl: 4.5}}/>
+                            <Typography
+                                component="span"
+                                sx={ {
+                                    width: '18px',
+                                    height: '18px',
+                                    display: 'inline-block',
+                                    textAlign: 'center',
+                                } }
+                            >
+                                <FontAwesomeIcon
+                                    icon={ props.isExpanded ? faChevronDown : faChevronRight }
+                                    size={ '1x' }
+                                />
+                            </Typography>
+                        </IconButton>
+                    ) :
+                    <Box sx={ { pl: 4.5 } }/>
             }
 
             <Tooltip
-                title={ElementNames[props.element.type]}
+                title={ ElementNames[props.element.type] }
                 arrow
             >
                 <Box
                     className="element-tree-item-icon"
-                    style={{
+                    style={ {
                         color: theme.palette.primary.dark,
-                    }}
+                    } }
                 >
                     <FontAwesomeIcon
-                        icon={elementIcon}
+                        icon={ elementIcon }
                         fixedWidth
-                        size={'lg'}
+                        size={ 'lg' }
                     />
                 </Box>
             </Tooltip>
 
             <Typography
                 variant="body1"
-                sx={{fontSize: '1rem', color: '#16191F'}}
+                sx={ {
+                    fontSize: '1rem',
+                    color: '#16191F',
+                } }
             >
                 {
                     useIdsInComponentTree ?
@@ -165,8 +170,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                         (
                             ((elementTitle).length > titleCharLimit) ?
                                 (<span
-                                    title={elementTitle}
-                                >{((elementTitle).substring(0, titleCharLimit - 1)) + '…'}</span>) :
+                                    title={ elementTitle }
+                                >{ ((elementTitle).substring(0, titleCharLimit - 1)) + '…' }</span>) :
                                 elementTitle
                         )
                 }
@@ -180,11 +185,11 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                     props.element.type === ElementType.SubmitStep
                 ) &&
                 <Chip
-                    sx={{
+                    sx={ {
                         ml: 1,
                         color: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd',
-                        borderColor: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd'
-                    }}
+                        borderColor: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd',
+                    } }
                     size="small"
                     label="Abschnitt"
                     variant="outlined"
@@ -192,31 +197,33 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
             }
 
             <div
-                style={{marginLeft: 'auto'}}
+                style={ {
+                    marginLeft: 'auto',
+                } }
             >
-
                 {
-                    statusIcons.map(icon => (
+                    statusIcons.map((icon) => (
                         <Tooltip
-                            title={icon.tooltip}
+                            title={ icon.tooltip }
                             arrow
-                            key={icon.tooltip}
+                            key={ icon.tooltip }
                         >
-                            <IconButton color={icon.color}>
-                                <FontAwesomeIcon icon={icon.icon}/>
+                            <IconButton color={ icon.color }>
+                                <FontAwesomeIcon icon={ icon.icon }/>
                             </IconButton>
                         </Tooltip>
                     ))
                 }
 
                 {
-                    props.onShowAddDialog &&
+                    props.editable &&
+                    (props.onShowAddDialog != null) &&
                     <Tooltip
                         title="Element hinzufügen"
                         arrow
                     >
-                        <IconButton onClick={props.onShowAddDialog}>
-                            <FontAwesomeIcon icon={faPlusCircle}/>
+                        <IconButton onClick={ props.onShowAddDialog }>
+                            <FontAwesomeIcon icon={ faPlusCircle }/>
                         </IconButton>
                     </Tooltip>
                 }
@@ -286,18 +293,18 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
     }
 
     if (functionStatus.length > 0) {
-        if (functionStatus.every(s => s.status === 'done')) {
+        if (functionStatus.every((s) => s.status === 'done')) {
             icons.push({
                 icon: faCircleF,
                 tooltip: 'Individuelle Funktionen definiert',
             });
-        } else if (functionStatus.some(s => s.status === 'todo')) {
+        } else if (functionStatus.some((s) => s.status === 'todo')) {
             icons.push({
                 color: 'error',
                 icon: faCircleF,
                 tooltip: 'Individuelle Funktionen erforderlich',
             });
-        } else if (functionStatus.some(s => s.status === 'unnecessary')) {
+        } else if (functionStatus.some((s) => s.status === 'unnecessary')) {
             icons.push({
                 color: 'error',
                 icon: faQuestionCircle,

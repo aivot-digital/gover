@@ -14,4 +14,5 @@ export interface ElementEditorContentProps<T extends AnyElement> {
     additionalTabs: EditorTab[];
     onChange: (update: Partial<T>) => void;
     onChangeApplication: (update: Partial<Application>) => void;
+    editable: boolean;
 }

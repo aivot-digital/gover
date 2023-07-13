@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
-import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
-import {Preamble} from '../static-components/preamble/preamble';
+import React, { useEffect, useState } from 'react';
+import { type SubmitStepElement } from '../../models/elements/steps/submit-step-element';
+import { Preamble } from '../static-components/preamble/preamble';
 import {
     Box,
     Button,
@@ -11,25 +11,28 @@ import {
     ListItemIcon,
     ListItemText,
     Typography,
-    useTheme
+    useTheme,
 } from '@mui/material';
-import {FadingPaper} from '../static-components/fading-paper/fading-paper';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faFileArrowUp, faUserRobot} from '@fortawesome/pro-light-svg-icons';
-import {faShieldCheck} from '@fortawesome/pro-solid-svg-icons';
-import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
-import {Department} from '../../models/entities/department';
-import {DepartmentsService} from '../../services/departments-service';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectCustomerInputErrorValue} from '../../slices/customer-input-errors-slice';
-import {selectLoadedApplication} from '../../slices/app-slice';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {BaseViewProps} from "../../views/base-view";
+import { FadingPaper } from '../static-components/fading-paper/fading-paper';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileArrowUp, faUserRobot } from '@fortawesome/pro-light-svg-icons';
+import { faShieldCheck } from '@fortawesome/pro-solid-svg-icons';
+import { selectCustomerInputValue, updateUserInput } from '../../slices/customer-input-slice';
+import { type Department } from '../../models/entities/department';
+import { DepartmentsService } from '../../services/departments-service';
+import { useAppSelector } from '../../hooks/use-app-selector';
+import { selectCustomerInputErrorValue } from '../../slices/customer-input-errors-slice';
+import { selectLoadedApplication } from '../../slices/app-slice';
+import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import { isStringNullOrEmpty } from '../../utils/string-utils';
+import { type BaseViewProps } from '../../views/base-view';
 
 export const SubmitHumanKey = '__human__';
 
-export function SubmitComponentView({allElements, element}: BaseViewProps<SubmitStepElement, void>) {
+export function SubmitComponentView({
+                                        allElements,
+                                        element,
+                                    }: BaseViewProps<SubmitStepElement, void>): JSX.Element | null {
     const theme = useTheme();
     const dispatch = useAppDispatch();
 
@@ -43,12 +46,18 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (application?.responsibleDepartment) {
+        if (
+            application?.responsibleDepartment != null &&
+            (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartment)
+        ) {
             DepartmentsService
                 .retrieve(application.responsibleDepartment)
                 .then(setResponsibleDepartment);
         }
-        if (application?.managingDepartment) {
+        if (
+            application?.managingDepartment != null &&
+            (managingDepartment == null || managingDepartment.id !== application.managingDepartment)
+        ) {
             DepartmentsService
                 .retrieve(application.managingDepartment)
                 .then(setManagingDepartment);
@@ -64,22 +73,28 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
             {
                 !isStringNullOrEmpty(element.textPreSubmit) &&
                 <Preamble
-                    allElements={allElements}
-                    text={element.textPreSubmit ?? ''}
+                    allElements={ allElements }
+                    text={ element.textPreSubmit ?? '' }
                 />
             }
 
             {
                 (
-                    responsibleDepartment ||
-                    managingDepartment ||
+                    (responsibleDepartment != null) ||
+                    (managingDepartment != null) ||
                     !isStringNullOrEmpty(element.textProcessingTime) ||
-                    (element.documentsToReceive && element.documentsToReceive.length > 0)
+                    ((element.documentsToReceive != null) && element.documentsToReceive.length > 0)
                 ) &&
                 <FadingPaper>
                     {
-                        responsibleDepartment &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (responsibleDepartment != null) &&
+                        <Box
+                            sx={ {
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            } }
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -90,15 +105,21 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                                 component="pre"
                                 variant="body2"
                             >
-                                {responsibleDepartment.name}<br/>
-                                {responsibleDepartment.address}
+                                { responsibleDepartment.name }<br/>
+                                { responsibleDepartment.address }
                             </Typography>
                         </Box>
                     }
 
                     {
-                        managingDepartment &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (managingDepartment != null) &&
+                        <Box
+                            sx={ {
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            } }
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -109,15 +130,21 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                                 component="pre"
                                 variant="body2"
                             >
-                                {managingDepartment.name}<br/>
-                                {managingDepartment.address}
+                                { managingDepartment.name }<br/>
+                                { managingDepartment.address }
                             </Typography>
                         </Box>
                     }
 
                     {
                         element.textProcessingTime &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        <Box
+                            sx={ {
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            } }
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -128,14 +155,20 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                                 component="pre"
                                 variant="body2"
                             >
-                                {element.textProcessingTime}
+                                { element.textProcessingTime }
                             </Typography>
                         </Box>
                     }
 
                     {
-                        element.documentsToReceive && element.documentsToReceive.length > 0 &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (element.documentsToReceive != null) && element.documentsToReceive.length > 0 &&
+                        <Box
+                            sx={ {
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            } }
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -149,19 +182,19 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                                 {
                                     element.documentsToReceive.map((doc: string) => (
                                         <ListItem
-                                            key={doc}
+                                            key={ doc }
                                             disableGutters
                                         >
-                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                            <ListItemIcon sx={ {minWidth: '34px'} }>
                                                 <FontAwesomeIcon
-                                                    icon={faFileArrowUp}
+                                                    icon={ faFileArrowUp }
                                                     fixedWidth
-                                                    size={'lg'}
-                                                    color={theme.palette.primary.main}
+                                                    size={ 'lg' }
+                                                    color={ theme.palette.primary.main }
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
-                                                {doc}
+                                                { doc }
                                             </ListItemText>
                                         </ListItem>
                                     ))
@@ -172,7 +205,7 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                 </FadingPaper>
             }
 
-            <Box sx={{mt: 4}}>
+            <Box sx={ {mt: 4} }>
                 <Typography
                     variant="h6"
                     color="primary"
@@ -181,24 +214,32 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                 </Typography>
 
                 <Typography
-                    variant={'body2'}
-                    sx={{maxWidth: '660px', mt: 1}}
+                    variant={ 'body2' }
+                    sx={ {
+                        maxWidth: '660px',
+                        mt: 1,
+                    } }
                 >
                     Bitte bestätigen Sie mit einem Klick auf das nachfolgende Element, dass Sie ein Mensch sind.
                     Die Verifizierung kann einen kleinen Moment dauern. Vielen Dank!
                 </Typography>
 
-                <Box sx={{mt: 3, minHeight: '61px'}}>
+                <Box
+                    sx={ {
+                        mt: 3,
+                        minHeight: '61px',
+                    } }
+                >
                     {
                         !isCalculating && !isHuman &&
                         <>
                             <Box>
                                 <Button
-                                    startIcon={<FontAwesomeIcon
-                                        icon={faUserRobot}
+                                    startIcon={ <FontAwesomeIcon
+                                        icon={ faUserRobot }
                                         fixedWidth
-                                    />}
-                                    onClick={() => {
+                                    /> }
+                                    onClick={ () => {
                                         setIsCalculating(true);
                                         setTimeout(() => {
                                             dispatch(updateUserInput({
@@ -207,18 +248,22 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                                             }));
                                             setIsCalculating(false);
                                         }, 1000);
-                                    }}
-                                    sx={{border: '1px solid #E0E0E0', px: 4, py: 2}}
-                                    size={'large'}
+                                    } }
+                                    sx={ {
+                                        border: '1px solid #E0E0E0',
+                                        px: 4,
+                                        py: 2,
+                                    } }
+                                    size={ 'large' }
                                 >
                                     Verifizierung starten
                                 </Button>
                             </Box>
                             {
                                 error &&
-                                <Box sx={{mt: 2}}>
-                                    <FormHelperText error={true}>
-                                        {error}
+                                <Box sx={ {mt: 2} }>
+                                    <FormHelperText error={ true }>
+                                        { error }
                                     </FormHelperText>
                                 </Box>
                             }
@@ -230,13 +275,20 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                     }
                     {
                         isHuman &&
-                        <Box sx={{display: 'flex', alignItems: 'center'}}>
+                        <Box
+                            sx={ {
+                                display: 'flex',
+                                alignItems: 'center',
+                            } }
+                        >
                             <FontAwesomeIcon
-                                icon={faShieldCheck}
+                                icon={ faShieldCheck }
                                 size="2x"
                             />
                             <Typography
-                                sx={{ml: 2}}
+                                sx={ {
+                                    ml: 2,
+                                } }
                             >
                                 Verifizierung erfolgreich. Sie sind ein Mensch.
                             </Typography>
@@ -244,7 +296,6 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                     }
                 </Box>
             </Box>
-
         </>
     );
 }

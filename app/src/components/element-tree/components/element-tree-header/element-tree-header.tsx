@@ -1,12 +1,13 @@
-import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import React, { useState } from 'react';
+import { Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faArrowsFromLine,
     faArrowsToLine,
     faGear,
     faListTree,
     faMessageCode,
-    faSearch
+    faSearch,
 } from '@fortawesome/pro-light-svg-icons';
 import {
     selectUseIdsInComponentTree,
@@ -15,17 +16,16 @@ import {
     setExpandElementTree,
     toggleIdsInComponentTree,
     toggleTestMode,
-    toggleWarnDuplicateIds
+    toggleWarnDuplicateIds,
 } from '../../../../slices/admin-settings-slice';
-import React, {useState} from 'react';
-import {useTheme} from '@mui/material/styles';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {ElementEditor} from '../element-editor/element-editor';
-import {ElementTreeHeaderProps} from './element-tree-header-props';
-import {AnyElement} from '../../../../models/elements/any-element';
+import { useTheme } from '@mui/material/styles';
+import { useAppSelector } from '../../../../hooks/use-app-selector';
+import { useAppDispatch } from '../../../../hooks/use-app-dispatch';
+import { ElementEditor } from '../element-editor/element-editor';
+import { type ElementTreeHeaderProps } from './element-tree-header-props';
+import { type AnyElement } from '../../../../models/elements/any-element';
 
-export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeaderProps<T>) {
+export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeaderProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const testMode = useAppSelector(selectUseTestMode);
@@ -35,11 +35,11 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
     const [showEditor, setShowEditor] = useState(false);
     const [cTMenuAnchorEl, setCTMenuAnchorEl] = useState<null | HTMLElement>(null);
 
-    const handleOpenCTMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleOpenCTMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setCTMenuAnchorEl(event.currentTarget);
     };
 
-    const handleCloseCTMenu = () => {
+    const handleCloseCTMenu = (): void => {
         setCTMenuAnchorEl(null);
     };
 
@@ -47,22 +47,36 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
 
     return (
         <>
-            <Box sx={{display: 'flex', justifyContent: 'space-between', mt: 1, mb: 1}}>
-                <Box sx={{display: 'flex', alignItems: 'center'}}>
-
+            <Box
+                sx={ {
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    mt: 1,
+                    mb: 1,
+                } }
+            >
+                <Box
+                    sx={ {
+                        display: 'flex',
+                        alignItems: 'center',
+                    } }
+                >
                     <span
-                        style={{
+                        style={ {
                             color: theme.palette.primary.dark,
                             fontSize: '1.625rem',
-                        }}
+                        } }
                     >
-                        <FontAwesomeIcon icon={faListTree}/>
+                        <FontAwesomeIcon icon={ faListTree }/>
                     </span>
 
                     <Typography
                         variant="h6"
                         color="primary"
-                        sx={{ml: 1, mt: '2px'}}
+                        sx={ {
+                            ml: 1,
+                            mt: '2px',
+                        } }
                     >
                         Struktur
                     </Typography>
@@ -73,8 +87,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Suchen"
                         arrow
                     >
-                        <IconButton onClick={props.onToggleSearch}>
-                            <FontAwesomeIcon icon={faSearch}/>
+                        <IconButton onClick={ props.onToggleSearch }>
+                            <FontAwesomeIcon icon={ faSearch }/>
                         </IconButton>
                     </Tooltip>
 
@@ -82,8 +96,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles ausklappen"
                         arrow
                     >
-                        <IconButton onClick={() => dispatch(setExpandElementTree('expanded'))}>
-                            <FontAwesomeIcon icon={faArrowsFromLine}/>
+                        <IconButton onClick={ () => dispatch(setExpandElementTree('expanded')) }>
+                            <FontAwesomeIcon icon={ faArrowsFromLine }/>
                         </IconButton>
                     </Tooltip>
 
@@ -91,8 +105,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles einklappen"
                         arrow
                     >
-                        <IconButton onClick={() => dispatch(setExpandElementTree('collapsed'))}>
-                            <FontAwesomeIcon icon={faArrowsToLine}/>
+                        <IconButton onClick={ () => dispatch(setExpandElementTree('collapsed')) }>
+                            <FontAwesomeIcon icon={ faArrowsToLine }/>
                         </IconButton>
                     </Tooltip>
 
@@ -100,8 +114,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Einstellungen für Entwickler:innen"
                         arrow
                     >
-                        <IconButton onClick={handleOpenCTMenu}>
-                            <FontAwesomeIcon icon={faMessageCode}/>
+                        <IconButton onClick={ handleOpenCTMenu }>
+                            <FontAwesomeIcon icon={ faMessageCode }/>
                         </IconButton>
                     </Tooltip>
                     <Tooltip
@@ -109,12 +123,14 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         arrow
                     >
                         <IconButton
-                            onClick={() => {
+                            onClick={ () => {
                                 setShowEditor(true);
-                            }}
-                            sx={{marginRight: '7px'}}
+                            } }
+                            sx={ {
+                                marginRight: '7px',
+                            } }
                         >
-                            <FontAwesomeIcon icon={faGear}/>
+                            <FontAwesomeIcon icon={ faGear }/>
                         </IconButton>
                     </Tooltip>
                 </Box>
@@ -122,18 +138,18 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
 
             <Menu
                 id="basic-menu"
-                anchorEl={cTMenuAnchorEl}
-                open={cTMenuAnchorEl != null}
-                onClose={handleCloseCTMenu}
+                anchorEl={ cTMenuAnchorEl }
+                open={ cTMenuAnchorEl != null }
+                onClose={ handleCloseCTMenu }
             >
                 <MenuItem>
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={useIdsInComponentTree}
-                                onChange={() => {
+                                checked={ useIdsInComponentTree }
+                                onChange={ () => {
                                     dispatch(toggleIdsInComponentTree());
-                                }}
+                                } }
                             />
                         }
                         label="Element-IDs anstatt Titel anzeigen"
@@ -143,10 +159,10 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={warnDuplicateIds}
-                                onChange={() => {
+                                checked={ warnDuplicateIds }
+                                onChange={ () => {
                                     dispatch(toggleWarnDuplicateIds());
-                                }}
+                                } }
                             />
                         }
                         label="Warnungen für doppelte IDs anzeigen"
@@ -156,10 +172,10 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={testMode}
-                                onChange={() => {
+                                checked={ testMode }
+                                onChange={ () => {
                                     dispatch(toggleTestMode());
-                                }}
+                                } }
                             />
                         }
                         label="Prüfungsansicht aktivieren"
@@ -170,15 +186,16 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
             {
                 showEditor &&
                 <ElementEditor
-                    parents={[] /* Uppermost element so no parents here */}
-                    element={props.element}
-                    onSave={update => {
+                    parents={ [] /* Uppermost element so no parents here */ }
+                    element={ props.element }
+                    onSave={ (update) => {
                         setShowEditor(false);
                         props.onPatch(update);
-                    }}
-                    onCancel={() => {
+                    } }
+                    onCancel={ () => {
                         setShowEditor(false);
-                    }}
+                    } }
+                    editable={ props.editable }
                 />
             }
         </>

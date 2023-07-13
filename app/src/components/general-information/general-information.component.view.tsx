@@ -1,26 +1,26 @@
-import React, {useEffect, useState} from 'react';
-import {Box, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
-import {ElementType} from '../../data/element-type/element-type';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faFileArrowUp, faFileLines, faUser} from '@fortawesome/pro-light-svg-icons';
-import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {FadingPaper} from '../static-components/fading-paper/fading-paper';
-import {Preamble} from '../static-components/preamble/preamble';
-import {Department} from '../../models/entities/department';
-import {DepartmentsService} from '../../services/departments-service';
-import {MetaDialog, selectLoadedApplication} from '../../slices/app-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import React, { useEffect, useState } from 'react';
+import { Box, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme } from '@mui/material';
+import { ElementType } from '../../data/element-type/element-type';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileArrowUp, faFileLines, faUser } from '@fortawesome/pro-light-svg-icons';
+import { ViewDispatcherComponent } from '../view-dispatcher.component';
+import { type IntroductionStepElement } from '../../models/elements/steps/introduction-step-element';
+import { FadingPaper } from '../static-components/fading-paper/fading-paper';
+import { Preamble } from '../static-components/preamble/preamble';
+import { type Department } from '../../models/entities/department';
+import { DepartmentsService } from '../../services/departments-service';
+import { MetaDialog, selectLoadedApplication } from '../../slices/app-slice';
+import { useAppSelector } from '../../hooks/use-app-selector';
+import { isStringNotNullOrEmpty, isStringNullOrEmpty } from '../../utils/string-utils';
 import ProjectPackage from '../../../package.json';
-import {BaseViewProps} from "../../views/base-view";
-import {useLocation, useNavigate} from "react-router-dom";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
+import { type BaseViewProps } from '../../views/base-view';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { selectSystemConfigValue } from '../../slices/system-config-slice';
+import { SystemConfigKeys } from '../../data/system-config-keys';
 
 export const PrivacyUserInputKey = '__privacy__';
 
-export function GeneralInformationComponentView({allElements, element}: BaseViewProps<IntroductionStepElement, void>) {
+export function GeneralInformationComponentView({ allElements, element }: BaseViewProps<IntroductionStepElement, void>): JSX.Element {
     const application = useAppSelector(selectLoadedApplication);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const theme = useTheme();
@@ -30,7 +30,10 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (application != null && application.responsibleDepartment != null) {
+        if (
+            application?.responsibleDepartment != null &&
+            (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartment)
+        ) {
             DepartmentsService
                 .retrieve(application.responsibleDepartment)
                 .then(setResponsibleDepartment);
@@ -40,7 +43,10 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
     }, [element]);
 
     useEffect(() => {
-        if (application != null && application.managingDepartment != null) {
+        if (
+            application?.managingDepartment != null &&
+            (managingDepartment == null || managingDepartment.id !== application.managingDepartment)
+        ) {
             DepartmentsService
                 .retrieve(application.managingDepartment)
                 .then(setManagingDepartment);
@@ -58,18 +64,18 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
 
             {
                 (
-                    responsibleDepartment ||
-                    managingDepartment ||
-                    (element.eligiblePersons && element.eligiblePersons.length > 0) ||
-                    (element.supportingDocuments && element.supportingDocuments.length > 0) ||
-                    (element.documentsToAttach && element.documentsToAttach.length > 0) ||
+                    (responsibleDepartment != null) ||
+                    (managingDepartment != null) ||
+                    ((element.eligiblePersons != null) && element.eligiblePersons.length > 0) ||
+                    ((element.supportingDocuments != null) && element.supportingDocuments.length > 0) ||
+                    ((element.documentsToAttach != null) && element.documentsToAttach.length > 0) ||
                     !isStringNullOrEmpty(application?.root.expiring) ||
                     !isStringNullOrEmpty(element.expectedCosts)
                 ) &&
                 <FadingPaper>
                     {
-                        responsibleDepartment &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (responsibleDepartment != null) &&
+                        <Box sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -93,8 +99,8 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                     }
 
                     {
-                        managingDepartment &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (managingDepartment != null) &&
+                        <Box sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -118,8 +124,8 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                     }
 
                     {
-                        element.eligiblePersons && element.eligiblePersons.length > 0 &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (element.eligiblePersons != null) && element.eligiblePersons.length > 0 &&
+                        <Box sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -136,7 +142,7 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                                             key={person}
                                             disableGutters
                                         >
-                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                            <ListItemIcon sx={{ minWidth: '34px' }}>
                                                 <FontAwesomeIcon
                                                     icon={faUser}
                                                     fixedWidth
@@ -155,8 +161,8 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                     }
 
                     {
-                        element.supportingDocuments && element.supportingDocuments.length > 0 &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (element.supportingDocuments != null) && element.supportingDocuments.length > 0 &&
+                        <Box sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -173,7 +179,7 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                                             key={document}
                                             disableGutters
                                         >
-                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                            <ListItemIcon sx={{ minWidth: '34px' }}>
                                                 <FontAwesomeIcon
                                                     icon={faFileLines}
                                                     fixedWidth
@@ -192,8 +198,8 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                     }
 
                     {
-                        element.documentsToAttach && element.documentsToAttach.length > 0 &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (element.documentsToAttach != null) && element.documentsToAttach.length > 0 &&
+                        <Box sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -210,7 +216,7 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                                             key={document}
                                             disableGutters
                                         >
-                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                            <ListItemIcon sx={{ minWidth: '34px' }}>
                                                 <FontAwesomeIcon
                                                     icon={faFileArrowUp}
                                                     fixedWidth
@@ -230,7 +236,7 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
 
                     {
                         !isStringNullOrEmpty(application?.root.expiring) &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        <Box sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -248,7 +254,7 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
 
                     {
                         !isStringNullOrEmpty(element.expectedCosts) &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        <Box sx={{ mb: 3, position: 'relative', zIndex: 1 }}>
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -267,7 +273,7 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
 
             <Typography
                 variant={'body2'}
-                sx={{mt: 4}}
+                sx={{ mt: 4 }}
             >
                 Alle mit Stern (*) gekennzeichneten Felder sind Pflichtfelder.
             </Typography>
@@ -275,7 +281,7 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
             <Typography
                 variant="h6"
                 color="primary"
-                sx={{mt: 4}}
+                sx={{ mt: 4 }}
             >
                 Hinweise zum Datenschutz
             </Typography>
@@ -283,14 +289,14 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
             {
                 application?.root.privacyText &&
                 <Box
-                    sx={{maxWidth: '600px', mt: 1}}
+                    sx={{ maxWidth: '600px', mt: 1 }}
                 >
                     <Typography
                         variant="body2"
                         dangerouslySetInnerHTML={{
                             __html: application.root.privacyText
-                                .replace('{privacy}', `<a href="/#${location.pathname}?dialog=${MetaDialog.Privacy}">`)
-                                .replace('{/privacy}', '</a>')
+                                .replace('{privacy}', `<a href="/#${ location.pathname }?dialog=${ MetaDialog.Privacy }">`)
+                                .replace('{/privacy}', '</a>'),
                         }}
                     />
                 </Box>

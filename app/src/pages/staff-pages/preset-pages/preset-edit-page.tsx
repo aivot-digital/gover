@@ -131,6 +131,7 @@ export function PresetEditPage(): JSX.Element {
                                     },
                                 });
                             } }
+                            editable={true}
                         />
                     </Grid>
 

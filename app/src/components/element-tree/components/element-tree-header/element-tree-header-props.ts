@@ -1,7 +1,8 @@
-import {AnyElement} from '../../../../models/elements/any-element';
+import { type AnyElement } from '../../../../models/elements/any-element';
 
 export interface ElementTreeHeaderProps<T extends AnyElement> {
     element: T;
     onPatch: (update: Partial<T>) => void;
     onToggleSearch: () => void;
+    editable: boolean;
 }

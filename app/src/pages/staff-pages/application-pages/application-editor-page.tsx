@@ -49,6 +49,7 @@ import { ImprintDialog } from '../../../dialogs/imprint-dialog/imprint-dialog';
 import { AccessibilityDialog } from '../../../dialogs/accessibility-dialog/accessibility-dialog';
 import { ThemesService } from '../../../services/themes-service';
 import { type Theme } from '../../../models/entities/theme';
+import { ApplicationStatus } from '../../../data/application-status/application-status';
 
 export function ApplicationEditorPage(): JSX.Element {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -190,6 +191,10 @@ export function ApplicationEditorPage(): JSX.Element {
                                         },
                                     }));
                                 } }
+                                editable={
+                                    application.status !== ApplicationStatus.Published &&
+                                    application.status !== ApplicationStatus.Revoked
+                                }
                             />
                         </Grid>
                     }

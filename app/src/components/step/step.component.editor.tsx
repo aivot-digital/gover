@@ -1,20 +1,23 @@
-import {StepElement} from '../../models/elements/steps/step-element';
-import {Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Select, TextField} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {StepIcons} from '../../data/step-icons';
-import {BaseEditorProps} from "../../editors/base-editor";
+import React from 'react';
+import { type StepElement } from '../../models/elements/steps/step-element';
+import { Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Select } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { StepIcons } from '../../data/step-icons';
+import { type BaseEditorProps } from '../../editors/base-editor';
+import { TextFieldComponent } from '../text-field/text-field-component';
 
-export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
+export function StepComponentEditor(props: BaseEditorProps<StepElement>): JSX.Element {
     return (
         <>
-            <TextField
-                value={props.element.title ?? ''}
+            <TextFieldComponent
+                value={ props.element.title ?? '' }
                 label="Titel des Abschnitts"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    title: event.target.value,
-                })}
+                onChange={ (val) => {
+                    props.onPatch({
+                        title: val,
+                    });
+                } }
+                disabled={ !props.editable }
             />
 
             <FormControl
@@ -26,23 +29,31 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                 <Select
                     labelId="icon-select-label"
                     label="Icon"
-                    value={props.element.icon ?? ''}
-                    onChange={event => props.onPatch({
-                        icon: event.target.value ?? '',
-                    })}
+                    value={ props.element.icon ?? '' }
+                    onChange={ (event) => {
+                        props.onPatch({
+                            icon: event.target.value ?? '',
+                        });
+                    } }
+                    disabled={ !props.editable }
                 >
                     {
-                        StepIcons.map(stepIcon => (
+                        StepIcons.map((stepIcon) => (
                             <MenuItem
-                                key={stepIcon.id}
-                                value={stepIcon.id}
+                                key={ stepIcon.id }
+                                value={ stepIcon.id }
                             >
-                                <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                <Box
+                                    sx={ {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    } }
+                                >
                                     <ListItemIcon>
-                                        <FontAwesomeIcon icon={stepIcon.def}/>
+                                        <FontAwesomeIcon icon={ stepIcon.def }/>
                                     </ListItemIcon>
                                     <ListItemText>
-                                        {stepIcon.label}
+                                        { stepIcon.label }
                                     </ListItemText>
                                 </Box>
                             </MenuItem>

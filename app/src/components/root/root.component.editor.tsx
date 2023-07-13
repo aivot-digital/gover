@@ -118,6 +118,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                 } }
                 options={ departments }
                 required
+                disabled={ !props.editable }
             />
 
             <SelectFieldComponent
@@ -129,6 +130,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     });
                 } }
                 options={ departments }
+                disabled={ !props.editable }
             />
 
             <SelectFieldComponent
@@ -140,6 +142,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     });
                 } }
                 options={ departments }
+                disabled={ !props.editable }
             />
 
             <Typography
@@ -160,6 +163,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     });
                 } }
                 options={ themes }
+                disabled={ !props.editable }
             />
 
             <Typography
@@ -187,6 +191,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     });
                 } }
                 maxCharacters={ 120 }
+                disabled={ !props.editable }
             />
 
             <TextFieldComponent
@@ -198,6 +203,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     });
                 } }
                 maxCharacters={ 60 }
+                disabled={ !props.editable }
             />
 
             <Typography
@@ -218,6 +224,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                         expiring: val,
                     });
                 } }
+                disabled={ !props.editable }
             />
 
             <Typography
@@ -241,6 +248,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     label: key,
                     value: key,
                 })) }
+                disabled={ !props.editable }
             />
 
             <Typography
@@ -261,6 +269,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     });
                 } }
                 options={ departments }
+                disabled={ !props.editable }
             />
 
             <SelectFieldComponent
@@ -272,6 +281,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
                     });
                 } }
                 options={ departments }
+                disabled={ !props.editable }
             />
         </>
     );

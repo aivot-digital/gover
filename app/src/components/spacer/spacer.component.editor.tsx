@@ -1,19 +1,21 @@
-import {TextField} from '@mui/material';
-import {SpacerElement} from '../../models/elements/form/content/spacer-element';
-import {BaseEditorProps} from "../../editors/base-editor";
+import { type SpacerElement } from '../../models/elements/form/content/spacer-element';
+import { type BaseEditorProps } from '../../editors/base-editor';
+import { NumberFieldComponent } from '../number-field/number-field-component';
 
-export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement>) {
+export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement>): JSX.Element {
     return (
         <>
-            <TextField
-                value={props.element.height ?? ''}
+            <NumberFieldComponent
+                value={ props.element.height != null ? parseInt(props.element.height) : undefined }
                 label="Abstand"
-                helperText="Die Angabe erfolgt in Pixeln (px)."
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    height: event.target.value,
-                })}
+                hint="Die Angabe erfolgt in Pixeln (px)."
+                suffix="px"
+                onChange={ (val) => {
+                    props.onPatch({
+                        height: val != null ? val.toString() : undefined,
+                    });
+                } }
+                disabled={ !props.editable }
             />
         </>
     );

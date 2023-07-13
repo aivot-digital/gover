@@ -44,9 +44,11 @@ export function ApplicationListItem({
     const showOptions = Boolean(optionAnchorEl);
 
     useEffect(() => {
-        DepartmentsService
-            .retrieve(application.developingDepartment)
-            .then(setDepartment);
+        if (department == null) {
+            DepartmentsService
+                .retrieve(application.developingDepartment)
+                .then(setDepartment);
+        }
     }, [application]);
 
     const handleOptionsClick = (event: React.MouseEvent<HTMLButtonElement>) => {

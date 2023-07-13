@@ -7,6 +7,7 @@ export interface BaseEditorProps<M> {
     onPatch: (patch: Partial<M>) => void;
     application: Application;
     onPatchApplication: (update: Partial<Application>) => void;
+    editable: boolean;
 }
 
 export type BaseEditor<M extends AnyElement> = FunctionComponent<BaseEditorProps<M>>;

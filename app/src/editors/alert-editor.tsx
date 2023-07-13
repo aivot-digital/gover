@@ -1,3 +1,4 @@
+import React from 'react';
 import { type AlertColor } from '@mui/material';
 import { type AlertElement } from '../models/elements/form/content/alert-element';
 import { type BaseEditor } from './base-editor';
@@ -11,42 +12,49 @@ const colors = [
     ['error', 'Fehler'],
 ];
 
-export const AlertEditor: BaseEditor<AlertElement> = ({ element, onPatch }) => {
+export const AlertEditor: BaseEditor<AlertElement> = ({
+                                                          element,
+                                                          onPatch,
+                                                          editable,
+                                                      }) => {
     return (
         <>
             <TextFieldComponent
-                value={element.title}
+                value={ element.title }
                 label="Titel"
-                onChange={(val) => {
+                onChange={ (val) => {
                     onPatch({
                         title: val,
                     });
-                }}
+                } }
+                disabled={ !editable }
             />
 
             <TextFieldComponent
-                value={element.text}
+                value={ element.text }
                 label="Hinweis"
                 multiline
-                onChange={(val) => {
+                onChange={ (val) => {
                     onPatch({
                         text: val,
                     });
-                }}
+                } }
+                disabled={ !editable }
             />
 
             <SelectFieldComponent
                 label="Hinweistyp"
-                value={element.alertType ?? 'info'}
-                onChange={(val) => {
+                value={ element.alertType ?? 'info' }
+                onChange={ (val) => {
                     onPatch({
                         alertType: val as AlertColor,
                     });
-                }}
-                options={colors.map(([type, label]) => ({
+                } }
+                options={ colors.map(([type, label]) => ({
                     label,
                     value: type,
-                }))}
+                })) }
+                disabled={ !editable }
             />
         </>
     );

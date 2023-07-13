@@ -1,29 +1,32 @@
-import {TextField} from '@mui/material';
-import {ImageElement} from '../../models/elements/form/content/image-element';
-import {BaseEditorProps} from "../../editors/base-editor";
+import React from 'react';
+import { type ImageElement } from '../../models/elements/form/content/image-element';
+import { type BaseEditorProps } from '../../editors/base-editor';
+import { TextFieldComponent } from '../text-field/text-field-component';
 
-export function ImageEditor(props: BaseEditorProps<ImageElement>) {
+export function ImageEditor(props: BaseEditorProps<ImageElement>): JSX.Element {
     return (
         <>
-            <TextField
-                value={props.element.src ?? ''}
+            <TextFieldComponent
+                value={ props.element.src ?? '' }
                 label="Url"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    src: event.target.value,
-                })}
+                onChange={ (val) => {
+                    props.onPatch({
+                        src: val,
+                    });
+                } }
+                disabled={ !props.editable }
             />
 
 
-            <TextField
-                value={props.element.alt ?? ''}
+            <TextFieldComponent
+                value={ props.element.alt ?? '' }
                 label="Alt-Text"
-                fullWidth
-                margin="normal"
-                onChange={event => props.onPatch({
-                    alt: event.target.value,
-                })}
+                onChange={ (val) => {
+                    props.onPatch({
+                        alt: val,
+                    });
+                } }
+                disabled={ !props.editable }
             />
         </>
     );

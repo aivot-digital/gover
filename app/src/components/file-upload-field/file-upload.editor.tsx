@@ -6,7 +6,7 @@ import {SystemService} from "../../services/system-service";
 import {NumberFieldComponent} from "../number-field/number-field-component";
 import {MultiCheckboxComponent} from "../multi-checkbox-field/multi-checkbox-component";
 
-export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatch}) => {
+export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatch, editable}) => {
     const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
 
     useEffect(() => {
@@ -29,6 +29,7 @@ export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatc
                                 minFiles: undefined,
                                 maxFiles: undefined,
                             })}
+                            disabled={ !editable }
                         />
                     }
                     label="Mehrere Anlagen zulässig"
@@ -48,6 +49,7 @@ export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatc
                             });
                         }}
                         error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                        disabled={ !editable }
                     />
 
                     <NumberFieldComponent
@@ -60,6 +62,7 @@ export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatc
                             });
                         }}
                         error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                        disabled={ !editable }
                     />
                 </>
             }
@@ -76,6 +79,7 @@ export const FileUploadEditor: BaseEditor<FileUploadElement> = ({element, onPatc
                 error={element.extensions == null || element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
                 options={allowedExtensions ?? []}
                 required
+                disabled={ !editable }
             />
         </>
     );

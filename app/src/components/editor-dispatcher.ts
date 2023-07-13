@@ -22,6 +22,7 @@ export function EditorDispatcher<T extends AnyElement>(props: EditorDispatcherPr
         onPatch: props.onPatch,
         application: props.application,
         onPatchApplication: props.onPatchApplication,
+        editable: props.editable,
     };
 
     return React.createElement(Component, editorProps);

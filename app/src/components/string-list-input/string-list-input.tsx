@@ -12,12 +12,12 @@ import {
     TableContainer,
     TableRow,
     TextField, Tooltip,
-    Typography
-} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faAdd, faArrowRightArrowLeft, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
-import {useState} from "react";
-import {TextFieldComponent} from "../text-field/text-field-component";
+    Typography,
+} from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faAdd, faArrowRightArrowLeft, faTrashCanXmark } from '@fortawesome/pro-light-svg-icons';
+import { useState } from 'react';
+import { TextFieldComponent } from '../text-field/text-field-component';
 
 interface StringListInputProps {
     label: string;
@@ -27,6 +27,7 @@ interface StringListInputProps {
     value?: string[];
     onChange: (ls: string[] | undefined) => void;
     allowEmpty: boolean;
+    disabled?: boolean;
 }
 
 export function StringListInput({
@@ -36,7 +37,8 @@ export function StringListInput({
                                     noItemsHint,
                                     value,
                                     onChange,
-                                    allowEmpty
+                                    allowEmpty,
+                                    disabled,
                                 }: StringListInputProps) {
     const [rawMode, setRawMode] = useState(false);
     const [rawBuffer, setRawBuffer] = useState<string>();
@@ -45,55 +47,67 @@ export function StringListInput({
 
     return (
         <FormControl
-            error={hasEmptyItem || isValueEmpty}
-            component={Paper}
-            sx={{p: 2}}
+            error={ hasEmptyItem || isValueEmpty }
+            component={ Paper }
+            sx={ {p: 2} }
         >
-            <Box sx={{display: 'flex', alignItems: 'center'}}>
-                <Tooltip
-                    title="Modus umschalten"
-                >
-                    <IconButton
-                        size="small"
-                        onClick={() => setRawMode(!rawMode)}
+            <Box
+                sx={ {
+                    display: 'flex',
+                    alignItems: 'center',
+                } }
+            >
+
+                {
+                    !disabled &&
+                    <Tooltip
+                        title="Modus umschalten"
                     >
-                        <FontAwesomeIcon
-                            icon={faArrowRightArrowLeft}
-                        />
-                    </IconButton>
-                </Tooltip>
+                        <IconButton
+                            size="small"
+                            onClick={ () => setRawMode(!rawMode) }
+                        >
+                            <FontAwesomeIcon
+                                icon={ faArrowRightArrowLeft }
+                            />
+                        </IconButton>
+                    </Tooltip>
+                }
 
                 <FormLabel
-                    sx={{ml: 1}}
+                    sx={ {ml: 1} }
                 >
-                    {label}
+                    { label }
                 </FormLabel>
 
-                <Button
-                    sx={{
-                        ml: 'auto',
-                    }}
-                    startIcon={
-                        <FontAwesomeIcon
-                            icon={faAdd}
-                        />
-                    }
-                    onClick={() => onChange([...(value ?? []), ''])}
-                >
-                    {addLabel}
-                </Button>
+                {
+                    !disabled &&
+                    <Button
+                        sx={ {
+                            ml: 'auto',
+                        } }
+                        startIcon={
+                            <FontAwesomeIcon
+                                icon={ faAdd }
+                            />
+                        }
+                        onClick={ () => onChange([...(value ?? []), '']) }
+                    >
+                        { addLabel }
+                    </Button>
+                }
             </Box>
 
             {
                 (!value || value.length === 0) &&
                 <Alert
-                    sx={{
+                    sx={ {
                         my: 4,
-                    }}
-                    severity={isValueEmpty ? 'error' : 'info'}
+                    } }
+                    severity={ isValueEmpty ? 'error' : 'info' }
                 >
                     <Typography>
-                        {noItemsHint}
+                        { noItemsHint }
                     </Typography>
                 </Alert>
             }
@@ -105,53 +119,57 @@ export function StringListInput({
                 <TableContainer>
                     <Table
                         size="small"
-                        sx={{
-                            "& td": {
+                        sx={ {
+                            '& td': {
                                 border: 0,
                             },
-                        }}
+                        } }
                     >
                         <TableBody>
                             {
                                 value.map((val, index) => (
-                                    <TableRow key={index}>
+                                    <TableRow key={ index }>
                                         <TableCell>
                                             <TextField
                                                 fullWidth
                                                 size="small"
                                                 margin="dense"
-                                                value={val}
-                                                onChange={event => {
+                                                value={ val }
+                                                onChange={ event => {
                                                     const updatedValue = [...value];
                                                     updatedValue[index] = event.target.value;
                                                     onChange(updatedValue);
-                                                }}
-                                                onBlur={() => {
+                                                } }
+                                                onBlur={ () => {
                                                     if (value != null) {
                                                         onChange(value.map(val => val.trim()));
                                                     }
-                                                }}
-                                                error={val.length === 0}
-                                                helperText={val.length === 0 ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
+                                                } }
+                                                error={ val.length === 0 }
+                                                helperText={ val.length === 0 ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined }
+                                                disabled={ disabled }
                                             />
                                         </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                color="error"
-                                                startIcon={
-                                                    <FontAwesomeIcon
-                                                        icon={faTrashCanXmark}
-                                                    />
-                                                }
-                                                onClick={() => {
-                                                    const updatedValue = [...value];
-                                                    updatedValue.splice(index, 1);
-                                                    onChange(updatedValue);
-                                                }}
-                                            >
-                                                Entfernen
-                                            </Button>
-                                        </TableCell>
+                                        {
+                                            !disabled &&
+                                            <TableCell>
+                                                <Button
+                                                    color="error"
+                                                    startIcon={
+                                                        <FontAwesomeIcon
+                                                            icon={ faTrashCanXmark }
+                                                        />
+                                                    }
+                                                    onClick={ () => {
+                                                        const updatedValue = [...value];
+                                                        updatedValue.splice(index, 1);
+                                                        onChange(updatedValue);
+                                                    } }
+                                                >
+                                                    Entfernen
+                                                </Button>
+                                            </TableCell>
+                                        }
                                     </TableRow>
                                 ))
                             }
@@ -164,18 +182,18 @@ export function StringListInput({
                 rawMode &&
                 <TextFieldComponent
                     label="Einträge"
-                    placeholder={'Option 1\nOption 2\nOption 3'}
-                    value={rawBuffer ?? (value ?? []).join('\n')}
-                    onChange={val => setRawBuffer(val ?? '')}
-                    onBlur={val => {
+                    placeholder={ 'Option 1\nOption 2\nOption 3' }
+                    value={ rawBuffer ?? (value ?? []).join('\n') }
+                    onChange={ val => setRawBuffer(val ?? '') }
+                    onBlur={ val => {
                         setRawBuffer(undefined);
                         onChange(val != null ? val.split('\n').map(l => l.trim()) : undefined);
-                    }}
+                    } }
                     multiline
                 />
             }
 
-            <FormHelperText sx={{mt: 2}}>
+            <FormHelperText sx={ {mt: 2} }>
                 {
                     hasEmptyItem ? 'Jede Zeile muss einen Wert enthalten. Befüllen Sie fehlende Werte oder entfernen Sie die entsprechenden Zeilen.' : (isValueEmpty ? 'Bitte fügen Sie mindestens einen Wert hinzu.' : hint)
                 }

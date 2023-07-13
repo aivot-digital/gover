@@ -96,6 +96,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 onChange={event => props.onPatch({
                     initiativeName: event.target.value,
                 })}
+                disabled={!props.editable}
             />
 
             <TextField
@@ -106,6 +107,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     initiativeLogoLink: event.target.value,
                 })}
                 helperText={'Link zu einer Grafik-Datei mit transparentem oder weißem Hintergrund.'}
+                disabled={!props.editable}
             />
 
             <TextField
@@ -116,6 +118,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 onChange={event => props.onPatch({
                     initiativeLink: event.target.value,
                 })}
+                disabled={!props.editable}
             />
 
             <Typography
@@ -135,6 +138,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 onChange={event => props.onPatch({
                     teaserText: event.target.value,
                 })}
+                disabled={!props.editable}
             />
 
             <FormGroup sx={{mt: 2}}>
@@ -145,6 +149,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     onChange={update => props.onPatch({
                         eligiblePersons: orderEligiblePersons(update),
                     })}
+                    disabled={!props.editable}
                 />
             </FormGroup>
 
@@ -162,6 +167,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                         });
                     }
                 }}
+                disabled={!props.editable}
             />
 
             <Typography
@@ -181,6 +187,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     supportingDocuments: supportingDocuments,
                 })}
                 allowEmpty={true}
+                disabled={!props.editable}
             />
 
             <StringListInput
@@ -193,6 +200,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     documentsToAttach: supportingDocuments,
                 })}
                 allowEmpty={true}
+                disabled={!props.editable}
             />
 
         </>

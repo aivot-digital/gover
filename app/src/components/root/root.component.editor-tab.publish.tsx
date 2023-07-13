@@ -23,19 +23,16 @@ import { isElementTested } from '../../utils/is-element-tested';
 import { hasUntestedChild } from '../../utils/has-untested-child';
 import { UserRole } from '../../data/user-role';
 import { AlertComponent } from '../alert/alert-component';
+import { updateAppModel } from '../../slices/app-slice';
 
-export function RootComponentEditorTabPublish({
-                                                  element,
-                                                  application,
-                                                  onPatchApplication,
-                                              }: BaseEditorProps<RootElement>): JSX.Element {
+export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
 
-    const isPublished = application?.status === ApplicationStatus.Published;
-    const isRevoked = application?.status === ApplicationStatus.Revoked;
+    const isPublished = props.application.status === ApplicationStatus.Published;
+    const isRevoked = props.application.status === ApplicationStatus.Revoked;
 
     const checklist: Array<{
         label: string;
@@ -43,50 +40,50 @@ export function RootComponentEditorTabPublish({
     }> = [
         {
             label: 'Fachlicher Support eingerichtet',
-            done: application.legalSupportDepartment != null,
+            done: props.application.legalSupportDepartment != null,
         },
         {
             label: 'Technischer Support eingerichtet',
-            done: application.technicalSupportDepartment != null,
+            done: props.application.technicalSupportDepartment != null,
         },
 
 
         {
             label: 'Impressum eingerichtet',
-            done: application.imprintDepartment != null,
+            done: props.application.imprintDepartment != null,
         },
         {
             label: 'Datenschutzerklärung eingerichtet',
-            done: application.privacyDepartment != null,
+            done: props.application.privacyDepartment != null,
         },
         {
             label: 'Barrierefreiheitserklärung eingerichtet',
-            done: application.accessibilityDepartment != null,
+            done: props.application.accessibilityDepartment != null,
         },
 
         {
             label: 'Zuständige und/oder bewirtschaftende Stelle eingerichtet',
-            done: application.responsibleDepartment != null || application?.managingDepartment != null,
+            done: props.application.responsibleDepartment != null || props.application.managingDepartment != null,
         },
 
         {
             label: 'Lösch- und Zugriffsfristen konfiguriert',
             done: (
-                application.submissionDeletionWeeks != null &&
-                application.submissionDeletionWeeks >= 0 &&
-                application.customerAccessHours != null &&
-                application.customerAccessHours > 0
+                props.application.submissionDeletionWeeks != null &&
+                props.application.submissionDeletionWeeks >= 0 &&
+                props.application.customerAccessHours != null &&
+                props.application.customerAccessHours > 0
             ),
         },
 
         {
             label: 'Das Formular wurde technisch und fachlich geprüft',
             done: (
-                isElementTested(element) &&
-                isElementTested(element.introductionStep) &&
-                isElementTested(element.summaryStep) &&
-                isElementTested(element.submitStep) &&
-                !hasUntestedChild(element)
+                isElementTested(props.element) &&
+                isElementTested(props.element.introductionStep) &&
+                isElementTested(props.element.summaryStep) &&
+                isElementTested(props.element.submitStep) &&
+                !hasUntestedChild(props.element)
             ),
         },
     ];
@@ -96,7 +93,7 @@ export function RootComponentEditorTabPublish({
         (user?.admin ?? false) ||
         (memberships ?? [])
             .some((mem) => (
-                    mem.department === application.developingDepartment &&
+                    mem.department === props.application.developingDepartment &&
                     (mem.role === UserRole.Admin || mem.role === UserRole.Publisher)
                 ),
             );
@@ -176,9 +173,10 @@ export function RootComponentEditorTabPublish({
                             }
                             color="warning"
                             onClick={ () => {
-                                onPatchApplication({
+                                dispatch(updateAppModel({
+                                    ...props.application,
                                     status: ApplicationStatus.Revoked,
-                                });
+                                }));
                             } }
                         >
                             Formular Zurückziehen
@@ -191,7 +189,9 @@ export function RootComponentEditorTabPublish({
                 isRevoked &&
                 <Alert
                     severity="warning"
-                    sx={ {mb: 2} }
+                    sx={ {
+                        mb: 2,
+                    } }
                 >
                     <AlertTitle>
                         Formular zurückgezogen
@@ -234,9 +234,10 @@ export function RootComponentEditorTabPublish({
                             <FontAwesomeIcon icon={ faPaperPlane }/>
                         }
                         onClick={ () => {
-                            onPatchApplication({
+                            dispatch(updateAppModel({
+                                ...props.application,
                                 status: ApplicationStatus.Published,
-                            });
+                            }));
                         } }
                     >
                         Formular Veröffentlichen

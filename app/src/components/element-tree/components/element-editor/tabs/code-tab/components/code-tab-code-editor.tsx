@@ -1,15 +1,20 @@
-import React, {useCallback, useRef} from "react";
-import {Box, Typography} from "@mui/material";
-import Editor from "@monaco-editor/react";
-import {Function} from "../../../../../../../models/functions/function";
-import {AlertComponent} from "../../../../../../alert/alert-component";
+import React, { useCallback, useRef } from 'react';
+import { Box, Typography } from '@mui/material';
+import Editor from '@monaco-editor/react';
+import { Function } from '../../../../../../../models/functions/function';
+import { AlertComponent } from '../../../../../../alert/alert-component';
 
 interface CodeTabCodeEditorProps {
     func: Function;
     onChange: (func: Function) => void;
+    editable: boolean;
 }
 
-export function CodeTabCodeEditor({func, onChange}: CodeTabCodeEditorProps) {
+export function CodeTabCodeEditor({
+                                      func,
+                                      onChange,
+                                      editable,
+                                  }: CodeTabCodeEditorProps) {
     const editorRef = useRef<any>();
 
     const handleEditorDidMount = useCallback((editor: any, _: any) => {
@@ -29,16 +34,17 @@ export function CodeTabCodeEditor({func, onChange}: CodeTabCodeEditorProps) {
                 Code bearbeiten
             </Typography>
 
-            <Box sx={{mt: 2}}>
+            <Box sx={ {mt: 2} }>
                 <Editor
                     height="calc(100vh - 768px)"
                     defaultLanguage="javascript"
-                    options={{
+                    options={ {
                         minimap: {
                             enabled: false,
                         },
-                    }}
-                    onMount={handleEditorDidMount}
+                        readOnly: !editable,
+                    } }
+                    onMount={ handleEditorDidMount }
                 />
             </Box>
 
