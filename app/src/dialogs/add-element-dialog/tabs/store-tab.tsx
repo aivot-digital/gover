@@ -1,10 +1,10 @@
-import React, {useEffect, useState} from "react";
-import {cloneElement} from "../../../utils/clone-element";
-import {GoverStoreService} from "../../../services/gover-store.service";
-import {BaseTabProps} from "./base-tab-props";
+import React, { useEffect, useState } from 'react';
+import { cloneElement } from '../../../utils/clone-element';
+import { GoverStoreService } from '../../../services/gover-store.service';
+import { type BaseTabProps } from './base-tab-props';
 import {
-    LoadingPlaceholderComponentView
-} from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
+    LoadingPlaceholderComponentView,
+} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
 import {
     Box,
     DialogContent,
@@ -16,40 +16,42 @@ import {
     ListItemText,
     Tooltip,
     Typography,
-    useTheme
-} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {AlertComponent} from "../../../components/alert/alert-component";
-import {Link} from "react-router-dom";
-import {useAppSelector} from "../../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../../data/system-config-keys";
-import {faCubes, faInfoCircle, faLock} from "@fortawesome/pro-light-svg-icons";
-import {TextFieldComponent} from "../../../components/text-field/text-field-component";
-import {StoreListModule} from "../../../models/entities/store-list-module";
+    useTheme,
+} from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { AlertComponent } from '../../../components/alert/alert-component';
+import { Link } from 'react-router-dom';
+import { useAppSelector } from '../../../hooks/use-app-selector';
+import { selectSystemConfigValue } from '../../../slices/system-config-slice';
+import { SystemConfigKeys } from '../../../data/system-config-keys';
+import { faCubes, faInfoCircle, faLock } from '@fortawesome/pro-light-svg-icons';
+import { TextFieldComponent } from '../../../components/text-field/text-field-component';
+import { type StoreListModule } from '../../../models/entities/store-list-module';
 
-export function StoreTab({parentType, onAddElement, showModuleId, hightlightedModuleId}: BaseTabProps & {
+export function StoreTab({ parentType, onAddElement, showModuleId, highlightedModuleId }: BaseTabProps & {
     showModuleId: (id: string) => void;
-    hightlightedModuleId?: string;
-}) {
+    highlightedModuleId?: string;
+}): JSX.Element {
     const theme = useTheme();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
     const [modules, setModules] = useState<StoreListModule[]>();
     const [search, setSearch] = useState<string>();
 
     useEffect(() => {
-        GoverStoreService.listModules(0, '', storeKey)
-            .then(res => {
+        GoverStoreService
+            .listModules(0, '', storeKey)
+            .then((res) => {
                 setModules(res.items);
             });
     }, [parentType, setModules]);
 
-    const addModuleElement = (module: StoreListModule) => {
-        GoverStoreService.fetchModuleCode(module.id, module.current_version, storeKey)
-            .then(group => {
+    const addModuleElement = (module: StoreListModule): void => {
+        GoverStoreService
+            .fetchModuleCode(module.id, module.current_version, storeKey)
+            .then((group) => {
                 onAddElement(cloneElement(group, true));
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error(err);
             });
     };
@@ -70,19 +72,20 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                 <Typography>
                     Sie können neue Bausteine für den Gover Store erstellen, in dem Sie bestehende Vorlagen im
                     Bereich <Link
-                    to="/presets"
-                    target="_blank"
-                >Vorlagen</Link> über die
+                        to="/presets"
+                        target="_blank"
+                    >Vorlagen</Link> über die
                     Schaltfläche <strong>Veröffentlichen</strong> in den Store transportieren.
                 </Typography>
 
-                <Typography sx={{mt: 2}}>
+                <Typography sx={ { mt: 2 } }>
                     Bitte beachten Sie, dass Sie für das Veröffentlichen von Bausteinen einen Gover Store Schlüssel
                     benötigen. Mehr dazu finden Sie
                     im <a
-                    href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
-                    target="_blank"
-                >Gover Store</a>.
+                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
+                        target="_blank"
+                        rel="noreferrer"
+                    >Gover Store</a>.
                 </Typography>
             </DialogContent>
         );
@@ -90,14 +93,14 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
         return (
             <>
                 <Box
-                    sx={{
+                    sx={ {
                         px: 4,
-                    }}
+                    } }
                 >
                     <TextFieldComponent
                         label="Suche"
-                        value={search}
-                        onChange={setSearch}
+                        value={ search }
+                        onChange={ setSearch }
                         placeholder="Suchen..."
                     />
                 </Box>
@@ -105,72 +108,78 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                 <List dense>
                     {
                         modules
-                            .filter(m => search == null || m.title.toLowerCase().includes(search.toLowerCase()))
-                            .map(module => (
+                            .filter((m) => search == null || m.title.toLowerCase().includes(search.toLowerCase()))
+                            .map((module) => (
                                 <ListItem
-                                    key={module.id}
+                                    key={ module.id }
                                     disablePadding
                                     secondaryAction={
                                         <Tooltip title="Mehr Informationen">
-                                            <IconButton onClick={() => showModuleId(module.id)}>
-                                                <FontAwesomeIcon icon={faInfoCircle}/>
+                                            <IconButton
+                                                onClick={ () => {
+                                                    showModuleId(module.id);
+                                                } }
+                                            >
+                                                <FontAwesomeIcon icon={ faInfoCircle }/>
                                             </IconButton>
                                         </Tooltip>
                                     }
                                 >
                                     <ListItemButton
-                                        onClick={() => addModuleElement(module)}
-                                        selected={hightlightedModuleId === module.id}
+                                        onClick={ () => {
+                                            addModuleElement(module);
+                                        } }
+                                        selected={ highlightedModuleId === module.id }
                                     >
-                                        <ListItemIcon sx={{pl: 1.5}}>
+                                        <ListItemIcon sx={ { pl: 1.5 } }>
                                             <FontAwesomeIcon
-                                                icon={faCubes}
+                                                icon={ faCubes }
                                             />
                                         </ListItemIcon>
                                         <ListItemText
                                             disableTypography
                                             primary={
-                                                <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                                <Box sx={ { display: 'flex', alignItems: 'center' } }>
                                                     {
                                                         !module.is_public &&
                                                         <Tooltip
                                                             title="Privater Baustein"
                                                         >
                                                             <FontAwesomeIcon
-                                                                icon={faLock}
-                                                                style={{marginRight: '0.5em'}}
+                                                                icon={ faLock }
+                                                                style={ { marginRight: '0.5em' } }
                                                             />
                                                         </Tooltip>
                                                     }
 
                                                     <Typography>
-                                                        {module.title}
+                                                        { module.title }
                                                     </Typography>
 
                                                     <Typography
                                                         variant="caption"
-                                                        sx={{ml: 1}}
+                                                        sx={ { ml: 1 } }
                                                     >
-                                                        {module.current_version}
+                                                        { module.current_version }
                                                     </Typography>
                                                 </Box>
                                             }
                                             secondary={
                                                 <Box>
                                                     <Typography
-                                                        sx={{display: 'inline', fontSize: '90%'}}
+                                                        sx={ { display: 'inline', fontSize: '90%' } }
                                                     >
-                                                        @{module.organization}
+                                                        @{ module.organization }
                                                     </Typography>
                                                     &nbsp;-&nbsp;
                                                     <Typography
-                                                        sx={{
+                                                        sx={ {
                                                             display: 'inline',
                                                             fontSize: '90%',
-                                                            color: theme.palette.grey["500"]
-                                                        }}
+                                                            color: theme.palette.grey['500'],
+                                                        } }
                                                     >
-                                                        {module.description_short}
+                                                        { module.description_short }
                                                     </Typography>
                                                 </Box>
                                             }

@@ -81,7 +81,7 @@ export function AddElementDialog({parentType, onAddElement, onClose}: AddElement
                                 parentType={parentType}
                                 onAddElement={onAddElement}
                                 showModuleId={setShowModuleId}
-                                hightlightedModuleId={showModuleId}
+                                highlightedModuleId={showModuleId}
                             />
                         }
                     </Box>
