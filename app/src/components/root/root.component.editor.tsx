@@ -4,21 +4,17 @@ import { type BaseEditorProps } from '../../editors/base-editor';
 import { type RootElement } from '../../models/elements/root-element';
 import { DepartmentsService } from '../../services/departments-service';
 import { SelectFieldComponent } from '../select-field/select-field-component';
-import { useAppSelector } from '../../hooks/use-app-selector';
-import { selectLoadedApplication, updateAppModel } from '../../slices/app-slice';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClipboard } from '@fortawesome/pro-light-svg-icons';
 import { useAppDispatch } from '../../hooks/use-app-dispatch';
-import { showSuccessSnackbar } from '../../slices/snackbar-slice';
+import { showErrorSnackbar, showSuccessSnackbar } from '../../slices/snackbar-slice';
 import { TextFieldComponent } from '../text-field/text-field-component';
-import { type Application } from '../../models/entities/application';
 import { type SelectFieldComponentOption } from '../select-field/select-field-component-option';
 import { ThemesService } from '../../services/themes-service';
 
-export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
+export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.Element {
     const dispatch = useAppDispatch();
     const theme = useTheme();
-    const app = useAppSelector(selectLoadedApplication);
 
     const [departments, setDepartments] = useState<SelectFieldComponentOption[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
@@ -30,7 +26,11 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 value: department.id.toString(),
                 label: department.name,
             })))
-            .then(setDepartments);
+            .then(setDepartments)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Fachbereiche!'));
+            });
 
         ThemesService
             .list()
@@ -38,27 +38,22 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 value: theme.id.toString(),
                 label: theme.name,
             })))
-            .then(setThemes);
+            .then(setThemes)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Farbschemata!'));
+            });
     }, []);
 
-    const patchApplication = (patch: Partial<Application>) => {
-        if (app == null) {
-            return;
-        }
-
-        dispatch(updateAppModel({
-            ...app,
-            ...patch,
-        }));
-    };
-
-    const link = `${ window.location.protocol }//${ window.location.host }/#/${ app?.slug }/${ app?.version }`;
+    const link = `${ window.location.protocol }//${ window.location.host }/#/${ props.application?.slug ?? '' }/${ props.application?.version ?? '' }`;
 
     return (
         <>
             <Typography
                 variant="h6"
-                sx={ { mt: 4 } }
+                sx={ {
+                    mt: 4,
+                } }
             >
                 Link des Formulars
             </Typography>
@@ -75,17 +70,28 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
                 <Typography>
                     <a
                         href={ link }
-                        target="_blank" rel="noreferrer"
+                        target="_blank"
+                        rel="noreferrer"
                     >{ link }</a>
                 </Typography>
 
                 <Tooltip title="In die Zwischenablage kopieren">
                     <IconButton
-                        sx={ { ml: 'auto' } }
+                        sx={ {
+                            ml: 'auto',
+                        } }
                         size="small"
                         onClick={ () => {
-                            navigator.clipboard.writeText(link);
-                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                            navigator
+                                .clipboard
+                                .writeText(link)
+                                .then(() => {
+                                    dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                })
+                                .catch((err) => {
+                                    console.error(err);
+                                    dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                });
                         } }
                     >
                         <FontAwesomeIcon icon={ faClipboard }/>
@@ -95,16 +101,18 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <Typography
                 variant="h6"
-                sx={ { mt: 4 } }
+                sx={ {
+                    mt: 4,
+                } }
             >
                 Zuständige Fachbereiche
             </Typography>
 
             <SelectFieldComponent
                 label="Entwickelnder Fachbereich"
-                value={ app?.developingDepartment?.toString() ?? undefined }
+                value={ props.application?.developingDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    patchApplication({
+                    props.onPatchApplication({
                         developingDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -114,9 +122,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <SelectFieldComponent
                 label="Zuständiger Fachbereich"
-                value={ app?.responsibleDepartment?.toString() ?? undefined }
+                value={ props.application?.responsibleDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    patchApplication({
+                    props.onPatchApplication({
                         responsibleDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -125,9 +133,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <SelectFieldComponent
                 label="Bewirtschaftender Fachbereich"
-                value={ app?.managingDepartment?.toString() ?? undefined }
+                value={ props.application?.managingDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    patchApplication({
+                    props.onPatchApplication({
                         managingDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -136,16 +144,18 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <Typography
                 variant="h6"
-                sx={ { mt: 4 } }
+                sx={ {
+                    mt: 4,
+                } }
             >
                 Farbschemata-Einstellung
             </Typography>
 
             <SelectFieldComponent
                 label="Farbschema (Visuelles Erscheinungsbild)"
-                value={ app?.theme?.toString() ?? undefined }
+                value={ props.application?.theme?.toString() ?? undefined }
                 onChange={ (val) => {
-                    patchApplication({
+                    props.onPatchApplication({
                         theme: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -154,7 +164,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <Typography
                 variant="h6"
-                sx={ { mt: 4 } }
+                sx={ {
+                    mt: 4,
+                } }
             >
                 Über dieses Formular
             </Typography>
@@ -190,7 +202,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <Typography
                 variant="h6"
-                sx={ { mt: 4 } }
+                sx={ {
+                    mt: 4,
+                } }
             >
                 Fristen
             </Typography>
@@ -208,7 +222,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <Typography
                 variant="h6"
-                sx={ { mt: 4 } }
+                sx={ {
+                    mt: 4,
+                } }
             >
                 Mindest-Vertrauensniveau
             </Typography>
@@ -229,16 +245,18 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <Typography
                 variant="h6"
-                sx={ { mt: 4 } }
+                sx={ {
+                    mt: 4,
+                } }
             >
                 Kontakte
             </Typography>
 
             <SelectFieldComponent
                 label="Fachlicher Support"
-                value={ app?.legalSupportDepartment?.toString() ?? undefined }
+                value={ props.application?.legalSupportDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    patchApplication({
+                    props.onPatchApplication({
                         legalSupportDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -247,9 +265,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>) {
 
             <SelectFieldComponent
                 label="Technischer Support"
-                value={ app?.technicalSupportDepartment?.toString() ?? undefined }
+                value={ props.application?.technicalSupportDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    patchApplication({
+                    props.onPatchApplication({
                         technicalSupportDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }

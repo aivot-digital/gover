@@ -9,23 +9,31 @@ import { selectUseTestMode } from '../../../../slices/admin-settings-slice';
 import { ElementEditorTabs } from './components/element-editor-tabs';
 import { ElementEditorContent } from './components/element-editor-content/element-editor-content';
 import { ElementEditorActions } from './components/element-editor-actions/element-editor-actions';
-import { ElementEditorProps } from './element-editor-props';
+import { type ElementEditorProps } from './element-editor-props';
 import { showErrorSnackbar, showSuccessSnackbar } from '../../../../slices/snackbar-slice';
-import { AnyElement } from '../../../../models/elements/any-element';
+import { type AnyElement } from '../../../../models/elements/any-element';
 import { ElementType } from '../../../../data/element-type/element-type';
 import ProjectPackage from '../../../../../package.json';
 import Editors from '../../../../editors';
+import { type Application } from '../../../../models/entities/application';
+import { selectLoadedApplication, updateAppModel } from '../../../../slices/app-slice';
 
-export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>): JSX.Element {
+export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>): JSX.Element | null {
     const dispatch = useAppDispatch();
 
     const testMode = useAppSelector(selectUseTestMode);
+    const application = useAppSelector(selectLoadedApplication);
 
     const [updatedElement, setUpdatedElement] = useState<T>();
+    const [updatedApplication, setUpdatedApplication] = useState<Application>();
     const [currentTab, setCurrentTab] = useState(testMode ? DefaultTabs.test : DefaultTabs.properties);
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
-    const handleSave = () => {
+    if (application == null) {
+        return null;
+    }
+
+    const handleSave = (): void => {
         if (updatedElement != null) {
             props.onSave({
                 ...updatedElement,
@@ -34,25 +42,39 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
         } else {
             props.onSave(props.element);
         }
+
+        if (updatedApplication != null) {
+            dispatch(updateAppModel(updatedApplication));
+        }
     };
 
-    const handleSetCurrentTab = (newTab: string) => {
+    const handleSetCurrentTab = (newTab: string): void => {
         setCurrentTab(newTab);
     };
 
-    const handleShowPresetDialog = () => {
+    const handleShowPresetDialog = (): void => {
         setShowCreatePresetDialog(true);
     };
 
-    const handleClosePresetDialog = () => {
+    const handleClosePresetDialog = (): void => {
         setShowCreatePresetDialog(false);
     };
 
-    const handleChange = (update: T) => {
-        setUpdatedElement(update);
+    const handleChange = (update: Partial<T>): void => {
+        setUpdatedElement({
+            ...props.element,
+            ...update,
+        });
     };
 
-    const handleSavePreset = (presetName: string) => {
+    const handleApplicationChange = (update: Partial<Application>): void => {
+        setUpdatedApplication({
+            ...(updatedApplication ?? application),
+            ...update,
+        });
+    };
+
+    const handleSavePreset = (presetName: string): void => {
         if (props.element.type === ElementType.Container) {
             PresetsService.create({
                 id: 0,
@@ -64,17 +86,17 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
                 updated: '',
             })
                 .then(() => {
-                    dispatch(showSuccessSnackbar('Preset Saved!'));
+                    dispatch(showSuccessSnackbar('Vorlage erfolgreich gespeichert'));
                 })
-                .catch(err => {
+                .catch((err) => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Failed to save preset...'));
+                    dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
                 });
         }
         handleClosePresetDialog();
     };
 
-    const handleClose = () => {
+    const handleClose = (): void => {
         if (updatedElement != null) {
             const conf = window.confirm('Sollen die Änderungen am Element wirklich verworfen werden?');
             if (conf) {
@@ -125,9 +147,11 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
                     <ElementEditorContent
                         parents={ props.parents }
                         element={ updatedElement ?? props.element }
+                        application={ updatedApplication ?? application }
                         currentTab={ currentTab }
                         additionalTabs={ additionalTabs }
                         onChange={ handleChange }
+                        onChangeApplication={ handleApplicationChange }
                     />
                 </Box>
 

@@ -1,14 +1,14 @@
 import Editor from '@monaco-editor/react';
-import {Box, Button, FormControlLabel, Switch} from '@mui/material';
-import React, {ChangeEvent, useCallback, useRef, useState} from 'react';
-import {faSave} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {StructureTabProps} from './structure-tab-props';
-import {AnyElement} from '../../../../../../models/elements/any-element';
-import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../../../../../slices/snackbar-slice';
+import { Box, Button, FormControlLabel, Switch } from '@mui/material';
+import React, { type ChangeEvent, useCallback, useRef, useState } from 'react';
+import { faSave } from '@fortawesome/pro-light-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { type StructureTabProps } from './structure-tab-props';
+import { type AnyElement } from '../../../../../../models/elements/any-element';
+import { useAppDispatch } from '../../../../../../hooks/use-app-dispatch';
+import { showErrorSnackbar } from '../../../../../../slices/snackbar-slice';
 
-export function StructureTab<T extends AnyElement>({elementModel, onChange}: StructureTabProps<T>) {
+export function StructureTab<T extends AnyElement>({ elementModel, onChange }: StructureTabProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const editorRef = useRef<any>();
@@ -50,7 +50,7 @@ export function StructureTab<T extends AnyElement>({elementModel, onChange}: Str
     };
 
     return (
-        <Box sx={{my: 4}}>
+        <Box sx={{ my: 4 }}>
             <Box sx={{
                 ml: 8,
                 mr: 2,
@@ -58,22 +58,22 @@ export function StructureTab<T extends AnyElement>({elementModel, onChange}: Str
                 display: 'flex',
                 justifyContent: 'space-between',
             }}>
-            <FormControlLabel
-                control={<Switch checked={editable} onChange={handleToggleEditable}/>}
-                label="Struktur manuell überschreiben"
-            />
-            <Button
-                startIcon={<FontAwesomeIcon
-                    icon={faSave}
-                    style={{marginTop: '-2px'}}
-                    fixedWidth
-                />}
-                disabled={!editable}
-                variant="outlined"
-                onClick={handleSaveChanges}
-            >
+                <FormControlLabel
+                    control={<Switch checked={editable} onChange={handleToggleEditable}/>}
+                    label="Struktur manuell überschreiben"
+                />
+                <Button
+                    startIcon={<FontAwesomeIcon
+                        icon={faSave}
+                        style={{ marginTop: '-2px' }}
+                        fixedWidth
+                    />}
+                    disabled={!editable}
+                    variant="outlined"
+                    onClick={handleSaveChanges}
+                >
                 Struktur anwenden
-            </Button>
+                </Button>
             </Box>
 
             <Editor

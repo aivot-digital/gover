@@ -4,18 +4,14 @@ import { type BaseEditorProps } from '../../editors/base-editor';
 import { type RootElement } from '../../models/elements/root-element';
 import { type Destination } from '../../models/entities/destination';
 import { DestinationsService } from '../../services/destinations-service';
-import { useAppSelector } from '../../hooks/use-app-selector';
-import { selectLoadedApplication, updateAppModel } from '../../slices/app-slice';
-import { type Application } from '../../models/entities/application';
 import { useAppDispatch } from '../../hooks/use-app-dispatch';
 import { SelectFieldComponent } from '../select-field/select-field-component';
 import { AlertComponent } from '../alert/alert-component';
-import { showErrorSnackbar } from "../../slices/snackbar-slice";
-import { DestinationType } from "../../data/destination-type/destination-type";
+import { showErrorSnackbar } from '../../slices/snackbar-slice';
+import { DestinationType } from '../../data/destination-type/destination-type';
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement>): JSX.Element {
     const dispatch = useAppDispatch();
-    const application = useAppSelector(selectLoadedApplication);
     const [destinations, setDestinations] = useState<Destination[]>();
 
     useEffect(() => {
@@ -27,17 +23,6 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 dispatch(showErrorSnackbar('Die Liste der Schnittstellen konnte nicht geladen werden.'));
             });
     }, []);
-
-    const handleApplicationPatch = (patch: Partial<Application>) => {
-        if (application == null) {
-            return;
-        }
-
-        dispatch(updateAppModel({
-            ...application,
-            ...patch,
-        }));
-    };
 
     return (
         <>
@@ -51,9 +36,9 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 destinations != null &&
                 <SelectFieldComponent
                     label="Auswahl der Schnittstelle"
-                    value={ application?.destination?.toString() ?? undefined }
+                    value={ props.application.destination?.toString() ?? undefined }
                     onChange={ (val) => {
-                        handleApplicationPatch({
+                        props.onPatchApplication({
                             destination: val != null ? parseInt(val) : undefined,
                         });
                     } }
@@ -65,7 +50,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
             }
 
             {
-                application?.destination == null &&
+                props.application.destination == null &&
                 <AlertComponent
                     title="Keine Schnittstelle ausgewählt"
                     color="info"
@@ -77,8 +62,8 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
             }
 
             {
-                application?.destination != null &&
-                destinations?.find((dest) => dest.id === application.destination)?.type === DestinationType.Mail &&
+                props.application.destination != null &&
+                destinations?.find((dest) => dest.id === props.application.destination)?.type === DestinationType.Mail &&
                 <AlertComponent
                     title="Hinweis zur E-Mail Schnittstelle"
                     color="warning"

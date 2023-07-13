@@ -4,66 +4,79 @@ import {
     AlertTitle,
     Button,
     Checkbox,
-    Dialog, Divider,
+    Divider,
     List,
     ListItem,
     ListItemText,
     Tooltip,
-    Typography
+    Typography,
 } from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faPaperPlane, faPauseCircle} from '@fortawesome/pro-light-svg-icons';
-import {BaseEditorProps} from "../../editors/base-editor";
-import {RootElement} from "../../models/elements/root-element";
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectUser} from "../../slices/user-slice";
-import {selectLoadedApplication, updateAppModel} from "../../slices/app-slice";
-import {ApplicationStatus} from "../../data/application-status/application-status";
-import {isElementTested} from "../../utils/is-element-tested";
-import {hasUntestedChild} from "../../utils/has-untested-child";
-import {checkUserRole} from "../../utils/check-user-role";
-import {UserRole} from "../../data/user-role";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPaperPlane, faPauseCircle } from '@fortawesome/pro-light-svg-icons';
+import { type BaseEditorProps } from '../../editors/base-editor';
+import { type RootElement } from '../../models/elements/root-element';
+import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import { useAppSelector } from '../../hooks/use-app-selector';
+import { selectMemberships, selectUser } from '../../slices/user-slice';
+import { ApplicationStatus } from '../../data/application-status/application-status';
+import { isElementTested } from '../../utils/is-element-tested';
+import { hasUntestedChild } from '../../utils/has-untested-child';
+import { UserRole } from '../../data/user-role';
+import { AlertComponent } from '../alert/alert-component';
 
-export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootElement>) {
+export function RootComponentEditorTabPublish({
+                                                  element,
+                                                  application,
+                                                  onPatchApplication,
+                                              }: BaseEditorProps<RootElement>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const user = useAppSelector(selectUser);
-    const application = useAppSelector(selectLoadedApplication);
+    const memberships = useAppSelector(selectMemberships);
 
     const isPublished = application?.status === ApplicationStatus.Published;
     const isRevoked = application?.status === ApplicationStatus.Revoked;
 
-    const checklist: {
+    const checklist: Array<{
         label: string;
         done: boolean;
-    }[] = [
+    }> = [
         {
             label: 'Fachlicher Support eingerichtet',
-            done: application?.legalSupportDepartment != null,
+            done: application.legalSupportDepartment != null,
         },
         {
             label: 'Technischer Support eingerichtet',
-            done: application?.technicalSupportDepartment != null,
+            done: application.technicalSupportDepartment != null,
         },
 
 
         {
             label: 'Impressum eingerichtet',
-            done: application?.imprintDepartment != null,
+            done: application.imprintDepartment != null,
         },
         {
             label: 'Datenschutzerklärung eingerichtet',
-            done: application?.privacyDepartment != null,
+            done: application.privacyDepartment != null,
         },
         {
             label: 'Barrierefreiheitserklärung eingerichtet',
-            done: application?.accessibilityDepartment != null,
+            done: application.accessibilityDepartment != null,
         },
 
         {
             label: 'Zuständige und/oder bewirtschaftende Stelle eingerichtet',
-            done: application?.responsibleDepartment != null || application?.managingDepartment != null,
+            done: application.responsibleDepartment != null || application?.managingDepartment != null,
+        },
+
+        {
+            label: 'Lösch- und Zugriffsfristen konfiguriert',
+            done: (
+                application.submissionDeletionWeeks != null &&
+                application.submissionDeletionWeeks >= 0 &&
+                application.customerAccessHours != null &&
+                application.customerAccessHours > 0
+            ),
         },
 
         {
@@ -78,7 +91,15 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
         },
     ];
 
-    const publishDisabled = isPublished || !checkUserRole(UserRole.Publisher, user) || checklist.some(item => !item.done);
+    const allChecksDone = checklist.every((item) => item.done);
+    const canPublish =
+        (user?.admin ?? false) ||
+        (memberships ?? [])
+            .some((mem) => (
+                    mem.department === application.developingDepartment &&
+                    (mem.role === UserRole.Admin || mem.role === UserRole.Publisher)
+                ),
+            );
 
     return (
         <>
@@ -94,19 +115,23 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                 Bevor ein Formular veröffentlicht werden kann, müssen die folgenden Punkte erfüllt sein.
             </Typography>
 
-            <List sx={{my: 2}}>
+            <List
+                sx={ {
+                    my: 2,
+                } }
+            >
                 {
-                    checklist.map(item => (
+                    checklist.map((item) => (
                         <ListItem
                             secondaryAction={
                                 <Checkbox
                                     edge="start"
-                                    checked={item.done}
+                                    checked={ item.done }
                                 />
                             }
                         >
                             <ListItemText
-                                primary={item.label}
+                                primary={ item.label }
                             />
                         </ListItem>
                     ))
@@ -117,20 +142,20 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                 isPublished &&
                 <>
                     <Alert
-                        severity='success'
+                        severity="success"
                     >
                         Formular Veröffentlicht
                     </Alert>
 
                     <Divider
-                        sx={{my: 8}}
+                        sx={ {my: 8} }
                     >
                         Formular zurückziehen
                     </Divider>
 
                     <Alert
-                        severity='warning'
-                        sx={{mb: 2}}
+                        severity="warning"
+                        sx={ {mb: 2} }
                     >
                         <AlertTitle>
                             Formular zurückziehen
@@ -147,17 +172,14 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
                         <Button
                             variant="outlined"
                             endIcon={
-                                <FontAwesomeIcon icon={faPauseCircle}/>
+                                <FontAwesomeIcon icon={ faPauseCircle }/>
                             }
                             color="warning"
-                            onClick={() => {
-                                if (application != null) {
-                                    dispatch(updateAppModel({
-                                        ...application,
-                                        status: ApplicationStatus.Revoked,
-                                    }));
-                                }
-                            }}
+                            onClick={ () => {
+                                onPatchApplication({
+                                    status: ApplicationStatus.Revoked,
+                                });
+                            } }
                         >
                             Formular Zurückziehen
                         </Button>
@@ -168,8 +190,8 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
             {
                 isRevoked &&
                 <Alert
-                    severity='warning'
-                    sx={{mb: 2}}
+                    severity="warning"
+                    sx={ {mb: 2} }
                 >
                     <AlertTitle>
                         Formular zurückgezogen
@@ -182,32 +204,43 @@ export function RootComponentEditorTabPublish({element}: BaseEditorProps<RootEle
 
             {
                 !isPublished &&
+                !allChecksDone &&
+                <AlertComponent color="info">
+                    Vor dem Veröffentlichen müssen alle Kriterien erfüllt sein und Sie müssen die notwendigen
+                    Berechtigungen haben.
+                </AlertComponent>
+            }
+
+            {
+                !isPublished &&
+                allChecksDone &&
+                !canPublish &&
+                <AlertComponent color="info">
+                    Sie verfügen nicht über die notwendigen Berechtigungen, um ein Formular in diesem Fachbereich zu
+                    veröffentlichen.
+                </AlertComponent>
+            }
+
+            {
+                !isPublished &&
+                allChecksDone &&
+                canPublish &&
                 <Tooltip
-                    title={
-                        publishDisabled ?
-                            'Vor dem Veröffentlichen müssen alle Kriterien erfüllt sein und Sie müssen die notwendigen Berechtigungen haben' :
-                            'Jetzt veröffentlichen'
-                    }
+                    title="Jetzt veröffentlichen"
                 >
-                <span>
                     <Button
                         variant="contained"
                         endIcon={
-                            <FontAwesomeIcon icon={faPaperPlane}/>
+                            <FontAwesomeIcon icon={ faPaperPlane }/>
                         }
-                        disabled={publishDisabled}
-                        onClick={() => {
-                            if (application != null) {
-                                dispatch(updateAppModel({
-                                    ...application,
-                                    status: ApplicationStatus.Published,
-                                }));
-                            }
-                        }}
+                        onClick={ () => {
+                            onPatchApplication({
+                                status: ApplicationStatus.Published,
+                            });
+                        } }
                     >
                         Formular Veröffentlichen
                     </Button>
-                </span>
                 </Tooltip>
             }
         </>

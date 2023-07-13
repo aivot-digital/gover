@@ -27,7 +27,7 @@ func main() {
 		}
 		deletionWeeks := application.SubmissionDeletionWeeks
 		if deletionWeeks == 0 {
-			deletionWeeks = 4
+			continue
 		}
 
 		expirationTimestamp := sub.Archived.Add(time.Hour * 24 * 7 * time.Duration(deletionWeeks))

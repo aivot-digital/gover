@@ -4,22 +4,24 @@ import { type AnyElement } from '../models/elements/any-element';
 import Editors from '../editors';
 import { type BaseEditorProps } from '../editors/base-editor';
 
-export function EditorDispatcher<T extends AnyElement>({ onPatch, props, additionalTabIndex }: EditorDispatcherProps<T>): null | JSX.Element {
-    const editorSet = Editors[props.type];
+export function EditorDispatcher<T extends AnyElement>(props: EditorDispatcherProps<T>): null | JSX.Element {
+    const editorSet = Editors[props.props.type];
     if (editorSet == null) {
         return null;
     }
 
     let Component = null;
-    if (additionalTabIndex != null && editorSet.additionalTabs != null && editorSet.additionalTabs.length > additionalTabIndex) {
-        Component = editorSet.additionalTabs[additionalTabIndex].editor;
+    if (props.additionalTabIndex != null && editorSet.additionalTabs != null && editorSet.additionalTabs.length > props.additionalTabIndex) {
+        Component = editorSet.additionalTabs[props.additionalTabIndex].editor;
     } else {
         Component = editorSet.default;
     }
 
     const editorProps: BaseEditorProps<T> = {
-        element: props,
-        onPatch,
+        element: props.props,
+        onPatch: props.onPatch,
+        application: props.application,
+        onPatchApplication: props.onPatchApplication,
     };
 
     return React.createElement(Component, editorProps);
