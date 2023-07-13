@@ -80,7 +80,7 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                     Bitte beachten Sie, dass Sie für das Veröffentlichen von Bausteinen einen Gover Store Schlüssel
                     benötigen. Mehr dazu finden Sie
                     im <a
-                    href="https://store.gover.digital/contribute"
+                    href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
                     target="_blank"
                 >Gover Store</a>.
                 </Typography>
