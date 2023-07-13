@@ -1,9 +1,8 @@
-import { Grid, Typography } from "@mui/material";
-import { BoxLink } from "../../../../components/box-link/box-link";
-import React, { useEffect, useState } from "react";
-import { ProviderLink } from "../../../../models/entities/provider-link";
-import { ApplicationService } from "../../../../services/application-service";
-import { ProviderLinksService } from "../../../../services/provider-links-service";
+import { Grid, Typography } from '@mui/material';
+import { BoxLink } from '../../../../components/box-link/box-link';
+import React, { useEffect, useState } from 'react';
+import { type ProviderLink } from '../../../../models/entities/provider-link';
+import { ProviderLinksService } from '../../../../services/provider-links-service';
 
 export function ProviderLinks(): JSX.Element {
     const [providerLinks, setProviderLinks] = useState<ProviderLink[]>();
@@ -21,28 +20,32 @@ export function ProviderLinks(): JSX.Element {
         <>
             <Typography
                 variant={ 'h5' }
-                sx={ {fontSize: '1.75rem'} }
+                sx={ {
+                    fontSize: '1.75rem',
+                } }
             >
                 Service und Unterstützung
             </Typography>
             <Grid
                 container
                 spacing={ 4 }
-                sx={ {mt: -2} }
+                sx={ {
+                    mt: -2,
+                } }
             >
                 <Grid
                     item
                     xs={ 12 }
                     md={ 6 }
                 >
-                    <BoxLink link="https://aivot.de/gover">
+                    <BoxLink link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch">
                         <span>Über Gover</span>
                         <br/>
                         Hilfen, Anleitungen und FAQs
                     </BoxLink>
                 </Grid>
                 {
-                    providerLinks?.map(({link, text}) => (
+                    providerLinks?.map(({ link, text }) => (
                         <Grid
                             key={ text }
                             item
