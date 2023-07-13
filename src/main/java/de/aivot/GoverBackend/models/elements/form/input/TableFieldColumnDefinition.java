@@ -15,7 +15,7 @@ public class TableFieldColumnDefinition {
 
     public TableFieldColumnDefinition(Map<String, Object> data) {
         label = MapUtils.getString(data, "label");
-        datatype = MapUtils.getEnum(data, "label", String.class, TableColumnDataType.values());
+        datatype = MapUtils.getEnum(data, "datatype", String.class, TableColumnDataType.values());
         placeholder = MapUtils.getString(data, "placeholder");
         decimalPlaces = MapUtils.getInteger(data, "decimalPlaces");
         optional = MapUtils.getBoolean(data, "optional");
