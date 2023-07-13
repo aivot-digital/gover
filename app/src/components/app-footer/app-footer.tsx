@@ -1,15 +1,15 @@
 import React from 'react';
-import {Box, Button, Container, SxProps, Typography, useTheme} from '@mui/material';
-import {AppFooterProps} from './app-footer-props';
-import {AppMode} from '../../data/app-mode';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faQuestionCircle} from '@fortawesome/pro-light-svg-icons';
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {MetaDialog, showMetaDialog} from "../../slices/app-slice";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
-import {AssetService} from "../../services/asset-service";
+import { Box, Button, Container, type SxProps, Typography, useTheme } from '@mui/material';
+import { type AppFooterProps } from './app-footer-props';
+import { AppMode } from '../../data/app-mode';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faQuestionCircle } from '@fortawesome/pro-light-svg-icons';
+import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import { MetaDialog, showMetaDialog } from '../../slices/app-slice';
+import { useAppSelector } from '../../hooks/use-app-selector';
+import { selectSystemConfigValue } from '../../slices/system-config-slice';
+import { SystemConfigKeys } from '../../data/system-config-keys';
+import { AssetService } from '../../services/asset-service';
 import { Logo } from '../static-components/logo/logo';
 
 const buttonStyle: SxProps = {
@@ -19,17 +19,16 @@ const buttonStyle: SxProps = {
     fontSize: '1.3125rem',
 };
 
-export function AppFooter({mode}: AppFooterProps) {
+export function AppFooter({mode}: AppFooterProps): JSX.Element {
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const logo = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.logo));
 
     return (
-        <Box sx={{boxShadow: 'inset 0px 10px 10px rgba(0, 0, 0, 0.12)'}}>
+        <Box sx={ {boxShadow: 'inset 0px 10px 10px rgba(0, 0, 0, 0.12)'} }>
             <Container>
                 <Box
-                    sx={{
+                    sx={ {
                         display: 'flex',
                         pt: 12,
                         pb: 15,
@@ -39,39 +38,39 @@ export function AppFooter({mode}: AppFooterProps) {
                             flexDirection: 'column',
                             alignItems: 'flex-start',
                         },
-                    }}
+                    } }
                 >
                     <Logo
-                        width={200}
-                        height={100}
+                        width={ 200 }
+                        height={ 100 }
                     />
 
                     <Box>
                         {
                             mode === AppMode.Customer &&
-                            <Box sx={{mb: 1}}>
+                            <Box sx={ {mb: 1} }>
                                 <Button
-                                    startIcon={<FontAwesomeIcon
-                                        style={{marginTop: '-6px'}}
-                                        icon={faQuestionCircle}
-                                    />}
-                                    sx={buttonStyle}
+                                    startIcon={ <FontAwesomeIcon
+                                        style={ {marginTop: '-6px'} }
+                                        icon={ faQuestionCircle }
+                                    /> }
+                                    sx={ buttonStyle }
                                     size="large"
-                                    onClick={() => dispatch(showMetaDialog(MetaDialog.Help))}
+                                    onClick={ () => dispatch(showMetaDialog(MetaDialog.Help)) }
                                 >
                                     Hilfe
                                 </Button>
                                 <Button
-                                    sx={buttonStyle}
+                                    sx={ buttonStyle }
                                     size="large"
-                                    onClick={() => dispatch(showMetaDialog(MetaDialog.Privacy))}
+                                    onClick={ () => dispatch(showMetaDialog(MetaDialog.Privacy)) }
                                 >
                                     Datenschutz
                                 </Button>
                                 <Button
-                                    sx={buttonStyle}
+                                    sx={ buttonStyle }
                                     size="large"
-                                    onClick={() => dispatch(showMetaDialog(MetaDialog.Imprint))}
+                                    onClick={ () => dispatch(showMetaDialog(MetaDialog.Imprint)) }
                                 >
                                     Impressum
                                 </Button>
@@ -79,24 +78,30 @@ export function AppFooter({mode}: AppFooterProps) {
                         }
                         <Box>
                             <Typography
-                                variant={'h6'}
+                                variant={ 'h6' }
                                 align="right"
-                                sx={{opacity: 0.5, mr: 1}}
+                                sx={ {opacity: 0.5, mr: 1} }
                             >
-                                {name}
+                                { name }
                             </Typography>
                         </Box>
                     </Box>
                 </Box>
             </Container>
-            <Box sx={{textAlign: 'center', backgroundColor: '#F2F2F2', p: 0.5}}>
+            <Box
+                sx={ {
+                    textAlign: 'center',
+                    backgroundColor: '#F2F2F2',
+                    p: 0.5,
+                } }
+            >
                 <Typography
                     variant="caption"
                     color="#444444"
                 >
                     {
                         mode === AppMode.Staff ?
-                            'Diese Anwendung wurde von Aivot gebaut - das Unternehmen für die digitale Transformation der Verwaltung' :
+                            'Diese Anwendung wurde von Aivot gebaut - dem Unternehmen für die digitale Transformation der Verwaltung' :
                             (
                                 mode === AppMode.Customer ?
                                     'Dieses Formular wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot' :
