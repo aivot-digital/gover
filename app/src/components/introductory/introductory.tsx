@@ -1,14 +1,14 @@
-import React, {useState} from 'react';
-import {Box, Container, Divider, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faArrowRight, faArrowUpLeft} from '@fortawesome/pro-solid-svg-icons';
-import {showNotImplementedMessage} from '../../utils/show-not-implemented-message';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {SystemConfigKeys} from '../../data/system-config-keys';
-import {faXmarkCircle} from '@fortawesome/pro-light-svg-icons';
-import {AppMode} from "../../data/app-mode";
-import {LocalStorageService} from "../../services/local-storage-service";
-import {LocalstorageKey} from "../../data/localstorage-key";
+import React, { useState } from 'react';
+import { Box, Container, Divider, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowRight, faArrowUpLeft } from '@fortawesome/pro-solid-svg-icons';
+import { showNotImplementedMessage } from '../../utils/show-not-implemented-message';
+import { useAppSelector } from '../../hooks/use-app-selector';
+import { SystemConfigKeys } from '../../data/system-config-keys';
+import { faXmarkCircle } from '@fortawesome/pro-light-svg-icons';
+import { AppMode } from '../../data/app-mode';
+import { LocalStorageService } from '../../services/local-storage-service';
+import { LocalstorageKey } from '../../data/localstorage-key';
 
 
 interface IntroductoryProps {
@@ -25,7 +25,7 @@ export function Introductory({mode}: IntroductoryProps) {
     const onDismiss = () => {
         setShow(false);
         LocalStorageService.storeFlag(LocalstorageKey.IntroDismissed, true);
-    }
+    };
 
     if (!show) {
         return null;
@@ -35,26 +35,31 @@ export function Introductory({mode}: IntroductoryProps) {
         <Container>
             <Box>
                 <Box
-                    sx={{
+                    sx={ {
                         position: 'relative',
                         px: 11,
                         py: 9,
                         mt: 5,
                         mb: 5,
                         backgroundColor: theme.palette.primary.dark,
-                    }}
+                    } }
                 >
                     {
                         mode === AppMode.Staff &&
-                        <Box sx={{position: 'absolute', right: theme.spacing(11)}}>
+                        <Box
+                            sx={ {
+                                position: 'absolute',
+                                right: theme.spacing(11),
+                            } }
+                        >
                             <Tooltip
                                 title="Blende diese Meldung aus"
                             >
                                 <IconButton
-                                    sx={{color: theme.palette.secondary.main}}
-                                    onClick={onDismiss}
+                                    sx={ {color: theme.palette.secondary.main} }
+                                    onClick={ onDismiss }
                                 >
-                                    <FontAwesomeIcon icon={faXmarkCircle}/>
+                                    <FontAwesomeIcon icon={ faXmarkCircle }/>
                                 </IconButton>
                             </Tooltip>
                         </Box>
@@ -63,23 +68,29 @@ export function Introductory({mode}: IntroductoryProps) {
                     <Box>
                         <Typography
                             variant="h2"
-                            fontSize={'1.75rem'}
-                            color={'white'}
+                            fontSize={ '1.75rem' }
+                            color={ 'white' }
                         >
                             Herzlich willkommen!
                         </Typography>
                         <Typography
                             variant="h2"
-                            fontSize={'2.5rem'}
-                            fontWeight={800}
-                            lineHeight={'2.625rem'}
-                            color={'white'}
-                            sx={{mt: 2}}
+                            fontSize={ '2.5rem' }
+                            fontWeight={ 800 }
+                            lineHeight={ '2.625rem' }
+                            color={ 'white' }
+                            sx={ {
+                                mt: 2,
+                            } }
                         >
-                            <span style={{color: theme.palette.secondary.main}}>
+                            <span
+                                style={ {
+                                    color: theme.palette.secondary.main,
+                                } }
+                            >
                                 Das neue Online-Antrags-Management
                             </span><br/>
-                            {systemConfig[SystemConfigKeys.provider.name]}
+                            { systemConfig[SystemConfigKeys.provider.name] }
                         </Typography>
 
                         {
@@ -87,20 +98,20 @@ export function Introductory({mode}: IntroductoryProps) {
                             <>
 
                                 <Divider
-                                    sx={{
+                                    sx={ {
                                         mt: 4,
                                         mb: 4,
                                         borderColor: 'var(--hw-secondary)',
-                                    }}
+                                    } }
                                 />
                                 <Typography
-                                    variant={'h4'}
-                                    fontSize={'1.125rem'}
-                                    lineHeight={'1.25rem'}
-                                    color={'white'}
-                                    fontWeight={'normal'}
-                                    onClick={showNotImplementedMessage}
-                                    sx={[
+                                    variant={ 'h4' }
+                                    fontSize={ '1.125rem' }
+                                    lineHeight={ '1.25rem' }
+                                    color={ 'white' }
+                                    fontWeight={ 'normal' }
+                                    onClick={ showNotImplementedMessage }
+                                    sx={ [
                                         {
                                             maxWidth: '480px',
                                             display: 'flex',
@@ -114,25 +125,28 @@ export function Introductory({mode}: IntroductoryProps) {
                                             '&:hover': {
                                                 color: 'var(--hw-secondary)',
                                             },
-                                        }]}
+                                        }] }
                                 >
                                     <FontAwesomeIcon
-                                        icon={faArrowRight}
+                                        icon={ faArrowRight }
                                         fixedWidth
-                                        size={'xs'}
-                                        style={{marginRight: '6px', flexShrink: 0}}
+                                        size={ 'xs' }
+                                        style={ {
+                                            marginRight: '6px',
+                                            flexShrink: 0,
+                                        } }
                                     />
                                     <span>Zur Benutzereinführung (inkl. Video-Kurs)</span>
                                 </Typography>
 
                                 <Typography
-                                    variant={'h4'}
-                                    fontSize={'1.125rem'}
-                                    lineHeight={'1.25rem'}
-                                    color={'white'}
-                                    fontWeight={'normal'}
-                                    onClick={showNotImplementedMessage}
-                                    sx={[
+                                    variant={ 'h4' }
+                                    fontSize={ '1.125rem' }
+                                    lineHeight={ '1.25rem' }
+                                    color={ 'white' }
+                                    fontWeight={ 'normal' }
+                                    onClick={ showNotImplementedMessage }
+                                    sx={ [
                                         {
                                             maxWidth: '480px',
                                             display: 'flex',
@@ -144,13 +158,16 @@ export function Introductory({mode}: IntroductoryProps) {
                                             '&:hover': {
                                                 color: 'var(--hw-secondary)',
                                             },
-                                        }]}
+                                        }] }
                                 >
                                     <FontAwesomeIcon
-                                        icon={faArrowUpLeft}
+                                        icon={ faArrowUpLeft }
                                         fixedWidth
-                                        size={'xs'}
-                                        style={{marginRight: '6px', flexShrink: 0}}
+                                        size={ 'xs' }
+                                        style={ {
+                                            marginRight: '6px',
+                                            flexShrink: 0,
+                                        } }
                                     />
                                     <span>Alles neu – was jetzt? Die neuen Arbeitsabläufe und Prozessschritte für Online-Formulare einfach erklärt</span>
                                 </Typography>

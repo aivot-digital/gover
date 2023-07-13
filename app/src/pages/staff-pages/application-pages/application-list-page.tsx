@@ -1,7 +1,7 @@
-import { Box, Container } from '@mui/material';
+import { Box, Button, Container, Paper, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { ApplicationService } from '../../../services/application-service';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     LoadingPlaceholderComponentView,
 } from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
@@ -30,13 +30,16 @@ import { type ListApplication } from '../../../models/entities/list-application'
 import { type ListApplicationGroup } from '../../../models/lib/list-application-group';
 import { compareVersions } from '../../../utils/version-utils';
 import { ApplicationListItemGroup } from '../../../components/application-list-item-group/application-list-item-group';
-import { selectMemberships } from '../../../slices/user-slice';
+import { selectMemberships, selectUser } from '../../../slices/user-slice';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
 import {
     DeleteApplicationDialog,
 } from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 import { ProviderLinks } from './components/provider-links';
+import { Department } from '../../../models/entities/department';
+import { DepartmentsService } from '../../../services/departments-service';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 function groupApplications(applications: ListApplication[]): ListApplicationGroup[] {
     const appMap = new Map<string, ListApplication[]>();
@@ -64,6 +67,7 @@ export function ApplicationListPage(): JSX.Element {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
+    const [departments, setDepartments] = useState<Department[]>();
     const [applications, setApplications] = useState<ListApplication[]>();
     const [search, setSearch] = useState<string>('');
 
@@ -75,6 +79,7 @@ export function ApplicationListPage(): JSX.Element {
     const [applicationToUpgrade, setApplicationToUpgrade] = useState<Application>();
     const [applicationToDelete, setApplicationToDelete] = useState<ListApplication>();
 
+    const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
@@ -85,9 +90,16 @@ export function ApplicationListPage(): JSX.Element {
             .catch((err) => {
                 console.error(err);
             });
+
+        DepartmentsService
+            .list()
+            .then(setDepartments)
+            .catch((err) => {
+                console.error(err);
+            });
     }, []);
 
-    const handleAdd = (application: Application, navigateToEditAfterwards: boolean) => {
+    const handleAdd = (application: Application, navigateToEditAfterwards: boolean): void => {
         if (applications != null) {
             ApplicationService
                 .create(application)
@@ -112,13 +124,13 @@ export function ApplicationListPage(): JSX.Element {
         }
     };
 
-    const handleApplicationClone = (appToClone: ListApplication) => {
+    const handleApplicationClone = (appToClone: ListApplication): void => {
         ApplicationService
             .retrieve(appToClone.id)
             .then(setApplicationToClone);
     };
 
-    const handleApplicationNewVersion = (appToClone: ListApplication) => {
+    const handleApplicationNewVersion = (appToClone: ListApplication): void => {
         ApplicationService
             .retrieve(appToClone.id)
             .then(setApplicationToUpgrade);
@@ -152,78 +164,167 @@ export function ApplicationListPage(): JSX.Element {
                 mode={ AppMode.Staff }
             />
 
-            <Box sx={ {backgroundColor: '#F3F3F3'} }>
-                <Container sx={ {mb: 5, py: 4} }>
-                    <Box
-                        sx={ {
-                            mt: 3,
-                            mb: 6,
-                        } }
-                    >
-                        <ListHeader
-                            title="Ihre Online-Formulare"
-                            search={ search }
-                            onSearchChange={ setSearch }
-                            searchPlaceholder="Formular suchen..."
-                            actions={ [
-                                {
-                                    label: 'Neues Formular',
-                                    icon: faPlus,
-                                    onClick: () => {
-                                        setShowAddApplicationDialog(true);
-                                    },
-                                },
-                                {
-                                    tooltip: 'Formular importieren',
-                                    icon: faCloudUpload,
-                                    onClick: () => {
-                                        setShowImportApplicationDialog(true);
-                                    },
-                                },
-                            ] }
-                        />
-                    </Box>
-                    <Box sx={ {mt: 3, mb: 5} }>
-                        {
-                            applications.length === 0 &&
-                            <EmptyDataListPlaceholder
-                                helperText="Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!"
-                                addText="Neues Formular"
-                                onAdd={ () => {
-                                    setShowAddApplicationDialog(true);
+            <Box
+                sx={ {
+                    backgroundColor: '#F3F3F3',
+                    minHeight: '60vh',
+                } }
+            >
+                <Container
+                    sx={ {
+                        mb: 5,
+                        py: 4,
+                    } }
+                >
+                    {
+                        (user?.admin ?? false) &&
+                        (departments ?? []).length === 0 &&
+                        <Paper
+                            sx={ {
+                                p: 4,
+                                mt: 4,
+                            } }
+                        >
+                            <Typography
+                                variant="h5"
+                                component="h2"
+                            >
+                                Noch kein Fachbereich angelegt
+                            </Typography>
+                            <Typography>
+                                Legen Sie einen Fachbereich an. Erst dann sind Sie in der Lage, Online-Formulare zu
+                                erstellen.
+                            </Typography>
+
+                            <Box
+                                sx={ {
+                                    mt: 2,
                                 } }
-                            />
-                        }
-                        {
-                            applications.length > 0 &&
-                            filteredApplications.length === 0 &&
-                            <EmptySearchDataListPlaceholder
-                                helperText="Es gibt keine Formulare, die Ihrer Suche entsprechen..."
-                            />
-                        }
-                        {
-                            groupedApplications.length > 0 &&
-                            <Box>
+                            >
+                                <Button
+                                    variant="outlined"
+                                    component={ Link }
+                                    to="/departments/new"
+                                    startIcon={
+                                        <FontAwesomeIcon icon={ faPlus }/>
+                                    }
+                                >
+                                    Fachbereich anlegen
+                                </Button>
+                            </Box>
+                        </Paper>
+                    }
+
+                    {
+                        !(user?.admin ?? false) &&
+                        (memberships ?? []).length === 0 &&
+                        <Paper
+                            sx={ {
+                                p: 4,
+                                mt: 4,
+                            } }
+                        >
+                            <Typography
+                                variant="h5"
+                                component="h2"
+                            >
+                                Noch keinem Fachbereich zugeordnet
+                            </Typography>
+                            <Typography>
+                                Ein Administrator muss Sie noch einem Fachbereich zuordnen und Ihnen eine Rolle geben.
+                                Erst dann können Sie hier loslegen.
+                            </Typography>
+                        </Paper>
+                    }
+
+                    {
+                        (departments ?? []).length > 0 &&
+                        (
+                            (user?.admin ?? false) || (memberships ?? []).length > 0
+                        ) &&
+                        <>
+                            <Box
+                                sx={ {
+                                    mt: 3,
+                                    mb: 6,
+                                } }
+                            >
+                                <ListHeader
+                                    title="Ihre Online-Formulare"
+                                    search={ search }
+                                    onSearchChange={ setSearch }
+                                    searchPlaceholder="Formular suchen..."
+                                    actions={ [
+                                        {
+                                            label: 'Neues Formular',
+                                            icon: faPlus,
+                                            onClick: () => {
+                                                setShowAddApplicationDialog(true);
+                                            },
+                                        },
+                                        {
+                                            tooltip: 'Formular importieren',
+                                            icon: faCloudUpload,
+                                            onClick: () => {
+                                                setShowImportApplicationDialog(true);
+                                            },
+                                        },
+                                    ] }
+                                />
+                            </Box>
+                            <Box
+                                sx={ {
+                                    mt: 3,
+                                    mb: 5,
+                                } }
+                            >
                                 {
-                                    groupedApplications
-                                        .map((group) => (
-                                            <ApplicationListItemGroup
-                                                key={ group.slug }
-                                                group={ group }
-                                                onClone={ handleApplicationClone }
-                                                onDelete={ setApplicationToDelete }
-                                                onNewVersion={ handleApplicationNewVersion }
-                                                memberships={ memberships }
-                                            />
-                                        ))
+                                    applications.length === 0 &&
+                                    <EmptyDataListPlaceholder
+                                        helperText="Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!"
+                                        addText="Neues Formular"
+                                        onAdd={ () => {
+                                            setShowAddApplicationDialog(true);
+                                        } }
+                                    />
+                                }
+                                {
+                                    applications.length > 0 &&
+                                    filteredApplications.length === 0 &&
+                                    <EmptySearchDataListPlaceholder
+                                        helperText="Es gibt keine Formulare, die Ihrer Suche entsprechen..."
+                                    />
+                                }
+                                {
+                                    groupedApplications.length > 0 &&
+                                    <Box>
+                                        {
+                                            groupedApplications
+                                                .map((group) => (
+                                                    <ApplicationListItemGroup
+                                                        key={ group.slug }
+                                                        group={ group }
+                                                        onClone={ handleApplicationClone }
+                                                        onDelete={ setApplicationToDelete }
+                                                        onNewVersion={ handleApplicationNewVersion }
+                                                        memberships={ memberships }
+                                                    />
+                                                ))
+                                        }
+                                    </Box>
                                 }
                             </Box>
-                        }
-                    </Box>
+                        </>
+                    }
                 </Container>
             </Box>
 
-            <Container sx={ {mt: 10, mb: 12} }>
+            <Container
+                sx={ {
+                    mt: 10,
+                    mb: 12,
+                } }
+            >
                 <ProviderLinks/>
             </Container>
 
