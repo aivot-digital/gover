@@ -363,47 +363,18 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                     />
 
                     <Typography
-                        variant="h6"
                         sx={ {
                             mt: 2,
-                            textDecoration: selectedUserRole === UserRole.Editor ? 'underline' : undefined,
                         } }
                     >
-                        Rolle: Bearbeiter
-                    </Typography>
-                    <Typography>
-                        Bearbeiter können Formulare anlegen und bearbeiten. Außerdem können Bearbeiter eingegangene
-                        Anträge einsehen,
-                        bearbeiten und archivieren.
-                    </Typography>
-
-                    <Typography
-                        variant="h6"
-                        sx={ {
-                            mt: 2,
-                            textDecoration: selectedUserRole === UserRole.Publisher ? 'underline' : undefined,
-                        } }
-                    >
-                        Rolle: Veröffentlicher
-                    </Typography>
-                    <Typography>
-                        Veröffentlicher können Formulare anlegen, bearbeiten, eingegangene Anträge einsehen,
-                        bearbeiten
-                        und archivieren, sowie Formulare veröffentlichen.
-                    </Typography>
-
-                    <Typography
-                        variant="h6"
-                        sx={ {
-                            mt: 2,
-                            textDecoration: selectedUserRole === UserRole.Admin ? 'underline' : undefined,
-                        } }
-                    >
-                        Rolle: Administrator
-                    </Typography>
-                    <Typography>
-                        Administratoren können Formulare bearbeiten, eingegangene Anträge einsehen, bearbeiten
-                        und archivieren, Anträge veröffentlichen und die Informationen eines Fachbereichs bearbeiten.
+                        Mehr Informationen zu den Rollen finden Sie
+                        im <a
+                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/rollenkonzept"
+                        target="_blank"
+                    >Rollenkonzept</a> des <a
+                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch"
+                        target="_blank"
+                    >Benutzerhandbuchs</a>.
                     </Typography>
                 </DialogContent>
                 <DialogActions>

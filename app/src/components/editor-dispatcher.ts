@@ -1,11 +1,11 @@
 import React from 'react';
-import {EditorDispatcherProps} from './editor-dispatcher-props';
-import {AnyElement} from '../models/elements/any-element';
-import Editors from "../editors";
-import {BaseEditorProps} from "../editors/base-editor";
+import { type EditorDispatcherProps } from './editor-dispatcher-props';
+import { type AnyElement } from '../models/elements/any-element';
+import Editors from '../editors';
+import { type BaseEditorProps } from '../editors/base-editor';
 
-export function EditorDispatcher<T extends AnyElement>({onPatch, props, additionalTabIndex}: EditorDispatcherProps<T>) {
-    let editorSet = Editors[props.type];
+export function EditorDispatcher<T extends AnyElement>({ onPatch, props, additionalTabIndex }: EditorDispatcherProps<T>) {
+    const editorSet = Editors[props.type];
     if (editorSet == null) {
         return null;
     }
@@ -20,7 +20,7 @@ export function EditorDispatcher<T extends AnyElement>({onPatch, props, addition
     const editorProps: BaseEditorProps<T> = {
         element: props,
         onPatch,
-    }
+    };
 
     return React.createElement(Component, editorProps);
 }

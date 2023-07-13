@@ -1,4 +1,4 @@
-import {AnyElement} from '../models/elements/any-element';
+import { type AnyElement } from '../models/elements/any-element';
 
 export interface EditorDispatcherProps<T extends AnyElement> {
     props: T;

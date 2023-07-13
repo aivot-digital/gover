@@ -139,7 +139,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                                     <IconButton
                                         color="primary"
                                         component={mode === AppMode.Staff ? 'a' : 'button'}
-                                        href={mode === AppMode.Staff ? 'https://aivot.de/gover' : undefined}
+                                        href={mode === AppMode.Staff ? 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' : undefined}
                                         target={mode === AppMode.Staff ? '_blank' : undefined}
                                         onClick={mode === AppMode.Staff ? undefined : () => {
                                             dispatch(showMetaDialog(MetaDialog.Help))
@@ -156,7 +156,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                             {
                                 mode !== AppMode.CustomerDisplay &&
                                 <Tooltip
-                                    title="Eistellungen"
+                                    title="Einstellungen"
                                 >
                                     <IconButton
                                         color="primary"
