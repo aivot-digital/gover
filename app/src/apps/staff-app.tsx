@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { logout, refreshMemberships, refreshUser, selectUser } from '../slices/user-slice';
-import { fetchSystemConfig } from '../slices/system-config-slice';
-import { Alert, Backdrop, CircularProgress, Snackbar, ThemeProvider, Typography } from '@mui/material';
-import { createDefaultAppTheme } from '../theming/themes';
+import { fetchSystemConfig, selectSystemConfigValue } from '../slices/system-config-slice';
+import {
+    Alert,
+    Backdrop,
+    CircularProgress,
+    Snackbar,
+    type Theme as MuiTheme,
+    ThemeProvider,
+    Typography,
+} from '@mui/material';
+import { createAppTheme, createDefaultAppTheme } from '../theming/themes';
 import { useAppDispatch } from '../hooks/use-app-dispatch';
 import { useAppSelector } from '../hooks/use-app-selector';
 import { resetSnackbar } from '../slices/snackbar-slice';
@@ -11,6 +19,10 @@ import { InfoDialog } from '../dialogs/info-dialog/info-dialog';
 import { isAnonymousUser, isInvalidUser } from '../models/entities/user';
 import { staffAppRoutes } from './staff-app-routes';
 import { Login } from '../pages/staff-pages/login/login';
+import { SystemConfigKeys } from '../data/system-config-keys';
+import { type Theme } from '../models/entities/theme';
+import { isStringNotNullOrEmpty } from '../utils/string-utils';
+import { ThemesService } from '../services/themes-service';
 
 const router = createBrowserRouter(
     Object.keys(staffAppRoutes).map((key) => staffAppRoutes[key]),
@@ -21,7 +33,9 @@ function StaffApp(): JSX.Element {
 
     const snackbar = useAppSelector((state) => state.snackbar);
     const user = useAppSelector(selectUser);
+    const themeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
+    const [theme, setTheme] = useState<Theme>();
     const [showTimeout, setShowTimeout] = useState(false);
 
     useEffect(() => {
@@ -50,6 +64,15 @@ function StaffApp(): JSX.Element {
         };
     }, [dispatch]);
 
+    useEffect(() => {
+        if (themeId != null && isStringNotNullOrEmpty(themeId)) {
+            ThemesService
+                .retrieve(parseInt(themeId))
+                .then(setTheme);
+        } else {
+            setTheme(undefined);
+        }
+    }, [themeId]);
 
     useEffect(() => {
         if (user == null) {
@@ -104,7 +127,7 @@ function StaffApp(): JSX.Element {
     }
 
     return (
-        <ThemeProvider theme={ createDefaultAppTheme }>
+        <ThemeProvider theme={ (baseTheme: MuiTheme) => createAppTheme(theme, baseTheme) }>
             <RouterProvider router={ router }/>
 
             <Snackbar

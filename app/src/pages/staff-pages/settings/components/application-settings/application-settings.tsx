@@ -1,5 +1,5 @@
 import { Box, Button, Typography } from '@mui/material';
-import React, { type FormEvent, useState } from 'react';
+import React, { type FormEvent, useEffect, useState } from 'react';
 import { fetchSystemConfig, selectSystemConfig, type SystemConfigMap } from '../../../../../slices/system-config-slice';
 import { SystemConfigsService } from '../../../../../services/system-configs-service';
 import { useAppSelector } from '../../../../../hooks/use-app-selector';
@@ -8,6 +8,9 @@ import { TextFieldComponent } from '../../../../../components/text-field/text-fi
 import { SystemConfigKeys, SystemConfigPublic } from '../../../../../data/system-config-keys';
 import { showErrorSnackbar } from '../../../../../slices/snackbar-slice';
 import { shallowEquals } from '../../../../../utils/equality-utils';
+import { SelectFieldComponent } from '../../../../../components/select-field/select-field-component';
+import { type SelectFieldComponentOption } from '../../../../../components/select-field/select-field-component-option';
+import { ThemesService } from '../../../../../services/themes-service';
 
 export function ApplicationSettings(): JSX.Element {
     const dispatch = useAppDispatch();
@@ -15,7 +18,23 @@ export function ApplicationSettings(): JSX.Element {
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
 
+    const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
+
     const hasChanged = editedConfig != null && !shallowEquals(config, editedConfig);
+
+    useEffect(() => {
+        ThemesService.list()
+            .then((themes) => {
+                setThemes(themes.map((theme) => ({
+                    value: theme.id.toString(),
+                    label: theme.name,
+                })));
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
+            });
+    });
 
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
@@ -67,27 +86,29 @@ export function ApplicationSettings(): JSX.Element {
             />
 
             {
-                /* Auskommentiert bis globales Theming wieder einzu hält
-            <Typography
-                variant="subtitle1"
-                sx={{ mt: 2 }}
-            >
-                Über die Gover-Instanz
-            </Typography>
+                themes.length > 0 &&
+                <>
+                    <Typography
+                        variant="subtitle1"
+                        sx={ {
+                            mt: 2,
+                        } }
+                    >
+                        Farbschemata der Gover-Instanz
+                    </Typography>
 
-            <SelectFieldComponent
-                label="Standard-Theme"
-                options={Themes.map((label) => ({ value: label, label }))}
-                value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
-                onChange={(val) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.system.theme]: val ?? '',
-                    });
-                }}
-                required
-            />
-                 */
+                    <SelectFieldComponent
+                        label="Standard-Theme"
+                        options={ themes }
+                        value={ editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme] }
+                        onChange={ (val) => {
+                            setEditedConfig({
+                                ...editedConfig,
+                                [SystemConfigKeys.system.theme]: val ?? '',
+                            });
+                        } }
+                    />
+                </>
             }
 
             <Typography
