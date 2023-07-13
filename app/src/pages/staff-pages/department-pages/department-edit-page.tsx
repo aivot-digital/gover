@@ -82,7 +82,7 @@ export function DepartmentEditPage(): JSX.Element {
                     .create(department)
                     .then((createdDepartment) => {
                         dispatch(showSuccessSnackbar('Fachbereich erfolgreich erstellt!'));
-                        navigate(`/departments/${ createdDepartment.id }`);
+                        navigate(`/departments/${ createdDepartment.id }`, { replace: true });
                     })
                     .catch((err) => {
                         console.error(err);
