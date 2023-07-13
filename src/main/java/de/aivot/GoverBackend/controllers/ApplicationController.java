@@ -284,54 +284,72 @@ public class ApplicationController {
                 destinationRepository
                         .findById(updatedApp.getDestination())
                         .ifPresent(existingApp::setDestination);
+            } else {
+                existingApp.setDestination(null);
             }
 
             if (updatedApp.getLegalSupportDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getLegalSupportDepartment())
                         .ifPresent(existingApp::setLegalSupportDepartment);
+            } else {
+                existingApp.setLegalSupportDepartment(null);
             }
 
             if (updatedApp.getTechnicalSupportDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getTechnicalSupportDepartment())
                         .ifPresent(existingApp::setTechnicalSupportDepartment);
+            } else {
+                existingApp.setTechnicalSupportDepartment(null);
             }
 
             if (updatedApp.getImprintDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getImprintDepartment())
                         .ifPresent(existingApp::setImprintDepartment);
+            } else {
+                existingApp.setImprintDepartment(null);
             }
 
             if (updatedApp.getPrivacyDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getPrivacyDepartment())
                         .ifPresent(existingApp::setPrivacyDepartment);
+            } else {
+                existingApp.setPrivacyDepartment(null);
             }
 
             if (updatedApp.getAccessibilityDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getAccessibilityDepartment())
                         .ifPresent(existingApp::setAccessibilityDepartment);
+            } else {
+                existingApp.setAccessibilityDepartment(null);
             }
 
             if (updatedApp.getManagingDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getManagingDepartment())
                         .ifPresent(existingApp::setManagingDepartment);
+            } else {
+                existingApp.setManagingDepartment(null);
             }
 
             if (updatedApp.getResponsibleDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getResponsibleDepartment())
                         .ifPresent(existingApp::setResponsibleDepartment);
+            } else {
+                existingApp.setResponsibleDepartment(null);
             }
 
             if (updatedApp.getTheme() != null) {
                 themeRepository
                         .findById(updatedApp.getTheme())
                         .ifPresent(existingApp::setTheme);
+            } else {
+                existingApp.setTheme(null);
             }
         }
 
