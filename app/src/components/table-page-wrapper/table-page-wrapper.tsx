@@ -4,6 +4,7 @@ import { PageWrapper } from '../page-wrapper/page-wrapper';
 import { DataGrid, type GridValidRowModel } from '@mui/x-data-grid';
 import { ListHeader } from '../list-header/list-header';
 import { Box } from '@mui/material';
+import { isStringNotNullOrEmpty } from '../../utils/string-utils';
 
 export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithChildren<TablePageWrapperProps<T>>): JSX.Element {
     const {
@@ -56,6 +57,25 @@ export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithCh
                     disableSelectionOnClick={ true }
                     disableColumnFilter={ true }
                     disableColumnMenu={ true }
+                    components={ {
+                        NoRowsOverlay: () => (
+                            <Box
+                                sx={ {
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                } }
+                            >
+                                {
+                                    isStringNotNullOrEmpty(search) ?
+                                        'Ihre Suche ergab keine Treffer' :
+                                        'Keine Einträge vorhanden'
+                                }
+                            </Box>
+                        ),
+                    } }
                 />
             </Box>
         </PageWrapper>
