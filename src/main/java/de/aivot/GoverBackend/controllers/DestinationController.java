@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.controllers;
 
+import de.aivot.GoverBackend.models.dtos.ApplicationListDto;
 import de.aivot.GoverBackend.models.entities.Destination;
 import de.aivot.GoverBackend.permissions.IsAdmin;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
@@ -43,6 +44,15 @@ public class DestinationController {
         return repository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/api/destinations/{id}/applications")
+    public Collection<ApplicationListDto> retrieveApplications(@PathVariable Integer id) {
+        return applicationRepository
+                .findAllByDestinationId(id)
+                .stream()
+                .map(ApplicationListDto::new)
+                .toList();
     }
 
     @IsAdmin

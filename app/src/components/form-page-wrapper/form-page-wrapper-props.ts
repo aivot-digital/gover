@@ -5,4 +5,9 @@ export interface FormPageWrapperProps extends PageWrapperProps {
     onSave: () => void;
     onReset?: () => void;
     onDelete?: () => void;
+
+    tabs?: Array<{
+        label: string;
+        content: JSX.Element;
+    }>;
 }
