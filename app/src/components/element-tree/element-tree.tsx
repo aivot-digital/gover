@@ -28,6 +28,7 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
     const [showSearch, setShowSearch] = useState(false);
 
     const treeElementSearch = useAppSelector(selectTreeElementSearch);
+
     const handleAddElement = (element: AnyElement): void => {
         props.onPatch({
             children: [

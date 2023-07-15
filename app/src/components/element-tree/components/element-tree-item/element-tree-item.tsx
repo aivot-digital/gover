@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { useDrag } from 'react-dnd';
 import { Box } from '@mui/material';
 import { setExpandElementTree, setIsDraggingTreeElement } from '../../../../slices/admin-settings-slice';
@@ -8,7 +8,7 @@ import { ElementTreeItemList } from '../element-tree-item-list/element-tree-item
 import { ElementEditor } from '../element-editor/element-editor';
 import { type ElementTreeItemProps } from './element-tree-item-props';
 import {
-    AnyElementWithChildren,
+    type AnyElementWithChildren,
     isAnyElementWithChildren,
 } from '../../../../models/elements/any-element-with-children';
 import { type AnyElement } from '../../../../models/elements/any-element';
@@ -24,27 +24,22 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     const dispatch = useAppDispatch();
     const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
 
-    const [expanded, toggleExpanded] = useReducer<(f: boolean) => boolean>((p) => !p, false);
+    const [expanded, setExpanded] = useState(false);
     const [showEditor, toggleShowEditor] = useReducer<(f: boolean) => boolean>((p) => !p, false);
     const [showAddDialog, toggleShowAddDialog] = useReducer<(f: boolean) => boolean>((p) => !p, false);
 
     const isLayoutElement = isAnyElementWithChildren(props.element);
 
     useEffect(() => {
-        if (expandStatus === 'expanded' && !expanded) {
-            toggleExpanded();
-        } else if (expandStatus === 'collapsed' && expanded) {
-            toggleExpanded();
+        if (isLayoutElement) {
+            console.log(props.element, expandStatus);
+            if (expandStatus === 'expanded') {
+                setExpanded(true);
+            } else if (expandStatus === 'collapsed') {
+                setExpanded(false);
+            }
         }
     }, [expandStatus]);
-
-    useEffect(() => {
-        if (expanded && expandStatus === 'collapsed') {
-            dispatch(setExpandElementTree(undefined));
-        } else if (!expanded && expandStatus === 'expanded') {
-            dispatch(setExpandElementTree(undefined));
-        }
-    }, [expanded]);
 
     const [{isDragging}, drag] = useDrag(() => ({
         item: props.element,
@@ -78,7 +73,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             } as any);
             toggleShowAddDialog();
             if (!expanded) {
-                toggleExpanded();
+                setExpanded(true);
             }
         }
     };
@@ -115,7 +110,14 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         >
             <ElementTreeItemTitle
                 isExpanded={ expanded }
-                onToggleExpanded={ isLayoutElement ? toggleExpanded : undefined }
+                onToggleExpanded={
+                    isLayoutElement ?
+                        () => {
+                            dispatch(setExpandElementTree(undefined));
+                            setExpanded(!expanded);
+                        } :
+                        undefined
+                }
                 element={ props.element }
                 onShowAddDialog={ isLayoutElement ? toggleShowAddDialog : undefined }
                 onSelect={ toggleShowEditor }

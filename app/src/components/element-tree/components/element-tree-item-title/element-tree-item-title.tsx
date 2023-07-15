@@ -5,11 +5,13 @@ import {
     faBinaryCircleCheck,
     faChevronDown,
     faChevronRight,
+    faCircleBolt,
     faCircleF,
     faDiamondExclamation,
     faListCheck,
     faMemoCircleCheck,
-    faPlusCircle, faQuestionCircle, faCircleBolt,
+    faPlusCircle,
+    faQuestionCircle,
 } from '@fortawesome/pro-light-svg-icons';
 import { ElementIcons } from '../../../../data/element-type/element-icons';
 import { generateComponentTitle } from '../../../../utils/generate-component-title';
@@ -35,28 +37,27 @@ import { type AnyElement } from '../../../../models/elements/any-element';
 import { isAnyElementWithChildren } from '../../../../models/elements/any-element-with-children';
 import { getStepIcon } from '../../../../data/step-icons';
 import { selectLoadedApplication } from '../../../../slices/app-slice';
-import { stringOrDefault } from '../../../../utils/string-utils';
 import { findNoCodeUsage } from '../../../../utils/find-no-code-usage';
 
 
 const highlightOutlineStyle = '#86FFD388 solid 2px';
 const highlightBoxShadowStyle = '0px 4px 20px rgba(179, 242, 219, 0.5)';
 
-export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>) {
+export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>): JSX.Element {
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
     const root = useAppSelector(selectLoadedApplication)?.root;
     const treeElementSearch = useAppSelector(selectTreeElementSearch);
 
-    const handleSelect = () => {
+    const handleSelect = (): void => {
         if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
         }
         props.onSelect();
     };
 
-    const addHighlightElement = () => {
+    const addHighlightElement = (): void => {
         const elem = document.getElementById(props.element.id);
         if (elem != null) {
             elem.style.outline = highlightOutlineStyle;
@@ -64,7 +65,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
         }
     };
 
-    const removeHighlightElement = () => {
+    const removeHighlightElement = (): void => {
         const elem = document.getElementById(props.element.id);
         if (elem != null) {
             elem.style.outline = 'none';
@@ -72,7 +73,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
         }
     };
 
-    const handleToggleExpand = (event?: React.MouseEvent<HTMLElement>) => {
+    const handleToggleExpand = (event?: React.MouseEvent<HTMLElement>): boolean => {
         if (props.onToggleExpanded != null) {
             props.onToggleExpanded();
         }
@@ -83,7 +84,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
         return false;
     };
 
-    const preventBubble = (event?: React.MouseEvent<HTMLElement>) => {
+    const preventBubble = (event?: React.MouseEvent<HTMLElement>): boolean => {
         if (event != null) {
             event.stopPropagation();
             event.preventDefault();
@@ -118,7 +119,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                             onClick={ handleToggleExpand }
                             onDoubleClick={ preventBubble }
                             size={ 'small' }
-                            sx={ { mr: 1 } }
+                            sx={ {mr: 1} }
                         >
                             <Typography
                                 component="span"
@@ -136,7 +137,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                             </Typography>
                         </IconButton>
                     ) :
-                    <Box sx={ { pl: 4.5 } }/>
+                    <Box sx={ {pl: 4.5} }/>
             }
 
             <Tooltip
