@@ -62,7 +62,7 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
 
     const handleChange = (update: Partial<T>): void => {
         setUpdatedElement({
-            ...props.element,
+            ...(updatedElement ?? props.element),
             ...update,
         });
     };

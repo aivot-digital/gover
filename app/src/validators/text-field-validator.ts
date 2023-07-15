@@ -1,6 +1,5 @@
-import {BaseInputElementValidator} from "./base-input-element-validator";
-import {TextFieldElement} from "../models/elements/form/input/text-field-element";
-import {humanizeNumber} from "../utils/huminization-utils";
+import { BaseInputElementValidator } from './base-input-element-validator';
+import { type TextFieldElement } from '../models/elements/form/input/text-field-element';
 
 
 export class TextFieldValidator extends BaseInputElementValidator<string, TextFieldElement> {
@@ -14,21 +13,21 @@ export class TextFieldValidator extends BaseInputElementValidator<string, TextFi
 
     protected makeSpecificErrors(comp: TextFieldElement, value: string | undefined, userInput: any): string | null {
         if (value != null) {
-            if (comp.maxCharacters != null && comp.maxCharacters > 0 && (comp.minCharacters == null || comp.minCharacters === 0)) {
-                if (value.length > comp.maxCharacters) {
-                    return `Bitte geben Sie weniger als ${comp.maxCharacters} Zeichen ein.`;
+            if (comp.minCharacters != null && comp.minCharacters > 0 && comp.maxCharacters != null && comp.maxCharacters > 0 && comp.minCharacters === comp.maxCharacters) {
+                if (value.length !== comp.minCharacters) {
+                    return `Bitte geben Sie genau ${ comp.minCharacters } Zeichen ein.`;
                 }
             }
 
-            if (comp.minCharacters != null && comp.minCharacters > 0 && (comp.maxCharacters == null || comp.maxCharacters === 0)) {
+            if (comp.minCharacters != null && comp.minCharacters > 0) {
                 if (value.length < comp.minCharacters) {
-                    return `Bitte geben Sie mindestens ${comp.minCharacters} Zeichen ein.`;
+                    return `Bitte geben Sie mindestens ${ comp.minCharacters } Zeichen ein.`;
                 }
             }
 
-            if (comp.maxCharacters != null && comp.maxCharacters > 0 && comp.minCharacters != null && comp.minCharacters > 0) {
-                if (value.length !== comp.maxCharacters) {
-                    return `Bitte geben Sie genau ${comp.maxCharacters} Zeichen ein.`;
+            if (comp.maxCharacters != null && comp.maxCharacters > 0) {
+                if (value.length > comp.maxCharacters) {
+                    return `Bitte geben Sie weniger als ${ comp.maxCharacters } Zeichen ein.`;
                 }
             }
         }
