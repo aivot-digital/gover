@@ -32,7 +32,6 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
 
     useEffect(() => {
         if (isLayoutElement) {
-            console.log(props.element, expandStatus);
             if (expandStatus === 'expanded') {
                 setExpanded(true);
             } else if (expandStatus === 'collapsed') {

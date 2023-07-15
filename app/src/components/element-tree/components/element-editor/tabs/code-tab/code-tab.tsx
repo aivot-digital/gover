@@ -109,7 +109,7 @@ export function CodeTab({
                 onChange={ (req) => {
                     onChange({
                         ...func,
-                        requirements: req,
+                        requirements: req ?? '',
                     });
                 } }
                 disabled={ !editable }

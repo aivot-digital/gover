@@ -1,17 +1,17 @@
 import React from 'react';
-import {Box, Button, Paper, Typography} from '@mui/material';
-import {selectCustomerInput, setUserInput} from '../../slices/customer-input-slice';
-import {selectShowUserInput} from '../../slices/admin-settings-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFileDownload, faFileUpload} from "@fortawesome/pro-light-svg-icons";
-import {downloadObjectFile, uploadObjectFile} from "../../utils/download-utils";
-import {selectLoadedApplication} from "../../slices/app-slice";
-import {format} from "date-fns";
-import {CustomerInput} from "../../models/customer-input";
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {showErrorSnackbar} from "../../slices/snackbar-slice";
-import {isFileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
+import { Box, Button, Paper, Typography } from '@mui/material';
+import { selectCustomerInput, setUserInput } from '../../slices/customer-input-slice';
+import { selectShowUserInput } from '../../slices/admin-settings-slice';
+import { useAppSelector } from '../../hooks/use-app-selector';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileDownload, faFileUpload } from '@fortawesome/pro-light-svg-icons';
+import { downloadObjectFile, uploadObjectFile } from '../../utils/download-utils';
+import { selectLoadedApplication } from '../../slices/app-slice';
+import { format } from 'date-fns';
+import { type CustomerInput } from '../../models/customer-input';
+import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import { showErrorSnackbar } from '../../slices/snackbar-slice';
+import { isFileUploadElementItem } from '../../models/elements/form/input/file-upload-element';
 
 function cleanCustomerInput(input: CustomerInput): CustomerInput {
     const cleanedInput: CustomerInput = {};
@@ -26,7 +26,7 @@ function cleanCustomerInput(input: CustomerInput): CustomerInput {
     return cleanedInput;
 }
 
-export function UserInputDebugger() {
+export function UserInputDebugger(): JSX.Element | null {
     const dispatch = useAppDispatch();
     const showUserInput = useAppSelector(selectShowUserInput);
     const userInput = useAppSelector(selectCustomerInput);
@@ -36,18 +36,22 @@ export function UserInputDebugger() {
         return null;
     }
 
-    const handleExport = () => {
-        const filename = `nutzereingaben-${app?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
-        const input =  cleanCustomerInput(userInput);
+    const handleExport = (): void => {
+        const filename = `nutzereingaben-${ app?.slug }_${ format(new Date(), 'dd-MM-yyyy') }.json`;
+        const input = cleanCustomerInput(userInput);
         downloadObjectFile(filename, input);
     };
 
-    const handleUpload = () => {
+    const handleUpload = (): void => {
         uploadObjectFile<CustomerInput>('.json')
-            .then(res => {
-                dispatch(setUserInput(res))
+            .then((res) => {
+                if (res == null) {
+                    dispatch(setUserInput({}));
+                } else {
+                    dispatch(setUserInput(res));
+                }
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Nutzereingaben konnten nicht geladen werden'));
             });

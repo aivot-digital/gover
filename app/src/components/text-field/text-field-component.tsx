@@ -1,6 +1,5 @@
-import {Box, TextField} from '@mui/material';
-import {TextFieldComponentProps} from "./text-field-component-props";
-import {humanizeNumber} from "../../utils/huminization-utils";
+import { Box, TextField } from '@mui/material';
+import { TextFieldComponentProps } from './text-field-component-props';
 
 export function TextFieldComponent({
                                        label,
@@ -20,27 +19,27 @@ export function TextFieldComponent({
                                    }: TextFieldComponentProps) {
     return (
         <TextField
-            label={label}
-            type={type}
-            placeholder={placeholder}
+            label={ label }
+            type={ type }
+            placeholder={ placeholder }
             variant="outlined"
             fullWidth
-            error={error != null}
-            multiline={multiline}
-            rows={multiline ? (rows ?? 4) : undefined}
-            FormHelperTextProps={{
+            error={ error != null }
+            multiline={ multiline }
+            rows={ multiline ? (rows ?? 4) : undefined }
+            FormHelperTextProps={ {
                 // @ts-ignore
                 component: 'div',
-            }}
+            } }
             helperText={
                 <Box
-                    sx={{
+                    sx={ {
                         display: 'flex',
                         justifyContent: 'space-between',
-                    }}
+                    } }
                 >
                     <Box>
-                        {error != null ? error : hint}
+                        { error != null ? error : hint }
                     </Box>
 
                     {
@@ -51,8 +50,8 @@ export function TextFieldComponent({
                             minCharacters === 0 ||
                             (value ?? '').length >= minCharacters
                         ) &&
-                        <Box sx={{ml: 3}}>
-                            {(value ?? '').length}/{maxCharacters}
+                        <Box sx={ {ml: 3} }>
+                            { (value ?? '').length }/{ maxCharacters }
                         </Box>
                     }
 
@@ -60,18 +59,18 @@ export function TextFieldComponent({
                         minCharacters != null &&
                         minCharacters > 0 &&
                         (value ?? '').length < minCharacters &&
-                        <Box sx={{ml: 3}}>
-                            Noch mindestens {minCharacters - (value?.length ?? 0)} Zeichen
+                        <Box sx={ {ml: 3} }>
+                            Noch mindestens { minCharacters - (value?.length ?? 0) } Zeichen
                         </Box>
                     }
                 </Box>
             }
-            value={value ?? ''}
-            onChange={event => {
+            value={ value ?? '' }
+            onChange={ event => {
                 const val = event.target.value;
                 onChange(val.length === 0 ? undefined : val);
-            }}
-            onBlur={() => {
+            } }
+            onBlur={ () => {
                 if (value != null) {
                     const trimmedValue = value.trim();
                     const blurValue = trimmedValue.length === 0 ? undefined : trimmedValue;
@@ -80,14 +79,14 @@ export function TextFieldComponent({
                         onBlur(blurValue);
                     }
                 }
-            }}
+            } }
             inputProps={
                 maxCharacters ? {
                     maxLength: maxCharacters,
                 } : undefined
             }
-            disabled={disabled}
-            required={required}
+            disabled={ disabled }
+            required={ required }
         />
     );
 }

@@ -1,89 +1,77 @@
-import {Box, Grid} from '@mui/material';
-import {ViewDispatcherComponent} from '../../view-dispatcher.component';
-import {ElementType} from '../../../data/element-type/element-type';
+import { Box, Grid, Typography } from '@mui/material';
 import React from 'react';
-import {useSelector} from 'react-redux';
-import {selectLoadedApplication} from '../../../slices/app-slice';
-import ProjectPackage from '../../../../package.json';
-import {AnyElement} from "../../../models/elements/any-element";
-
-// TODO: Replace RichText with component
 
 interface PreambleProps {
-    allElements: AnyElement[];
     text: string;
+    logoLink?: string;
+    logoAlt?: string;
 }
 
-export function Preamble(props: PreambleProps) {
-    const introductionStep = useSelector(selectLoadedApplication)?.root.introductionStep;
-
+export function Preamble(props: PreambleProps): JSX.Element {
     return (
         <>
             {
                 (
-                    introductionStep &&
-                    introductionStep.initiativeName &&
-                    introductionStep.initiativeLogoLink
+                    props.logoLink != null &&
+                    props.logoAlt != null
                 ) ?
                     <Grid
                         container
-                        spacing={10}
-                        justifyContent={'space-between'}
+                        spacing={ 10 }
+                        justifyContent={ 'space-between' }
                     >
                         <Grid
                             item
-                            xs={12}
-                            md={8}
-                            lg={7}
+                            xs={ 12 }
+                            md={ 8 }
+                            lg={ 7 }
                         >
-                            <ViewDispatcherComponent
-                                allElements={props.allElements}
-                                element={{
-                                    id: 'preambleText',
-                                    type: ElementType.Richtext,
-                                    appVersion: ProjectPackage.version,
-                                    content: props.text,
-                                }}
+                            <Typography
+                                variant="body2"
+                                dangerouslySetInnerHTML={ {
+                                    __html: props.text,
+                                } }
                             />
                         </Grid>
                         <Grid
                             item
-                            xs={12}
-                            md={4}
-                            lg={5}
-                            sx={{pr: 6, textAlign: 'center'}}
+                            xs={ 12 }
+                            md={ 4 }
+                            lg={ 5 }
+                            sx={ {
+                                pr: 6,
+                                textAlign: 'center',
+                            } }
                         >
-                            {
-                                introductionStep &&
-                                introductionStep.initiativeName &&
-                                introductionStep.initiativeLogoLink &&
-                                <img
-                                    src={introductionStep.initiativeLogoLink}
-                                    alt={introductionStep.initiativeName}
-                                    style={{maxWidth: '100%', marginTop: '-10px'}}
-                                />
-                            }
+                            <img
+                                src={ props.logoLink }
+                                alt={ props.logoAlt }
+                                style={ {
+                                    maxWidth: '100%',
+                                    marginTop: '-10px',
+                                } }
+                            />
                         </Grid>
-                    </Grid>
-                    :
+                    </Grid> :
                     <Grid
                         container
-                        spacing={10}
-                        justifyContent={'space-between'}
+                        spacing={ 10 }
+                        justifyContent="space-between"
                     >
                         <Grid
                             item
-                            xs={12}
+                            xs={ 12 }
                         >
-                            <Box sx={{maxWidth: '660px'}}>
-                                <ViewDispatcherComponent
-                                    allElements={props.allElements}
-                                    element={{
-                                        id: 'preambleText',
-                                        type: ElementType.Richtext,
-                                        appVersion: ProjectPackage.version,
-                                        content: props.text,
-                                    }}
+                            <Box
+                                sx={ {
+                                    maxWidth: '660px',
+                                } }
+                            >
+                                <Typography
+                                    variant="body2"
+                                    dangerouslySetInnerHTML={ {
+                                        __html: props.text,
+                                    } }
                                 />
                             </Box>
                         </Grid>

@@ -17,25 +17,19 @@ import './rich-text-editor.component.scss';
 interface RichTextEditorComponentViewProps {
     label?: string;
     value: string;
-    onChange: (text: string) => void;
+    onChange: (text: string | undefined) => void;
     required?: boolean;
     error?: string;
     disabled?: boolean;
+    hint?: string;
 }
 
-export function RichTextEditorComponentView({
-                                                value,
-                                                onChange,
-                                                label,
-                                                required,
-                                                error,
-                                                disabled,
-                                            }: RichTextEditorComponentViewProps) {
+export function RichTextEditorComponentView(props: RichTextEditorComponentViewProps): JSX.Element {
     const onChangeCallback = useEventCallback(({editor}: any) => {
         if (editor.isEmpty) {
-            onChange('');
+            props.onChange(undefined);
         } else {
-            onChange(editor.getHTML());
+            props.onChange(editor.getHTML());
         }
     });
 
@@ -60,30 +54,30 @@ export function RichTextEditorComponentView({
             Strike,
         ],
         onUpdate: onChangeCallback,
-        editable: !(disabled ?? false),
+        editable: !(props.disabled ?? false),
     });
 
     useEffect(() => {
         if (editor != null && editor.isEmpty) {
-            editor.commands.setContent(value ?? '');
+            editor.commands.setContent(props.value ?? '');
         }
-    }, [value, editor]);
+    }, [props.value, editor]);
 
     return (
         <>
             {
-                label != null &&
+                props.label != null &&
                 <Typography
                     sx={ {
                         mb: 2,
                     } }
                 >
-                    { label } { required === true ? ' *' : '' }
+                    { props.label } { props.required === true ? ' *' : '' }
                 </Typography>
             }
 
             {
-                !(disabled ?? false) &&
+                !(props.disabled ?? false) &&
                 <RichTextEditorMenuComponentView editor={ editor }/>
             }
 
@@ -107,12 +101,15 @@ export function RichTextEditorComponentView({
             </Paper>
 
             {
-                error != null &&
+                (
+                    props.hint != null ||
+                    props.error != null
+                ) &&
                 <Typography
                     variant="caption"
-                    color="error"
+                    color={ props.error != null ? 'error' : undefined }
                 >
-                    { error }
+                    { props.error ?? props.hint }
                 </Typography>
             }
         </>

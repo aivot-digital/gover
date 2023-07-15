@@ -1,6 +1,6 @@
-import {createSlice, PayloadAction} from '@reduxjs/toolkit'
-import {RootState} from "../store";
-import {CustomerInput} from "../models/customer-input";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { type RootState } from '../store';
+import { type CustomerInput } from '../models/customer-input';
 
 const initialState: {
     input: CustomerInput;
@@ -12,7 +12,7 @@ const customerInputSlice = createSlice({
     name: 'customerInput',
     initialState,
     reducers: {
-        setUserInput: (state, action: PayloadAction<any>) => {
+        setUserInput: (state, action: PayloadAction<CustomerInput>) => {
             state.input = action.payload;
         },
         resetUserInput: (state, _: PayloadAction<void>) => {
@@ -30,7 +30,7 @@ export const {
     resetUserInput,
 } = customerInputSlice.actions;
 
-export const selectCustomerInput = (state: RootState) => state.customerInput.input;
+export const selectCustomerInput = (state: RootState): CustomerInput => state.customerInput.input;
 export const selectCustomerInputValue = (key: string) => (state: RootState) => state.customerInput.input[key];
 
 export const customerInputReducer = customerInputSlice.reducer;

@@ -71,10 +71,12 @@ export function SubmitComponentView({
     return (
         <>
             {
+                element.textPreSubmit != null &&
                 !isStringNullOrEmpty(element.textPreSubmit) &&
                 <Preamble
-                    allElements={ allElements }
-                    text={ element.textPreSubmit ?? '' }
+                    text={ element.textPreSubmit }
+                    logoLink={ application.root.introductionStep.initiativeLogoLink }
+                    logoAlt={ application.root.introductionStep.initiativeName }
                 />
             }
 
