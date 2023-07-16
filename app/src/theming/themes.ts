@@ -42,7 +42,7 @@ const defaultColorPalettes: {
     Urwald: colorPaletteFactory('#60865e', '#446249', '#dad8ce'),
     Sonnenschein: colorPaletteFactory('#fdc022', '#dca41a', '#dee2e6'),
     Aubergine: colorPaletteFactory('#bc457c', '#763d55', '#d7f4ea'),
-    Mitternacht: colorPaletteFactory('#2e3d45', '#181715', '#e9e0d6'),
+    Mitternacht: colorPaletteFactory('#253e63', '#142638', '#ffd481'),
 }
 
 const customerColorPalettes: {
