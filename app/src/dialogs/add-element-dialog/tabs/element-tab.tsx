@@ -9,8 +9,6 @@ import {
     ListSubheader,
     Tooltip
 } from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faInfoCircle} from "@fortawesome/pro-light-svg-icons";
 import {generateElementWithDefaultValues} from "../../../utils/generate-element-with-default-values";
 import {ElementIcons} from "../../../data/element-type/element-icons";
 import {ElementNames} from "../../../data/element-type/element-names";
@@ -18,6 +16,7 @@ import {BaseTabProps} from "./base-tab-props";
 import {ElementTypesMap} from "../../../data/element-type/element-types-map";
 import {ElementType} from "../../../data/element-type/element-type";
 import {ElementChildOptions} from "../../../data/element-type/element-child-options";
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 enum ElementTypeGroups {
     Display,
@@ -97,38 +96,41 @@ export function ElementTab({parentType, onAddElement, showElementInfo, highlight
                         </ListSubheader>
 
                         {
-                            (optionGroups[parseInt(groupString) as ElementTypeGroups] ?? []).map(type => (
-                                <ListItem
-                                    key={type}
-                                    disablePadding
-                                    secondaryAction={
-                                        <Tooltip title="Mehr Informationen">
-                                            <IconButton onClick={() => showElementInfo(type)}>
-                                                <FontAwesomeIcon icon={faInfoCircle}/>
-                                            </IconButton>
-                                        </Tooltip>
-                                    }
+                            (optionGroups[parseInt(groupString) as ElementTypeGroups] ?? []).map(type => {
+                                const Icon = ElementIcons[type];
+                                return (
+                                    <ListItem
+                                        key={type}
+                                        disablePadding
+                                        secondaryAction={
+                                            <Tooltip title="Mehr Informationen">
+                                                <IconButton onClick={() => showElementInfo(type)}>
+                                                    <InfoOutlinedIcon/>
+                                                </IconButton>
+                                            </Tooltip>
+                                        }
 
-                                >
-                                    <ListItemButton
-                                        onClick={() => {
-                                            const newElement = generateElementWithDefaultValues(type);
-                                            if (newElement != null) {
-                                                onAddElement(newElement);
-                                            }
-                                        }}
-                                        selected={highlightedElement === type}
                                     >
-                                        <ListItemIcon sx={{pl: 1.5}}>
-                                            <FontAwesomeIcon icon={ElementIcons[type]}/>
-                                        </ListItemIcon>
-                                        <ListItemText
-                                            disableTypography
-                                            primary={ElementNames[type]}
-                                        />
-                                    </ListItemButton>
-                                </ListItem>
-                            ))
+                                        <ListItemButton
+                                            onClick={() => {
+                                                const newElement = generateElementWithDefaultValues(type);
+                                                if (newElement != null) {
+                                                    onAddElement(newElement);
+                                                }
+                                            }}
+                                            selected={highlightedElement === type}
+                                        >
+                                            <ListItemIcon sx={{pl: 1.5}}>
+                                                <Icon/>
+                                            </ListItemIcon>
+                                            <ListItemText
+                                                disableTypography
+                                                primary={ElementNames[type]}
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                )
+                            })
                         }
                     </React.Fragment>
                 ))

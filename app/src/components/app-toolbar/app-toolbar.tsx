@@ -2,8 +2,9 @@ import React from 'react';
 import {AppToolbarProps} from './app-toolbar-props';
 import {AppBar, Box, IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faArrowLeft, faHome} from '@fortawesome/pro-light-svg-icons';
 import {Link, useNavigate} from 'react-router-dom';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 
 export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
     const navigate = useNavigate();
@@ -20,12 +21,12 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                             to="/overview"
                             color="inherit"
                         >
-                            <FontAwesomeIcon icon={faHome}/>
+                            <HomeOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
 
-                    <Tooltip title="Schritt Zurück">
+                    <Tooltip title="Schritt zurück">
                         <IconButton
                             size="small"
                             edge="start"
@@ -35,12 +36,12 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                                 ml: 1,
                             }}
                         >
-                            <FontAwesomeIcon icon={faArrowLeft}/>
+                            <ArrowBackOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
                     <Typography
-                        variant="h6"
+                        variant="h5"
                         component="div"
                         sx={{
                             flexGrow: 1,
@@ -60,6 +61,7 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                                         width: '1px',
                                         height: '2em',
                                         backgroundColor: 'white',
+                                        opacity: '.25',
                                     }}
                                 >
                                 </Box>
@@ -70,6 +72,7 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                                     arrow
                                 >
                                     <IconButton
+                                        size="small"
                                         color="inherit"
                                         sx={{ml: 2}}
                                         onClick={'onClick' in action ? action.onClick : undefined}
@@ -77,10 +80,7 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                                         href={'href' in action ? action.href : undefined}
                                         target={'href' in action ? '_blank' : undefined}
                                     >
-                                        <FontAwesomeIcon
-                                            icon={action.icon}
-                                            fixedWidth
-                                        />
+                                        {action.icon}
                                     </IconButton>
                                 </Tooltip>
                             ))

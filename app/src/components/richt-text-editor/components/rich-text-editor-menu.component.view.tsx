@@ -1,59 +1,55 @@
 import React, {useCallback} from 'react';
 import {Editor} from '@tiptap/react';
-import {Button, ButtonGroup} from '@mui/material';
-import {
-    faBold,
-    faItalic,
-    faLink,
-    faLinkSlash,
-    faListOl,
-    faListUl,
-    faStrikethrough,
-    faX
-} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
-
+import {Button, ButtonGroup, SvgIconTypeMap} from '@mui/material';
+import FormatBoldOutlinedIcon from '@mui/icons-material/FormatBoldOutlined';
+import FormatItalicOutlinedIcon from '@mui/icons-material/FormatItalicOutlined';
+import StrikethroughSOutlinedIcon from '@mui/icons-material/StrikethroughSOutlined';
+import FormatClearOutlinedIcon from '@mui/icons-material/FormatClearOutlined';
+import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBulletedOutlined';
+import FormatListNumberedOutlinedIcon from '@mui/icons-material/FormatListNumberedOutlined';
+import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
+import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
+import {OverridableComponent} from "@mui/material/OverridableComponent";
 
 export function RichTextEditorMenuComponentView({editor}: { editor: Editor | null }) {
     const fontOptions: {
-        icon: IconDefinition;
+        icon: OverridableComponent<SvgIconTypeMap>;
         style?: string;
         func: () => void;
     }[] = [
         {
-            icon: faBold,
+            icon: FormatBoldOutlinedIcon,
             style: 'bold',
             func: () => editor?.chain().focus().toggleBold().run()
         },
         {
-            icon: faItalic,
+            icon: FormatItalicOutlinedIcon,
             style: 'italic',
             func: () => editor?.chain().focus().toggleItalic().run()
         },
         {
-            icon: faStrikethrough,
+            icon: StrikethroughSOutlinedIcon,
             style: 'strike',
             func: () => editor?.chain().focus().toggleStrike().run()
         },
         {
-            icon: faX,
+            icon: FormatClearOutlinedIcon,
             func: () => editor?.chain().focus().unsetAllMarks().run()
         },
     ];
 
     const parOptions: {
-        icon: IconDefinition;
+        icon: OverridableComponent<SvgIconTypeMap>;
         style: string;
         func: () => any;
     }[] = [
         {
-            icon: faListUl,
+            icon: FormatListBulletedOutlinedIcon,
             style: 'bulletList',
             func: () => editor?.chain().focus().toggleBulletList().run()
         },
         {
-            icon: faListOl,
+            icon: FormatListNumberedOutlinedIcon,
             style: 'orderedList',
             func: () => editor?.chain().focus().toggleOrderedList().run()
         },
@@ -101,7 +97,7 @@ export function RichTextEditorMenuComponentView({editor}: { editor: Editor | nul
                             onClick={option.func}
                             variant={option.style != null && editor.isActive(option.style) ? 'contained' : 'outlined'}
                         >
-                            <FontAwesomeIcon icon={option.icon} />
+                            <option.icon fontSize={"small"}/>
                         </Button>
                     ))
                 }
@@ -115,7 +111,7 @@ export function RichTextEditorMenuComponentView({editor}: { editor: Editor | nul
                             onClick={option.func}
                             variant={editor.isActive(option.style) ? 'contained' : 'outlined'}
                         >
-                            <FontAwesomeIcon icon={option.icon} />
+                            <option.icon fontSize={"small"}/>
                         </Button>
                     ))
                 }
@@ -126,13 +122,13 @@ export function RichTextEditorMenuComponentView({editor}: { editor: Editor | nul
                     onClick={setLink}
                     variant={editor.isActive('link') ? 'contained' : 'outlined'}
                 >
-                    <FontAwesomeIcon icon={faLink} />
+                    <InsertLinkOutlinedIcon fontSize={"small"}/>
                 </Button>
                 <Button
                     onClick={() => editor.chain().focus().unsetLink().run()}
                     disabled={!editor.isActive('link')}
                 >
-                    <FontAwesomeIcon icon={faLinkSlash} />
+                    <LinkOffOutlinedIcon fontSize={"small"}/>
                 </Button>
             </ButtonGroup>
         </>

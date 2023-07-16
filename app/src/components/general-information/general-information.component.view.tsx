@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {Box, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {ElementType} from '../../data/element-type/element-type';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faFileArrowUp, faFileLines, faUser} from '@fortawesome/pro-light-svg-icons';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../static-components/fading-paper/fading-paper';
@@ -137,11 +138,8 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                                             disableGutters
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
-                                                <FontAwesomeIcon
-                                                    icon={faUser}
-                                                    fixedWidth
-                                                    size={'lg'}
-                                                    color={theme.palette.primary.main}
+                                                <PersonOutlineOutlinedIcon
+                                                    sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
@@ -174,11 +172,8 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                                             disableGutters
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
-                                                <FontAwesomeIcon
-                                                    icon={faFileLines}
-                                                    fixedWidth
-                                                    size={'lg'}
-                                                    color={theme.palette.primary.main}
+                                                <DescriptionOutlinedIcon
+                                                    sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
@@ -211,11 +206,8 @@ export function GeneralInformationComponentView({allElements, element}: BaseView
                                             disableGutters
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
-                                                <FontAwesomeIcon
-                                                    icon={faFileArrowUp}
-                                                    fixedWidth
-                                                    size={'lg'}
-                                                    color={theme.palette.primary.main}
+                                                <UploadFileOutlinedIcon
+                                                    sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>

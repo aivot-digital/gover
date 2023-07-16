@@ -1,13 +1,4 @@
 import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {
-    faArrowsFromLine,
-    faArrowsToLine,
-    faGear,
-    faListTree,
-    faMessageCode,
-    faSearch
-} from '@fortawesome/pro-light-svg-icons';
 import {
     selectUseIdsInComponentTree,
     selectUseTestMode,
@@ -24,6 +15,12 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {ElementEditor} from '../element-editor/element-editor';
 import {ElementTreeHeaderProps} from './element-tree-header-props';
 import {AnyElement} from '../../../../models/elements/any-element';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import ExpandOutlinedIcon from '@mui/icons-material/ExpandOutlined';
+import CompressOutlinedIcon from '@mui/icons-material/CompressOutlined';
+import IntegrationInstructionsOutlinedIcon from '@mui/icons-material/IntegrationInstructionsOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeaderProps<T>) {
     const dispatch = useAppDispatch();
@@ -47,22 +44,16 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
 
     return (
         <>
-            <Box sx={{display: 'flex', justifyContent: 'space-between', mt: 1, mb: 1}}>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, mb: 1, padding: 1,}}>
                 <Box sx={{display: 'flex', alignItems: 'center'}}>
 
-                    <span
-                        style={{
-                            color: theme.palette.primary.dark,
-                            fontSize: '1.625rem',
-                        }}
-                    >
-                        <FontAwesomeIcon icon={faListTree}/>
-                    </span>
-
+                    <AccountTreeOutlinedIcon sx={{
+                        color: theme.palette.primary.dark,
+                    }}/>
                     <Typography
-                        variant="h6"
+                        variant="h4"
                         color="primary"
-                        sx={{ml: 1, mt: '2px'}}
+                        sx={{ml: 2}}
                     >
                         Struktur
                     </Typography>
@@ -73,8 +64,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Suchen"
                         arrow
                     >
-                        <IconButton onClick={props.onToggleSearch}>
-                            <FontAwesomeIcon icon={faSearch}/>
+                        <IconButton size="small" onClick={props.onToggleSearch}>
+                            <SearchOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
@@ -82,8 +73,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles ausklappen"
                         arrow
                     >
-                        <IconButton onClick={() => dispatch(setExpandElementTree('expanded'))}>
-                            <FontAwesomeIcon icon={faArrowsFromLine}/>
+                        <IconButton size="small" onClick={() => dispatch(setExpandElementTree('expanded'))}>
+                            <ExpandOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
@@ -91,8 +82,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles einklappen"
                         arrow
                     >
-                        <IconButton onClick={() => dispatch(setExpandElementTree('collapsed'))}>
-                            <FontAwesomeIcon icon={faArrowsToLine}/>
+                        <IconButton size="small" onClick={() => dispatch(setExpandElementTree('collapsed'))}>
+                            <CompressOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
@@ -100,8 +91,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Einstellungen für Entwickler:innen"
                         arrow
                     >
-                        <IconButton onClick={handleOpenCTMenu}>
-                            <FontAwesomeIcon icon={faMessageCode}/>
+                        <IconButton size="small" onClick={handleOpenCTMenu}>
+                            <IntegrationInstructionsOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
                     <Tooltip
@@ -109,12 +100,13 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         arrow
                     >
                         <IconButton
+                            size="small"
                             onClick={() => {
                                 setShowEditor(true);
                             }}
                             sx={{marginRight: '7px'}}
                         >
-                            <FontAwesomeIcon icon={faGear}/>
+                            <SettingsOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
                 </Box>

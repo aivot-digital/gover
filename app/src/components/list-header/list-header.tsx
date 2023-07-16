@@ -28,7 +28,7 @@ export function ListHeader({title, search, searchPlaceholder, onSearchChange, ac
                     actions.map(act => 'label' in act ? (
                         <Button
                             key={act.label}
-                            endIcon={<FontAwesomeIcon icon={act.icon}/>}
+                            endIcon={act.icon}
                             variant="contained"
                             sx={{ml: 2}}
                             onClick={act.onClick}
@@ -43,9 +43,7 @@ export function ListHeader({title, search, searchPlaceholder, onSearchChange, ac
                                 sx={{ml: 2}}
                                 onClick={act.onClick}
                             >
-                                <FontAwesomeIcon
-                                    icon={act.icon}
-                                />
+                                {act.icon}
                             </IconButton>
                         </Tooltip>
                     ))

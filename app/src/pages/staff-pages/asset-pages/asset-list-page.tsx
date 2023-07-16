@@ -1,11 +1,11 @@
 import {useAuthGuard} from "../../../hooks/use-auth-guard";
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {faPlus,} from "@fortawesome/pro-light-svg-icons";
 import {GridColDef} from "@mui/x-data-grid";
 import {useUserGuard} from "../../../hooks/use-user-guard";
 import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
 import {AssetService} from "../../../services/asset-service";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 interface Asset {
     id: string;
@@ -72,7 +72,7 @@ export function AssetListPage() {
 
             actions={[{
                 label: 'Neue Anlage',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neue Anlage anlegen',
                 onClick: () => navigate(`/assets/new`),
             }]}

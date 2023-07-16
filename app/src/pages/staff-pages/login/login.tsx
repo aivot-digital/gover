@@ -3,11 +3,10 @@ import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {useDispatch, useSelector} from 'react-redux';
-import {faArrowRightToBracket} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {authenticate, logout, selectAuthenticationState} from '../../../slices/auth-slice';
 import {AuthState} from "../../../data/auth-state";
 import {Logo} from '../../../components/static-components/logo/logo';
+import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 
 export function Login() {
     const dispatch = useDispatch();
@@ -103,10 +102,8 @@ export function Login() {
                                 variant="contained"
                                 size={'large'}
                                 startIcon={
-                                    <FontAwesomeIcon
-                                        icon={faArrowRightToBracket}
-                                        fixedWidth
-                                        style={{marginTop: '-2px', marginRight: '4px'}}
+                                    <LoginOutlinedIcon
+                                        sx={{marginTop: '-2px', marginRight: '4px'}}
                                     />
                                 }
                                 disabled={isAuthenticating}

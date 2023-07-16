@@ -15,8 +15,7 @@ import {
 } from '@mui/material';
 import {FadingPaper} from '../static-components/fading-paper/fading-paper';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faFileArrowUp, faUserRobot} from '@fortawesome/pro-light-svg-icons';
-import {faShieldCheck} from '@fortawesome/pro-solid-svg-icons';
+import {faFileArrowUp} from '@fortawesome/pro-light-svg-icons';
 import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
 import {Department} from '../../models/entities/department';
 import {DepartmentsService} from '../../services/departments-service';
@@ -26,6 +25,8 @@ import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
 import {BaseViewProps} from "../../views/base-view";
+import GppGoodTwoToneIcon from '@mui/icons-material/GppGoodTwoTone';
+import SmartToyTwoToneIcon from '@mui/icons-material/SmartToyTwoTone';
 
 export const SubmitHumanKey = '__human__';
 
@@ -194,10 +195,7 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                         <>
                             <Box>
                                 <Button
-                                    startIcon={<FontAwesomeIcon
-                                        icon={faUserRobot}
-                                        fixedWidth
-                                    />}
+                                    startIcon={<SmartToyTwoToneIcon/>}
                                     onClick={() => {
                                         setIsCalculating(true);
                                         setTimeout(() => {
@@ -231,10 +229,7 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                     {
                         isHuman &&
                         <Box sx={{display: 'flex', alignItems: 'center'}}>
-                            <FontAwesomeIcon
-                                icon={faShieldCheck}
-                                size="2x"
-                            />
+                            <GppGoodTwoToneIcon fontSize={"large"} sx={{color: theme.palette.primary.main}}/>
                             <Typography
                                 sx={{ml: 2}}
                             >

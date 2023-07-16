@@ -1,6 +1,5 @@
 import {StepElement} from '../../models/elements/steps/step-element';
 import {Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Select, TextField} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {StepIcons} from '../../data/step-icons';
 import {BaseEditorProps} from "../../editors/base-editor";
 
@@ -32,21 +31,24 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                     })}
                 >
                     {
-                        StepIcons.map(stepIcon => (
-                            <MenuItem
-                                key={stepIcon.id}
-                                value={stepIcon.id}
-                            >
-                                <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                    <ListItemIcon>
-                                        <FontAwesomeIcon icon={stepIcon.def}/>
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        {stepIcon.label}
-                                    </ListItemText>
-                                </Box>
-                            </MenuItem>
-                        ))
+                        StepIcons.map(stepIcon => {
+                            const Icon = stepIcon.def;
+                            return (
+                                <MenuItem
+                                    key={stepIcon.id}
+                                    value={stepIcon.id}
+                                >
+                                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                        <ListItemIcon>
+                                            <Icon/>
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {stepIcon.label}
+                                        </ListItemText>
+                                    </Box>
+                                </MenuItem>
+                            )
+                        })
                     }
 
                 </Select>

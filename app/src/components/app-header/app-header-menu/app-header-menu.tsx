@@ -1,28 +1,25 @@
 import React from 'react';
 import {AppHeaderMenuProps} from './app-header-menu-props';
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
-import {
-    faBracketsCurly,
-    faBuilding,
-    faCopy, faFile,
-    faLink,
-    faSignOut,
-    faUser,
-    faUsers
-} from '@fortawesome/pro-light-svg-icons';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, SvgIconProps} from '@mui/material';
 import {AppMode} from '../../../data/app-mode';
 import {resetUserInput} from '../../../slices/customer-input-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {resetStepper} from '../../../slices/stepper-slice';
 import {Link} from 'react-router-dom';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {logout} from '../../../slices/auth-slice';
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {selectMemberships, selectUser} from "../../../slices/user-slice";
 import {resetErrors} from "../../../slices/customer-input-errors-slice";
-import {IconProp} from "@fortawesome/fontawesome-svg-core";
 import {UserRole} from "../../../data/user-role";
-
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import FilePresentOutlinedIcon from '@mui/icons-material/FilePresentOutlined';
+import DashboardCustomizeOutlinedIcon from '@mui/icons-material/DashboardCustomizeOutlined';
+import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
+import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps) {
     const dispatch = useAppDispatch();
@@ -39,7 +36,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 props.mode === AppMode.Customer &&
                 <ActionMenuItem
                     label="Alle Antragsdaten löschen"
-                    icon={faSignOut}
+                    icon={<LogoutOutlinedIcon/>}
                     onClick={() => {
                         const conf = window.confirm('Sollen wirklich alle Daten gelöscht werden?');
                         if (conf) {
@@ -55,7 +52,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 props.mode === AppMode.Staff &&
                 <LinkMenuItem
                     label="Profil"
-                    icon={faUser}
+                    icon={<AccountCircleOutlinedIcon/>}
                     to="/profile"
                 />
             }
@@ -65,7 +62,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 user?.admin &&
                 <LinkMenuItem
                     label="Einstellungen"
-                    icon={faUser}
+                    icon={<SettingsApplicationsOutlinedIcon/>}
                     to="/settings"
                 />
             }
@@ -75,7 +72,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 user?.admin &&
                 <LinkMenuItem
                     label="Benutzerverwaltung"
-                    icon={faUsers}
+                    icon={<GroupOutlinedIcon/>}
                     to="/users"
                 />
             }
@@ -88,7 +85,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 ) &&
                 <LinkMenuItem
                     label="Fachbereichsverwaltung"
-                    icon={faBuilding}
+                    icon={<BusinessOutlinedIcon/>}
                     to="/departments"
                 />
             }
@@ -98,7 +95,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 user?.admin &&
                 <LinkMenuItem
                     label="Anlagen"
-                    icon={faFile}
+                    icon={<FilePresentOutlinedIcon/>}
                     to="/assets"
                 />
             }
@@ -112,7 +109,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 props.mode === AppMode.Staff &&
                 <LinkMenuItem
                     label="Vorlagen"
-                    icon={faCopy}
+                    icon={<DashboardCustomizeOutlinedIcon/>}
                     to="/presets"
                 />
             }
@@ -122,7 +119,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 user?.admin &&
                 <LinkMenuItem
                     label="Schnittstellen"
-                    icon={faBracketsCurly}
+                    icon={<DataObjectOutlinedIcon/>}
                     to="/destinations"
                 />
             }
@@ -132,7 +129,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 user?.admin &&
                 <LinkMenuItem
                     label="Links"
-                    icon={faLink}
+                    icon={<LinkOutlinedIcon/>}
                     to="/provider-links"
                 />
             }
@@ -146,7 +143,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 props.mode === AppMode.Staff &&
                 <ActionMenuItem
                     label="Abmelden"
-                    icon={faSignOut}
+                    icon={<LogoutOutlinedIcon/>}
                     onClick={() => {
                         dispatch(logout());
                     }}
@@ -156,16 +153,14 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
     );
 }
 
-function LinkMenuItem({to, icon, label}: { to: string, icon: IconProp, label: string }) {
+function LinkMenuItem({to, icon, label}: { to: string, icon: SvgIconProps, label: string }) {
     return (
         <MenuItem
             component={Link}
             to={to}
         >
             <ListItemIcon>
-                <FontAwesomeIcon
-                    icon={icon}
-                />
+                {icon}
             </ListItemIcon>
             <ListItemText>
                 {label}
@@ -174,15 +169,13 @@ function LinkMenuItem({to, icon, label}: { to: string, icon: IconProp, label: st
     );
 }
 
-function ActionMenuItem({onClick, icon, label}: { onClick: () => void, icon: IconProp, label: string }) {
+function ActionMenuItem({onClick, icon, label}: { onClick: () => void, icon: SvgIconProps, label: string }) {
     return (
         <MenuItem
             onClick={onClick}
         >
             <ListItemIcon>
-                <FontAwesomeIcon
-                    icon={icon}
-                />
+                {icon}
             </ListItemIcon>
             <ListItemText>
                 {label}

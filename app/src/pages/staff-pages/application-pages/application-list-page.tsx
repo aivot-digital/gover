@@ -5,7 +5,6 @@ import {useNavigate} from 'react-router-dom';
 import {
     LoadingPlaceholderComponentView
 } from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
-import {faCloudUpload, faPlus} from '@fortawesome/pro-light-svg-icons';
 import {AppFooter} from '../../../components/app-footer/app-footer';
 import {Introductory} from '../../../components/introductory/introductory';
 import {BoxLink} from '../../../components/box-link/box-link';
@@ -33,6 +32,8 @@ import {ApplicationListItemGroup} from "../../../components/application-list-ite
 import {selectMemberships} from "../../../slices/user-slice";
 import {useAppDispatch} from "../../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../../slices/snackbar-slice";
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 
 function groupApplications(applications: ListApplication[]): ListApplicationGroup[] {
     const appMap = new Map<string, ListApplication[]>();
@@ -174,12 +175,12 @@ export function ApplicationListPage() {
                             actions={[
                                 {
                                     label: 'Neues Formular',
-                                    icon: faPlus,
+                                    icon: <AddOutlinedIcon/>,
                                     onClick: () => setShowAddApplicationDialog(true),
                                 },
                                 {
                                     tooltip: 'Formular importieren',
-                                    icon: faCloudUpload,
+                                    icon: <CloudUploadOutlinedIcon sx={{transform: "scale(1.2)"}}/>,
                                     onClick: () => setShowImportApplicationDialog(true),
                                 },
                             ]}
@@ -225,8 +226,7 @@ export function ApplicationListPage() {
 
             <Container sx={{mt: 10, mb: 12}}>
                 <Typography
-                    variant={'h5'}
-                    sx={{fontSize: '1.75rem'}}
+                    variant={'h2'}
                 >
                     Service und Unterstützung
                 </Typography>

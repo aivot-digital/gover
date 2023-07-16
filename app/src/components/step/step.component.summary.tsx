@@ -10,6 +10,8 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {getStepIcon} from '../../data/step-icons';
 import {BaseSummaryProps} from "../../summaries/base-summary";
+import {faBrakeWarning} from "@fortawesome/pro-regular-svg-icons";
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 
 export function StepComponentSummary({model}: BaseSummaryProps<StepElement, any>) {
     const dispatch = useAppDispatch();
@@ -24,6 +26,7 @@ export function StepComponentSummary({model}: BaseSummaryProps<StepElement, any>
         }
     };
 
+    const Icon = getStepIcon(model);
     return (
         <Box
             sx={{
@@ -37,12 +40,7 @@ export function StepComponentSummary({model}: BaseSummaryProps<StepElement, any>
                 variant="h6"
                 color="primary"
             >
-                <FontAwesomeIcon
-                    icon={getStepIcon(model)}
-                    style={{
-                        marginRight: '6px',
-                    }}
-                />
+                <Icon sx={{marginRight: '6px'}}/>
                 &nbsp;
                 {
                     model.title ? model.title : 'Unbenannter Abschnitt'
@@ -61,9 +59,7 @@ export function StepComponentSummary({model}: BaseSummaryProps<StepElement, any>
                         color: '#BFBFBF',
                     }}
                 >
-                    <FontAwesomeIcon
-                        icon={faPenToSquare}
-                    />
+                    <EditNoteOutlinedIcon/>
                 </IconButton>
             </Tooltip>
         </Box>

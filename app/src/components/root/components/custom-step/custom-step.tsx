@@ -1,7 +1,4 @@
 import {Alert, AlertTitle, Box, Button, Step, StepContent, StepLabel, StepProps, useTheme} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faArrowLeft, faArrowRight} from '@fortawesome/pro-regular-svg-icons';
-import {faCheckCircle} from '@fortawesome/pro-solid-svg-icons';
 import React, {useEffect, useRef} from 'react';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {getStepIcon} from '../../../../data/step-icons';
@@ -11,6 +8,9 @@ import {IntroductionStepElement} from "../../../../models/elements/steps/introdu
 import {SummaryStepElement} from "../../../../models/elements/steps/summary-step-element";
 import {SubmitStepElement} from "../../../../models/elements/steps/submit-step-element";
 import {SubmittedStepElement} from "../../../../models/elements/steps/submitted-step-element";
+import CheckCircleTwoToneIcon from '@mui/icons-material/CheckCircleTwoTone';
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
+import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 
 interface CustomStepProps {
     step: StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
@@ -53,6 +53,7 @@ export function CustomStep({
         }
     }, [active, step, ref]);
 
+    const Icon = getStepIcon(step);
     return (
         <Step
             {...passTroughProps}
@@ -60,11 +61,8 @@ export function CustomStep({
         >
             <StepLabel
                 StepIconComponent={(props) => (
-                    <FontAwesomeIcon
-                        fixedWidth
-                        icon={getStepIcon(step)}
-                        size="2x"
-                        color={props.active ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.4)'}
+                    <Icon
+                        sx={{fontSize: '2rem', marginLeft: '4px', color: props.active ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.4)'}}
                     />
                 )}
             >
@@ -77,10 +75,8 @@ export function CustomStep({
                     className="completed-step-suffix"
                     sx={{ml: 0.75}}
                 >
-                    <FontAwesomeIcon
-                        fixedWidth
-                        icon={faCheckCircle}
-                        color={theme.palette.primary.main}
+                    <CheckCircleTwoToneIcon
+                        sx={{color: theme.palette.primary.main, transform: 'translateY(5px)'}}
                     />
                 </Box>
             </StepLabel>
@@ -119,7 +115,7 @@ export function CustomStep({
                                 onClick={onNext}
                                 size="large"
                                 color="primary"
-                                endIcon={<FontAwesomeIcon icon={faArrowRight}/>}
+                                endIcon={<ArrowForwardOutlinedIcon/>}
                             >
                                 {nextLabel}
                             </Button>
@@ -133,7 +129,7 @@ export function CustomStep({
                             onClick={onPrevious}
                             variant="outlined"
                             size="large"
-                            startIcon={<FontAwesomeIcon icon={faArrowLeft}/>}
+                            startIcon={<ArrowBackOutlinedIcon/>}
                             sx={{
                                 mt: 2,
                                 [theme.breakpoints.up('md')]: {

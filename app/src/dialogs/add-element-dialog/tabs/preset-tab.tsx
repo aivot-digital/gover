@@ -3,7 +3,6 @@ import {Preset} from "../../../models/entities/preset";
 import {PresetsService} from "../../../services/presets.service";
 import {BaseTabProps} from "./base-tab-props";
 import {DialogContent, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {ElementIcons} from "../../../data/element-type/element-icons";
 import {ElementType} from "../../../data/element-type/element-type";
 import {
@@ -54,24 +53,25 @@ export function PresetTab({parentType, onAddElement}: BaseTabProps) {
             <List dense>
                 {
                     presets
-                        .map(preset => (
-                            <ListItem
-                                key={preset.root.name}
-                                disablePadding
-                            >
-                                <ListItemButton onClick={() => addPresetElement(preset)}>
-                                    <ListItemIcon sx={{pl: 1.5}}>
-                                        <FontAwesomeIcon
-                                            icon={ElementIcons[ElementType.Container]}
+                        .map(preset => {
+                            const Icon = ElementIcons[ElementType.Container];
+                            return (
+                                <ListItem
+                                    key={preset.root.name}
+                                    disablePadding
+                                >
+                                    <ListItemButton onClick={() => addPresetElement(preset)}>
+                                        <ListItemIcon sx={{pl: 1.5}}>
+                                            <Icon/>
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            disableTypography
+                                            primary={preset.root.name}
                                         />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        disableTypography
-                                        primary={preset.root.name}
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        ))
+                                    </ListItemButton>
+                                </ListItem>
+                            )
+                        })
                 }
             </List>
         );

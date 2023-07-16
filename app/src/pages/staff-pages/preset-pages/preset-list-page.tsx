@@ -3,11 +3,11 @@ import {Preset} from '../../../models/entities/preset';
 import {ElementType} from '../../../data/element-type/element-type';
 import {generateElementIdForType} from "../../../utils/id-utils";
 import ProjectPackage from '../../../../package.json';
-import {faPlus} from "@fortawesome/pro-light-svg-icons";
-import {useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
 import {GridColDef} from "@mui/x-data-grid";
 import {useNavigate} from "react-router-dom";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 
 const columns: GridColDef<Preset>[] = [
@@ -61,7 +61,7 @@ export function PresetListPage() {
             actions={[{
                 label: 'Neue Vorlage',
                 onClick: handleCreate,
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neue Vorlage hinzufügen',
             }]}
 

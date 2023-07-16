@@ -5,6 +5,10 @@ import {format, isToday} from 'date-fns';
 import {ApplicationStatusNames} from '../../data/application-status/application-status-names';
 import {ApplicationStatus} from '../../data/application-status/application-status';
 import {Link} from 'react-router-dom';
+import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
+import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
+import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import {
     faArrowUpRightFromSquare,
     faBars,
@@ -16,7 +20,7 @@ import {
     faTrashCanXmark,
     faUpFromDottedLine,
     faFiles,
-} from '@fortawesome/pro-light-svg-icons';
+} from '@fortawesome/pro-regular-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {ApplicationService} from '../../services/application-service';
 import {getColorPalette} from '../../theming/themes';
@@ -29,7 +33,12 @@ import {DepartmentsService} from "../../services/departments-service";
 import {ApplicationListItemProps} from "./application-list-item-props";
 import {useAppSelector} from "../../hooks/use-app-selector";
 import {selectUser} from "../../slices/user-slice";
-
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined';
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
+import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
+import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 export function ApplicationListItem({
                                         application,
@@ -95,10 +104,9 @@ export function ApplicationListItem({
             <Box
                 className={styles.listItemIcon}
             >
-                <FontAwesomeIcon
-                    icon={faFileText}
-                    size="2x"
-                    color={(getColorPalette(application.theme).primary as SimplePaletteColorOptions).main}
+                <DescriptionOutlinedIcon
+                    sx={{ color: (getColorPalette(application.theme).primary as SimplePaletteColorOptions).main }}
+                    fontSize="large"
                 />
             </Box>
             <Box
@@ -106,7 +114,8 @@ export function ApplicationListItem({
                 sx={{ml: 2.5, py: '8px'}}
             >
                 <Typography
-                    variant="h6"
+                    variant="h5"
+                    sx={{mb: 0.5}}
                 >
                     {application.title}
 
@@ -146,13 +155,11 @@ export function ApplicationListItem({
                     isEditor &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={<FontAwesomeIcon
-                                icon={faFiles}
-                                style={{marginTop: '-2px'}}
-                            />}
+                            startIcon={<FolderSharedOutlinedIcon sx={{marginTop: '-2px' }} />}
                             component={Link}
                             to={'/submissions/' + application.id}
                         >
+
                             Anträge einsehen
                         </Button>
                     </Box>
@@ -162,10 +169,7 @@ export function ApplicationListItem({
                     isDeveloper &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={<FontAwesomeIcon
-                                icon={faEdit}
-                                style={{marginTop: '-2px'}}
-                            />}
+                            startIcon={<DriveFileRenameOutlineOutlinedIcon sx={{marginTop: '-2px' }} />}
                             component={Link}
                             to={'/edit/' + application.id}
                         >
@@ -178,10 +182,7 @@ export function ApplicationListItem({
                     isDeveloper &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={<FontAwesomeIcon
-                                icon={faUpFromDottedLine}
-                                style={{marginTop: '-2px'}}
-                            />}
+                            startIcon={<DriveFolderUploadOutlinedIcon sx={{marginTop: '-2px' }} />}
                             onClick={handleNewVersion}
                         >
                             Neue Version
@@ -191,10 +192,7 @@ export function ApplicationListItem({
 
                 <Box className={styles.listItemActionsContainer}>
                     <Button
-                        startIcon={<FontAwesomeIcon
-                            icon={faBars}
-                            style={{marginTop: '-2px'}}
-                        />}
+                        startIcon={<MenuOutlinedIcon sx={{marginTop: '-2px' }} />}
                         onClick={handleOptionsClick}
                     >
                         Optionen
@@ -207,10 +205,10 @@ export function ApplicationListItem({
                     >
                         <MenuItem onClick={handleClone}>
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={faClone}/>
+                                <FileCopyOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
-                                Antrag Duplizieren
+                                Antrag duplizieren
                             </ListItemText>
                         </MenuItem>
 
@@ -220,7 +218,7 @@ export function ApplicationListItem({
                             target="_blank"
                         >
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={faArrowUpRightFromSquare}/>
+                                <OpenInNewOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
                                 Antrag als Antragsteller:in öffnen (in neuem Tab)
@@ -236,7 +234,7 @@ export function ApplicationListItem({
                             }}
                         >
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={faClipboard}/>
+                                <ContentPasteOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
                                 Link in Zwischenablage kopieren
@@ -247,7 +245,7 @@ export function ApplicationListItem({
                             isDeveloper &&
                             <MenuItem onClick={handleDownloadConfig}>
                                 <ListItemIcon>
-                                    <FontAwesomeIcon icon={faFileExport}/>
+                                    <ImportExportOutlinedIcon/>
                                 </ListItemIcon>
                                 <ListItemText>
                                     Antrag als .gov-Datei exportieren
@@ -259,7 +257,7 @@ export function ApplicationListItem({
                             isDeveloper &&
                             <MenuItem onClick={handleDelete}>
                                 <ListItemIcon>
-                                    <FontAwesomeIcon icon={faTrashCanXmark}/>
+                                    <DeleteForeverOutlinedIcon/>
                                 </ListItemIcon>
                                 <ListItemText>
                                     Antrag löschen

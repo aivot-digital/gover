@@ -1,8 +1,8 @@
 import React, {useRef} from 'react';
 import {Box, IconButton, Typography} from '@mui/material';
 import {FileUploadProps} from './file-upload-props';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faTrashCanXmark, faUpload} from '@fortawesome/pro-light-svg-icons';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 /**
  * @deprecated Use FieldUploadFieldComponent
@@ -62,10 +62,7 @@ export function FileUpload({extensions, multiple, onChange, value}: FileUploadPr
                                     sx={{ml: 1}}
                                     onClick={() => handleRemove(file)}
                                 >
-                                    <FontAwesomeIcon
-                                        size="xs"
-                                        icon={faTrashCanXmark}
-                                    />
+                                    <DeleteForeverOutlinedIcon/>
                                 </IconButton>
                             </Box>
                         ))
@@ -88,16 +85,12 @@ export function FileUpload({extensions, multiple, onChange, value}: FileUploadPr
                     onChange={handleChange}
                 />
                 <Box>
-                    <FontAwesomeIcon
-                        icon={faUpload}
-                        size="3x"
-                        color="#ccc"
-                    />
+                    <FileUploadOutlinedIcon sx={{color: '#aaa', fontSize: "3rem"}}/>
                 </Box>
                 <Box>
                     <Typography
-                        sx={{mt: 2}}
-                        color="#ccc"
+                        sx={{mt: 1}}
+                        color="#aaa"
                     >
                         Klicken Sie hier, um eine Datei für den Upload auszuwählen
                     </Typography>

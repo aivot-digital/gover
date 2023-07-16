@@ -8,8 +8,6 @@ import {CustomStep} from './components/custom-step/custom-step';
 import {PrivacyUserInputKey} from '../general-information/general-information.component.view';
 import {isElementVisible} from '../../utils/is-element-visible';
 import Chip from '@mui/material/Chip';
-import {faShieldCheck} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import Tooltip from '@mui/material/Tooltip';
 import {Submitted} from '../static-components/submitted/submitted';
 import {SummaryAttachmentsTooLargeKey, SummaryUserInputKey} from '../summary/summary.component.view';
@@ -36,6 +34,7 @@ import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from "../../views/base-view";
 import {withTimeout} from "../../utils/with-timeout";
 import {SubmissionListDto} from "../../models/entities/submission-list-dto";
+import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 
 const checkTimeoutMinMs = 2000;
 const submissionTimeoutMinMs = 3000;
@@ -304,10 +303,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                     >
                         <Chip
                             sx={{pl: 1, pr: 1, cursor: 'help'}}
-                            icon={<span style={{color: 'var(--hw-primary)'}}><FontAwesomeIcon
-                                icon={faShieldCheck}
-                                size={'lg'}
-                            /></span>}
+                            icon={<span style={{color: 'var(--hw-primary)', transform: 'translateY(1px)'}}><GppGoodOutlinedIcon fontSize={"small"}/></span>}
                             label="Lokal auf Ihrem Gerät zwischengespeichert"
                             variant="outlined"
                         />

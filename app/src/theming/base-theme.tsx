@@ -1,13 +1,10 @@
 import {createTheme} from '@mui/material';
 import {deDE} from '@mui/x-data-grid';
 import {deDE as coreDeDE} from '@mui/material/locale';
-import {
-    faCircleCheck,
-    faCircleExclamation,
-    faCircleInfo,
-    faTriangleExclamation
-} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
 
 const fontStackHeadlines = ['"Public Sans"',
     '-apple-system',
@@ -204,10 +201,10 @@ export const BaseTheme = createTheme({
             },
             defaultProps: {
                 iconMapping: {
-                    error: <FontAwesomeIcon icon={faCircleExclamation}/>,
-                    info: <FontAwesomeIcon icon={faCircleInfo}/>,
-                    success: <FontAwesomeIcon icon={faCircleCheck}/>,
-                    warning: <FontAwesomeIcon icon={faTriangleExclamation}/>,
+                    error: <ErrorOutlineOutlinedIcon/>,
+                    info: <InfoOutlinedIcon/>,
+                    success: <CheckCircleOutlinedIcon/>,
+                    warning: <ReportOutlinedIcon/>,
                 },
             },
         },

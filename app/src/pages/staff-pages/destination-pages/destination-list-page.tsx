@@ -1,7 +1,6 @@
 import {useAuthGuard} from "../../../hooks/use-auth-guard";
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {faPlus,} from "@fortawesome/pro-light-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {Destination} from "../../../models/entities/destination";
 import {DestinationsService} from "../../../services/destinations-service";
@@ -9,6 +8,7 @@ import {GridColDef} from "@mui/x-data-grid";
 import {useUserGuard} from "../../../hooks/use-user-guard";
 import {DestinationType, DestinationTypeIcons} from "../../../data/destination-type/destination-type";
 import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 const columns: GridColDef<Destination>[] = [
     {
@@ -71,7 +71,7 @@ export function DestinationListPage() {
 
             actions={[{
                 label: 'Neue Schnittstelle',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neue Schnittstelle anlegen',
                 onClick: () => navigate(`/destinations/new`),
             }]}

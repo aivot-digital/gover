@@ -19,8 +19,8 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ElementTree} from '../../../components/element-tree/element-tree';
 import {flattenElements} from "../../../utils/flatten-elements";
-import {faTrashAlt} from "@fortawesome/pro-light-svg-icons";
 import {ConfirmDialog} from "../../../dialogs/confirm-dialog/confirm-dialog";
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 export function PresetEditPage() {
     useAuthGuard();
@@ -82,7 +82,7 @@ export function PresetEditPage() {
                     title={preset.root.name ?? ''}
                     noPlaceholder={true}
                     actions={[{
-                        icon: faTrashAlt,
+                        icon: <DeleteForeverOutlinedIcon/>,
                         tooltip: 'Vorlage löschen',
                         onClick: () => setConfirmDelete(() => () => {
                             PresetsService.destroy(preset.id);

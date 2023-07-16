@@ -20,6 +20,7 @@ import {SearchInput} from "../search-input/search-input";
 import {useAppSelector} from "../../hooks/use-app-selector";
 import {selectTreeElementSearch, setExpandElementTree, setTreeElementSearch} from "../../slices/admin-settings-slice";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
+import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 
 export function ElementTree<T extends AnyElementWithChildren>(props: ElementTreeProps<T>) {
     const dispatch = useAppDispatch();
@@ -198,13 +199,8 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                         variant="outlined"
                         size="small"
                         fullWidth
-                        endIcon={<span
-                            style={{
-                                fontSize: '16px',
-                                transform: 'translateY(1px)'
-                            }}
-                        ><FontAwesomeIcon icon={faPlusCircle}/></span>}
-                        sx={{mt: 4}}
+                        endIcon={<AddCircleOutlineOutlinedIcon sx={{transform: 'translateY(-1px)'}}/>}
+                        sx={{mt: 4, py: 0.5}}
                     >
                         {
                             isRootElement(props.element) ? 'Neuen Abschnitt hinzufügen' : 'Neues Element hinzufügen'

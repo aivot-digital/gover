@@ -1,6 +1,5 @@
 import {useAuthGuard} from "../../../hooks/use-auth-guard";
 import React, {useEffect, useState} from "react";
-import {faPlus} from "@fortawesome/pro-light-svg-icons";
 import {useNavigate} from "react-router-dom";
 import {Department} from "../../../models/entities/department";
 import {DepartmentsService} from "../../../services/departments-service";
@@ -10,6 +9,7 @@ import {useAppSelector} from "../../../hooks/use-app-selector";
 import {selectUser} from "../../../slices/user-slice";
 import {GridColDef} from "@mui/x-data-grid";
 import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 
 const columns: GridColDef<Department>[] = [
@@ -69,7 +69,7 @@ export function DepartmentListPage() {
                 user != null &&
                 user.admin ? [{
                     label: 'Fachbereich hinzufügen',
-                    icon: faPlus,
+                    icon: <AddOutlinedIcon/>,
                     onClick: () => navigate('/departments/new'),
                     tooltip: 'Neuen Fachbereich hinzufügen',
                 }] : []

@@ -2,11 +2,11 @@ import {useAuthGuard} from "../../../hooks/use-auth-guard";
 import React, {useEffect, useState} from "react";
 import {User} from "../../../models/entities/user";
 import {UsersService} from "../../../services/users-service";
-import {faPlus} from "@fortawesome/pro-light-svg-icons";
 import {useNavigate} from "react-router-dom";
 import {useUserGuard} from "../../../hooks/use-user-guard";
 import {GridColDef} from "@mui/x-data-grid";
 import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 
 const columns: GridColDef<User>[] = [
@@ -62,7 +62,7 @@ export function UserListPage() {
 
             actions={[{
                 label: 'Benutzer:in hinzufügen',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 onClick: () => navigate('/users/new'),
                 tooltip: 'Neue Benutzer:in hinzufügen',
             }]}

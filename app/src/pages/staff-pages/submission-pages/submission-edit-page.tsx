@@ -6,7 +6,7 @@ import {SubmissionDetailsDto} from "../../../models/entities/submission-details-
 import {ApplicationService} from "../../../services/application-service";
 import {SubmissionService} from "../../../services/submission-service";
 import {format, parseISO} from "date-fns";
-import {faArrowsRotate, faFileDownload, faFilePdf, faFileZipper} from "@fortawesome/pro-light-svg-icons";
+import {faFileDownload, faFilePdf} from "@fortawesome/pro-light-svg-icons";
 import {TextFieldComponent} from "../../../components/text-field/text-field-component";
 import {SelectFieldComponent} from "../../../components/select-field/select-field-component";
 import {UsersService} from "../../../services/users-service";
@@ -23,6 +23,8 @@ import {DestinationsService} from "../../../services/destinations-service";
 import {PageWrapper} from "../../../components/page-wrapper/page-wrapper";
 import {ConfirmDialog} from "../../../dialogs/confirm-dialog/confirm-dialog";
 import {useChangeBlocker} from "../../../hooks/use-change-blocker";
+import FolderZipOutlinedIcon from '@mui/icons-material/FolderZipOutlined';
+import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
 
 export function SubmissionEditPage() {
     const dispatch = useAppDispatch();
@@ -185,13 +187,13 @@ export function SubmissionEditPage() {
             isLoading={application == null || editedSubmission == null || userOptions == null || attachments == null}
             toolbarActions={archived == null && editedSubmission?.destination == null ? [
                 {
-                    icon: faFileZipper,
+                    icon: <FolderZipOutlinedIcon/>,
                     tooltip: 'Antrag abschließen',
                     onClick: handleArchive,
                 },
             ] : (editedSubmission?.destination != null && !editedSubmission?.destinationSuccess ? [
                 {
-                    icon: faArrowsRotate,
+                    icon: <CachedOutlinedIcon/>,
                     tooltip: 'Erneut übertragen',
                     onClick: handleResendDestination,
                 },

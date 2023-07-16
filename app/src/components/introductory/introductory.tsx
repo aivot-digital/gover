@@ -1,15 +1,14 @@
 import React, {useState} from 'react';
 import {Box, Container, Divider, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faArrowRight, faArrowUpLeft} from '@fortawesome/pro-solid-svg-icons';
 import {showNotImplementedMessage} from '../../utils/show-not-implemented-message';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {faXmarkCircle} from '@fortawesome/pro-regular-svg-icons';
 import {AppMode} from "../../data/app-mode";
 import {LocalStorageService} from "../../services/local-storage-service";
 import {LocalstorageKey} from "../../data/localstorage-key";
-
+import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
+import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
 
 interface IntroductoryProps {
     mode: AppMode;
@@ -55,7 +54,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                     sx={{color: theme.palette.secondary.main}}
                                     onClick={onDismiss}
                                 >
-                                    <FontAwesomeIcon icon={faXmarkCircle}/>
+                                    <HighlightOffOutlinedIcon sx={{fontSize: "1.75rem"}}/>
                                 </IconButton>
                             </Tooltip>
                         </Box>
@@ -117,12 +116,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                             },
                                         }]}
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faArrowRight}
-                                        fixedWidth
-                                        size={'xs'}
-                                        style={{marginRight: '6px', flexShrink: 0}}
-                                    />
+                                    <ArrowForwardOutlinedIcon style={{marginRight: '6px', flexShrink: 0, fontSize: '0.9em'}}/>
                                     <span>Zur Benutzereinführung (inkl. Video-Kurs)</span>
                                 </Typography>
 
@@ -147,12 +141,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                             },
                                         }]}
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faArrowUpLeft}
-                                        fixedWidth
-                                        size={'xs'}
-                                        style={{marginRight: '6px', flexShrink: 0}}
-                                    />
+                                    <NorthWestOutlinedIcon style={{marginRight: '6px', flexShrink: 0, fontSize: '0.9em'}}/>
                                     <span>Alles neu – was jetzt? Die neuen Arbeitsabläufe und Prozessschritte für Online-Formulare einfach erklärt</span>
                                 </Typography>
                             </>

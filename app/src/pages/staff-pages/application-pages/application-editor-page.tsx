@@ -37,7 +37,7 @@ import {
     faScrewdriverWrench,
     faText,
     faTextSlash
-} from '@fortawesome/pro-light-svg-icons';
+} from '@fortawesome/pro-regular-svg-icons';
 import {AdminToolsDialog} from '../../../dialogs/admin-tools/admin-tools-dialog';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -48,6 +48,14 @@ import {HelpDialog} from "../../../dialogs/help-dialog/help.dialog";
 import {PrivacyDialog} from "../../../dialogs/privacy-dialog/privacy-dialog";
 import {ImprintDialog} from "../../../dialogs/imprint-dialog/imprint-dialog";
 import {AccessibilityDialog} from "../../../dialogs/accessibility-dialog/accessibility-dialog";
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import RemoveDoneOutlinedIcon from '@mui/icons-material/RemoveDoneOutlined';
+import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
+import HandymanOutlinedIcon from '@mui/icons-material/HandymanOutlined';
+import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined';
+import LaunchOutlinedIcon from '@mui/icons-material/LaunchOutlined';
 
 export function ApplicationEditorPage() {
     useAuthGuard();
@@ -108,14 +116,14 @@ export function ApplicationEditorPage() {
                     actions={[
                         {
                             tooltip: adminSettings.disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
-                            icon: adminSettings.disableValidation ? faText : faTextSlash,
+                            icon: adminSettings.disableValidation ? <DoneAllOutlinedIcon/> : <RemoveDoneOutlinedIcon/>,
                             onClick: () => {
                                 dispatch(toggleValidation());
                             },
                         },
                         {
                             tooltip: adminSettings.disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                            icon: adminSettings.disableVisibility ? faEye : faEyeSlash,
+                            icon: adminSettings.disableVisibility ? <VisibilityOutlinedIcon/> : <VisibilityOffOutlinedIcon/>,
                             onClick: () => {
                                 dispatch(toggleVisibility());
                             },
@@ -123,21 +131,21 @@ export function ApplicationEditorPage() {
                         'separator',
                         {
                             tooltip: 'Admin-Werkzeuge öffnen',
-                            icon: faScrewdriverWrench,
+                            icon: <HandymanOutlinedIcon/>,
                             onClick: () => {
                                 setShowAdminTools(true);
                             },
                         },
                         {
                             tooltip: adminSettings.hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
-                            icon: adminSettings.hideComponentTree ? faDisplay : faDisplaySlash,
+                            icon: adminSettings.hideComponentTree ? <DesktopWindowsOutlinedIcon/> : <DesktopAccessDisabledOutlinedIcon/>,
                             onClick: () => {
                                 dispatch(toggleComponentTree());
                             },
                         },
                         {
                             tooltip: 'Formular als Antragsteller:in öffnen (in neuem Tab)',
-                            icon: faExternalLink,
+                            icon: <LaunchOutlinedIcon/>,
                             href: `/#/${application.slug ?? ''}/${application.version ?? ''}`,
                         },
                     ]}
