@@ -39,4 +39,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Intege
 
     @Transactional(readOnly = true)
     Collection<Application> findAllByDestinationId(Integer destination);
+    @Transactional(readOnly = true)
+    Collection<Application> findAllByThemeId(Integer destination);
 }

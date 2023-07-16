@@ -19,6 +19,7 @@ public class ApplicationListDto {
     private LocalDateTime created;
     private LocalDateTime updated;
     private Integer openSubmissions;
+    private Integer inProgressSubmissions;
     private Integer totalSubmissions;
 
     public ApplicationListDto() {
@@ -44,6 +45,7 @@ public class ApplicationListDto {
         created = app.getCreated();
         updated = app.getUpdated();
         openSubmissions = app.getOpenSubmissions();
+        inProgressSubmissions = app.getInProgressSubmissions();
         totalSubmissions = app.getTotalSubmissions();
     }
 
@@ -159,6 +161,14 @@ public class ApplicationListDto {
 
     public void setOpenSubmissions(Integer openSubmissions) {
         this.openSubmissions = openSubmissions;
+    }
+
+    public Integer getInProgressSubmissions() {
+        return inProgressSubmissions;
+    }
+
+    public void setInProgressSubmissions(Integer inProgressSubmissions) {
+        this.inProgressSubmissions = inProgressSubmissions;
     }
 
 

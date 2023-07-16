@@ -93,6 +93,9 @@ public class Application {
     private Integer openSubmissions;
 
     @Column(updatable = false)
+    private Integer inProgressSubmissions;
+
+    @Column(updatable = false)
     private Integer totalSubmissions;
 
 
@@ -309,6 +312,14 @@ public class Application {
 
     public void setOpenSubmissions(Integer openSubmissions) {
         this.openSubmissions = openSubmissions;
+    }
+
+    public Integer getInProgressSubmissions() {
+        return inProgressSubmissions;
+    }
+
+    public void setInProgressSubmissions(Integer inProgressSubmissions) {
+        this.inProgressSubmissions = inProgressSubmissions;
     }
 
 

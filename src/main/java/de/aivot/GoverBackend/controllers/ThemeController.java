@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.controllers;
 
+import de.aivot.GoverBackend.models.dtos.ApplicationListDto;
 import de.aivot.GoverBackend.models.entities.Theme;
 import de.aivot.GoverBackend.permissions.IsAdmin;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
@@ -43,6 +44,15 @@ public class ThemeController {
         return repository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/api/themes/{id}/applications")
+    public Collection<ApplicationListDto> retrieveApplications(@PathVariable Integer id) {
+        return applicationRepository
+                .findAllByThemeId(id)
+                .stream()
+                .map(ApplicationListDto::new)
+                .toList();
     }
 
     @GetMapping("/api/public/themes/{id}")
