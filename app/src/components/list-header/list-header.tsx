@@ -13,7 +13,7 @@ export function ListHeader({title, search, searchPlaceholder, onSearchChange, ac
                 alignItems: 'center'
             }}
         >
-            <Typography variant="h5">
+            <Typography variant="h2">
                 {title}
             </Typography>
 
