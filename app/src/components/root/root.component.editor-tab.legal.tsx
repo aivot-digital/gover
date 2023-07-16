@@ -9,8 +9,9 @@ import { useAppDispatch } from '../../hooks/use-app-dispatch';
 import { SelectFieldComponent } from '../select-field/select-field-component';
 import { NumberFieldComponent } from '../number-field/number-field-component';
 import { showErrorSnackbar } from '../../slices/snackbar-slice';
+import { Application } from '../../models/entities/application';
 
-export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>): JSX.Element {
+export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
     const [departments, setDepartments] = useState<Department[]>([]);
 
@@ -39,9 +40,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
 
             <SelectFieldComponent
                 label="Text für das Impressum"
-                value={ props.application.imprintDepartment?.toString() ?? undefined }
+                value={ props.entity.imprintDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         imprintDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -51,9 +52,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
 
             <SelectFieldComponent
                 label="Text für die Datenschutzerklärung"
-                value={ props.application.privacyDepartment?.toString() ?? undefined }
+                value={ props.entity.privacyDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         privacyDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -63,9 +64,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
 
             <SelectFieldComponent
                 label="Text für die Erklärung der Barrierefreiheit"
-                value={ props.application.accessibilityDepartment?.toString() ?? undefined }
+                value={ props.entity.accessibilityDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         accessibilityDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -122,9 +123,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 label="Löschfrist in Wochen"
                 hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie 0 ein um Anträge nicht zu löschen."
                 placeholder="2"
-                value={ props.application.submissionDeletionWeeks ?? undefined }
+                value={ props.entity.submissionDeletionWeeks ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         submissionDeletionWeeks: val,
                     });
                 } }
@@ -137,9 +138,9 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 label="Zugriffsfrist in Stunden"
                 hint="Die Zeit in Stunden, in der Nutzer:innen noch auf die von Ihnen gestellten Anträge zugreifen und diese herunterladen können."
                 placeholder="4"
-                value={ props.application.customerAccessHours ?? undefined }
+                value={ props.entity.customerAccessHours ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         customerAccessHours: val,
                     });
                 } }

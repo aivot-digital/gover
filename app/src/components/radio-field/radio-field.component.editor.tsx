@@ -1,8 +1,10 @@
 import { type RadioFieldElement } from '../../models/elements/form/input/radio-field-element';
 import { StringListInput } from '../string-list-input/string-list-input';
 import { type BaseEditorProps } from '../../editors/base-editor';
+import { Application } from '../../models/entities/application';
+import { Preset } from '../../models/entities/preset';
 
-export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldElement>): JSX.Element {
+export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldElement, Application | Preset>): JSX.Element {
     return (
         <>
             <StringListInput

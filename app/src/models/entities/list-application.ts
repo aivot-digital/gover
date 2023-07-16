@@ -1,4 +1,4 @@
-import {ApplicationStatus} from "../../data/application-status/application-status";
+import { type ApplicationStatus } from '../../data/application-status/application-status';
 
 export interface ListApplication {
     id: number;
@@ -6,11 +6,13 @@ export interface ListApplication {
     version: string;
     title: string;
     headline: string;
-    theme: string;
+    theme?: number | null;
     status: ApplicationStatus;
     developingDepartment: number;
-    managingDepartment: number;
-    responsibleDepartment: number;
+    managingDepartment?: number | null;
+    responsibleDepartment?: number | null;
     created: string;
     updated: string;
+    totalSubmissions: number;
+    openSubmissions: number;
 }

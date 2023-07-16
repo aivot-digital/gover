@@ -12,16 +12,18 @@ import { faClose, faPlusCircle } from '@fortawesome/pro-light-svg-icons';
 import { ElementType } from '../../data/element-type/element-type';
 import { AddElementDialog } from '../../dialogs/add-element-dialog/add-element-dialog';
 import { type AnyElement } from '../../models/elements/any-element';
-import { type AnyElementWithChildren } from '../../models/elements/any-element-with-children';
 import { ElementTreeItem } from './components/element-tree-item/element-tree-item';
-import { isRootElement, type RootElement } from '../../models/elements/root-element';
+import { type RootElement } from '../../models/elements/root-element';
 import { generateElementIdForType } from '../../utils/id-utils';
 import { SearchInput } from '../search-input/search-input';
 import { useAppSelector } from '../../hooks/use-app-selector';
 import { selectTreeElementSearch, setExpandElementTree, setTreeElementSearch } from '../../slices/admin-settings-slice';
 import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import { type Application, isApplication } from '../../models/entities/application';
+import { type Preset } from '../../models/entities/preset';
+import { type GroupLayout } from '../../models/elements/form/layout/group-layout';
 
-export function ElementTree<T extends AnyElementWithChildren>(props: ElementTreeProps<T>): JSX.Element {
+export function ElementTree<T extends Application | Preset>(props: ElementTreeProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -31,15 +33,19 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
 
     const handleAddElement = (element: AnyElement): void => {
         props.onPatch({
-            children: [
-                ...(props.element as any).children,
-                element,
-            ],
-        } as any);
+            ...props.entity,
+            root: {
+                ...props.entity.root,
+                children: [
+                    ...props.entity.root.children,
+                    element,
+                ],
+            },
+        });
     };
 
     const handleAdd = (): void => {
-        if (isRootElement(props.element)) {
+        if (isApplication(props.entity)) {
             handleAddElement({
                 id: generateElementIdForType(ElementType.Step),
                 type: ElementType.Step,
@@ -49,6 +55,18 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
         } else {
             setShowAddDialog(true);
         }
+    };
+
+    const handleRootPatch = (updatedElement: Partial<RootElement | GroupLayout>, updatedEntity: Partial<T>): void => {
+        props.onPatch({
+            ...props.entity,
+            ...updatedEntity,
+            root: {
+                ...props.entity.root,
+                ...updatedEntity.root,
+                ...updatedElement,
+            },
+        });
     };
 
     const handleToggleSearch = (): void => {
@@ -72,8 +90,9 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
             >
                 <Box>
                     <ElementTreeHeader
-                        element={ props.element }
-                        onPatch={ props.onPatch }
+                        entity={ props.entity }
+                        element={ props.entity.root }
+                        onPatch={ handleRootPatch }
                         onToggleSearch={ handleToggleSearch }
                         editable={ props.editable }
                     />
@@ -121,19 +140,26 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                         backend={ HTML5Backend }
                     >
                         {
-                            isRootElement(props.element) &&
+                            isApplication(props.entity) &&
                             <ElementTreeItem
-                                parents={ [props.element] }
-                                element={ props.element.introductionStep }
-                                onPatch={ (patch) => {
-                                    if (isRootElement(props.element)) {
-                                        const rootPatch: Partial<RootElement> = {
-                                            introductionStep: {
-                                                ...props.element.introductionStep,
-                                                ...patch,
+                                parents={ [props.entity.root] }
+                                entity={ props.entity }
+                                element={ props.entity.root.introductionStep }
+                                onPatch={ (updatedElement, updatedEntity) => {
+                                    if (isApplication(props.entity)) {
+                                        props.onPatch({
+                                            ...props.entity,
+                                            ...updatedEntity,
+                                            root: {
+                                                ...props.entity.root,
+                                                ...updatedEntity.root,
+                                                introductionStep: {
+                                                    ...props.entity.root.introductionStep,
+                                                    ...updatedEntity.root?.introductionStep,
+                                                    ...updatedElement,
+                                                },
                                             },
-                                        };
-                                        props.onPatch(rootPatch as Partial<T>);
+                                        });
                                     }
                                 } }
                                 onDelete={ () => {
@@ -148,26 +174,44 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
 
                         <ElementTreeItemList
                             parents={ [] }
-                            element={ props.element }
-                            onPatch={ props.onPatch }
-                            isRootList
+                            entity={ props.entity }
+                            element={ props.entity.root }
+                            onPatch={ (updatedElement, updatedEntity) => {
+                                props.onPatch({
+                                    ...props.entity,
+                                    ...updatedEntity,
+                                    root: {
+                                        ...props.entity.root,
+                                        ...updatedEntity.root,
+                                        ...updatedElement,
+                                    },
+                                });
+                            } }
                             editable={ props.editable }
+                            isRootList={ true }
                         />
 
                         {
-                            isRootElement(props.element) &&
+                            isApplication(props.entity) &&
                             <ElementTreeItem
-                                parents={ [props.element] }
-                                element={ props.element.summaryStep }
-                                onPatch={ (patch) => {
-                                    if (isRootElement(props.element)) {
-                                        const rootPatch: Partial<RootElement> = {
-                                            summaryStep: {
-                                                ...props.element.summaryStep,
-                                                ...patch,
+                                parents={ [props.entity.root] }
+                                entity={ props.entity }
+                                element={ props.entity.root.summaryStep }
+                                onPatch={ (updatedElement, updatedEntity) => {
+                                    if (isApplication(props.entity)) {
+                                        props.onPatch({
+                                            ...props.entity,
+                                            ...updatedEntity,
+                                            root: {
+                                                ...props.entity.root,
+                                                ...updatedEntity.root,
+                                                summaryStep: {
+                                                    ...props.entity.root.summaryStep,
+                                                    ...updatedEntity.root?.summaryStep,
+                                                    ...updatedElement,
+                                                },
                                             },
-                                        };
-                                        props.onPatch(rootPatch as Partial<T>);
+                                        });
                                     }
                                 } }
                                 onDelete={ () => {
@@ -181,19 +225,26 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                         }
 
                         {
-                            isRootElement(props.element) &&
+                            isApplication(props.entity) &&
                             <ElementTreeItem
-                                parents={ [props.element] }
-                                element={ props.element.submitStep }
-                                onPatch={ (patch) => {
-                                    if (isRootElement(props.element)) {
-                                        const rootPatch: Partial<RootElement> = {
-                                            submitStep: {
-                                                ...props.element.submitStep,
-                                                ...patch,
+                                parents={ [props.entity.root] }
+                                entity={ props.entity }
+                                element={ props.entity.root.submitStep }
+                                onPatch={ (updatedElement, updatedEntity) => {
+                                    if (isApplication(props.entity)) {
+                                        props.onPatch({
+                                            ...props.entity,
+                                            ...updatedEntity,
+                                            root: {
+                                                ...props.entity.root,
+                                                ...updatedEntity.root,
+                                                submitStep: {
+                                                    ...props.entity.root.submitStep,
+                                                    ...updatedEntity.root?.submitStep,
+                                                    ...updatedElement,
+                                                },
                                             },
-                                        };
-                                        props.onPatch(rootPatch as Partial<T>);
+                                        });
                                     }
                                 } }
                                 onDelete={ () => {
@@ -227,7 +278,9 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                             } }
                         >
                             {
-                                isRootElement(props.element) ? 'Neuen Abschnitt hinzufügen' : 'Neues Element hinzufügen'
+                                isApplication(props.entity) ?
+                                    'Neuen Abschnitt hinzufügen' :
+                                    'Neues Element hinzufügen'
                             }
                         </Button>
                     }
@@ -269,19 +322,17 @@ export function ElementTree<T extends AnyElementWithChildren>(props: ElementTree
                 </Box>
             </Box>
 
-            {
-                showAddDialog &&
-                <AddElementDialog
-                    parentType={ props.element.type }
-                    onAddElement={ (element) => {
-                        handleAddElement(element);
-                        setShowAddDialog(false);
-                    } }
-                    onClose={ () => {
-                        setShowAddDialog(false);
-                    } }
-                />
-            }
+            <AddElementDialog
+                show={ showAddDialog }
+                parentType={ props.entity.root.type }
+                onAddElement={ (element) => {
+                    handleAddElement(element);
+                    setShowAddDialog(false);
+                } }
+                onClose={ () => {
+                    setShowAddDialog(false);
+                } }
+            />
         </>
     );
 }

@@ -9,8 +9,9 @@ import { SelectFieldComponent } from '../select-field/select-field-component';
 import { AlertComponent } from '../alert/alert-component';
 import { showErrorSnackbar } from '../../slices/snackbar-slice';
 import { DestinationType } from '../../data/destination-type/destination-type';
+import { Application } from '../../models/entities/application';
 
-export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement>): JSX.Element {
+export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
     const [destinations, setDestinations] = useState<Destination[]>();
 
@@ -36,9 +37,9 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 destinations != null &&
                 <SelectFieldComponent
                     label="Auswahl der Schnittstelle"
-                    value={ props.application.destination?.toString() ?? undefined }
+                    value={ props.entity.destination?.toString() ?? undefined }
                     onChange={ (val) => {
-                        props.onPatchApplication({
+                        props.onPatchEntity({
                             destination: val != null ? parseInt(val) : undefined,
                         });
                     } }
@@ -51,7 +52,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
             }
 
             {
-                props.application.destination == null &&
+                props.entity.destination == null &&
                 <AlertComponent
                     title="Keine Schnittstelle ausgewählt"
                     color="info"
@@ -63,8 +64,8 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
             }
 
             {
-                props.application.destination != null &&
-                destinations?.find((dest) => dest.id === props.application.destination)?.type === DestinationType.Mail &&
+                props.entity.destination != null &&
+                destinations?.find((dest) => dest.id === props.entity.destination)?.type === DestinationType.Mail &&
                 <AlertComponent
                     title="Hinweis zur E-Mail Schnittstelle"
                     color="warning"

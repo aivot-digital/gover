@@ -8,8 +8,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { isStringNullOrEmpty } from '../../utils/string-utils';
 import { BaseEditorProps } from '../../editors/base-editor';
 import { NumberFieldComponent } from '../number-field/number-field-component';
+import { Application } from '../../models/entities/application';
+import { Preset } from '../../models/entities/preset';
 
-export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement>) {
+export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, Application | Preset>) {
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
     const minRequiredError = (
         props.element.minimumRequiredRows != null &&

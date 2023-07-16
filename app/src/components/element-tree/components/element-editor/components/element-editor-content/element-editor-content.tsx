@@ -14,8 +14,10 @@ import { isAnyInputElement } from '../../../../../../models/elements/form/input/
 import { TextFieldComponent } from '../../../../../text-field/text-field-component';
 import { SelectFieldComponent } from '../../../../../select-field/select-field-component';
 import { CheckboxFieldComponent } from '../../../../../checkbox-field/checkbox-field-component';
+import { type Application } from '../../../../../../models/entities/application';
+import { type Preset } from '../../../../../../models/entities/preset';
 
-export function ElementEditorContent<T extends AnyElement>(props: ElementEditorContentProps<T>): JSX.Element | null {
+export function ElementEditorContent<T extends AnyElement, E extends Application | Preset>(props: ElementEditorContentProps<T, E>): JSX.Element | null {
     switch (props.currentTab) {
         case DefaultTabs.properties:
             return <DefaultEditor { ...props }/>;
@@ -31,9 +33,8 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                     allowNoCode={ true }
                     shouldReturnString={ false }
                     onChange={ (updatedFunc) => {
-                        // @ts-ignore
+                        // @ts-expect-error
                         props.onChange({
-                            // @ts-ignore
                             isVisible: updatedFunc,
                         });
                     } }
@@ -53,7 +54,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                     shouldReturnString={ true }
                     onChange={ (updatedFunc) => {
                         props.onChange({
-                            // @ts-ignore
+                            // @ts-expect-error
                             validate: updatedFunc,
                         });
                     } }
@@ -73,7 +74,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                     shouldReturnString={ false }
                     onChange={ (updatedFunc) => {
                         props.onChange({
-                            // @ts-ignore
+                            // @ts-expect-error
                             computeValue: updatedFunc,
                         });
                     } }
@@ -92,9 +93,8 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                     allowNoCode={ false }
                     shouldReturnString={ false }
                     onChange={ (updatedFunc) => {
-                        // @ts-ignore
+                        // @ts-expect-error
                         props.onChange({
-                            // @ts-ignore
                             patchElement: updatedFunc,
                         });
                     } }
@@ -116,9 +116,8 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                 <TestTab
                     elementModel={ props.element }
                     onPatch={ (updatedTestProtocolSet) => {
-                        // @ts-ignore
+                        // @ts-expect-error
                         props.onChange({
-                            // @ts-ignore
                             testProtocolSet: updatedTestProtocolSet,
                         });
                     } }
@@ -137,8 +136,8 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
                             props={ props.element }
                             onPatch={ props.onChange }
                             additionalTabIndex={ props.additionalTabs.findIndex((add) => props.currentTab === add.label) }
-                            application={ props.application }
-                            onPatchApplication={ props.onChangeApplication }
+                            entity={ props.entity }
+                            onPatchEntity={ props.onChangeEntity }
                             editable={ props.editable }
                         />
                     </Box>
@@ -148,7 +147,7 @@ export function ElementEditorContent<T extends AnyElement>(props: ElementEditorC
     }
 }
 
-function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>): JSX.Element {
+function DefaultEditor<T extends AnyElement, E extends Application | Preset>(props: ElementEditorContentProps<T, E>): JSX.Element {
     return (
         <Box
             sx={ {
@@ -172,9 +171,8 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                     label="Interner Name"
                     value={ props.element.name }
                     onChange={ (val) => {
-                        // @ts-ignore
+                        // @ts-expect-error
                         props.onChange({
-                            // @ts-ignore
                             name: val ?? '',
                         });
                     } }
@@ -195,7 +193,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                     value={ (props.element as AnyFormElement)?.weight?.toString() }
                     onChange={ (val) => {
                         props.onChange({
-                            // @ts-ignore
+                            // @ts-expect-error
                             weight: val != null ? parseInt(val) : 12,
                         });
                     } }
@@ -244,7 +242,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                         label="Titel"
                         onChange={ (val) => {
                             props.onChange({
-                                // @ts-ignore
+                                // @ts-expect-error
                                 label: val,
                             });
                         } }
@@ -257,7 +255,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                         label="Hinweis"
                         onChange={ (val) => {
                             props.onChange({
-                                // @ts-ignore
+                                // @ts-expect-error
                                 hint: val,
                             });
                         } }
@@ -270,7 +268,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                         value={ props.element.required }
                         onChange={ (checked) => {
                             props.onChange({
-                                // @ts-ignore
+                                // @ts-expect-error
                                 required: checked,
                                 disabled: undefined,
                             });
@@ -284,7 +282,7 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
                         value={ props.element.disabled }
                         onChange={ (checked) => {
                             props.onChange({
-                                // @ts-ignore
+                                // @ts-expect-error
                                 required: undefined,
                                 disabled: checked,
                             });
@@ -298,8 +296,8 @@ function DefaultEditor<T extends AnyElement>(props: ElementEditorContentProps<T>
             <EditorDispatcher
                 props={ props.element }
                 onPatch={ props.onChange }
-                application={ props.application }
-                onPatchApplication={ props.onChangeApplication }
+                entity={ props.entity }
+                onPatchEntity={ props.onChangeEntity }
                 editable={ props.editable }
             />
         </Box>

@@ -121,14 +121,11 @@ export function PresetEditPage(): JSX.Element {
                         } }
                     >
                         <ElementTree
-                            element={ preset.root }
+                            entity={ preset }
                             onPatch={ (patch) => {
                                 setPreset({
                                     ...preset,
-                                    root: {
-                                        ...preset.root,
-                                        ...patch,
-                                    },
+                                    ...patch,
                                 });
                             } }
                             editable={true}

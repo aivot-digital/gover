@@ -4,6 +4,8 @@ import { type AlertElement } from '../models/elements/form/content/alert-element
 import { type BaseEditor } from './base-editor';
 import { TextFieldComponent } from '../components/text-field/text-field-component';
 import { SelectFieldComponent } from '../components/select-field/select-field-component';
+import { Application } from '../models/entities/application';
+import { Preset } from '../models/entities/preset';
 
 const colors = [
     ['success', 'Erfolg'],
@@ -12,7 +14,7 @@ const colors = [
     ['error', 'Fehler'],
 ];
 
-export const AlertEditor: BaseEditor<AlertElement> = ({
+export const AlertEditor: BaseEditor<AlertElement, Application | Preset> = ({
                                                           element,
                                                           onPatch,
                                                           editable,

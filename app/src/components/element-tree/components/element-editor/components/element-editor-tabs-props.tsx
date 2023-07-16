@@ -1,5 +1,5 @@
-import {AnyElement} from '../../../../../models/elements/any-element';
-import {EditorTab} from "../../../../../editors";
+import { type AnyElement } from '../../../../../models/elements/any-element';
+import { type EditorTab } from '../../../../../editors';
 
 export interface ElementEditorTabsProps<T extends AnyElement> {
     component: T;

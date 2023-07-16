@@ -3,8 +3,10 @@ import { TextFieldComponent } from '../components/text-field/text-field-componen
 import { type BaseEditor } from './base-editor';
 import { CheckboxFieldComponent } from '../components/checkbox-field/checkbox-field-component';
 import { NumberFieldComponent } from '../components/number-field/number-field-component';
+import { type Application } from '../models/entities/application';
+import { type Preset } from '../models/entities/preset';
 
-export const TextFieldEditor: BaseEditor<TextFieldElement> = ({
+export const TextFieldEditor: BaseEditor<TextFieldElement, Application | Preset> = ({
     element,
     onPatch,
     editable,

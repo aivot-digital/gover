@@ -1,5 +1,5 @@
-import {AnyElement} from '../../../../models/elements/any-element';
-import {AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import { type AnyElement } from '../../../../models/elements/any-element';
+import { type AnyElementWithChildren } from '../../../../models/elements/any-element-with-children';
 
 export interface ElementTreeItemDropTargetProps<T extends AnyElementWithChildren> {
     element: T;

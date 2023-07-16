@@ -7,6 +7,8 @@ import { type CheckboxTreeOption } from '../checkbox-tree/checkbox-tree-option';
 import { type BaseEditorProps } from '../../editors/base-editor';
 import { TextFieldComponent } from '../text-field/text-field-component';
 import { RichTextEditorComponentView } from '../richt-text-editor/rich-text-editor.component.view';
+import { Application } from '../../models/entities/application';
+import { Preset } from '../../models/entities/preset';
 
 const eligibleEntities: CheckboxTreeOption[] = [
     {
@@ -80,7 +82,7 @@ function orderEligiblePersons(value: string[]): string[] {
         .filter((opt) => value.includes(opt));
 }
 
-export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>): JSX.Element {
+export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, Application | Preset>): JSX.Element {
     return (
         <>
             <Typography

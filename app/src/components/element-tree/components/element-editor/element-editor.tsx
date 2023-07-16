@@ -16,36 +16,28 @@ import { ElementType } from '../../../../data/element-type/element-type';
 import ProjectPackage from '../../../../../package.json';
 import Editors from '../../../../editors';
 import { type Application } from '../../../../models/entities/application';
-import { selectLoadedApplication, updateAppModel } from '../../../../slices/app-slice';
+import { type Preset } from '../../../../models/entities/preset';
 
-export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>): JSX.Element | null {
+export function ElementEditor<T extends AnyElement, E extends Application | Preset>(props: ElementEditorProps<T, E>): JSX.Element | null {
     const dispatch = useAppDispatch();
 
     const testMode = useAppSelector(selectUseTestMode);
-    const application = useAppSelector(selectLoadedApplication);
 
     const [updatedElement, setUpdatedElement] = useState<T>();
-    const [updatedApplication, setUpdatedApplication] = useState<Application>();
+    const [updatedEntity, setUpdatedEntity] = useState<E>();
     const [currentTab, setCurrentTab] = useState(testMode ? DefaultTabs.test : DefaultTabs.properties);
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
-    if (application == null) {
-        return null;
-    }
-
     const handleSave = (): void => {
-        if (updatedElement != null) {
-            props.onSave({
-                ...updatedElement,
-                appVersion: ProjectPackage.version,
-            });
-        } else {
-            props.onSave(props.element);
-        }
-
-        if (updatedApplication != null) {
-            dispatch(updateAppModel(updatedApplication));
-        }
+        props.onSave(
+            updatedElement != null ?
+                {
+                    ...updatedElement,
+                    appVersion: ProjectPackage.version,
+                } :
+                {},
+            updatedEntity ?? {},
+        );
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
@@ -67,9 +59,9 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
         });
     };
 
-    const handleApplicationChange = (update: Partial<Application>): void => {
-        setUpdatedApplication({
-            ...(updatedApplication ?? application),
+    const handleEntityChange = (update: Partial<E>): void => {
+        setUpdatedEntity({
+            ...(updatedEntity ?? props.entity),
             ...update,
         });
     };
@@ -147,11 +139,11 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
                     <ElementEditorContent
                         parents={ props.parents }
                         element={ updatedElement ?? props.element }
-                        application={ updatedApplication ?? application }
+                        entity={ updatedEntity ?? props.entity }
                         currentTab={ currentTab }
                         additionalTabs={ additionalTabs }
                         onChange={ handleChange }
-                        onChangeApplication={ handleApplicationChange }
+                        onChangeEntity={ handleEntityChange }
                         editable={ props.editable }
                     />
                 </Box>

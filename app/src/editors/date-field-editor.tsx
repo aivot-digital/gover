@@ -2,6 +2,8 @@ import { type BaseEditor } from './base-editor';
 import { DateFieldComponentModelMode, type DateFieldElement } from '../models/elements/form/input/date-field-element';
 import { type SelectFieldComponentOption } from '../components/select-field/select-field-component-option';
 import { SelectFieldComponent } from '../components/select-field/select-field-component';
+import { Application } from '../models/entities/application';
+import { Preset } from '../models/entities/preset';
 
 const modes: SelectFieldComponentOption[] = [
     {
@@ -18,7 +20,7 @@ const modes: SelectFieldComponentOption[] = [
     },
 ];
 
-export const DateFieldEditor: BaseEditor<DateFieldElement> = ({
+export const DateFieldEditor: BaseEditor<DateFieldElement, Application | Preset> = ({
                                                                   element,
                                                                   onPatch,
                                                                   editable,

@@ -1,7 +1,8 @@
-import { type AnyElement } from '../../models/elements/any-element';
+import { type Application } from '../../models/entities/application';
+import { type Preset } from '../../models/entities/preset';
 
-export interface ElementTreeProps<T extends AnyElement> {
-    element: T;
-    onPatch: (patch: Partial<T>) => void;
+export interface ElementTreeProps<T extends Application | Preset> {
+    entity: T;
+    onPatch: (patch: T) => void;
     editable: boolean;
 }

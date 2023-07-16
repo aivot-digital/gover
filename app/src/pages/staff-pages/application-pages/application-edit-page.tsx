@@ -51,7 +51,7 @@ import { ThemesService } from '../../../services/themes-service';
 import { type Theme } from '../../../models/entities/theme';
 import { ApplicationStatus } from '../../../data/application-status/application-status';
 
-export function ApplicationEditorPage(): JSX.Element {
+export function ApplicationEditPage(): JSX.Element {
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = searchParams.get('dialog');
 
@@ -86,7 +86,7 @@ export function ApplicationEditorPage(): JSX.Element {
     }, [params.id, dispatch]);
 
     useEffect(() => {
-        if (application != null && application.theme != null) {
+        if (application?.theme != null) {
             ThemesService
                 .retrieve(application.theme)
                 .then(setTheme)
@@ -96,7 +96,7 @@ export function ApplicationEditorPage(): JSX.Element {
         }
     }, [application]);
 
-    if (failedToLoad) {
+    if (failedToLoad === true) {
         return (
             <>
                 <AppToolbar
@@ -181,14 +181,11 @@ export function ApplicationEditorPage(): JSX.Element {
                             } }
                         >
                             <ElementTree
-                                element={ application.root }
+                                entity={ application }
                                 onPatch={ (patch) => {
                                     dispatch(updateAppModel({
                                         ...application,
-                                        root: {
-                                            ...application?.root,
-                                            ...patch,
-                                        },
+                                        ...patch,
                                     }));
                                 } }
                                 editable={

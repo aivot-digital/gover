@@ -5,14 +5,15 @@ import { type StepElement } from '../../../../../../models/elements/steps/step-e
 import { type GroupLayout } from '../../../../../../models/elements/form/layout/group-layout';
 import { type ReplicatingContainerLayout } from '../../../../../../models/elements/form/layout/replicating-container-layout';
 import { type Application } from '../../../../../../models/entities/application';
+import { type Preset } from '../../../../../../models/entities/preset';
 
-export interface ElementEditorContentProps<T extends AnyElement> {
+export interface ElementEditorContentProps<T extends AnyElement, E extends Application | Preset> {
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
     element: T;
-    application: Application;
+    entity: E;
     currentTab: string;
     additionalTabs: EditorTab[];
     onChange: (update: Partial<T>) => void;
-    onChangeApplication: (update: Partial<Application>) => void;
+    onChangeEntity: (update: Partial<E>) => void;
     editable: boolean;
 }

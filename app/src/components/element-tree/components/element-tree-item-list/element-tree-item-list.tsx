@@ -8,8 +8,10 @@ import { useAppSelector } from '../../../../hooks/use-app-selector';
 import { type AnyElementWithChildren } from '../../../../models/elements/any-element-with-children';
 import { cloneElement } from '../../../../utils/clone-element';
 import { ElementTreeItem } from '../element-tree-item/element-tree-item';
+import { type Application } from '../../../../models/entities/application';
+import { type Preset } from '../../../../models/entities/preset';
 
-export function ElementTreeItemList<T extends AnyElementWithChildren>(props: ElementTreeItemListProps<T>): JSX.Element {
+export function ElementTreeItemList<T extends AnyElementWithChildren, E extends Application | Preset>(props: ElementTreeItemListProps<T, E>): JSX.Element {
     const isDraggingTreeElement = useAppSelector(selectIsDraggingTreeElement);
 
     return (
@@ -35,6 +37,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>(props: Ele
                     >
                         <ElementTreeItem
                             parents={ [...props.parents, props.element] }
+                            entity={ props.entity }
                             element={ child }
                             onPatch={ (patch) => {
                                 const updatedChildren = [...props.element.children];

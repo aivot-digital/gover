@@ -24,15 +24,16 @@ import { hasUntestedChild } from '../../utils/has-untested-child';
 import { UserRole } from '../../data/user-role';
 import { AlertComponent } from '../alert/alert-component';
 import { updateAppModel } from '../../slices/app-slice';
+import { Application } from '../../models/entities/application';
 
-export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement>): JSX.Element {
+export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
 
-    const isPublished = props.application.status === ApplicationStatus.Published;
-    const isRevoked = props.application.status === ApplicationStatus.Revoked;
+    const isPublished = props.entity.status === ApplicationStatus.Published;
+    const isRevoked = props.entity.status === ApplicationStatus.Revoked;
 
     const checklist: Array<{
         label: string;
@@ -40,39 +41,39 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
     }> = [
         {
             label: 'Fachlicher Support eingerichtet',
-            done: props.application.legalSupportDepartment != null,
+            done: props.entity.legalSupportDepartment != null,
         },
         {
             label: 'Technischer Support eingerichtet',
-            done: props.application.technicalSupportDepartment != null,
+            done: props.entity.technicalSupportDepartment != null,
         },
 
 
         {
             label: 'Impressum eingerichtet',
-            done: props.application.imprintDepartment != null,
+            done: props.entity.imprintDepartment != null,
         },
         {
             label: 'Datenschutzerklärung eingerichtet',
-            done: props.application.privacyDepartment != null,
+            done: props.entity.privacyDepartment != null,
         },
         {
             label: 'Barrierefreiheitserklärung eingerichtet',
-            done: props.application.accessibilityDepartment != null,
+            done: props.entity.accessibilityDepartment != null,
         },
 
         {
             label: 'Zuständige und/oder bewirtschaftende Stelle eingerichtet',
-            done: props.application.responsibleDepartment != null || props.application.managingDepartment != null,
+            done: props.entity.responsibleDepartment != null || props.entity.managingDepartment != null,
         },
 
         {
             label: 'Lösch- und Zugriffsfristen konfiguriert',
             done: (
-                props.application.submissionDeletionWeeks != null &&
-                props.application.submissionDeletionWeeks >= 0 &&
-                props.application.customerAccessHours != null &&
-                props.application.customerAccessHours > 0
+                props.entity.submissionDeletionWeeks != null &&
+                props.entity.submissionDeletionWeeks >= 0 &&
+                props.entity.customerAccessHours != null &&
+                props.entity.customerAccessHours > 0
             ),
         },
 
@@ -93,7 +94,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
         (user?.admin ?? false) ||
         (memberships ?? [])
             .some((mem) => (
-                    mem.department === props.application.developingDepartment &&
+                    mem.department === props.entity.developingDepartment &&
                     (mem.role === UserRole.Admin || mem.role === UserRole.Publisher)
                 ),
             );
@@ -174,7 +175,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                             color="warning"
                             onClick={ () => {
                                 dispatch(updateAppModel({
-                                    ...props.application,
+                                    ...props.entity,
                                     status: ApplicationStatus.Revoked,
                                 }));
                             } }
@@ -235,7 +236,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                         }
                         onClick={ () => {
                             dispatch(updateAppModel({
-                                ...props.application,
+                                ...props.entity,
                                 status: ApplicationStatus.Published,
                             }));
                         } }

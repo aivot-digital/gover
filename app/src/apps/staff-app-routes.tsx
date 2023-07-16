@@ -1,6 +1,6 @@
 import React from 'react';
 import { ApplicationListPage } from '../pages/staff-pages/application-pages/application-list-page';
-import { ApplicationEditorPage } from '../pages/staff-pages/application-pages/application-editor-page';
+import { ApplicationEditPage } from '../pages/staff-pages/application-pages/application-edit-page';
 import { Settings } from '../pages/staff-pages/settings/settings';
 import { Profile } from '../pages/staff-pages/profile/profile';
 import { PresetListPage } from '../pages/staff-pages/preset-pages/preset-list-page';
@@ -29,7 +29,7 @@ export const staffAppRoutes: Record<string, Route> = {
     },
     applicationEdit: {
         path: '/edit/:id',
-        element: <ApplicationEditorPage/>,
+        element: <ApplicationEditPage/>,
     },
 
     settings: {

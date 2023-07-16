@@ -5,8 +5,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { StepIcons } from '../../data/step-icons';
 import { type BaseEditorProps } from '../../editors/base-editor';
 import { TextFieldComponent } from '../text-field/text-field-component';
+import { Application } from '../../models/entities/application';
 
-export function StepComponentEditor(props: BaseEditorProps<StepElement>): JSX.Element {
+export function StepComponentEditor(props: BaseEditorProps<StepElement, Application>): JSX.Element {
     return (
         <>
             <TextFieldComponent

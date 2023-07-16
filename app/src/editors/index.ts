@@ -31,11 +31,11 @@ import { FileUploadEditor } from '../components/file-upload-field/file-upload.ed
 
 export interface EditorTab {
     label: string;
-    editor: BaseEditor<any>;
+    editor: BaseEditor<any, any>;
 }
 
 export interface EditorSet {
-    default: BaseEditor<any>;
+    default: BaseEditor<any, any>;
     additionalTabs?: EditorTab[];
 };
 

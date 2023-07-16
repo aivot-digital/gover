@@ -12,7 +12,6 @@ public class ApplicationDetailsMinimalDto extends ApplicationListDto {
     private Integer accessibilityDepartment;
     private Integer customerAccessHours;
     private Integer submissionDeletionWeeks;
-    private Integer theme;
 
     public ApplicationDetailsMinimalDto() {
     }

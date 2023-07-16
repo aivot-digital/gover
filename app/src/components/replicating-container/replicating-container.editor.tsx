@@ -4,8 +4,10 @@ import { TextField } from '@mui/material';
 import { type BaseEditorProps } from '../../editors/base-editor';
 import { TextFieldComponent } from '../text-field/text-field-component';
 import { NumberFieldComponent } from '../number-field/number-field-component';
+import { Application } from '../../models/entities/application';
+import { Preset } from '../../models/entities/preset';
 
-export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>): JSX.Element {
+export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout, Application | Preset>): JSX.Element {
     const minRequiredError = (
         props.element.minimumRequiredSets != null &&
         props.element.maximumSets != null &&

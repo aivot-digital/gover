@@ -2,8 +2,10 @@ import React from 'react';
 import { type ImageElement } from '../../models/elements/form/content/image-element';
 import { type BaseEditorProps } from '../../editors/base-editor';
 import { TextFieldComponent } from '../text-field/text-field-component';
+import { Application } from '../../models/entities/application';
+import { Preset } from '../../models/entities/preset';
 
-export function ImageEditor(props: BaseEditorProps<ImageElement>): JSX.Element {
+export function ImageEditor(props: BaseEditorProps<ImageElement, Application | Preset>): JSX.Element {
     return (
         <>
             <TextFieldComponent

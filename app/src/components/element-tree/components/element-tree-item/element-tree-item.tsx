@@ -18,8 +18,10 @@ import { findNoCodeUsage, findNoCodeUsageOfChildren } from '../../../../utils/fi
 import { generateComponentTitle } from '../../../../utils/generate-component-title';
 import { isChildOf } from '../../../../utils/is-child-of';
 import { useAppSelector } from '../../../../hooks/use-app-selector';
+import { type Application } from '../../../../models/entities/application';
+import { type Preset } from '../../../../models/entities/preset';
 
-export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProps<T>,
+export function ElementTreeItem<T extends AnyElement, E extends Application | Preset>(props: ElementTreeItemProps<T, E>,
 ): JSX.Element {
     const dispatch = useAppDispatch();
     const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
@@ -40,7 +42,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         }
     }, [expandStatus]);
 
-    const [{isDragging}, drag] = useDrag(() => ({
+    const [{ isDragging }, drag] = useDrag(() => ({
         item: props.element,
         type: props.element.type.toString(),
         collect: (monitor) => ({
@@ -48,7 +50,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         }),
         end: (element, monitor) => {
             if (!monitor.didDrop()) {
-                props.onPatch({});
+                props.onPatch({}, {});
             }
             dispatch(setIsDraggingTreeElement(false));
         },
@@ -69,7 +71,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                     ...props.element.children,
                     addedElement,
                 ],
-            } as any);
+            }, {});
             toggleShowAddDialog();
             if (!expanded) {
                 setExpanded(true);
@@ -124,32 +126,32 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             />
 
             {
-                isLayoutElement &&
                 expanded &&
+                isAnyElementWithChildren(props.element) &&
                 <ElementTreeItemList
                     parents={ props.parents }
-                    element={ props.element as AnyElementWithChildren }
-                    onPatch={ props.onPatch as (update: Partial<AnyElementWithChildren>) => void }
+                    entity={ props.entity }
+                    element={ props.element }
+                    onPatch={ props.onPatch }
                     editable={ props.editable }
                 />
             }
 
-            {
-                showAddDialog &&
-                <AddElementDialog
-                    parentType={ props.element.type }
-                    onAddElement={ handleAddElement }
-                    onClose={ toggleShowAddDialog }
-                />
-            }
+            <AddElementDialog
+                show={ showAddDialog }
+                parentType={ props.element.type }
+                onAddElement={ handleAddElement }
+                onClose={ toggleShowAddDialog }
+            />
 
             {
                 showEditor &&
                 <ElementEditor
                     parents={ props.parents }
                     element={ props.element }
-                    onSave={ (update) => {
-                        props.onPatch(update);
+                    entity={ props.entity }
+                    onSave={ (updatedElement, updatedApplication) => {
+                        props.onPatch(updatedElement, updatedApplication);
                         toggleShowEditor();
                     } }
                     onCancel={ toggleShowEditor }

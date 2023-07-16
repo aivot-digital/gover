@@ -1,8 +1,10 @@
 import { type BaseEditor } from './base-editor';
 import { type SelectFieldElement } from '../models/elements/form/input/select-field-element';
 import { StringListInput } from '../components/string-list-input/string-list-input';
+import { Application } from '../models/entities/application';
+import { Preset } from '../models/entities/preset';
 
-export const SelectFieldEditor: BaseEditor<SelectFieldElement> = ({
+export const SelectFieldEditor: BaseEditor<SelectFieldElement, Application | Preset> = ({
                                                                       element,
                                                                       onPatch,
                                                                       editable,

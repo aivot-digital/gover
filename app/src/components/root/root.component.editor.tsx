@@ -11,8 +11,9 @@ import { showErrorSnackbar, showSuccessSnackbar } from '../../slices/snackbar-sl
 import { TextFieldComponent } from '../text-field/text-field-component';
 import { type SelectFieldComponentOption } from '../select-field/select-field-component-option';
 import { ThemesService } from '../../services/themes-service';
+import { Application } from '../../models/entities/application';
 
-export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.Element {
+export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
     const theme = useTheme();
 
@@ -45,7 +46,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
             });
     }, []);
 
-    const link = `${ window.location.protocol }//${ window.location.host }/#/${ props.application?.slug ?? '' }/${ props.application?.version ?? '' }`;
+    const link = `${ window.location.protocol }//${ window.location.host }/#/${ props.entity?.slug ?? '' }/${ props.entity?.version ?? '' }`;
 
     return (
         <>
@@ -110,9 +111,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
 
             <SelectFieldComponent
                 label="Entwickelnder Fachbereich"
-                value={ props.application?.developingDepartment?.toString() ?? undefined }
+                value={ props.entity?.developingDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         developingDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -123,9 +124,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
 
             <SelectFieldComponent
                 label="Zuständiger Fachbereich"
-                value={ props.application?.responsibleDepartment?.toString() ?? undefined }
+                value={ props.entity?.responsibleDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         responsibleDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -135,9 +136,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
 
             <SelectFieldComponent
                 label="Bewirtschaftender Fachbereich"
-                value={ props.application?.managingDepartment?.toString() ?? undefined }
+                value={ props.entity?.managingDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         managingDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -156,9 +157,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
 
             <SelectFieldComponent
                 label="Farbschema (Visuelles Erscheinungsbild)"
-                value={ props.application?.theme?.toString() ?? undefined }
+                value={ props.entity?.theme?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         theme: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -262,9 +263,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
 
             <SelectFieldComponent
                 label="Fachlicher Support"
-                value={ props.application?.legalSupportDepartment?.toString() ?? undefined }
+                value={ props.entity?.legalSupportDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         legalSupportDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }
@@ -274,9 +275,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement>): JSX.El
 
             <SelectFieldComponent
                 label="Technischer Support"
-                value={ props.application?.technicalSupportDepartment?.toString() ?? undefined }
+                value={ props.entity?.technicalSupportDepartment?.toString() ?? undefined }
                 onChange={ (val) => {
-                    props.onPatchApplication({
+                    props.onPatchEntity({
                         technicalSupportDepartment: val != null ? parseInt(val) : undefined,
                     });
                 } }

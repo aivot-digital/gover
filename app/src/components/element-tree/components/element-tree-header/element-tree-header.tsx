@@ -23,9 +23,13 @@ import { useAppSelector } from '../../../../hooks/use-app-selector';
 import { useAppDispatch } from '../../../../hooks/use-app-dispatch';
 import { ElementEditor } from '../element-editor/element-editor';
 import { type ElementTreeHeaderProps } from './element-tree-header-props';
-import { type AnyElement } from '../../../../models/elements/any-element';
+import { type RootElement } from '../../../../models/elements/root-element';
+import { type Application } from '../../../../models/entities/application';
+import { type Preset } from '../../../../models/entities/preset';
+import { type GroupLayout } from '../../../../models/elements/form/layout/group-layout';
+import { AnyElement } from '../../../../models/elements/any-element';
 
-export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeaderProps<T>): JSX.Element {
+export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends Application | Preset>(props: ElementTreeHeaderProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const testMode = useAppSelector(selectUseTestMode);
@@ -187,10 +191,11 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                 showEditor &&
                 <ElementEditor
                     parents={ [] /* Uppermost element so no parents here */ }
-                    element={ props.element }
-                    onSave={ (update) => {
+                    entity={ props.entity }
+                    element={ props.entity.root as any /* TODO: Fix this any type */}
+                    onSave={ (updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
                         setShowEditor(false);
-                        props.onPatch(update);
+                        props.onPatch(updatedElement, updatedApplication);
                     } }
                     onCancel={ () => {
                         setShowEditor(false);

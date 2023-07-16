@@ -31,7 +31,7 @@ rules:
   '@typescript-eslint/indent':
     - 'error'
     - 4
-  require-jsdoc: off
+  'require-jsdoc': off
   '@typescript-eslint/space-before-function-paren': off
   '@typescript-eslint/comma-dangle':
     - 'error'

@@ -2,8 +2,10 @@ import { type NumberFieldElement } from '../models/elements/form/input/number-fi
 import { type BaseEditor } from './base-editor';
 import { TextFieldComponent } from '../components/text-field/text-field-component';
 import { NumberFieldComponent } from '../components/number-field/number-field-component';
+import { Application } from '../models/entities/application';
+import { Preset } from '../models/entities/preset';
 
-export const NumberFieldEditor: BaseEditor<NumberFieldElement> = ({
+export const NumberFieldEditor: BaseEditor<NumberFieldElement, Application | Preset> = ({
                                                                       element,
                                                                       onPatch,
                                                                       editable,

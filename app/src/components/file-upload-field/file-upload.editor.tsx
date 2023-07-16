@@ -7,8 +7,10 @@ import { NumberFieldComponent } from '../number-field/number-field-component';
 import { MultiCheckboxComponent } from '../multi-checkbox-field/multi-checkbox-component';
 import { useAppDispatch } from '../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../slices/snackbar-slice';
+import { type Application } from '../../models/entities/application';
+import { type Preset } from '../../models/entities/preset';
 
-export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>): JSX.Element {
+export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Application | Preset>): JSX.Element {
     const dispatch = useAppDispatch();
     const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
 

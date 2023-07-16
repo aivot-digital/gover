@@ -2,8 +2,10 @@ import { type MultiCheckboxFieldElement } from '../../models/elements/form/input
 import { StringListInput } from '../string-list-input/string-list-input';
 import { type BaseEditorProps } from '../../editors/base-editor';
 import { NumberFieldComponent } from '../number-field/number-field-component';
+import { Application } from '../../models/entities/application';
+import { Preset } from '../../models/entities/preset';
 
-export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement>): JSX.Element {
+export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement, Application | Preset>): JSX.Element {
     const minRequiredError = (
         props.element.minimumRequiredOptions != null &&
         props.element.options != null &&

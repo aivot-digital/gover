@@ -18,6 +18,8 @@ public class ApplicationListDto {
     private Integer responsibleDepartment;
     private LocalDateTime created;
     private LocalDateTime updated;
+    private Integer openSubmissions;
+    private Integer totalSubmissions;
 
     public ApplicationListDto() {
     }
@@ -41,6 +43,8 @@ public class ApplicationListDto {
         }
         created = app.getCreated();
         updated = app.getUpdated();
+        openSubmissions = app.getOpenSubmissions();
+        totalSubmissions = app.getTotalSubmissions();
     }
 
     // region Getters & Setters
@@ -139,6 +143,22 @@ public class ApplicationListDto {
 
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
+    }
+
+    public Integer getTotalSubmissions() {
+        return totalSubmissions;
+    }
+
+    public void setTotalSubmissions(Integer totalSubmissions) {
+        this.totalSubmissions = totalSubmissions;
+    }
+
+    public Integer getOpenSubmissions() {
+        return openSubmissions;
+    }
+
+    public void setOpenSubmissions(Integer openSubmissions) {
+        this.openSubmissions = openSubmissions;
     }
 
 

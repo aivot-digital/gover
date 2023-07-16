@@ -48,7 +48,7 @@ public class Application {
     @Column(columnDefinition = "jsonb")
     private RootElement root;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     private Destination destination;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -88,6 +88,12 @@ public class Application {
     private Integer customerAccessHours;
 
     private Integer submissionDeletionWeeks;
+
+    @Column(updatable = false)
+    private Integer openSubmissions;
+
+    @Column(updatable = false)
+    private Integer totalSubmissions;
 
 
     // region Signales
@@ -287,6 +293,22 @@ public class Application {
 
     public void setSubmissionDeletionWeeks(Integer submissionDeletionWeeks) {
         this.submissionDeletionWeeks = submissionDeletionWeeks;
+    }
+
+    public Integer getTotalSubmissions() {
+        return totalSubmissions;
+    }
+
+    public void setTotalSubmissions(Integer totalSubmissions) {
+        this.totalSubmissions = totalSubmissions;
+    }
+
+    public Integer getOpenSubmissions() {
+        return openSubmissions;
+    }
+
+    public void setOpenSubmissions(Integer openSubmissions) {
+        this.openSubmissions = openSubmissions;
     }
 
 

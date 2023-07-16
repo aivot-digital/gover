@@ -3,8 +3,9 @@ import { SubmitStepElement } from '../../models/elements/steps/submit-step-eleme
 import { TextField } from '@mui/material';
 import { isStringNullOrEmpty } from '../../utils/string-utils';
 import { BaseEditorProps } from '../../editors/base-editor';
+import { Application } from '../../models/entities/application';
 
-export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>) {
+export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, Application>) {
     return (
         <>
             <TextField
