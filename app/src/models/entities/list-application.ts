@@ -14,5 +14,6 @@ export interface ListApplication {
     created: string;
     updated: string;
     totalSubmissions: number;
+    inProgressSubmissions: number;
     openSubmissions: number;
 }

@@ -19,7 +19,7 @@ import { AlertComponent } from '../../../components/alert/alert-component';
 import { InfoDialog } from '../../../dialogs/info-dialog/info-dialog';
 import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
 import { TableWrapper } from '../../../components/table-wrapper/table-wrapper';
-import { GridColDef } from '@mui/x-data-grid';
+import { type GridColDef } from '@mui/x-data-grid';
 import { filterItems } from '../../../utils/filter-items';
 
 type Errors = {
@@ -49,8 +49,8 @@ export function DestinationEditPage(): JSX.Element {
 
     const [originalDest, setOriginalDest] = useState<Destination>();
     const [editedDest, setEditedDest] = useState<Destination>();
-    const [relatedApplications, setRelatedApplications] = useState<ListApplication[]>();
 
+    const [relatedApplications, setRelatedApplications] = useState<ListApplication[]>();
     const [searchRelatedApplication, setSearchRelatedApplication] = useState('');
 
     const [showNotDeletableDialog, setShowNotDeletableDialog] = useState(false);
@@ -159,7 +159,6 @@ export function DestinationEditPage(): JSX.Element {
                         if (editedDest.id === 0) {
                             setRelatedApplications([]);
                         }
-
                         setOriginalDest(createdDest);
                         setEditedDest(createdDest);
                         dispatch(showSuccessSnackbar('Schnittstelle erfolgreich gespeichert'));

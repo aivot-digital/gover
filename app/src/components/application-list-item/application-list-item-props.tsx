@@ -1,10 +1,12 @@
-import {ListApplication} from "../../models/entities/list-application";
-import {DepartmentMembership} from "../../models/entities/department-membership";
+import { type ListApplication } from '../../models/entities/list-application';
+import { type DepartmentMembership } from '../../models/entities/department-membership';
+import { type User } from '../../models/entities/user';
 
 export interface ApplicationListItemProps {
     application: ListApplication;
     onClone: (application: ListApplication) => void;
     onDelete: (application: ListApplication) => void;
     onNewVersion: (application: ListApplication) => void;
-    memberships?: DepartmentMembership[];
+    user: User;
+    memberships: DepartmentMembership[];
 }

@@ -38,6 +38,7 @@ function createEmptyApplication(): Application {
         created: '',
         updated: '',
         openSubmissions: 0,
+        inProgressSubmissions: 0,
         totalSubmissions: 0,
     };
 }

@@ -58,7 +58,7 @@ export function ApplicationPage() {
     useEffect(() => {
         if (application?.theme != null) {
             ThemesService
-                .retrieve(application.theme)
+                .retrievePublic(application.theme)
                 .then(setTheme)
                 .catch((err) => {
                     console.error(err);

@@ -1,10 +1,10 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
 import styles from './application-list-item.module.scss';
-import {format, isToday} from 'date-fns';
-import {ApplicationStatusNames} from '../../data/application-status/application-status-names';
-import {ApplicationStatus} from '../../data/application-status/application-status';
-import {Link} from 'react-router-dom';
+import { format, isToday, parseISO } from 'date-fns';
+import { ApplicationStatusNames } from '../../data/application-status/application-status-names';
+import { ApplicationStatus } from '../../data/application-status/application-status';
+import { Link } from 'react-router-dom';
 import {
     faArrowUpRightFromSquare,
     faBars,
@@ -12,33 +12,23 @@ import {
     faClone,
     faEdit,
     faFileExport,
+    faFiles,
     faFileText,
     faTrashCanXmark,
     faUpFromDottedLine,
-    faFiles,
 } from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {ApplicationService} from '../../services/application-service';
-import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
-import {downloadConfigFile} from "../../utils/download-utils";
-import {showSuccessSnackbar} from "../../slices/snackbar-slice";
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {Department} from "../../models/entities/department";
-import {DepartmentsService} from "../../services/departments-service";
-import {ApplicationListItemProps} from "./application-list-item-props";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectUser} from "../../slices/user-slice";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ApplicationService } from '../../services/application-service';
+import { downloadConfigFile } from '../../utils/download-utils';
+import { showSuccessSnackbar } from '../../slices/snackbar-slice';
+import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import { type Department } from '../../models/entities/department';
+import { DepartmentsService } from '../../services/departments-service';
+import { type ApplicationListItemProps } from './application-list-item-props';
 
 
-export function ApplicationListItem({
-                                        application,
-                                        onClone,
-                                        onDelete,
-                                        onNewVersion,
-                                        memberships,
-                                    }: ApplicationListItemProps) {
+export function ApplicationListItem(props: ApplicationListItemProps): JSX.Element {
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectUser);
     const [department, setDepartment] = useState<Department>();
     const [optionAnchorEl, setOptionAnchorEl] = useState<null | HTMLElement>(null);
     const showOptions = Boolean(optionAnchorEl);
@@ -46,105 +36,133 @@ export function ApplicationListItem({
     useEffect(() => {
         if (department == null) {
             DepartmentsService
-                .retrieve(application.developingDepartment)
+                .retrieve(props.application.developingDepartment)
                 .then(setDepartment);
         }
-    }, [application]);
+    }, [props.application]);
 
-    const handleOptionsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleOptionsClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setOptionAnchorEl(event.currentTarget);
     };
 
-    const handleCloseOptions = () => {
+    const handleCloseOptions = (): void => {
         setOptionAnchorEl(null);
     };
 
-    const handleNewVersion = () => {
-        onNewVersion(application);
+    const handleNewVersion = (): void => {
+        props.onNewVersion(props.application);
     };
 
-    const handleClone = () => {
-        onClone(application);
+    const handleClone = (): void => {
+        props.onClone(props.application);
         handleCloseOptions();
     };
 
-    const handleDelete = () => {
-        onDelete(application);
+    const handleDelete = (): void => {
+        props.onDelete(props.application);
         handleCloseOptions();
     };
 
-    const handleDownloadConfig = () => {
+    const handleDownloadConfig = (): void => {
         ApplicationService
-            .retrieve(application.id)
+            .retrieve(props.application.id)
             .then(downloadConfigFile);
         handleCloseOptions();
     };
 
-    const isDeveloper = user?.admin || (memberships ?? []).some(mem => mem.department === application.developingDepartment);
-    const isEditor = user?.admin || (memberships ?? []).some(mem => mem.department === application.managingDepartment || mem.department === application.responsibleDepartment);
-    const lastUpdate = application.updated ? new Date(application.updated) : new Date();
+    const isDeveloper =
+        props.user.admin ||
+        props.memberships
+            .some((mem) => {
+                return mem.department === props.application.developingDepartment;
+            });
+
+    const isEditor =
+        props.user.admin ||
+        props.memberships
+            .some((mem) => {
+                return (
+                    mem.department === props.application.managingDepartment ||
+                    mem.department === props.application.responsibleDepartment
+                );
+            });
+    const lastUpdate = parseISO(props.application.updated);
 
     return (
-        <Box className={styles.listItem}>
+        <Box className={ styles.listItem }>
             <Box
-                className={styles.listItemIcon}
+                className={ styles.listItemIcon }
             >
                 <FontAwesomeIcon
-                    icon={faFileText}
+                    icon={ faFileText }
                     size="2x"
                 />
             </Box>
             <Box
-                className={styles.listItemInfo}
-                sx={{ml: 2.5, py: '8px'}}
+                className={ styles.listItemInfo }
+                sx={ {
+                    ml: 2.5,
+                    py: '8px',
+                } }
             >
                 <Typography
                     variant="h6"
                 >
-                    {application.title}
+                    { props.application.title }
 
                     <Typography
                         variant="caption"
-                        sx={{ml: 1}}
+                        sx={ {
+                            ml: 1,
+                        } }
                     >
-                        {application.version}
+                        { props.application.version }
                     </Typography>
                 </Typography>
 
                 <Typography
-                    sx={{
+                    sx={ {
                         mt: -0.75,
                         fontSize: '0.875rem',
                         lineHeight: '1.5rem',
-                    }}
+                    } }
                 >
-                    Entwickelt durch: {department?.name}
+                    Entwickelt durch: { department?.name }
                 </Typography>
 
                 <Typography
                     variant="body2"
-                    className={styles.metaText}
-                    sx={{
+                    className={ styles.metaText }
+                    sx={ {
                         mt: -0.6,
                         fontSize: '0.875rem',
                         lineHeight: '1.5rem',
-                    }}
+                    } }
                 >
-                    {ApplicationStatusNames[application.status ?? ApplicationStatus.Drafted]} • Zuletzt
-                                                                                              bearbeitet: {isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} Uhr
+                    { ApplicationStatusNames[props.application.status ?? ApplicationStatus.Drafted] } • Zuletzt
+                                                                                                      bearbeitet: { isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy') } – { format(lastUpdate, 'HH:mm') } Uhr
+                </Typography>
+
+
+                <Typography
+                    variant="caption"
+                >
+                    Anträge: Offen { props.application.openSubmissions } | In Bearbeitung { props.application.inProgressSubmissions } | Gesamt { props.application.totalSubmissions }
                 </Typography>
             </Box>
-            <Box className={styles.listItemActions}>
+            <Box className={ styles.listItemActions }>
                 {
                     isEditor &&
-                    <Box className={styles.listItemActionsContainer}>
+                    <Box className={ styles.listItemActionsContainer }>
                         <Button
-                            startIcon={<FontAwesomeIcon
-                                icon={faFiles}
-                                style={{marginTop: '-2px'}}
-                            />}
-                            component={Link}
-                            to={'/submissions/' + application.id}
+                            startIcon={ <FontAwesomeIcon
+                                icon={ faFiles }
+                                style={ {
+                                    marginTop: '-2px',
+                                } }
+                            /> }
+                            component={ Link }
+                            to={ `/submissions/${ props.application.id }` }
                         >
                             Anträge einsehen
                         </Button>
@@ -153,14 +171,16 @@ export function ApplicationListItem({
 
                 {
                     isDeveloper &&
-                    <Box className={styles.listItemActionsContainer}>
+                    <Box className={ styles.listItemActionsContainer }>
                         <Button
-                            startIcon={<FontAwesomeIcon
-                                icon={faEdit}
-                                style={{marginTop: '-2px'}}
-                            />}
-                            component={Link}
-                            to={'/edit/' + application.id}
+                            startIcon={ <FontAwesomeIcon
+                                icon={ faEdit }
+                                style={ {
+                                    marginTop: '-2px',
+                                } }
+                            /> }
+                            component={ Link }
+                            to={ `/edit/${ props.application.id }` }
                         >
                             Bearbeiten
                         </Button>
@@ -169,38 +189,42 @@ export function ApplicationListItem({
 
                 {
                     isDeveloper &&
-                    <Box className={styles.listItemActionsContainer}>
+                    <Box className={ styles.listItemActionsContainer }>
                         <Button
-                            startIcon={<FontAwesomeIcon
-                                icon={faUpFromDottedLine}
-                                style={{marginTop: '-2px'}}
-                            />}
-                            onClick={handleNewVersion}
+                            startIcon={ <FontAwesomeIcon
+                                icon={ faUpFromDottedLine }
+                                style={ {
+                                    marginTop: '-2px',
+                                } }
+                            /> }
+                            onClick={ handleNewVersion }
                         >
                             Neue Version
                         </Button>
                     </Box>
                 }
 
-                <Box className={styles.listItemActionsContainer}>
+                <Box className={ styles.listItemActionsContainer }>
                     <Button
-                        startIcon={<FontAwesomeIcon
-                            icon={faBars}
-                            style={{marginTop: '-2px'}}
-                        />}
-                        onClick={handleOptionsClick}
+                        startIcon={ <FontAwesomeIcon
+                            icon={ faBars }
+                            style={ {
+                                marginTop: '-2px',
+                            } }
+                        /> }
+                        onClick={ handleOptionsClick }
                     >
                         Optionen
                     </Button>
 
                     <Menu
-                        anchorEl={optionAnchorEl}
-                        open={showOptions}
-                        onClose={handleCloseOptions}
+                        anchorEl={ optionAnchorEl }
+                        open={ showOptions }
+                        onClose={ handleCloseOptions }
                     >
-                        <MenuItem onClick={handleClone}>
+                        <MenuItem onClick={ handleClone }>
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={faClone}/>
+                                <FontAwesomeIcon icon={ faClone }/>
                             </ListItemIcon>
                             <ListItemText>
                                 Formular duplizieren
@@ -209,11 +233,11 @@ export function ApplicationListItem({
 
                         <MenuItem
                             component="a"
-                            href={'/#/' + application.slug + '/' + application.version}
+                            href={ `/#/ ${ props.application.slug }/${ props.application.version }` }
                             target="_blank"
                         >
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={faArrowUpRightFromSquare}/>
+                                <FontAwesomeIcon icon={ faArrowUpRightFromSquare }/>
                             </ListItemIcon>
                             <ListItemText>
                                 Formular als Antragsteller:in öffnen (in neuem Tab)
@@ -221,15 +245,23 @@ export function ApplicationListItem({
                         </MenuItem>
 
                         <MenuItem
-                            onClick={() => {
-                                const link = `${window.location.protocol}//${window.location.host}/#/${application.slug}/${application.version}`;
-                                navigator.clipboard.writeText(link);
-                                dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert!'));
+                            onClick={ () => {
+                                const link = `${ window.location.protocol }//${ window.location.host }/#/${ props.application.slug }/${ props.application.version }`;
+                                navigator
+                                    .clipboard
+                                    .writeText(link)
+                                    .then(() => {
+                                        dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert'));
+                                    })
+                                    .catch((err) => {
+                                        console.error(err);
+                                        dispatch(showSuccessSnackbar('Formularlink konnte nicht kopiert werden'));
+                                    });
                                 handleCloseOptions();
-                            }}
+                            } }
                         >
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={faClipboard}/>
+                                <FontAwesomeIcon icon={ faClipboard }/>
                             </ListItemIcon>
                             <ListItemText>
                                 Formularlink in Zwischenablage kopieren
@@ -238,9 +270,9 @@ export function ApplicationListItem({
 
                         {
                             isDeveloper &&
-                            <MenuItem onClick={handleDownloadConfig}>
+                            <MenuItem onClick={ handleDownloadConfig }>
                                 <ListItemIcon>
-                                    <FontAwesomeIcon icon={faFileExport}/>
+                                    <FontAwesomeIcon icon={ faFileExport }/>
                                 </ListItemIcon>
                                 <ListItemText>
                                     Formular exportieren
@@ -250,9 +282,9 @@ export function ApplicationListItem({
 
                         {
                             isDeveloper &&
-                            <MenuItem onClick={handleDelete}>
+                            <MenuItem onClick={ handleDelete }>
                                 <ListItemIcon>
-                                    <FontAwesomeIcon icon={faTrashCanXmark}/>
+                                    <FontAwesomeIcon icon={ faTrashCanXmark }/>
                                 </ListItemIcon>
                                 <ListItemText>
                                     Formular löschen

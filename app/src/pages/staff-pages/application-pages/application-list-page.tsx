@@ -147,7 +147,7 @@ export function ApplicationListPage(): JSX.Element {
             });
     };
 
-    if (applications == null) {
+    if (applications == null || user == null || memberships == null) {
         return <LoadingPlaceholderComponentView
             message="Lade Formulare..."
         />;
@@ -188,7 +188,7 @@ export function ApplicationListPage(): JSX.Element {
                     } }
                 >
                     {
-                        (user?.admin ?? false) &&
+                        user.admin &&
                         (departments ?? []).length === 0 &&
                         <Paper
                             sx={ {
@@ -227,7 +227,7 @@ export function ApplicationListPage(): JSX.Element {
                     }
 
                     {
-                        !(user?.admin ?? false) &&
+                        !user.admin &&
                         (memberships ?? []).length === 0 &&
                         <Paper
                             sx={ {
@@ -251,7 +251,7 @@ export function ApplicationListPage(): JSX.Element {
                     {
                         (departments ?? []).length > 0 &&
                         (
-                            (user?.admin ?? false) || (memberships ?? []).length > 0
+                            user.admin || (memberships ?? []).length > 0
                         ) &&
                         <>
                             <Box
@@ -319,6 +319,7 @@ export function ApplicationListPage(): JSX.Element {
                                                         onDelete={ setApplicationToDelete }
                                                         onNewVersion={ handleApplicationNewVersion }
                                                         memberships={ memberships }
+                                                        user={ user }
                                                     />
                                                 ))
                                         }

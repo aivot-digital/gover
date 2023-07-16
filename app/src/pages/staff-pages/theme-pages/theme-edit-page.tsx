@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { TextFieldComponent } from '../../../components/text-field/text-field-component';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
@@ -8,9 +8,29 @@ import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page
 import { delayPromise } from '../../../utils/with-delay';
 import { type Theme } from '../../../models/entities/theme';
 import { ThemesService } from '../../../services/themes-service';
-import { Box, Divider, Grid, Typography } from '@mui/material';
+import { Box, Divider, Grid, List, ListItem, Typography } from '@mui/material';
 import { SketchPicker } from 'react-color';
 import { useAdminGuard } from '../../../hooks/use-admin-guard';
+import { type GridColDef } from '@mui/x-data-grid';
+import { type ListApplication } from '../../../models/entities/list-application';
+import { AlertComponent } from '../../../components/alert/alert-component';
+import { TableWrapper } from '../../../components/table-wrapper/table-wrapper';
+import { filterItems } from '../../../utils/filter-items';
+import { InfoDialog } from '../../../dialogs/info-dialog/info-dialog';
+import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
+
+const columns: Array<GridColDef<ListApplication>> = [
+    {
+        field: 'title',
+        headerName: 'Title',
+        flex: 1,
+    },
+    {
+        field: 'version',
+        headerName: 'Version',
+        flex: 1,
+    },
+];
 
 export function ThemeEditPage(): JSX.Element {
     useAdminGuard();
@@ -22,6 +42,12 @@ export function ThemeEditPage(): JSX.Element {
 
     const [originalTheme, setOriginalTheme] = useState<Theme>();
     const [editedTheme, setEditedTheme] = useState<Theme>();
+
+    const [relatedApplications, setRelatedApplications] = useState<ListApplication[]>();
+    const [searchRelatedApplication, setSearchRelatedApplication] = useState('');
+
+    const [showNotDeletableDialog, setShowNotDeletableDialog] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<() => void>();
 
     const [isLoading, setIsLoading] = useState(false);
     const [isNotFound, setIsNotFound] = useState(false);
@@ -57,6 +83,15 @@ export function ThemeEditPage(): JSX.Element {
                 .finally(() => {
                     setIsLoading(false);
                 });
+
+            ThemesService
+                .listApplications(parseInt(themeId))
+                .then(setRelatedApplications)
+                .catch((err) => {
+                    console.error(err);
+                    setRelatedApplications([]);
+                    dispatch(showErrorSnackbar('Zugehörige Formulare konnten nicht geladen werden'));
+                });
         }
     }, [themeId]);
 
@@ -80,9 +115,12 @@ export function ThemeEditPage(): JSX.Element {
                 editedTheme.id !== 0 ? editedTheme.id : undefined,
                 editedTheme,
             )
-            .then((responseLink) => {
-                setOriginalTheme(responseLink);
-                setEditedTheme(responseLink);
+            .then((createdTheme) => {
+                if (editedTheme.id === 0) {
+                    setRelatedApplications([]);
+                }
+                setOriginalTheme(createdTheme);
+                setEditedTheme(createdTheme);
                 dispatch(showSuccessSnackbar('Theme erfolgreich gespeichert'));
             })
             .catch((err) => {
@@ -101,6 +139,14 @@ export function ThemeEditPage(): JSX.Element {
         setEditedTheme(originalTheme);
     };
 
+    const handlePrepareDelete = (): void => {
+        if (relatedApplications != null && relatedApplications.length > 0) {
+            setShowNotDeletableDialog(true);
+        } else {
+            setConfirmDelete(() => handleDelete);
+        }
+    };
+
     const handleDelete = (): void => {
         if (editedTheme == null || editedTheme.id === 0) {
             return;
@@ -113,131 +159,218 @@ export function ThemeEditPage(): JSX.Element {
                 navigate('/themes');
             })
             .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Theme konnte nicht gelöscht werden'));
+                if (err.response?.status === 409) {
+                    dispatch(showErrorSnackbar('Farbschema wird noch verwendet und kann nicht gelöscht werden'));
+                } else {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Farbschema konnte nicht gelöscht werden'));
+                }
                 setIsLoading(false);
             });
     };
 
     return (
-        <FormPageWrapper
-            title="Farbschema bearbeiten"
-            isLoading={ isLoading }
-            is404={ isNotFound }
-            hasChanged={ hasChanged }
-            onSave={ handleSave }
-            onReset={ (editedTheme?.id ?? 0) !== 0 ? handleReset : undefined }
-            onDelete={ (editedTheme?.id ?? 0) !== 0 ? handleDelete : undefined }
-        >
-            <TextFieldComponent
-                label="Name des Farbschemas"
-                placeholder="Neues Farbschema"
-                hint="Der Name des Farbschemas. Dieser wird nur Ihren Mitarbeiter:innen angezeigt."
-                value={ editedTheme?.name }
-                onChange={ (val) => {
-                    handlePatch({
-                        name: val,
-                    });
-                } }
-                required
-                maxCharacters={ 96 }
-            />
+        <>
+            <FormPageWrapper
+                title="Farbschema bearbeiten"
+                isLoading={ isLoading }
+                is404={ isNotFound }
+                hasChanged={ hasChanged }
+                onSave={ handleSave }
+                onReset={ (editedTheme?.id ?? 0) !== 0 ? handleReset : undefined }
+                onDelete={ (editedTheme?.id ?? 0) !== 0 ? handlePrepareDelete : undefined }
 
-            <Grid
-                container
-                columnSpacing={ 2 }
-                rowSpacing={ 4 }
-                sx={ {
-                    mt: 2,
+                tabs={
+                    editedTheme?.id !== 0 ?
+                        [
+                            {
+                                label: 'Formulare',
+                                content: (
+                                    <>
+                                        {
+                                            relatedApplications != null &&
+                                            relatedApplications.length === 0 &&
+                                            <AlertComponent
+                                                color="info"
+                                            >
+                                                Dieses Farbschema wird aktuell von keinem Formular verwendet.
+                                            </AlertComponent>
+                                        }
+
+                                        {
+                                            relatedApplications != null &&
+                                            relatedApplications.length > 0 &&
+                                            <TableWrapper
+                                                columns={ columns }
+                                                rows={ filterItems(relatedApplications, 'title', searchRelatedApplication) }
+                                                onRowClick={ (app) => {
+                                                    navigate(`/edit/${ app.id }`);
+                                                } }
+                                                title="Die folgenden Formulare verwenden dieses Farbschema"
+                                                search={ searchRelatedApplication }
+                                                searchPlaceholder="Formular suchen"
+                                                onSearchChange={ setSearchRelatedApplication }
+                                                actions={ [] }
+                                            />
+                                        }
+                                    </>
+                                ),
+                            },
+                        ] :
+                        undefined
+                }
+            >
+                <TextFieldComponent
+                    label="Name des Farbschemas"
+                    placeholder="Neues Farbschema"
+                    hint="Der Name des Farbschemas. Dieser wird nur Ihren Mitarbeiter:innen angezeigt."
+                    value={ editedTheme?.name }
+                    onChange={ (val) => {
+                        handlePatch({
+                            name: val,
+                        });
+                    } }
+                    required
+                    maxCharacters={ 96 }
+                />
+
+                <Grid
+                    container
+                    columnSpacing={ 2 }
+                    rowSpacing={ 4 }
+                    sx={ {
+                        mt: 2,
+                    } }
+                >
+                    <ColorPicker
+                        label="Pimärfarbe"
+                        value={ editedTheme?.main }
+                        onChange={ (color) => {
+                            handlePatch({
+                                main: color,
+                            });
+                        } }
+                    />
+
+                    <ColorPicker
+                        label="Pimärfarbe (Dunkel)"
+                        value={ editedTheme?.mainDark }
+                        onChange={ (color) => {
+                            handlePatch({
+                                mainDark: color,
+                            });
+                        } }
+                    />
+
+                    <ColorPicker
+                        label="Akzentfarbe"
+                        value={ editedTheme?.accent }
+                        onChange={ (color) => {
+                            handlePatch({
+                                accent: color,
+                            });
+                        } }
+                    />
+                </Grid>
+
+                <Divider
+                    sx={ {
+                        my: 8,
+                    } }
+                />
+
+                <Grid
+                    container
+                    columnSpacing={ 2 }
+                    rowSpacing={ 4 }
+                >
+                    <ColorPicker
+                        label="Fehlerfarbe"
+                        value={ editedTheme?.error }
+                        onChange={ (color) => {
+                            handlePatch({
+                                error: color,
+                            });
+                        } }
+                    />
+
+                    <ColorPicker
+                        label="Warnungsfarbe"
+                        value={ editedTheme?.warning }
+                        onChange={ (color) => {
+                            handlePatch({
+                                warning: color,
+                            });
+                        } }
+                    />
+
+                    <ColorPicker
+                        label="Informationsfarbe"
+                        value={ editedTheme?.info }
+                        onChange={ (color) => {
+                            handlePatch({
+                                info: color,
+                            });
+                        } }
+                    />
+
+                    <ColorPicker
+                        label="Erfolgsfarbe"
+                        value={ editedTheme?.success }
+                        onChange={ (color) => {
+                            handlePatch({
+                                success: color,
+                            });
+                        } }
+                    />
+                </Grid>
+            </FormPageWrapper>
+
+            <InfoDialog
+                title="Farbschema kann nicht gelöscht werden"
+                severity="warning"
+                open={ showNotDeletableDialog }
+                onClose={ () => {
+                    setShowNotDeletableDialog(false);
                 } }
             >
-                <ColorPicker
-                    label="Pimärfarbe"
-                    value={ editedTheme?.main }
-                    onChange={ (color) => {
-                        handlePatch({
-                            main: color,
-                        });
-                    } }
-                />
+                <Typography
+                    variant="body1"
+                    component="p"
+                >
+                    Dieses Farbschema kann nicht gelöscht werden, da es aktuell von einem oder mehreren Formularen
+                    verwendet wird.
+                </Typography>
 
-                <ColorPicker
-                    label="Pimärfarbe (Dunkel)"
-                    value={ editedTheme?.mainDark }
-                    onChange={ (color) => {
-                        handlePatch({
-                            mainDark: color,
-                        });
-                    } }
-                />
+                <List>
+                    {
+                        relatedApplications?.map((app) => (
+                            <ListItem
+                                key={ app.id }
+                            >
+                                <Link to={ `/edit/${ app.id }` }>
+                                    { app.title } { app.version }
+                                </Link>
+                            </ListItem>
+                        ))
+                    }
+                </List>
+            </InfoDialog>
 
-                <ColorPicker
-                    label="Akzentfarbe"
-                    value={ editedTheme?.accent }
-                    onChange={ (color) => {
-                        handlePatch({
-                            accent: color,
-                        });
-                    } }
-                />
-            </Grid>
-
-            <Divider
-                sx={ {
-                    my: 8,
+            <ConfirmDialog
+                title="Farbschema löschen"
+                onCancel={ () => {
+                    setConfirmDelete(undefined);
                 } }
-            />
-
-            <Grid
-                container
-                columnSpacing={ 2 }
-                rowSpacing={ 4 }
+                onConfirm={ confirmDelete }
             >
-                <ColorPicker
-                    label="Fehlerfarbe"
-                    value={ editedTheme?.error }
-                    onChange={ (color) => {
-                        handlePatch({
-                            error: color,
-                        });
-                    } }
-                />
-
-                <ColorPicker
-                    label="Warnungsfarbe"
-                    value={ editedTheme?.warning }
-                    onChange={ (color) => {
-                        handlePatch({
-                            warning: color,
-                        });
-                    } }
-                />
-
-                <ColorPicker
-                    label="Informationsfarbe"
-                    value={ editedTheme?.info }
-                    onChange={ (color) => {
-                        handlePatch({
-                            info: color,
-                        });
-                    } }
-                />
-
-                <ColorPicker
-                    label="Erfolgsfarbe"
-                    value={ editedTheme?.success }
-                    onChange={ (color) => {
-                        handlePatch({
-                            success: color,
-                        });
-                    } }
-                />
-            </Grid>
-        </FormPageWrapper>
+                Soll dieses Farbschema wirklich gelöscht werden?
+            </ConfirmDialog>
+        </>
     );
 }
 
-function ColorPicker({label, value, onChange}: {
+function ColorPicker({ label, value, onChange }: {
     label: string;
     value?: string;
     onChange: (val: string) => void;
