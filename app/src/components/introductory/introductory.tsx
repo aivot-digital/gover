@@ -5,7 +5,7 @@ import {faArrowRight, faArrowUpLeft} from '@fortawesome/pro-solid-svg-icons';
 import {showNotImplementedMessage} from '../../utils/show-not-implemented-message';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {faXmarkCircle} from '@fortawesome/pro-light-svg-icons';
+import {faXmarkCircle} from '@fortawesome/pro-regular-svg-icons';
 import {AppMode} from "../../data/app-mode";
 import {LocalStorageService} from "../../services/local-storage-service";
 import {LocalstorageKey} from "../../data/localstorage-key";
@@ -37,18 +37,19 @@ export function Introductory({mode}: IntroductoryProps) {
                 <Box
                     sx={{
                         position: 'relative',
-                        px: 11,
-                        py: 9,
+                        px: 7,
+                        py: 6,
                         mt: 5,
                         mb: 5,
                         backgroundColor: theme.palette.primary.dark,
+                        borderRadius: theme.shape.borderRadius / 2,
                     }}
                 >
                     {
                         mode === AppMode.Staff &&
-                        <Box sx={{position: 'absolute', right: theme.spacing(11)}}>
+                        <Box sx={{position: 'absolute', right: theme.spacing(7)}}>
                             <Tooltip
-                                title="Blende diese Meldung aus"
+                                title="Diese Meldung ausblenden"
                             >
                                 <IconButton
                                     sx={{color: theme.palette.secondary.main}}
@@ -77,7 +78,7 @@ export function Introductory({mode}: IntroductoryProps) {
                             sx={{mt: 2}}
                         >
                             <span style={{color: theme.palette.secondary.main}}>
-                                Das neue Online-Antrags-Management
+                                Online-Antrags-Management
                             </span><br/>
                             {systemConfig[SystemConfigKeys.provider.name]}
                         </Typography>
