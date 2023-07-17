@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
-import { Box, Container, Divider, IconButton, Tooltip, Typography, useTheme } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight, faArrowUpLeft } from '@fortawesome/pro-solid-svg-icons';
-import { showNotImplementedMessage } from '../../utils/show-not-implemented-message';
-import { useAppSelector } from '../../hooks/use-app-selector';
-import { SystemConfigKeys } from '../../data/system-config-keys';
-import { faXmarkCircle } from '@fortawesome/pro-light-svg-icons';
-import { AppMode } from '../../data/app-mode';
-import { LocalStorageService } from '../../services/local-storage-service';
-import { LocalstorageKey } from '../../data/localstorage-key';
-
+import React, {useState} from 'react';
+import {Box, Container, Divider, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
+import {showNotImplementedMessage} from '../../utils/show-not-implemented-message';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {SystemConfigKeys} from '../../data/system-config-keys';
+import {AppMode} from "../../data/app-mode";
+import {LocalStorageService} from "../../services/local-storage-service";
+import {LocalstorageKey} from "../../data/localstorage-key";
+import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
+import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
 
 interface IntroductoryProps {
     mode: AppMode;
@@ -37,29 +36,25 @@ export function Introductory({mode}: IntroductoryProps) {
                 <Box
                     sx={ {
                         position: 'relative',
-                        px: 11,
-                        py: 9,
+                        px: 7,
+                        py: 6,
                         mt: 5,
                         mb: 5,
                         backgroundColor: theme.palette.primary.dark,
-                    } }
+                        borderRadius: theme.shape.borderRadius / 2,
+                    }}
                 >
                     {
                         mode === AppMode.Staff &&
-                        <Box
-                            sx={ {
-                                position: 'absolute',
-                                right: theme.spacing(11),
-                            } }
-                        >
+                        <Box sx={{position: 'absolute', right: theme.spacing(7)}}>
                             <Tooltip
-                                title="Blende diese Meldung aus"
+                                title="Diese Meldung ausblenden"
                             >
                                 <IconButton
                                     sx={ {color: theme.palette.secondary.main} }
                                     onClick={ onDismiss }
                                 >
-                                    <FontAwesomeIcon icon={ faXmarkCircle }/>
+                                    <HighlightOffOutlinedIcon sx={{fontSize: "1.75rem"}}/>
                                 </IconButton>
                             </Tooltip>
                         </Box>
@@ -83,12 +78,8 @@ export function Introductory({mode}: IntroductoryProps) {
                                 mt: 2,
                             } }
                         >
-                            <span
-                                style={ {
-                                    color: theme.palette.secondary.main,
-                                } }
-                            >
-                                Das neue Online-Antrags-Management
+                            <span style={{color: theme.palette.secondary.main}}>
+                                Online-Antrags-Management
                             </span><br/>
                             { systemConfig[SystemConfigKeys.provider.name] }
                         </Typography>
@@ -127,15 +118,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                             },
                                         }] }
                                 >
-                                    <FontAwesomeIcon
-                                        icon={ faArrowRight }
-                                        fixedWidth
-                                        size={ 'xs' }
-                                        style={ {
-                                            marginRight: '6px',
-                                            flexShrink: 0,
-                                        } }
-                                    />
+                                    <ArrowForwardOutlinedIcon sx={{marginRight: '6px', flexShrink: 0, fontSize: '0.9em'}}/>
                                     <span>Zur Benutzereinführung (inkl. Video-Kurs)</span>
                                 </Typography>
 
@@ -160,15 +143,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                             },
                                         }] }
                                 >
-                                    <FontAwesomeIcon
-                                        icon={ faArrowUpLeft }
-                                        fixedWidth
-                                        size={ 'xs' }
-                                        style={ {
-                                            marginRight: '6px',
-                                            flexShrink: 0,
-                                        } }
-                                    />
+                                    <NorthWestOutlinedIcon style={{marginRight: '6px', flexShrink: 0, fontSize: '0.9em'}}/>
                                     <span>Alles neu – was jetzt? Die neuen Arbeitsabläufe und Prozessschritte für Online-Formulare einfach erklärt</span>
                                 </Typography>
                             </>

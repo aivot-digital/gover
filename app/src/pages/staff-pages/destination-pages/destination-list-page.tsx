@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { type Destination } from '../../../models/entities/destination';
 import { DestinationsService } from '../../../services/destinations-service';
@@ -85,7 +85,7 @@ export function DestinationListPage(): JSX.Element {
 
             actions={ [{
                 label: 'Neue Schnittstelle',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neue Schnittstelle anlegen',
                 link: '/destinations/new',
             }] }

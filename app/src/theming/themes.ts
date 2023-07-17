@@ -11,11 +11,11 @@ export function createDefaultAppTheme(baseTheme: MuiTheme): MuiTheme {
 export function createAppTheme(appTheme: Theme | undefined, baseTheme: MuiTheme): MuiTheme {
     const palette = {
         primary: {
-            main: appTheme?.main ?? '#2e3d45',
-            dark: appTheme?.mainDark ?? '#181715',
+            main: appTheme?.main ?? '#253e63',
+            dark: appTheme?.mainDark ?? '#142638',
         },
         secondary: {
-            main: appTheme?.accent ?? '#e9e0d6',
+            main: appTheme?.accent ?? '#ffd481',
         },
         error: {
             main: appTheme?.error ?? '#BF261D',

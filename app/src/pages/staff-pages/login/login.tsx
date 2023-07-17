@@ -9,6 +9,15 @@ import { authenticate, selectUser } from '../../../slices/user-slice';
 import { isInvalidUser } from '../../../models/entities/user';
 import { type Credentials } from '../../../models/dtos/credentials';
 import { TextFieldComponent } from '../../../components/text-field/text-field-component';
+import {Box, Button, Container, TextField, Typography} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {MetaElement} from '../../../components/meta-element/meta-element';
+import {useDispatch, useSelector} from 'react-redux';
+import {authenticate, logout, selectAuthenticationState} from '../../../slices/auth-slice';
+import {AuthState} from "../../../data/auth-state";
+import {Logo} from '../../../components/static-components/logo/logo';
+import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 
 export function Login(): JSX.Element {
     const dispatch = useDispatch();
@@ -135,10 +144,8 @@ export function Login(): JSX.Element {
                                 variant="contained"
                                 size="large"
                                 startIcon={
-                                    <FontAwesomeIcon
-                                        icon={ faArrowRightToBracket }
-                                        fixedWidth
-                                        style={ {
+                                    <LoginOutlinedIcon
+                                        sx={ {
                                             marginTop: '-2px',
                                             marginRight: '4px',
                                         } }

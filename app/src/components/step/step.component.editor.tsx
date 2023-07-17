@@ -1,8 +1,7 @@
 import React from 'react';
 import { type StepElement } from '../../models/elements/steps/step-element';
 import { Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Select } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { StepIcons } from '../../data/step-icons';
+import {  StepIcons } from '../../data/step-icons';
 import { type BaseEditorProps } from '../../editors/base-editor';
 import { TextFieldComponent } from '../text-field/text-field-component';
 import { Application } from '../../models/entities/application';
@@ -39,8 +38,9 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                     disabled={ !props.editable }
                 >
                     {
-                        StepIcons.map((stepIcon) => (
-                            <MenuItem
+                        StepIcons.map((stepIcon) => {
+                            const Icon = stepIcon.def;
+                            return (<MenuItem
                                 key={ stepIcon.id }
                                 value={ stepIcon.id }
                             >
@@ -51,14 +51,14 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                                     } }
                                 >
                                     <ListItemIcon>
-                                        <FontAwesomeIcon icon={ stepIcon.def }/>
+                                        <Icon/>
                                     </ListItemIcon>
                                     <ListItemText>
                                         { stepIcon.label }
                                     </ListItemText>
                                 </Box>
                             </MenuItem>
-                        ))
+                        )})
                     }
 
                 </Select>

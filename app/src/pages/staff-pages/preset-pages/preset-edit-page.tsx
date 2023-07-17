@@ -17,6 +17,24 @@ import { ElementTree } from '../../../components/element-tree/element-tree';
 import { flattenElements } from '../../../utils/flatten-elements';
 import { faTrashAlt } from '@fortawesome/pro-light-svg-icons';
 import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
+import {useNavigate, useParams} from 'react-router-dom';
+import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
+import {createAppTheme} from '../../../theming/themes';
+import {NotFoundPage} from '../../../components/static-components/not-found-page/not-found-page';
+import {MetaElement} from '../../../components/meta-element/meta-element';
+import {useAuthGuard} from '../../../hooks/use-auth-guard';
+import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {PresetsService} from '../../../services/presets.service';
+import {Preset} from '../../../models/entities/preset';
+import {selectSystemConfigValue} from '../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../data/system-config-keys';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {ElementTree} from '../../../components/element-tree/element-tree';
+import {flattenElements} from "../../../utils/flatten-elements";
+import {ConfirmDialog} from "../../../dialogs/confirm-dialog/confirm-dialog";
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 export function PresetEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
@@ -93,7 +111,7 @@ export function PresetEditPage(): JSX.Element {
                     title={ preset.root.name ?? '' }
                     noPlaceholder={ true }
                     actions={ [{
-                        icon: faTrashAlt,
+                        icon: <DeleteForeverOutlinedIcon/>,
                         tooltip: 'Vorlage löschen',
                         onClick: () => {
                             setConfirmDelete(() => handleDelete);

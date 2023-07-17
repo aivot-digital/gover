@@ -1,7 +1,7 @@
-import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
+import {SvgIcon} from "@mui/material";
 
 export interface StepIcon {
     id: string;
-    def: IconDefinition,
+    def: typeof SvgIcon,
     label: string;
 }

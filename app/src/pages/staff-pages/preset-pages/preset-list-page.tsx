@@ -10,6 +10,11 @@ import { type GridColDef } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
+import React, {useEffect, useState} from "react";
+import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
+import {GridColDef} from "@mui/x-data-grid";
+import {useNavigate} from "react-router-dom";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 const columns: Array<GridColDef<Preset>> = [
     {
@@ -83,7 +88,7 @@ export function PresetListPage(): JSX.Element {
             actions={[{
                 label: 'Neue Vorlage',
                 onClick: handleCreate,
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neue Vorlage hinzufügen',
             }]}
 

@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
     LoadingPlaceholderComponentView,
 } from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
-import { faCloudUpload, faPlus } from '@fortawesome/pro-light-svg-icons';
+
 import { AppFooter } from '../../../components/app-footer/app-footer';
 import { Introductory } from '../../../components/introductory/introductory';
 import {
@@ -39,8 +39,9 @@ import {
 import { ProviderLinks } from './components/provider-links';
 import { Department } from '../../../models/entities/department';
 import { DepartmentsService } from '../../../services/departments-service';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ApplicationStatus } from '../../../data/application-status/application-status';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 
 function groupApplications(applications: ListApplication[]): ListApplicationGroup[] {
     const appMap = new Map<string, ListApplication[]>();
@@ -217,7 +218,7 @@ export function ApplicationListPage(): JSX.Element {
                                     component={ Link }
                                     to="/departments/new"
                                     startIcon={
-                                        <FontAwesomeIcon icon={ faPlus }/>
+                                        <AddOutlinedIcon/>
                                     }
                                 >
                                     Fachbereich anlegen
@@ -268,14 +269,14 @@ export function ApplicationListPage(): JSX.Element {
                                     actions={ [
                                         {
                                             label: 'Neues Formular',
-                                            icon: faPlus,
+                                            icon: <AddOutlinedIcon/>,
                                             onClick: () => {
                                                 setShowAddApplicationDialog(true);
                                             },
                                         },
                                         {
                                             tooltip: 'Formular importieren',
-                                            icon: faCloudUpload,
+                                            icon: <CloudUploadOutlinedIcon sx={{transform: "scale(1.2)"}}/>,
                                             onClick: () => {
                                                 setShowImportApplicationDialog(true);
                                             },

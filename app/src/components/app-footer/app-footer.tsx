@@ -2,15 +2,13 @@ import React from 'react';
 import { Box, Button, Container, type SxProps, Typography, useTheme } from '@mui/material';
 import { type AppFooterProps } from './app-footer-props';
 import { AppMode } from '../../data/app-mode';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQuestionCircle } from '@fortawesome/pro-light-svg-icons';
-import { useAppDispatch } from '../../hooks/use-app-dispatch';
+import {  useAppDispatch } from '../../hooks/use-app-dispatch';
 import { MetaDialog, showMetaDialog } from '../../slices/app-slice';
 import { useAppSelector } from '../../hooks/use-app-selector';
 import { selectSystemConfigValue } from '../../slices/system-config-slice';
 import { SystemConfigKeys } from '../../data/system-config-keys';
-import { AssetService } from '../../services/asset-service';
 import { Logo } from '../static-components/logo/logo';
+import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 
 const buttonStyle: SxProps = {
     color: '#16191F',
@@ -25,7 +23,7 @@ export function AppFooter({mode}: AppFooterProps): JSX.Element {
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     return (
-        <Box sx={ {boxShadow: 'inset 0px 10px 10px rgba(0, 0, 0, 0.12)'} }>
+        <Box sx={{boxShadow: 'inset 0px 10px 20px rgba(0, 0, 0, 0.06)'}}>
             <Container>
                 <Box
                     sx={ {
@@ -50,11 +48,10 @@ export function AppFooter({mode}: AppFooterProps): JSX.Element {
                             mode === AppMode.Customer &&
                             <Box sx={ {mb: 1} }>
                                 <Button
-                                    startIcon={ <FontAwesomeIcon
-                                        style={ {marginTop: '-6px'} }
-                                        icon={ faQuestionCircle }
-                                    /> }
-                                    sx={ buttonStyle }
+                                    startIcon={<HelpOutlineOutlinedIcon
+                                        style={{marginTop: '-1px'}}
+                                    />}
+                                    sx={buttonStyle}
                                     size="large"
                                     onClick={ () => dispatch(showMetaDialog(MetaDialog.Help)) }
                                 >
@@ -101,7 +98,7 @@ export function AppFooter({mode}: AppFooterProps): JSX.Element {
                 >
                     {
                         mode === AppMode.Staff ?
-                            'Diese Anwendung wurde von Aivot gebaut - dem Unternehmen für die digitale Transformation der Verwaltung' :
+                            'Das Online-Antrags-Management wird umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot' :
                             (
                                 mode === AppMode.Customer ?
                                     'Dieses Formular wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot' :

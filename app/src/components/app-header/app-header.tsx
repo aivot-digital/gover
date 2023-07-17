@@ -4,13 +4,16 @@ import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/ma
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {AppMode} from '../../data/app-mode';
-import {faCog, faQuestionCircle, faUniversalAccess} from '@fortawesome/pro-light-svg-icons';
+import {faCog, faQuestionCircle, faUniversalAccess} from '@fortawesome/pro-regular-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {MetaDialog, selectLoadedApplication, showMetaDialog} from '../../slices/app-slice';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {AppHeaderMenu} from './app-header-menu/app-header-menu';
 import {Logo} from '../static-components/logo/logo';
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
+import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import AccessibilityNewOutlinedIcon from '@mui/icons-material/AccessibilityNewOutlined';
 
 export function AppHeader({mode}: AppHeaderProps) {
     const dispatch = useAppDispatch();
@@ -117,15 +120,14 @@ export function AppHeader({mode}: AppHeaderProps) {
                             {
                                 mode === AppMode.Customer &&
                                 <Tooltip
-                                    title="Barrierefreiheit"
+                                    title="Informationen zur Barrierefreiheit"
                                 >
                                     <IconButton
                                         color="primary"
                                         onClick={() => dispatch(showMetaDialog(MetaDialog.Accessibility))}
                                     >
-                                        <FontAwesomeIcon
-                                            icon={faUniversalAccess}
-                                            size="lg"
+                                        <AccessibilityNewOutlinedIcon
+                                            fontSize={"large"}
                                         />
                                     </IconButton>
                                 </Tooltip>
@@ -145,9 +147,8 @@ export function AppHeader({mode}: AppHeaderProps) {
                                             dispatch(showMetaDialog(MetaDialog.Help))
                                         }}
                                     >
-                                        <FontAwesomeIcon
-                                            icon={faQuestionCircle}
-                                            size="lg"
+                                        <HelpOutlineOutlinedIcon
+                                            fontSize={"large"}
                                         />
                                     </IconButton>
                                 </Tooltip>
@@ -162,9 +163,8 @@ export function AppHeader({mode}: AppHeaderProps) {
                                         color="primary"
                                         onClick={handleOpenMenu}
                                     >
-                                        <FontAwesomeIcon
-                                            icon={faCog}
-                                            size="lg"
+                                        <SettingsOutlinedIcon
+                                            fontSize={"large"}
                                         />
                                     </IconButton>
                                 </Tooltip>

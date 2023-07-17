@@ -1,16 +1,12 @@
-import React from 'react';
-import { createTheme } from '@mui/material';
-import { deDE } from '@mui/x-data-grid';
-import { deDE as coreDeDE } from '@mui/material/locale';
-import {
-    faCircleCheck,
-    faCircleExclamation,
-    faCircleInfo,
-    faTriangleExclamation,
-} from '@fortawesome/pro-light-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {createTheme} from '@mui/material';
+import {deDE} from '@mui/x-data-grid';
+import {deDE as coreDeDE} from '@mui/material/locale';
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
 
-const fontStackNoto = ['"Noto Sans"',
+const fontStackHeadlines = ['"Public Sans"',
     '-apple-system',
     'BlinkMacSystemFont',
     '"Segoe UI"',
@@ -23,7 +19,7 @@ const fontStackNoto = ['"Noto Sans"',
     '"Segoe UI Symbol"',
 ].join(',');
 
-const fontStackRocGrotesk = ['"Roc Grotesk"',
+const fontStackBodyCopy = ['"Public Sans"',
     '-apple-system',
     'BlinkMacSystemFont',
     '"Segoe UI"',
@@ -36,7 +32,7 @@ const fontStackRocGrotesk = ['"Roc Grotesk"',
     '"Segoe UI Symbol"',
 ].join(',');
 
-const fontStackFranziska = ['"Franziska"',
+const fontStackAccentCopy = ['"Public Sans"',
     '-apple-system',
     'BlinkMacSystemFont',
     '"Segoe UI"',
@@ -51,46 +47,51 @@ const fontStackFranziska = ['"Franziska"',
 
 export const BaseTheme = createTheme({
     shape: {
-        borderRadius: 0,
+        borderRadius: 4,
     },
     typography: {
-        fontFamily: fontStackNoto,
+        fontFamily: fontStackBodyCopy,
         h1: {
-            fontFamily: fontStackRocGrotesk,
+            fontFamily: fontStackHeadlines,
             fontWeight: 700,
-            fontSize: '1.75rem',
-            lineHeight: '2rem',
+            fontSize: '1.802rem',
+            lineHeight: '2rem'
         },
         h2: {
-            fontFamily: fontStackRocGrotesk,
-            fontWeight: 500,
+            fontFamily: fontStackHeadlines,
+            fontWeight: 700,
+            fontSize: '1.602rem',
         },
         h3: {
-            fontFamily: fontStackRocGrotesk,
-            fontWeight: 500,
+            fontFamily: fontStackHeadlines,
+            fontWeight: 600,
+            fontSize: '1.424rem',
         },
         h4: {
-            fontFamily: fontStackRocGrotesk,
-            fontWeight: 500,
+            fontFamily: fontStackHeadlines,
+            fontWeight: 600,
+            fontSize: '1.266rem',
         },
         h5: {
-            fontFamily: fontStackRocGrotesk,
-            fontWeight: 500,
+            fontFamily: fontStackHeadlines,
+            fontWeight: 600,
+            fontSize: '1.125rem',
         },
         h6: {
-            fontFamily: fontStackRocGrotesk,
-            fontWeight: 500,
+            fontFamily: fontStackHeadlines,
+            fontWeight: 600,
+            fontSize: '1rem',
         },
         subtitle1: {
-            fontFamily: fontStackRocGrotesk,
-            fontWeight: 500,
+            fontFamily: fontStackHeadlines,
+            fontWeight: 600,
         },
         body1: {
-            fontFamily: fontStackNoto,
+            fontFamily: fontStackBodyCopy,
             color: '#444',
         },
         body2: {
-            fontFamily: fontStackFranziska,
+            fontFamily: fontStackAccentCopy,
             color: '#444',
             fontSize: '1rem',
             lineHeight: '1.5',
@@ -127,7 +128,7 @@ export const BaseTheme = createTheme({
         MuiButton: {
             styleOverrides: {
                 root: {
-                    fontFamily: fontStackRocGrotesk,
+                    fontFamily: fontStackHeadlines,
                     alignItems: 'center',
                 },
             },
@@ -158,11 +159,11 @@ export const BaseTheme = createTheme({
                     color: 'rgba(0, 0, 0, 0.4)',
                 },
                 label: {
-                    'fontFamily': fontStackRocGrotesk,
-                    'fontWeight': 500,
-                    'fontSize': '1.3125rem',
-                    'paddingTop': '4px',
-                    'marginLeft': '15px',
+                    fontFamily: fontStackHeadlines,
+                    fontWeight: 500,
+                    fontSize: '1.3125rem',
+                    paddingTop: '4px',
+                    marginLeft: '15px',
                     '&.Mui-completed': {
                         '.completed-step-suffix': {
                             display: 'inline-block',
@@ -192,24 +193,24 @@ export const BaseTheme = createTheme({
         MuiAlert: {
             styleOverrides: {
                 root: {
-                    fontFamily: fontStackFranziska,
+                    fontFamily: fontStackAccentCopy,
                     fontSize: '1rem',
                     padding: '14px 18px',
                 },
             },
             defaultProps: {
                 iconMapping: {
-                    error: <FontAwesomeIcon icon={faCircleExclamation}/>,
-                    info: <FontAwesomeIcon icon={faCircleInfo}/>,
-                    success: <FontAwesomeIcon icon={faCircleCheck}/>,
-                    warning: <FontAwesomeIcon icon={faTriangleExclamation}/>,
+                    error: <ErrorOutlineOutlinedIcon/>,
+                    info: <InfoOutlinedIcon/>,
+                    success: <CheckCircleOutlinedIcon/>,
+                    warning: <ReportOutlinedIcon/>,
                 },
             },
         },
         MuiAlertTitle: {
             styleOverrides: {
                 root: {
-                    fontFamily: fontStackRocGrotesk,
+                    fontFamily: fontStackHeadlines,
                     fontWeight: 500,
                     fontSize: '1.125rem',
                     marginBottom: '.125rem',

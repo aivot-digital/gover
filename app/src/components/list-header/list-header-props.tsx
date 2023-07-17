@@ -1,6 +1,4 @@
-import { type IconDefinition } from '@fortawesome/pro-duotone-svg-icons';
-
-type ListHeaderAction = { icon: IconDefinition } & ({ label: string } | { tooltip: string }) & ({ onClick: () => void } | { link: string });
+type ListHeaderAction = { icon: JSX.Element } & ({ label: string } | { tooltip: string }) & ({ onClick: () => void } | { link: string });
 
 export interface ListHeaderProps {
     title: string;

@@ -35,18 +35,26 @@ import {
     faEyeSlash,
     faScrewdriverWrench,
     faText,
-    faTextSlash,
-} from '@fortawesome/pro-light-svg-icons';
-import { AdminToolsDialog } from '../../../dialogs/admin-tools/admin-tools-dialog';
-import { useAppSelector } from '../../../hooks/use-app-selector';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { ElementTree } from '../../../components/element-tree/element-tree';
-import { setCurrentStep } from '../../../slices/stepper-slice';
-import { flattenElements } from '../../../utils/flatten-elements';
-import { HelpDialog } from '../../../dialogs/help-dialog/help.dialog';
-import { PrivacyDialog } from '../../../dialogs/privacy-dialog/privacy-dialog';
-import { ImprintDialog } from '../../../dialogs/imprint-dialog/imprint-dialog';
-import { AccessibilityDialog } from '../../../dialogs/accessibility-dialog/accessibility-dialog';
+    faTextSlash
+} from '@fortawesome/pro-regular-svg-icons';
+import {AdminToolsDialog} from '../../../dialogs/admin-tools/admin-tools-dialog';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {ElementTree} from '../../../components/element-tree/element-tree';
+import {setCurrentStep} from '../../../slices/stepper-slice';
+import {flattenElements} from "../../../utils/flatten-elements";
+import {HelpDialog} from "../../../dialogs/help-dialog/help.dialog";
+import {PrivacyDialog} from "../../../dialogs/privacy-dialog/privacy-dialog";
+import {ImprintDialog} from "../../../dialogs/imprint-dialog/imprint-dialog";
+import {AccessibilityDialog} from "../../../dialogs/accessibility-dialog/accessibility-dialog";
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import RemoveDoneOutlinedIcon from '@mui/icons-material/RemoveDoneOutlined';
+import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
+import HandymanOutlinedIcon from '@mui/icons-material/HandymanOutlined';
+import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined';
+import LaunchOutlinedIcon from '@mui/icons-material/LaunchOutlined';
 import { ThemesService } from '../../../services/themes-service';
 import { type Theme } from '../../../models/entities/theme';
 import { ApplicationStatus } from '../../../data/application-status/application-status';
@@ -122,14 +130,14 @@ export function ApplicationEditPage(): JSX.Element {
                     actions={ [
                         {
                             tooltip: adminSettings.disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
-                            icon: adminSettings.disableValidation ? faText : faTextSlash,
+                            icon: adminSettings.disableValidation ? <DoneAllOutlinedIcon/> : <RemoveDoneOutlinedIcon/>,
                             onClick: () => {
                                 dispatch(toggleValidation());
                             },
                         },
                         {
                             tooltip: adminSettings.disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                            icon: adminSettings.disableVisibility ? faEye : faEyeSlash,
+                            icon: adminSettings.disableVisibility ? <VisibilityOutlinedIcon/> : <VisibilityOffOutlinedIcon/>,
                             onClick: () => {
                                 dispatch(toggleVisibility());
                             },
@@ -137,22 +145,22 @@ export function ApplicationEditPage(): JSX.Element {
                         'separator',
                         {
                             tooltip: 'Admin-Werkzeuge öffnen',
-                            icon: faScrewdriverWrench,
+                            icon: <HandymanOutlinedIcon/>,
                             onClick: () => {
                                 setShowAdminTools(true);
                             },
                         },
                         {
                             tooltip: adminSettings.hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
-                            icon: adminSettings.hideComponentTree ? faDisplay : faDisplaySlash,
+                            icon: adminSettings.hideComponentTree ? <DesktopWindowsOutlinedIcon/> : <DesktopAccessDisabledOutlinedIcon/>,
                             onClick: () => {
                                 dispatch(toggleComponentTree());
                             },
                         },
                         {
                             tooltip: 'Formular als Antragsteller:in öffnen (in neuem Tab)',
-                            icon: faExternalLink,
-                            href: `/#/${ application.slug ?? '' }/${ application.version ?? '' }`,
+                            icon: <LaunchOutlinedIcon/>,
+                            href: `/#/${application.slug ?? ''}/${application.version ?? ''}`,
                         },
                     ] }
                     noPlaceholder={ true }
@@ -161,16 +169,16 @@ export function ApplicationEditPage(): JSX.Element {
 
                 <Grid
                     container
-                    sx={ {
+                    sx={{
                         minHeight: '100vh',
-                    } }
+                    }}
                 >
                     {
                         !adminSettings.hideComponentTree &&
                         <Grid
                             item
-                            xs={ 4 }
-                            sx={ {
+                            xs={4}
+                            sx={{
                                 pt: 8,
                                 px: 2,
                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
@@ -178,11 +186,11 @@ export function ApplicationEditPage(): JSX.Element {
                                 overflowY: 'scroll',
                                 borderRight: '1px solid #E0E7E0',
                                 position: 'relative',
-                            } }
+                            }}
                         >
                             <ElementTree
-                                entity={ application }
-                                onPatch={ (patch) => {
+                                element={application.root}
+                                onPatch={patch => {
                                     dispatch(updateAppModel({
                                         ...application,
                                         ...patch,
@@ -198,16 +206,16 @@ export function ApplicationEditPage(): JSX.Element {
 
                     <Grid
                         item
-                        xs={ adminSettings.hideComponentTree ? 12 : 8 }
-                        sx={ {
+                        xs={adminSettings.hideComponentTree ? 12 : 8}
+                        sx={{
                             pt: 8,
                             height: '100vh',
                             overflowY: 'scroll',
-                        } }
+                        }}
                     >
                         <ViewDispatcherComponent
-                            allElements={ allElements }
-                            element={ application.root }
+                            allElements={allElements}
+                            element={application.root}
                         />
                     </Grid>
                 </Grid>

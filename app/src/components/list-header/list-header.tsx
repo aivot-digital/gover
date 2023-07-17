@@ -14,7 +14,7 @@ export function ListHeader ({title, search, searchPlaceholder, onSearchChange, a
                 alignItems: 'center'
             } }
         >
-            <Typography variant="h5">
+            <Typography variant="h2">
                 { title }
             </Typography>
 
@@ -35,7 +35,7 @@ export function ListHeader ({title, search, searchPlaceholder, onSearchChange, a
                             ? (
                                 <Button
                                     key={ act.label }
-                                    endIcon={ <FontAwesomeIcon icon={ act.icon }/> }
+                                    endIcon={  act.icon }
                                     variant="contained"
                                     sx={ {ml: 2} }
                                     component={ 'link' in act ? Link : 'button' }
@@ -55,9 +55,8 @@ export function ListHeader ({title, search, searchPlaceholder, onSearchChange, a
                                         to={ 'link' in act ? act.link : undefined }
                                         onClick={ 'onClick' in act ? act.onClick : undefined }
                                     >
-                                        <FontAwesomeIcon
-                                            icon={ act.icon }
-                                        />
+                                        { act.icon }
+
                                     </IconButton>
                                 </Tooltip>
                             )

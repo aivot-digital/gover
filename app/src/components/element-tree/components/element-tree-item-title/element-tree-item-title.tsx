@@ -1,31 +1,17 @@
 import styles from './element-tree-item-title.module.scss';
-import { Box, IconButton, Tooltip, Typography } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faBinaryCircleCheck,
-    faChevronDown,
-    faChevronRight,
-    faCircleBolt,
-    faCircleF,
-    faDiamondExclamation,
-    faListCheck,
-    faMemoCircleCheck,
-    faPlusCircle,
-    faQuestionCircle,
-} from '@fortawesome/pro-light-svg-icons';
-import { ElementIcons } from '../../../../data/element-type/element-icons';
-import { generateComponentTitle } from '../../../../utils/generate-component-title';
-import { checkId } from '../../../../utils/id-utils';
-import { getFunctionStatus } from '../../../../utils/function-status-utils';
+import {Box, IconButton, SvgIcon, Tooltip, Typography} from '@mui/material';
+import {ElementIcons} from '../../../../data/element-type/element-icons';
+import {generateComponentTitle} from '../../../../utils/generate-component-title';
+import {checkId} from '../../../../utils/id-utils';
+import {getFunctionStatus} from '../../../../utils/function-status-utils';
 import React from 'react';
 import { ElementType } from '../../../../data/element-type/element-type';
 import { ElementNames } from '../../../../data/element-type/element-names';
 import { useTheme } from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
-import { hasUntestedChild } from '../../../../utils/has-untested-child';
-import { type RootElement } from '../../../../models/elements/root-element';
-import { type IconDefinition } from '@fortawesome/pro-duotone-svg-icons';
-import { useAppSelector } from '../../../../hooks/use-app-selector';
+import {hasUntestedChild} from '../../../../utils/has-untested-child';
+import {RootElement} from '../../../../models/elements/root-element';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {
     selectTreeElementSearch,
     selectUseIdsInComponentTree,
@@ -38,7 +24,16 @@ import { isAnyElementWithChildren } from '../../../../models/elements/any-elemen
 import { getStepIcon } from '../../../../data/step-icons';
 import { selectLoadedApplication } from '../../../../slices/app-slice';
 import { findNoCodeUsage } from '../../../../utils/find-no-code-usage';
-
+import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
+import KeyboardArrowRightOutlinedIcon from '@mui/icons-material/KeyboardArrowRightOutlined';
+import GradingOutlinedIcon from '@mui/icons-material/GradingOutlined';
+import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
+import ChecklistOutlinedIcon from '@mui/icons-material/ChecklistOutlined';
+import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
+import OfflineBoltOutlinedIcon from '@mui/icons-material/OfflineBoltOutlined';
+import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
+import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 
 const highlightOutlineStyle = '#86FFD388 solid 2px';
 const highlightBoxShadowStyle = '0px 4px 20px rgba(179, 242, 219, 0.5)';
@@ -97,7 +92,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     const statusIcons = determineIcons(testMode, warnDuplicateIds, root, props.element);
     const elementTitle = generateComponentTitle(props.element);
     const titleCharLimit = testMode ? 30 : 40;
-    const elementIcon = props.element.type === ElementType.Step ? getStepIcon(props.element) : ElementIcons[props.element.type];
+    const ElementIcon = props.element.type === ElementType.Step ? getStepIcon(props.element) : ElementIcons[props.element.type];
     const matchesSearch = treeElementSearch != null && treeElementSearch.length > 2 && (elementTitle.toLowerCase().includes(treeElementSearch.toLowerCase()) || props.element.id.toLowerCase().includes(treeElementSearch.toLocaleLowerCase()));
 
     return (
@@ -130,10 +125,12 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                                     textAlign: 'center',
                                 } }
                             >
-                                <FontAwesomeIcon
-                                    icon={ props.isExpanded ? faChevronDown : faChevronRight }
-                                    size={ '1x' }
-                                />
+                                {
+                                     props.isExpanded ? <KeyboardArrowDownOutlinedIcon
+                                        sx={{transform: 'translate(-0.125rem, -0.125rem)' }}/> :
+                                    <KeyboardArrowRightOutlinedIcon
+                                        sx={{transform: 'translate(-0.125rem, -0.125rem)' }}/>
+                                }
                             </Typography>
                         </IconButton>
                     ) :
@@ -150,11 +147,12 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                         color: theme.palette.primary.dark,
                     } }
                 >
-                    <FontAwesomeIcon
+                    <ElementIcon sx={{fontSize: "1.75rem", transform: 'translateY(2px)', mr: 0.5}}/>
+                    {/*<FontAwesomeIcon
                         icon={ elementIcon }
                         fixedWidth
                         size={ 'lg' }
-                    />
+                    />*/}
                 </Box>
             </Tooltip>
 
@@ -203,17 +201,19 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                 } }
             >
                 {
-                    statusIcons.map((icon) => (
-                        <Tooltip
+                    statusIcons.map((icon) => {
+                        const Icon = icon.icon;
+                        return (<Tooltip
                             title={ icon.tooltip }
                             arrow
                             key={ icon.tooltip }
                         >
                             <IconButton color={ icon.color }>
-                                <FontAwesomeIcon icon={ icon.icon }/>
-                            </IconButton>
-                        </Tooltip>
-                    ))
+                                <Icon/>
+                                </IconButton>
+                            </Tooltip>
+                        )
+                    })
                 }
 
                 {
@@ -224,7 +224,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                         arrow
                     >
                         <IconButton onClick={ props.onShowAddDialog }>
-                            <FontAwesomeIcon icon={ faPlusCircle }/>
+                            <AddCircleOutlineOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
                 }
@@ -236,7 +236,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
 interface TreeElementIcon {
     color?: 'primary' | 'secondary' | 'error' | 'success' | 'warning';
     tooltip: string;
-    icon: IconDefinition;
+    icon: typeof SvgIcon;
 }
 
 function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: RootElement | undefined, element: AnyElement): TreeElementIcon[] {
@@ -250,7 +250,7 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
         if (professionalTestMissing) {
             icons.push({
                 color: 'warning',
-                icon: faMemoCircleCheck,
+                icon: GradingOutlinedIcon,
                 tooltip: 'Fachliche Prüfung ausstehend',
             });
         }
@@ -258,7 +258,7 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
         if (technicalTestMissing) {
             icons.push({
                 color: 'warning',
-                icon: faBinaryCircleCheck,
+                icon: InventoryOutlinedIcon,
                 tooltip: 'Technische Prüfung ausstehend',
             });
         }
@@ -267,7 +267,7 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
             if (hasUntestedChild(element)) {
                 icons.push({
                     color: 'warning',
-                    icon: faListCheck,
+                    icon: ChecklistOutlinedIcon,
                     tooltip: 'Prüfung für Kind-Element ausstehend',
                 });
             }
@@ -279,7 +279,7 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
         if (msg != null) {
             icons.push({
                 color: 'error',
-                icon: faDiamondExclamation,
+                icon: ReportOutlinedIcon,
                 tooltip: msg,
             });
         }
@@ -288,7 +288,7 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
     const noCodeUsages = root != null ? findNoCodeUsage(element, root) : [];
     if (noCodeUsages.length > 0) {
         icons.push({
-            icon: faCircleBolt,
+            icon: OfflineBoltOutlinedIcon,
             tooltip: 'Von No-Code Funktion referenziert: ' + noCodeUsages.map(generateComponentTitle).join(', '),
         });
     }
@@ -296,19 +296,19 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
     if (functionStatus.length > 0) {
         if (functionStatus.every((s) => s.status === 'done')) {
             icons.push({
-                icon: faCircleF,
+                icon: BuildCircleOutlinedIcon,
                 tooltip: 'Individuelle Funktionen definiert',
             });
         } else if (functionStatus.some((s) => s.status === 'todo')) {
             icons.push({
                 color: 'error',
-                icon: faCircleF,
+                icon: BuildCircleOutlinedIcon,
                 tooltip: 'Individuelle Funktionen erforderlich',
             });
         } else if (functionStatus.some((s) => s.status === 'unnecessary')) {
             icons.push({
                 color: 'error',
-                icon: faQuestionCircle,
+                icon: HelpOutlineOutlinedIcon,
                 tooltip: 'Individuelle Funktionen definiert aber keine Anforderung vorhanden',
             });
         }

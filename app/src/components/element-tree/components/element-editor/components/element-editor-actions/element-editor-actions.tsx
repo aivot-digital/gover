@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClone, faEllipsisVertical, faFloppyDisk, faLayerPlus, faTrashXmark } from '@fortawesome/pro-light-svg-icons';
 import { type ElementEditorActionsProps } from './element-editor-actions-props';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
+import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 
 export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Element {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -32,9 +35,8 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                         color="primary"
                         variant="contained"
                         onClick={ props.onSave }
-                        startIcon={ <FontAwesomeIcon
-                            icon={ faFloppyDisk }
-                            style={ {
+                        startIcon={ <SaveOutlinedIcon
+                            sx={ {
                                 marginTop: '-2px',
                             } }
                         /> }
@@ -62,10 +64,7 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                             color="primary"
                             onClick={ handleClick }
                         >
-                            <FontAwesomeIcon
-                                icon={ faEllipsisVertical }
-                                fixedWidth
-                            />
+                            <MoreVertOutlinedIcon/>
                         </IconButton>
                     }
                 </Box>
@@ -76,9 +75,8 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                         color="error"
                         onClick={ props.onDelete }
                         variant="outlined"
-                        startIcon={ <FontAwesomeIcon
-                            icon={ faTrashXmark }
-                            style={ {
+                        startIcon={ <DeleteForeverOutlinedIcon
+                            sx={ {
                                 marginTop: '-4px',
                             } }
                         /> }
@@ -101,9 +99,8 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                         } }
                     >
                         <ListItemIcon>
-                            <FontAwesomeIcon
-                                icon={ faLayerPlus }
-                                style={ {
+                            <LibraryAddOutlinedIcon
+                                sx={ {
                                     marginTop: '-4px',
                                 } }
                             />
@@ -122,9 +119,8 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                         } }
                     >
                         <ListItemIcon>
-                            <FontAwesomeIcon
-                                icon={ faClone }
-                                style={ {
+                            <ContentCopyOutlinedIcon
+                                sx={ {
                                     marginTop: '-4px',
                                 } }
                             />

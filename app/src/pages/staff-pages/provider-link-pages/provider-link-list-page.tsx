@@ -7,6 +7,15 @@ import { ProviderLinksService } from '../../../services/provider-links-service';
 import { type ProviderLink } from '../../../models/entities/provider-link';
 import { filterItems } from '../../../utils/filter-items';
 import { useAdminGuard } from '../../../hooks/use-admin-guard';
+import {useAuthGuard} from "../../../hooks/use-auth-guard";
+import React, {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {GridColDef} from "@mui/x-data-grid";
+import {useUserGuard} from "../../../hooks/use-user-guard";
+import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
+import {ProviderLinksService} from "../../../services/provider-links-service";
+import {ProviderLink} from "../../../models/entities/provider-link";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 const columns: Array<GridColDef<ProviderLink>> = [
     {
@@ -67,7 +76,7 @@ export function ProviderLinkListPage(): JSX.Element {
 
             actions={ [{
                 label: 'Neuer Link',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neuen Link anlegen',
                 link: '/provider-links/new',
             }] }

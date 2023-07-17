@@ -5,6 +5,10 @@ import { format, isToday, parseISO } from 'date-fns';
 import { ApplicationStatusNames } from '../../data/application-status/application-status-names';
 import { ApplicationStatus } from '../../data/application-status/application-status';
 import { Link } from 'react-router-dom';
+import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
+import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
+import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import {
     faArrowUpRightFromSquare,
     faBars,
@@ -16,7 +20,26 @@ import {
     faFileText,
     faTrashCanXmark,
     faUpFromDottedLine,
-} from '@fortawesome/pro-light-svg-icons';
+    faFiles,
+} from '@fortawesome/pro-regular-svg-icons';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {ApplicationService} from '../../services/application-service';
+import {getColorPalette} from '../../theming/themes';
+import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
+import {downloadConfigFile} from "../../utils/download-utils";
+import {showSuccessSnackbar} from "../../slices/snackbar-slice";
+import {useAppDispatch} from "../../hooks/use-app-dispatch";
+import {Department} from "../../models/entities/department";
+import {DepartmentsService} from "../../services/departments-service";
+import {ApplicationListItemProps} from "./application-list-item-props";
+import {useAppSelector} from "../../hooks/use-app-selector";
+import {selectUser} from "../../slices/user-slice";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined';
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
+import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
+import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ApplicationService } from '../../services/application-service';
 import { downloadConfigFile } from '../../utils/download-utils';
@@ -89,55 +112,51 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
     const lastUpdate = parseISO(props.application.updated);
 
     return (
-        <Box className={ styles.listItem }>
+        <Box className={styles.listItem}>
             <Box
-                className={ styles.listItemIcon }
+                className={styles.listItemIcon}
             >
-                <FontAwesomeIcon
-                    icon={ faFileText }
-                    size="2x"
+                <DescriptionOutlinedIcon
+                    sx={{ color: (getColorPalette(application.theme).primary as SimplePaletteColorOptions).main }}
+                    fontSize="large"
                 />
             </Box>
             <Box
-                className={ styles.listItemInfo }
-                sx={ {
-                    ml: 2.5,
-                    py: '8px',
-                } }
+                className={styles.listItemInfo}
+                sx={{ml: 2.5, py: '8px'}}
             >
                 <Typography
-                    variant="h6"
+                    variant="h5"
+                    sx={{mb: 0.5}}
                 >
                     { props.application.title }
 
                     <Typography
                         variant="caption"
-                        sx={ {
-                            ml: 1,
-                        } }
+                        sx={{ml: 1}}
                     >
                         { props.application.version }
                     </Typography>
                 </Typography>
 
                 <Typography
-                    sx={ {
+                    sx={{
                         mt: -0.75,
                         fontSize: '0.875rem',
                         lineHeight: '1.5rem',
-                    } }
+                    }}
                 >
                     Entwickelt durch: { department?.name }
                 </Typography>
 
                 <Typography
                     variant="body2"
-                    className={ styles.metaText }
-                    sx={ {
+                    className={styles.metaText}
+                    sx={{
                         mt: -0.6,
                         fontSize: '0.875rem',
                         lineHeight: '1.5rem',
-                    } }
+                    }}
                 >
                     { ApplicationStatusNames[props.application.status ?? ApplicationStatus.Drafted] } • Zuletzt
                                                                                                       bearbeitet: { isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy') } – { format(lastUpdate, 'HH:mm') } Uhr
@@ -150,18 +169,13 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                     Anträge: Offen { props.application.openSubmissions } | In Bearbeitung { props.application.inProgressSubmissions } | Gesamt { props.application.totalSubmissions }
                 </Typography>
             </Box>
-            <Box className={ styles.listItemActions }>
+            <Box className={styles.listItemActions}>
                 {
                     isEditor &&
-                    <Box className={ styles.listItemActionsContainer }>
+                    <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={ <FontAwesomeIcon
-                                icon={ faFiles }
-                                style={ {
-                                    marginTop: '-2px',
-                                } }
-                            /> }
-                            component={ Link }
+                            startIcon={<FolderSharedOutlinedIcon sx={{marginTop: '-2px' }} />}
+                            component={Link}
                             to={ `/submissions/${ props.application.id }` }
                         >
                             Anträge einsehen
@@ -173,9 +187,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                     isDeveloper &&
                     <Box className={ styles.listItemActionsContainer }>
                         <Button
-                            startIcon={ <FontAwesomeIcon
-                                icon={ faEdit }
-                                style={ {
+                            startIcon={ <DriveFileRenameOutlineOutlinedIcon sx={ {
                                     marginTop: '-2px',
                                 } }
                             /> }
@@ -189,11 +201,9 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                 {
                     isDeveloper &&
-                    <Box className={ styles.listItemActionsContainer }>
+                    <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={ <FontAwesomeIcon
-                                icon={ faUpFromDottedLine }
-                                style={ {
+                            startIcon={ <DriveFolderUploadOutlinedIcon sx={ {
                                     marginTop: '-2px',
                                 } }
                             /> }
@@ -206,9 +216,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                 <Box className={ styles.listItemActionsContainer }>
                     <Button
-                        startIcon={ <FontAwesomeIcon
-                            icon={ faBars }
-                            style={ {
+                        startIcon={ <MenuOutlinedIcon sx={ {
                                 marginTop: '-2px',
                             } }
                         /> }
@@ -224,7 +232,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                     >
                         <MenuItem onClick={ handleClone }>
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={ faClone }/>
+                                <FileCopyOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
                                 Formular duplizieren
@@ -237,7 +245,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                             target="_blank"
                         >
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={ faArrowUpRightFromSquare }/>
+                                <OpenInNewOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
                                 Formular als Antragsteller:in öffnen (in neuem Tab)
@@ -258,10 +266,10 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                                         dispatch(showSuccessSnackbar('Formularlink konnte nicht kopiert werden'));
                                     });
                                 handleCloseOptions();
-                            } }
+                            }}
                         >
                             <ListItemIcon>
-                                <FontAwesomeIcon icon={ faClipboard }/>
+                                <ContentPasteOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
                                 Formularlink in Zwischenablage kopieren
@@ -270,9 +278,9 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         {
                             isDeveloper &&
-                            <MenuItem onClick={ handleDownloadConfig }>
+                            <MenuItem onClick={handleDownloadConfig}>
                                 <ListItemIcon>
-                                    <FontAwesomeIcon icon={ faFileExport }/>
+                                    <ImportExportOutlinedIcon/>
                                 </ListItemIcon>
                                 <ListItemText>
                                     Formular exportieren
@@ -282,9 +290,9 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         {
                             isDeveloper &&
-                            <MenuItem onClick={ handleDelete }>
+                            <MenuItem onClick={handleDelete}>
                                 <ListItemIcon>
-                                    <FontAwesomeIcon icon={ faTrashCanXmark }/>
+                                    <DeleteForeverOutlinedIcon/>
                                 </ListItemIcon>
                                 <ListItemText>
                                     Formular löschen

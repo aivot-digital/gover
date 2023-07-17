@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { useNavigate } from 'react-router-dom';
 import { type Department } from '../../../models/entities/department';
 import { DepartmentsService } from '../../../services/departments-service';
@@ -81,7 +81,7 @@ export function DepartmentListPage(): JSX.Element {
                 (user?.admin ?? false) ?
                     [{
                         label: 'Fachbereich hinzufügen',
-                        icon: faPlus,
+                        icon: <AddOutlinedIcon/>,
                         onClick: () => {
                             navigate('/departments/new');
                         },

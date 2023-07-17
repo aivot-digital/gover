@@ -22,6 +22,7 @@ import { useAppDispatch } from '../../hooks/use-app-dispatch';
 import { type Application, isApplication } from '../../models/entities/application';
 import { type Preset } from '../../models/entities/preset';
 import { type GroupLayout } from '../../models/elements/form/layout/group-layout';
+import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 
 export function ElementTree<T extends Application | Preset>(props: ElementTreeProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -267,12 +268,7 @@ export function ElementTree<T extends Application | Preset>(props: ElementTreePr
                             variant="outlined"
                             size="small"
                             fullWidth
-                            endIcon={ <span
-                                style={ {
-                                    fontSize: '16px',
-                                    transform: 'translateY(1px)',
-                                } }
-                            ><FontAwesomeIcon icon={ faPlusCircle }/></span> }
+                            endIcon={<AddCircleOutlineOutlinedIcon sx={{transform: 'translateY(-1px)'}}/> }
                             sx={ {
                                 mt: 4,
                             } }

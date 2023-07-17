@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import { type GridColDef } from '@mui/x-data-grid';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { AssetService } from '../../../services/asset-service';
@@ -45,7 +45,7 @@ export function AssetListPage(): JSX.Element {
     const [search, setSearch] = useState('');
     const [assets, setAssets] = useState<Asset[]>();
     const [isBusy, setIsBusy] = useState(false);
-    
+
     useEffect(() => {
         setIsBusy(true);
         delayPromise(AssetService.list())
@@ -82,7 +82,7 @@ export function AssetListPage(): JSX.Element {
 
             actions={ [{
                 label: 'Dokument/Medieninhalt hinzufügen',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neues Dokument oder neuen Medieninhalt anlegen',
                 onClick: () => {
                     navigate('/assets/new');

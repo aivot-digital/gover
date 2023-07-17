@@ -1,13 +1,12 @@
-import {IconDefinition} from '@fortawesome/pro-duotone-svg-icons';
-
+import {SvgIconProps} from "@mui/material";
 
 export type AppToolbarPropsAction = ({
     tooltip: string;
-    icon: IconDefinition;
+    icon: SvgIconProps;
     onClick: () => void;
 } | {
     tooltip: string;
-    icon: IconDefinition;
+    icon: SvgIconProps;
     href: string;
 } | 'separator');
 

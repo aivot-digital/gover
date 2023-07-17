@@ -28,6 +28,12 @@ import { type Application } from '../../../../models/entities/application';
 import { type Preset } from '../../../../models/entities/preset';
 import { type GroupLayout } from '../../../../models/elements/form/layout/group-layout';
 import { AnyElement } from '../../../../models/elements/any-element';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import ExpandOutlinedIcon from '@mui/icons-material/ExpandOutlined';
+import CompressOutlinedIcon from '@mui/icons-material/CompressOutlined';
+import IntegrationInstructionsOutlinedIcon from '@mui/icons-material/IntegrationInstructionsOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends Application | Preset>(props: ElementTreeHeaderProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -55,8 +61,10 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                 sx={ {
                     display: 'flex',
                     justifyContent: 'space-between',
+                    alignItems: 'center',
                     mt: 1,
                     mb: 1,
+                    padding: 1,
                 } }
             >
                 <Box
@@ -65,22 +73,14 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         alignItems: 'center',
                     } }
                 >
-                    <span
-                        style={ {
-                            color: theme.palette.primary.dark,
-                            fontSize: '1.625rem',
-                        } }
-                    >
-                        <FontAwesomeIcon icon={ faListTree }/>
-                    </span>
+                    <AccountTreeOutlinedIcon sx={{
+                        color: theme.palette.primary.dark,
+                    }}/>
 
                     <Typography
-                        variant="h6"
+                        variant="h4"
                         color="primary"
-                        sx={ {
-                            ml: 1,
-                            mt: '2px',
-                        } }
+                        sx={{ml: 2}}
                     >
                         Struktur
                     </Typography>
@@ -91,8 +91,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Suchen"
                         arrow
                     >
-                        <IconButton onClick={ props.onToggleSearch }>
-                            <FontAwesomeIcon icon={ faSearch }/>
+                        <IconButton size="small" onClick={ props.onToggleSearch }>
+                            <SearchOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
@@ -100,8 +100,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Alles ausklappen"
                         arrow
                     >
-                        <IconButton onClick={ () => dispatch(setExpandElementTree('expanded')) }>
-                            <FontAwesomeIcon icon={ faArrowsFromLine }/>
+                        <IconButton size="small" onClick={ () => dispatch(setExpandElementTree('expanded')) }>
+                            <ExpandOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
@@ -109,8 +109,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Alles einklappen"
                         arrow
                     >
-                        <IconButton onClick={ () => dispatch(setExpandElementTree('collapsed')) }>
-                            <FontAwesomeIcon icon={ faArrowsToLine }/>
+                        <IconButton size="small" onClick={ () => dispatch(setExpandElementTree('collapsed')) }>
+                            <CompressOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
 
@@ -118,8 +118,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Einstellungen für Entwickler:innen"
                         arrow
                     >
-                        <IconButton onClick={ handleOpenCTMenu }>
-                            <FontAwesomeIcon icon={ faMessageCode }/>
+                        <IconButton size="small" onClick={ handleOpenCTMenu }>
+                            <IntegrationInstructionsOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
                     <Tooltip
@@ -127,6 +127,7 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         arrow
                     >
                         <IconButton
+                            size="small"
                             onClick={ () => {
                                 setShowEditor(true);
                             } }
@@ -134,7 +135,7 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                                 marginRight: '7px',
                             } }
                         >
-                            <FontAwesomeIcon icon={ faGear }/>
+                            <SettingsOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
                 </Box>

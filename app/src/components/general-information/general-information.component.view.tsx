@@ -20,6 +20,26 @@ import { useAppDispatch } from '../../hooks/use-app-dispatch';
 import { formatMetaDialog } from '../../utils/format-meta-dialog';
 import { selectCustomerInputErrorValue } from '../../slices/customer-input-errors-slice';
 import { showErrorSnackbar } from '../../slices/snackbar-slice';
+import React, {useEffect, useState} from 'react';
+import {Box, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
+import {ElementType} from '../../data/element-type/element-type';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
+import {ViewDispatcherComponent} from '../view-dispatcher.component';
+import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {FadingPaper} from '../static-components/fading-paper/fading-paper';
+import {Preamble} from '../static-components/preamble/preamble';
+import {Department} from '../../models/entities/department';
+import {DepartmentsService} from '../../services/departments-service';
+import {MetaDialog, selectLoadedApplication} from '../../slices/app-slice';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import ProjectPackage from '../../../package.json';
+import {BaseViewProps} from "../../views/base-view";
+import {useLocation, useNavigate} from "react-router-dom";
+import {selectSystemConfigValue} from "../../slices/system-config-slice";
+import {SystemConfigKeys} from "../../data/system-config-keys";
 
 export const PrivacyUserInputKey = '__privacy__';
 
@@ -178,16 +198,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                             key={ person }
                                             disableGutters
                                         >
-                                            <ListItemIcon
-                                                sx={ {
-                                                    minWidth: '34px',
-                                                } }
-                                            >
-                                                <FontAwesomeIcon
-                                                    icon={ faUser }
-                                                    fixedWidth
-                                                    size="lg"
-                                                    color={ theme.palette.primary.main }
+                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                                <PersonOutlineOutlinedIcon
+                                                    sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
@@ -226,16 +239,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                             key={ document }
                                             disableGutters
                                         >
-                                            <ListItemIcon
-                                                sx={ {
-                                                    minWidth: '34px',
-                                                } }
-                                            >
-                                                <FontAwesomeIcon
-                                                    icon={ faFileLines }
-                                                    fixedWidth
-                                                    size="lg"
-                                                    color={ theme.palette.primary.main }
+                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                                <DescriptionOutlinedIcon
+                                                    sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
@@ -274,16 +280,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                             key={ document }
                                             disableGutters
                                         >
-                                            <ListItemIcon
-                                                sx={ {
-                                                    minWidth: '34px',
-                                                } }
-                                            >
-                                                <FontAwesomeIcon
-                                                    icon={ faFileArrowUp }
-                                                    fixedWidth
-                                                    size="lg"
-                                                    color={ theme.palette.primary.main }
+                                            <ListItemIcon sx={{minWidth: '34px'}}>
+                                                <UploadFileOutlinedIcon
+                                                    sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>

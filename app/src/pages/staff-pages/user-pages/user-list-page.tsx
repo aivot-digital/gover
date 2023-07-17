@@ -9,6 +9,15 @@ import { delayPromise } from '../../../utils/with-delay';
 import { filterItems } from '../../../utils/filter-items';
 import { useAdminGuard } from '../../../hooks/use-admin-guard';
 import { Box, FormControlLabel, Switch } from '@mui/material';
+import {useAuthGuard} from "../../../hooks/use-auth-guard";
+import React, {useEffect, useState} from "react";
+import {User} from "../../../models/entities/user";
+import {UsersService} from "../../../services/users-service";
+import {useNavigate} from "react-router-dom";
+import {useUserGuard} from "../../../hooks/use-user-guard";
+import {GridColDef} from "@mui/x-data-grid";
+import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 
 const columns: Array<GridColDef<User>> = [
     {
@@ -84,7 +93,7 @@ export function UserListPage(): JSX.Element {
 
             actions={ [{
                 label: 'Mitarbeiter:in hinzufügen',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 link: '/users/new',
                 tooltip: 'Neue Mitarbeiter:in hinzufügen',
             }] }
