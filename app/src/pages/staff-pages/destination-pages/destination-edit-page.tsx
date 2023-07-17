@@ -253,7 +253,7 @@ export function DestinationEditPage(): JSX.Element {
                                                 search={searchRelatedApplication}
                                                 searchPlaceholder="Formular suchen"
                                                 onSearchChange={setSearchRelatedApplication}
-                                                actions={[]}
+                                                smallTitle={true}
                                             />
                                         }
                                     </>

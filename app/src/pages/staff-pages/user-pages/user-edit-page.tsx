@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {type User} from '../../../models/entities/user';
-import {Divider} from '@mui/material';
+import {Typography} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {UsersService} from '../../../services/users-service';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
@@ -13,6 +13,7 @@ import {delayPromise} from '../../../utils/with-delay';
 import {FormPageWrapper} from '../../../components/form-page-wrapper/form-page-wrapper';
 import {AlertComponent} from '../../../components/alert/alert-component';
 import {useAdminGuard} from '../../../hooks/use-admin-guard';
+import {UserEditPageMembershipsTab} from './tabs/user-edit-page-memberships-tab';
 
 type Errors = {
     [key in keyof User]?: string;
@@ -155,11 +156,18 @@ export function UserEditPage(): JSX.Element {
             hasChanged={hasChanged}
             onSave={handleSave}
             onReset={(editedUser?.id ?? 0) !== 0 ? handleReset : undefined}
-        >
-            <Divider sx={{mb: 4}}>
-                Allgemein
-            </Divider>
 
+            tabs={
+                editedUser != null && editedUser.id !== 0 ?
+                    [
+                        {
+                            label: 'Fachbereiche und Rollen',
+                            content: <UserEditPageMembershipsTab user={editedUser.id}/>,
+                        },
+                    ] :
+                    undefined
+            }
+        >
             <TextFieldComponent
                 label="Name"
                 value={editedUser?.name}
@@ -209,12 +217,15 @@ export function UserEditPage(): JSX.Element {
                         active: val,
                     });
                 }}
-                hint="Deaktivieren Sie Benutzer:innen damit diese sich nicht mehr anmelden können."
+                hint="Deaktivieren sie Benutzer:innen damit diese sich nicht mehr anmelden können."
             />
 
-            <Divider sx={{my: 4}}>
-                Passwort {editedUser?.id !== 0 ? 'überschreiben' : ''}
-            </Divider>
+            <Typography
+                variant="h5"
+                component="h2"
+            >
+                Passwort
+            </Typography>
 
             <TextFieldComponent
                 label="Passwort"

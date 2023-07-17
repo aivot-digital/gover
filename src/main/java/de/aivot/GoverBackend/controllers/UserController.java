@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.controllers;
 
+import de.aivot.GoverBackend.models.dtos.DepartmentMembershipWithDepartmentDto;
 import de.aivot.GoverBackend.models.entities.DepartmentMembership;
 import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.permissions.IsAdmin;
@@ -115,6 +116,15 @@ public class UserController {
                     return user;
                 })
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/api/users/{id}/memberships")
+    public Collection<DepartmentMembershipWithDepartmentDto> retrieveMemberships(@PathVariable Integer id) {
+        return departmentMembershipRepository
+                .findAllByUserId(id)
+                .stream()
+                .map(DepartmentMembershipWithDepartmentDto::new)
+                .toList();
     }
 
     @PutMapping("/api/users/{id}")

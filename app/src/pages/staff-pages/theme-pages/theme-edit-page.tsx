@@ -210,7 +210,7 @@ export function ThemeEditPage(): JSX.Element {
                                                 search={searchRelatedApplication}
                                                 searchPlaceholder="Formular suchen"
                                                 onSearchChange={setSearchRelatedApplication}
-                                                actions={[]}
+                                                smallTitle={true}
                                             />
                                         }
                                     </>

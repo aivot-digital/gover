@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.models.dtos.DepartmentMembershipDto;
-import de.aivot.GoverBackend.models.entities.AccessibleApplication;
 import de.aivot.GoverBackend.models.entities.DepartmentMembership;
 import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.repositories.*;
@@ -10,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
@@ -65,7 +63,7 @@ public class DepartmentMembershipController {
 
         return memberships
                 .stream()
-                .map(DepartmentMembershipDto::valueOf)
+                .map(DepartmentMembershipDto::new)
                 .toList();
     }
 
@@ -110,7 +108,7 @@ public class DepartmentMembershipController {
         membership.setUser(user.get());
         membership.setRole(newMembership.getRole());
 
-        return DepartmentMembershipDto.valueOf(membershipRepository.save(membership));
+        return new DepartmentMembershipDto(membershipRepository.save(membership));
     }
 
     @PutMapping("/api/department-memberships/{id}")
@@ -140,7 +138,7 @@ public class DepartmentMembershipController {
 
         membership.setRole(updatedMembership.getRole());
 
-        return DepartmentMembershipDto.valueOf(membershipRepository.save(membership));
+        return new DepartmentMembershipDto(membershipRepository.save(membership));
     }
 
     @DeleteMapping("/api/department-memberships/{id}")

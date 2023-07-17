@@ -1,18 +1,11 @@
 import React from 'react';
-import {Box, Button, IconButton, styled, Tooltip, tooltipClasses, TooltipProps, Typography} from '@mui/material';
+import {Box, Button, IconButton, styled, Tooltip, tooltipClasses, type TooltipProps, Typography} from '@mui/material';
 import {SearchInput} from '../search-input/search-input';
 import {type ListHeaderProps} from './list-header-props';
 import {Link} from 'react-router-dom';
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 
-export function ListHeader({
-                               title,
-                               search,
-                               searchPlaceholder,
-                               onSearchChange,
-                               actions,
-                               hint,
-                           }: ListHeaderProps): JSX.Element {
+export function ListHeader(props: ListHeaderProps): JSX.Element {
     return (
         <Box
             sx={{
@@ -20,22 +13,22 @@ export function ListHeader({
                 alignItems: 'center',
             }}
         >
-            <Typography variant="h2">
-                {title}
+            <Typography variant={props.smallTitle === true ? 'h5' : 'h2'}>
+                {props.title}
             </Typography>
 
             {
-                hint != null &&
+                props.hint != null &&
                 <HintTooltip
                     arrow
                     placement="right"
                     title={
                         <>
-                            {hint.text} <a href={hint.moreLink}
-                                           target="_blank"
-                                           rel="noreferrer">
+                            {props.hint.text} <a href={props.hint.moreLink}
+                                target="_blank"
+                                rel="noreferrer">
                             Mehr Informationen
-                        </a>
+                            </a>
                         </>
                     }
                 >
@@ -54,13 +47,13 @@ export function ListHeader({
                 }}
             >
                 <SearchInput
-                    value={search}
-                    onChange={onSearchChange}
-                    placeholder={searchPlaceholder}
+                    value={props.search}
+                    onChange={props.onSearchChange}
+                    placeholder={props.searchPlaceholder}
                 />
 
                 {
-                    actions.map((act) => (
+                    props.actions?.map((act) => (
                         'label' in act ?
                             (
                                 <Button

@@ -12,24 +12,14 @@ import {SelectFieldComponent} from '../../../../components/select-field/select-f
 import {UserRole, UserRoleLabels} from '../../../../data/user-role';
 import {DialogTitleWithClose} from '../../../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../../../models/entities/department';
+import {type DepartmentMembershipWithUserDto} from '../../../../models/dtos/department-membership-with-user-dto';
+import {DepartmentsService} from '../../../../services/departments-service';
+import {filterItems} from '../../../../utils/filter-items';
 
 interface MembershipUser {
     membership: DepartmentMembership;
     user: User;
 }
-
-const fetchMemberships = async (id: number): Promise<MembershipUser[]> => {
-    const res: MembershipUser[] = [];
-    const memberships = await DepartmentMembershipsService.list({department: id});
-    for (const membership of memberships) {
-        const user = await UsersService.retrieve(membership.user);
-        res.push({
-            membership,
-            user,
-        });
-    }
-    return res;
-};
 
 interface EditDepartmentPageMembersTabProps {
     department: Department;
@@ -40,14 +30,15 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
     const [search, setSearch] = useState('');
 
     const [admins, setAdmins] = useState<User[]>();
-    const [memberships, setMemberships] = useState<MembershipUser[]>();
+    const [memberships, setMemberships] = useState<DepartmentMembershipWithUserDto[]>();
 
     const [selectedUser, setSelectedUser] = useState<User>();
-    const [selectedMembership, setSelectedMembership] = useState<MembershipUser>();
+    const [selectedMembership, setSelectedMembership] = useState<DepartmentMembershipWithUserDto>();
     const [selectedUserRole, setSelectedUserRole] = useState<UserRole>(UserRole.Editor);
 
     useEffect(() => {
-        fetchMemberships(department.id)
+        DepartmentsService
+            .listMemberships(department.id)
             .then(setMemberships);
 
         UsersService
@@ -61,7 +52,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
         if (memberships != null) {
             DepartmentMembershipsService
                 .destroy(membershipId);
-            setMemberships(memberships.filter((mem) => mem.membership.id !== membershipId));
+            setMemberships(memberships.filter((mem) => mem.id !== membershipId));
         }
     };
 
@@ -76,7 +67,9 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                 })
                 .then((mem) => {
                     setMemberships([{
-                        membership: mem,
+                        id: mem.id,
+                        role: mem.role,
+                        department: mem.department,
                         user: selectedUser,
                     }, ...memberships]);
                 });
@@ -88,15 +81,19 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
     const handleUpdateMembership = (): void => {
         if (selectedMembership != null && memberships != null) {
             DepartmentMembershipsService
-                .update(selectedMembership.membership.id, {
-                    ...selectedMembership.membership,
+                .update(selectedMembership.id, {
+                    id: selectedMembership.id,
+                    user: selectedMembership.user.id,
+                    department: selectedMembership.department,
                     role: selectedUserRole,
                 })
                 .then((mem) => {
                     setMemberships(memberships.map((m) => {
-                        if (m.membership.id === mem.id) {
+                        if (m.id === mem.id) {
                             return {
-                                membership: mem,
+                                id: mem.id,
+                                role: mem.role,
+                                department: mem.department,
                                 user: m.user,
                             };
                         }
@@ -108,10 +105,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
         }
     };
 
-    const filteredAdmins = admins == null ?
-        undefined :
-        admins
-            .filter((ad) => ad.name.toLowerCase().includes(search.toLowerCase()));
+    const filteredAdmins = filterItems(admins, 'name', search);
 
     const filteredMemberships = memberships == null ?
         undefined :
@@ -181,25 +175,19 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                                     ))
                                 }
                                 {
-                                    filteredMemberships.map(({
-                                                                 membership,
-                                                                 user,
-                                                             }) => (
-                                        <TableRow key={membership.id}>
+                                    filteredMemberships.map((mem) => (
+                                        <TableRow key={mem.id}>
                                             <TableCell>
-                                                {user.name} {user.active ? '' : '(Inaktiv)'}
+                                                {mem.user.name} {mem.user.active ? '' : '(Inaktiv)'}
                                             </TableCell>
                                             <TableCell>
-                                                {UserRoleLabels[membership.role]}
+                                                {UserRoleLabels[mem.role]}
 
                                                 <IconButton
                                                     color="primary"
                                                     size="small"
                                                     onClick={() => {
-                                                        setSelectedMembership({
-                                                            membership,
-                                                            user,
-                                                        });
+                                                        setSelectedMembership(mem);
                                                     }}
                                                     sx={{
                                                         ml: 1,
@@ -216,7 +204,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                                                         color="error"
                                                         size="small"
                                                         onClick={() => {
-                                                            handleDelete(membership.id);
+                                                            handleDelete(mem.id);
                                                         }}
                                                     >
                                                         <FontAwesomeIcon icon={faTrashAlt}/>
