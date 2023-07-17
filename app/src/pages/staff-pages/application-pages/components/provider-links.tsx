@@ -1,8 +1,8 @@
-import { Grid, Typography } from '@mui/material';
-import { BoxLink } from '../../../../components/box-link/box-link';
-import React, { useEffect, useState } from 'react';
-import { type ProviderLink } from '../../../../models/entities/provider-link';
-import { ProviderLinksService } from '../../../../services/provider-links-service';
+import React, {useEffect, useState} from 'react';
+import {Grid, Typography} from '@mui/material';
+import {BoxLink} from '../../../../components/box-link/box-link';
+import {type ProviderLink} from '../../../../models/entities/provider-link';
+import {ProviderLinksService} from '../../../../services/provider-links-service';
 
 export function ProviderLinks(): JSX.Element {
     const [providerLinks, setProviderLinks] = useState<ProviderLink[]>();
@@ -19,52 +19,42 @@ export function ProviderLinks(): JSX.Element {
     return (
         <>
             <Typography
-                variant={ 'h5' }
-                sx={ {
+                variant={'h5'}
+                sx={{
                     fontSize: '1.75rem',
-                } }
+                }}
             >
                 Service und Unterstützung
             </Typography>
             <Grid
                 container
-                spacing={ 4 }
-                sx={ {
+                spacing={4}
+                sx={{
                     mt: -2,
-                } }
+                }}
             >
                 <Grid
                     item
-                    xs={ 12 }
-                    md={ 6 }
+                    xs={12}
+                    md={6}
                 >
-                    <BoxLink link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch">
-                        <span>Über Gover</span>
-                        <br/>
-                        Hilfen, Anleitungen und FAQs
-                    </BoxLink>
+                    <BoxLink
+                        link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch"
+                        text={'Über Gover\nHilfen, Anleitungen und FAQs'}
+                    />
                 </Grid>
                 {
-                    providerLinks?.map(({ link, text }) => (
+                    providerLinks?.map((link) => (
                         <Grid
-                            key={ text }
+                            key={link.text}
                             item
-                            xs={ 12 }
-                            md={ 6 }
+                            xs={12}
+                            md={6}
                         >
-                            <BoxLink link={ link }>
-                                {
-                                    text
-                                        .split('\n')
-                                        .map((line, index) =>
-                                            index === 0 ?
-                                                <React.Fragment key={ index }>
-                                                    <span>{ line }</span>
-                                                    <br/></React.Fragment> :
-                                                <React.Fragment key={ index }>{ line }<br/></React.Fragment>,
-                                        )
-                                }
-                            </BoxLink>
+                            <BoxLink
+                                link={link.link}
+                                text={link.text}
+                            />
                         </Grid>
                     ))
                 }

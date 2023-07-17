@@ -1,16 +1,15 @@
 import React from 'react';
-import {AppHeaderMenuProps} from './app-header-menu-props';
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, SvgIconProps} from '@mui/material';
+import {type AppHeaderMenuProps} from './app-header-menu-props';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, type SvgIconProps} from '@mui/material';
 import {AppMode} from '../../../data/app-mode';
 import {resetUserInput} from '../../../slices/customer-input-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {resetStepper} from '../../../slices/stepper-slice';
 import {Link} from 'react-router-dom';
-import {logout} from '../../../slices/auth-slice';
-import {useAppSelector} from "../../../hooks/use-app-selector";
-import {selectMemberships, selectUser} from "../../../slices/user-slice";
-import {resetErrors} from "../../../slices/customer-input-errors-slice";
-import {UserRole} from "../../../data/user-role";
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {logout, selectMemberships, selectUser} from '../../../slices/user-slice';
+import {resetErrors} from '../../../slices/customer-input-errors-slice';
+import {UserRole} from '../../../data/user-role';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
@@ -20,8 +19,9 @@ import DashboardCustomizeOutlinedIcon from '@mui/icons-material/DashboardCustomi
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
 import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import ColorLensIcon from '@mui/icons-material/ColorLens';
 
-export function AppHeaderMenu(props: AppHeaderMenuProps) {
+export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
@@ -138,7 +138,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                 (user?.admin ?? false) &&
                 <LinkMenuItem
                     label="Farbschemata"
-                    icon={ faPalette }
+                    icon={<ColorLensIcon/>}
                     to="/themes"
                 />
             }
@@ -162,23 +162,33 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
     );
 }
 
-function LinkMenuItem({to, icon, label}: { to: string, icon: SvgIconProps, label: string }) {
+interface LinkMenuItemProps {
+    to: string;
+    icon: JSX.Element;
+    label: string;
+}
+
+function LinkMenuItem(props: LinkMenuItemProps): JSX.Element {
     return (
         <MenuItem
             component={Link}
-            to={to}
+            to={props.to}
         >
             <ListItemIcon>
-                {icon}
+                {props.icon}
             </ListItemIcon>
             <ListItemText>
-                {label}
+                {props.label}
             </ListItemText>
         </MenuItem>
     );
 }
 
-function ActionMenuItem({onClick, icon, label}: { onClick: () => void, icon: SvgIconProps, label: string }) {
+function ActionMenuItem({
+    onClick,
+    icon,
+    label,
+}: {onClick: () => void, icon: SvgIconProps, label: string}) {
     return (
         <MenuItem
             onClick={onClick}

@@ -4,17 +4,12 @@ import { type Preset } from '../../../models/entities/preset';
 import { ElementType } from '../../../data/element-type/element-type';
 import { generateElementIdForType } from '../../../utils/id-utils';
 import ProjectPackage from '../../../../package.json';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { type GridColDef } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../../hooks/use-app-dispatch';
 import { showErrorSnackbar } from '../../../slices/snackbar-slice';
-import React, {useEffect, useState} from "react";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import {GridColDef} from "@mui/x-data-grid";
-import {useNavigate} from "react-router-dom";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 const columns: Array<GridColDef<Preset>> = [
     {

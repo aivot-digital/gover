@@ -1,11 +1,20 @@
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import React from 'react';
 import styles from './box-link.module.scss';
-import {faArrowUpLeft} from '@fortawesome/pro-regular-svg-icons';
-import {PropsWithChildren} from 'react';
-import {BoxLinkProps} from "./box-link-props";
+import {type BoxLinkProps} from './box-link-props';
 import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
 
-export function BoxLink(props: PropsWithChildren<BoxLinkProps>) {
+export function BoxLink(props: BoxLinkProps): JSX.Element {
+    const lines = props
+        .text
+        .split('\n')
+        .map((line, index) =>
+            index === 0 ?
+                <React.Fragment key={index}>
+                    <span>{line}</span>
+                    <br/></React.Fragment> :
+                <React.Fragment key={index}>{line}<br/></React.Fragment>,
+        );
+
     return (
         <a
             href={props.link}
@@ -13,7 +22,7 @@ export function BoxLink(props: PropsWithChildren<BoxLinkProps>) {
             rel="noreferrer"
             className={styles.boxLink}
         >
-            {props.children}
+            {lines}
             <span className={styles.boxLinkIcon}>
                 <NorthWestOutlinedIcon/>
             </span>

@@ -1,21 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
-import { type GridColDef } from '@mui/x-data-grid';
-import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
-import { ProviderLinksService } from '../../../services/provider-links-service';
-import { type ProviderLink } from '../../../models/entities/provider-link';
-import { filterItems } from '../../../utils/filter-items';
-import { useAdminGuard } from '../../../hooks/use-admin-guard';
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {GridColDef} from "@mui/x-data-grid";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import {ProviderLinksService} from "../../../services/provider-links-service";
-import {ProviderLink} from "../../../models/entities/provider-link";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {type GridColDef} from '@mui/x-data-grid';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {ProviderLinksService} from '../../../services/provider-links-service';
+import {type ProviderLink} from '../../../models/entities/provider-link';
+import {filterItems} from '../../../utils/filter-items';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 const columns: Array<GridColDef<ProviderLink>> = [
     {
@@ -61,25 +52,25 @@ export function ProviderLinkListPage(): JSX.Element {
     return (
         <TablePageWrapper
             title="Links"
-            isLoading={ isLoading }
-            error={ loadError }
+            isLoading={isLoading}
+            error={loadError}
 
-            columns={ columns }
-            rows={ filtered ?? [] }
-            onRowClick={ (dest) => {
-                navigate(`/provider-links/${ dest.id }`);
-            } }
+            columns={columns}
+            rows={filtered ?? []}
+            onRowClick={(dest) => {
+                navigate(`/provider-links/${dest.id}`);
+            }}
 
-            search={ search }
+            search={search}
             searchPlaceholder="Link suchen..."
-            onSearchChange={ setSearch }
+            onSearchChange={setSearch}
 
-            actions={ [{
+            actions={[{
                 label: 'Neuer Link',
                 icon: <AddOutlinedIcon/>,
                 tooltip: 'Neuen Link anlegen',
                 link: '/provider-links/new',
-            }] }
+            }]}
         />
     );
 }

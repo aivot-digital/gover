@@ -1,45 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { Box, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileArrowUp, faFileLines, faUser } from '@fortawesome/pro-light-svg-icons';
-import { type IntroductionStepElement } from '../../models/elements/steps/introduction-step-element';
-import { FadingPaper } from '../static-components/fading-paper/fading-paper';
-import { Preamble } from '../static-components/preamble/preamble';
-import { type Department } from '../../models/entities/department';
-import { DepartmentsService } from '../../services/departments-service';
-import { selectLoadedApplication } from '../../slices/app-slice';
-import { useAppSelector } from '../../hooks/use-app-selector';
-import { isStringNotNullOrEmpty, isStringNullOrEmpty } from '../../utils/string-utils';
-import { type BaseViewProps } from '../../views/base-view';
-import { useLocation } from 'react-router-dom';
-import { selectSystemConfigValue } from '../../slices/system-config-slice';
-import { SystemConfigKeys } from '../../data/system-config-keys';
-import { CheckboxFieldComponent } from '../checkbox-field/checkbox-field-component';
-import { selectCustomerInputValue, updateUserInput } from '../../slices/customer-input-slice';
-import { useAppDispatch } from '../../hooks/use-app-dispatch';
-import { formatMetaDialog } from '../../utils/format-meta-dialog';
-import { selectCustomerInputErrorValue } from '../../slices/customer-input-errors-slice';
-import { showErrorSnackbar } from '../../slices/snackbar-slice';
 import React, {useEffect, useState} from 'react';
 import {Box, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
-import {ElementType} from '../../data/element-type/element-type';
+import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {FadingPaper} from '../static-components/fading-paper/fading-paper';
+import {Preamble} from '../static-components/preamble/preamble';
+import {type Department} from '../../models/entities/department';
+import {DepartmentsService} from '../../services/departments-service';
+import {selectLoadedApplication} from '../../slices/app-slice';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
+import {type BaseViewProps} from '../../views/base-view';
+import {useLocation} from 'react-router-dom';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
+import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
+import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {formatMetaDialog} from '../../utils/format-meta-dialog';
+import {selectCustomerInputErrorValue} from '../../slices/customer-input-errors-slice';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import {ViewDispatcherComponent} from '../view-dispatcher.component';
-import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {FadingPaper} from '../static-components/fading-paper/fading-paper';
-import {Preamble} from '../static-components/preamble/preamble';
-import {Department} from '../../models/entities/department';
-import {DepartmentsService} from '../../services/departments-service';
-import {MetaDialog, selectLoadedApplication} from '../../slices/app-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
-import ProjectPackage from '../../../package.json';
-import {BaseViewProps} from "../../views/base-view";
-import {useLocation, useNavigate} from "react-router-dom";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
 
 export const PrivacyUserInputKey = '__privacy__';
 
@@ -93,9 +74,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 props.element.teaserText != null &&
                 isStringNotNullOrEmpty(props.element.teaserText) &&
                 <Preamble
-                    text={ props.element.teaserText }
-                    logoLink={ props.element.initiativeLogoLink }
-                    logoAlt={ props.element.initiativeName }
+                    text={props.element.teaserText}
+                    logoLink={props.element.initiativeLogoLink}
+                    logoAlt={props.element.initiativeName}
                 />
             }
 
@@ -113,11 +94,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     {
                         responsibleDepartment != null &&
                         <Box
-                            sx={ {
+                            sx={{
                                 mb: 3,
                                 position: 'relative',
                                 zIndex: 1,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="subtitle1"
@@ -132,11 +113,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 {
                                     isStringNotNullOrEmpty(providerName) &&
                                     <>
-                                        { providerName }<br/>
+                                        {providerName}<br/>
                                     </>
                                 }
-                                { responsibleDepartment.name }<br/>
-                                { responsibleDepartment.address }
+                                {responsibleDepartment.name}<br/>
+                                {responsibleDepartment.address}
                             </Typography>
                         </Box>
                     }
@@ -144,11 +125,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     {
                         managingDepartment != null &&
                         <Box
-                            sx={ {
+                            sx={{
                                 mb: 3,
                                 position: 'relative',
                                 zIndex: 1,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="subtitle1"
@@ -163,11 +144,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 {
                                     isStringNotNullOrEmpty(providerName) &&
                                     <>
-                                        { providerName }<br/>
+                                        {providerName}<br/>
                                     </>
                                 }
-                                { managingDepartment.name }<br/>
-                                { managingDepartment.address }
+                                {managingDepartment.name}<br/>
+                                {managingDepartment.address}
                             </Typography>
                         </Box>
                     }
@@ -176,11 +157,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         props.element.eligiblePersons != null &&
                         props.element.eligiblePersons.length > 0 &&
                         <Box
-                            sx={ {
+                            sx={{
                                 mb: 3,
                                 position: 'relative',
                                 zIndex: 1,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="subtitle1"
@@ -195,7 +176,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 {
                                     props.element.eligiblePersons.map((person: string) => (
                                         <ListItem
-                                            key={ person }
+                                            key={person}
                                             disableGutters
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
@@ -204,7 +185,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
-                                                { person }
+                                                {person}
                                             </ListItemText>
                                         </ListItem>
                                     ))
@@ -217,11 +198,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         props.element.supportingDocuments != null &&
                         props.element.supportingDocuments.length > 0 &&
                         <Box
-                            sx={ {
+                            sx={{
                                 mb: 3,
                                 position: 'relative',
                                 zIndex: 1,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="subtitle1"
@@ -236,7 +217,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 {
                                     props.element.supportingDocuments.map((document: string) => (
                                         <ListItem
-                                            key={ document }
+                                            key={document}
                                             disableGutters
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
@@ -245,7 +226,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
-                                                { document }
+                                                {document}
                                             </ListItemText>
                                         </ListItem>
                                     ))
@@ -258,11 +239,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         props.element.documentsToAttach != null &&
                         props.element.documentsToAttach.length > 0 &&
                         <Box
-                            sx={ {
+                            sx={{
                                 mb: 3,
                                 position: 'relative',
                                 zIndex: 1,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="subtitle1"
@@ -277,7 +258,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 {
                                     props.element.documentsToAttach.map((document: string) => (
                                         <ListItem
-                                            key={ document }
+                                            key={document}
                                             disableGutters
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
@@ -286,7 +267,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>
-                                                { document }
+                                                {document}
                                             </ListItemText>
                                         </ListItem>
                                     ))
@@ -299,11 +280,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         application != null &&
                         !isStringNullOrEmpty(application?.root.expiring) &&
                         <Box
-                            sx={ {
+                            sx={{
                                 mb: 3,
                                 position: 'relative',
                                 zIndex: 1,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="subtitle1"
@@ -315,7 +296,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 component="pre"
                                 variant="body2"
                             >
-                                { application.root.expiring }
+                                {application.root.expiring}
                             </Typography>
                         </Box>
                     }
@@ -324,11 +305,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         props.element.expectedCosts != null &&
                         !isStringNullOrEmpty(props.element.expectedCosts) &&
                         <Box
-                            sx={ {
+                            sx={{
                                 mb: 3,
                                 position: 'relative',
                                 zIndex: 1,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="subtitle1"
@@ -339,7 +320,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                             <Typography
                                 variant="body2"
                             >
-                                { props.element.expectedCosts }
+                                {props.element.expectedCosts}
                             </Typography>
                         </Box>
                     }
@@ -347,10 +328,10 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             }
 
             <Typography
-                variant={ 'body2' }
-                sx={ {
+                variant={'body2'}
+                sx={{
                     mt: 4,
-                } }
+                }}
             >
                 Alle mit Stern (*) gekennzeichneten Felder sind Pflichtfelder.
             </Typography>
@@ -358,9 +339,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <Typography
                 variant="h6"
                 color="primary"
-                sx={ {
+                sx={{
                     mt: 4,
-                } }
+                }}
             >
                 Hinweise zum Datenschutz
             </Typography>
@@ -368,16 +349,16 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             {
                 application?.root.privacyText != null &&
                 <Box
-                    sx={ {
+                    sx={{
                         maxWidth: '600px',
                         mt: 1,
-                    } }
+                    }}
                 >
                     <Typography
                         variant="body2"
-                        dangerouslySetInnerHTML={ {
+                        dangerouslySetInnerHTML={{
                             __html: formatMetaDialog(application.root.privacyText, location),
-                        } }
+                        }}
                     />
                 </Box>
             }
@@ -385,14 +366,14 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <Box>
                 <CheckboxFieldComponent
                     label="Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen."
-                    value={ value }
-                    onChange={ (checked) => {
+                    value={value}
+                    onChange={(checked) => {
                         dispatch(updateUserInput({
                             key: PrivacyUserInputKey,
                             value: checked,
                         }));
-                    } }
-                    required={ true }
+                    }}
+                    required={true}
                     error={error}
                 />
             </Box>

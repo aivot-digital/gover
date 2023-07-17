@@ -1,53 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
-import { format, isToday, parseISO } from 'date-fns';
-import { ApplicationStatusNames } from '../../data/application-status/application-status-names';
-import { ApplicationStatus } from '../../data/application-status/application-status';
-import { Link } from 'react-router-dom';
+import {format, isToday, parseISO} from 'date-fns';
+import {ApplicationStatusNames} from '../../data/application-status/application-status-names';
+import {ApplicationStatus} from '../../data/application-status/application-status';
+import {Link} from 'react-router-dom';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
-import {
-    faArrowUpRightFromSquare,
-    faBars,
-    faClipboard,
-    faClone,
-    faEdit,
-    faFileExport,
-    faFiles,
-    faFileText,
-    faTrashCanXmark,
-    faUpFromDottedLine,
-    faFiles,
-} from '@fortawesome/pro-regular-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {ApplicationService} from '../../services/application-service';
-import {getColorPalette} from '../../theming/themes';
-import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
-import {downloadConfigFile} from "../../utils/download-utils";
-import {showSuccessSnackbar} from "../../slices/snackbar-slice";
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {Department} from "../../models/entities/department";
-import {DepartmentsService} from "../../services/departments-service";
-import {ApplicationListItemProps} from "./application-list-item-props";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectUser} from "../../slices/user-slice";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import {downloadConfigFile} from '../../utils/download-utils';
+import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {type Department} from '../../models/entities/department';
+import {DepartmentsService} from '../../services/departments-service';
+import {type ApplicationListItemProps} from './application-list-item-props';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { ApplicationService } from '../../services/application-service';
-import { downloadConfigFile } from '../../utils/download-utils';
-import { showSuccessSnackbar } from '../../slices/snackbar-slice';
-import { useAppDispatch } from '../../hooks/use-app-dispatch';
-import { type Department } from '../../models/entities/department';
-import { DepartmentsService } from '../../services/departments-service';
-import { type ApplicationListItemProps } from './application-list-item-props';
 
 
 export function ApplicationListItem(props: ApplicationListItemProps): JSX.Element {
@@ -117,25 +91,28 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                 className={styles.listItemIcon}
             >
                 <DescriptionOutlinedIcon
-                    sx={{ color: (getColorPalette(application.theme).primary as SimplePaletteColorOptions).main }}
+                    sx={{color: 'primary'}}
                     fontSize="large"
                 />
             </Box>
             <Box
                 className={styles.listItemInfo}
-                sx={{ml: 2.5, py: '8px'}}
+                sx={{
+                    ml: 2.5,
+                    py: '8px',
+                }}
             >
                 <Typography
                     variant="h5"
                     sx={{mb: 0.5}}
                 >
-                    { props.application.title }
+                    {props.application.title}
 
                     <Typography
                         variant="caption"
                         sx={{ml: 1}}
                     >
-                        { props.application.version }
+                        {props.application.version}
                     </Typography>
                 </Typography>
 
@@ -146,7 +123,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                         lineHeight: '1.5rem',
                     }}
                 >
-                    Entwickelt durch: { department?.name }
+                    Entwickelt durch: {department?.name}
                 </Typography>
 
                 <Typography
@@ -158,15 +135,15 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                         lineHeight: '1.5rem',
                     }}
                 >
-                    { ApplicationStatusNames[props.application.status ?? ApplicationStatus.Drafted] } • Zuletzt
-                                                                                                      bearbeitet: { isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy') } – { format(lastUpdate, 'HH:mm') } Uhr
+                    {ApplicationStatusNames[props.application.status ?? ApplicationStatus.Drafted]} • Zuletzt
+                    bearbeitet: {isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} Uhr
                 </Typography>
 
 
                 <Typography
                     variant="caption"
                 >
-                    Anträge: Offen { props.application.openSubmissions } | In Bearbeitung { props.application.inProgressSubmissions } | Gesamt { props.application.totalSubmissions }
+                    Anträge: Offen {props.application.openSubmissions} | In Bearbeitung {props.application.inProgressSubmissions} | Gesamt {props.application.totalSubmissions}
                 </Typography>
             </Box>
             <Box className={styles.listItemActions}>
@@ -174,9 +151,9 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                     isEditor &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={<FolderSharedOutlinedIcon sx={{marginTop: '-2px' }} />}
+                            startIcon={<FolderSharedOutlinedIcon sx={{marginTop: '-2px'}}/>}
                             component={Link}
-                            to={ `/submissions/${ props.application.id }` }
+                            to={`/submissions/${props.application.id}`}
                         >
                             Anträge einsehen
                         </Button>
@@ -185,14 +162,14 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                 {
                     isDeveloper &&
-                    <Box className={ styles.listItemActionsContainer }>
+                    <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={ <DriveFileRenameOutlineOutlinedIcon sx={ {
-                                    marginTop: '-2px',
-                                } }
-                            /> }
-                            component={ Link }
-                            to={ `/edit/${ props.application.id }` }
+                            startIcon={<DriveFileRenameOutlineOutlinedIcon sx={{
+                                marginTop: '-2px',
+                            }}
+                            />}
+                            component={Link}
+                            to={`/edit/${props.application.id}`}
                         >
                             Bearbeiten
                         </Button>
@@ -203,34 +180,34 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                     isDeveloper &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={ <DriveFolderUploadOutlinedIcon sx={ {
-                                    marginTop: '-2px',
-                                } }
-                            /> }
-                            onClick={ handleNewVersion }
+                            startIcon={<DriveFolderUploadOutlinedIcon sx={{
+                                marginTop: '-2px',
+                            }}
+                            />}
+                            onClick={handleNewVersion}
                         >
                             Neue Version
                         </Button>
                     </Box>
                 }
 
-                <Box className={ styles.listItemActionsContainer }>
+                <Box className={styles.listItemActionsContainer}>
                     <Button
-                        startIcon={ <MenuOutlinedIcon sx={ {
-                                marginTop: '-2px',
-                            } }
-                        /> }
-                        onClick={ handleOptionsClick }
+                        startIcon={<MenuOutlinedIcon sx={{
+                            marginTop: '-2px',
+                        }}
+                        />}
+                        onClick={handleOptionsClick}
                     >
                         Optionen
                     </Button>
 
                     <Menu
-                        anchorEl={ optionAnchorEl }
-                        open={ showOptions }
-                        onClose={ handleCloseOptions }
+                        anchorEl={optionAnchorEl}
+                        open={showOptions}
+                        onClose={handleCloseOptions}
                     >
-                        <MenuItem onClick={ handleClone }>
+                        <MenuItem onClick={handleClone}>
                             <ListItemIcon>
                                 <FileCopyOutlinedIcon/>
                             </ListItemIcon>
@@ -241,7 +218,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         <MenuItem
                             component="a"
-                            href={ `/#/ ${ props.application.slug }/${ props.application.version }` }
+                            href={`/#/ ${props.application.slug}/${props.application.version}`}
                             target="_blank"
                         >
                             <ListItemIcon>
@@ -253,8 +230,8 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                         </MenuItem>
 
                         <MenuItem
-                            onClick={ () => {
-                                const link = `${ window.location.protocol }//${ window.location.host }/#/${ props.application.slug }/${ props.application.version }`;
+                            onClick={() => {
+                                const link = `${window.location.protocol}//${window.location.host}/#/${props.application.slug}/${props.application.version}`;
                                 navigator
                                     .clipboard
                                     .writeText(link)

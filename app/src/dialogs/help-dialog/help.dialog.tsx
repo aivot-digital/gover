@@ -1,18 +1,18 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography } from '@mui/material';
-import { BoxLink } from '../../components/box-link/box-link';
-import React, { useEffect, useState } from 'react';
-import { styled } from '@mui/material/styles';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown } from '@fortawesome/pro-light-svg-icons';
+import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography} from '@mui/material';
+import {BoxLink} from '../../components/box-link/box-link';
+import React, {useEffect, useState} from 'react';
+import {styled} from '@mui/material/styles';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faChevronDown} from '@fortawesome/pro-light-svg-icons';
 import MuiAccordionDetails from '@mui/material/AccordionDetails';
-import MuiAccordion, { type AccordionProps } from '@mui/material/Accordion';
-import MuiAccordionSummary, { type AccordionSummaryProps } from '@mui/material/AccordionSummary';
-import { DialogTitleWithClose } from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import { type Department } from '../../models/entities/department';
-import { useSelector } from 'react-redux';
-import { DepartmentsService } from '../../services/departments-service';
-import { type HelpDialogProps } from './help-dialog-props';
-import { selectLoadedApplication } from '../../slices/app-slice';
+import MuiAccordion, {type AccordionProps} from '@mui/material/Accordion';
+import MuiAccordionSummary, {type AccordionSummaryProps} from '@mui/material/AccordionSummary';
+import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
+import {type Department} from '../../models/entities/department';
+import {useSelector} from 'react-redux';
+import {DepartmentsService} from '../../services/departments-service';
+import {type HelpDialogProps} from './help-dialog-props';
+import {selectLoadedApplication} from '../../slices/app-slice';
 
 
 export function HelpDialog(props: HelpDialogProps): JSX.Element {
@@ -23,7 +23,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
     useEffect(() => {
         if (
             application?.technicalSupportDepartment != null &&
-                (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartment)
+            (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartment)
         ) {
             DepartmentsService
                 .retrieve(application.technicalSupportDepartment)
@@ -32,7 +32,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
 
         if (
             application?.legalSupportDepartment != null &&
-                (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartment)
+            (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartment)
         ) {
             DepartmentsService
                 .retrieve(application.legalSupportDepartment)
@@ -54,47 +54,50 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                 Hilfe für diesen Antrag
             </DialogTitleWithClose>
             <DialogContent>
-
-                <Grid
-                    container
-                    spacing={4}
-                    sx={{ mt: -3.6, mb: 4 }}
-                >
+                {
+                    application != null &&
+                    specialDepartment != null &&
+                    technicalDepartment != null &&
                     <Grid
-                        item
-                        xs={6}
+                        container
+                        spacing={4}
+                        sx={{
+                            mt: -3.6,
+                            mb: 4,
+                        }}
                     >
-                        <BoxLink
-                            link={`mailto:${ specialDepartment?.specialSupportAddress }?subject=Fachlicher Support: ${ application?.title }`}
+                        <Grid
+                            item
+                            xs={6}
                         >
-                            <span>Fachlicher Support</span><br/>
-                            Unterstützung zum Inhalt <br/>und Ausfüllen des Antrages
-                        </BoxLink>
-                    </Grid>
-                    <Grid
-                        item
-                        xs={6}
-                    >
-                        <BoxLink
-                            link={`mailto:${ technicalDepartment?.technicalSupportAddress }?subject=Technischer Support: ${ application?.title }`}
+                            <BoxLink
+                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.title}`}
+                                text={'Fachlicher Support\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
+                            />
+                        </Grid>
+                        <Grid
+                            item
+                            xs={6}
                         >
-                            <span>Technischer Support</span><br/>
-                            Unterstützung bei technischen Problemen und Fehlern
-                        </BoxLink>
+                            <BoxLink
+                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.title}`}
+                                text={'Technischer Support\nUnterstützung bei technischen Problemen und Fehlern'}
+                            />
+                        </Grid>
                     </Grid>
-                </Grid>
+                }
 
                 <DialogContentText component="div">
-                    <Box sx={{ mb: 4 }}>
+                    <Box sx={{mb: 4}}>
                         <Typography
                             variant={'h6'}
-                            sx={{ color: '#16191F' }}
+                            sx={{color: '#16191F'}}
                         >Häufig gestellte Fragen (FAQ)</Typography>
-                        Für eine schnelle Hilfe haben wir Ihnen nachfolgend die häufigsten Fragen zu diesem Antrag
+                        Für eine schnelle Hilfe haben wir Ihnen nachfolgend die häufigsten Fragen zu diesem Formular
                         zusammengestellt. Sollten Sie auf Ihre Frage keine Antwort finden, so nutzen Sie
                         gerne die oben gezeigten Möglichkeiten, um Kontakt mit uns aufzunehmen. Vielen Dank!
                     </Box>
-                    <Accordion sx={{ mt: 4 }}>
+                    <Accordion sx={{mt: 4}}>
                         <AccordionSummary
                             expandIcon={<FontAwesomeIcon icon={faChevronDown}/>}
                             aria-controls="panel1a-content"
@@ -105,12 +108,11 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                         <AccordionDetails>
                             <Typography>
                                 Bitte füllen Sie zunächst alle mit * gekennzeichneten Pflichtfelder aus. Über die
-                                Schaltflächen "Weiter" und "Zurück" werden die von Ihnen eingegebenen Daten im
+                                Schaltflächen "Weiter" und "Zurück zum vorherigen Schritt" werden die von Ihnen eingegebenen Daten im
                                 jeweiligen Formular-Register geprüft. Zum Abschluss des Formulars erfolgt eine
-                                Gesamtprüfung über die Schaltfläche „Antrag abschicken“. Sind alle Eingaben korrekt,
+                                Gesamtprüfung über die Schaltfläche „Antrag verbindlich einreichen“. Sind alle Eingaben korrekt,
                                 wird Ihr Antrag direkt an die zuständige Behörde medienbruchfrei weitergeleitet.
-                                Beinhaltet das Antragsformular noch fehlerhafte Eingaben, werden die Felder rot umrahmt.
-                                Zusätzlich können die Fehlermeldungen im Bereich „Meldungen“ angezeigt werden. Nach
+                                Beinhaltet das Antragsformular noch fehlerhafte Eingaben, werden die Felder rot umrahmt. Nach
                                 erfolgreicher Korrektur ist erneut die jeweilige Schaltfläche zu betätigen. Das
                                 ausgefüllte Antragsformular können Sie sich über die Schaltfläche „PDF erstellen“ lokal
                                 abspeichern oder per E-Mail zusenden lassen.
@@ -146,7 +148,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                                 Folgende Dateiformate können hochgeladen werden: docx, xlsx, pptx, rtf, pdf, txt, csv,
                                 bmp, gif, jfif, jpeg, jpg, png, tiff, prn, msg, ppsx, eps, svg, uxf.
                             </Typography>
-                            <Typography sx={{ mt: 2 }}>
+                            <Typography sx={{mt: 2}}>
                                 Pro Datei ist eine Maximalgröße von 10 MB zulässig. Insgesamt können Dateien bis zu
                                 einer Größe von 100 MB hochgeladen werden.
                             </Typography>
@@ -164,15 +166,15 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                             <Typography>
                                 Zum Öffnen von PDF-Dokumenten benötigen Sie eine spezielle Software, die kostenfrei zur
                                 Verfügung steht. Die bekannteste ist der PDF Reader der Firma Adobe (<a
-                                    rel="noreferrer"
-                                    href={'https://get.adobe.com/de/reader/'}
-                                    target={'_blank'}
-                                >https://get.adobe.com/de/reader/</a>), es gibt aber auch das
+                                rel="noreferrer"
+                                href={'https://get.adobe.com/de/reader/'}
+                                target={'_blank'}
+                            >https://get.adobe.com/de/reader/</a>), es gibt aber auch das
                                 alternative kostenfreie Produkt (Foxit PDF Reader, <a
-                                    rel="noreferrer"
-                                    href={'https://www.foxitsoftware.com/de/pdf-reader/'}
-                                    target={'_blank'}
-                                >https://www.foxitsoftware.com/de/pdf-reader/</a>). Nachdem Sie die
+                                rel="noreferrer"
+                                href={'https://www.foxitsoftware.com/de/pdf-reader/'}
+                                target={'_blank'}
+                            >https://www.foxitsoftware.com/de/pdf-reader/</a>). Nachdem Sie die
                                 Software installiert haben, können Sie das PDF-Dokument öffnen und betrachten.
                             </Typography>
                         </AccordionDetails>
@@ -233,8 +235,8 @@ const Accordion = styled((props: AccordionProps) => (
         square
         {...props}
     />
-))(({ theme }) => ({
-    'border': `1px solid ${ theme.palette.primary.dark }`,
+))(({theme}) => ({
+    'border': `1px solid ${theme.palette.primary.dark}`,
     '&:not(:last-child)': {
         borderBottom: 0,
     },
@@ -247,7 +249,7 @@ const AccordionSummary = styled((props: AccordionSummaryProps) => (
     <MuiAccordionSummary
         {...props}
     />
-))(({ theme }) => ({
+))(({theme}) => ({
     'flexDirection': 'row-reverse',
     'transition': '200ms all ease-in-out',
     '&.Mui-expanded': {
@@ -265,7 +267,7 @@ const AccordionSummary = styled((props: AccordionSummaryProps) => (
     },
 }));
 
-const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
+const AccordionDetails = styled(MuiAccordionDetails)(({theme}) => ({
     padding: theme.spacing(2),
     paddingBottom: theme.spacing(4),
     borderTop: '1px solid rgba(0, 0, 0, .125)',

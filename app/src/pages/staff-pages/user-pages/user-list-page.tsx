@@ -1,23 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { type User } from '../../../models/entities/user';
-import { UsersService } from '../../../services/users-service';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
-import { useNavigate } from 'react-router-dom';
-import { type GridColDef } from '@mui/x-data-grid';
-import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
-import { delayPromise } from '../../../utils/with-delay';
-import { filterItems } from '../../../utils/filter-items';
-import { useAdminGuard } from '../../../hooks/use-admin-guard';
-import { Box, FormControlLabel, Switch } from '@mui/material';
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {User} from "../../../models/entities/user";
-import {UsersService} from "../../../services/users-service";
-import {useNavigate} from "react-router-dom";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {GridColDef} from "@mui/x-data-grid";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import React, {useEffect, useState} from 'react';
+import {type User} from '../../../models/entities/user';
+import {UsersService} from '../../../services/users-service';
+import {useNavigate} from 'react-router-dom';
+import {type GridColDef} from '@mui/x-data-grid';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {delayPromise} from '../../../utils/with-delay';
+import {filterItems} from '../../../utils/filter-items';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
+import {Box, FormControlLabel, Switch} from '@mui/material';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 const columns: Array<GridColDef<User>> = [
     {
@@ -78,39 +69,39 @@ export function UserListPage(): JSX.Element {
     return (
         <TablePageWrapper
             title="Mitarbeiter:innen"
-            isLoading={ isLoading }
-            error={ loadingError }
+            isLoading={isLoading}
+            error={loadingError}
 
-            search={ search }
-            onSearchChange={ setSearch }
+            search={search}
+            onSearchChange={setSearch}
             searchPlaceholder="Suchen..."
 
-            rows={ filteredUsers ?? [] }
-            columns={ columns }
-            onRowClick={ (user) => {
-                navigate(`/users/${ user.id }`);
-            } }
+            rows={filteredUsers ?? []}
+            columns={columns}
+            onRowClick={(user) => {
+                navigate(`/users/${user.id}`);
+            }}
 
-            actions={ [{
+            actions={[{
                 label: 'Mitarbeiter:in hinzufügen',
                 icon: <AddOutlinedIcon/>,
                 link: '/users/new',
                 tooltip: 'Neue Mitarbeiter:in hinzufügen',
-            }] }
+            }]}
         >
             <Box
-                sx={ {
+                sx={{
                     display: 'flex',
                     my: 2,
-                } }
+                }}
             >
                 <FormControlLabel
                     control={
                         <Switch
-                            checked={ includeInactive }
-                            onChange={ event => {
+                            checked={includeInactive}
+                            onChange={(event) => {
                                 setIncludeInactive(event.target.checked);
-                            } }
+                            }}
                         />
                     }
                     label="Inklusive inaktiver Mitarbeiter:innen anzeigen"

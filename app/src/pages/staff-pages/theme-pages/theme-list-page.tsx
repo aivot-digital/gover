@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
 import { type GridColDef } from '@mui/x-data-grid';
 import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
 import { filterItems } from '../../../utils/filter-items';
 import { ThemesService } from '../../../services/themes-service';
 import { type Theme } from '../../../models/entities/theme';
 import { useAdminGuard } from '../../../hooks/use-admin-guard';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 const columns: Array<GridColDef<Theme>> = [
     {
@@ -62,7 +62,7 @@ export function ThemeListPage(): JSX.Element {
 
             actions={ [{
                 label: 'Neues Farbschema',
-                icon: faPlus,
+                icon: <AddOutlinedIcon/>,
                 tooltip: 'Neues Farbschema anlegen',
                 link: '/themes/new',
             }] }
