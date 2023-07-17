@@ -9,6 +9,7 @@ import {useChangeBlocker} from '../../../hooks/use-change-blocker';
 import {FormPageWrapper} from '../../../components/form-page-wrapper/form-page-wrapper';
 import {delayPromise} from '../../../utils/with-delay';
 import {useAdminGuard} from '../../../hooks/use-admin-guard';
+import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 
 export function ProviderLinkEditPage(): JSX.Element {
     useAdminGuard();
@@ -23,6 +24,8 @@ export function ProviderLinkEditPage(): JSX.Element {
 
     const [isLoading, setIsLoading] = useState(false);
     const [isNotFound, setIsNotFound] = useState(false);
+
+    const [confirmDelete, setConfirmDelete] = useState<() => void>();
 
     const hasChanged = useChangeBlocker(originalLink, editedLink);
 
@@ -114,44 +117,57 @@ export function ProviderLinkEditPage(): JSX.Element {
     };
 
     return (
-        <FormPageWrapper
-            title="Link bearbeiten"
-            isLoading={isLoading}
-            is404={isNotFound}
-            hasChanged={hasChanged}
-            onSave={handleSave}
-            onReset={(editedLink?.id ?? 0) !== 0 ? handleReset : undefined}
-            onDelete={(editedLink?.id ?? 0) !== 0 ? handleDelete : undefined}
-        >
-            <TextFieldComponent
-                label="Name des Links"
-                placeholder={'Das hier ist\nein neuer Link'}
-                hint="Der Titel des Links, der auf der Kachel angezeigt wird. Es sind maximal 3 Zeilen möglich."
-                value={editedLink?.text}
-                onChange={(val) => {
-                    handlePatch({
-                        text: val,
-                    });
-                }}
-                required
-                multiline
-                maxCharacters={128}
-            />
+        <>
+            <FormPageWrapper
+                title="Link bearbeiten"
+                isLoading={isLoading}
+                is404={isNotFound}
+                hasChanged={hasChanged}
+                onSave={handleSave}
+                onReset={(editedLink?.id ?? 0) !== 0 ? handleReset : undefined}
+                onDelete={(editedLink?.id ?? 0) !== 0 ? () => setConfirmDelete(() => handleDelete) : undefined}
+            >
+                <TextFieldComponent
+                    label="Name des Links"
+                    placeholder={'Das hier ist\nein neuer Link'}
+                    hint="Der Titel des Links, der auf der Kachel angezeigt wird. Es sind maximal 3 Zeilen möglich."
+                    value={editedLink?.text}
+                    onChange={(val) => {
+                        handlePatch({
+                            text: val,
+                        });
+                    }}
+                    required
+                    multiline
+                    maxCharacters={128}
+                />
 
-            <TextFieldComponent
-                label="Link"
-                type="url"
-                placeholder="https://aivot.de/gover"
-                hint="Der Link, welcher aufgerufen wird, sobald eine Mitarbeiter:in auf die Kachel klickt."
-                value={editedLink?.link}
-                onChange={(val) => {
-                    handlePatch({
-                        link: val,
-                    });
+                <TextFieldComponent
+                    label="Link"
+                    type="url"
+                    placeholder="https://aivot.de/gover"
+                    hint="Der Link, welcher aufgerufen wird, sobald eine Mitarbeiter:in auf die Kachel klickt."
+                    value={editedLink?.link}
+                    onChange={(val) => {
+                        handlePatch({
+                            link: val,
+                        });
+                    }}
+                    required
+                    maxCharacters={128}
+                />
+            </FormPageWrapper>
+
+            <ConfirmDialog
+                title="Link löschen"
+                onCancel={() => {
+                    setConfirmDelete(undefined);
                 }}
-                required
-                maxCharacters={128}
-            />
-        </FormPageWrapper>
+                onConfirm={confirmDelete}
+            >
+                Sind Sie sicher, dass Sie diesen Link wirklich löschen wollen?
+                Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
+            </ConfirmDialog>
+        </>
     );
 }
