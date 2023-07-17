@@ -374,7 +374,7 @@ export function DepartmentEditPage(): JSX.Element {
             </InfoDialog>
 
             <ConfirmDialog
-                title="Fachbereich wirklich löschen"
+                title="Fachbereich löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {
                     setConfirmDelete(undefined);

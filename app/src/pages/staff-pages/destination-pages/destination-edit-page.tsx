@@ -427,8 +427,8 @@ export function DestinationEditPage(): JSX.Element {
                     variant="body1"
                     component="p"
                 >
-                    Diese Schnittstelle kann nicht gelöscht werden, da sie aktuell von einem oder mehreren Formularen
-                    verwendet wird.
+                    Diese Schnittstelle kann nicht gelöscht werden, da sie aktuell von einem oder mehreren Formularen verwendet wird.
+                    Sie müssen diese Anträge erst löschen oder eine anderen Schnittstelle einrichten, bevor Sie diese Schnittstelle löschen können.
                 </Typography>
 
                 <List>
@@ -453,7 +453,8 @@ export function DestinationEditPage(): JSX.Element {
                 }}
                 onConfirm={confirmDelete}
             >
-                Soll die Schnittstelle wirklich gelöscht werden?
+                Sind Sie sicher, dass Sie die Schnittstelle wirklich löschen wollen?
+                Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
             </ConfirmDialog>
         </>
     );

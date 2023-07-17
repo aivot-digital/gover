@@ -338,8 +338,8 @@ export function ThemeEditPage(): JSX.Element {
                     variant="body1"
                     component="p"
                 >
-                    Dieses Farbschema kann nicht gelöscht werden, da es aktuell von einem oder mehreren Formularen
-                    verwendet wird.
+                    Dieses Farbschema kann nicht gelöscht werden, da es aktuell von einem oder mehreren Formularen verwendet wird.
+                    Sie müssen diese Anträge erst löschen oder ein anderes Farbschema einrichten, bevor Sie dieses Farbschema löschen können.
                 </Typography>
 
                 <List>
@@ -364,7 +364,8 @@ export function ThemeEditPage(): JSX.Element {
                 }}
                 onConfirm={confirmDelete}
             >
-                Soll dieses Farbschema wirklich gelöscht werden?
+                Sind Sie sicher, dass Sie dieses Farbschema wirklich löschen wollen?
+                Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
             </ConfirmDialog>
         </>
     );
