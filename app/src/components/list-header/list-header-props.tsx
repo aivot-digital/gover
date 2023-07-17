@@ -6,4 +6,8 @@ export interface ListHeaderProps {
     searchPlaceholder: string;
     onSearchChange: (search: string) => void;
     actions: ListHeaderAction[];
+    hint?: {
+        text: string;
+        moreLink?: string;
+    };
 }

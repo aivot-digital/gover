@@ -55,6 +55,11 @@ export function ProviderLinkListPage(): JSX.Element {
             isLoading={isLoading}
             error={loadError}
 
+            hint={{
+                text: 'Hier können Sie Links anlegen, die dann auf der Startseite angezeigt werden.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+            }}
+
             columns={columns}
             rows={filtered ?? []}
             onRowClick={(dest) => {

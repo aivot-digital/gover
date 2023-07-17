@@ -73,6 +73,11 @@ export function DestinationListPage(): JSX.Element {
             isLoading={isLoading}
             error={loadError}
 
+            hint={{
+                text: 'Hier können Sie Schnittstellen anlegen, an die abgesendete Anträge gesendet werden können.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/schnittstellenkonzept' /* TODO: Link anpassen */,
+            }}
+
             columns={columns}
             rows={filtered ?? []}
             onRowClick={(dest) => {

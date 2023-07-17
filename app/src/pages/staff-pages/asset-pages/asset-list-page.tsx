@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {type GridColDef} from '@mui/x-data-grid';
 import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
 import {AssetService} from '../../../services/asset-service';
@@ -69,6 +69,11 @@ export function AssetListPage(): JSX.Element {
         <TablePageWrapper
             title="Dokumente & Medieninhalte"
             isLoading={isBusy}
+
+            hint={{
+                text: 'Hier können Sie Dokumente und Medieninhalte anlegen, auf die Sie dann in Ihren Formularen bezug nehmen können.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+            }}
 
             columns={columns}
             rows={filtered ?? []}

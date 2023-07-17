@@ -67,6 +67,11 @@ export function DepartmentListPage(): JSX.Element {
             isLoading={isLoading}
             error={loadError}
 
+            hint={{
+                text: 'Hier können Sie Fachbereiche anlegen, denen Sie später Ihre Formulare zuordnen.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/fachbereichskonzept' /* TODO: Link anpassen */,
+            }}
+
             search={search}
             onSearchChange={setSearch}
             searchPlaceholder="Fachbereich suchen..."

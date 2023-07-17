@@ -71,7 +71,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                 props.mode === AppMode.Staff &&
                 (user?.admin ?? false) &&
                 <LinkMenuItem
-                    label="Benutzerverwaltung"
+                    label="Mitarbeiter:innen"
                     icon={<GroupOutlinedIcon/>}
                     to="/users"
                 />

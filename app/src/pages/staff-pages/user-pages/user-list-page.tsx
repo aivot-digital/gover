@@ -72,6 +72,11 @@ export function UserListPage(): JSX.Element {
             isLoading={isLoading}
             error={loadingError}
 
+            hint={{
+                text: 'Hier können Sie Mitarbeiter:innen anlegen, um diesen so Zugriff auf Gover zu gewähren.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+            }}
+
             search={search}
             onSearchChange={setSearch}
             searchPlaceholder="Suchen..."

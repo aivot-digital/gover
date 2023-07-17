@@ -80,6 +80,12 @@ export function PresetListPage(): JSX.Element {
             title="Vorlagen"
             isLoading={isLoading}
             error={loadingError}
+
+            hint={{
+                text: 'Hier können Sie Vorlagen anlegen, die Sie zum Bauen Ihrer Formulare wiederverwenden können.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+            }}
+
             actions={[{
                 label: 'Neue Vorlage',
                 onClick: handleCreate,
