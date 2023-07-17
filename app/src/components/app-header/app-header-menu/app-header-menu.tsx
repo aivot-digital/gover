@@ -93,7 +93,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
             {
                 props.mode === AppMode.Staff &&
                 <LinkMenuItem
-                    label="Anlagen"
+                    label="Dokumente & Medieninhalte"
                     icon={<FilePresentOutlinedIcon/>}
                     to="/assets"
                 />
