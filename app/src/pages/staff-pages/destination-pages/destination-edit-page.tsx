@@ -118,7 +118,7 @@ export function DestinationEditPage(): JSX.Element {
             const errors: Errors = {};
 
             if (editedDest.name.length < 3) {
-                errors.name = 'Bitte geben Sie einen Namen ein';
+                errors.name = 'Bitte geben Sie einen Namen mit mindestens drei Zeichen ein';
             }
 
             if ((editedDest.maxAttachmentMegaBytes ?? 0) > 100) {
