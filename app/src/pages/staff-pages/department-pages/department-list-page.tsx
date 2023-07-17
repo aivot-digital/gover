@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import { useNavigate } from 'react-router-dom';
-import { type Department } from '../../../models/entities/department';
-import { DepartmentsService } from '../../../services/departments-service';
-import { UserRole } from '../../../data/user-role';
-import { useAppSelector } from '../../../hooks/use-app-selector';
-import { selectUser } from '../../../slices/user-slice';
-import { type GridColDef } from '@mui/x-data-grid';
-import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
-import { delayPromise } from '../../../utils/with-delay';
-import { useAdminMembershipGuard } from '../../../hooks/use-admin-membership-guard';
+import {useNavigate} from 'react-router-dom';
+import {type Department} from '../../../models/entities/department';
+import {DepartmentsService} from '../../../services/departments-service';
+import {UserRole} from '../../../data/user-role';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectUser} from '../../../slices/user-slice';
+import {type GridColDef} from '@mui/x-data-grid';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {delayPromise} from '../../../utils/with-delay';
+import {useAdminMembershipGuard} from '../../../hooks/use-admin-membership-guard';
 
 const columns: Array<GridColDef<Department>> = [
     {
@@ -64,18 +64,18 @@ export function DepartmentListPage(): JSX.Element {
     return (
         <TablePageWrapper
             title="Fachbereiche"
-            isLoading={ isLoading }
-            error={ loadError }
+            isLoading={isLoading}
+            error={loadError}
 
-            search={ search }
-            onSearchChange={ setSearch }
+            search={search}
+            onSearchChange={setSearch}
             searchPlaceholder="Fachbereich suchen..."
 
-            rows={ filteredDepartments ?? [] }
-            columns={ columns }
-            onRowClick={ (dep) => {
-                navigate(`/departments/${ dep.id }`);
-            } }
+            rows={filteredDepartments ?? []}
+            columns={columns}
+            onRowClick={(dep) => {
+                navigate(`/departments/${dep.id}`);
+            }}
 
             actions={
                 (user?.admin ?? false) ?

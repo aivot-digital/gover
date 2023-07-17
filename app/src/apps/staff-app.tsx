@@ -1,28 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { logout, refreshMemberships, refreshUser, selectUser } from '../slices/user-slice';
-import { fetchSystemConfig, selectSystemConfigValue } from '../slices/system-config-slice';
-import {
-    Alert,
-    Backdrop,
-    CircularProgress,
-    Snackbar,
-    type Theme as MuiTheme,
-    ThemeProvider,
-    Typography,
-} from '@mui/material';
-import { createAppTheme, createDefaultAppTheme } from '../theming/themes';
-import { useAppDispatch } from '../hooks/use-app-dispatch';
-import { useAppSelector } from '../hooks/use-app-selector';
-import { resetSnackbar } from '../slices/snackbar-slice';
-import { InfoDialog } from '../dialogs/info-dialog/info-dialog';
-import { isAnonymousUser, isInvalidUser } from '../models/entities/user';
-import { staffAppRoutes } from './staff-app-routes';
-import { Login } from '../pages/staff-pages/login/login';
-import { SystemConfigKeys } from '../data/system-config-keys';
-import { type Theme } from '../models/entities/theme';
-import { isStringNotNullOrEmpty } from '../utils/string-utils';
-import { ThemesService } from '../services/themes-service';
+import React, {useEffect, useState} from 'react';
+import {createBrowserRouter, RouterProvider} from 'react-router-dom';
+import {logout, refreshMemberships, refreshUser, selectUser} from '../slices/user-slice';
+import {fetchSystemConfig, selectSystemConfigValue} from '../slices/system-config-slice';
+import {Alert, Backdrop, CircularProgress, Snackbar, type Theme as MuiTheme, ThemeProvider, Typography} from '@mui/material';
+import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
+import {useAppDispatch} from '../hooks/use-app-dispatch';
+import {useAppSelector} from '../hooks/use-app-selector';
+import {resetSnackbar} from '../slices/snackbar-slice';
+import {InfoDialog} from '../dialogs/info-dialog/info-dialog';
+import {isAnonymousUser, isInvalidUser} from '../models/entities/user';
+import {staffAppRoutes} from './staff-app-routes';
+import {Login} from '../pages/staff-pages/login/login';
+import {SystemConfigKeys} from '../data/system-config-keys';
+import {type Theme} from '../models/entities/theme';
+import {isStringNotNullOrEmpty} from '../utils/string-utils';
+import {ThemesService} from '../services/themes-service';
 
 const router = createBrowserRouter(
     Object.keys(staffAppRoutes).map((key) => staffAppRoutes[key]),
@@ -93,9 +85,9 @@ function StaffApp(): JSX.Element {
 
     if (showTimeout) {
         return (
-            <ThemeProvider theme={ createDefaultAppTheme }>
+            <ThemeProvider theme={createDefaultAppTheme}>
                 <InfoDialog
-                    open={ true }
+                    open={true}
                     severity="error"
                     title="Serververbindung fehlgeschlagen"
                 >
@@ -112,7 +104,7 @@ function StaffApp(): JSX.Element {
 
     if (user == null) {
         return (
-            <Backdrop open={ true }>
+            <Backdrop open={true}>
                 <CircularProgress/>
             </Backdrop>
         );
@@ -120,29 +112,29 @@ function StaffApp(): JSX.Element {
 
     if (isAnonymousUser(user) || isInvalidUser(user)) {
         return (
-            <ThemeProvider theme={ createDefaultAppTheme }>
+            <ThemeProvider theme={createDefaultAppTheme}>
                 <Login/>
             </ThemeProvider>
         );
     }
 
     return (
-        <ThemeProvider theme={ (baseTheme: MuiTheme) => createAppTheme(theme, baseTheme) }>
-            <RouterProvider router={ router }/>
+        <ThemeProvider theme={(baseTheme: MuiTheme) => createAppTheme(theme, baseTheme)}>
+            <RouterProvider router={router}/>
 
             <Snackbar
-                open={ snackbar.message != null }
-                autoHideDuration={ 6000 }
-                onClose={ () => dispatch(resetSnackbar()) }
+                open={snackbar.message != null}
+                autoHideDuration={6000}
+                onClose={() => dispatch(resetSnackbar())}
             >
                 <Alert
-                    onClose={ () => dispatch(resetSnackbar()) }
-                    severity={ snackbar.severity }
-                    sx={ {
+                    onClose={() => dispatch(resetSnackbar())}
+                    severity={snackbar.severity}
+                    sx={{
                         width: '100%',
-                    } }
+                    }}
                 >
-                    { snackbar.message }
+                    {snackbar.message}
                 </Alert>
             </Snackbar>
         </ThemeProvider>

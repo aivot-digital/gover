@@ -1,12 +1,12 @@
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { UsersService } from '../services/users-service';
-import { LocalStorageService } from '../services/local-storage-service';
-import { type RootState } from '../store';
-import { LocalstorageKey } from '../data/localstorage-key';
-import { type AnonymousUser, type InvalidUser, type User } from '../models/entities/user';
-import { type DepartmentMembership } from '../models/entities/department-membership';
-import { DepartmentMembershipsService } from '../services/department-memberships-service';
-import { type Credentials } from '../models/dtos/credentials';
+import {createAsyncThunk, createSlice, type PayloadAction} from '@reduxjs/toolkit';
+import {UsersService} from '../services/users-service';
+import {LocalStorageService} from '../services/local-storage-service';
+import {type RootState} from '../store';
+import {LocalstorageKey} from '../data/localstorage-key';
+import {type AnonymousUser, type InvalidUser, type User} from '../models/entities/user';
+import {type DepartmentMembership} from '../models/entities/department-membership';
+import {DepartmentMembershipsService} from '../services/department-memberships-service';
+import {type Credentials} from '../models/dtos/credentials';
 
 interface UserState {
     user: User | AnonymousUser | InvalidUser | undefined;
@@ -52,7 +52,7 @@ export const refreshUser = createAsyncThunk(
 export const refreshMemberships = createAsyncThunk(
     'user/refreshMemberships',
     async (user: User): Promise<DepartmentMembership[]> => {
-        return await DepartmentMembershipsService.list({ user: user.id });
+        return await DepartmentMembershipsService.list({user: user.id});
     },
 );
 
@@ -130,7 +130,7 @@ const userSlice = createSlice({
     },
 });
 
-export const { logout } = userSlice.actions;
+export const {logout} = userSlice.actions;
 
 export const selectUser = (state: RootState): User | undefined => state.user.user;
 export const selectMemberships = (state: RootState): DepartmentMembership[] => state.user.memberships;

@@ -1,4 +1,4 @@
-import { type PageWrapperProps } from '../page-wrapper/page-wrapper-props';
+import {type PageWrapperProps} from '../page-wrapper/page-wrapper-props';
 
 export interface FormPageWrapperProps extends PageWrapperProps {
     hasChanged: boolean;

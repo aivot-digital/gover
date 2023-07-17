@@ -1,24 +1,22 @@
-import { Alert, Button, Dialog, DialogActions, DialogContent, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import {
-    DialogTitleWithClose,
-} from '../../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import { type Application } from '../../../models/entities/application';
-import { ElementType } from '../../../data/element-type/element-type';
-import { type AddApplicationDialogProps } from './add-application-dialog-props';
-import { ApplicationStatus } from '../../../data/application-status/application-status';
-import { generateElementWithDefaultValues } from '../../../utils/generate-element-with-default-values';
-import { type RootElement } from '../../../models/elements/root-element';
-import { TextFieldComponent } from '../../../components/text-field/text-field-component';
-import { slugify } from '../../../utils/slugify';
-import { checkTitle } from '../../../utils/check-title';
-import { checkVersion } from '../../../utils/version-utils';
-import { checkSlugAndVersion } from '../../../utils/check-slug-and-version';
-import { type Department } from '../../../models/entities/department';
-import { DepartmentsService } from '../../../services/departments-service';
-import { SelectFieldComponent } from '../../../components/select-field/select-field-component';
-import { useAppSelector } from '../../../hooks/use-app-selector';
-import { selectMemberships, selectUser } from '../../../slices/user-slice';
+import {Alert, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {DialogTitleWithClose} from '../../../components/static-components/dialog-title-with-close/dialog-title-with-close';
+import {type Application} from '../../../models/entities/application';
+import {ElementType} from '../../../data/element-type/element-type';
+import {type AddApplicationDialogProps} from './add-application-dialog-props';
+import {ApplicationStatus} from '../../../data/application-status/application-status';
+import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {type RootElement} from '../../../models/elements/root-element';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {slugify} from '../../../utils/slugify';
+import {checkTitle} from '../../../utils/check-title';
+import {checkVersion} from '../../../utils/version-utils';
+import {checkSlugAndVersion} from '../../../utils/check-slug-and-version';
+import {type Department} from '../../../models/entities/department';
+import {DepartmentsService} from '../../../services/departments-service';
+import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectMemberships, selectUser} from '../../../slices/user-slice';
 
 
 type ErrorsType = {
@@ -143,13 +141,13 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
 
     return (
         <Dialog
-            { ...passTroughProps }
+            {...passTroughProps}
             fullWidth
-            onClose={ handleClose }
+            onClose={handleClose}
             maxWidth="lg"
         >
             <DialogTitleWithClose
-                onClose={ props.onClose }
+                onClose={props.onClose}
                 closeTooltip="Schließen"
             >
                 {
@@ -175,7 +173,7 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
             <DialogContent>
                 <Typography
                     variant="body2"
-                    sx={ { mb: 2 } }
+                    sx={{mb: 2}}
                 >
                     Wählen Sie den Fachbereich aus, für den Sie das Formular anlegen möchten.
                     Achten Sie darauf, dass <u>ausschließlich</u> Mitarbeiter:innen dieses Fachbereichs das Formular
@@ -188,21 +186,27 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
 
                 <SelectFieldComponent
                     label="Entwickelnder Fachbereich"
-                    value={ application.developingDepartment.toString() }
-                    onChange={ (val) => {
+                    value={application.developingDepartment.toString()}
+                    onChange={(val) => {
                         handlePatch({
                             developingDepartment: val != null ? parseInt(val) : 0,
                         });
-                    } }
-                    options={ departments.map((dep) => ({ value: dep.id.toString(), label: dep.name })) }
-                    error={ errors.developingDepartment }
+                    }}
+                    options={departments.map((dep) => ({
+                        value: dep.id.toString(),
+                        label: dep.name,
+                    }))}
+                    error={errors.developingDepartment}
                     required
-                    disabled={ mode === 'new-version' }
+                    disabled={mode === 'new-version'}
                 />
 
                 <Typography
                     variant="body2"
-                    sx={ { mt: 4, mb: 2 } }
+                    sx={{
+                        mt: 4,
+                        mb: 2,
+                    }}
                 >
                     Vergeben Sie einen Titel für das Formular um es besser identifizieren zu können.
                     Diesen Titel können nur Sie und ihre Kolleg:innen einsehen.
@@ -211,29 +215,32 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                 <TextFieldComponent
                     label="Titel des Formulars"
                     placeholder="Hundesteueranmeldung"
-                    value={ application.title ?? '' }
-                    onChange={ (val) => {
+                    value={application.title ?? ''}
+                    onChange={(val) => {
                         handlePatch({
                             title: val,
                         });
-                    } }
-                    onBlur={ (val) => {
+                    }}
+                    onBlur={(val) => {
                         const title = val != null ? val.trim() : '';
                         if (application.slug.length === 0) {
                             handlePatch({
                                 slug: slugify(title),
                             });
                         }
-                    } }
+                    }}
                     required
-                    error={ errors.title }
-                    maxCharacters={ 96 }
-                    disabled={ mode === 'new-version' }
+                    error={errors.title}
+                    maxCharacters={96}
+                    disabled={mode === 'new-version'}
                 />
 
                 <Typography
                     variant="body2"
-                    sx={ { mt: 4, mb: 2 } }
+                    sx={{
+                        mt: 4,
+                        mb: 2,
+                    }}
                 >
                     Vergeben Sie die URL des Formulars. Unter dieser wird das Formular für Antragstellende verfügbar
                     sein.
@@ -244,26 +251,29 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                 <TextFieldComponent
                     label="URL-Element (Titel des Antrages innerhalb der URL)"
                     placeholder="antrag-hundesteueranmeldung"
-                    value={ application.slug }
-                    onChange={ (val) => {
+                    value={application.slug}
+                    onChange={(val) => {
                         handlePatch({
                             slug: val,
                         });
-                    } }
-                    onBlur={ (val) => {
+                    }}
+                    onBlur={(val) => {
                         handlePatch({
                             slug: val != null ? val.trim().replace(/-\s*$/, '') : '',
                         });
-                    } }
+                    }}
                     required
-                    error={ errors.slug }
-                    maxCharacters={ 60 }
-                    disabled={ mode === 'new-version' }
+                    error={errors.slug}
+                    maxCharacters={60}
+                    disabled={mode === 'new-version'}
                 />
 
                 <Typography
                     variant="body2"
-                    sx={ { mt: 4, mb: 2 } }
+                    sx={{
+                        mt: 4,
+                        mb: 2,
+                    }}
                 >
                     Vergeben Sie die Version des Formulars. Unter dieser wird das Formular für Antragstellende verfügbar
                     sein. Achten Sie darauf, dass Sie dem Schema der semantischen Versionierung folgen.
@@ -276,21 +286,21 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                 <TextFieldComponent
                     label="Version des Formulars"
                     placeholder="1.0.0"
-                    value={ application.version }
-                    onChange={ (val) => {
+                    value={application.version}
+                    onChange={(val) => {
                         handlePatch({
                             version: val,
                         });
-                    } }
+                    }}
                     required
-                    error={ errors.version }
-                    maxCharacters={ 11 }
+                    error={errors.version}
+                    maxCharacters={11}
                 />
 
                 <Alert
                     severity="warning"
                     variant="outlined"
-                    sx={ { mt: 1 } }
+                    sx={{mt: 1}}
                 >
                     Bitte beachten Sie, dass diese Angaben später nicht mehr geändert werden können.
                 </Alert>
@@ -299,7 +309,7 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                     Object.keys(errors).length > 0 &&
                     <Alert
                         severity="error"
-                        sx={ { mt: 2 } }
+                        sx={{mt: 2}}
                     >
                         Bitte beheben Sie die existierenden Fehler!
                     </Alert>
@@ -307,30 +317,34 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
             </DialogContent>
 
             <DialogActions
-                sx={ {
+                sx={{
                     pb: 3,
                     px: 3,
                     justifyContent: 'flex-start',
-                } }
+                }}
             >
                 <Button
                     size="large"
                     variant="outlined"
-                    onClick={ () => {handleSave(true);} }
+                    onClick={() => {
+                        handleSave(true);
+                    }}
                 >
                     Anlegen und Bearbeiten
                 </Button>
                 <Button
                     size="large"
-                    onClick={ () => {handleSave(false);} }
+                    onClick={() => {
+                        handleSave(false);
+                    }}
                 >
                     Nur Anlegen
                 </Button>
                 <Button
-                    onClick={ handleClose }
-                    sx={ {
+                    onClick={handleClose}
+                    sx={{
                         ml: 'auto!important',
-                    } }
+                    }}
                     size="large"
                 >
                     Abbrechen

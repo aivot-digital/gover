@@ -13,7 +13,7 @@ export class SelectFieldValidator extends BaseInputElementValidator<string, Sele
     protected makeSpecificErrors(comp: SelectFieldElement, value: string | undefined, userInput: any): string | null {
         if (value != null) {
             if (value !== '' && !(comp.options ?? []).includes(value)) {
-                return 'Bitte wählen Sie eine der vorgegebenen Optionen aus.'
+                return 'Bitte wählen Sie eine der vorgegebenen Optionen aus.';
             }
         }
         return null;

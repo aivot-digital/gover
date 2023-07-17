@@ -1,45 +1,35 @@
-import { Box, Button, Container, Paper, Typography } from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import { ApplicationService } from '../../../services/application-service';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-    LoadingPlaceholderComponentView,
-} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
+import {Box, Button, Container, Paper, Typography} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {ApplicationService} from '../../../services/application-service';
+import {Link, useNavigate} from 'react-router-dom';
+import {LoadingPlaceholderComponentView} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
 
-import { AppFooter } from '../../../components/app-footer/app-footer';
-import { Introductory } from '../../../components/introductory/introductory';
-import {
-    AddApplicationDialog,
-} from '../../../dialogs/application-dialogs/add-application-dialog/add-application-dialog';
-import {
-    ImportApplicationDialog,
-} from '../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
-import { MetaElement } from '../../../components/meta-element/meta-element';
-import { type Application } from '../../../models/entities/application';
-import { AppHeader } from '../../../components/app-header/app-header';
-import { AppMode } from '../../../data/app-mode';
-import { ListHeader } from '../../../components/list-header/list-header';
-import { EmptyDataListPlaceholder } from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
-import {
-    EmptySearchDataListPlaceholder,
-} from '../../../components/empty-search-data-list-placeholder/empty-search-data-list-placeholder';
-import { useAppSelector } from '../../../hooks/use-app-selector';
-import { selectSystemConfigValue } from '../../../slices/system-config-slice';
-import { SystemConfigKeys } from '../../../data/system-config-keys';
-import { type ListApplication } from '../../../models/entities/list-application';
-import { type ListApplicationGroup } from '../../../models/lib/list-application-group';
-import { compareVersions } from '../../../utils/version-utils';
-import { ApplicationListItemGroup } from '../../../components/application-list-item-group/application-list-item-group';
-import { selectMemberships, selectUser } from '../../../slices/user-slice';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { showErrorSnackbar } from '../../../slices/snackbar-slice';
-import {
-    DeleteApplicationDialog,
-} from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
-import { ProviderLinks } from './components/provider-links';
-import { Department } from '../../../models/entities/department';
-import { DepartmentsService } from '../../../services/departments-service';
-import { ApplicationStatus } from '../../../data/application-status/application-status';
+import {AppFooter} from '../../../components/app-footer/app-footer';
+import {Introductory} from '../../../components/introductory/introductory';
+import {AddApplicationDialog} from '../../../dialogs/application-dialogs/add-application-dialog/add-application-dialog';
+import {ImportApplicationDialog} from '../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
+import {MetaElement} from '../../../components/meta-element/meta-element';
+import {type Application} from '../../../models/entities/application';
+import {AppHeader} from '../../../components/app-header/app-header';
+import {AppMode} from '../../../data/app-mode';
+import {ListHeader} from '../../../components/list-header/list-header';
+import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
+import {EmptySearchDataListPlaceholder} from '../../../components/empty-search-data-list-placeholder/empty-search-data-list-placeholder';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../data/system-config-keys';
+import {type ListApplication} from '../../../models/entities/list-application';
+import {type ListApplicationGroup} from '../../../models/lib/list-application-group';
+import {compareVersions} from '../../../utils/version-utils';
+import {ApplicationListItemGroup} from '../../../components/application-list-item-group/application-list-item-group';
+import {selectMemberships, selectUser} from '../../../slices/user-slice';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {DeleteApplicationDialog} from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
+import {ProviderLinks} from './components/provider-links';
+import {Department} from '../../../models/entities/department';
+import {DepartmentsService} from '../../../services/departments-service';
+import {ApplicationStatus} from '../../../data/application-status/application-status';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 
@@ -107,7 +97,7 @@ export function ApplicationListPage(): JSX.Element {
                 .create(application)
                 .then((createdApplication) => {
                     if (navigateToEditAfterwards) {
-                        navigate(`/edit/${ createdApplication.id }`);
+                        navigate(`/edit/${createdApplication.id}`);
                     } else {
                         setApplications([
                             createdApplication,
@@ -165,37 +155,37 @@ export function ApplicationListPage(): JSX.Element {
     return (
         <>
             <MetaElement
-                title={ providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot' }
+                title={providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}
             />
 
             <AppHeader
-                mode={ AppMode.Staff }
+                mode={AppMode.Staff}
             />
 
             <Introductory
-                mode={ AppMode.Staff }
+                mode={AppMode.Staff}
             />
 
             <Box
-                sx={ {
+                sx={{
                     backgroundColor: '#F3F3F3',
                     minHeight: '60vh',
-                } }
+                }}
             >
                 <Container
-                    sx={ {
+                    sx={{
                         mb: 5,
                         py: 4,
-                    } }
+                    }}
                 >
                     {
                         user.admin &&
                         (departments ?? []).length === 0 &&
                         <Paper
-                            sx={ {
+                            sx={{
                                 p: 4,
                                 mt: 4,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="h5"
@@ -209,13 +199,13 @@ export function ApplicationListPage(): JSX.Element {
                             </Typography>
 
                             <Box
-                                sx={ {
+                                sx={{
                                     mt: 2,
-                                } }
+                                }}
                             >
                                 <Button
                                     variant="outlined"
-                                    component={ Link }
+                                    component={Link}
                                     to="/departments/new"
                                     startIcon={
                                         <AddOutlinedIcon/>
@@ -231,10 +221,10 @@ export function ApplicationListPage(): JSX.Element {
                         !user.admin &&
                         (memberships ?? []).length === 0 &&
                         <Paper
-                            sx={ {
+                            sx={{
                                 p: 4,
                                 mt: 4,
-                            } }
+                            }}
                         >
                             <Typography
                                 variant="h5"
@@ -256,17 +246,17 @@ export function ApplicationListPage(): JSX.Element {
                         ) &&
                         <>
                             <Box
-                                sx={ {
+                                sx={{
                                     mt: 3,
                                     mb: 6,
-                                } }
+                                }}
                             >
                                 <ListHeader
                                     title="Ihre Online-Formulare"
-                                    search={ search }
-                                    onSearchChange={ setSearch }
+                                    search={search}
+                                    onSearchChange={setSearch}
                                     searchPlaceholder="Formular suchen..."
-                                    actions={ [
+                                    actions={[
                                         {
                                             label: 'Neues Formular',
                                             icon: <AddOutlinedIcon/>,
@@ -281,23 +271,23 @@ export function ApplicationListPage(): JSX.Element {
                                                 setShowImportApplicationDialog(true);
                                             },
                                         },
-                                    ] }
+                                    ]}
                                 />
                             </Box>
                             <Box
-                                sx={ {
+                                sx={{
                                     mt: 3,
                                     mb: 5,
-                                } }
+                                }}
                             >
                                 {
                                     applications.length === 0 &&
                                     <EmptyDataListPlaceholder
                                         helperText="Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!"
                                         addText="Neues Formular"
-                                        onAdd={ () => {
+                                        onAdd={() => {
                                             setShowAddApplicationDialog(true);
-                                        } }
+                                        }}
                                     />
                                 }
                                 {
@@ -314,13 +304,13 @@ export function ApplicationListPage(): JSX.Element {
                                             groupedApplications
                                                 .map((group) => (
                                                     <ApplicationListItemGroup
-                                                        key={ group.slug }
-                                                        group={ group }
-                                                        onClone={ handleApplicationClone }
-                                                        onDelete={ setApplicationToDelete }
-                                                        onNewVersion={ handleApplicationNewVersion }
-                                                        memberships={ memberships }
-                                                        user={ user }
+                                                        key={group.slug}
+                                                        group={group}
+                                                        onClone={handleApplicationClone}
+                                                        onDelete={setApplicationToDelete}
+                                                        onNewVersion={handleApplicationNewVersion}
+                                                        memberships={memberships}
+                                                        user={user}
                                                     />
                                                 ))
                                         }
@@ -333,47 +323,47 @@ export function ApplicationListPage(): JSX.Element {
             </Box>
 
             <Container
-                sx={ {
+                sx={{
                     mt: 10,
                     mb: 12,
-                } }
+                }}
             >
                 <ProviderLinks/>
             </Container>
 
-            <AppFooter mode={ AppMode.Staff }/>
+            <AppFooter mode={AppMode.Staff}/>
 
             <AddApplicationDialog
-                mode={ showAddApplicationDialog ? 'new' : (applicationToUpgrade != null ? 'new-version' : (applicationToClone != null ? 'clone' : 'import')) }
-                existingApplications={ applications }
-                applicationToBaseOn={ applicationToUpgrade ?? applicationToClone ?? applicationToImport }
-                open={ showAddApplicationDialog || applicationToUpgrade != null || applicationToClone != null || applicationToImport != null }
-                onClose={ () => {
+                mode={showAddApplicationDialog ? 'new' : (applicationToUpgrade != null ? 'new-version' : (applicationToClone != null ? 'clone' : 'import'))}
+                existingApplications={applications}
+                applicationToBaseOn={applicationToUpgrade ?? applicationToClone ?? applicationToImport}
+                open={showAddApplicationDialog || applicationToUpgrade != null || applicationToClone != null || applicationToImport != null}
+                onClose={() => {
                     setShowAddApplicationDialog(false);
                     setApplicationToClone(undefined);
                     setApplicationToImport(undefined);
                     setApplicationToUpgrade(undefined);
-                } }
-                onSave={ handleAdd }
+                }}
+                onSave={handleAdd}
             />
 
             <ImportApplicationDialog
-                open={ showImportApplicationDialog }
-                onClose={ () => {
+                open={showImportApplicationDialog}
+                onClose={() => {
                     setShowImportApplicationDialog(false);
-                } }
-                onImport={ setApplicationToImport }
+                }}
+                onImport={setApplicationToImport}
             />
 
             <DeleteApplicationDialog
-                application={ applicationToDelete }
-                onDelete={ () => {
+                application={applicationToDelete}
+                onDelete={() => {
                     setApplications(applications.filter((app) => app.id !== applicationToDelete?.id));
                     setApplicationToDelete(undefined);
-                } }
-                onCancel={ () => {
+                }}
+                onCancel={() => {
                     setApplicationToDelete(undefined);
-                } }
+                }}
             />
         </>
     );

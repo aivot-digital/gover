@@ -1,16 +1,21 @@
-import { Box, Checkbox, FormControlLabel } from '@mui/material';
+import {Box, Checkbox, FormControlLabel} from '@mui/material';
 import React from 'react';
-import { type CheckboxTreeProps } from './checkbox-tree-props';
-import { CheckboxTreeItem } from './checkbox-tree-item';
+import {type CheckboxTreeProps} from './checkbox-tree-props';
+import {CheckboxTreeItem} from './checkbox-tree-item';
 
-export function CheckboxTree({ options, value, onChange, disabled }: CheckboxTreeProps) {
+export function CheckboxTree({
+                                 options,
+                                 value,
+                                 onChange,
+                                 disabled,
+                             }: CheckboxTreeProps) {
     return (
         <Box>
             {
                 options.map((opt) => typeof opt === 'string' ?
                     (
                         <FormControlLabel
-                            sx={{ display: 'block' }}
+                            sx={{display: 'block'}}
                             key={opt}
                             label={opt}
                             control={

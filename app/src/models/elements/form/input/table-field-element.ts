@@ -10,7 +10,7 @@ export interface TableFieldComponentColumnModel {
     disabled?: boolean;
 }
 
-export interface TableFieldElement extends BaseInputElement<{ [key: string]: string }[], ElementType.Table> {
+export interface TableFieldElement extends BaseInputElement<{[key: string]: string}[], ElementType.Table> {
     fields?: TableFieldComponentColumnModel[];
     maximumRows?: number;
     minimumRequiredRows?: number;

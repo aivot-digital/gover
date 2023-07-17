@@ -1,5 +1,5 @@
 import {SelectUserDialogProps} from "./select-user-dialog-props";
-import {Box, Dialog, DialogContent, DialogTitle, List, ListItem, ListItemButton, ListItemText} from "@mui/material";
+import {Box, Dialog, DialogContent, List, ListItem, ListItemButton, ListItemText} from "@mui/material";
 import {PropsWithChildren, useEffect, useState} from "react";
 import {DialogTitleWithClose} from "../../components/static-components/dialog-title-with-close/dialog-title-with-close";
 import {SearchInput} from "../../components/search-input/search-input";
@@ -26,7 +26,7 @@ export function SelectUserDialog(props: PropsWithChildren<SelectUserDialogProps>
     const handleSelect = (user: User) => {
         setSearch('');
         props.onSelect(user);
-    }
+    };
 
     const filteredUsers = users == null ? undefined : users.filter(usr => (props.userIdsToIgnore == null || !props.userIdsToIgnore.includes(usr.id)) && usr.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -41,7 +41,6 @@ export function SelectUserDialog(props: PropsWithChildren<SelectUserDialogProps>
             >
                 {props.title}
             </DialogTitleWithClose>
-
 
 
             <DialogContent>

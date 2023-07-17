@@ -14,7 +14,7 @@ export class TimeFieldComponentValidator extends BaseInputElementValidator<strin
         if (value != null) {
             const timestamp = Date.parse(value);
             if (isNaN(timestamp)) {
-                return 'Bitte geben Sie eine Uhrzeit im geforderten Format ein.'
+                return 'Bitte geben Sie eine Uhrzeit im geforderten Format ein.';
             }
         }
         return null;

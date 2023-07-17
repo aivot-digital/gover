@@ -1,9 +1,9 @@
-import { Alert, Button, TextField, Typography } from '@mui/material';
-import React, { type FormEvent, useCallback, useState } from 'react';
-import { UsersService } from '../../../../services/users-service';
-import { isStringNullOrEmpty } from '../../../../utils/string-utils';
-import { useAppSelector } from '../../../../hooks/use-app-selector';
-import { selectUser } from '../../../../slices/user-slice';
+import {Alert, Button, TextField, Typography} from '@mui/material';
+import React, {type FormEvent, useCallback, useState} from 'react';
+import {UsersService} from '../../../../services/users-service';
+import {isStringNullOrEmpty} from '../../../../utils/string-utils';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../slices/user-slice';
 
 
 export function ProfilePasswordChange(): JSX.Element {
@@ -81,14 +81,14 @@ export function ProfilePasswordChange(): JSX.Element {
 
             {
                 passwordChanged &&
-                <Alert sx={{ mt: 2 }}>
+                <Alert sx={{mt: 2}}>
                     Passwort erfolgreich geändert!
                 </Alert>
             }
 
             <Button
                 type="submit"
-                sx={{ mt: 2 }}
+                sx={{mt: 2}}
                 disabled={newPassword.length === 0}
             >
                 Passwort ändern

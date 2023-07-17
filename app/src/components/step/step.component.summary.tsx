@@ -1,7 +1,5 @@
 import {Box, IconButton, Typography} from '@mui/material';
 import {StepElement} from '../../models/elements/steps/step-element';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faPenToSquare} from '@fortawesome/pro-light-svg-icons';
 import Tooltip from '@mui/material/Tooltip';
 import React from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -10,7 +8,6 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {getStepIcon} from '../../data/step-icons';
 import {BaseSummaryProps} from "../../summaries/base-summary";
-import {faBrakeWarning} from "@fortawesome/pro-regular-svg-icons";
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 
 export function StepComponentSummary({model}: BaseSummaryProps<StepElement, any>) {

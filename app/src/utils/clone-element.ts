@@ -6,7 +6,10 @@ import {isAnyInputElement} from "../models/elements/form/input/any-input-element
 import {generateComponentTitle} from "./generate-component-title";
 
 export function cloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): T {
-    const {clone, idMap} = deepCloneElement(element, skipSuffix);
+    const {
+        clone,
+        idMap,
+    } = deepCloneElement(element, skipSuffix);
     return fixNoCodeReferences(clone, idMap);
 }
 
@@ -14,7 +17,7 @@ type IdMap = {
     [key: string]: string;
 };
 
-function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): { clone: T, idMap: IdMap } {
+function deepCloneElement<T extends AnyElement>(element: T, skipSuffix?: boolean): {clone: T, idMap: IdMap} {
     const newId = generateElementIdForType(element.type);
 
     let idMap = {
@@ -58,7 +61,7 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
                 ...fixedElement.isVisible,
                 conditionSet: fixConditionSetReferences(fixedElement.isVisible.conditionSet, idMap),
             },
-        }
+        };
     }
 
     if (isAnyInputElement(fixedElement)) {
@@ -69,7 +72,7 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
                     ...fixedElement.validate,
                     conditionSet: fixConditionSetReferences(fixedElement.validate.conditionSet, idMap),
                 },
-            }
+            };
         }
     }
 
@@ -77,7 +80,7 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
         fixedElement = {
             ...fixedElement,
             children: fixedElement.children.map(c => fixNoCodeReferences(c, idMap)),
-        }
+        };
     }
 
     return fixedElement;

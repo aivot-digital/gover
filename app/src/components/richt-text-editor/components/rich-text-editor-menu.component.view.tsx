@@ -11,7 +11,7 @@ import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
 import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
 import {OverridableComponent} from "@mui/material/OverridableComponent";
 
-export function RichTextEditorMenuComponentView({editor}: { editor: Editor | null }) {
+export function RichTextEditorMenuComponentView({editor}: {editor: Editor | null}) {
     const fontOptions: {
         icon: OverridableComponent<SvgIconTypeMap>;
         style?: string;
@@ -20,21 +20,21 @@ export function RichTextEditorMenuComponentView({editor}: { editor: Editor | nul
         {
             icon: FormatBoldOutlinedIcon,
             style: 'bold',
-            func: () => editor?.chain().focus().toggleBold().run()
+            func: () => editor?.chain().focus().toggleBold().run(),
         },
         {
             icon: FormatItalicOutlinedIcon,
             style: 'italic',
-            func: () => editor?.chain().focus().toggleItalic().run()
+            func: () => editor?.chain().focus().toggleItalic().run(),
         },
         {
             icon: StrikethroughSOutlinedIcon,
             style: 'strike',
-            func: () => editor?.chain().focus().toggleStrike().run()
+            func: () => editor?.chain().focus().toggleStrike().run(),
         },
         {
             icon: FormatClearOutlinedIcon,
-            func: () => editor?.chain().focus().unsetAllMarks().run()
+            func: () => editor?.chain().focus().unsetAllMarks().run(),
         },
     ];
 
@@ -46,31 +46,31 @@ export function RichTextEditorMenuComponentView({editor}: { editor: Editor | nul
         {
             icon: FormatListBulletedOutlinedIcon,
             style: 'bulletList',
-            func: () => editor?.chain().focus().toggleBulletList().run()
+            func: () => editor?.chain().focus().toggleBulletList().run(),
         },
         {
             icon: FormatListNumberedOutlinedIcon,
             style: 'orderedList',
-            func: () => editor?.chain().focus().toggleOrderedList().run()
+            func: () => editor?.chain().focus().toggleOrderedList().run(),
         },
     ];
 
     const setLink = useCallback(() => {
         if (editor) {
-            const previousUrl = editor.getAttributes('link').href
-            let url = window.prompt('URL', previousUrl)
+            const previousUrl = editor.getAttributes('link').href;
+            let url = window.prompt('URL', previousUrl);
 
             // cancelled
             if (url === null) {
-                return
+                return;
             }
 
             // empty
             if (url === '') {
                 editor.chain().focus().extendMarkRange('link').unsetLink()
-                    .run()
+                    .run();
 
-                return
+                return;
             }
 
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -79,12 +79,12 @@ export function RichTextEditorMenuComponentView({editor}: { editor: Editor | nul
 
             // update link
             editor.chain().focus().extendMarkRange('link').setLink({href: url})
-                .run()
+                .run();
         }
     }, [editor]);
 
     if (!editor) {
-        return null
+        return null;
     }
 
     return (
@@ -132,5 +132,5 @@ export function RichTextEditorMenuComponentView({editor}: { editor: Editor | nul
                 </Button>
             </ButtonGroup>
         </>
-    )
+    );
 }

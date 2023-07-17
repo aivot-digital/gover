@@ -10,13 +10,16 @@ export function HeadlineComponentSummary({model}: BaseSummaryProps<HeadlineEleme
             sx={{
                 mt: 2,
                 borderBottom: "1px solid #D4D4D4",
-                py: 1
+                py: 1,
             }}
         >
             <Grid
                 item
                 md={4}
-                sx={{textAlign: "right", pr: 5}}
+                sx={{
+                    textAlign: "right",
+                    pr: 5,
+                }}
             >
                 <Typography
                     variant="body2"
@@ -28,7 +31,7 @@ export function HeadlineComponentSummary({model}: BaseSummaryProps<HeadlineEleme
                         /* TODO: Overthink if small mode is really relevant here
                         model.small ?
                             <small>{model.content}</small> :*/
-                            model.content
+                        model.content
                     }
                 </Typography>
             </Grid>

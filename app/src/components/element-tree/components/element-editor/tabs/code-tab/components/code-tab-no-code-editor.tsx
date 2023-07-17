@@ -1,18 +1,16 @@
-import { type AnyElement } from '../../../../../../../models/elements/any-element';
-import { flattenElements } from '../../../../../../../utils/flatten-elements';
-import { CodeTabConditionSetEditor } from './code-tab-condition-set-editor';
+import {type AnyElement} from '../../../../../../../models/elements/any-element';
+import {flattenElements} from '../../../../../../../utils/flatten-elements';
+import {CodeTabConditionSetEditor} from './code-tab-condition-set-editor';
 import React from 'react';
-import { ConditionSetOperator } from '../../../../../../../data/condition-set-operator';
+import {ConditionSetOperator} from '../../../../../../../data/condition-set-operator';
 import Evaluators from '../../../../../../../evaluators';
-import { type Function } from '../../../../../../../models/functions/function';
-import { type RootElement } from '../../../../../../../models/elements/root-element';
-import { type StepElement } from '../../../../../../../models/elements/steps/step-element';
-import { type GroupLayout } from '../../../../../../../models/elements/form/layout/group-layout';
-import {
-    type ReplicatingContainerLayout,
-} from '../../../../../../../models/elements/form/layout/replicating-container-layout';
-import { ElementType } from '../../../../../../../data/element-type/element-type';
-import { type ConditionSet } from '../../../../../../../models/functions/conditions/condition-set';
+import {type Function} from '../../../../../../../models/functions/function';
+import {type RootElement} from '../../../../../../../models/elements/root-element';
+import {type StepElement} from '../../../../../../../models/elements/steps/step-element';
+import {type GroupLayout} from '../../../../../../../models/elements/form/layout/group-layout';
+import {type ReplicatingContainerLayout} from '../../../../../../../models/elements/form/layout/replicating-container-layout';
+import {ElementType} from '../../../../../../../data/element-type/element-type';
+import {type ConditionSet} from '../../../../../../../models/functions/conditions/condition-set';
 
 interface CodeTabNoCodeEditorProps {
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
@@ -61,14 +59,14 @@ export function CodeTabNoCodeEditor({
 
     return (
         <CodeTabConditionSetEditor
-            element={ element }
-            allElements={ allElements }
-            conditionSet={ func.conditionSet ?? {
+            element={element}
+            allElements={allElements}
+            conditionSet={func.conditionSet ?? {
                 operator: ConditionSetOperator.Any,
-            } }
-            onChange={ handleChange }
-            shouldReturnString={ shouldReturnString }
-            editable={ editable }
+            }}
+            onChange={handleChange}
+            shouldReturnString={shouldReturnString}
+            editable={editable}
         />
     );
 }

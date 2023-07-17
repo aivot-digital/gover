@@ -1,12 +1,12 @@
 import React from 'react';
-import { type AnyElement } from '../../../../../../../models/elements/any-element';
-import { type ConditionSet } from '../../../../../../../models/functions/conditions/condition-set';
-import { Box, Button, Divider, IconButton, MenuItem, TextField, Typography } from '@mui/material';
-import { ConditionSetOperator } from '../../../../../../../data/condition-set-operator';
-import { ConditionOperator } from '../../../../../../../data/condition-operator';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAdd, faTrashCanXmark } from '@fortawesome/pro-light-svg-icons';
-import { CodeTabCondition } from './code-tab-condition';
+import {type AnyElement} from '../../../../../../../models/elements/any-element';
+import {type ConditionSet} from '../../../../../../../models/functions/conditions/condition-set';
+import {Box, Button, Divider, IconButton, MenuItem, TextField, Typography} from '@mui/material';
+import {ConditionSetOperator} from '../../../../../../../data/condition-set-operator';
+import {ConditionOperator} from '../../../../../../../data/condition-operator';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faAdd, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
+import {CodeTabCondition} from './code-tab-condition';
 
 interface CodeTabConditionSetEditorProps {
     element: AnyElement;
@@ -40,28 +40,28 @@ export function CodeTabConditionSetEditor({
             <TextField
                 select
                 fullWidth
-                value={ conditionSet.operator }
+                value={conditionSet.operator}
                 label="Bedingung"
-                onChange={ (event) => {
+                onChange={(event) => {
                     onChange({
                         ...conditionSet,
                         operator: parseInt(event.target.value) as ConditionSetOperator,
                     });
-                } }
-                disabled={ !editable }
+                }}
+                disabled={!editable}
             >
                 {
                     shouldReturnString ?
                         (
                             <MenuItem
-                                value={ ConditionSetOperator.Any }
+                                value={ConditionSetOperator.Any}
                             >
                                 <u>keine einzige</u>&nbsp;der folgenden Bedingungen wahr ist
                             </MenuItem>
                         ) :
                         (
                             <MenuItem
-                                value={ ConditionSetOperator.Any }
+                                value={ConditionSetOperator.Any}
                             >
                                 <u>mindestens eine</u>&nbsp;der folgenden Bedingungen wahr ist
                             </MenuItem>
@@ -72,14 +72,14 @@ export function CodeTabConditionSetEditor({
                     shouldReturnString ?
                         (
                             <MenuItem
-                                value={ ConditionSetOperator.All }
+                                value={ConditionSetOperator.All}
                             >
                                 <u>nicht alle</u>&nbsp;der folgenden Bedingungen wahr sind
                             </MenuItem>
                         ) :
                         (
                             <MenuItem
-                                value={ ConditionSetOperator.All }
+                                value={ConditionSetOperator.All}
                             >
                                 <u>alle</u>&nbsp;der folgenden Bedingungen wahr sind
                             </MenuItem>
@@ -94,44 +94,44 @@ export function CodeTabConditionSetEditor({
                 <TextField
                     fullWidth
                     label="Fehlermeldung"
-                    value={ conditionSet.conditionSetUnmetMessage }
-                    onChange={ (event) => {
+                    value={conditionSet.conditionSetUnmetMessage}
+                    onChange={(event) => {
                         onChange({
                             ...conditionSet,
                             conditionSetUnmetMessage: event.target.value,
                         });
-                    } }
+                    }}
                     helperText="Dieser Fehler wird angezeigt, wenn die Bedingungsgruppe nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
                 />
             }
             <Box
-                sx={ {
+                sx={{
                     pt: 2,
                     ml: 2,
                     borderLeft: '1px solid #e0e0e0',
-                } }
+                }}
             >
                 <Box
-                    sx={ {
+                    sx={{
                         ml: 2,
                         p: 2,
                         border: '1px solid #e0e0e0',
-                    } }
+                    }}
                 >
                     {
                         editable &&
                         <Box
-                            sx={ {
+                            sx={{
                                 display: 'flex',
                                 justifyContent: 'flex-end',
                                 mb: 2,
-                            } }
+                            }}
                         >
                             <Button
                                 startIcon={
-                                    <FontAwesomeIcon icon={ faAdd }/>
+                                    <FontAwesomeIcon icon={faAdd}/>
                                 }
-                                onClick={ () => {
+                                onClick={() => {
                                     onChange({
                                         ...conditionSet,
                                         conditions: [
@@ -144,7 +144,7 @@ export function CodeTabConditionSetEditor({
                                             },
                                         ],
                                     });
-                                } }
+                                }}
                             >
                                 Bedingung hinzufügen
                             </Button>
@@ -155,26 +155,26 @@ export function CodeTabConditionSetEditor({
                         (conditionSet.conditions != null) &&
                         conditionSet.conditions.map((cond, index) => (
                             <Box
-                                sx={ {mb: 3} }
-                                key={ index }
+                                sx={{mb: 3}}
+                                key={index}
                             >
                                 <CodeTabCondition
-                                    allElements={ allElements }
-                                    cond={ cond }
-                                    index={ index }
-                                    onDelete={ () => {
+                                    allElements={allElements}
+                                    cond={cond}
+                                    index={index}
+                                    onDelete={() => {
                                         onChange({
                                             ...conditionSet,
                                             conditions: conditionSet.conditions!.filter((c) => c !== cond),
                                         });
-                                    } }
-                                    onChange={ (updatedCond) => {
+                                    }}
+                                    onChange={(updatedCond) => {
                                         onChange({
                                             ...conditionSet,
                                             conditions: conditionSet.conditions!.map((c) => c !== cond ? c : updatedCond),
                                         });
-                                    } }
-                                    editable={ editable }
+                                    }}
+                                    editable={editable}
                                 />
                                 {
                                     shouldReturnString &&
@@ -182,8 +182,8 @@ export function CodeTabConditionSetEditor({
                                     !suppressConditionUnmetMessage &&
                                     <TextField
                                         label="Fehlermeldung, wenn diese Bedingung nicht wahr ist"
-                                        value={ cond.conditionUnmetMessage }
-                                        onChange={ (event) => {
+                                        value={cond.conditionUnmetMessage}
+                                        onChange={(event) => {
                                             onChange({
                                                 ...conditionSet,
                                                 conditions: conditionSet.conditions!.map((c) => c !== cond ?
@@ -193,9 +193,9 @@ export function CodeTabConditionSetEditor({
                                                         conditionUnmetMessage: event.target.value,
                                                     }),
                                             });
-                                        } }
+                                        }}
                                         helperText="Diese Fehlermeldung wird angezeigt, wenn die Bedingung nicht wahr ist. Lassen Sie dieses Feld leer, um die Standardfehlermeldung anzuzeigen."
-                                        disabled={ !editable }
+                                        disabled={!editable}
                                     />
                                 }
                             </Box>
@@ -203,22 +203,22 @@ export function CodeTabConditionSetEditor({
                     }
 
                     <Divider
-                        sx={ {
+                        sx={{
                             my: 2,
-                        } }
+                        }}
                     />
 
                     {
                         editable &&
                         <Box
-                            sx={ {
+                            sx={{
                                 display: 'flex',
                                 justifyContent: 'flex-end',
                                 mb: 2,
-                            } }
+                            }}
                         >
                             <Button
-                                onClick={ () => {
+                                onClick={() => {
                                     onChange({
                                         ...conditionSet,
                                         conditionsSets: [
@@ -231,9 +231,9 @@ export function CodeTabConditionSetEditor({
                                             },
                                         ],
                                     });
-                                } }
+                                }}
                                 startIcon={
-                                    <FontAwesomeIcon icon={ faAdd }/>
+                                    <FontAwesomeIcon icon={faAdd}/>
                                 }
                             >
                                 Bedingungsgruppe hinzufügen
@@ -245,30 +245,30 @@ export function CodeTabConditionSetEditor({
                         (conditionSet.conditionsSets != null) &&
                         conditionSet.conditionsSets.map((cs, index) => (
                             <Box
-                                sx={ {mb: 3} }
-                                key={ index }
+                                sx={{mb: 3}}
+                                key={index}
                             >
                                 <Box
-                                    sx={ {
+                                    sx={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         mb: 2,
-                                    } }
+                                    }}
                                 >
                                     {
                                         editable &&
                                         <IconButton
                                             size="small"
                                             color="error"
-                                            onClick={ () => {
+                                            onClick={() => {
                                                 onChange({
                                                     ...conditionSet,
                                                     conditionsSets: conditionSet.conditionsSets!.filter((c) => c !== cs),
                                                 });
-                                            } }
+                                            }}
                                         >
                                             <FontAwesomeIcon
-                                                icon={ faTrashCanXmark }
+                                                icon={faTrashCanXmark}
                                                 size="sm"
                                             />
                                         </IconButton>
@@ -276,25 +276,25 @@ export function CodeTabConditionSetEditor({
 
                                     <Typography
                                         variant="caption"
-                                        sx={ {ml: 2} }
+                                        sx={{ml: 2}}
                                     >
-                                        { index + 1 }. Bedingungsgruppe
+                                        {index + 1}. Bedingungsgruppe
                                     </Typography>
                                 </Box>
 
                                 <CodeTabConditionSetEditor
-                                    element={ element }
-                                    allElements={ allElements }
-                                    conditionSet={ cs }
-                                    onChange={ (updatedCs) => {
+                                    element={element}
+                                    allElements={allElements}
+                                    conditionSet={cs}
+                                    onChange={(updatedCs) => {
                                         onChange({
                                             ...conditionSet,
                                             conditionsSets: conditionSet.conditionsSets!.map((c) => c !== cs ? c : updatedCs),
                                         });
-                                    } }
-                                    shouldReturnString={ shouldReturnString }
-                                    suppressConditionUnmetMessage={ conditionSet.operator === ConditionSetOperator.Any }
-                                    editable={ editable }
+                                    }}
+                                    shouldReturnString={shouldReturnString}
+                                    suppressConditionUnmetMessage={conditionSet.operator === ConditionSetOperator.Any}
+                                    editable={editable}
                                 />
                             </Box>
                         ))

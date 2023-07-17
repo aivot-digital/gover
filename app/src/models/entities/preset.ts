@@ -1,4 +1,4 @@
-import { type GroupLayout } from '../elements/form/layout/group-layout';
+import {type GroupLayout} from '../elements/form/layout/group-layout';
 
 export interface Preset {
     id: number;

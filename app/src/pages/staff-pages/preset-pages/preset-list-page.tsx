@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { PresetsService } from '../../../services/presets.service';
-import { type Preset } from '../../../models/entities/preset';
-import { ElementType } from '../../../data/element-type/element-type';
-import { generateElementIdForType } from '../../../utils/id-utils';
+import React, {useEffect, useState} from 'react';
+import {PresetsService} from '../../../services/presets.service';
+import {type Preset} from '../../../models/entities/preset';
+import {ElementType} from '../../../data/element-type/element-type';
+import {generateElementIdForType} from '../../../utils/id-utils';
 import ProjectPackage from '../../../../package.json';
-import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
-import { type GridColDef } from '@mui/x-data-grid';
-import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { showErrorSnackbar } from '../../../slices/snackbar-slice';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {type GridColDef} from '@mui/x-data-grid';
+import {useNavigate} from 'react-router-dom';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 const columns: Array<GridColDef<Preset>> = [
@@ -46,7 +46,7 @@ export function PresetListPage(): JSX.Element {
     }, []);
 
     const navigateTo = (preset: Preset): void => {
-        navigate(`/presets/edit/${ preset.id }`);
+        navigate(`/presets/edit/${preset.id}`);
     };
 
     const handleCreate = (): void => {
@@ -59,7 +59,7 @@ export function PresetListPage(): JSX.Element {
                     id,
                     type: ElementType.Container,
                     appVersion: ProjectPackage.version,
-                    name: `Neue Vorlage ${ (presets?.length ?? 0) + 1 }`,
+                    name: `Neue Vorlage ${(presets?.length ?? 0) + 1}`,
                     children: [],
                 },
                 created: '',

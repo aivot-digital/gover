@@ -1,8 +1,8 @@
-import React, { type PropsWithChildren } from 'react';
-import { type TablePageWrapperProps } from './table-page-wrapper-props';
-import { PageWrapper } from '../page-wrapper/page-wrapper';
-import { type GridValidRowModel } from '@mui/x-data-grid';
-import { TableWrapper } from '../table-wrapper/table-wrapper';
+import React, {type PropsWithChildren} from 'react';
+import {type TablePageWrapperProps} from './table-page-wrapper-props';
+import {PageWrapper} from '../page-wrapper/page-wrapper';
+import {type GridValidRowModel} from '@mui/x-data-grid';
+import {TableWrapper} from '../table-wrapper/table-wrapper';
 
 export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithChildren<TablePageWrapperProps<T>>): JSX.Element {
     const {
@@ -21,18 +21,18 @@ export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithCh
     } = props;
 
     return (
-        <PageWrapper { ...pageWrapperProps }>
+        <PageWrapper {...pageWrapperProps}>
             <TableWrapper
-                columns={ columns }
-                rows={ rows }
-                onRowClick={ onRowClick }
-                title={ pageWrapperProps.title }
-                search={ search }
-                searchPlaceholder={ searchPlaceholder }
-                onSearchChange={ onSearchChange }
-                actions={ actions }
+                columns={columns}
+                rows={rows}
+                onRowClick={onRowClick}
+                title={pageWrapperProps.title}
+                search={search}
+                searchPlaceholder={searchPlaceholder}
+                onSearchChange={onSearchChange}
+                actions={actions}
             >
-                { children }
+                {children}
             </TableWrapper>
         </PageWrapper>
     );

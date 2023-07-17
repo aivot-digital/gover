@@ -1,37 +1,17 @@
-import {
-    Box,
-    Button,
-    Checkbox,
-    Divider,
-    FormControl,
-    FormControlLabel,
-    FormHelperText,
-    Grid,
-    TextField,
-    Typography,
-    useTheme,
-} from '@mui/material';
-import Rating, { type IconContainerProps } from '@mui/material/Rating';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    faEnvelope,
-    faFaceFrown,
-    faFaceFrownSlight,
-    faFaceLaugh,
-    faFaceMeh,
-    faFaceSmile,
-    faFilePdf,
-} from '@fortawesome/pro-light-svg-icons';
-import { Preamble } from '../preamble/preamble';
+import {Box, Button, Checkbox, Divider, FormControl, FormControlLabel, FormHelperText, Grid, TextField, Typography, useTheme} from '@mui/material';
+import Rating, {type IconContainerProps} from '@mui/material/Rating';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {faEnvelope, faFaceFrown, faFaceFrownSlight, faFaceLaugh, faFaceMeh, faFaceSmile, faFilePdf} from '@fortawesome/pro-light-svg-icons';
+import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
-import { useSelector } from 'react-redux';
-import { ApplicationService } from '../../../services/application-service';
-import { selectLoadedApplication } from '../../../slices/app-slice';
-import { validateEmail } from '../../../utils/validate-email';
-import { isStringNullOrEmpty } from '../../../utils/string-utils';
-import { type AnyElement } from '../../../models/elements/any-element';
-import { InfoDialog } from '../../../dialogs/info-dialog/info-dialog';
+import {useSelector} from 'react-redux';
+import {ApplicationService} from '../../../services/application-service';
+import {selectLoadedApplication} from '../../../slices/app-slice';
+import {validateEmail} from '../../../utils/validate-email';
+import {isStringNullOrEmpty} from '../../../utils/string-utils';
+import {type AnyElement} from '../../../models/elements/any-element';
+import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -57,56 +37,56 @@ export function Submitted({
     }> = {
         1: {
             icon: <FontAwesomeIcon
-                icon={ faFaceFrown }
+                icon={faFaceFrown}
                 fixedWidth
-                style={ {
+                style={{
                     fontSize: '40px',
                     margin: '0 5px',
-                } }
+                }}
             />,
             label: 'Sehr Unzufrieden',
         },
         2: {
             icon: <FontAwesomeIcon
-                icon={ faFaceFrownSlight }
+                icon={faFaceFrownSlight}
                 fixedWidth
-                style={ {
+                style={{
                     fontSize: '40px',
                     margin: '0 5px',
-                } }
+                }}
             />,
             label: 'Unzufrieden',
         },
         3: {
             icon: <FontAwesomeIcon
-                icon={ faFaceMeh }
+                icon={faFaceMeh}
                 fixedWidth
-                style={ {
+                style={{
                     fontSize: '40px',
                     margin: '0 5px',
-                } }
+                }}
             />,
             label: 'Neutral',
         },
         4: {
             icon: <FontAwesomeIcon
-                icon={ faFaceSmile }
+                icon={faFaceSmile}
                 fixedWidth
-                style={ {
+                style={{
                     fontSize: '40px',
                     margin: '0 5px',
-                } }
+                }}
             />,
             label: 'Zufrieden',
         },
         5: {
             icon: <FontAwesomeIcon
-                icon={ faFaceLaugh }
+                icon={faFaceLaugh}
                 fixedWidth
-                style={ {
+                style={{
                     fontSize: '40px',
                     margin: '0 5px',
-                } }
+                }}
             />,
             label: 'Sehr Zufrieden',
         },
@@ -117,7 +97,7 @@ export function Submitted({
             value,
             ...other
         } = props;
-        return <span { ...other }>{ customIcons[value].icon }</span>;
+        return <span {...other}>{customIcons[value].icon}</span>;
     }
 
     const canvasStyles = {
@@ -228,21 +208,21 @@ export function Submitted({
                 submitStep?.textPostSubmit != null &&
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
-                    text={ submitStep?.textPostSubmit }
-                    logoLink={ application?.root.introductionStep.initiativeLogoLink }
-                    logoAlt={ application?.root.introductionStep.initiativeName }
+                    text={submitStep?.textPostSubmit}
+                    logoLink={application?.root.introductionStep.initiativeLogoLink}
+                    logoAlt={application?.root.introductionStep.initiativeName}
                 />
             }
 
-            <Divider sx={ {my: 8} }/>
+            <Divider sx={{my: 8}}/>
 
             <Grid
                 container
-                spacing={ 6 }
+                spacing={6}
             >
                 <Grid
                     item
-                    md={ 6 }
+                    md={6}
                 >
                     <Typography
                         variant="h6"
@@ -251,11 +231,11 @@ export function Submitted({
                         Antrag als PDF herunterladen
                     </Typography>
                     <Typography
-                        sx={ {
+                        sx={{
                             mt: 1,
                             mb: 4,
-                        } }
-                        variant={ 'body2' }
+                        }}
+                        variant={'body2'}
                     >
                         Über die Schaltfläche “Antrag als PDF herunterladen” können Sie sich den von Ihnen
                         eingereichten
@@ -264,21 +244,21 @@ export function Submitted({
 
                     <Button
                         variant="contained"
-                        startIcon={ <FontAwesomeIcon
-                            icon={ faFilePdf }
-                            style={ {marginTop: '-2px'} }
-                        /> }
+                        startIcon={<FontAwesomeIcon
+                            icon={faFilePdf}
+                            style={{marginTop: '-2px'}}
+                        />}
                         component="a"
                         target="_blank"
-                        href={ pdfLink }
-                        size={ 'large' }
+                        href={pdfLink}
+                        size={'large'}
                     >
                         Antrag als PDF herunterladen
                     </Button>
                 </Grid>
                 <Grid
                     item
-                    md={ 6 }
+                    md={6}
                 >
                     <Typography
                         variant="h6"
@@ -287,11 +267,11 @@ export function Submitted({
                         Antrag per E-Mail erhalten
                     </Typography>
                     <Typography
-                        sx={ {
+                        sx={{
                             mt: 1,
                             mb: 2.4,
-                        } }
-                        variant={ 'body2' }
+                        }}
+                        variant={'body2'}
                     >
                         Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
                         die
@@ -300,100 +280,100 @@ export function Submitted({
                     <TextField
                         label="E-Mail-Adresse *"
                         placeholder="max.mustermann@mail.de"
-                        value={ email }
-                        disabled={ mailSent }
-                        onChange={ (event) => {
+                        value={email}
+                        disabled={mailSent}
+                        onChange={(event) => {
                             setEmail(event.target.value);
-                        } }
-                        error={ mailInvalid }
-                        helperText={ mailInvalid ? 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' : undefined }
+                        }}
+                        error={mailInvalid}
+                        helperText={mailInvalid ? 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' : undefined}
                     />
-                    <FormControl error={ privacyError != null }>
+                    <FormControl error={privacyError != null}>
                         <FormControlLabel
-                            sx={ {mt: 2} }
-                            control={ <Checkbox
-                                checked={ privacy }
-                                onChange={ (_, checked) => {
+                            sx={{mt: 2}}
+                            control={<Checkbox
+                                checked={privacy}
+                                onChange={(_, checked) => {
                                     setPrivacy(checked);
-                                } }
-                                color={ privacyError != null ? 'primary' : 'error' }
-                            /> }
-                            disabled={ mailSent }
+                                }}
+                                color={privacyError != null ? 'primary' : 'error'}
+                            />}
+                            disabled={mailSent}
                             label="Ich erteile mein Einverständnis, dass der Antrag inklusive hochgeladener Unterlagen per unverschlüsselter E-Mail versandt wird."
                         />
                         {
                             privacyError != null &&
                             <FormHelperText>
-                                { privacyError }
+                                {privacyError}
                             </FormHelperText>
                         }
                     </FormControl>
                     <Button
-                        sx={ {mt: 4} }
+                        sx={{mt: 4}}
                         variant="contained"
-                        startIcon={ <FontAwesomeIcon
-                            icon={ faEnvelope }
-                            style={ {marginTop: '-2px'} }
-                        /> }
-                        onClick={ sendApplicationCopyMail }
-                        size={ 'large' }
-                        disabled={ mailSent }
+                        startIcon={<FontAwesomeIcon
+                            icon={faEnvelope}
+                            style={{marginTop: '-2px'}}
+                        />}
+                        onClick={sendApplicationCopyMail}
+                        size={'large'}
+                        disabled={mailSent}
                     >
                         Antrag per E-Mail erhalten
                     </Button>
                 </Grid>
             </Grid>
 
-            <Divider sx={ {my: 8} }/>
+            <Divider sx={{my: 8}}/>
 
             <Typography
                 variant="h6"
-                sx={ {textAlign: 'center'} }
+                sx={{textAlign: 'center'}}
                 color="primary"
             >
                 Wie hat Ihnen dieser Prozess gefallen?
             </Typography>
             <Typography
-                sx={ {
+                sx={{
                     textAlign: 'center',
                     mt: 1,
-                } }
-                variant={ 'body2' }
+                }}
+                variant={'body2'}
             >
                 Ihre Rückmeldung wird anonym an uns übertragen und hilft uns <br/>
                 bei der Verbesserung unserer Anträge &amp; Prozesse. Vielen Dank!
             </Typography>
             <Box
-                sx={ {
+                sx={{
                     display: 'flex',
                     justifyContent: 'center',
                     mt: 4,
-                } }
+                }}
             >
                 <Rating
-                    sx={ {
+                    sx={{
                         color: theme.palette.primary.main,
-                    } }
+                    }}
                     name="highlight-selected-only"
-                    IconContainerComponent={ IconContainer }
+                    IconContainerComponent={IconContainer}
                     highlightSelectedOnly
-                    size={ 'large' }
+                    size={'large'}
                 />
             </Box>
 
             <ReactCanvasConfetti
-                refConfetti={ getInstance }
+                refConfetti={getInstance}
                 // @ts-expect-error
-                style={ canvasStyles }
+                style={canvasStyles}
             />
 
             <InfoDialog
                 title="E-Mail versendet"
                 severity="success"
-                open={ showMailSentDialog }
-                onClose={ () => {
+                open={showMailSentDialog}
+                onClose={() => {
                     setShowMailSentDialog(false);
-                } }
+                }}
             >
                 Eine E-Mail mit dem eingereichten Antrag wurde an die angegebene E-Mail-Adresse versendet.
             </InfoDialog>

@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Checkbox, FormControl, FormControlLabel } from '@mui/material';
-import { type FileUploadElement } from '../../models/elements/form/input/file-upload-element';
-import { type BaseEditorProps } from '../../editors/base-editor';
-import { SystemService } from '../../services/system-service';
-import { NumberFieldComponent } from '../number-field/number-field-component';
-import { MultiCheckboxComponent } from '../multi-checkbox-field/multi-checkbox-component';
-import { useAppDispatch } from '../../hooks/use-app-dispatch';
-import { showErrorSnackbar } from '../../slices/snackbar-slice';
-import { type Application } from '../../models/entities/application';
-import { type Preset } from '../../models/entities/preset';
+import React, {useEffect, useState} from 'react';
+import {Checkbox, FormControl, FormControlLabel} from '@mui/material';
+import {type FileUploadElement} from '../../models/elements/form/input/file-upload-element';
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {SystemService} from '../../services/system-service';
+import {NumberFieldComponent} from '../number-field/number-field-component';
+import {MultiCheckboxComponent} from '../multi-checkbox-field/multi-checkbox-component';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {type Application} from '../../models/entities/application';
+import {type Preset} from '../../models/entities/preset';
 
 export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Application | Preset>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -32,15 +32,15 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Appli
                 <FormControlLabel
                     control={
                         <Checkbox
-                            checked={ props.element.isMultifile ?? false }
-                            onChange={ (event) => {
+                            checked={props.element.isMultifile ?? false}
+                            onChange={(event) => {
                                 props.onPatch({
                                     isMultifile: event.target.checked,
                                     minFiles: undefined,
                                     maxFiles: undefined,
                                 });
-                            } }
-                            disabled={ !props.editable }
+                            }}
+                            disabled={!props.editable}
                         />
                     }
                     label="Mehrere Anlagen zulässig"
@@ -51,46 +51,46 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Appli
                 props.element.isMultifile === true &&
                 <>
                     <NumberFieldComponent
-                        value={ props.element.minFiles }
+                        value={props.element.minFiles}
                         label="Minimalzahl an Anlagen"
                         hint="Geben Sie 0 ein, um keine Minimalzahl zu fordern."
-                        onChange={ (val) => {
+                        onChange={(val) => {
                             props.onPatch({
                                 minFiles: val,
                             });
-                        } }
-                        error={ invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined }
-                        disabled={ !props.editable }
+                        }}
+                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                        disabled={!props.editable}
                     />
 
                     <NumberFieldComponent
-                        value={ props.element.maxFiles }
+                        value={props.element.maxFiles}
                         label="Maximalanzahl an Anlagen"
                         hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                        onChange={ (val) => {
+                        onChange={(val) => {
                             props.onPatch({
                                 maxFiles: val,
                             });
-                        } }
-                        error={ invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined }
-                        disabled={ !props.editable }
+                        }}
+                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                        disabled={!props.editable}
                     />
                 </>
             }
 
             <MultiCheckboxComponent
                 label="Erlaubte Dateiendungen"
-                value={ props.element.extensions }
-                onChange={ (val) => {
+                value={props.element.extensions}
+                onChange={(val) => {
                     props.onPatch({
                         extensions: val,
                     });
-                } }
+                }}
                 hint="Die Bürger:in kann nur Dateien mit diesen Endungen hochladen."
-                error={ props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined }
-                options={ allowedExtensions ?? [] }
+                error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
+                options={allowedExtensions ?? []}
                 required
-                disabled={ !props.editable }
+                disabled={!props.editable}
             />
         </>
     );

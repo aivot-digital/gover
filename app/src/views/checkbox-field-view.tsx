@@ -6,7 +6,7 @@ export const CheckboxFieldView: BaseView<CheckboxFieldElement, boolean> = ({
                                                                                setValue,
                                                                                element,
                                                                                error,
-                                                                               value
+                                                                               value,
                                                                            }) => {
     return (
         <CheckboxFieldComponent
@@ -19,4 +19,4 @@ export const CheckboxFieldView: BaseView<CheckboxFieldElement, boolean> = ({
             required={element.required}
         />
     );
-}
+};

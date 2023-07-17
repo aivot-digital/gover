@@ -5,7 +5,12 @@ import {useCallback, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from "../../views/base-view";
 
-export function TableFieldComponentView({element, value, error, setValue}: BaseViewProps<TableFieldElement, any[]>) {
+export function TableFieldComponentView({
+                                            element,
+                                            value,
+                                            error,
+                                            setValue,
+                                        }: BaseViewProps<TableFieldElement, any[]>) {
     const [selectionModel, setSelectionModel] = useState<GridSelectionModel>();
 
     const handleAddRow = useCallback(() => {
@@ -13,7 +18,7 @@ export function TableFieldComponentView({element, value, error, setValue}: BaseV
             const newRow = (element.fields ?? []).reduce((acc, val) => {
                 acc[val.label] = '';
                 return acc;
-            }, {} as { [key: string]: string })
+            }, {} as {[key: string]: string});
 
             setValue([
                 ...(value ?? []),
@@ -109,7 +114,10 @@ export function TableFieldComponentView({element, value, error, setValue}: BaseV
                 }
             </Box>
 
-            <div style={{height: 550, width: '100%'}}>
+            <div style={{
+                height: 550,
+                width: '100%',
+            }}>
                 <DataGrid
                     rows={rows}
                     columns={columns}

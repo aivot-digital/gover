@@ -1,4 +1,4 @@
-import { type ApplicationStatus } from '../../data/application-status/application-status';
+import {type ApplicationStatus} from '../../data/application-status/application-status';
 
 export interface ListApplication {
     id: number;

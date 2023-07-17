@@ -1,35 +1,17 @@
-import React, { useEffect, useReducer, useState } from 'react';
-import {
-    Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    IconButton,
-    Skeleton,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import { DepartmentMembershipsService } from '../../../../services/department-memberships-service';
-import { type DepartmentMembership } from '../../../../models/entities/department-membership';
-import { type User } from '../../../../models/entities/user';
-import { UsersService } from '../../../../services/users-service';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAdd, faEdit, faTrashAlt } from '@fortawesome/pro-light-svg-icons';
-import { SearchInput } from '../../../../components/search-input/search-input';
-import { SelectUserDialog } from '../../../../dialogs/select-user-dialog/select-user-dialog';
-import { SelectFieldComponent } from '../../../../components/select-field/select-field-component';
-import { UserRole, UserRoleLabels } from '../../../../data/user-role';
-import {
-    DialogTitleWithClose,
-} from '../../../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import { type Department } from '../../../../models/entities/department';
+import React, {useEffect, useReducer, useState} from 'react';
+import {Box, Button, Dialog, DialogActions, DialogContent, IconButton, Skeleton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography} from '@mui/material';
+import {DepartmentMembershipsService} from '../../../../services/department-memberships-service';
+import {type DepartmentMembership} from '../../../../models/entities/department-membership';
+import {type User} from '../../../../models/entities/user';
+import {UsersService} from '../../../../services/users-service';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faAdd, faEdit, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
+import {SearchInput} from '../../../../components/search-input/search-input';
+import {SelectUserDialog} from '../../../../dialogs/select-user-dialog/select-user-dialog';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {UserRole, UserRoleLabels} from '../../../../data/user-role';
+import {DialogTitleWithClose} from '../../../../components/static-components/dialog-title-with-close/dialog-title-with-close';
+import {type Department} from '../../../../models/entities/department';
 
 interface MembershipUser {
     membership: DepartmentMembership;
@@ -147,25 +129,25 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                 filteredMemberships != null &&
                 <Box>
                     <Box
-                        sx={ {
+                        sx={{
                             display: 'flex',
                             justifyContent: 'flex-end',
-                        } }
+                        }}
                     >
                         <SearchInput
-                            value={ search }
-                            onChange={ setSearch }
+                            value={search}
+                            onChange={setSearch}
                             placeholder="Mitarbeiter:in suchen..."
                         />
 
                         <Button
-                            sx={ {
+                            sx={{
                                 ml: 2,
-                            } }
+                            }}
                             startIcon={
-                                <FontAwesomeIcon icon={ faAdd }/>
+                                <FontAwesomeIcon icon={faAdd}/>
                             }
-                            onClick={ toggleShowAddMembership }
+                            onClick={toggleShowAddMembership}
                         >
                             Mitarbeiter:in hinzufügen
                         </Button>
@@ -187,9 +169,9 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                             <TableBody>
                                 {
                                     filteredAdmins?.map((user) => (
-                                        <TableRow key={ user.id }>
+                                        <TableRow key={user.id}>
                                             <TableCell>
-                                                { user.name }
+                                                {user.name}
                                             </TableCell>
                                             <TableCell>
                                                 Globale Administrator:in
@@ -199,25 +181,31 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                                     ))
                                 }
                                 {
-                                    filteredMemberships.map(({membership, user}) => (
-                                        <TableRow key={ membership.id }>
+                                    filteredMemberships.map(({
+                                                                 membership,
+                                                                 user,
+                                                             }) => (
+                                        <TableRow key={membership.id}>
                                             <TableCell>
-                                                { user.name } { user.active ? '' : '(Inaktiv)' }
+                                                {user.name} {user.active ? '' : '(Inaktiv)'}
                                             </TableCell>
                                             <TableCell>
-                                                { UserRoleLabels[membership.role] }
+                                                {UserRoleLabels[membership.role]}
 
                                                 <IconButton
                                                     color="primary"
                                                     size="small"
-                                                    onClick={ () => {
-                                                        setSelectedMembership({membership, user});
-                                                    } }
-                                                    sx={ {
+                                                    onClick={() => {
+                                                        setSelectedMembership({
+                                                            membership,
+                                                            user,
+                                                        });
+                                                    }}
+                                                    sx={{
                                                         ml: 1,
-                                                    } }
+                                                    }}
                                                 >
-                                                    <FontAwesomeIcon icon={ faEdit }/>
+                                                    <FontAwesomeIcon icon={faEdit}/>
                                                 </IconButton>
                                             </TableCell>
                                             <TableCell>
@@ -227,11 +215,11 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                                                     <IconButton
                                                         color="error"
                                                         size="small"
-                                                        onClick={ () => {
+                                                        onClick={() => {
                                                             handleDelete(membership.id);
-                                                        } }
+                                                        }}
                                                     >
-                                                        <FontAwesomeIcon icon={ faTrashAlt }/>
+                                                        <FontAwesomeIcon icon={faTrashAlt}/>
                                                     </IconButton>
                                                 </Tooltip>
                                             </TableCell>
@@ -245,45 +233,45 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
             }
 
             <SelectUserDialog
-                userIdsToIgnore={ [
+                userIdsToIgnore={[
                     ...(memberships ?? []).map((m) => m.user.id),
                     ...(admins ?? []).map((user) => user.id),
-                ] }
+                ]}
                 title="Mitarbeiter:in auswählen"
-                show={ showAddMembership }
-                onSelect={ (user) => {
+                show={showAddMembership}
+                onSelect={(user) => {
                     setSelectedUser(user);
                     toggleShowAddMembership();
-                } }
-                onCancel={ toggleShowAddMembership }
+                }}
+                onCancel={toggleShowAddMembership}
             />
 
-            <Dialog open={ selectedUser != null }>
+            <Dialog open={selectedUser != null}>
                 <DialogTitleWithClose
-                    onClose={ () => {
+                    onClose={() => {
                         setSelectedUser(undefined);
-                    } }
+                    }}
                 >
-                    Rolle für { selectedUser?.name } auswählen
+                    Rolle für {selectedUser?.name} auswählen
                 </DialogTitleWithClose>
                 <DialogContent>
                     <SelectFieldComponent
                         label="Rolle"
                         required
-                        value={ selectedUserRole.toString() }
-                        onChange={ (val) => {
+                        value={selectedUserRole.toString()}
+                        onChange={(val) => {
                             setSelectedUserRole(val != null ? parseInt(val) as UserRole : UserRole.Editor);
-                        } }
-                        options={ Object.keys(UserRoleLabels).map((key) => ({
+                        }}
+                        options={Object.keys(UserRoleLabels).map((key) => ({
                             value: key,
                             label: UserRoleLabels[parseInt(key) as UserRole],
-                        })) }
+                        }))}
                     />
 
                     <Typography
-                        sx={ {
+                        sx={{
                             mt: 2,
-                        } }
+                        }}
                     >
                         Mehr Informationen zu den Rollen finden Sie
                         im <a
@@ -297,46 +285,46 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        onClick={ handleAddMembership }
+                        onClick={handleAddMembership}
                     >
                         Hinzufügen
                     </Button>
                     <Button
-                        onClick={ () => {
+                        onClick={() => {
                             setSelectedUser(undefined);
-                        } }
+                        }}
                     >
                         Abbrechen
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            <Dialog open={ selectedMembership != null }>
+            <Dialog open={selectedMembership != null}>
                 <DialogTitleWithClose
-                    onClose={ () => {
+                    onClose={() => {
                         setSelectedMembership(undefined);
-                    } }
+                    }}
                 >
-                    Rolle für { selectedUser?.name } auswählen
+                    Rolle für {selectedUser?.name} auswählen
                 </DialogTitleWithClose>
                 <DialogContent>
                     <SelectFieldComponent
                         label="Rolle"
                         required
-                        value={ selectedUserRole.toString() }
-                        onChange={ (val) => {
+                        value={selectedUserRole.toString()}
+                        onChange={(val) => {
                             setSelectedUserRole(val != null ? parseInt(val) as UserRole : UserRole.Editor);
-                        } }
-                        options={ Object.keys(UserRoleLabels).map((key) => ({
+                        }}
+                        options={Object.keys(UserRoleLabels).map((key) => ({
                             value: key,
                             label: UserRoleLabels[parseInt(key) as UserRole],
-                        })) }
+                        }))}
                     />
 
                     <Typography
-                        sx={ {
+                        sx={{
                             mt: 2,
-                        } }
+                        }}
                     >
                         Mehr Informationen zu den Rollen finden Sie
                         im <a
@@ -350,14 +338,14 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        onClick={ handleUpdateMembership }
+                        onClick={handleUpdateMembership}
                     >
                         Speichern
                     </Button>
                     <Button
-                        onClick={ () => {
+                        onClick={() => {
                             setSelectedMembership(undefined);
-                        } }
+                        }}
                     >
                         Abbrechen
                     </Button>

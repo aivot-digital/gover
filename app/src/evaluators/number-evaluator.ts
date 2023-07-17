@@ -18,7 +18,7 @@ function transformValue(val: any): number | null {
                 return parseFloat(val.replace('.', '').replace(',', '.'));
             }
         default:
-            return null
+            return null;
     }
 }
 

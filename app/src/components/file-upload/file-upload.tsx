@@ -12,7 +12,12 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
  * @param value
  * @constructor
  */
-export function FileUpload({extensions, multiple, onChange, value}: FileUploadProps) {
+export function FileUpload({
+                               extensions,
+                               multiple,
+                               onChange,
+                               value,
+                           }: FileUploadProps) {
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +60,10 @@ export function FileUpload({extensions, multiple, onChange, value}: FileUploadPr
                         value.map(file => (
                             <Box
                                 key={file.name}
-                                sx={{display: 'flex', alignItems: 'center'}}
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                }}
                             >
                                 <Typography>{file.name}</Typography>
                                 <IconButton
@@ -85,7 +93,10 @@ export function FileUpload({extensions, multiple, onChange, value}: FileUploadPr
                     onChange={handleChange}
                 />
                 <Box>
-                    <FileUploadOutlinedIcon sx={{color: '#aaa', fontSize: "3rem"}}/>
+                    <FileUploadOutlinedIcon sx={{
+                        color: '#aaa',
+                        fontSize: "3rem",
+                    }}/>
                 </Box>
                 <Box>
                     <Typography

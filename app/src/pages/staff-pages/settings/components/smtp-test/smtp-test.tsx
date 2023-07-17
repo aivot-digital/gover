@@ -1,6 +1,6 @@
-import React, { type FormEvent, useState } from 'react';
-import { Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
-import { SystemService } from '../../../../../services/system-service';
+import React, {type FormEvent, useState} from 'react';
+import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
+import {SystemService} from '../../../../../services/system-service';
 
 
 export function SmtpTest(): JSX.Element {
@@ -52,7 +52,7 @@ export function SmtpTest(): JSX.Element {
                 isSending &&
                 <Alert
                     severity="info"
-                    sx={{ mt: 2 }}
+                    sx={{mt: 2}}
                 >
                     <AlertTitle>
                         Teste E-Mail-Versand
@@ -70,7 +70,7 @@ export function SmtpTest(): JSX.Element {
                             size="2em"
                         />
 
-                        <Typography sx={{ ml: 2 }}>
+                        <Typography sx={{ml: 2}}>
                             Der Test der verbindung läuft aktuell. Schließen Sie diese Seite nicht. Der Test kann bis zu
                             5 Minuten dauern.
                         </Typography>
@@ -83,7 +83,7 @@ export function SmtpTest(): JSX.Element {
                 emailTestResult === true &&
                 <Alert
                     severity="success"
-                    sx={{ mt: 2 }}
+                    sx={{mt: 2}}
                 >
                     <AlertTitle>
                         Test erfolgreich!
@@ -99,7 +99,7 @@ export function SmtpTest(): JSX.Element {
                 emailTestResult !== true &&
                 <Alert
                     severity="error"
-                    sx={{ mt: 2 }}
+                    sx={{mt: 2}}
                 >
                     <AlertTitle>
                         Versand fehlgeschlagen!
@@ -112,7 +112,7 @@ export function SmtpTest(): JSX.Element {
 
                     <Typography
                         variant="subtitle2"
-                        sx={{ mt: 2 }}
+                        sx={{mt: 2}}
                     >
                         Fehlerbericht
                     </Typography>
@@ -135,8 +135,12 @@ export function SmtpTest(): JSX.Element {
                         type="email"
                         placeholder="max.muster@mail.de"
                         value={targetEmail}
-                        onChange={(event) => {setTargetEmail(event.target.value);}}
-                        onBlur={() => {setTargetEmail(targetEmail.trim());}}
+                        onChange={(event) => {
+                            setTargetEmail(event.target.value);
+                        }}
+                        onBlur={() => {
+                            setTargetEmail(targetEmail.trim());
+                        }}
                         disabled={isSending}
                         required
                     />

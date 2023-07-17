@@ -1,13 +1,13 @@
-import { type DeleteApplicationDialogProps } from './delete-application-dialog-props';
-import { ApplicationService } from '../../../services/application-service';
-import { showErrorSnackbar } from '../../../slices/snackbar-slice';
-import React, { useEffect, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { type SubmissionListDto } from '../../../models/entities/submission-list-dto';
-import { SubmissionService } from '../../../services/submission-service';
-import { TextFieldComponent } from '../../../components/text-field/text-field-component';
-import { AlertComponent } from '../../../components/alert/alert-component';
+import {type DeleteApplicationDialogProps} from './delete-application-dialog-props';
+import {ApplicationService} from '../../../services/application-service';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import React, {useEffect, useState} from 'react';
+import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from '@mui/material';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {type SubmissionListDto} from '../../../models/entities/submission-list-dto';
+import {SubmissionService} from '../../../services/submission-service';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {AlertComponent} from '../../../components/alert/alert-component';
 
 export function DeleteApplicationDialog(props: DeleteApplicationDialogProps): JSX.Element {
     const dispatch = useAppDispatch();
@@ -59,7 +59,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps): JS
 
     return (
         <Dialog
-            open={ props.application != null }
+            open={props.application != null}
         >
             <DialogTitle>
                 Formular löschen
@@ -81,38 +81,38 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps): JS
                     <>
                         <DialogContentText>
                             Sind Sie sicher, dass Sie das
-                            Formular <strong>{ props.application?.title }</strong> wirklich
+                            Formular <strong>{props.application?.title}</strong> wirklich
                             löschen wollen? Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
                             Es werden alle Anträge, die für diese Formularversion eingegangen sind, gelöscht.
                         </DialogContentText>
 
 
                         <DialogContentText
-                            sx={ {
+                            sx={{
                                 mt: 2,
-                            } }
+                            }}
                         >
                             Bitte geben Sie den Titel des Formulars ein, um die Löschung zu bestätigen.
                         </DialogContentText>
 
                         <TextFieldComponent
                             label="Titel bestätigen"
-                            value={ formTitle }
-                            onChange={ setFormTitle }
+                            value={formTitle}
+                            onChange={setFormTitle}
                         />
                     </>
                 }
             </DialogContent>
             <DialogActions>
                 <Button
-                    onClick={ props.onCancel }
-                    disabled={ isBusy }
+                    onClick={props.onCancel}
+                    disabled={isBusy}
                 >
                     Abbrechen
                 </Button>
                 <Button
-                    onClick={ handleDelete }
-                    disabled={ isBusy || formTitle !== props.application?.title }
+                    onClick={handleDelete}
+                    disabled={isBusy || formTitle !== props.application?.title}
                     color="error"
                 >
                     Löschen

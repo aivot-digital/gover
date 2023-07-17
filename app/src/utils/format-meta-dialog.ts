@@ -1,5 +1,5 @@
-import { type Location } from 'react-router-dom';
-import { MetaDialog } from '../slices/app-slice';
+import {type Location} from 'react-router-dom';
+import {MetaDialog} from '../slices/app-slice';
 
 
 export function formatMetaDialog(text: string, location: Location): string {
@@ -7,8 +7,8 @@ export function formatMetaDialog(text: string, location: Location): string {
 
     for (const meta in MetaDialog) {
         result = result
-            .replace(`{${ meta }}`, `<a href="/#${ location.pathname }?dialog=${ meta }">`)
-            .replace(`{/${ meta }}`, '</a>');
+            .replace(`{${meta}}`, `<a href="/#${location.pathname}?dialog=${meta}">`)
+            .replace(`{/${meta}}`, '</a>');
     }
 
     return result;

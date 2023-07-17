@@ -1,34 +1,34 @@
 import React from 'react';
-import { type ImageElement } from '../../models/elements/form/content/image-element';
-import { type BaseEditorProps } from '../../editors/base-editor';
-import { TextFieldComponent } from '../text-field/text-field-component';
-import { Application } from '../../models/entities/application';
-import { Preset } from '../../models/entities/preset';
+import {type ImageElement} from '../../models/elements/form/content/image-element';
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {TextFieldComponent} from '../text-field/text-field-component';
+import {Application} from '../../models/entities/application';
+import {Preset} from '../../models/entities/preset';
 
 export function ImageEditor(props: BaseEditorProps<ImageElement, Application | Preset>): JSX.Element {
     return (
         <>
             <TextFieldComponent
-                value={ props.element.src ?? '' }
+                value={props.element.src ?? ''}
                 label="Url"
-                onChange={ (val) => {
+                onChange={(val) => {
                     props.onPatch({
                         src: val,
                     });
-                } }
-                disabled={ !props.editable }
+                }}
+                disabled={!props.editable}
             />
 
 
             <TextFieldComponent
-                value={ props.element.alt ?? '' }
+                value={props.element.alt ?? ''}
                 label="Alt-Text"
-                onChange={ (val) => {
+                onChange={(val) => {
                     props.onPatch({
                         alt: val,
                     });
-                } }
-                disabled={ !props.editable }
+                }}
+                disabled={!props.editable}
             />
         </>
     );

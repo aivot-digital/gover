@@ -5,14 +5,15 @@ import {BaseTabProps} from "./base-tab-props";
 import {DialogContent, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography} from "@mui/material";
 import {ElementIcons} from "../../../data/element-type/element-icons";
 import {ElementType} from "../../../data/element-type/element-type";
-import {
-    LoadingPlaceholderComponentView
-} from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
+import {LoadingPlaceholderComponentView} from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
 import {cloneElement} from "../../../utils/clone-element";
 import {AlertComponent} from "../../../components/alert/alert-component";
 import {Link} from "react-router-dom";
 
-export function PresetTab({parentType, onAddElement}: BaseTabProps) {
+export function PresetTab({
+                              parentType,
+                              onAddElement,
+                          }: BaseTabProps) {
     const [presets, setPresets] = useState<Preset[]>();
 
     useEffect(() => {
@@ -70,7 +71,7 @@ export function PresetTab({parentType, onAddElement}: BaseTabProps) {
                                         />
                                     </ListItemButton>
                                 </ListItem>
-                            )
+                            );
                         })
                 }
             </List>

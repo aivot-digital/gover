@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { TextFieldComponent } from '../../../components/text-field/text-field-component';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { type ProviderLink } from '../../../models/entities/provider-link';
-import { ProviderLinksService } from '../../../services/provider-links-service';
-import { useChangeBlocker } from '../../../hooks/use-change-blocker';
-import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page-wrapper';
-import { delayPromise } from '../../../utils/with-delay';
-import { useAdminGuard } from '../../../hooks/use-admin-guard';
+import React, {useEffect, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {type ProviderLink} from '../../../models/entities/provider-link';
+import {ProviderLinksService} from '../../../services/provider-links-service';
+import {useChangeBlocker} from '../../../hooks/use-change-blocker';
+import {FormPageWrapper} from '../../../components/form-page-wrapper/form-page-wrapper';
+import {delayPromise} from '../../../utils/with-delay';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
 
 export function ProviderLinkEditPage(): JSX.Element {
     useAdminGuard();
@@ -116,26 +116,26 @@ export function ProviderLinkEditPage(): JSX.Element {
     return (
         <FormPageWrapper
             title="Link bearbeiten"
-            isLoading={ isLoading }
-            is404={ isNotFound }
-            hasChanged={ hasChanged }
-            onSave={ handleSave }
-            onReset={ (editedLink?.id ?? 0) !== 0 ? handleReset : undefined }
-            onDelete={ (editedLink?.id ?? 0) !== 0 ? handleDelete : undefined }
+            isLoading={isLoading}
+            is404={isNotFound}
+            hasChanged={hasChanged}
+            onSave={handleSave}
+            onReset={(editedLink?.id ?? 0) !== 0 ? handleReset : undefined}
+            onDelete={(editedLink?.id ?? 0) !== 0 ? handleDelete : undefined}
         >
             <TextFieldComponent
                 label="Name des Links"
-                placeholder={ 'Das hier ist\nein neuer Link' }
+                placeholder={'Das hier ist\nein neuer Link'}
                 hint="Der Titel des Links, der auf der Kachel angezeigt wird. Es sind maximal 3 Zeilen möglich."
-                value={ editedLink?.text }
-                onChange={ (val) => {
+                value={editedLink?.text}
+                onChange={(val) => {
                     handlePatch({
                         text: val,
                     });
-                } }
+                }}
                 required
                 multiline
-                maxCharacters={ 128 }
+                maxCharacters={128}
             />
 
             <TextFieldComponent
@@ -143,14 +143,14 @@ export function ProviderLinkEditPage(): JSX.Element {
                 type="url"
                 placeholder="https://aivot.de/gover"
                 hint="Der Link, welcher aufgerufen wird, sobald eine Mitarbeiter:in auf die Kachel klickt."
-                value={ editedLink?.link }
-                onChange={ (val) => {
+                value={editedLink?.link}
+                onChange={(val) => {
                     handlePatch({
                         link: val,
                     });
-                } }
+                }}
                 required
-                maxCharacters={ 128 }
+                maxCharacters={128}
             />
         </FormPageWrapper>
     );

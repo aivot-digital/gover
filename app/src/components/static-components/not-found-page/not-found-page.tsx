@@ -1,14 +1,17 @@
 import React from 'react';
-import { Alert, AlertTitle, Container, Typography } from '@mui/material';
+import {Alert, AlertTitle, Container, Typography} from '@mui/material';
 
-export function NotFoundPage({ title, msg }: { title?: string, msg?: string }): JSX.Element {
+export function NotFoundPage({
+                                 title,
+                                 msg,
+                             }: {title?: string, msg?: string}): JSX.Element {
     return (
         <Container>
             <Alert
                 severity="error"
-                sx={ {
+                sx={{
                     mt: 8,
-                } }
+                }}
             >
                 <AlertTitle>
                     {

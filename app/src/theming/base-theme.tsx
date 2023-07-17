@@ -55,7 +55,7 @@ export const BaseTheme = createTheme({
             fontFamily: fontStackHeadlines,
             fontWeight: 700,
             fontSize: '1.802rem',
-            lineHeight: '2rem'
+            lineHeight: '2rem',
         },
         h2: {
             fontFamily: fontStackHeadlines,

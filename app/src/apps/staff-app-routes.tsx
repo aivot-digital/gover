@@ -1,26 +1,26 @@
 import React from 'react';
-import { ApplicationListPage } from '../pages/staff-pages/application-pages/application-list-page';
-import { ApplicationEditPage } from '../pages/staff-pages/application-pages/application-edit-page';
-import { Settings } from '../pages/staff-pages/settings/settings';
-import { Profile } from '../pages/staff-pages/profile/profile';
-import { PresetListPage } from '../pages/staff-pages/preset-pages/preset-list-page';
-import { PresetEditPage } from '../pages/staff-pages/preset-pages/preset-edit-page';
-import { UserListPage } from '../pages/staff-pages/user-pages/user-list-page';
-import { UserEditPage } from '../pages/staff-pages/user-pages/user-edit-page';
-import { DepartmentListPage } from '../pages/staff-pages/department-pages/department-list-page';
-import { DepartmentEditPage } from '../pages/staff-pages/department-pages/department-edit-page';
-import { SubmissionListPage } from '../pages/staff-pages/submission-pages/submission-list-page';
-import { SubmissionEditPage } from '../pages/staff-pages/submission-pages/submission-edit-page';
-import { DestinationListPage } from '../pages/staff-pages/destination-pages/destination-list-page';
-import { DestinationEditPage } from '../pages/staff-pages/destination-pages/destination-edit-page';
-import { ProviderLinkListPage } from '../pages/staff-pages/provider-link-pages/provider-link-list-page';
-import { ProviderLinkEditPage } from '../pages/staff-pages/provider-link-pages/provider-link-edit-page';
-import { AssetListPage } from '../pages/staff-pages/asset-pages/asset-list-page';
-import { AssetEditPage } from '../pages/staff-pages/asset-pages/asset-edit-page';
-import { ThemeListPage } from '../pages/staff-pages/theme-pages/theme-list-page';
-import { ThemeEditPage } from '../pages/staff-pages/theme-pages/theme-edit-page';
-import { type Route } from '../models/lib/route';
-import { NotFound } from '../pages/staff-pages/not-found/not-found';
+import {ApplicationListPage} from '../pages/staff-pages/application-pages/application-list-page';
+import {ApplicationEditPage} from '../pages/staff-pages/application-pages/application-edit-page';
+import {Settings} from '../pages/staff-pages/settings/settings';
+import {Profile} from '../pages/staff-pages/profile/profile';
+import {PresetListPage} from '../pages/staff-pages/preset-pages/preset-list-page';
+import {PresetEditPage} from '../pages/staff-pages/preset-pages/preset-edit-page';
+import {UserListPage} from '../pages/staff-pages/user-pages/user-list-page';
+import {UserEditPage} from '../pages/staff-pages/user-pages/user-edit-page';
+import {DepartmentListPage} from '../pages/staff-pages/department-pages/department-list-page';
+import {DepartmentEditPage} from '../pages/staff-pages/department-pages/department-edit-page';
+import {SubmissionListPage} from '../pages/staff-pages/submission-pages/submission-list-page';
+import {SubmissionEditPage} from '../pages/staff-pages/submission-pages/submission-edit-page';
+import {DestinationListPage} from '../pages/staff-pages/destination-pages/destination-list-page';
+import {DestinationEditPage} from '../pages/staff-pages/destination-pages/destination-edit-page';
+import {ProviderLinkListPage} from '../pages/staff-pages/provider-link-pages/provider-link-list-page';
+import {ProviderLinkEditPage} from '../pages/staff-pages/provider-link-pages/provider-link-edit-page';
+import {AssetListPage} from '../pages/staff-pages/asset-pages/asset-list-page';
+import {AssetEditPage} from '../pages/staff-pages/asset-pages/asset-edit-page';
+import {ThemeListPage} from '../pages/staff-pages/theme-pages/theme-list-page';
+import {ThemeEditPage} from '../pages/staff-pages/theme-pages/theme-edit-page';
+import {type Route} from '../models/lib/route';
+import {NotFound} from '../pages/staff-pages/not-found/not-found';
 
 export const staffAppRoutes: Record<string, Route> = {
     applicationList: {

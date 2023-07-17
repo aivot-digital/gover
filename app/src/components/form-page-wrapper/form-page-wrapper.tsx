@@ -1,7 +1,7 @@
-import React, { type FormEvent, type PropsWithChildren, useState } from 'react';
-import { type FormPageWrapperProps } from './form-page-wrapper-props';
-import { PageWrapper } from '../page-wrapper/page-wrapper';
-import { Box, Button, Tab, Tabs } from '@mui/material';
+import React, {type FormEvent, type PropsWithChildren, useState} from 'react';
+import {type FormPageWrapperProps} from './form-page-wrapper-props';
+import {PageWrapper} from '../page-wrapper/page-wrapper';
+import {Box, Button, Tab, Tabs} from '@mui/material';
 
 export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>): JSX.Element {
     const {
@@ -25,29 +25,29 @@ export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>):
     };
 
     return (
-        <PageWrapper { ...pageWrapperProps }>
+        <PageWrapper {...pageWrapperProps}>
             {
                 tabs != null &&
                 <Tabs
-                    value={ currentTab }
-                    onChange={ (_, val) => {
+                    value={currentTab}
+                    onChange={(_, val) => {
                         setCurrentTab(parseInt(val));
-                    } }
-                    sx={ {
+                    }}
+                    sx={{
                         mb: 2,
-                    } }
+                    }}
                 >
                     <Tab
                         label="Allgemein"
-                        value={ -1 }
+                        value={-1}
                     />
 
                     {
                         tabs.map((tab, index) => (
                             <Tab
-                                key={ tab.label }
-                                label={ tab.label }
-                                value={ index }
+                                key={tab.label}
+                                label={tab.label}
+                                value={index}
                             />
                         ))
                     }
@@ -56,18 +56,18 @@ export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>):
 
             {
                 (tabs == null || currentTab === -1) &&
-                <form onSubmit={ handleSubmit }>
-                    { children }
+                <form onSubmit={handleSubmit}>
+                    {children}
 
                     <Box
-                        sx={ {
+                        sx={{
                             mt: 4,
                             display: 'flex',
-                        } }
+                        }}
                     >
                         <Button
                             type="submit"
-                            disabled={ !hasChanged }
+                            disabled={!hasChanged}
                         >
                             Speichern
                         </Button>
@@ -75,11 +75,11 @@ export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>):
                         {
                             onReset != null &&
                             <Button
-                                sx={ {ml: 2} }
+                                sx={{ml: 2}}
                                 type="reset"
                                 color="error"
-                                disabled={ !hasChanged }
-                                onClick={ onReset }
+                                disabled={!hasChanged}
+                                onClick={onReset}
                             >
                                 Zurücksetzen
                             </Button>
@@ -88,12 +88,12 @@ export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>):
                         {
                             onDelete != null &&
                             <Button
-                                sx={ {
+                                sx={{
                                     ml: 'auto',
-                                } }
+                                }}
                                 type="button"
                                 color="error"
-                                onClick={ onDelete }
+                                onClick={onDelete}
                             >
                                 Löschen
                             </Button>

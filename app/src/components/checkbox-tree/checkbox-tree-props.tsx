@@ -1,4 +1,4 @@
-import { type CheckboxTreeOption } from './checkbox-tree-option';
+import {type CheckboxTreeOption} from './checkbox-tree-option';
 
 export interface CheckboxTreeProps {
     options: CheckboxTreeOption[];

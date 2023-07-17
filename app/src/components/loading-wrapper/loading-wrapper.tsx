@@ -1,6 +1,6 @@
-import React, { type PropsWithChildren } from 'react';
-import { type LoadingWrapperProps } from './loading-wrapper-props';
-import { Backdrop, CircularProgress } from '@mui/material';
+import React, {type PropsWithChildren} from 'react';
+import {type LoadingWrapperProps} from './loading-wrapper-props';
+import {Backdrop, CircularProgress} from '@mui/material';
 
 export function LoadingWrapper(props: PropsWithChildren<LoadingWrapperProps>): JSX.Element {
     return (
@@ -11,11 +11,11 @@ export function LoadingWrapper(props: PropsWithChildren<LoadingWrapperProps>): J
             }
 
             <Backdrop
-                open={ props.isLoading ?? false }
-                sx={ {
+                open={props.isLoading ?? false}
+                sx={{
                     backgroundColor: '#ffffff55',
                     zIndex: 999,
-                } }
+                }}
             >
                 <CircularProgress color="inherit"/>
             </Backdrop>

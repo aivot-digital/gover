@@ -1,11 +1,11 @@
-import React, { type FormEvent, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Button, Typography } from '@mui/material';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
-import { FileUpload } from '../../../components/file-upload/file-upload';
-import { AssetService } from '../../../services/asset-service';
-import { showErrorSnackbar } from '../../../slices/snackbar-slice';
+import React, {type FormEvent, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import {Box, Button, Typography} from '@mui/material';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
+import {FileUpload} from '../../../components/file-upload/file-upload';
+import {AssetService} from '../../../services/asset-service';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 
 export function AssetEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
@@ -58,29 +58,29 @@ export function AssetEditPage(): JSX.Element {
     return (
         <PageWrapper
             title="Dokument / Medieninhalt bearbeiten"
-            isLoading={ isBusy }
+            isLoading={isBusy}
         >
             {
                 name != null &&
                 name === 'new' &&
-                <form onSubmit={ handleSubmit }>
+                <form onSubmit={handleSubmit}>
                     <Typography
                         variant="h6"
-                        sx={ {mb: 4} }
+                        sx={{mb: 4}}
                     >
                         Neue Anlage hochladen
                     </Typography>
 
                     <FileUpload
-                        value={ file }
-                        onChange={ setFile }
-                        multiple={ false }
+                        value={file}
+                        onChange={setFile}
+                        multiple={false}
                     />
 
-                    <Box sx={ {mt: 4} }>
+                    <Box sx={{mt: 4}}>
                         <Button
                             type="submit"
-                            disabled={ file.length === 0 }
+                            disabled={file.length === 0}
                         >
                             Hochladen
                         </Button>
@@ -95,18 +95,18 @@ export function AssetEditPage(): JSX.Element {
                     <Typography>
                         Link zum Dokument / Medieninhalt:&nbsp;
                         <a
-                            href={ AssetService.getLink(name) }
+                            href={AssetService.getLink(name)}
                             target="_blank"
                             rel="noreferrer"
                         >
-                            { AssetService.getLink(name) }
+                            {AssetService.getLink(name)}
                         </a>
                     </Typography>
 
-                    <Box sx={ {mt: 4} }>
+                    <Box sx={{mt: 4}}>
                         <Button
                             color="error"
-                            onClick={ handleDelete }
+                            onClick={handleDelete}
                         >
                             Dokument / Medieninhalt Löschen
                         </Button>

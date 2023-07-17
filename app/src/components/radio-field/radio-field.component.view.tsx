@@ -3,7 +3,12 @@ import {RadioFieldElement} from '../../models/elements/form/input/radio-field-el
 import {isStringNullOrEmpty} from "../../utils/string-utils";
 import {BaseViewProps} from "../../views/base-view";
 
-export function RadioFieldComponentView({element, value, error, setValue}: BaseViewProps<RadioFieldElement, string>) {
+export function RadioFieldComponentView({
+                                            element,
+                                            value,
+                                            error,
+                                            setValue,
+                                        }: BaseViewProps<RadioFieldElement, string>) {
     return (
         <FormControl
             component="fieldset"

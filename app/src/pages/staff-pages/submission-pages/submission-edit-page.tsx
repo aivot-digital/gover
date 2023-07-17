@@ -1,42 +1,32 @@
-import React, { type FormEvent, useEffect, useState } from 'react';
-import {
-    Box,
-    Button,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
-} from '@mui/material';
-import { Link, useParams } from 'react-router-dom';
-import { type Application } from '../../../models/entities/application';
-import { type SubmissionDetailsDto } from '../../../models/entities/submission-details-dto';
-import { ApplicationService } from '../../../services/application-service';
-import { SubmissionService } from '../../../services/submission-service';
-import { format, parseISO } from 'date-fns';
-import { faFileDownload, faFilePdf } from '@fortawesome/pro-light-svg-icons';
-import { TextFieldComponent } from '../../../components/text-field/text-field-component';
-import { SelectFieldComponent } from '../../../components/select-field/select-field-component';
-import { UsersService } from '../../../services/users-service';
-import { type SelectFieldComponentOption } from '../../../components/select-field/select-field-component-option';
-import { type User } from '../../../models/entities/user';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { type SubmissionAttachmentListDto } from '../../../models/entities/submission-attachment-list-dto';
-import { downloadBlobFile } from '../../../utils/download-utils';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { AlertComponent } from '../../../components/alert/alert-component';
-import { type Destination } from '../../../models/entities/destination';
-import { DestinationsService } from '../../../services/destinations-service';
-import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
-import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
-import { useChangeBlocker } from '../../../hooks/use-change-blocker';
+import React, {type FormEvent, useEffect, useState} from 'react';
+import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
+import {Link, useParams} from 'react-router-dom';
+import {type Application} from '../../../models/entities/application';
+import {type SubmissionDetailsDto} from '../../../models/entities/submission-details-dto';
+import {ApplicationService} from '../../../services/application-service';
+import {SubmissionService} from '../../../services/submission-service';
+import {format, parseISO} from 'date-fns';
+import {faFileDownload, faFilePdf} from '@fortawesome/pro-light-svg-icons';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
+import {UsersService} from '../../../services/users-service';
+import {type SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
+import {type User} from '../../../models/entities/user';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {type SubmissionAttachmentListDto} from '../../../models/entities/submission-attachment-list-dto';
+import {downloadBlobFile} from '../../../utils/download-utils';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {AlertComponent} from '../../../components/alert/alert-component';
+import {type Destination} from '../../../models/entities/destination';
+import {DestinationsService} from '../../../services/destinations-service';
+import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
+import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
+import {useChangeBlocker} from '../../../hooks/use-change-blocker';
 import FolderZipOutlinedIcon from '@mui/icons-material/FolderZipOutlined';
 import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
-import { delayPromise } from '../../../utils/with-delay';
-import { isStringNotNullOrEmpty } from '../../../utils/string-utils';
+import {delayPromise} from '../../../utils/with-delay';
+import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 
 async function fetchData(formId: string, submissionId: string): Promise<{
     form: Application;
@@ -248,7 +238,7 @@ export function SubmissionEditPage(): JSX.Element {
             SubmissionService
                 .downloadPdf(form.id, editedSubmission.id)
                 .then((res) => {
-                    downloadBlobFile(`${ form.title }.pdf`, res);
+                    downloadBlobFile(`${form.title}.pdf`, res);
                 })
                 .catch((err) => {
                     console.error(err);
@@ -284,18 +274,18 @@ export function SubmissionEditPage(): JSX.Element {
 
     let title = 'Antrag';
     if (form != null) {
-        title += ` - ${ form.title } - ${ form.version }`;
+        title += ` - ${form.title} - ${form.version}`;
         if (isStringNotNullOrEmpty(editedSubmission?.fileNumber)) {
-            title += ` - ${ editedSubmission?.fileNumber ?? '' }`;
+            title += ` - ${editedSubmission?.fileNumber ?? ''}`;
         }
     }
 
     return (
         <PageWrapper
-            title={ isLoading ? 'Lade...' : (isNotFound ? 'Nicht gefunden' : title) }
-            isLoading={ isLoading }
-            is404={ isNotFound }
-            toolbarActions={ archived == null && editedSubmission?.destination == null ?
+            title={isLoading ? 'Lade...' : (isNotFound ? 'Nicht gefunden' : title)}
+            isLoading={isLoading}
+            is404={isNotFound}
+            toolbarActions={archived == null && editedSubmission?.destination == null ?
                 [
                     {
                         icon: <FolderZipOutlinedIcon/>,
@@ -311,12 +301,12 @@ export function SubmissionEditPage(): JSX.Element {
                             onClick: handleResendDestination,
                         },
                     ] :
-                    undefined) }
+                    undefined)}
         >
             {
                 (editedSubmission?.isTestSubmission ?? false) &&
                 <Box
-                    sx={ {mb: 4} }
+                    sx={{mb: 4}}
                 >
                     <AlertComponent
                         title="Test-Antrag"
@@ -330,7 +320,7 @@ export function SubmissionEditPage(): JSX.Element {
                 editedSubmission?.destination == null &&
                 editedSubmission?.assignee == null &&
                 <Box
-                    sx={ {mb: 4} }
+                    sx={{mb: 4}}
                 >
                     <AlertComponent
                         title="Noch nicht in Bearbeitung"
@@ -344,11 +334,11 @@ export function SubmissionEditPage(): JSX.Element {
                 editedSubmission?.destination == null &&
                 archived != null &&
                 <Box
-                    sx={ {mb: 4} }
+                    sx={{mb: 4}}
                 >
                     <AlertComponent
                         title="Abgeschlossener Vorgang"
-                        text={ `Dieser Antrag wurde am ${ format(archived, 'dd.MM.yyyy') } um ${ format(archived, 'HH:mm') } Uhr abgeschlossen.` }
+                        text={`Dieser Antrag wurde am ${format(archived, 'dd.MM.yyyy')} um ${format(archived, 'HH:mm')} Uhr abgeschlossen.`}
                         color="warning"
                     />
                 </Box>
@@ -359,15 +349,15 @@ export function SubmissionEditPage(): JSX.Element {
                 (editedSubmission?.destinationSuccess ?? false) &&
                 archived != null &&
                 <Box
-                    sx={ {mb: 4} }
+                    sx={{mb: 4}}
                 >
                     <AlertComponent
                         title="An Schnittstelle übertragen"
                         color="success"
                     >
-                        Dieser Antrag wurde am { format(archived, 'dd.MM.yyyy') } um { format(archived, 'HH:mm') } Uhr
+                        Dieser Antrag wurde am {format(archived, 'dd.MM.yyyy')} um {format(archived, 'HH:mm')} Uhr
                         erfolgreich an die
-                        Schnittstelle <Link to={ `/destinations/${ destination?.id ?? 0 }` }>{ destination?.name }</Link> übertragen.
+                        Schnittstelle <Link to={`/destinations/${destination?.id ?? 0}`}>{destination?.name}</Link> übertragen.
                     </AlertComponent>
                 </Box>
             }
@@ -376,14 +366,14 @@ export function SubmissionEditPage(): JSX.Element {
                 editedSubmission?.destination != null &&
                 !(editedSubmission?.destinationSuccess ?? false) &&
                 <Box
-                    sx={ {mb: 4} }
+                    sx={{mb: 4}}
                 >
                     <AlertComponent
                         title="Übertragung fehlgeschlagen"
                         color="error"
                     >
                         Dieser Antrag konnte nicht an die
-                        Schnittstelle <Link to={ `/destinations/${ destination?.id ?? 0 }` }>{ destination?.name }</Link> übertragen
+                        Schnittstelle <Link to={`/destinations/${destination?.id ?? 0}`}>{destination?.name}</Link> übertragen
                         werden.
                         Bitte überprüfen Sie die Schnittstelle und probieren Sie es erneut.
                     </AlertComponent>
@@ -392,7 +382,7 @@ export function SubmissionEditPage(): JSX.Element {
 
             <Typography
                 variant="h6"
-                sx={ {mb: 2} }
+                sx={{mb: 2}}
             >
                 Antragsinformationen
             </Typography>
@@ -405,7 +395,7 @@ export function SubmissionEditPage(): JSX.Element {
                                 Eingangsdatum
                             </TableCell>
                             <TableCell>
-                                { (created != null) && format(created, 'dd.MM.yyyy') }
+                                {(created != null) && format(created, 'dd.MM.yyyy')}
                             </TableCell>
                         </TableRow>
 
@@ -414,7 +404,7 @@ export function SubmissionEditPage(): JSX.Element {
                                 Eingangsuhrzeit
                             </TableCell>
                             <TableCell>
-                                { (created != null) && format(created, 'HH:mm') } Uhr
+                                {(created != null) && format(created, 'HH:mm')} Uhr
                             </TableCell>
                         </TableRow>
                     </TableBody>
@@ -423,18 +413,21 @@ export function SubmissionEditPage(): JSX.Element {
 
             {
                 editedSubmission?.destination == null &&
-                <form onSubmit={ handleSubmit }>
+                <form onSubmit={handleSubmit}>
                     <Typography
                         variant="h6"
-                        sx={ {mt: 4, mb: 2} }
+                        sx={{
+                            mt: 4,
+                            mb: 2,
+                        }}
                     >
                         Bearbeitungsinformationen
                     </Typography>
 
                     <TextFieldComponent
                         label="Aktenzeichen"
-                        value={ editedSubmission?.fileNumber ?? undefined }
-                        onChange={ (val) => {
+                        value={editedSubmission?.fileNumber ?? undefined}
+                        onChange={(val) => {
                             if (editedSubmission == null) {
                                 return;
                             }
@@ -442,14 +435,14 @@ export function SubmissionEditPage(): JSX.Element {
                                 ...editedSubmission,
                                 fileNumber: val ?? null,
                             });
-                        } }
-                        disabled={ archived != null }
+                        }}
+                        disabled={archived != null}
                     />
 
                     <SelectFieldComponent
                         label="Zuständige Mitarbeiter:in"
-                        value={ editedSubmission?.assignee?.toString() ?? undefined }
-                        onChange={ (val) => {
+                        value={editedSubmission?.assignee?.toString() ?? undefined}
+                        onChange={(val) => {
                             if (editedSubmission == null) {
                                 return;
                             }
@@ -457,17 +450,17 @@ export function SubmissionEditPage(): JSX.Element {
                                 ...editedSubmission,
                                 assignee: val != null ? parseInt(val) : null,
                             });
-                        } }
-                        options={ userOptions ?? [] }
-                        disabled={ archived != null }
+                        }}
+                        options={userOptions ?? []}
+                        disabled={archived != null}
                     />
 
                     {
                         editedSubmission?.archived == null &&
-                        <Box sx={ {mt: 2} }>
+                        <Box sx={{mt: 2}}>
                             <Button
                                 type="submit"
-                                disabled={ !hasChanged }
+                                disabled={!hasChanged}
                             >
                                 Speichern
                             </Button>
@@ -475,11 +468,11 @@ export function SubmissionEditPage(): JSX.Element {
                             <Button
                                 type="reset"
                                 color="error"
-                                disabled={ !hasChanged }
-                                onClick={ () => {
+                                disabled={!hasChanged}
+                                onClick={() => {
                                     setEditedSubmission(JSON.parse(JSON.stringify(originalSubmission)));
-                                } }
-                                sx={ {ml: 2} }
+                                }}
+                                sx={{ml: 2}}
                             >
                                 Zurücksetzen
                             </Button>
@@ -490,16 +483,19 @@ export function SubmissionEditPage(): JSX.Element {
 
             <Typography
                 variant="h6"
-                sx={ {mt: 4, mb: 2} }
+                sx={{
+                    mt: 4,
+                    mb: 2,
+                }}
             >
                 Antrag
             </Typography>
 
             <Button
-                onClick={ handleDownloadPrint }
+                onClick={handleDownloadPrint}
                 endIcon={
                     <FontAwesomeIcon
-                        icon={ faFilePdf }
+                        icon={faFilePdf}
                     />
                 }
             >
@@ -512,7 +508,10 @@ export function SubmissionEditPage(): JSX.Element {
                 <>
                     <Typography
                         variant="h6"
-                        sx={ {mt: 4, mb: 2} }
+                        sx={{
+                            mt: 4,
+                            mb: 2,
+                        }}
                     >
                         Anlagen
                     </Typography>
@@ -531,17 +530,17 @@ export function SubmissionEditPage(): JSX.Element {
                             <TableBody>
                                 {
                                     attachments.map((att) => (
-                                        <TableRow key={ att.id }>
+                                        <TableRow key={att.id}>
                                             <TableCell>
-                                                { att.filename }
+                                                {att.filename}
                                             </TableCell>
                                             <TableCell>
                                                 <Button
-                                                    onClick={ () => {
+                                                    onClick={() => {
                                                         handleDownloadAttachment(att);
-                                                    } }
+                                                    }}
                                                     endIcon={
-                                                        <FontAwesomeIcon icon={ faFileDownload }/>
+                                                        <FontAwesomeIcon icon={faFileDownload}/>
                                                     }
                                                 >
                                                     Herunterladen
@@ -558,10 +557,10 @@ export function SubmissionEditPage(): JSX.Element {
 
             <ConfirmDialog
                 title="Vorgang abschließen"
-                onConfirm={ confirmArchive }
-                onCancel={ () => {
+                onConfirm={confirmArchive}
+                onCancel={() => {
                     setConfirmArchive(undefined);
-                } }
+                }}
             >
                 Sind Sie sicher, dass Sie den Vorgang abschließen wollen? Der Vorgang kann danach nicht wieder in
                 Bearbeitung genommen werden.

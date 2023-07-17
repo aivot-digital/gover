@@ -185,10 +185,10 @@ function LinkMenuItem(props: LinkMenuItemProps): JSX.Element {
 }
 
 function ActionMenuItem({
-    onClick,
-    icon,
-    label,
-}: {onClick: () => void, icon: SvgIconProps, label: string}) {
+                            onClick,
+                            icon,
+                            label,
+                        }: {onClick: () => void, icon: SvgIconProps, label: string}) {
     return (
         <MenuItem
             onClick={onClick}

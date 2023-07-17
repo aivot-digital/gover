@@ -1,23 +1,8 @@
-import {
-    Alert,
-    Box,
-    Button,
-    FormControl,
-    FormHelperText,
-    FormLabel, IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableRow,
-    TextField, Tooltip,
-    Typography,
-} from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAdd, faArrowRightArrowLeft, faTrashCanXmark } from '@fortawesome/pro-light-svg-icons';
-import { useState } from 'react';
-import { TextFieldComponent } from '../text-field/text-field-component';
+import {Alert, Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Tooltip, Typography} from '@mui/material';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faAdd, faArrowRightArrowLeft, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
+import {useState} from 'react';
+import {TextFieldComponent} from '../text-field/text-field-component';
 
 interface StringListInputProps {
     label: string;
@@ -47,15 +32,15 @@ export function StringListInput({
 
     return (
         <FormControl
-            error={ hasEmptyItem || isValueEmpty }
-            component={ Paper }
-            sx={ {p: 2} }
+            error={hasEmptyItem || isValueEmpty}
+            component={Paper}
+            sx={{p: 2}}
         >
             <Box
-                sx={ {
+                sx={{
                     display: 'flex',
                     alignItems: 'center',
-                } }
+                }}
             >
 
                 {
@@ -65,35 +50,35 @@ export function StringListInput({
                     >
                         <IconButton
                             size="small"
-                            onClick={ () => setRawMode(!rawMode) }
+                            onClick={() => setRawMode(!rawMode)}
                         >
                             <FontAwesomeIcon
-                                icon={ faArrowRightArrowLeft }
+                                icon={faArrowRightArrowLeft}
                             />
                         </IconButton>
                     </Tooltip>
                 }
 
                 <FormLabel
-                    sx={ {ml: 1} }
+                    sx={{ml: 1}}
                 >
-                    { label }
+                    {label}
                 </FormLabel>
 
                 {
                     !disabled &&
                     <Button
-                        sx={ {
+                        sx={{
                             ml: 'auto',
-                        } }
+                        }}
                         startIcon={
                             <FontAwesomeIcon
-                                icon={ faAdd }
+                                icon={faAdd}
                             />
                         }
-                        onClick={ () => onChange([...(value ?? []), '']) }
+                        onClick={() => onChange([...(value ?? []), ''])}
                     >
-                        { addLabel }
+                        {addLabel}
                     </Button>
                 }
             </Box>
@@ -101,13 +86,13 @@ export function StringListInput({
             {
                 (!value || value.length === 0) &&
                 <Alert
-                    sx={ {
+                    sx={{
                         my: 4,
-                    } }
-                    severity={ isValueEmpty ? 'error' : 'info' }
+                    }}
+                    severity={isValueEmpty ? 'error' : 'info'}
                 >
                     <Typography>
-                        { noItemsHint }
+                        {noItemsHint}
                     </Typography>
                 </Alert>
             }
@@ -119,35 +104,35 @@ export function StringListInput({
                 <TableContainer>
                     <Table
                         size="small"
-                        sx={ {
+                        sx={{
                             '& td': {
                                 border: 0,
                             },
-                        } }
+                        }}
                     >
                         <TableBody>
                             {
                                 value.map((val, index) => (
-                                    <TableRow key={ index }>
+                                    <TableRow key={index}>
                                         <TableCell>
                                             <TextField
                                                 fullWidth
                                                 size="small"
                                                 margin="dense"
-                                                value={ val }
-                                                onChange={ event => {
+                                                value={val}
+                                                onChange={event => {
                                                     const updatedValue = [...value];
                                                     updatedValue[index] = event.target.value;
                                                     onChange(updatedValue);
-                                                } }
-                                                onBlur={ () => {
+                                                }}
+                                                onBlur={() => {
                                                     if (value != null) {
                                                         onChange(value.map(val => val.trim()));
                                                     }
-                                                } }
-                                                error={ val.length === 0 }
-                                                helperText={ val.length === 0 ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined }
-                                                disabled={ disabled }
+                                                }}
+                                                error={val.length === 0}
+                                                helperText={val.length === 0 ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
+                                                disabled={disabled}
                                             />
                                         </TableCell>
                                         {
@@ -157,14 +142,14 @@ export function StringListInput({
                                                     color="error"
                                                     startIcon={
                                                         <FontAwesomeIcon
-                                                            icon={ faTrashCanXmark }
+                                                            icon={faTrashCanXmark}
                                                         />
                                                     }
-                                                    onClick={ () => {
+                                                    onClick={() => {
                                                         const updatedValue = [...value];
                                                         updatedValue.splice(index, 1);
                                                         onChange(updatedValue);
-                                                    } }
+                                                    }}
                                                 >
                                                     Entfernen
                                                 </Button>
@@ -182,18 +167,18 @@ export function StringListInput({
                 rawMode &&
                 <TextFieldComponent
                     label="Einträge"
-                    placeholder={ 'Option 1\nOption 2\nOption 3' }
-                    value={ rawBuffer ?? (value ?? []).join('\n') }
-                    onChange={ val => setRawBuffer(val ?? '') }
-                    onBlur={ val => {
+                    placeholder={'Option 1\nOption 2\nOption 3'}
+                    value={rawBuffer ?? (value ?? []).join('\n')}
+                    onChange={val => setRawBuffer(val ?? '')}
+                    onBlur={val => {
                         setRawBuffer(undefined);
                         onChange(val != null ? val.split('\n').map(l => l.trim()) : undefined);
-                    } }
+                    }}
                     multiline
                 />
             }
 
-            <FormHelperText sx={ {mt: 2} }>
+            <FormHelperText sx={{mt: 2}}>
                 {
                     hasEmptyItem ? 'Jede Zeile muss einen Wert enthalten. Befüllen Sie fehlende Werte oder entfernen Sie die entsprechenden Zeilen.' : (isValueEmpty ? 'Bitte fügen Sie mindestens einen Wert hinzu.' : hint)
                 }

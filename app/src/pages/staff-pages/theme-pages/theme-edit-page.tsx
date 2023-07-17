@@ -1,23 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { TextFieldComponent } from '../../../components/text-field/text-field-component';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { useChangeBlocker } from '../../../hooks/use-change-blocker';
-import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page-wrapper';
-import { delayPromise } from '../../../utils/with-delay';
-import { type Theme } from '../../../models/entities/theme';
-import { ThemesService } from '../../../services/themes-service';
-import { Box, Divider, Grid, List, ListItem, Typography } from '@mui/material';
-import { SketchPicker } from 'react-color';
-import { useAdminGuard } from '../../../hooks/use-admin-guard';
-import { type GridColDef } from '@mui/x-data-grid';
-import { type ListApplication } from '../../../models/entities/list-application';
-import { AlertComponent } from '../../../components/alert/alert-component';
-import { TableWrapper } from '../../../components/table-wrapper/table-wrapper';
-import { filterItems } from '../../../utils/filter-items';
-import { InfoDialog } from '../../../dialogs/info-dialog/info-dialog';
-import { ConfirmDialog } from '../../../dialogs/confirm-dialog/confirm-dialog';
+import React, {useEffect, useState} from 'react';
+import {Link, useNavigate, useParams} from 'react-router-dom';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {useChangeBlocker} from '../../../hooks/use-change-blocker';
+import {FormPageWrapper} from '../../../components/form-page-wrapper/form-page-wrapper';
+import {delayPromise} from '../../../utils/with-delay';
+import {type Theme} from '../../../models/entities/theme';
+import {ThemesService} from '../../../services/themes-service';
+import {Box, Divider, Grid, List, ListItem, Typography} from '@mui/material';
+import {SketchPicker} from 'react-color';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
+import {type GridColDef} from '@mui/x-data-grid';
+import {type ListApplication} from '../../../models/entities/list-application';
+import {AlertComponent} from '../../../components/alert/alert-component';
+import {TableWrapper} from '../../../components/table-wrapper/table-wrapper';
+import {filterItems} from '../../../utils/filter-items';
+import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
+import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 
 const columns: Array<GridColDef<ListApplication>> = [
     {
@@ -173,12 +173,12 @@ export function ThemeEditPage(): JSX.Element {
         <>
             <FormPageWrapper
                 title="Farbschema bearbeiten"
-                isLoading={ isLoading }
-                is404={ isNotFound }
-                hasChanged={ hasChanged }
-                onSave={ handleSave }
-                onReset={ (editedTheme?.id ?? 0) !== 0 ? handleReset : undefined }
-                onDelete={ (editedTheme?.id ?? 0) !== 0 ? handlePrepareDelete : undefined }
+                isLoading={isLoading}
+                is404={isNotFound}
+                hasChanged={hasChanged}
+                onSave={handleSave}
+                onReset={(editedTheme?.id ?? 0) !== 0 ? handleReset : undefined}
+                onDelete={(editedTheme?.id ?? 0) !== 0 ? handlePrepareDelete : undefined}
 
                 tabs={
                     editedTheme?.id !== 0 ?
@@ -201,16 +201,16 @@ export function ThemeEditPage(): JSX.Element {
                                             relatedApplications != null &&
                                             relatedApplications.length > 0 &&
                                             <TableWrapper
-                                                columns={ columns }
-                                                rows={ filterItems(relatedApplications, 'title', searchRelatedApplication) }
-                                                onRowClick={ (app) => {
-                                                    navigate(`/edit/${ app.id }`);
-                                                } }
+                                                columns={columns}
+                                                rows={filterItems(relatedApplications, 'title', searchRelatedApplication)}
+                                                onRowClick={(app) => {
+                                                    navigate(`/edit/${app.id}`);
+                                                }}
                                                 title="Die folgenden Formulare verwenden dieses Farbschema"
-                                                search={ searchRelatedApplication }
+                                                search={searchRelatedApplication}
                                                 searchPlaceholder="Formular suchen"
-                                                onSearchChange={ setSearchRelatedApplication }
-                                                actions={ [] }
+                                                onSearchChange={setSearchRelatedApplication}
+                                                actions={[]}
                                             />
                                         }
                                     </>
@@ -224,104 +224,104 @@ export function ThemeEditPage(): JSX.Element {
                     label="Name des Farbschemas"
                     placeholder="Neues Farbschema"
                     hint="Der Name des Farbschemas. Dieser wird nur Ihren Mitarbeiter:innen angezeigt."
-                    value={ editedTheme?.name }
-                    onChange={ (val) => {
+                    value={editedTheme?.name}
+                    onChange={(val) => {
                         handlePatch({
                             name: val,
                         });
-                    } }
+                    }}
                     required
-                    maxCharacters={ 96 }
+                    maxCharacters={96}
                 />
 
                 <Grid
                     container
-                    columnSpacing={ 2 }
-                    rowSpacing={ 4 }
-                    sx={ {
+                    columnSpacing={2}
+                    rowSpacing={4}
+                    sx={{
                         mt: 2,
-                    } }
+                    }}
                 >
                     <ColorPicker
                         label="Pimärfarbe"
-                        value={ editedTheme?.main }
-                        onChange={ (color) => {
+                        value={editedTheme?.main}
+                        onChange={(color) => {
                             handlePatch({
                                 main: color,
                             });
-                        } }
+                        }}
                     />
 
                     <ColorPicker
                         label="Pimärfarbe (Dunkel)"
-                        value={ editedTheme?.mainDark }
-                        onChange={ (color) => {
+                        value={editedTheme?.mainDark}
+                        onChange={(color) => {
                             handlePatch({
                                 mainDark: color,
                             });
-                        } }
+                        }}
                     />
 
                     <ColorPicker
                         label="Akzentfarbe"
-                        value={ editedTheme?.accent }
-                        onChange={ (color) => {
+                        value={editedTheme?.accent}
+                        onChange={(color) => {
                             handlePatch({
                                 accent: color,
                             });
-                        } }
+                        }}
                     />
                 </Grid>
 
                 <Divider
-                    sx={ {
+                    sx={{
                         my: 8,
-                    } }
+                    }}
                 />
 
                 <Grid
                     container
-                    columnSpacing={ 2 }
-                    rowSpacing={ 4 }
+                    columnSpacing={2}
+                    rowSpacing={4}
                 >
                     <ColorPicker
                         label="Fehlerfarbe"
-                        value={ editedTheme?.error }
-                        onChange={ (color) => {
+                        value={editedTheme?.error}
+                        onChange={(color) => {
                             handlePatch({
                                 error: color,
                             });
-                        } }
+                        }}
                     />
 
                     <ColorPicker
                         label="Warnungsfarbe"
-                        value={ editedTheme?.warning }
-                        onChange={ (color) => {
+                        value={editedTheme?.warning}
+                        onChange={(color) => {
                             handlePatch({
                                 warning: color,
                             });
-                        } }
+                        }}
                     />
 
                     <ColorPicker
                         label="Informationsfarbe"
-                        value={ editedTheme?.info }
-                        onChange={ (color) => {
+                        value={editedTheme?.info}
+                        onChange={(color) => {
                             handlePatch({
                                 info: color,
                             });
-                        } }
+                        }}
                     />
 
                     <ColorPicker
                         label="Erfolgsfarbe"
-                        value={ editedTheme?.success }
-                        onChange={ (color) => {
+                        value={editedTheme?.success}
+                        onChange={(color) => {
                             handlePatch({
                                 success: color,
                             });
-                        } }
+                        }}
                     />
                 </Grid>
             </FormPageWrapper>
@@ -329,10 +329,10 @@ export function ThemeEditPage(): JSX.Element {
             <InfoDialog
                 title="Farbschema kann nicht gelöscht werden"
                 severity="warning"
-                open={ showNotDeletableDialog }
-                onClose={ () => {
+                open={showNotDeletableDialog}
+                onClose={() => {
                     setShowNotDeletableDialog(false);
-                } }
+                }}
             >
                 <Typography
                     variant="body1"
@@ -346,10 +346,10 @@ export function ThemeEditPage(): JSX.Element {
                     {
                         relatedApplications?.map((app) => (
                             <ListItem
-                                key={ app.id }
+                                key={app.id}
                             >
-                                <Link to={ `/edit/${ app.id }` }>
-                                    { app.title } { app.version }
+                                <Link to={`/edit/${app.id}`}>
+                                    {app.title} {app.version}
                                 </Link>
                             </ListItem>
                         ))
@@ -359,10 +359,10 @@ export function ThemeEditPage(): JSX.Element {
 
             <ConfirmDialog
                 title="Farbschema löschen"
-                onCancel={ () => {
+                onCancel={() => {
                     setConfirmDelete(undefined);
-                } }
-                onConfirm={ confirmDelete }
+                }}
+                onConfirm={confirmDelete}
             >
                 Soll dieses Farbschema wirklich gelöscht werden?
             </ConfirmDialog>
@@ -370,7 +370,11 @@ export function ThemeEditPage(): JSX.Element {
     );
 }
 
-function ColorPicker({ label, value, onChange }: {
+function ColorPicker({
+                         label,
+                         value,
+                         onChange,
+                     }: {
     label: string;
     value?: string;
     onChange: (val: string) => void;
@@ -378,43 +382,43 @@ function ColorPicker({ label, value, onChange }: {
     return (
         <Grid
             item
-            xs={ 12 }
-            md={ 6 }
-            lg={ 4 }
+            xs={12}
+            md={6}
+            lg={4}
         >
             <Box
-                sx={ {
+                sx={{
                     mb: 1,
                     display: 'flex',
                     alignItems: 'center',
-                } }
+                }}
             >
                 <Box
-                    sx={ {
+                    sx={{
                         mr: 1,
                         width: '1em',
                         height: '1em',
                         borderRadius: '100%',
                         backgroundColor: value,
-                    } }
+                    }}
                 />
 
                 <Typography
                     variant="subtitle1"
                     component="h2"
                 >
-                    { label }
+                    {label}
                 </Typography>
             </Box>
 
             <SketchPicker
-                color={ value }
-                onChange={ (color) => {
+                color={value}
+                onChange={(color) => {
                     onChange(color.hex);
-                } }
-                disableAlpha={ true }
+                }}
+                disableAlpha={true}
                 width="256px"
-                presetColors={ [
+                presetColors={[
                     '#113a8d',
                     '#d73234',
                     '#60865e',
@@ -425,7 +429,7 @@ function ColorPicker({ label, value, onChange }: {
                     '#D18D23',
                     '#1D7C9C',
                     '#449456',
-                ] }
+                ]}
             />
         </Grid>
     );

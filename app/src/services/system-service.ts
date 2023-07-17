@@ -3,7 +3,7 @@ import {ApiService} from "./api-service";
 
 class _SystemService {
 
-    public async testSmtp(targetEmail: string): Promise<{ result?: string }> {
+    public async testSmtp(targetEmail: string): Promise<{result?: string}> {
         return ApiService.post('system/test-smtp', {
             targetMail: targetEmail,
         });

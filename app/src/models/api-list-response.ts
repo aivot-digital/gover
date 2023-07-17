@@ -2,7 +2,7 @@ import {ApiDetailsResponse} from './api-details-response';
 
 export interface ApiListResponse<T, A extends string> {
     _embedded: {
-      [key in A]: ApiDetailsResponse<T>[];
+        [key in A]: ApiDetailsResponse<T>[];
     };
     _links: {
         [key: string]: {

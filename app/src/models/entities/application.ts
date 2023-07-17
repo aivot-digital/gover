@@ -1,5 +1,5 @@
-import { type RootElement } from '../elements/root-element';
-import { type ListApplication } from './list-application';
+import {type RootElement} from '../elements/root-element';
+import {type ListApplication} from './list-application';
 
 
 export interface Application extends ListApplication {

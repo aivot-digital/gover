@@ -1,12 +1,12 @@
-import { Alert, Button, Typography } from '@mui/material';
-import React, { type FormEvent, useCallback, useState } from 'react';
-import { type User } from '../../../../models/entities/user';
-import { UsersService } from '../../../../services/users-service';
-import { refreshUser, selectUser } from '../../../../slices/user-slice';
-import { useAppDispatch } from '../../../../hooks/use-app-dispatch';
-import { useAppSelector } from '../../../../hooks/use-app-selector';
-import { validateEmail } from '../../../../utils/validate-email';
-import { TextFieldComponent } from '../../../../components/text-field/text-field-component';
+import {Alert, Button, Typography} from '@mui/material';
+import React, {type FormEvent, useCallback, useState} from 'react';
+import {type User} from '../../../../models/entities/user';
+import {UsersService} from '../../../../services/users-service';
+import {refreshUser, selectUser} from '../../../../slices/user-slice';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {validateEmail} from '../../../../utils/validate-email';
+import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 
 
 export function ProfileInformationChange(): JSX.Element {
@@ -91,14 +91,14 @@ export function ProfileInformationChange(): JSX.Element {
 
             {
                 userChanged &&
-                <Alert sx={{ mt: 2 }}>
+                <Alert sx={{mt: 2}}>
                     Daten erfolgreich geändert!
                 </Alert>
             }
 
             <Button
                 type="submit"
-                sx={{ mt: 2 }}
+                sx={{mt: 2}}
                 disabled={editedUser == null}
             >
                 Änderungen Speichern

@@ -45,27 +45,27 @@ export function Login(): JSX.Element {
             />
 
             <Container
-                sx={ {
+                sx={{
                     mt: 5,
-                } }
+                }}
             >
                 <Box
-                    sx={ {
+                    sx={{
                         px: 11,
                         py: 9,
                         mt: 5,
                         mb: 8,
                         border: '1px solid #efefef',
-                    } }
+                    }}
                 >
                     <Box
-                        sx={ {
+                        sx={{
                             mb: 4,
-                        } }
+                        }}
                     >
                         <Logo
-                            width={ 200 }
-                            height={ 100 }
+                            width={200}
+                            height={100}
                         />
                     </Box>
 
@@ -78,70 +78,70 @@ export function Login(): JSX.Element {
 
                     <Typography
                         variant="body2"
-                        sx={ {
+                        sx={{
                             mt: 1,
-                        } }
+                        }}
                     >
                         Zur Nutzung dieser Anwendung ist ein Benutzer-Account notwendig.
                     </Typography>
 
                     <Box
-                        sx={ {
+                        sx={{
                             mt: 1,
                             mb: 5,
-                        } }
+                        }}
                     >
                         <form
-                            onSubmit={ handleAuthenticate }
-                            style={ {
+                            onSubmit={handleAuthenticate}
+                            style={{
                                 maxWidth: '600px',
-                            } }
+                            }}
                         >
                             <TextFieldComponent
-                                value={ credentials.email }
-                                onChange={ (val) => {
+                                value={credentials.email}
+                                onChange={(val) => {
                                     setCredentials({
                                         ...credentials,
                                         email: val ?? '',
                                     });
-                                } }
+                                }}
                                 type="email"
                                 label="E-Mail-Adresse"
                                 placeholder="max.muster@gover.digital"
-                                error={ loginError }
-                                disabled={ isAuthenticating }
+                                error={loginError}
+                                disabled={isAuthenticating}
                             />
 
                             <TextFieldComponent
-                                value={ credentials.password }
-                                onChange={ (val) => {
+                                value={credentials.password}
+                                onChange={(val) => {
                                     setCredentials({
                                         ...credentials,
                                         password: val ?? '',
                                     });
-                                } }
+                                }}
                                 type="password"
                                 label="Passwort"
-                                error={ loginError }
-                                disabled={ isAuthenticating }
+                                error={loginError}
+                                disabled={isAuthenticating}
                             />
 
                             <Button
                                 type="submit"
-                                sx={ {
+                                sx={{
                                     mt: 2,
-                                } }
+                                }}
                                 variant="contained"
                                 size="large"
                                 startIcon={
                                     <LoginOutlinedIcon
-                                        sx={ {
+                                        sx={{
                                             marginTop: '-2px',
                                             marginRight: '4px',
-                                        } }
+                                        }}
                                     />
                                 }
-                                disabled={ isAuthenticating }
+                                disabled={isAuthenticating}
                             >
                                 Jetzt Anmelden
                             </Button>

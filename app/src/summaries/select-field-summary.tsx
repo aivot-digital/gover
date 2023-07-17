@@ -3,19 +3,25 @@ import {BaseSummaryProps} from "./base-summary";
 import {SelectFieldElement} from "../models/elements/form/input/select-field-element";
 import {stringOrDefault} from "../utils/string-utils";
 
-export function SelectFieldSummary({model, value}: BaseSummaryProps<SelectFieldElement, string>) {
+export function SelectFieldSummary({
+                                       model,
+                                       value,
+                                   }: BaseSummaryProps<SelectFieldElement, string>) {
     return (
         <Grid
             container
             sx={{
                 borderBottom: "1px solid #D4D4D4",
-                py: 1
+                py: 1,
             }}
         >
             <Grid
                 item
                 xs={4}
-                sx={{textAlign: "right", pr: 5}}
+                sx={{
+                    textAlign: "right",
+                    pr: 5,
+                }}
             >
                 <Typography variant={"body2"}>
                     {model.label}

@@ -1,4 +1,4 @@
-export function validateEmail (email?: string | null): boolean {
+export function validateEmail(email?: string | null): boolean {
     if (email == null) {
         return false;
     }
@@ -6,7 +6,7 @@ export function validateEmail (email?: string | null): boolean {
     const matches = email
         .toLowerCase()
         .match(
-            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
         );
 
     return matches != null && matches.length > 0;

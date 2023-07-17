@@ -1,7 +1,5 @@
 import {Box, Chip, Grid, Typography} from '@mui/material';
-import {
-    ReplicatingContainerLayout
-} from '../../models/elements/form/layout/replicating-container-layout';
+import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {flattenElementsForSummary} from '../summary/summary.component.view';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
@@ -16,7 +14,7 @@ export function ReplicationContainerSummary({
                                                 allElements,
                                                 model,
                                                 value,
-                                                idPrefix
+                                                idPrefix,
                                             }: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
     const prefixedId = idPrefix != null ? (idPrefix + model.id) : model.id;
 
@@ -39,13 +37,16 @@ export function ReplicationContainerSummary({
                 sx={{
                     mt: 2,
                     borderBottom: '1px solid #D4D4D4',
-                    py: 1
+                    py: 1,
                 }}
             >
                 <Grid
                     item
                     xs={4}
-                    sx={{textAlign: 'right', pr: 5}}
+                    sx={{
+                        textAlign: 'right',
+                        pr: 5,
+                    }}
                 >
                     <Typography
                         variant="body2"
@@ -86,7 +87,10 @@ export function ReplicationContainerSummary({
                             <Grid
                                 item
                                 xs={4}
-                                sx={{textAlign: 'right', pr: 5}}
+                                sx={{
+                                    textAlign: 'right',
+                                    pr: 5,
+                                }}
                             >
                                 <Typography
                                     variant="body2"
@@ -98,7 +102,10 @@ export function ReplicationContainerSummary({
                                         (model.headlineTemplate ?? '').replace('#', (index + 1).toFixed())
                                     } <FontAwesomeIcon
                                     icon={faTurnDown}
-                                    style={{marginLeft: '6px', transform: 'translateY(6px)'}}
+                                    style={{
+                                        marginLeft: '6px',
+                                        transform: 'translateY(6px)',
+                                    }}
                                 />
                                 </Typography>
                             </Grid>

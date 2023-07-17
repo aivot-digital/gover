@@ -6,9 +6,7 @@ import {CheckboxFieldValidator} from "./checkbox-field-validator";
 import {DateFieldValidator} from "./date-field-validator";
 import {NumberFieldValidator} from "./number-field-validator";
 import {SelectFieldValidator} from "./select-field-validator";
-import {
-    MultiCheckboxFieldComponentValidator
-} from "../components/multi-checkbox-field/multi-checkbox-field.component.validator";
+import {MultiCheckboxFieldComponentValidator} from "../components/multi-checkbox-field/multi-checkbox-field.component.validator";
 import {ReplicatingContainerValidator} from "../components/replicating-container/replicating-container.validator";
 import {RadioFieldComponentValidator} from "../components/radio-field/radio-field.component.validator";
 import {TableFieldComponentValidator} from "../components/table-field/table-field.component.validator";

@@ -1,17 +1,17 @@
 import React from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
-import { selectCustomerInput, setUserInput } from '../../slices/customer-input-slice';
-import { selectShowUserInput } from '../../slices/admin-settings-slice';
-import { useAppSelector } from '../../hooks/use-app-selector';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileDownload, faFileUpload } from '@fortawesome/pro-light-svg-icons';
-import { downloadObjectFile, uploadObjectFile } from '../../utils/download-utils';
-import { selectLoadedApplication } from '../../slices/app-slice';
-import { format } from 'date-fns';
-import { type CustomerInput } from '../../models/customer-input';
-import { useAppDispatch } from '../../hooks/use-app-dispatch';
-import { showErrorSnackbar } from '../../slices/snackbar-slice';
-import { isFileUploadElementItem } from '../../models/elements/form/input/file-upload-element';
+import {Box, Button, Paper, Typography} from '@mui/material';
+import {selectCustomerInput, setUserInput} from '../../slices/customer-input-slice';
+import {selectShowUserInput} from '../../slices/admin-settings-slice';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faFileDownload, faFileUpload} from '@fortawesome/pro-light-svg-icons';
+import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
+import {selectLoadedApplication} from '../../slices/app-slice';
+import {format} from 'date-fns';
+import {type CustomerInput} from '../../models/customer-input';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 
 function cleanCustomerInput(input: CustomerInput): CustomerInput {
     const cleanedInput: CustomerInput = {};
@@ -37,7 +37,7 @@ export function UserInputDebugger(): JSX.Element | null {
     }
 
     const handleExport = (): void => {
-        const filename = `nutzereingaben-${ app?.slug }_${ format(new Date(), 'dd-MM-yyyy') }.json`;
+        const filename = `nutzereingaben-${app?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
         const input = cleanCustomerInput(userInput);
         downloadObjectFile(filename, input);
     };

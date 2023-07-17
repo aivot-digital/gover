@@ -1,4 +1,4 @@
-import { EditorContent, useEditor } from '@tiptap/react';
+import {EditorContent, useEditor} from '@tiptap/react';
 import Document from '@tiptap/extension-document';
 import Bold from '@tiptap/extension-bold';
 import Italic from '@tiptap/extension-italic';
@@ -9,9 +9,9 @@ import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import Link from '@tiptap/extension-link';
 import Text from '@tiptap/extension-text';
-import React, { useEffect } from 'react';
-import { Paper, Typography, useEventCallback } from '@mui/material';
-import { RichTextEditorMenuComponentView } from './components/rich-text-editor-menu.component.view';
+import React, {useEffect} from 'react';
+import {Paper, Typography, useEventCallback} from '@mui/material';
+import {RichTextEditorMenuComponentView} from './components/rich-text-editor-menu.component.view';
 import './rich-text-editor.component.scss';
 
 interface RichTextEditorComponentViewProps {
@@ -68,35 +68,35 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
             {
                 props.label != null &&
                 <Typography
-                    sx={ {
+                    sx={{
                         mb: 2,
-                    } }
+                    }}
                 >
-                    { props.label } { props.required === true ? ' *' : '' }
+                    {props.label} {props.required === true ? ' *' : ''}
                 </Typography>
             }
 
             {
                 !(props.disabled ?? false) &&
-                <RichTextEditorMenuComponentView editor={ editor }/>
+                <RichTextEditorMenuComponentView editor={editor}/>
             }
 
             <Paper
-                elevation={ 0 }
-                sx={ {
+                elevation={0}
+                sx={{
                     mt: 2,
                     py: 1,
                     px: 2,
-                } }
+                }}
                 className="editorWrapper"
-                onClick={ () => {
+                onClick={() => {
                     if (editor != null && !editor.isFocused) {
                         editor.commands.focus();
                     }
-                } }
+                }}
             >
                 <EditorContent
-                    editor={ editor }
+                    editor={editor}
                 />
             </Paper>
 
@@ -107,9 +107,9 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
                 ) &&
                 <Typography
                     variant="caption"
-                    color={ props.error != null ? 'error' : undefined }
+                    color={props.error != null ? 'error' : undefined}
                 >
-                    { props.error ?? props.hint }
+                    {props.error ?? props.hint}
                 </Typography>
             }
         </>

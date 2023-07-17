@@ -1,18 +1,6 @@
 import {ConditionOperator} from "../data/condition-operator";
 import {BaseEvaluator} from "./base-evaluator";
-import {
-    addDays,
-    addMonths,
-    addYears,
-    isAfter,
-    isBefore, isSameDay,
-    isValid,
-    parse,
-    parseISO,
-    subDays,
-    subMonths,
-    subYears
-} from "date-fns";
+import {addDays, addMonths, addYears, isAfter, isBefore, isSameDay, isValid, parse, parseISO, subDays, subMonths, subYears} from "date-fns";
 
 const dayRegex = /^\d\d\.\d\d\.\d\d\d\d$/;
 const dayAnyMonthAnyYearRegex = /^\d\d\.$/;
@@ -44,29 +32,19 @@ function transformValue(val: any): [Date, Precision] | [null, null] {
         if (val.match(dayRegex)) {
             date = parse(val, germanDateFormat, new Date());
             precision = Precision.day;
-        }
-
-        else if (val.match(dayAnyMonthAnyYearRegex)) {
+        } else if (val.match(dayAnyMonthAnyYearRegex)) {
             date = parse(val + today.getMonth() + '.' + today.getFullYear(), germanDateFormat, new Date());
             precision = Precision.dayAnyMonthAnyYear;
-        }
-
-        else if (val.match(monthRegex)) {
+        } else if (val.match(monthRegex)) {
             date = parse('01.' + val, germanDateFormat, new Date());
             precision = Precision.month;
-        }
-
-        else if (val.match(monthAnyYearRegex)) {
+        } else if (val.match(monthAnyYearRegex)) {
             date = parse(val + today.getFullYear(), germanDateFormat, new Date());
             precision = Precision.dayAndMonthAnyYear;
-        }
-
-        else if (val.match(yearRegex)) {
+        } else if (val.match(yearRegex)) {
             date = parse('01.01.' + val, germanDateFormat, new Date());
             precision = Precision.year;
-        }
-
-        else {
+        } else {
             date = parseISO(val);
             precision = Precision.iso;
         }
@@ -96,7 +74,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
         const [tValA, pValA] = transformValue(valueA);
         const [tValB, pValB] = transformValue(valueB);
 
-        if (tValA == null || tValB == null){
+        if (tValA == null || tValB == null) {
             return false;
         }
 
@@ -124,7 +102,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
         const [tValA, pValA] = transformValue(valueA);
         const [tValB, pValB] = transformValue(valueB);
 
-        if (tValA == null || tValB == null){
+        if (tValA == null || tValB == null) {
             return false;
         }
 
@@ -153,7 +131,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
         const [tValA, pValA] = transformValue(valueA);
         const [tValB, pValB] = transformValue(valueB);
 
-        if (tValA == null || tValB == null){
+        if (tValA == null || tValB == null) {
             return false;
         }
 
@@ -195,7 +173,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
         const [tValA, pValA] = transformValue(valueA);
         const [tValB, pValB] = transformValue(valueB);
 
-        if (tValA == null || tValB == null){
+        if (tValA == null || tValB == null) {
             return false;
         }
 
@@ -237,7 +215,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
         const [tValA, pValA] = transformValue(valueA);
         const [tValB, pValB] = transformValue(valueB);
 
-        if (tValA == null || tValB == null){
+        if (tValA == null || tValB == null) {
             return false;
         }
 
@@ -279,7 +257,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
         const [tValA, pValA] = transformValue(valueA);
         const [tValB, pValB] = transformValue(valueB);
 
-        if (tValA == null || tValB == null){
+        if (tValA == null || tValB == null) {
             return false;
         }
 
@@ -334,7 +312,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const [valueADate,_] = transformValue(valueA);
+        const [valueADate, _] = transformValue(valueA);
         if (valueADate == null) {
             return false;
         }
@@ -353,7 +331,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const [valueADate,_] = transformValue(valueA);
+        const [valueADate, _] = transformValue(valueA);
         if (valueADate == null) {
             return false;
         }
@@ -372,7 +350,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const [valueADate,_] = transformValue(valueA);
+        const [valueADate, _] = transformValue(valueA);
         if (valueADate == null) {
             return false;
         }
@@ -391,7 +369,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const [valueADate,_] = transformValue(valueA);
+        const [valueADate, _] = transformValue(valueA);
         if (valueADate == null) {
             return false;
         }
@@ -410,7 +388,7 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const [valueADate,_] = transformValue(valueA);
+        const [valueADate, _] = transformValue(valueA);
         if (valueADate == null) {
             return false;
         }
@@ -429,12 +407,12 @@ export const DateEvaluator: BaseEvaluator<string> = {
             return false;
         }
 
-        const [valueADate,_] = transformValue(valueA);
+        const [valueADate, _] = transformValue(valueA);
         if (valueADate == null) {
             return false;
         }
 
-        const target = addDays(new Date(), days)
+        const target = addDays(new Date(), days);
         return isAfter(valueADate, target) || isSameDay(valueADate, target);
     },
 };

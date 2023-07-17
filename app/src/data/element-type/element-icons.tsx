@@ -48,4 +48,4 @@ export const ElementIcons: ElementTypesMap<typeof SvgIcon> = {
     [ElementType.SubmitStep]: CheckCircleOutlineOutlinedIcon,
     [ElementType.SubmittedStep]: CheckCircleOutlinedIcon,
     [ElementType.FileUpload]: UploadFileOutlinedIcon,
-}
+};

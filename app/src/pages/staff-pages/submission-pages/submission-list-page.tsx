@@ -1,36 +1,27 @@
-import React, { type ChangeEvent, useEffect, useState } from 'react';
-import { Box, Chip, FormControlLabel, Switch } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ApplicationService } from '../../../services/application-service';
-import { type Application } from '../../../models/entities/application';
-import { type SubmissionListDto } from '../../../models/entities/submission-list-dto';
-import { SubmissionService } from '../../../services/submission-service';
-import { format, parseISO } from 'date-fns';
-import { type IconProp } from '@fortawesome/fontawesome-svg-core';
-import {
-    faBracketsCurly,
-    faCircleCheck,
-    faCircleX,
-    faFileCirclePlus,
-    faFilePen,
-    faFileZipper,
-    faUserEdit,
-    faVialCircleCheck,
-} from '@fortawesome/pro-light-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { LocalStorageService } from '../../../services/local-storage-service';
-import { LocalstorageKey } from '../../../data/localstorage-key';
-import { UsersService } from '../../../services/users-service';
-import { type User } from '../../../models/entities/user';
-import { useAppSelector } from '../../../hooks/use-app-selector';
-import { selectUser } from '../../../slices/user-slice';
-import { type Destination } from '../../../models/entities/destination';
-import { DestinationsService } from '../../../services/destinations-service';
-import { type GridColDef } from '@mui/x-data-grid';
-import { isStringNotNullOrEmpty } from '../../../utils/string-utils';
-import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
-import { delayPromise } from '../../../utils/with-delay';
-import { filterItems } from '../../../utils/filter-items';
+import React, {type ChangeEvent, useEffect, useState} from 'react';
+import {Box, Chip, FormControlLabel, Switch} from '@mui/material';
+import {useNavigate, useParams} from 'react-router-dom';
+import {ApplicationService} from '../../../services/application-service';
+import {type Application} from '../../../models/entities/application';
+import {type SubmissionListDto} from '../../../models/entities/submission-list-dto';
+import {SubmissionService} from '../../../services/submission-service';
+import {format, parseISO} from 'date-fns';
+import {type IconProp} from '@fortawesome/fontawesome-svg-core';
+import {faBracketsCurly, faCircleCheck, faCircleX, faFileCirclePlus, faFilePen, faFileZipper, faUserEdit, faVialCircleCheck} from '@fortawesome/pro-light-svg-icons';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {LocalStorageService} from '../../../services/local-storage-service';
+import {LocalstorageKey} from '../../../data/localstorage-key';
+import {UsersService} from '../../../services/users-service';
+import {type User} from '../../../models/entities/user';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectUser} from '../../../slices/user-slice';
+import {type Destination} from '../../../models/entities/destination';
+import {DestinationsService} from '../../../services/destinations-service';
+import {type GridColDef} from '@mui/x-data-grid';
+import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {delayPromise} from '../../../utils/with-delay';
+import {filterItems} from '../../../utils/filter-items';
 import Tooltip from '@mui/material/Tooltip';
 
 type Submission = SubmissionListDto & {
@@ -45,25 +36,25 @@ const columns: Array<GridColDef<Submission>> = [
         renderCell: (params) => (
             <>
                 <Chip
-                    label={ determineLabel(params.row) }
-                    icon={ <FontAwesomeIcon icon={ determineIcon(params.row) }/> }
-                    color={ determineColor(params.row) }
+                    label={determineLabel(params.row)}
+                    icon={<FontAwesomeIcon icon={determineIcon(params.row)}/>}
+                    color={determineColor(params.row)}
                     variant="outlined"
-                    sx={ {
+                    sx={{
                         px: 4,
                         width: '16em',
-                    } }
+                    }}
                 />
 
                 {
                     params.row.isTestSubmission &&
                     <Tooltip title="Test-Antrag">
                         <Box
-                            sx={ {
+                            sx={{
                                 ml: 2,
-                            } }
+                            }}
                         >
-                            <FontAwesomeIcon icon={ faVialCircleCheck }/>
+                            <FontAwesomeIcon icon={faVialCircleCheck}/>
                         </Box>
                     </Tooltip>
                 }
@@ -84,7 +75,7 @@ const columns: Array<GridColDef<Submission>> = [
         type: 'date',
         renderCell: (params) => {
             const created = parseISO(params.row.created);
-            return `${ format(created, 'dd.MM.yyyy') } - ${ format(created, 'HH:mm') } Uhr`;
+            return `${format(created, 'dd.MM.yyyy')} - ${format(created, 'HH:mm')} Uhr`;
         },
         valueGetter: (params) => parseISO(params.row.created),
         flex: 1,
@@ -97,22 +88,22 @@ const columns: Array<GridColDef<Submission>> = [
                 {
                     params.row.destination != null &&
                     <FontAwesomeIcon
-                        icon={ faBracketsCurly }
-                        style={ {marginRight: '0.5em'} }
+                        icon={faBracketsCurly}
+                        style={{marginRight: '0.5em'}}
                     />
                 }
 
                 {
                     params.row.assignee != null &&
                     <FontAwesomeIcon
-                        icon={ faUserEdit }
-                        style={ {marginRight: '0.5em'} }
+                        icon={faUserEdit}
+                        style={{marginRight: '0.5em'}}
                     />
                 }
 
                 {
                     params.row.resolvedDestination != null &&
-                    `Schnittstelle "${ params.row.resolvedDestination.name }"`
+                    `Schnittstelle "${params.row.resolvedDestination.name}"`
                 }
 
                 {
@@ -207,39 +198,39 @@ export function SubmissionListPage(): JSX.Element {
 
     let title = 'Anträge';
     if (form != null) {
-        title += ` - ${ form.title } - ${ form.version }`;
+        title += ` - ${form.title} - ${form.version}`;
     }
 
     return (
         <TablePageWrapper
-            title={ title }
-            isLoading={ isFormLoading || isSubmissionsLoading }
-            is404={ isFormNotFound }
-            error={ !isFormNotFound ? submissionLoadingError : undefined }
+            title={title}
+            isLoading={isFormLoading || isSubmissionsLoading}
+            is404={isFormNotFound}
+            error={!isFormNotFound ? submissionLoadingError : undefined}
 
-            rows={ filteredSubmissions }
-            columns={ columns }
-            onRowClick={ (sub) => {
-                navigate(`/submissions/${ sub.application }/${ sub.id }`);
-            } }
+            rows={filteredSubmissions}
+            columns={columns}
+            onRowClick={(sub) => {
+                navigate(`/submissions/${sub.application}/${sub.id}`);
+            }}
 
-            search={ search }
-            onSearchChange={ setSearch }
+            search={search}
+            onSearchChange={setSearch}
             searchPlaceholder="Aktenzeichen suchen..."
 
-            actions={ [] }
+            actions={[]}
         >
             <Box
-                sx={ {
+                sx={{
                     display: 'flex',
                     my: 2,
-                } }
+                }}
             >
                 <FormControlLabel
                     control={
                         <Switch
-                            checked={ includeArchived }
-                            onChange={ handleToggleIncludeArchived }
+                            checked={includeArchived}
+                            onChange={handleToggleIncludeArchived}
                         />
                     }
                     label="Inklusive abgeschlossener Vorgänge anzeigen"
@@ -248,8 +239,8 @@ export function SubmissionListPage(): JSX.Element {
                 <FormControlLabel
                     control={
                         <Switch
-                            checked={ includeTest }
-                            onChange={ handleToggleIncludeTest }
+                            checked={includeTest}
+                            onChange={handleToggleIncludeTest}
                         />
                     }
                     label="Inklusive Test-Vorgänge anzeigen"
@@ -258,12 +249,12 @@ export function SubmissionListPage(): JSX.Element {
                 <FormControlLabel
                     control={
                         <Switch
-                            checked={ onlyAssigned }
-                            onChange={ handleToggleOnlyAssigned }
+                            checked={onlyAssigned}
+                            onChange={handleToggleOnlyAssigned}
                         />
                     }
                     label="Nur mir zugewiesene Vorgänge anzeigen"
-                    sx={ {mr: 'auto'} }
+                    sx={{mr: 'auto'}}
                 />
             </Box>
         </TablePageWrapper>

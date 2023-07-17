@@ -9,7 +9,7 @@ export function isChildOf(target: AnyElement, parent: AnyElementWithChildren): b
 
         if (isAnyElementWithChildren(c)) {
             if (isChildOf(target, c)) {
-                return true
+                return true;
             }
         }
     }

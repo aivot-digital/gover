@@ -64,7 +64,7 @@ export function NumberFieldComponent({
                     style: {
                         textAlign: 'right',
                     },
-                }
+                },
             }}
             error={error != null || valueBufferIsNan}
             helperText={error != null ? error : (valueBufferIsNan ? 'Bitte geben Sie eine gültige Zahl ein.' : hint)}

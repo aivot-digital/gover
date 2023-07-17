@@ -1,10 +1,10 @@
-import React, { type FormEvent, useState } from 'react';
-import { Box, Button, Divider } from '@mui/material';
-import { TextFieldComponent } from '../../../../components/text-field/text-field-component';
-import { validateEmail } from '../../../../utils/validate-email';
-import { type Department } from '../../../../models/entities/department';
-import { RichTextEditorComponentView } from '../../../../components/richt-text-editor/rich-text-editor.component.view';
-import { ConfirmDialog } from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import React, {type FormEvent, useState} from 'react';
+import {Box, Button, Divider} from '@mui/material';
+import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
+import {validateEmail} from '../../../../utils/validate-email';
+import {type Department} from '../../../../models/entities/department';
+import {RichTextEditorComponentView} from '../../../../components/richt-text-editor/rich-text-editor.component.view';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 
 type Errors = {
     [key in keyof Department]?: string;
@@ -69,128 +69,131 @@ export function EditDepartmentPageCommonTab(props: EditDepartmentPageCommonTabPr
 
     return (
         <>
-            <form onSubmit={ handleSubmit }>
+            <form onSubmit={handleSubmit}>
                 <TextFieldComponent
                     label="Name des Fachbereichs"
-                    value={ props.department.name }
-                    onChange={ val => {
+                    value={props.department.name}
+                    onChange={val => {
                         props.onChange({
                             name: val ?? '',
                         });
-                    } }
+                    }}
                     required
-                    maxCharacters={ 96 }
-                    minCharacters={ 3 }
-                    error={ errors.name }
+                    maxCharacters={96}
+                    minCharacters={3}
+                    error={errors.name}
                 />
 
                 <TextFieldComponent
                     label="Adresse des Fachbereichs"
-                    value={ props.department.address }
-                    onChange={ val => {
+                    value={props.department.address}
+                    onChange={val => {
                         props.onChange({
                             address: val ?? '',
                         });
-                    } }
+                    }}
                     required
-                    maxCharacters={ 255 }
+                    maxCharacters={255}
                     multiline
-                    rows={ 3 }
-                    error={ errors.address }
+                    rows={3}
+                    error={errors.address}
                 />
 
-                <Divider sx={ {my: 4} }>
+                <Divider sx={{my: 4}}>
                     Kontakt-Email-Adressen
                 </Divider>
 
                 <TextFieldComponent
                     label="Kontakt-Email-Adresse fachliche Unterstützung"
                     type="email"
-                    value={ props.department.specialSupportAddress }
-                    onChange={ val => {
+                    value={props.department.specialSupportAddress}
+                    onChange={val => {
                         props.onChange({
                             specialSupportAddress: val ?? '',
                         });
-                    } }
+                    }}
                     required
-                    maxCharacters={ 255 }
-                    error={ errors.specialSupportAddress }
+                    maxCharacters={255}
+                    error={errors.specialSupportAddress}
                 />
 
                 <TextFieldComponent
                     label="Kontakt-Email-Adresse technische Unterstützung"
                     type="email"
-                    value={ props.department.technicalSupportAddress }
-                    onChange={ val => {
+                    value={props.department.technicalSupportAddress}
+                    onChange={val => {
                         props.onChange({
                             technicalSupportAddress: val ?? '',
                         });
-                    } }
+                    }}
                     required
-                    maxCharacters={ 255 }
-                    error={ errors.technicalSupportAddress }
+                    maxCharacters={255}
+                    error={errors.technicalSupportAddress}
                 />
 
-                <Divider sx={ {my: 4} }>
+                <Divider sx={{my: 4}}>
                     Rechtliche Informationen
                 </Divider>
 
-                <Box sx={ {mb: 3} }>
+                <Box sx={{mb: 3}}>
                     <RichTextEditorComponentView
                         label="Impressum"
-                        value={ props.department.imprint }
-                        onChange={ val => {
+                        value={props.department.imprint}
+                        onChange={val => {
                             props.onChange({
                                 imprint: val,
                             });
-                        } }
+                        }}
                         required
-                        error={ errors.imprint }
+                        error={errors.imprint}
                     />
                 </Box>
 
-                <Box sx={ {mb: 3} }>
+                <Box sx={{mb: 3}}>
                     <RichTextEditorComponentView
                         label="Datenschutzerklärung"
-                        value={ props.department.privacy }
-                        onChange={ val => {
+                        value={props.department.privacy}
+                        onChange={val => {
                             props.onChange({
                                 privacy: val,
                             });
-                        } }
+                        }}
                         required
-                        error={ errors.privacy }
+                        error={errors.privacy}
                     />
                 </Box>
 
-                <Box sx={ {mb: 3} }>
+                <Box sx={{mb: 3}}>
                     <RichTextEditorComponentView
                         label="Barrierefreiheitserklärung"
-                        value={ props.department.accessibility }
-                        onChange={ val => {
+                        value={props.department.accessibility}
+                        onChange={val => {
                             props.onChange({
                                 accessibility: val,
                             });
-                        } }
+                        }}
                         required
-                        error={ errors.accessibility }
+                        error={errors.accessibility}
                     />
                 </Box>
 
-                <Box sx={ {mt: 4, display: 'flex'} }>
+                <Box sx={{
+                    mt: 4,
+                    display: 'flex',
+                }}>
                     <Button
                         type="submit"
-                        disabled={ !props.hasChanged }
+                        disabled={!props.hasChanged}
                     >
                         Speichern
                     </Button>
 
                     <Button
-                        sx={ {ml: 2} }
+                        sx={{ml: 2}}
                         type="reset"
                         color="error"
-                        onClick={ props.onReset }
-                        disabled={ !props.hasChanged }
+                        onClick={props.onReset}
+                        disabled={!props.hasChanged}
                     >
                         Zurücksetzen
                     </Button>
@@ -198,12 +201,12 @@ export function EditDepartmentPageCommonTab(props: EditDepartmentPageCommonTabPr
                     {
                         props.department.id !== 0 &&
                         <Button
-                            sx={ {ml: 'auto'} }
+                            sx={{ml: 'auto'}}
                             color="error"
                             type="button"
-                            onClick={ () => {
+                            onClick={() => {
                                 setConfirmDelete(() => props.onDelete);
-                            } }
+                            }}
                         >
                             Löschen
                         </Button>
@@ -213,15 +216,15 @@ export function EditDepartmentPageCommonTab(props: EditDepartmentPageCommonTabPr
 
             <ConfirmDialog
                 title="Fachbereich wirklich löschen"
-                onConfirm={ confirmDelete }
-                onCancel={ () => {
+                onConfirm={confirmDelete}
+                onCancel={() => {
                     setConfirmDelete(undefined);
-                } }
+                }}
             >
-                Sind Sie sicher, dass Sie den Fachbereich <strong>{ props.department.name }</strong> wirklich löschen
+                Sind Sie sicher, dass Sie den Fachbereich <strong>{props.department.name}</strong> wirklich löschen
                 wollen? Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.<br/>
                 Es werden alle Formulare und eingegangenen Anträge, in denen der
-                Fachbereich <strong>{ props.department.name }</strong> als entwickelnder Fachbereich geführt wird,
+                Fachbereich <strong>{props.department.name}</strong> als entwickelnder Fachbereich geführt wird,
                 gelöscht.
             </ConfirmDialog>
         </>

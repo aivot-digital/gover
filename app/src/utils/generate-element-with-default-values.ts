@@ -14,7 +14,9 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
     switch (type) {
         case ElementType.Root:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 headline: 'Ihr Neues\nOnline-Formular',
                 children: [],
                 introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
@@ -24,138 +26,180 @@ export function generateElementWithDefaultValues<T extends ElementType>(type: T)
             };
         case ElementType.Step:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 children: [],
             };
         case ElementType.Alert:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 title: 'Hinweis',
-                text: 'Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.'
+                text: 'Nutzen Sie diesen Hinweis, um Antragsstellenden zusätzliche Informationen hervorgehoben bereitzustellen.',
             };
         case ElementType.Container:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 children: [],
             };
         case ElementType.Checkbox:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Checkbox (Ja/Nein)',
             };
         case ElementType.Date:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Datum',
                 mode: DateFieldComponentModelMode.Date,
             };
         case ElementType.Headline:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 content: 'Überschrift',
             };
         case ElementType.MultiCheckbox:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Checkbox (Mehrfachauswahl)',
                 options: [
                     'Option 1',
                     'Option 2',
-                    'Option 3'
+                    'Option 3',
                 ],
             };
         case ElementType.Number:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Zahl',
             };
         case ElementType.ReplicatingContainer:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Strukturierte Listeneingabe',
                 headlineTemplate: 'Datensatz Nr. #',
                 children: [],
             };
         case ElementType.Richtext:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 content: '<p class="MuiTypography-root MuiTypography-body2">Fließtext</p>',
             };
         case ElementType.Radio:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Radio-Button (Einfachauswahl)',
                 options: [
                     'Option 1',
                     'Option 2',
-                    'Option 3'
+                    'Option 3',
                 ],
             };
         case ElementType.Select:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Dropdown (Einfachauswahl)',
                 options: [
                     'Option 1',
                     'Option 2',
-                    'Option 3'
+                    'Option 3',
                 ],
             };
         case ElementType.Spacer:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 height: '30',
             };
         case ElementType.Table:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Tabelle',
                 fields: [
                     {
                         'label': 'Spalte 1',
                         'datatype': 'string',
-                        'placeholder': 'Inhalt für Spalte 1'
+                        'placeholder': 'Inhalt für Spalte 1',
                     },
                     {
                         'label': 'Spalte 2',
                         'datatype': 'string',
-                        'placeholder': 'Inhalt für Spalte 2'
-                    }
+                        'placeholder': 'Inhalt für Spalte 2',
+                    },
                 ],
             };
         case ElementType.Text:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Text',
             };
         case ElementType.Time:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Zeit',
             };
         case ElementType.IntroductionStep:
             return {
-                id, type, appVersion, // TODO: Mit Default-Daten befüllen
+                id,
+                type,
+                appVersion, // TODO: Mit Default-Daten befüllen
             };
         case ElementType.SubmitStep:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 textPreSubmit: 'Sie können Ihren Antrag nun verbindlich bei der zuständigen/bewirtschaftenden Stelle einreichen. Nach der Einreichung können Sie sich den Antrag für Ihre Unterlagen herunterladen oder zusenden lassen.',
                 textPostSubmit: 'Sie können Ihren Antrag herunterladen oder sich per E-Mail zuschicken lassen. Wir empfehlen Ihnen, den Antrag anschließend zu Ihren Unterlagen zu nehmen.',
             };
         case ElementType.SummaryStep:
             return {
-                id, type, appVersion, // TODO: Mit Default-Daten befüllen
+                id,
+                type,
+                appVersion, // TODO: Mit Default-Daten befüllen
             };
         case ElementType.Image:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 alt: 'Bild',
                 src: 'https://aivot.de/img/aivot-logo.svg',
             };
         case ElementType.FileUpload:
             return {
-                id, type, appVersion,
+                id,
+                type,
+                appVersion,
                 label: 'Anlage(n)',
                 extensions: ['pdf'],
             };

@@ -1,13 +1,13 @@
-import { Box, Button, Typography } from '@mui/material';
-import React, { useReducer } from 'react';
-import { useAppSelector } from '../../../../../hooks/use-app-selector';
-import { fetchSystemConfig, selectSystemConfigValue } from '../../../../../slices/system-config-slice';
-import { SystemConfigKeys } from '../../../../../data/system-config-keys';
-import { AssetService } from '../../../../../services/asset-service';
-import { SelectAssetDialog } from '../../../../../dialogs/select-asset-dialog/select-asset-dialog';
-import { SystemConfigsService } from '../../../../../services/system-configs-service';
-import { useAppDispatch } from '../../../../../hooks/use-app-dispatch';
-import { showErrorSnackbar } from '../../../../../slices/snackbar-slice';
+import {Box, Button, Typography} from '@mui/material';
+import React, {useReducer} from 'react';
+import {useAppSelector} from '../../../../../hooks/use-app-selector';
+import {fetchSystemConfig, selectSystemConfigValue} from '../../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../../data/system-config-keys';
+import {AssetService} from '../../../../../services/asset-service';
+import {SelectAssetDialog} from '../../../../../dialogs/select-asset-dialog/select-asset-dialog';
+import {SystemConfigsService} from '../../../../../services/system-configs-service';
+import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../../../slices/snackbar-slice';
 
 const logoPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
 
@@ -61,15 +61,15 @@ export function MediaSettings(): JSX.Element {
     return (
         <>
             <Box
-                sx={ {
+                sx={{
                     mt: 2,
-                } }
+                }}
             >
                 <Typography
                     variant="subtitle1"
-                    sx={ {
+                    sx={{
                         mb: 2,
-                    } }
+                    }}
                 >
                     Favicon
                 </Typography>
@@ -77,37 +77,37 @@ export function MediaSettings(): JSX.Element {
                 {
                     faviconConfigKey != null &&
                     <Box
-                        sx={ {
+                        sx={{
                             mb: 2,
-                        } }
+                        }}
                     >
                         <img
-                            src={ logoPrefix + AssetService.getLink(faviconConfigKey) }
+                            src={logoPrefix + AssetService.getLink(faviconConfigKey)}
                             alt="Favicon"
                         />
                     </Box>
                 }
 
                 <Button
-                    sx={ {
+                    sx={{
                         mt: 2,
-                    } }
-                    onClick={ toggleFaviconSelect }
+                    }}
+                    onClick={toggleFaviconSelect}
                 >
                     Auswählen
                 </Button>
             </Box>
 
             <Box
-                sx={ {
+                sx={{
                     mt: 8,
-                } }
+                }}
             >
                 <Typography
                     variant="subtitle1"
-                    sx={ {
+                    sx={{
                         mb: 2,
-                    } }
+                    }}
                 >
                     Logo
                 </Typography>
@@ -115,22 +115,22 @@ export function MediaSettings(): JSX.Element {
                 {
                     logoConfigKey != null &&
                     <Box
-                        sx={ {
+                        sx={{
                             mb: 2,
-                        } }
+                        }}
                     >
                         <img
-                            src={ logoPrefix + AssetService.getLink(logoConfigKey) }
+                            src={logoPrefix + AssetService.getLink(logoConfigKey)}
                             alt="Logo"
                         />
                     </Box>
                 }
 
                 <Button
-                    sx={ {
+                    sx={{
                         mt: 2,
-                    } }
-                    onClick={ toggleLogoSelect }
+                    }}
+                    onClick={toggleLogoSelect}
                 >
                     Auswählen
                 </Button>
@@ -138,16 +138,16 @@ export function MediaSettings(): JSX.Element {
 
             <SelectAssetDialog
                 title="Favicon auswählen"
-                show={ showFaviconSelect }
-                onSelect={ handleSetFavicon }
-                onCancel={ toggleFaviconSelect }
+                show={showFaviconSelect}
+                onSelect={handleSetFavicon}
+                onCancel={toggleFaviconSelect}
             />
 
             <SelectAssetDialog
                 title="Logo auswählen"
-                show={ showLogoSelect }
-                onSelect={ handleSetLogo }
-                onCancel={ toggleLogoSelect }
+                show={showLogoSelect}
+                onSelect={handleSetLogo}
+                onCancel={toggleLogoSelect}
             />
         </>
     );

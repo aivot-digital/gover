@@ -4,7 +4,10 @@ import {stringOrDefault} from "../utils/string-utils";
 import {TextFieldElement} from "../models/elements/form/input/text-field-element";
 import {BaseSummary} from "./base-summary";
 
-export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({model, value}) => {
+export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
+                                                                            model,
+                                                                            value,
+                                                                        }) => {
     const theme = useTheme();
     const [expanded, setExpanded] = useState(false);
 
@@ -71,4 +74,4 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({model, 
             </Grid>
         </Grid>
     );
-}
+};

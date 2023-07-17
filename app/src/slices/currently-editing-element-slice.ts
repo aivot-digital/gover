@@ -1,4 +1,4 @@
-import {createSlice, current, PayloadAction} from '@reduxjs/toolkit'
+import {createSlice, current, PayloadAction} from '@reduxjs/toolkit';
 import {RootState} from '../store';
 import {AnyElement} from '../models/elements/any-element';
 
@@ -18,7 +18,7 @@ const currentlyEditingElementSlice = createSlice({
             state.original = undefined;
         },
         setCurrentlyEditingElement: (state, action: PayloadAction<AnyElement>) => {
-            state.edited = {...action.payload}
+            state.edited = {...action.payload};
             state.original = action.payload;
         },
         updateCurrentlyEditingElement: (state, action: PayloadAction<Partial<AnyElement>>) => {

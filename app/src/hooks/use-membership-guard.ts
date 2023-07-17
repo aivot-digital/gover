@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { useEffect } from 'react';
-import { selectMemberships, selectUser } from '../slices/user-slice';
-import { useAppDispatch } from './use-app-dispatch';
-import { showErrorSnackbar } from '../slices/snackbar-slice';
-import { type DepartmentMembership } from '../models/entities/department-membership';
-import { UserRole } from '../data/user-role';
+import {useNavigate} from 'react-router-dom';
+import {useSelector} from 'react-redux';
+import {useEffect} from 'react';
+import {selectMemberships, selectUser} from '../slices/user-slice';
+import {useAppDispatch} from './use-app-dispatch';
+import {showErrorSnackbar} from '../slices/snackbar-slice';
+import {type DepartmentMembership} from '../models/entities/department-membership';
+import {UserRole} from '../data/user-role';
 
 export function useMembershipGuard(departmentId: number): void {
     const dispatch = useAppDispatch();

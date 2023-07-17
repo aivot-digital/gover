@@ -4,9 +4,7 @@ import {BaseSummary} from "./base-summary";
 import {TextFieldSummary} from "./text-field-summary";
 import {CheckboxFieldSummary} from "./checkbox-field-summary";
 import {DateFieldSummary} from "./date-field-summary";
-import {
-    MultiCheckboxFieldComponentSummary
-} from "../components/multi-checkbox-field/multi-checkbox-field.component.summary";
+import {MultiCheckboxFieldComponentSummary} from "../components/multi-checkbox-field/multi-checkbox-field.component.summary";
 import {NumberSummary} from "./number-summary";
 import {SelectFieldSummary} from "./select-field-summary";
 import {ReplicationContainerSummary} from "../components/replicating-container/replication-container.summary";

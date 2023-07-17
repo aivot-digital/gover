@@ -1,12 +1,12 @@
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useDrop } from 'react-dnd';
-import { Box } from '@mui/material';
-import { type RootState } from '../../../../store';
-import { type AnyElement } from '../../../../models/elements/any-element';
-import { type ElementTreeItemDropTargetProps } from './element-tree-item-drop-target-props';
-import { type AnyElementWithChildren } from '../../../../models/elements/any-element-with-children';
-import { ElementChildOptions } from '../../../../data/element-type/element-child-options';
+import {useDispatch, useSelector} from 'react-redux';
+import {useDrop} from 'react-dnd';
+import {Box} from '@mui/material';
+import {type RootState} from '../../../../store';
+import {type AnyElement} from '../../../../models/elements/any-element';
+import {type ElementTreeItemDropTargetProps} from './element-tree-item-drop-target-props';
+import {type AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import {ElementChildOptions} from '../../../../data/element-type/element-child-options';
 
 
 export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>(props: ElementTreeItemDropTargetProps<T>): JSX.Element {
@@ -14,7 +14,7 @@ export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>(prop
     const adminSettings = useSelector((state: RootState) => state.adminSettings);
     const acceptedChildren: string[] = (ElementChildOptions[props.element.type] ?? []).map((e) => e.toString());
 
-    const [{ isOver }, drop] = useDrop(
+    const [{isOver}, drop] = useDrop(
         () => ({
             accept: acceptedChildren,
             canDrop: (droppedElement: AnyElement, _) => {
@@ -29,7 +29,7 @@ export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>(prop
             },
             collect: (monitor) => {
                 return {
-                    isOver: /* canDrop(monitor.getItem(), path) && */ monitor.isOver({ shallow: true }),
+                    isOver: /* canDrop(monitor.getItem(), path) && */ monitor.isOver({shallow: true}),
                 };
             },
         }),

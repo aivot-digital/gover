@@ -1,15 +1,12 @@
-import { Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography } from '@mui/material';
-import {
-    TableFieldComponentColumnModel,
-    TableFieldElement,
-} from '../../models/elements/form/input/table-field-element';
-import { faPlus } from '@fortawesome/pro-light-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { isStringNullOrEmpty } from '../../utils/string-utils';
-import { BaseEditorProps } from '../../editors/base-editor';
-import { NumberFieldComponent } from '../number-field/number-field-component';
-import { Application } from '../../models/entities/application';
-import { Preset } from '../../models/entities/preset';
+import {Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
+import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
+import {faPlus} from '@fortawesome/pro-light-svg-icons';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {BaseEditorProps} from '../../editors/base-editor';
+import {NumberFieldComponent} from '../number-field/number-field-component';
+import {Application} from '../../models/entities/application';
+import {Preset} from '../../models/entities/preset';
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, Application | Preset>) {
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
@@ -25,35 +22,35 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
             {
                 props.element.required &&
                 <NumberFieldComponent
-                    value={ props.element.minimumRequiredRows }
+                    value={props.element.minimumRequiredRows}
                     label="Mindestanzahl der hinzuzufügenden Zeilen"
                     hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
-                    error={ minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined }
-                    onChange={ (val) => {
+                    error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                    onChange={(val) => {
                         props.onPatch({
                             minimumRequiredRows: val,
                         });
-                    } }
-                    disabled={ !props.editable }
+                    }}
+                    disabled={!props.editable}
                 />
             }
 
             <NumberFieldComponent
-                value={ props.element.maximumRows }
+                value={props.element.maximumRows}
                 label="Maximalanzahl der hinzuzufügenden Zeilen"
                 hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                error={ minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined }
-                onChange={ (val) => {
+                error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                onChange={(val) => {
                     props.onPatch({
                         maximumRows: val,
                     });
-                } }
-                disabled={ !props.editable }
+                }}
+                disabled={!props.editable}
             />
 
             <Typography
                 variant="subtitle1"
-                sx={ {mt: 4} }
+                sx={{mt: 4}}
             >
                 Spalten
             </Typography>
@@ -72,60 +69,60 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                     };
                     return (
                         <Box
-                            sx={ {mt: 2} }
-                            key={ index }
+                            sx={{mt: 2}}
+                            key={index}
                         >
                             <Grid
                                 container
-                                spacing={ 1 }
+                                spacing={1}
                             >
                                 <Grid
                                     item
-                                    xs={ 4 }
+                                    xs={4}
                                 >
                                     <TextField
                                         label="Titel"
                                         margin="normal"
-                                        value={ column.label }
-                                        onChange={ event => onChange({
+                                        value={column.label}
+                                        onChange={event => onChange({
                                             label: event.target.value,
-                                        }) }
-                                        onBlur={ () => onChange({
+                                        })}
+                                        onBlur={() => onChange({
                                             label: (column.label ?? '').trim(),
-                                        }) }
-                                        error={ columnLabelErrors[index] != null }
-                                        helperText={ columnLabelErrors[index] }
-                                        disabled={ !props.editable }
+                                        })}
+                                        error={columnLabelErrors[index] != null}
+                                        helperText={columnLabelErrors[index]}
+                                        disabled={!props.editable}
                                     />
                                 </Grid>
                                 <Grid
                                     item
-                                    xs={ 4 }
+                                    xs={4}
                                 >
                                     <TextField
                                         label="Platzhalter"
                                         margin="normal"
-                                        value={ column.placeholder ?? '' }
-                                        onChange={ event => onChange({
+                                        value={column.placeholder ?? ''}
+                                        onChange={event => onChange({
                                             placeholder: event.target.value,
-                                        }) }
-                                        onBlur={ () => onChange({
+                                        })}
+                                        onBlur={() => onChange({
                                             placeholder: (column.placeholder ?? '').trim(),
-                                        }) }
-                                        disabled={ !props.editable }
+                                        })}
+                                        disabled={!props.editable}
                                     />
                                 </Grid>
                                 {
                                     column.datatype === 'number' &&
                                     <Grid
                                         item
-                                        xs={ 4 }
+                                        xs={4}
                                     >
                                         <TextField
                                             label="Dezimalstellen"
                                             margin="normal"
-                                            value={ column.decimalPlaces?.toFixed() ?? '' }
-                                            onChange={ event => {
+                                            value={column.decimalPlaces?.toFixed() ?? ''}
+                                            onChange={event => {
                                                 if (event.target.value === '') {
                                                     onChange({
                                                         decimalPlaces: undefined,
@@ -139,27 +136,27 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                                         decimalPlaces: val,
                                                     });
                                                 }
-                                            } }
-                                            disabled={ !props.editable }
+                                            }}
+                                            disabled={!props.editable}
                                         />
                                     </Grid>
                                 }
                             </Grid>
                             <Box
-                                sx={ {
+                                sx={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
-                                } }
+                                }}
                             >
                                 <Box>
                                     <FormControlLabel
                                         control={
                                             <Checkbox
-                                                checked={ column.datatype === 'number' }
-                                                onChange={ event => onChange({
+                                                checked={column.datatype === 'number'}
+                                                onChange={event => onChange({
                                                     datatype: event.target.checked ? 'number' : 'string',
-                                                }) }
-                                                disabled={ !props.editable }
+                                                })}
+                                                disabled={!props.editable}
                                             />
                                         }
                                         label="Zahl-Angabe"
@@ -167,11 +164,11 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                     <FormControlLabel
                                         control={
                                             <Checkbox
-                                                checked={ column.optional ?? false }
-                                                onChange={ event => onChange({
+                                                checked={column.optional ?? false}
+                                                onChange={event => onChange({
                                                     optional: event.target.checked,
-                                                }) }
-                                                disabled={ !props.editable }
+                                                })}
+                                                disabled={!props.editable}
                                             />
                                         }
                                         label="Optionale Angabe"
@@ -180,11 +177,11 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                     <FormControlLabel
                                         control={
                                             <Checkbox
-                                                checked={ column.disabled ?? false }
-                                                onChange={ event => onChange({
+                                                checked={column.disabled ?? false}
+                                                onChange={event => onChange({
                                                     disabled: event.target.checked,
-                                                }) }
-                                                disabled={ !props.editable }
+                                                })}
+                                                disabled={!props.editable}
                                             />
                                         }
                                         label="Eingabe deaktiviert"
@@ -192,14 +189,14 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 </Box>
                                 <Button
                                     color="error"
-                                    onClick={ () => {
+                                    onClick={() => {
                                         const updatedFields = [...(props.element.fields ?? [])];
                                         updatedFields.splice(index, 1);
                                         props.onPatch({
                                             fields: updatedFields,
                                         });
-                                    } }
-                                    disabled={ !props.editable }
+                                    }}
+                                    disabled={!props.editable}
                                 >
                                     Spalte löschen
                                 </Button>
@@ -209,10 +206,10 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 })
             }
             <Button
-                sx={ {mt: 2} }
-                startIcon={ <FontAwesomeIcon icon={ faPlus }/> }
+                sx={{mt: 2}}
+                startIcon={<FontAwesomeIcon icon={faPlus}/>}
                 variant="contained"
-                onClick={ () => {
+                onClick={() => {
                     props.onPatch({
                         fields: [
                             ...(props.element.fields ?? []),
@@ -222,8 +219,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             },
                         ],
                     });
-                } }
-                disabled={ !props.editable }
+                }}
+                disabled={!props.editable}
             >
                 Spalte Hinzufügen
             </Button>

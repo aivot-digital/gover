@@ -4,19 +4,25 @@ import {NumberFieldElement} from "../models/elements/form/input/number-field-ele
 import {isStringNullOrEmpty} from "../utils/string-utils";
 import {formatNumStringToGermanNum} from "../utils/format-german-numbers";
 
-export function NumberSummary({model, value}: BaseSummaryProps<NumberFieldElement, number>) {
+export function NumberSummary({
+                                  model,
+                                  value,
+                              }: BaseSummaryProps<NumberFieldElement, number>) {
     return (
         <Grid
             container
             sx={{
                 borderBottom: "1px solid #D4D4D4",
-                py: 1
+                py: 1,
             }}
         >
             <Grid
                 item
                 xs={4}
-                sx={{textAlign: "right", pr: 5}}
+                sx={{
+                    textAlign: "right",
+                    pr: 5,
+                }}
             >
                 <Typography variant={"body2"}>
                     {model.label}

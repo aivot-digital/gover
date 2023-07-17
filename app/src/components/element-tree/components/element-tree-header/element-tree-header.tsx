@@ -1,33 +1,15 @@
-import React, { useState } from 'react';
-import { Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faArrowsFromLine,
-    faArrowsToLine,
-    faGear,
-    faListTree,
-    faMessageCode,
-    faSearch,
-} from '@fortawesome/pro-light-svg-icons';
-import {
-    selectUseIdsInComponentTree,
-    selectUseTestMode,
-    selectWarnDuplicateIds,
-    setExpandElementTree,
-    toggleIdsInComponentTree,
-    toggleTestMode,
-    toggleWarnDuplicateIds,
-} from '../../../../slices/admin-settings-slice';
-import { useTheme } from '@mui/material/styles';
-import { useAppSelector } from '../../../../hooks/use-app-selector';
-import { useAppDispatch } from '../../../../hooks/use-app-dispatch';
-import { ElementEditor } from '../element-editor/element-editor';
-import { type ElementTreeHeaderProps } from './element-tree-header-props';
-import { type RootElement } from '../../../../models/elements/root-element';
-import { type Application } from '../../../../models/entities/application';
-import { type Preset } from '../../../../models/entities/preset';
-import { type GroupLayout } from '../../../../models/elements/form/layout/group-layout';
-import { AnyElement } from '../../../../models/elements/any-element';
+import React, {useState} from 'react';
+import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
+import {selectUseIdsInComponentTree, selectUseTestMode, selectWarnDuplicateIds, setExpandElementTree, toggleIdsInComponentTree, toggleTestMode, toggleWarnDuplicateIds} from '../../../../slices/admin-settings-slice';
+import {useTheme} from '@mui/material/styles';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {ElementEditor} from '../element-editor/element-editor';
+import {type ElementTreeHeaderProps} from './element-tree-header-props';
+import {type RootElement} from '../../../../models/elements/root-element';
+import {type Application} from '../../../../models/entities/application';
+import {type Preset} from '../../../../models/entities/preset';
+import {type GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import ExpandOutlinedIcon from '@mui/icons-material/ExpandOutlined';
@@ -58,20 +40,20 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
     return (
         <>
             <Box
-                sx={ {
+                sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     mt: 1,
                     mb: 1,
                     padding: 1,
-                } }
+                }}
             >
                 <Box
-                    sx={ {
+                    sx={{
                         display: 'flex',
                         alignItems: 'center',
-                    } }
+                    }}
                 >
                     <AccountTreeOutlinedIcon sx={{
                         color: theme.palette.primary.dark,
@@ -91,7 +73,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Suchen"
                         arrow
                     >
-                        <IconButton size="small" onClick={ props.onToggleSearch }>
+                        <IconButton size="small"
+                                    onClick={props.onToggleSearch}>
                             <SearchOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -100,7 +83,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Alles ausklappen"
                         arrow
                     >
-                        <IconButton size="small" onClick={ () => dispatch(setExpandElementTree('expanded')) }>
+                        <IconButton size="small"
+                                    onClick={() => dispatch(setExpandElementTree('expanded'))}>
                             <ExpandOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -109,7 +93,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Alles einklappen"
                         arrow
                     >
-                        <IconButton size="small" onClick={ () => dispatch(setExpandElementTree('collapsed')) }>
+                        <IconButton size="small"
+                                    onClick={() => dispatch(setExpandElementTree('collapsed'))}>
                             <CompressOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -118,7 +103,8 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Einstellungen für Entwickler:innen"
                         arrow
                     >
-                        <IconButton size="small" onClick={ handleOpenCTMenu }>
+                        <IconButton size="small"
+                                    onClick={handleOpenCTMenu}>
                             <IntegrationInstructionsOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -128,12 +114,12 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                     >
                         <IconButton
                             size="small"
-                            onClick={ () => {
+                            onClick={() => {
                                 setShowEditor(true);
-                            } }
-                            sx={ {
+                            }}
+                            sx={{
                                 marginRight: '7px',
-                            } }
+                            }}
                         >
                             <SettingsOutlinedIcon/>
                         </IconButton>
@@ -143,18 +129,18 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
 
             <Menu
                 id="basic-menu"
-                anchorEl={ cTMenuAnchorEl }
-                open={ cTMenuAnchorEl != null }
-                onClose={ handleCloseCTMenu }
+                anchorEl={cTMenuAnchorEl}
+                open={cTMenuAnchorEl != null}
+                onClose={handleCloseCTMenu}
             >
                 <MenuItem>
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={ useIdsInComponentTree }
-                                onChange={ () => {
+                                checked={useIdsInComponentTree}
+                                onChange={() => {
                                     dispatch(toggleIdsInComponentTree());
-                                } }
+                                }}
                             />
                         }
                         label="Element-IDs anstatt Titel anzeigen"
@@ -164,10 +150,10 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={ warnDuplicateIds }
-                                onChange={ () => {
+                                checked={warnDuplicateIds}
+                                onChange={() => {
                                     dispatch(toggleWarnDuplicateIds());
-                                } }
+                                }}
                             />
                         }
                         label="Warnungen für doppelte IDs anzeigen"
@@ -177,10 +163,10 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                     <FormControlLabel
                         control={
                             <Switch
-                                checked={ testMode }
-                                onChange={ () => {
+                                checked={testMode}
+                                onChange={() => {
                                     dispatch(toggleTestMode());
-                                } }
+                                }}
                             />
                         }
                         label="Prüfungsansicht aktivieren"
@@ -191,17 +177,17 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
             {
                 showEditor &&
                 <ElementEditor
-                    parents={ [] /* Uppermost element so no parents here */ }
-                    entity={ props.entity }
-                    element={ props.entity.root as any /* TODO: Fix this any type */}
-                    onSave={ (updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
+                    parents={[] /* Uppermost element so no parents here */}
+                    entity={props.entity}
+                    element={props.entity.root as any /* TODO: Fix this any type */}
+                    onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
                         setShowEditor(false);
                         props.onPatch(updatedElement, updatedApplication);
-                    } }
-                    onCancel={ () => {
+                    }}
+                    onCancel={() => {
                         setShowEditor(false);
-                    } }
-                    editable={ props.editable }
+                    }}
+                    editable={props.editable}
                 />
             }
         </>

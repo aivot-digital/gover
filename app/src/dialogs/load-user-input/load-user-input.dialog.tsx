@@ -1,15 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-    Alert,
-    Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    Typography
-} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography} from '@mui/material';
 import {UserInputService} from '../../services/user-input-service';
 import {useDispatch} from 'react-redux';
 import {setUserInput} from '../../slices/customer-input-slice';
@@ -120,7 +110,8 @@ export function LoadUserInputDialog({application}: LoadUserInputDialogProps) {
                         </Box>
                     </Box>
 
-                    <Alert severity="warning" sx={{mt: 2}}>
+                    <Alert severity="warning"
+                           sx={{mt: 2}}>
                         Bitte beachten Sie, dass aus Datenschutzgründen zuvor hinzugefügte Anlagen <strong>nicht</strong> zwischengespeichert wurden.
                         Sie werden automatisch an den entsprechenden Stellen darauf hingewiesen, diese erneut hinzuzufügen.
                     </Alert>
@@ -130,7 +121,7 @@ export function LoadUserInputDialog({application}: LoadUserInputDialogProps) {
                 sx={{
                     pb: 3,
                     px: 3,
-                    justifyContent: 'flex-start'
+                    justifyContent: 'flex-start',
                 }}
             >
                 <Button

@@ -1,6 +1,6 @@
-import { ApiConfig } from '../api-config';
-import { LocalStorageService } from './local-storage-service';
-import { LocalstorageKey } from '../data/localstorage-key';
+import {ApiConfig} from '../api-config';
+import {LocalStorageService} from './local-storage-service';
+import {LocalstorageKey} from '../data/localstorage-key';
 
 export class ApiError extends Error {
     constructor(public readonly status: number, public readonly details: any) {
@@ -9,7 +9,7 @@ export class ApiError extends Error {
 }
 
 export class ApiService<T, L, I> {
-    private static readonly basePath = `${ ApiConfig.address }`;
+    private static readonly basePath = `${ApiConfig.address}`;
 
     protected readonly path: string;
 
@@ -18,7 +18,7 @@ export class ApiService<T, L, I> {
     }
 
     public static async get<R>(path: string): Promise<R> {
-        const res = await window.fetch(`${ ApiService.basePath }/${ path }`, ApiService.getConfig());
+        const res = await window.fetch(`${ApiService.basePath}/${path}`, ApiService.getConfig());
         if (res.status !== 200) {
             throw new ApiError(res.status, await res.json());
         }
@@ -26,7 +26,7 @@ export class ApiService<T, L, I> {
     }
 
     public static async getBlob(path: string): Promise<Blob> {
-        const res = await window.fetch(`${ ApiService.basePath }/${ path }`, ApiService.getConfig());
+        const res = await window.fetch(`${ApiService.basePath}/${path}`, ApiService.getConfig());
         if (res.status !== 200) {
             throw new ApiError(res.status, await res.json());
         }
@@ -34,7 +34,7 @@ export class ApiService<T, L, I> {
     }
 
     public static async post<R>(path: string, data: any): Promise<R> {
-        const res = await window.fetch(`${ ApiService.basePath }/${ path }`, {
+        const res = await window.fetch(`${ApiService.basePath}/${path}`, {
             method: 'POST',
             body: JSON.stringify(data),
             ...ApiService.getConfig(),
@@ -46,7 +46,7 @@ export class ApiService<T, L, I> {
     }
 
     public static async postFormData<R>(path: string, data: FormData): Promise<R> {
-        const res = await window.fetch(`${ ApiService.basePath }/${ path }`, {
+        const res = await window.fetch(`${ApiService.basePath}/${path}`, {
             method: 'POST',
             body: data,
             headers: {
@@ -60,7 +60,7 @@ export class ApiService<T, L, I> {
     }
 
     public static async put<R>(path: string, data: any): Promise<R> {
-        const res = await window.fetch(`${ ApiService.basePath }/${ path }`, {
+        const res = await window.fetch(`${ApiService.basePath}/${path}`, {
             method: 'PUT',
             body: JSON.stringify(data),
             ...ApiService.getConfig(),
@@ -72,7 +72,7 @@ export class ApiService<T, L, I> {
     }
 
     public static async patch<R>(path: string, data: any): Promise<R> {
-        const res = await window.fetch(`${ ApiService.basePath }/${ path }`, {
+        const res = await window.fetch(`${ApiService.basePath}/${path}`, {
             method: 'PATCH',
             body: JSON.stringify(data),
             ...ApiService.getConfig(),
@@ -84,7 +84,7 @@ export class ApiService<T, L, I> {
     }
 
     public static async delete(path: string): Promise<void> {
-        const res = await window.fetch(`${ ApiService.basePath }/${ path }`, {
+        const res = await window.fetch(`${ApiService.basePath}/${path}`, {
             method: 'DELETE',
             ...ApiService.getConfig(),
         });
@@ -97,11 +97,11 @@ export class ApiService<T, L, I> {
         const queryParams = [];
         if (filter != null) {
             for (const key of Object.keys(filter)) {
-                queryParams.push(`${ key }=${ filter[key] }`);
+                queryParams.push(`${key}=${filter[key]}`);
             }
         }
 
-        return await ApiService.get(`${ this.path }?${ queryParams.join('&') }`);
+        return await ApiService.get(`${this.path}?${queryParams.join('&')}`);
     }
 
     public async retrieve(id: I): Promise<T> {
@@ -133,7 +133,7 @@ export class ApiService<T, L, I> {
         return {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': jwt != null ? `Bearer ${ jwt }` : undefined,
+                'Authorization': jwt != null ? `Bearer ${jwt}` : undefined,
             },
         };
     }

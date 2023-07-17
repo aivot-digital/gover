@@ -1,6 +1,6 @@
-import { ApiService } from './api-service';
-import { type Theme } from '../models/entities/theme';
-import { type ListApplication } from '../models/entities/list-application';
+import {ApiService} from './api-service';
+import {type Theme} from '../models/entities/theme';
+import {type ListApplication} from '../models/entities/list-application';
 
 class _ThemesService extends ApiService<Theme, Theme, number> {
     constructor() {
@@ -8,11 +8,11 @@ class _ThemesService extends ApiService<Theme, Theme, number> {
     }
 
     public async retrievePublic(id: number): Promise<Theme> {
-        return await ApiService.get(`public/themes/${ id }`);
+        return await ApiService.get(`public/themes/${id}`);
     }
 
     public async listApplications(destinationId: number): Promise<ListApplication[]> {
-        return await ApiService.get<ListApplication[]>(`themes/${ destinationId }/applications`);
+        return await ApiService.get<ListApplication[]>(`themes/${destinationId}/applications`);
     }
 }
 

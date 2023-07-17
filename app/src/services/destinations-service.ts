@@ -1,6 +1,6 @@
-import { type Destination } from '../models/entities/destination';
-import { ApiService } from './api-service';
-import { type ListApplication } from '../models/entities/list-application';
+import {type Destination} from '../models/entities/destination';
+import {ApiService} from './api-service';
+import {type ListApplication} from '../models/entities/list-application';
 
 
 class _DestinationsService extends ApiService<Destination, Destination, number> {
@@ -9,7 +9,7 @@ class _DestinationsService extends ApiService<Destination, Destination, number> 
     }
 
     public async listApplications(destinationId: number): Promise<ListApplication[]> {
-        return await ApiService.get<ListApplication[]>(`destinations/${ destinationId }/applications`);
+        return await ApiService.get<ListApplication[]>(`destinations/${destinationId}/applications`);
     }
 }
 

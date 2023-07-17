@@ -35,7 +35,10 @@ export function SummaryComponentView({allElements}: BaseViewProps<SummaryStepEle
     return (
         <>
             <Typography
-                sx={{mb: 5, maxWidth: '620px'}}
+                sx={{
+                    mb: 5,
+                    maxWidth: '620px',
+                }}
                 variant={'body2'}
             >
                 Bitte prüfen Sie die von Ihnen eingegebenen Daten sorgfältig, bevor Sie den Antrag einreichen. Durch
@@ -62,7 +65,10 @@ export function SummaryComponentView({allElements}: BaseViewProps<SummaryStepEle
             </Typography>
 
             <Typography
-                sx={{mt: 1, maxWidth: '700px'}}
+                sx={{
+                    mt: 1,
+                    maxWidth: '700px',
+                }}
                 variant={'body2'}
             >
                 Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben Ihres Antrages geprüft haben.
@@ -119,7 +125,7 @@ export function flattenElementsForSummary(allElements: AnyElement[], model: AnyE
 
         return [
             model,
-            ...childElements
+            ...childElements,
         ];
     } else {
         return [

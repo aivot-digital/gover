@@ -3,7 +3,7 @@ import React from 'react';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCloud} from '@fortawesome/pro-solid-svg-icons';
 
-export function LoadingPlaceholderComponentView({message}: { message?: string }) {
+export function LoadingPlaceholderComponentView({message}: {message?: string}) {
     return (
         <Container
             maxWidth="sm"
@@ -36,7 +36,7 @@ export function LoadingPlaceholderComponentView({message}: { message?: string })
     );
 }
 
-function LoadingIcon({color}: { color: string }) {
+function LoadingIcon({color}: {color: string}) {
     return (
         <Box
             sx={{

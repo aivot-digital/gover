@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Typography } from '@mui/material';
-import { type BaseEditorProps } from '../../editors/base-editor';
-import { type RootElement } from '../../models/elements/root-element';
-import { type Destination } from '../../models/entities/destination';
-import { DestinationsService } from '../../services/destinations-service';
-import { useAppDispatch } from '../../hooks/use-app-dispatch';
-import { SelectFieldComponent } from '../select-field/select-field-component';
-import { AlertComponent } from '../alert/alert-component';
-import { showErrorSnackbar } from '../../slices/snackbar-slice';
-import { DestinationType } from '../../data/destination-type/destination-type';
-import { Application } from '../../models/entities/application';
+import React, {useEffect, useState} from 'react';
+import {Typography} from '@mui/material';
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {type RootElement} from '../../models/elements/root-element';
+import {type Destination} from '../../models/entities/destination';
+import {DestinationsService} from '../../services/destinations-service';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {SelectFieldComponent} from '../select-field/select-field-component';
+import {AlertComponent} from '../alert/alert-component';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {DestinationType} from '../../data/destination-type/destination-type';
+import {Application} from '../../models/entities/application';
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -37,17 +37,17 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 destinations != null &&
                 <SelectFieldComponent
                     label="Auswahl der Schnittstelle"
-                    value={ props.entity.destination?.toString() ?? undefined }
-                    onChange={ (val) => {
+                    value={props.entity.destination?.toString() ?? undefined}
+                    onChange={(val) => {
                         props.onPatchEntity({
                             destination: val != null ? parseInt(val) : undefined,
                         });
-                    } }
-                    options={ destinations.map((destination) => ({
+                    }}
+                    options={destinations.map((destination) => ({
                         value: destination.id.toString(),
                         label: destination.name,
-                    })) }
-                    disabled={ !props.editable }
+                    }))}
+                    disabled={!props.editable}
                 />
             }
 

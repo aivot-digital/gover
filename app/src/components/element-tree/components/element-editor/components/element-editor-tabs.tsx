@@ -1,13 +1,20 @@
-import { Tab, Tabs } from '@mui/material';
-import { ElementType } from '../../../../../data/element-type/element-type';
-import { ElementIsInput } from '../../../../../data/element-type/element-is-input';
-import React, { useCallback } from 'react';
-import { DefaultTabs } from '../data/default-tabs';
-import { type ElementEditorTabsProps } from './element-editor-tabs-props';
-import { type AnyElement } from '../../../../../models/elements/any-element';
+import {Tab, Tabs} from '@mui/material';
+import {ElementType} from '../../../../../data/element-type/element-type';
+import {ElementIsInput} from '../../../../../data/element-type/element-is-input';
+import React, {useCallback} from 'react';
+import {DefaultTabs} from '../data/default-tabs';
+import {type ElementEditorTabsProps} from './element-editor-tabs-props';
+import {type AnyElement} from '../../../../../models/elements/any-element';
 
-export function ElementEditorTabs<T extends AnyElement>({ component, currentTab, onTabChange, additionalTabs }: ElementEditorTabsProps<T>): JSX.Element {
-    const handleTabChange = useCallback((_, newTab: string) => {onTabChange(newTab);}, [onTabChange]);
+export function ElementEditorTabs<T extends AnyElement>({
+                                                            component,
+                                                            currentTab,
+                                                            onTabChange,
+                                                            additionalTabs,
+                                                        }: ElementEditorTabsProps<T>): JSX.Element {
+    const handleTabChange = useCallback((_, newTab: string) => {
+        onTabChange(newTab);
+    }, [onTabChange]);
 
     return (
         <Tabs

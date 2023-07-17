@@ -1,9 +1,9 @@
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { useEffect } from 'react';
-import { selectUser } from '../slices/user-slice';
-import { useAppDispatch } from './use-app-dispatch';
-import { showErrorSnackbar } from '../slices/snackbar-slice';
+import {useNavigate} from 'react-router-dom';
+import {useSelector} from 'react-redux';
+import {useEffect} from 'react';
+import {selectUser} from '../slices/user-slice';
+import {useAppDispatch} from './use-app-dispatch';
+import {showErrorSnackbar} from '../slices/snackbar-slice';
 
 export function useAdminGuard(): void {
     const dispatch = useAppDispatch();

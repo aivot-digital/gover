@@ -12,6 +12,6 @@ export function withTimeout<T>(first: () => void, func: () => Promise<T>, after:
                     after(res);
                     resolve();
                 }, remainingTimeout);
-            })
+            });
     });
 }

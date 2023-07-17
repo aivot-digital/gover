@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { type GridColDef } from '@mui/x-data-grid';
-import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
-import { filterItems } from '../../../utils/filter-items';
-import { ThemesService } from '../../../services/themes-service';
-import { type Theme } from '../../../models/entities/theme';
-import { useAdminGuard } from '../../../hooks/use-admin-guard';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {type GridColDef} from '@mui/x-data-grid';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {filterItems} from '../../../utils/filter-items';
+import {ThemesService} from '../../../services/themes-service';
+import {type Theme} from '../../../models/entities/theme';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 const columns: Array<GridColDef<Theme>> = [
@@ -47,25 +47,25 @@ export function ThemeListPage(): JSX.Element {
     return (
         <TablePageWrapper
             title="Farbschemata"
-            isLoading={ isLoading }
-            error={ loadError }
+            isLoading={isLoading}
+            error={loadError}
 
-            columns={ columns }
-            rows={ filtered ?? [] }
-            onRowClick={ (dest) => {
-                navigate(`/themes/${ dest.id }`);
-            } }
+            columns={columns}
+            rows={filtered ?? []}
+            onRowClick={(dest) => {
+                navigate(`/themes/${dest.id}`);
+            }}
 
-            search={ search }
+            search={search}
             searchPlaceholder="Farbschema suchen..."
-            onSearchChange={ setSearch }
+            onSearchChange={setSearch}
 
-            actions={ [{
+            actions={[{
                 label: 'Neues Farbschema',
                 icon: <AddOutlinedIcon/>,
                 tooltip: 'Neues Farbschema anlegen',
                 link: '/themes/new',
-            }] }
+            }]}
         />
     );
 }

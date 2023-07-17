@@ -1,16 +1,16 @@
-import { Box, Button, Typography } from '@mui/material';
-import React, { type FormEvent, useEffect, useState } from 'react';
-import { fetchSystemConfig, selectSystemConfig, type SystemConfigMap } from '../../../../../slices/system-config-slice';
-import { SystemConfigsService } from '../../../../../services/system-configs-service';
-import { useAppSelector } from '../../../../../hooks/use-app-selector';
-import { useAppDispatch } from '../../../../../hooks/use-app-dispatch';
-import { TextFieldComponent } from '../../../../../components/text-field/text-field-component';
-import { SystemConfigKeys, SystemConfigPublic } from '../../../../../data/system-config-keys';
-import { showErrorSnackbar } from '../../../../../slices/snackbar-slice';
-import { shallowEquals } from '../../../../../utils/equality-utils';
-import { SelectFieldComponent } from '../../../../../components/select-field/select-field-component';
-import { type SelectFieldComponentOption } from '../../../../../components/select-field/select-field-component-option';
-import { ThemesService } from '../../../../../services/themes-service';
+import {Box, Button, Typography} from '@mui/material';
+import React, {type FormEvent, useEffect, useState} from 'react';
+import {fetchSystemConfig, selectSystemConfig, type SystemConfigMap} from '../../../../../slices/system-config-slice';
+import {SystemConfigsService} from '../../../../../services/system-configs-service';
+import {useAppSelector} from '../../../../../hooks/use-app-selector';
+import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
+import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
+import {SystemConfigKeys, SystemConfigPublic} from '../../../../../data/system-config-keys';
+import {showErrorSnackbar} from '../../../../../slices/snackbar-slice';
+import {shallowEquals} from '../../../../../utils/equality-utils';
+import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
+import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
+import {ThemesService} from '../../../../../services/themes-service';
 
 export function ApplicationSettings(): JSX.Element {
     const dispatch = useAppDispatch();
@@ -64,7 +64,7 @@ export function ApplicationSettings(): JSX.Element {
     };
 
     return (
-        <form onSubmit={ handleSubmit }>
+        <form onSubmit={handleSubmit}>
             <Typography
                 variant="subtitle1"
             >
@@ -75,13 +75,13 @@ export function ApplicationSettings(): JSX.Element {
                 label="Name des Betreibers"
                 placeholder="Komune XYZ"
                 hint="Der Name wird in der Anwendung angezeigt"
-                value={ editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name] }
-                onChange={ (val) => {
+                value={editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name]}
+                onChange={(val) => {
                     setEditedConfig({
                         ...editedConfig,
                         [SystemConfigKeys.provider.name]: val ?? '',
                     });
-                } }
+                }}
                 required
             />
 
@@ -90,32 +90,32 @@ export function ApplicationSettings(): JSX.Element {
                 <>
                     <Typography
                         variant="subtitle1"
-                        sx={ {
+                        sx={{
                             mt: 2,
-                        } }
+                        }}
                     >
                         Farbschemata der Gover-Instanz
                     </Typography>
 
                     <SelectFieldComponent
                         label="Standard-Theme"
-                        options={ themes }
-                        value={ editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme] }
-                        onChange={ (val) => {
+                        options={themes}
+                        value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
+                        onChange={(val) => {
                             setEditedConfig({
                                 ...editedConfig,
                                 [SystemConfigKeys.system.theme]: val ?? '',
                             });
-                        } }
+                        }}
                     />
                 </>
             }
 
             <Typography
                 variant="subtitle1"
-                sx={ {
+                sx={{
                     mt: 2,
-                } }
+                }}
             >
                 Gover Store
             </Typography>
@@ -124,37 +124,37 @@ export function ApplicationSettings(): JSX.Element {
                 label="Schlüssel für den Gover Store"
                 placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
                 hint="Geben Sie hier Ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Gover Store veröffentlichen wollen."
-                value={ editedConfig[SystemConfigKeys.gover.storeKey] ?? config[SystemConfigKeys.gover.storeKey] }
-                onChange={ (val) => {
+                value={editedConfig[SystemConfigKeys.gover.storeKey] ?? config[SystemConfigKeys.gover.storeKey]}
+                onChange={(val) => {
                     setEditedConfig({
                         ...editedConfig,
                         [SystemConfigKeys.gover.storeKey]: val ?? '',
                     });
-                } }
+                }}
             />
 
             <Box
-                sx={ {
+                sx={{
                     mt: 2,
-                } }
+                }}
             >
                 <Button
                     type="submit"
-                    disabled={ !hasChanged }
+                    disabled={!hasChanged}
                 >
                     Speichern
                 </Button>
 
                 <Button
-                    sx={ {
+                    sx={{
                         ml: 2,
-                    } }
+                    }}
                     type="button"
                     color="error"
-                    disabled={ !hasChanged }
-                    onClick={ () => {
+                    disabled={!hasChanged}
+                    onClick={() => {
                         setEditedConfig({});
-                    } }
+                    }}
                 >
                     Zurücksetzen
                 </Button>

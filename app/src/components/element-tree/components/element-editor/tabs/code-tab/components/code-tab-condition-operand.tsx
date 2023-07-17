@@ -1,12 +1,11 @@
 import {AnyElement} from "../../../../../../../models/elements/any-element";
 import {Box, IconButton, Tooltip} from "@mui/material";
-import {stringOrDefault} from "../../../../../../../utils/string-utils";
 import {generateComponentTitle} from "../../../../../../../utils/generate-component-title";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faRefresh} from "@fortawesome/pro-light-svg-icons";
 import React from "react";
 import {ElementType} from "../../../../../../../data/element-type/element-type";
-import {ConditionOperatorHint, getConditionOperatorHint} from "../../../../../../../data/condition-operator";
+import {getConditionOperatorHint} from "../../../../../../../data/condition-operator";
 import {SelectFieldComponent} from "../../../../../../select-field/select-field-component";
 import {TextFieldComponent} from "../../../../../../text-field/text-field-component";
 

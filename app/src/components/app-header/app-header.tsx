@@ -4,8 +4,6 @@ import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/ma
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {AppMode} from '../../data/app-mode';
-import {faCog, faQuestionCircle, faUniversalAccess} from '@fortawesome/pro-regular-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {MetaDialog, selectLoadedApplication, showMetaDialog} from '../../slices/app-slice';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {AppHeaderMenu} from './app-header-menu/app-header-menu';
@@ -144,7 +142,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                                         href={mode === AppMode.Staff ? 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' : undefined}
                                         target={mode === AppMode.Staff ? '_blank' : undefined}
                                         onClick={mode === AppMode.Staff ? undefined : () => {
-                                            dispatch(showMetaDialog(MetaDialog.Help))
+                                            dispatch(showMetaDialog(MetaDialog.Help));
                                         }}
                                     >
                                         <HelpOutlineOutlinedIcon

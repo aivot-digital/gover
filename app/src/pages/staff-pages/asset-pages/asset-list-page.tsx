@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import { type GridColDef } from '@mui/x-data-grid';
-import { TablePageWrapper } from '../../../components/table-page-wrapper/table-page-wrapper';
-import { AssetService } from '../../../services/asset-service';
-import { delayPromise } from '../../../utils/with-delay';
-import { showErrorSnackbar } from '../../../slices/snackbar-slice';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
+import {type GridColDef} from '@mui/x-data-grid';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {AssetService} from '../../../services/asset-service';
+import {delayPromise} from '../../../utils/with-delay';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 
 interface Asset {
     id: string;
@@ -25,14 +25,14 @@ const columns: Array<GridColDef<Asset>> = [
         flex: 1,
         renderCell: (params) => (
             <a
-                href={ params.row.link }
+                href={params.row.link}
                 target="_blank"
-                onClick={ (event) => {
+                onClick={(event) => {
                     event.stopPropagation();
-                } }
+                }}
                 rel="noreferrer"
             >
-                { params.row.link }
+                {params.row.link}
             </a>
         ),
     },
@@ -68,26 +68,26 @@ export function AssetListPage(): JSX.Element {
     return (
         <TablePageWrapper
             title="Dokumente & Medieninhalte"
-            isLoading={ isBusy }
+            isLoading={isBusy}
 
-            columns={ columns }
-            rows={ filtered ?? [] }
-            onRowClick={ (ass) => {
-                navigate(`/assets/${ ass.id }`);
-            } }
+            columns={columns}
+            rows={filtered ?? []}
+            onRowClick={(ass) => {
+                navigate(`/assets/${ass.id}`);
+            }}
 
-            search={ search }
+            search={search}
             searchPlaceholder="Suchen..."
-            onSearchChange={ setSearch }
+            onSearchChange={setSearch}
 
-            actions={ [{
+            actions={[{
                 label: 'Dokument/Medieninhalt hinzufügen',
                 icon: <AddOutlinedIcon/>,
                 tooltip: 'Neues Dokument oder neuen Medieninhalt anlegen',
                 onClick: () => {
                     navigate('/assets/new');
                 },
-            }] }
+            }]}
         />
     );
 }

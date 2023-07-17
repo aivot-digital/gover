@@ -1,6 +1,6 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { type RootState } from '../store';
-import { type CustomerInput } from '../models/customer-input';
+import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
+import {type RootState} from '../store';
+import {type CustomerInput} from '../models/customer-input';
 
 const initialState: {
     input: CustomerInput;
@@ -18,7 +18,7 @@ const customerInputSlice = createSlice({
         resetUserInput: (state, _: PayloadAction<void>) => {
             state.input = {};
         },
-        updateUserInput: (state, action: PayloadAction<{ key: string, value: any }>) => {
+        updateUserInput: (state, action: PayloadAction<{key: string, value: any}>) => {
             state.input[action.payload.key] = action.payload.value;
         },
     },

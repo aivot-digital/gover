@@ -1,7 +1,7 @@
-import { Container } from '@mui/material';
+import {Container} from '@mui/material';
 import React from 'react';
-import { MetaElement } from '../../../components/meta-element/meta-element';
-import { AlertComponent } from '../../../components/alert/alert-component';
+import {MetaElement} from '../../../components/meta-element/meta-element';
+import {AlertComponent} from '../../../components/alert/alert-component';
 
 export function NotFound(): JSX.Element {
     return (
@@ -11,9 +11,9 @@ export function NotFound(): JSX.Element {
             />
 
             <Container
-                sx={ {
+                sx={{
                     mt: 5,
-                } }
+                }}
             >
                 <AlertComponent
                     color="error"

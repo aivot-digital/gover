@@ -1,6 +1,6 @@
-import { type ListApplication } from '../../models/entities/list-application';
-import { type DepartmentMembership } from '../../models/entities/department-membership';
-import { type User } from '../../models/entities/user';
+import {type ListApplication} from '../../models/entities/list-application';
+import {type DepartmentMembership} from '../../models/entities/department-membership';
+import {type User} from '../../models/entities/user';
 
 export interface ApplicationListItemProps {
     application: ListApplication;

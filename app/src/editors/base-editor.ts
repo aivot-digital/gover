@@ -1,7 +1,7 @@
-import { type FunctionComponent } from 'react';
-import { type AnyElement } from '../models/elements/any-element';
-import { type Application } from '../models/entities/application';
-import { type Preset } from '../models/entities/preset';
+import {type FunctionComponent} from 'react';
+import {type AnyElement} from '../models/elements/any-element';
+import {type Application} from '../models/entities/application';
+import {type Preset} from '../models/entities/preset';
 
 export interface BaseEditorProps<T extends AnyElement, E extends Application | Preset> {
     element: T;

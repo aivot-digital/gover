@@ -6,4 +6,4 @@ export const DefaultTabs = {
     patch: 'patch',
     structure: 'structure',
     test: 'test',
-}
+};

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useAppSelector } from '../../../hooks/use-app-selector';
-import { selectSystemConfigValue } from '../../../slices/system-config-slice';
-import { SystemConfigKeys } from '../../../data/system-config-keys';
-import { Box } from '@mui/material';
-import { AssetService } from '../../../services/asset-service';
+import React, {useState} from 'react';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../data/system-config-keys';
+import {Box} from '@mui/material';
+import {AssetService} from '../../../services/asset-service';
 
 const logoPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
 
@@ -20,26 +20,26 @@ export function Logo(props: LogoProps): JSX.Element {
     if (imageFailed) {
         return (
             <Box
-                sx={ {
+                sx={{
                     width: props.width ?? 200,
                     height: props.height ?? 100,
-                } }
+                }}
             />
         );
     }
 
     return (
         <img
-            src={ logoPrefix + AssetService.getLink(logo) }
-            alt={ name }
-            width={ props.width ?? 200 }
-            height={ props.height ?? 100 }
-            style={ {
+            src={logoPrefix + AssetService.getLink(logo)}
+            alt={name}
+            width={props.width ?? 200}
+            height={props.height ?? 100}
+            style={{
                 objectFit: 'contain',
-            } }
-            onError={ () => {
+            }}
+            onError={() => {
                 setImageFailed(true);
-            } }
+            }}
         />
     );
 }

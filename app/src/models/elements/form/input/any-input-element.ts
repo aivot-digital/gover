@@ -39,5 +39,5 @@ export function isAnyInputElement(obj: any): obj is AnyInputElement {
         ElementType.Time,
         ElementType.FileUpload,
         ElementType.ReplicatingContainer,
-    ].includes(obj.type)
+    ].includes(obj.type);
 }

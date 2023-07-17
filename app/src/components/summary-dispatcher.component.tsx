@@ -25,11 +25,15 @@ function makeValue(idPrefix: string | undefined, allElements: AnyElement[], mode
     return (model as any).value ?? (global ?? {})[resolveId(id, idPrefix)];
 }
 
-export function SummaryDispatcherComponent<M extends AnyElement>({allElements, element, idPrefix}: DispatcherComponentProps<M>) {
+export function SummaryDispatcherComponent<M extends AnyElement>({
+                                                                     allElements,
+                                                                     element,
+                                                                     idPrefix,
+                                                                 }: DispatcherComponentProps<M>) {
     const prefixedId = idPrefix != null ? (idPrefix + element.id) : element.id;
 
     const customerInput = useSelector(selectCustomerInput);
-    const disableVisibility = useSelector(selectDisableVisibility)
+    const disableVisibility = useSelector(selectDisableVisibility);
 
     const patchedModel = {
         ...element,

@@ -59,7 +59,7 @@ const prefixMap: ElementTypesMap<string> = {
     [ElementType.SummaryStep]: 'summ',
     [ElementType.Image]: 'imag',
     [ElementType.SubmittedStep]: 'subx',
-    [ElementType.FileUpload]: 'fupl'
+    [ElementType.FileUpload]: 'fupl',
 };
 
 export function generateElementIdForType(type: ElementType): string {

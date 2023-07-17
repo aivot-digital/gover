@@ -1,19 +1,19 @@
 import React from 'react';
-import { MenuItem, TextField } from '@mui/material';
-import { isStringNullOrEmpty } from '../../utils/string-utils';
-import { type SelectFieldComponentProps } from './select-field-component-props';
+import {MenuItem, TextField} from '@mui/material';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {type SelectFieldComponentProps} from './select-field-component-props';
 
 export function SelectFieldComponent({
-    label,
-    placeholder,
-    hint,
-    disabled,
-    required,
-    error,
-    value,
-    onChange,
-    options,
-}: SelectFieldComponentProps): JSX.Element {
+                                         label,
+                                         placeholder,
+                                         hint,
+                                         disabled,
+                                         required,
+                                         error,
+                                         value,
+                                         onChange,
+                                         options,
+                                     }: SelectFieldComponentProps): JSX.Element {
     const val = value ?? '';
 
     return (

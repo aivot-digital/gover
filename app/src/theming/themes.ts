@@ -1,7 +1,7 @@
-import { createTheme, type Theme as MuiTheme } from '@mui/material';
-import { deDE as datePickerLocale } from '@mui/x-date-pickers';
-import { deDE as coreLocale } from '@mui/material/locale';
-import { type Theme } from '../models/entities/theme';
+import {createTheme, type Theme as MuiTheme} from '@mui/material';
+import {deDE as datePickerLocale} from '@mui/x-date-pickers';
+import {deDE as coreLocale} from '@mui/material/locale';
+import {type Theme} from '../models/entities/theme';
 
 
 export function createDefaultAppTheme(baseTheme: MuiTheme): MuiTheme {

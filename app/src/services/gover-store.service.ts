@@ -16,7 +16,7 @@ class _GoverStoreService {
                 headers: {
                     Authorization: key,
                 },
-            } : undefined
+            } : undefined,
         );
         return resp.json();
     }
@@ -33,7 +33,7 @@ class _GoverStoreService {
                 headers: {
                     Authorization: key,
                 },
-            }
+            },
         );
         return resp.json();
     }
@@ -45,7 +45,7 @@ class _GoverStoreService {
                 headers: {
                     Authorization: key,
                 },
-            } : undefined
+            } : undefined,
         );
         return resp.json();
     }
@@ -57,7 +57,7 @@ class _GoverStoreService {
                 headers: {
                     Authorization: key,
                 },
-            } : undefined
+            } : undefined,
         );
         return await resp.json();
     }
@@ -69,7 +69,7 @@ class _GoverStoreService {
                 headers: {
                     Authorization: key,
                 },
-            } : undefined
+            } : undefined,
         );
         return await resp.json();
     }
@@ -86,7 +86,7 @@ class _GoverStoreService {
                 headers: {
                     Authorization: key,
                 },
-            }
+            },
         );
         return resp.json();
     }

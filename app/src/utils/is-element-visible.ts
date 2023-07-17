@@ -7,7 +7,7 @@ export function isElementVisible(
     allElements: AnyElement[],
     id: string,
     element: AnyElement,
-    customerInput: CustomerInput
+    customerInput: CustomerInput,
 ): boolean {
     if (element.isVisible == null) {
         return true;

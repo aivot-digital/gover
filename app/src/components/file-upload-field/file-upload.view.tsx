@@ -1,35 +1,18 @@
 import React, {useRef, useState} from 'react';
-import {
-    Box,
-    Button,
-    FormLabel,
-    IconButton,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
-    useMediaQuery,
-    useTheme
-} from '@mui/material';
+import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faCloudArrowUp, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
-import {
-    FileUploadElement,
-    FileUploadElementItem
-} from "../../models/elements/form/input/file-upload-element";
+import {FileUploadElement, FileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../slices/snackbar-slice";
 import {humanizeFileSize, humanizeNumber, pluralize} from "../../utils/huminization-utils";
-import { BaseViewProps } from '../../views/base-view';
+import {BaseViewProps} from '../../views/base-view';
 
 export function FileUploadView({
                                    element,
                                    value,
                                    error,
-                                   setValue
+                                   setValue,
                                }: BaseViewProps<FileUploadElement, FileUploadElementItem[]>) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
@@ -87,7 +70,7 @@ export function FileUploadView({
         }
 
         setValue(fileUploadItems.length > 0 ? fileUploadItems : undefined);
-    }
+    };
 
     const fileMaximumReached = (
         (element.isMultifile && element.maxFiles != null && (value ?? []).length >= element.maxFiles) ||

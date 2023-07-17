@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { type User } from '../../../models/entities/user';
-import { Divider } from '@mui/material';
-import { TextFieldComponent } from '../../../components/text-field/text-field-component';
-import { UsersService } from '../../../services/users-service';
-import { CheckboxFieldComponent } from '../../../components/checkbox-field/checkbox-field-component';
-import { validateEmail } from '../../../utils/validate-email';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { useChangeBlocker } from '../../../hooks/use-change-blocker';
-import { delayPromise } from '../../../utils/with-delay';
-import { FormPageWrapper } from '../../../components/form-page-wrapper/form-page-wrapper';
-import { AlertComponent } from '../../../components/alert/alert-component';
-import { useAdminGuard } from '../../../hooks/use-admin-guard';
+import React, {useEffect, useState} from 'react';
+import {useParams} from 'react-router-dom';
+import {type User} from '../../../models/entities/user';
+import {Divider} from '@mui/material';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {UsersService} from '../../../services/users-service';
+import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
+import {validateEmail} from '../../../utils/validate-email';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {useChangeBlocker} from '../../../hooks/use-change-blocker';
+import {delayPromise} from '../../../utils/with-delay';
+import {FormPageWrapper} from '../../../components/form-page-wrapper/form-page-wrapper';
+import {AlertComponent} from '../../../components/alert/alert-component';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
 
 type Errors = {
     [key in keyof User]?: string;
@@ -149,99 +149,99 @@ export function UserEditPage(): JSX.Element {
     return (
         <FormPageWrapper
             title="Benutzer bearbeiten"
-            isLoading={ isUserLoading }
-            is404={ isUserNotFound }
+            isLoading={isUserLoading}
+            is404={isUserNotFound}
 
-            hasChanged={ hasChanged }
-            onSave={ handleSave }
-            onReset={ (editedUser?.id ?? 0) !== 0 ? handleReset : undefined }
+            hasChanged={hasChanged}
+            onSave={handleSave}
+            onReset={(editedUser?.id ?? 0) !== 0 ? handleReset : undefined}
         >
-            <Divider sx={ {mb: 4} }>
+            <Divider sx={{mb: 4}}>
                 Allgemein
             </Divider>
 
             <TextFieldComponent
                 label="Name"
-                value={ editedUser?.name }
-                onChange={ (val) => {
+                value={editedUser?.name}
+                onChange={(val) => {
                     handlePatch({
                         name: val,
                     });
-                } }
+                }}
                 required
-                maxCharacters={ 96 }
-                minCharacters={ 3 }
+                maxCharacters={96}
+                minCharacters={3}
                 hint="Der Name wird in der Gover-Anwendung angezeigt."
-                error={ errors.name }
+                error={errors.name}
             />
 
             <TextFieldComponent
                 label="E-Mail-Adresse"
                 type="email"
-                value={ editedUser?.email }
-                onChange={ (val) => {
+                value={editedUser?.email}
+                onChange={(val) => {
                     handlePatch({
                         email: val,
                     });
-                } }
+                }}
                 required
-                maxCharacters={ 255 }
+                maxCharacters={255}
                 hint="Mit der E-Mail-Adresse muss sich die Benutzer:in anmelden. Bitte beachten Sie, dass die E-Mail-Adresse einzigartig sein muss."
-                error={ errors.email }
+                error={errors.email}
             />
 
             <CheckboxFieldComponent
                 label="Globale Administrator:in"
-                value={ editedUser?.admin ?? false }
-                onChange={ (val) => {
+                value={editedUser?.admin ?? false}
+                onChange={(val) => {
                     handlePatch({
                         admin: val,
                     });
-                } }
+                }}
                 hint="Globale Administrator:innen können Benutzer:innen und Fachbereiche verwalten. Sie haben systemweiten Zugriff auf alle Fachbereiche, Formulare und Anträge."
             />
 
             <CheckboxFieldComponent
                 label="Benutzer ist Aktiv"
-                value={ editedUser?.active ?? false }
-                onChange={ (val) => {
+                value={editedUser?.active ?? false}
+                onChange={(val) => {
                     handlePatch({
                         active: val,
                     });
-                } }
+                }}
                 hint="Deaktivieren Sie Benutzer:innen damit diese sich nicht mehr anmelden können."
             />
 
-            <Divider sx={ {my: 4} }>
-                Passwort { editedUser?.id !== 0 ? 'überschreiben' : '' }
+            <Divider sx={{my: 4}}>
+                Passwort {editedUser?.id !== 0 ? 'überschreiben' : ''}
             </Divider>
 
             <TextFieldComponent
                 label="Passwort"
                 type="password"
-                value={ editedUser?.password }
-                onChange={ (val) => {
+                value={editedUser?.password}
+                onChange={(val) => {
                     handlePatch({
                         password: val,
                     });
-                } }
-                required={ editedUser?.id === 0 }
-                maxCharacters={ 72 }
-                minCharacters={ 8 }
-                error={ errors.password }
+                }}
+                required={editedUser?.id === 0}
+                maxCharacters={72}
+                minCharacters={8}
+                error={errors.password}
             />
 
             <TextFieldComponent
                 label="Passwort wiederholen"
                 type="password"
-                value={ retypedPassword }
-                onChange={ (val) => {
+                value={retypedPassword}
+                onChange={(val) => {
                     setRetypedPassword(val ?? '');
-                } }
-                required={ editedUser?.id === 0 }
-                maxCharacters={ 72 }
-                minCharacters={ 8 }
-                error={ errors.password }
+                }}
+                required={editedUser?.id === 0}
+                maxCharacters={72}
+                minCharacters={8}
+                error={errors.password}
             />
 
             {

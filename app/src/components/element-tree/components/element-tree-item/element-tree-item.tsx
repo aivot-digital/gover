@@ -1,25 +1,22 @@
-import React, { useEffect, useReducer, useState } from 'react';
-import { useDrag } from 'react-dnd';
-import { Box } from '@mui/material';
-import { setExpandElementTree, setIsDraggingTreeElement } from '../../../../slices/admin-settings-slice';
-import { useAppDispatch } from '../../../../hooks/use-app-dispatch';
-import { ElementTreeItemTitle } from '../element-tree-item-title/element-tree-item-title';
-import { ElementTreeItemList } from '../element-tree-item-list/element-tree-item-list';
-import { ElementEditor } from '../element-editor/element-editor';
-import { type ElementTreeItemProps } from './element-tree-item-props';
-import {
-    type AnyElementWithChildren,
-    isAnyElementWithChildren,
-} from '../../../../models/elements/any-element-with-children';
-import { type AnyElement } from '../../../../models/elements/any-element';
-import { AddElementDialog } from '../../../../dialogs/add-element-dialog/add-element-dialog';
-import { ElementType } from '../../../../data/element-type/element-type';
-import { findNoCodeUsage, findNoCodeUsageOfChildren } from '../../../../utils/find-no-code-usage';
-import { generateComponentTitle } from '../../../../utils/generate-component-title';
-import { isChildOf } from '../../../../utils/is-child-of';
-import { useAppSelector } from '../../../../hooks/use-app-selector';
-import { type Application } from '../../../../models/entities/application';
-import { type Preset } from '../../../../models/entities/preset';
+import React, {useEffect, useReducer, useState} from 'react';
+import {useDrag} from 'react-dnd';
+import {Box} from '@mui/material';
+import {setExpandElementTree, setIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {ElementTreeItemTitle} from '../element-tree-item-title/element-tree-item-title';
+import {ElementTreeItemList} from '../element-tree-item-list/element-tree-item-list';
+import {ElementEditor} from '../element-editor/element-editor';
+import {type ElementTreeItemProps} from './element-tree-item-props';
+import {type AnyElementWithChildren, isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import {type AnyElement} from '../../../../models/elements/any-element';
+import {AddElementDialog} from '../../../../dialogs/add-element-dialog/add-element-dialog';
+import {ElementType} from '../../../../data/element-type/element-type';
+import {findNoCodeUsage, findNoCodeUsageOfChildren} from '../../../../utils/find-no-code-usage';
+import {generateComponentTitle} from '../../../../utils/generate-component-title';
+import {isChildOf} from '../../../../utils/is-child-of';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {type Application} from '../../../../models/entities/application';
+import {type Preset} from '../../../../models/entities/preset';
 
 export function ElementTreeItem<T extends AnyElement, E extends Application | Preset>(props: ElementTreeItemProps<T, E>,
 ): JSX.Element {
@@ -42,7 +39,7 @@ export function ElementTreeItem<T extends AnyElement, E extends Application | Pr
         }
     }, [expandStatus]);
 
-    const [{ isDragging }, drag] = useDrag(() => ({
+    const [{isDragging}, drag] = useDrag(() => ({
         item: props.element,
         type: props.element.type.toString(),
         collect: (monitor) => ({
@@ -83,7 +80,7 @@ export function ElementTreeItem<T extends AnyElement, E extends Application | Pr
         const directUsages = findNoCodeUsage(props.element, props.parents[0]);
 
         if (directUsages.length > 0 && !(directUsages.length === 1 && directUsages[0].id === props.element.id)) {
-            alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${ directUsages.map((u) => generateComponentTitle(u)).join(', ') }`);
+            alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${directUsages.map((u) => generateComponentTitle(u)).join(', ')}`);
             return;
         }
 
@@ -104,13 +101,13 @@ export function ElementTreeItem<T extends AnyElement, E extends Application | Pr
 
     return (
         <Box
-            ref={ props.editable ? drag : undefined }
-            sx={ {
+            ref={props.editable ? drag : undefined}
+            sx={{
                 opacity: isDragging ? 0 : 1,
-            } }
+            }}
         >
             <ElementTreeItemTitle
-                isExpanded={ expanded }
+                isExpanded={expanded}
                 onToggleExpanded={
                     isLayoutElement ?
                         () => {
@@ -119,50 +116,50 @@ export function ElementTreeItem<T extends AnyElement, E extends Application | Pr
                         } :
                         undefined
                 }
-                element={ props.element }
-                onShowAddDialog={ isLayoutElement ? toggleShowAddDialog : undefined }
-                onSelect={ toggleShowEditor }
-                editable={ props.editable }
+                element={props.element}
+                onShowAddDialog={isLayoutElement ? toggleShowAddDialog : undefined}
+                onSelect={toggleShowEditor}
+                editable={props.editable}
             />
 
             {
                 expanded &&
                 isAnyElementWithChildren(props.element) &&
                 <ElementTreeItemList
-                    parents={ props.parents }
-                    entity={ props.entity }
-                    element={ props.element }
-                    onPatch={ props.onPatch }
-                    editable={ props.editable }
+                    parents={props.parents}
+                    entity={props.entity}
+                    element={props.element}
+                    onPatch={props.onPatch}
+                    editable={props.editable}
                 />
             }
 
             <AddElementDialog
-                show={ showAddDialog }
-                parentType={ props.element.type }
-                onAddElement={ handleAddElement }
-                onClose={ toggleShowAddDialog }
+                show={showAddDialog}
+                parentType={props.element.type}
+                onAddElement={handleAddElement}
+                onClose={toggleShowAddDialog}
             />
 
             {
                 showEditor &&
                 <ElementEditor
-                    parents={ props.parents }
-                    element={ props.element }
-                    entity={ props.entity }
-                    onSave={ (updatedElement, updatedApplication) => {
+                    parents={props.parents}
+                    element={props.element}
+                    entity={props.entity}
+                    onSave={(updatedElement, updatedApplication) => {
                         props.onPatch(updatedElement, updatedApplication);
                         toggleShowEditor();
-                    } }
-                    onCancel={ toggleShowEditor }
-                    onDelete={ (
+                    }}
+                    onCancel={toggleShowEditor}
+                    onDelete={(
                         props.element.type === ElementType.IntroductionStep ||
                         props.element.type === ElementType.SummaryStep ||
                         props.element.type === ElementType.SubmitStep
                     ) ?
                         undefined :
-                        handleDeleteElement }
-                    onClone={ (
+                        handleDeleteElement}
+                    onClone={(
                         props.element.type === ElementType.IntroductionStep ||
                         props.element.type === ElementType.SummaryStep ||
                         props.element.type === ElementType.SubmitStep
@@ -171,8 +168,8 @@ export function ElementTreeItem<T extends AnyElement, E extends Application | Pr
                         () => {
                             props.onClone();
                             toggleShowEditor();
-                        } }
-                    editable={ props.editable }
+                        }}
+                    editable={props.editable}
                 />
             }
         </Box>

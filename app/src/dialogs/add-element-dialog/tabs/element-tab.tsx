@@ -1,14 +1,5 @@
 import React from "react";
-import {
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    ListSubheader,
-    Tooltip
-} from "@mui/material";
+import {IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Tooltip} from "@mui/material";
 import {generateElementWithDefaultValues} from "../../../utils/generate-element-with-default-values";
 import {ElementIcons} from "../../../data/element-type/element-icons";
 import {ElementNames} from "../../../data/element-type/element-names";
@@ -36,7 +27,7 @@ const elementTypeGroupsLabels: { [key in ElementTypeGroups]: string } = {
     [ElementTypeGroups.DateTime]: 'Datum und Zeit',
     [ElementTypeGroups.Group]: 'Gruppierung',
     [ElementTypeGroups.Other]: 'Sonstige',
-}
+};
 
 const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Alert]: ElementTypeGroups.Information,
@@ -63,9 +54,14 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
-}
+};
 
-export function ElementTab({parentType, onAddElement, showElementInfo, highlightedElement}: BaseTabProps & {
+export function ElementTab({
+                               parentType,
+                               onAddElement,
+                               showElementInfo,
+                               highlightedElement,
+                           }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
 }) {
@@ -90,7 +86,12 @@ export function ElementTab({parentType, onAddElement, showElementInfo, highlight
                         <ListSubheader
                             component="div"
                             id={'element-list-subheader-' + index}
-                            sx={{pl: '26px', lineHeight: '30px', mt: 1, textTransform: 'uppercase'}}
+                            sx={{
+                                pl: '26px',
+                                lineHeight: '30px',
+                                mt: 1,
+                                textTransform: 'uppercase',
+                            }}
                         >
                             {elementTypeGroupsLabels[parseInt(groupString) as ElementTypeGroups]}
                         </ListSubheader>
@@ -129,7 +130,7 @@ export function ElementTab({parentType, onAddElement, showElementInfo, highlight
                                             />
                                         </ListItemButton>
                                     </ListItem>
-                                )
+                                );
                             })
                         }
                     </React.Fragment>

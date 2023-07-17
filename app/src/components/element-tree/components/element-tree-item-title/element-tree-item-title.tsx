@@ -1,29 +1,24 @@
 import styles from './element-tree-item-title.module.scss';
-import {Box, IconButton, SvgIcon, Tooltip, Typography} from '@mui/material';
+import {Box, IconButton, type SvgIcon, Tooltip, Typography} from '@mui/material';
 import {ElementIcons} from '../../../../data/element-type/element-icons';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {checkId} from '../../../../utils/id-utils';
 import {getFunctionStatus} from '../../../../utils/function-status-utils';
 import React from 'react';
-import { ElementType } from '../../../../data/element-type/element-type';
-import { ElementNames } from '../../../../data/element-type/element-names';
-import { useTheme } from '@mui/material/styles';
+import {ElementType} from '../../../../data/element-type/element-type';
+import {ElementNames} from '../../../../data/element-type/element-names';
+import {useTheme} from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
 import {hasUntestedChild} from '../../../../utils/has-untested-child';
-import {RootElement} from '../../../../models/elements/root-element';
+import {type RootElement} from '../../../../models/elements/root-element';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {
-    selectTreeElementSearch,
-    selectUseIdsInComponentTree,
-    selectUseTestMode,
-    selectWarnDuplicateIds,
-} from '../../../../slices/admin-settings-slice';
-import { type ElementTreeItemTitleProps } from './element-tree-item-title-props';
-import { type AnyElement } from '../../../../models/elements/any-element';
-import { isAnyElementWithChildren } from '../../../../models/elements/any-element-with-children';
-import { getStepIcon } from '../../../../data/step-icons';
-import { selectLoadedApplication } from '../../../../slices/app-slice';
-import { findNoCodeUsage } from '../../../../utils/find-no-code-usage';
+import {selectTreeElementSearch, selectUseIdsInComponentTree, selectUseTestMode, selectWarnDuplicateIds} from '../../../../slices/admin-settings-slice';
+import {type ElementTreeItemTitleProps} from './element-tree-item-title-props';
+import {type AnyElement} from '../../../../models/elements/any-element';
+import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import {getStepIcon} from '../../../../data/step-icons';
+import {selectLoadedApplication} from '../../../../slices/app-slice';
+import {findNoCodeUsage} from '../../../../utils/find-no-code-usage';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
 import KeyboardArrowRightOutlinedIcon from '@mui/icons-material/KeyboardArrowRightOutlined';
@@ -97,57 +92,61 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
 
     return (
         <div
-            className={ styles.listItem }
-            onDoubleClick={ handleSelect }
-            style={ {
+            className={styles.listItem}
+            onDoubleClick={handleSelect}
+            style={{
                 display: 'flex',
                 outline: matchesSearch ? highlightOutlineStyle : undefined,
                 boxShadow: matchesSearch ? highlightBoxShadowStyle : undefined,
-            } }
-            onMouseEnter={ addHighlightElement }
-            onMouseLeave={ removeHighlightElement }
+            }}
+            onMouseEnter={addHighlightElement}
+            onMouseLeave={removeHighlightElement}
         >
             {
                 (props.onToggleExpanded != null) ?
                     (
                         <IconButton
-                            onClick={ handleToggleExpand }
-                            onDoubleClick={ preventBubble }
-                            size={ 'small' }
-                            sx={ {mr: 1} }
+                            onClick={handleToggleExpand}
+                            onDoubleClick={preventBubble}
+                            size={'small'}
+                            sx={{mr: 1}}
                         >
                             <Typography
                                 component="span"
-                                sx={ {
+                                sx={{
                                     width: '18px',
                                     height: '18px',
                                     display: 'inline-block',
                                     textAlign: 'center',
-                                } }
+                                }}
                             >
                                 {
-                                     props.isExpanded ? <KeyboardArrowDownOutlinedIcon
-                                        sx={{transform: 'translate(-0.125rem, -0.125rem)' }}/> :
-                                    <KeyboardArrowRightOutlinedIcon
-                                        sx={{transform: 'translate(-0.125rem, -0.125rem)' }}/>
+                                    props.isExpanded ? <KeyboardArrowDownOutlinedIcon
+                                            sx={{transform: 'translate(-0.125rem, -0.125rem)'}}/> :
+                                        <KeyboardArrowRightOutlinedIcon
+                                            sx={{transform: 'translate(-0.125rem, -0.125rem)'}}/>
                                 }
                             </Typography>
                         </IconButton>
                     ) :
-                    <Box sx={ {pl: 4.5} }/>
+                    <Box sx={{pl: 4.5}}/>
             }
 
             <Tooltip
-                title={ ElementNames[props.element.type] }
+                title={ElementNames[props.element.type]}
                 arrow
             >
                 <Box
                     className="element-tree-item-icon"
-                    style={ {
+                    style={{
                         color: theme.palette.primary.dark,
-                    } }
+                    }}
                 >
-                    <ElementIcon sx={{fontSize: "1.75rem", transform: 'translateY(2px)', mr: 0.5}}/>
+                    <ElementIcon sx={{
+                        fontSize: "1.75rem",
+                        transform: 'translateY(2px)',
+                        mr: 0.5,
+                    }}/>
                     {/*<FontAwesomeIcon
                         icon={ elementIcon }
                         fixedWidth
@@ -158,10 +157,10 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
 
             <Typography
                 variant="body1"
-                sx={ {
+                sx={{
                     fontSize: '1rem',
                     color: '#16191F',
-                } }
+                }}
             >
                 {
                     useIdsInComponentTree ?
@@ -169,8 +168,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                         (
                             ((elementTitle).length > titleCharLimit) ?
                                 (<span
-                                    title={ elementTitle }
-                                >{ ((elementTitle).substring(0, titleCharLimit - 1)) + '…' }</span>) :
+                                    title={elementTitle}
+                                >{((elementTitle).substring(0, titleCharLimit - 1)) + '…'}</span>) :
                                 elementTitle
                         )
                 }
@@ -184,11 +183,11 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                     props.element.type === ElementType.SubmitStep
                 ) &&
                 <Chip
-                    sx={ {
+                    sx={{
                         ml: 1,
                         color: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd',
                         borderColor: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd',
-                    } }
+                    }}
                     size="small"
                     label="Abschnitt"
                     variant="outlined"
@@ -196,23 +195,23 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
             }
 
             <div
-                style={ {
+                style={{
                     marginLeft: 'auto',
-                } }
+                }}
             >
                 {
                     statusIcons.map((icon) => {
                         const Icon = icon.icon;
                         return (<Tooltip
-                            title={ icon.tooltip }
-                            arrow
-                            key={ icon.tooltip }
-                        >
-                            <IconButton color={ icon.color }>
-                                <Icon/>
+                                title={icon.tooltip}
+                                arrow
+                                key={icon.tooltip}
+                            >
+                                <IconButton color={icon.color}>
+                                    <Icon/>
                                 </IconButton>
                             </Tooltip>
-                        )
+                        );
                     })
                 }
 
@@ -223,7 +222,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                         title="Element hinzufügen"
                         arrow
                     >
-                        <IconButton onClick={ props.onShowAddDialog }>
+                        <IconButton onClick={props.onShowAddDialog}>
                             <AddCircleOutlineOutlinedIcon/>
                         </IconButton>
                     </Tooltip>

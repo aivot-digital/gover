@@ -23,7 +23,11 @@ interface PublishPresetDialogProps {
 
 export function PublishPresetDialog(props: PublishPresetDialogProps) {
     const dispatch = useAppDispatch();
-    const {preset, onClose, ...passTroughProps} = props;
+    const {
+        preset,
+        onClose,
+        ...passTroughProps
+    } = props;
 
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
 
@@ -65,7 +69,7 @@ export function PublishPresetDialog(props: PublishPresetDialogProps) {
                             description_short: descriptionShort,
                             is_public: isPublic,
                             datenfeld_id: datenfeldId == null ? '' : datenfeldId,
-                        }
+                        },
                     )
                         .then(res => {
                             // TODO: Lokale Vorlage mit GoverStoreId updaten

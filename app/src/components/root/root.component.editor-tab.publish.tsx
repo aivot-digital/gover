@@ -1,30 +1,19 @@
 import React from 'react';
-import {
-    Alert,
-    AlertTitle,
-    Button,
-    Checkbox,
-    Divider,
-    List,
-    ListItem,
-    ListItemText,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faPauseCircle } from '@fortawesome/pro-light-svg-icons';
-import { type BaseEditorProps } from '../../editors/base-editor';
-import { type RootElement } from '../../models/elements/root-element';
-import { useAppDispatch } from '../../hooks/use-app-dispatch';
-import { useAppSelector } from '../../hooks/use-app-selector';
-import { selectMemberships, selectUser } from '../../slices/user-slice';
-import { ApplicationStatus } from '../../data/application-status/application-status';
-import { isElementTested } from '../../utils/is-element-tested';
-import { hasUntestedChild } from '../../utils/has-untested-child';
-import { UserRole } from '../../data/user-role';
-import { AlertComponent } from '../alert/alert-component';
-import { updateAppModel } from '../../slices/app-slice';
-import { Application } from '../../models/entities/application';
+import {Alert, AlertTitle, Button, Checkbox, Divider, List, ListItem, ListItemText, Tooltip, Typography} from '@mui/material';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faPaperPlane, faPauseCircle} from '@fortawesome/pro-light-svg-icons';
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {type RootElement} from '../../models/elements/root-element';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectMemberships, selectUser} from '../../slices/user-slice';
+import {ApplicationStatus} from '../../data/application-status/application-status';
+import {isElementTested} from '../../utils/is-element-tested';
+import {hasUntestedChild} from '../../utils/has-untested-child';
+import {UserRole} from '../../data/user-role';
+import {AlertComponent} from '../alert/alert-component';
+import {updateAppModel} from '../../slices/app-slice';
+import {Application} from '../../models/entities/application';
 
 export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -114,9 +103,9 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
             </Typography>
 
             <List
-                sx={ {
+                sx={{
                     my: 2,
-                } }
+                }}
             >
                 {
                     checklist.map((item) => (
@@ -124,12 +113,12 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                             secondaryAction={
                                 <Checkbox
                                     edge="start"
-                                    checked={ item.done }
+                                    checked={item.done}
                                 />
                             }
                         >
                             <ListItemText
-                                primary={ item.label }
+                                primary={item.label}
                             />
                         </ListItem>
                     ))
@@ -146,14 +135,14 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                     </Alert>
 
                     <Divider
-                        sx={ {my: 8} }
+                        sx={{my: 8}}
                     >
                         Formular zurückziehen
                     </Divider>
 
                     <Alert
                         severity="warning"
-                        sx={ {mb: 2} }
+                        sx={{mb: 2}}
                     >
                         <AlertTitle>
                             Formular zurückziehen
@@ -170,15 +159,15 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                         <Button
                             variant="outlined"
                             endIcon={
-                                <FontAwesomeIcon icon={ faPauseCircle }/>
+                                <FontAwesomeIcon icon={faPauseCircle}/>
                             }
                             color="warning"
-                            onClick={ () => {
+                            onClick={() => {
                                 dispatch(updateAppModel({
                                     ...props.entity,
                                     status: ApplicationStatus.Revoked,
                                 }));
-                            } }
+                            }}
                         >
                             Formular Zurückziehen
                         </Button>
@@ -190,9 +179,9 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                 isRevoked &&
                 <Alert
                     severity="warning"
-                    sx={ {
+                    sx={{
                         mb: 2,
-                    } }
+                    }}
                 >
                     <AlertTitle>
                         Formular zurückgezogen
@@ -232,14 +221,14 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                     <Button
                         variant="contained"
                         endIcon={
-                            <FontAwesomeIcon icon={ faPaperPlane }/>
+                            <FontAwesomeIcon icon={faPaperPlane}/>
                         }
-                        onClick={ () => {
+                        onClick={() => {
                             dispatch(updateAppModel({
                                 ...props.entity,
                                 status: ApplicationStatus.Published,
                             }));
-                        } }
+                        }}
                     >
                         Formular Veröffentlichen
                     </Button>

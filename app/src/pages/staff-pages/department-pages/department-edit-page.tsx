@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Tab, Tabs } from '@mui/material';
-import { EditDepartmentPageCommonTab } from './tabs/edit-department-page-common-tab';
-import { EditDepartmentPageMembersTab } from './tabs/edit-department-page-members-tab';
-import { PageWrapper } from '../../../components/page-wrapper/page-wrapper';
-import { type Department } from '../../../models/entities/department';
-import { DepartmentsService } from '../../../services/departments-service';
-import { delayPromise } from '../../../utils/with-delay';
-import { showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { useAppDispatch } from '../../../hooks/use-app-dispatch';
-import { shallowEquals } from '../../../utils/equality-utils';
-import { useMembershipGuard } from '../../../hooks/use-membership-guard';
+import React, {useEffect, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import {Tab, Tabs} from '@mui/material';
+import {EditDepartmentPageCommonTab} from './tabs/edit-department-page-common-tab';
+import {EditDepartmentPageMembersTab} from './tabs/edit-department-page-members-tab';
+import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
+import {type Department} from '../../../models/entities/department';
+import {DepartmentsService} from '../../../services/departments-service';
+import {delayPromise} from '../../../utils/with-delay';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {shallowEquals} from '../../../utils/equality-utils';
+import {useMembershipGuard} from '../../../hooks/use-membership-guard';
 
 export function DepartmentEditPage(): JSX.Element {
     const {id} = useParams();
@@ -82,7 +82,7 @@ export function DepartmentEditPage(): JSX.Element {
                     .create(department)
                     .then((createdDepartment) => {
                         dispatch(showSuccessSnackbar('Fachbereich erfolgreich erstellt!'));
-                        navigate(`/departments/${ createdDepartment.id }`, { replace: true });
+                        navigate(`/departments/${createdDepartment.id}`, {replace: true});
                     })
                     .catch((err) => {
                         console.error(err);
@@ -132,28 +132,28 @@ export function DepartmentEditPage(): JSX.Element {
     return (
         <PageWrapper
             title="Fachbereich bearbeiten"
-            isLoading={ isBusy }
-            is404={ is404 }
+            isLoading={isBusy}
+            is404={is404}
         >
             <Tabs
-                value={ currentTab }
-                onChange={ (_, val) => {
+                value={currentTab}
+                onChange={(_, val) => {
                     setCurrentTab(val);
-                } }
-                sx={ {
+                }}
+                sx={{
                     mb: 2,
                     borderBottom: 1,
                     borderColor: 'divider',
-                } }
+                }}
             >
                 <Tab
-                    value={ 0 }
+                    value={0}
                     label="Allgemein"
                 />
                 {
                     id !== 'new' &&
                     <Tab
-                        value={ 1 }
+                        value={1}
                         label="Mitarbeiter:innen"
                     />
                 }
@@ -163,12 +163,12 @@ export function DepartmentEditPage(): JSX.Element {
                 department != null &&
                 currentTab === 0 &&
                 <EditDepartmentPageCommonTab
-                    department={ department }
-                    hasChanged={ hasChanged }
-                    onChange={ handleChange }
-                    onSave={ handleSave }
-                    onReset={ handleReset }
-                    onDelete={ handleDelete }
+                    department={department}
+                    hasChanged={hasChanged}
+                    onChange={handleChange}
+                    onSave={handleSave}
+                    onReset={handleReset}
+                    onDelete={handleDelete}
                 />
             }
 
@@ -177,7 +177,7 @@ export function DepartmentEditPage(): JSX.Element {
                 department.id !== 0 &&
                 currentTab === 1 &&
                 <EditDepartmentPageMembersTab
-                    department={ department }
+                    department={department}
                 />
             }
         </PageWrapper>

@@ -45,7 +45,7 @@ function newNoCodeFunc(id1: keyof typeof customerData, id2: keyof typeof custome
                 reference: id1,
                 target: id2,
             }],
-        }
+        },
     };
 }
 
@@ -56,108 +56,108 @@ const evalAbbr = (allElements: AnyElement[], id1: keyof typeof customerData, id2
     customerData,
     element,
     '',
-    true
+    true,
 );
 
 test('test evaluate code function', () => {
     const resTrue = evaluateFunction(
-        undefined,[], {
-        requirements: '',
-        code: `
+        undefined, [], {
+            requirements: '',
+            code: `
         function main(data, element, id) {
             return data[id];
         }
         `,
-    }, customerData, element, 'boolean-id1', true);
+        }, customerData, element, 'boolean-id1', true);
     expect(resTrue).toBe(true);
 
     const resFalse = evaluateFunction(
-        undefined,[],{
-        requirements: '',
-        code: `
+        undefined, [], {
+            requirements: '',
+            code: `
         function main(data, element, id) {
             return data[id] == data['boolean-id2'];
         }
         `,
-    }, customerData, element, 'boolean-id1', true);
+        }, customerData, element, 'boolean-id1', true);
     expect(resFalse).toBe(false);
 });
 
 test('test condition evaluate no-code equals boolean', () => {
     expect(
-        evalAbbr([], 'boolean-id1', 'boolean-id1')
+        evalAbbr([], 'boolean-id1', 'boolean-id1'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'boolean-id1', 'boolean-id2')
+        evalAbbr([], 'boolean-id1', 'boolean-id2'),
     ).toBe(false);
 
     expect(
-        evalAbbr([],'boolean-id1', 'undefined')
+        evalAbbr([], 'boolean-id1', 'undefined'),
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals boolean -- type --> text', () => {
     expect(
-        evalAbbr([],'boolean-id1', 'boolean-text-id1')
+        evalAbbr([], 'boolean-id1', 'boolean-text-id1'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'boolean-id2', 'boolean-text-id2')
+        evalAbbr([], 'boolean-id2', 'boolean-text-id2'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'boolean-id1', 'boolean-text-id2')
+        evalAbbr([], 'boolean-id1', 'boolean-text-id2'),
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals text', () => {
     expect(
-        evalAbbr([],'text-id1', 'text-id1')
+        evalAbbr([], 'text-id1', 'text-id1'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'text-id1', 'text-id3')
+        evalAbbr([], 'text-id1', 'text-id3'),
     ).toBe(false);
 
     expect(
-        evalAbbr([],'text-id1', 'undefined')
+        evalAbbr([], 'text-id1', 'undefined'),
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals number', () => {
     expect(
-        evalAbbr([],'num-id1', 'num-id2')
+        evalAbbr([], 'num-id1', 'num-id2'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'num-id1', 'num-id3')
+        evalAbbr([], 'num-id1', 'num-id3'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'num-id1', 'num-id4')
+        evalAbbr([], 'num-id1', 'num-id4'),
     ).toBe(false);
 
     expect(
-        evalAbbr([],'num-id1', 'num-id4')
+        evalAbbr([], 'num-id1', 'num-id4'),
     ).toBe(false);
 
     expect(
-        evalAbbr([],'num-id1', 'undefined')
+        evalAbbr([], 'num-id1', 'undefined'),
     ).toBe(false);
 });
 
 test('test condition evaluate no-code equals number -- type --> text', () => {
     expect(
-        evalAbbr([],'num-id1', 'num-text-id1')
+        evalAbbr([], 'num-id1', 'num-text-id1'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'num-id2', 'num-text-id3')
+        evalAbbr([], 'num-id2', 'num-text-id3'),
     ).toBe(true);
 
     expect(
-        evalAbbr([],'num-id1', 'num-text-id4')
+        evalAbbr([], 'num-id1', 'num-text-id4'),
     ).toBe(false);
 });
 
