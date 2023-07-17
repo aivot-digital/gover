@@ -3,15 +3,17 @@ package de.aivot.GoverBackend.enums;
 import de.aivot.GoverBackend.lib.Identifiable;
 
 public enum MailTemplate implements Identifiable<String> {
-    ExceptionMail("system-mail-exception"),
-    SystemInfoMail("system-mail-info"),
+    CustomerMail("customer-mail"),
     DestinationMail("destination-mail"),
-    SmtpTestMail("system-test-mail"),
-    CustomerMail("customer-mail");
+    NewSubmissionMail("new-submission-mail"),
+    SystemExceptionMail("system-exception-mail"),
+    SystemTestMail("system-test-mail"),
+    UserCreatedMail("user-created-mail"),
+    ;
 
     private final String key;
 
-    private MailTemplate(String key) {
+    MailTemplate(String key) {
         this.key = key;
     }
 

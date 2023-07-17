@@ -16,14 +16,14 @@ export function isElementValid(
     allElements: AnyElement[],
     dispatch: Dispatch<any>,
     _comp: AnyElement,
-    userInput: any
+    userInput: any,
 ): boolean {
     const id = idPrefix != null ? (idPrefix + _comp.id) : _comp.id;
 
     const comp = {
         ..._comp,
         ...generateComponentPatch(idPrefix, allElements, _comp.id, _comp, userInput),
-    }
+    };
 
     $debug.start(`Validating Element ${id}`);
 
@@ -41,7 +41,10 @@ export function isElementValid(
             const error = validator.makeErrors(allElements, idPrefix, _comp.id, comp, userInput);
             if (error != null) {
                 isValid = false;
-                dispatch(addError({key: id, error}));
+                dispatch(addError({
+                    key: id,
+                    error,
+                }));
             }
         }
     }
@@ -53,7 +56,7 @@ export function isElementValid(
                 if (comp.type === ElementType.ReplicatingContainer) {
                     const values: string[] | null = userInput[id];
                     return (values ?? []).map(val =>
-                        isElementValid($debug, `${id}_${val}_`, allElements, dispatch, child, userInput, )
+                        isElementValid($debug, `${id}_${val}_`, allElements, dispatch, child, userInput),
                     ).every(val => val);
                 } else {
                     return isElementValid($debug, idPrefix, allElements, dispatch, child, userInput);

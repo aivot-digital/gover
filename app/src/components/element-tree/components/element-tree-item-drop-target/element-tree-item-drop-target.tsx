@@ -2,22 +2,17 @@ import React from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useDrop} from 'react-dnd';
 import {Box} from '@mui/material';
-import {RootState} from '../../../../store';
-import {AnyElement} from '../../../../models/elements/any-element';
-import {ElementTreeItemDropTargetProps} from './element-tree-item-drop-target-props';
-import {AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import {type RootState} from '../../../../store';
+import {type AnyElement} from '../../../../models/elements/any-element';
+import {type ElementTreeItemDropTargetProps} from './element-tree-item-drop-target-props';
+import {type AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
 import {ElementChildOptions} from '../../../../data/element-type/element-child-options';
 
 
-export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>({
-                                                                                children,
-                                                                                element,
-                                                                                isPlaceholder,
-                                                                                onDrop,
-                                                                            }: ElementTreeItemDropTargetProps<T>) {
+export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>(props: ElementTreeItemDropTargetProps<T>): JSX.Element {
     const dispatch = useDispatch();
     const adminSettings = useSelector((state: RootState) => state.adminSettings);
-    const acceptedChildren: string[] = (ElementChildOptions[element.type] ?? []).map(e => e.toString());
+    const acceptedChildren: string[] = (ElementChildOptions[props.element.type] ?? []).map((e) => e.toString());
 
     const [{isOver}, drop] = useDrop(
         () => ({
@@ -30,21 +25,21 @@ export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>({
                 if (didDrop) {
                     return;
                 }
-                onDrop(droppedElement);
+                props.onDrop(droppedElement);
             },
             collect: (monitor) => {
                 return {
                     isOver: /* canDrop(monitor.getItem(), path) && */ monitor.isOver({shallow: true}),
-                }
+                };
             },
         }),
-        [dispatch, acceptedChildren, onDrop],
+        [dispatch, acceptedChildren, props.onDrop],
     );
 
     return (
         <Box
             sx={{
-                position: 'relative'
+                position: 'relative',
             }}
         >
             {
@@ -55,8 +50,8 @@ export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>({
                         position: 'absolute',
                         height: '100%',
                         width: '100%',
-                        borderTop: isOver && !isPlaceholder ? '4px solid lightgray' : 'none',
-                        backgroundColor: isOver && isPlaceholder ? '#00000055' : 'transparent',
+                        borderTop: isOver && (props.isPlaceholder === false) ? '4px solid lightgray' : 'none',
+                        backgroundColor: isOver && (props.isPlaceholder === true) ? '#00000055' : 'transparent',
                         borderRadius: 0.25,
                         fontStyle: 'italic',
                         opacity: 0.5,
@@ -65,7 +60,7 @@ export function ElementTreeItemDropTarget<T extends AnyElementWithChildren>({
                 </Box>
             }
 
-            {children}
+            {props.children}
         </Box>
     );
 }

@@ -1,6 +1,6 @@
-import {RootElement} from "./root-element";
-import {StepElement} from "./steps/step-element";
-import {AnyLayoutElement} from "./form/layout/any-layout-element";
+import {type RootElement} from './root-element';
+import {type StepElement} from './steps/step-element';
+import {type AnyLayoutElement} from './form/layout/any-layout-element';
 
 export type AnyElementWithChildren =
     RootElement |

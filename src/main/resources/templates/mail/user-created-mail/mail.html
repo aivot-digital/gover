@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html
+        lang="de"
+>
+    <head>
+        <meta charset="UTF-8">
+        <title>Nutzerkonto angelegt</title>
+    </head>
+    <body>
+        <p>
+            Hallo, <br/>
+            f&uuml;r Sie wurde ein neues Benutzerkonto in Gover angelegt.
+        </p>
+
+        <p>
+            E-Mail-Adresse: <strong th:text="${email}"></strong> <br/>
+            Passwort: <strong th:text="${password}"></strong>
+        </p>
+
+        <p>
+            Sie k&ouml;nnen sich unter <a
+                th:href="${hostname}"
+                th:text="${hostname}"
+        ></a> anmelden.
+        </p>
+
+        <p>
+            <strong>Bitte &auml;ndern Sie Ihr Passwort nach der ersten Anmeldung.</strong>
+        </p>
+
+        <p>
+            Diese E-Mail ist automatisch generiert.
+            Bitte nicht antworten.
+        </p>
+    </body>
+</html>

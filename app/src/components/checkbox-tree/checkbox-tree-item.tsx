@@ -1,10 +1,10 @@
-import {CheckboxTreeOptionItem} from "./checkbox-tree-option-item";
-import React, {useState} from "react";
-import {Box, Checkbox, FormControlLabel, IconButton} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faChevronDown, faChevronUp} from "@fortawesome/pro-light-svg-icons";
-import {CheckboxTree} from "./checkbox-tree";
-import {CheckboxTreeOption} from "./checkbox-tree-option";
+import {CheckboxTreeOptionItem} from './checkbox-tree-option-item';
+import React, {useState} from 'react';
+import {Box, Checkbox, FormControlLabel, IconButton} from '@mui/material';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faChevronDown, faChevronUp} from '@fortawesome/pro-light-svg-icons';
+import {CheckboxTree} from './checkbox-tree';
+import {CheckboxTreeOption} from './checkbox-tree-option';
 
 function getChildValues(treeOption: CheckboxTreeOption): string[] {
     const vals: string[] = [];
@@ -23,11 +23,17 @@ function getChildValues(treeOption: CheckboxTreeOption): string[] {
     return vals;
 }
 
-export function CheckboxTreeItem({item, value, onChange}: {
+export function CheckboxTreeItem({
+                                     item,
+                                     value,
+                                     onChange,
+                                     disabled,
+                                 }: {
     item: CheckboxTreeOptionItem,
     value: string[],
     onChange: (value: string[]) => void;
-}) {
+    disabled: boolean;
+}): JSX.Element {
     const [isExtended, setIsExtended] = useState(false);
     const childValues = getChildValues(item);
 
@@ -47,6 +53,7 @@ export function CheckboxTreeItem({item, value, onChange}: {
                                 }
                             }}
                             indeterminate={value.some(val => childValues.includes(val))}
+                            disabled={disabled}
                         />
                     }
                 />
@@ -72,6 +79,7 @@ export function CheckboxTreeItem({item, value, onChange}: {
                         options={item.children}
                         value={value}
                         onChange={onChange}
+                        disabled={disabled}
                     />
                 </Box>
             }

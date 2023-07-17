@@ -1,4 +1,4 @@
-import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit'
+import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {ApplicationService} from '../services/application-service';
 import {RootState} from '../store';
 import {Application} from "../models/entities/application";
@@ -21,14 +21,14 @@ export const fetchApplicationById = createAsyncThunk(
     'app/fetchApplicationById',
     async (id: number, _) => {
         return await ApplicationService.retrieve(id);
-    }
+    },
 );
 
 export const fetchApplicationBySlug = createAsyncThunk(
     'app/fetchApplicationBySlug',
-    async (req: { slug: string, version: string }, _) => {
+    async (req: {slug: string, version: string}, _) => {
         return await ApplicationService.retrievePublic(req.slug, req.version);
-    }
+    },
 );
 
 const appSlice = createSlice({

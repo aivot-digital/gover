@@ -1,36 +1,29 @@
 import React, {useEffect, useState} from 'react';
-import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../static-components/preamble/preamble';
-import {
-    Box,
-    Button,
-    CircularProgress,
-    FormHelperText,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-    useTheme
-} from '@mui/material';
+import {Box, Button, CircularProgress, FormHelperText, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../static-components/fading-paper/fading-paper';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faFileArrowUp} from '@fortawesome/pro-light-svg-icons';
+
 import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
-import {Department} from '../../models/entities/department';
+import {type Department} from '../../models/entities/department';
 import {DepartmentsService} from '../../services/departments-service';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectCustomerInputErrorValue} from '../../slices/customer-input-errors-slice';
 import {selectLoadedApplication} from '../../slices/app-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {BaseViewProps} from "../../views/base-view";
+import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {type BaseViewProps} from '../../views/base-view';
 import GppGoodTwoToneIcon from '@mui/icons-material/GppGoodTwoTone';
 import SmartToyTwoToneIcon from '@mui/icons-material/SmartToyTwoTone';
 
 export const SubmitHumanKey = '__human__';
 
-export function SubmitComponentView({allElements, element}: BaseViewProps<SubmitStepElement, void>) {
+export function SubmitComponentView({
+                                        allElements,
+                                        element,
+                                    }: BaseViewProps<SubmitStepElement, void>): JSX.Element | null {
     const theme = useTheme();
     const dispatch = useAppDispatch();
 
@@ -44,12 +37,18 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (application?.responsibleDepartment) {
+        if (
+            application?.responsibleDepartment != null &&
+            (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartment)
+        ) {
             DepartmentsService
                 .retrieve(application.responsibleDepartment)
                 .then(setResponsibleDepartment);
         }
-        if (application?.managingDepartment) {
+        if (
+            application?.managingDepartment != null &&
+            (managingDepartment == null || managingDepartment.id !== application.managingDepartment)
+        ) {
             DepartmentsService
                 .retrieve(application.managingDepartment)
                 .then(setManagingDepartment);
@@ -63,24 +62,32 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
     return (
         <>
             {
+                element.textPreSubmit != null &&
                 !isStringNullOrEmpty(element.textPreSubmit) &&
                 <Preamble
-                    allElements={allElements}
-                    text={element.textPreSubmit ?? ''}
+                    text={element.textPreSubmit}
+                    logoLink={application.root.introductionStep.initiativeLogoLink}
+                    logoAlt={application.root.introductionStep.initiativeName}
                 />
             }
 
             {
                 (
-                    responsibleDepartment ||
-                    managingDepartment ||
+                    (responsibleDepartment != null) ||
+                    (managingDepartment != null) ||
                     !isStringNullOrEmpty(element.textProcessingTime) ||
-                    (element.documentsToReceive && element.documentsToReceive.length > 0)
+                    ((element.documentsToReceive != null) && element.documentsToReceive.length > 0)
                 ) &&
                 <FadingPaper>
                     {
-                        responsibleDepartment &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (responsibleDepartment != null) &&
+                        <Box
+                            sx={{
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            }}
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -98,8 +105,14 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                     }
 
                     {
-                        managingDepartment &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (managingDepartment != null) &&
+                        <Box
+                            sx={{
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            }}
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -118,7 +131,13 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
 
                     {
                         element.textProcessingTime &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        <Box
+                            sx={{
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            }}
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -135,8 +154,14 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                     }
 
                     {
-                        element.documentsToReceive && element.documentsToReceive.length > 0 &&
-                        <Box sx={{mb: 3, position: 'relative', zIndex: 1,}}>
+                        (element.documentsToReceive != null) && element.documentsToReceive.length > 0 &&
+                        <Box
+                            sx={{
+                                mb: 3,
+                                position: 'relative',
+                                zIndex: 1,
+                            }}
+                        >
                             <Typography
                                 variant="subtitle1"
                                 color="primary"
@@ -183,19 +208,28 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
 
                 <Typography
                     variant={'body2'}
-                    sx={{maxWidth: '660px', mt: 1}}
+                    sx={{
+                        maxWidth: '660px',
+                        mt: 1,
+                    }}
                 >
                     Bitte bestätigen Sie mit einem Klick auf das nachfolgende Element, dass Sie ein Mensch sind.
                     Die Verifizierung kann einen kleinen Moment dauern. Vielen Dank!
                 </Typography>
 
-                <Box sx={{mt: 3, minHeight: '61px'}}>
+                <Box
+                    sx={{
+                        mt: 3,
+                        minHeight: '61px',
+                    }}
+                >
                     {
                         !isCalculating && !isHuman &&
                         <>
                             <Box>
                                 <Button
-                                    startIcon={<SmartToyTwoToneIcon/>}
+                                    startIcon={<SmartToyTwoToneIcon
+                                    />}
                                     onClick={() => {
                                         setIsCalculating(true);
                                         setTimeout(() => {
@@ -206,7 +240,11 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                                             setIsCalculating(false);
                                         }, 1000);
                                     }}
-                                    sx={{border: '1px solid #E0E0E0', px: 4, py: 2}}
+                                    sx={{
+                                        border: '1px solid #E0E0E0',
+                                        px: 4,
+                                        py: 2,
+                                    }}
                                     size={'large'}
                                 >
                                     Verifizierung starten
@@ -228,10 +266,18 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                     }
                     {
                         isHuman &&
-                        <Box sx={{display: 'flex', alignItems: 'center'}}>
-                            <GppGoodTwoToneIcon fontSize={"large"} sx={{color: theme.palette.primary.main}}/>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <GppGoodTwoToneIcon fontSize={"large"}
+                                                sx={{color: theme.palette.primary.main}}/>
                             <Typography
-                                sx={{ml: 2}}
+                                sx={{
+                                    ml: 2,
+                                }}
                             >
                                 Verifizierung erfolgreich. Sie sind ein Mensch.
                             </Typography>
@@ -239,7 +285,6 @@ export function SubmitComponentView({allElements, element}: BaseViewProps<Submit
                     }
                 </Box>
             </Box>
-
         </>
     );
 }

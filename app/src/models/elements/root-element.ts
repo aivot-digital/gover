@@ -1,14 +1,13 @@
 import {ElementType} from '../../data/element-type/element-type';
-import {BaseElement} from './base-element';
-import {StepElement} from './steps/step-element';
-import {IntroductionStepElement} from './steps/introduction-step-element';
-import {SummaryStepElement} from './steps/summary-step-element';
-import {SubmitStepElement} from './steps/submit-step-element';
+import {type BaseElement} from './base-element';
+import {type StepElement} from './steps/step-element';
+import {type IntroductionStepElement} from './steps/introduction-step-element';
+import {type SummaryStepElement} from './steps/summary-step-element';
+import {type SubmitStepElement} from './steps/submit-step-element';
 
 export interface RootElement extends BaseElement<ElementType.Root> {
     headline?: string;
     tabTitle?: string;
-    theme?: string;
     children: StepElement[];
 
     expiring?: string;

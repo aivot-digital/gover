@@ -46,7 +46,6 @@ const fontStackAccentCopy = ['"Public Sans"',
 ].join(',');
 
 export const BaseTheme = createTheme({
-    // ...Themes(Ministry.Innen),
     shape: {
         borderRadius: 4,
     },
@@ -56,7 +55,7 @@ export const BaseTheme = createTheme({
             fontFamily: fontStackHeadlines,
             fontWeight: 700,
             fontSize: '1.802rem',
-            lineHeight: '2rem'
+            lineHeight: '2rem',
         },
         h2: {
             fontFamily: fontStackHeadlines,
@@ -135,14 +134,14 @@ export const BaseTheme = createTheme({
             },
             defaultProps: {
                 disableElevation: true,
-            }
+            },
         },
         MuiStepContent: {
             styleOverrides: {
                 root: {
                     paddingTop: '1em',
                     paddingLeft: '45px',
-                    marginLeft: '20px'
+                    marginLeft: '20px',
                 },
             },
         },
@@ -150,14 +149,14 @@ export const BaseTheme = createTheme({
             styleOverrides: {
                 root: {
                     marginLeft: '20px',
-                    display: 'none'
+                    display: 'none',
                 },
             },
         },
         MuiStepLabel: {
             styleOverrides: {
                 iconContainer: {
-                    color: 'rgba(0, 0, 0, 0.4)'
+                    color: 'rgba(0, 0, 0, 0.4)',
                 },
                 label: {
                     fontFamily: fontStackHeadlines,
@@ -168,12 +167,12 @@ export const BaseTheme = createTheme({
                     '&.Mui-completed': {
                         '.completed-step-suffix': {
                             display: 'inline-block',
-                        }
+                        },
                     },
                     '.completed-step-suffix': {
                         display: 'none',
                     },
-                    color: 'rgba(0, 0, 0, 0.4)'
+                    'color': 'rgba(0, 0, 0, 0.4)',
                 },
             },
         },
@@ -214,7 +213,7 @@ export const BaseTheme = createTheme({
                     fontFamily: fontStackHeadlines,
                     fontWeight: 500,
                     fontSize: '1.125rem',
-                    marginBottom: '.125rem'
+                    marginBottom: '.125rem',
                 },
             },
         },
@@ -223,13 +222,13 @@ export const BaseTheme = createTheme({
                 root: {
                     '&.Mui-disabled': {
                         backgroundColor: '#F8F8F8',
-                        cursor: 'not-allowed'
+                        cursor: 'not-allowed',
                     },
                 },
                 input: {
                     '&.Mui-disabled': {
                         backgroundColor: '#F8F8F8',
-                        cursor: 'not-allowed'
+                        cursor: 'not-allowed',
                     },
                 },
             },
@@ -238,7 +237,7 @@ export const BaseTheme = createTheme({
             styleOverrides: {
                 root: {
                     '&.Mui-disabled': {
-                        cursor: 'not-allowed'
+                        cursor: 'not-allowed',
                     },
                 },
             },

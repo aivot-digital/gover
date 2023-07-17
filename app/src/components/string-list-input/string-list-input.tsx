@@ -1,23 +1,8 @@
-import {
-    Alert,
-    Box,
-    Button,
-    FormControl,
-    FormHelperText,
-    FormLabel, IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableRow,
-    TextField, Tooltip,
-    Typography
-} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faAdd, faArrowRightArrowLeft, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
-import {useState} from "react";
-import {TextFieldComponent} from "../text-field/text-field-component";
+import {Alert, Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Tooltip, Typography} from '@mui/material';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faAdd, faArrowRightArrowLeft, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
+import {useState} from 'react';
+import {TextFieldComponent} from '../text-field/text-field-component';
 
 interface StringListInputProps {
     label: string;
@@ -27,6 +12,7 @@ interface StringListInputProps {
     value?: string[];
     onChange: (ls: string[] | undefined) => void;
     allowEmpty: boolean;
+    disabled?: boolean;
 }
 
 export function StringListInput({
@@ -36,7 +22,8 @@ export function StringListInput({
                                     noItemsHint,
                                     value,
                                     onChange,
-                                    allowEmpty
+                                    allowEmpty,
+                                    disabled,
                                 }: StringListInputProps) {
     const [rawMode, setRawMode] = useState(false);
     const [rawBuffer, setRawBuffer] = useState<string>();
@@ -49,19 +36,28 @@ export function StringListInput({
             component={Paper}
             sx={{p: 2}}
         >
-            <Box sx={{display: 'flex', alignItems: 'center'}}>
-                <Tooltip
-                    title="Modus umschalten"
-                >
-                    <IconButton
-                        size="small"
-                        onClick={() => setRawMode(!rawMode)}
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                }}
+            >
+
+                {
+                    !disabled &&
+                    <Tooltip
+                        title="Modus umschalten"
                     >
-                        <FontAwesomeIcon
-                            icon={faArrowRightArrowLeft}
-                        />
-                    </IconButton>
-                </Tooltip>
+                        <IconButton
+                            size="small"
+                            onClick={() => setRawMode(!rawMode)}
+                        >
+                            <FontAwesomeIcon
+                                icon={faArrowRightArrowLeft}
+                            />
+                        </IconButton>
+                    </Tooltip>
+                }
 
                 <FormLabel
                     sx={{ml: 1}}
@@ -69,19 +65,22 @@ export function StringListInput({
                     {label}
                 </FormLabel>
 
-                <Button
-                    sx={{
-                        ml: 'auto',
-                    }}
-                    startIcon={
-                        <FontAwesomeIcon
-                            icon={faAdd}
-                        />
-                    }
-                    onClick={() => onChange([...(value ?? []), ''])}
-                >
-                    {addLabel}
-                </Button>
+                {
+                    !disabled &&
+                    <Button
+                        sx={{
+                            ml: 'auto',
+                        }}
+                        startIcon={
+                            <FontAwesomeIcon
+                                icon={faAdd}
+                            />
+                        }
+                        onClick={() => onChange([...(value ?? []), ''])}
+                    >
+                        {addLabel}
+                    </Button>
+                }
             </Box>
 
             {
@@ -106,7 +105,7 @@ export function StringListInput({
                     <Table
                         size="small"
                         sx={{
-                            "& td": {
+                            '& td': {
                                 border: 0,
                             },
                         }}
@@ -133,25 +132,29 @@ export function StringListInput({
                                                 }}
                                                 error={val.length === 0}
                                                 helperText={val.length === 0 ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
+                                                disabled={disabled}
                                             />
                                         </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                color="error"
-                                                startIcon={
-                                                    <FontAwesomeIcon
-                                                        icon={faTrashCanXmark}
-                                                    />
-                                                }
-                                                onClick={() => {
-                                                    const updatedValue = [...value];
-                                                    updatedValue.splice(index, 1);
-                                                    onChange(updatedValue);
-                                                }}
-                                            >
-                                                Entfernen
-                                            </Button>
-                                        </TableCell>
+                                        {
+                                            !disabled &&
+                                            <TableCell>
+                                                <Button
+                                                    color="error"
+                                                    startIcon={
+                                                        <FontAwesomeIcon
+                                                            icon={faTrashCanXmark}
+                                                        />
+                                                    }
+                                                    onClick={() => {
+                                                        const updatedValue = [...value];
+                                                        updatedValue.splice(index, 1);
+                                                        onChange(updatedValue);
+                                                    }}
+                                                >
+                                                    Entfernen
+                                                </Button>
+                                            </TableCell>
+                                        }
                                     </TableRow>
                                 ))
                             }

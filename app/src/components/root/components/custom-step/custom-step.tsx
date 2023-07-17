@@ -62,7 +62,11 @@ export function CustomStep({
             <StepLabel
                 StepIconComponent={(props) => (
                     <Icon
-                        sx={{fontSize: '2rem', marginLeft: '4px', color: props.active ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.4)'}}
+                        sx={{
+                            fontSize: '2rem',
+                            marginLeft: '4px',
+                            color: props.active ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.4)',
+                        }}
                     />
                 )}
             >
@@ -76,7 +80,10 @@ export function CustomStep({
                     sx={{ml: 0.75}}
                 >
                     <CheckCircleTwoToneIcon
-                        sx={{color: theme.palette.primary.main, transform: 'translateY(5px)'}}
+                        sx={{
+                            color: theme.palette.primary.main,
+                            transform: 'translateY(5px)',
+                        }}
                     />
                 </Box>
             </StepLabel>
@@ -134,7 +141,7 @@ export function CustomStep({
                                 mt: 2,
                                 [theme.breakpoints.up('md')]: {
                                     mt: 0,
-                                }
+                                },
                             }}
                         >
                             {previousLabel}

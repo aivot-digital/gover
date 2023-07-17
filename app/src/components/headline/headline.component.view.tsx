@@ -1,4 +1,4 @@
-import {Typography, useTheme} from '@mui/material';
+import {useTheme} from '@mui/material';
 import {HeadlineElement} from '../../models/elements/form/content/headline-element';
 import {BaseViewProps} from "../../views/base-view";
 import {HeadlineComponent} from "./headline-component";

@@ -1,15 +1,21 @@
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {User} from "../../../models/entities/user";
-import {UsersService} from "../../../services/users-service";
-import {useNavigate} from "react-router-dom";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {GridColDef} from "@mui/x-data-grid";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import React, {useEffect, useState} from 'react';
+import {type User} from '../../../models/entities/user';
+import {UsersService} from '../../../services/users-service';
+import {useNavigate} from 'react-router-dom';
+import {type GridColDef} from '@mui/x-data-grid';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {delayPromise} from '../../../utils/with-delay';
+import {filterItems} from '../../../utils/filter-items';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
+import {Box, FormControlLabel, Switch} from '@mui/material';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
-
-const columns: GridColDef<User>[] = [
+const columns: Array<GridColDef<User>> = [
+    {
+        field: 'active',
+        type: 'boolean',
+        headerName: 'Aktiv',
+    },
     {
         field: 'name',
         headerName: 'Name',
@@ -23,49 +29,89 @@ const columns: GridColDef<User>[] = [
     {
         field: 'admin',
         headerName: 'Rolle',
-        valueGetter: params => params.row.admin ? 'Globale Administrator:in' : 'Standard Nutzer:in',
+        valueGetter: (params) => params.row.admin ? 'Globale Administrator:in' : 'Standard Nutzer:in',
         flex: 1,
     },
 ];
 
-
-export function UserListPage() {
-    useAuthGuard();
-    useUserGuard(user => user != null && user.admin);
+export function UserListPage(): JSX.Element {
+    useAdminGuard();
 
     const navigate = useNavigate();
-
-    useEffect(() => {
-        UsersService
-            .list()
-            .then(setUsers);
-    }, []);
 
     const [search, setSearch] = useState('');
     const [users, setUsers] = useState<User[]>();
 
-    const filteredUsers = users == null ? undefined : users
-        .filter(user => user.name.toLowerCase().includes(search.toLowerCase()));
+    const [includeInactive, setIncludeInactive] = useState(false);
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadingError, setLoadingError] = useState<string>();
+
+    useEffect(() => {
+        setIsLoading(true);
+        setLoadingError(undefined);
+
+        delayPromise(UsersService.list({
+            excludeInactive: (!includeInactive).toString(),
+        }))
+            .then(setUsers)
+            .catch((err) => {
+                console.error(err);
+                setLoadingError('Die Liste der Mitarbeiter:innen konnte nicht geladen werden.');
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
+    }, [includeInactive]);
+
+    const filteredUsers = filterItems(users, 'name', search);
 
     return (
         <TablePageWrapper
-            title="Benutzerverwaltung"
-            isLoading={filteredUsers == null}
+            title="Mitarbeiter:innen"
+            isLoading={isLoading}
+            error={loadingError}
+
+            hint={{
+                text: 'Hier können Sie Mitarbeiter:innen anlegen, um diesen so Zugriff auf Gover zu gewähren.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+            }}
 
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Benutzer suchen..."
+            searchPlaceholder="Suchen..."
 
             rows={filteredUsers ?? []}
             columns={columns}
-            onRowClick={user => navigate(`/users/${user.id}`)}
+            onRowClick={(user) => {
+                navigate(`/users/${user.id}`);
+            }}
 
             actions={[{
-                label: 'Benutzer:in hinzufügen',
+                label: 'Mitarbeiter:in hinzufügen',
                 icon: <AddOutlinedIcon/>,
-                onClick: () => navigate('/users/new'),
-                tooltip: 'Neue Benutzer:in hinzufügen',
+                link: '/users/new',
+                tooltip: 'Neue Mitarbeiter:in hinzufügen',
             }]}
-        />
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    my: 2,
+                }}
+            >
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={includeInactive}
+                            onChange={(event) => {
+                                setIncludeInactive(event.target.checked);
+                            }}
+                        />
+                    }
+                    label="Inklusive inaktiver Mitarbeiter:innen anzeigen"
+                />
+            </Box>
+        </TablePageWrapper>
     );
 }

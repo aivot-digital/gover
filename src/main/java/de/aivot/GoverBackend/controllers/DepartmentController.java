@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.UserRole;
+import de.aivot.GoverBackend.models.dtos.ApplicationListDto;
 import de.aivot.GoverBackend.models.entities.AccessibleDepartment;
 import de.aivot.GoverBackend.models.entities.Department;
 import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.permissions.IsAdmin;
 import de.aivot.GoverBackend.repositories.AccessibleDepartmentRepository;
+import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,21 +17,22 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
 public class DepartmentController {
     private final DepartmentRepository departmentRepository;
     private final AccessibleDepartmentRepository accessibleDepartmentRepository;
+    private final ApplicationRepository applicationRepository;
 
     @Autowired
     public DepartmentController(
             DepartmentRepository departmentRepository,
-            AccessibleDepartmentRepository accessibleDepartmentRepository
-    ) {
+            AccessibleDepartmentRepository accessibleDepartmentRepository,
+            ApplicationRepository applicationRepository) {
         this.departmentRepository = departmentRepository;
         this.accessibleDepartmentRepository = accessibleDepartmentRepository;
+        this.applicationRepository = applicationRepository;
     }
 
     @GetMapping("/api/departments")
@@ -81,6 +84,15 @@ public class DepartmentController {
         return departmentRepository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/api/departments/{id}/applications")
+    public Collection<ApplicationListDto> retrieveApplications(@PathVariable Integer id) {
+        return applicationRepository
+                .findAllByDevelopingDepartmentId(id)
+                .stream()
+                .map(ApplicationListDto::new)
+                .toList();
     }
 
     @GetMapping("/api/public/departments/{id}")

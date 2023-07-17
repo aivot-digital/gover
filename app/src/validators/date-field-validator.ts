@@ -15,7 +15,7 @@ export class DateFieldValidator extends BaseInputElementValidator<string, DateFi
         if (value != null) {
             const timestamp = Date.parse(value);
             if (isNaN(timestamp)) {
-                return 'Bitte geben Sie ein Datum im geforderten Format ein.'
+                return 'Bitte geben Sie ein Datum im geforderten Format ein.';
             }
         }
 

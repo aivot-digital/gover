@@ -17,8 +17,28 @@ public interface ApplicationRepository extends JpaRepository<Application, Intege
     boolean existsBySlugAndVersion(String slug, String version);
 
     @Transactional(readOnly = true)
+    boolean existsBySlug(String slug);
+
+    @Transactional(readOnly = true)
+    boolean existsBySlugAndDevelopingDepartment_Id(String slug, Integer department);
+
+    @Transactional(readOnly = true)
+    boolean existsByDestination_Id(Integer destination);
+
+    @Transactional(readOnly = true)
+    boolean existsByTheme_Id(Integer theme);
+
+    @Transactional(readOnly = true)
     Collection<Application> findAllByStatus(ApplicationStatus status);
 
     @Transactional(readOnly = true)
     Collection<Application> findAllByIdIn(List<Integer> ids);
+
+    @Transactional(readOnly = true)
+    Collection<Application> findAllByDevelopingDepartmentId(Integer department);
+
+    @Transactional(readOnly = true)
+    Collection<Application> findAllByDestinationId(Integer destination);
+    @Transactional(readOnly = true)
+    Collection<Application> findAllByThemeId(Integer destination);
 }

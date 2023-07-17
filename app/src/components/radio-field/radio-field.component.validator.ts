@@ -13,7 +13,7 @@ export class RadioFieldComponentValidator extends BaseInputElementValidator<stri
     protected makeSpecificErrors(comp: RadioFieldElement, value: string | undefined, userInput: any): string | null {
         if (value != null) {
             if (!(comp.options ?? []).includes(value)) {
-                return 'Bitte wählen Sie eine der vorgegebenen Optionen aus.'
+                return 'Bitte wählen Sie eine der vorgegebenen Optionen aus.';
             }
         }
         return null;

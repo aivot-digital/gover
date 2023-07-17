@@ -3,7 +3,10 @@ import {FileUploadElement, FileUploadElementItem} from "../../models/elements/fo
 import {humanizeFileSize} from "../../utils/huminization-utils";
 import {BaseSummaryProps} from "../../summaries/base-summary";
 
-export function FileUploadSummary({model, value}: BaseSummaryProps<FileUploadElement, FileUploadElementItem[]>) {
+export function FileUploadSummary({
+                                      model,
+                                      value,
+                                  }: BaseSummaryProps<FileUploadElement, FileUploadElementItem[]>) {
     const theme = useTheme();
 
     return (
@@ -11,7 +14,7 @@ export function FileUploadSummary({model, value}: BaseSummaryProps<FileUploadEle
             container
             sx={{
                 borderBottom: "1px solid #D4D4D4",
-                py: 1
+                py: 1,
             }}
         >
             <Grid
@@ -23,7 +26,7 @@ export function FileUploadSummary({model, value}: BaseSummaryProps<FileUploadEle
                     pr: 5,
                     [theme.breakpoints.up('md')]: {
                         textAlign: 'right',
-                    }
+                    },
                 }}
             >
                 <Typography
@@ -32,7 +35,7 @@ export function FileUploadSummary({model, value}: BaseSummaryProps<FileUploadEle
                         fontWeight: 'bold',
                         [theme.breakpoints.up('md')]: {
                             fontWeight: 'normal',
-                        }
+                        },
                     }}
                 >
                     {model.label}

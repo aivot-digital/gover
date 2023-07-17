@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.controllers;
 
-import de.aivot.GoverBackend.permissions.IsAdmin;
+import de.aivot.GoverBackend.services.AVService;
 import de.aivot.GoverBackend.services.AssetStorageService;
 import de.aivot.GoverBackend.services.MailService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +9,6 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,13 +28,16 @@ public class AssetsController {
     private final AssetStorageService assetStorageService;
     private final MailService mailService;
 
+    private final AVService avService;
+
     @Autowired
     public AssetsController(
             AssetStorageService assetStorageService,
-            MailService mailService
-    ) {
+            MailService mailService,
+            AVService avService) {
         this.assetStorageService = assetStorageService;
         this.mailService = mailService;
+        this.avService = avService;
     }
 
     @GetMapping("/api/public/system-assets/{assetKey}")
@@ -67,11 +69,8 @@ public class AssetsController {
         }
     }
 
-    @IsAdmin
     @GetMapping("/api/system-assets")
-    public Collection<String> list(
-            Authentication authentication
-    ) {
+    public Collection<String> list() {
         File assetRoot = new File(assetStorageService.getAssetRoot());
         File[] files = assetRoot.listFiles();
 
@@ -85,12 +84,19 @@ public class AssetsController {
         }
     }
 
-    @IsAdmin
     @PostMapping("/api/system-assets")
     public ResponseEntity<HttpStatus> create(
-            Authentication authentication,
             @RequestParam("file") MultipartFile file
     ) {
+        try {
+            var isClean = avService.testFile(file);
+            if (!isClean) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         String filename = file.getOriginalFilename();
 
         if (filename == null) {
@@ -111,10 +117,8 @@ public class AssetsController {
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
-    @IsAdmin
     @DeleteMapping("/api/system-assets/{assetKey}")
     public ResponseEntity<HttpStatus> destroy(
-            Authentication authentication,
             @PathVariable String assetKey
     ) {
         Optional<Path> path = assetStorageService.getAssetPath(assetKey);

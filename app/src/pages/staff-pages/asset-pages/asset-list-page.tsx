@@ -1,18 +1,19 @@
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {GridColDef} from "@mui/x-data-grid";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import {AssetService} from "../../../services/asset-service";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import {type GridColDef} from '@mui/x-data-grid';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {AssetService} from '../../../services/asset-service';
+import {delayPromise} from '../../../utils/with-delay';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 
 interface Asset {
     id: string;
     link: string;
 }
 
-const columns: GridColDef<Asset>[] = [
+const columns: Array<GridColDef<Asset>> = [
     {
         field: 'id',
         headerName: 'Name',
@@ -22,59 +23,75 @@ const columns: GridColDef<Asset>[] = [
         field: 'link',
         headerName: 'Link',
         flex: 1,
-        renderCell: params => (
+        renderCell: (params) => (
             <a
                 href={params.row.link}
                 target="_blank"
-                onClick={event => event.stopPropagation()}
+                onClick={(event) => {
+                    event.stopPropagation();
+                }}
+                rel="noreferrer"
             >
                 {params.row.link}
             </a>
-        )
+        ),
     },
 ];
 
-
-export function AssetListPage() {
-    useAuthGuard();
-    useUserGuard(user => user?.admin ?? false);
-
+export function AssetListPage(): JSX.Element {
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
     const [search, setSearch] = useState('');
     const [assets, setAssets] = useState<Asset[]>();
-
+    const [isBusy, setIsBusy] = useState(false);
 
     useEffect(() => {
-        AssetService
-            .list()
-            .then(ass => ass.map(name => ({
+        setIsBusy(true);
+        delayPromise(AssetService.list())
+            .then((ass) => ass.map((name) => ({
                 id: name,
                 link: AssetService.getLink(name),
             })))
-            .then(setAssets);
+            .then(setAssets)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Die Liste der Dokumente & Medieninhalte konnte nicht geladen werden.'));
+            })
+            .finally(() => {
+                setIsBusy(false);
+            });
     }, []);
 
-    const filtered = assets != null ? assets.filter(ass => ass.id.toLowerCase().includes(search.toLowerCase())) : undefined;
+    const filtered = assets != null ? assets.filter((ass) => ass.id.toLowerCase().includes(search.toLowerCase())) : undefined;
 
     return (
         <TablePageWrapper
-            title="Anlagen"
-            isLoading={filtered == null}
+            title="Dokumente & Medieninhalte"
+            isLoading={isBusy}
+
+            hint={{
+                text: 'Hier können Sie Dokumente und Medieninhalte anlegen, auf die Sie dann in Ihren Formularen bezug nehmen können.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+            }}
 
             columns={columns}
             rows={filtered ?? []}
-            onRowClick={ass => navigate(`/assets/${ass.id}`)}
+            onRowClick={(ass) => {
+                navigate(`/assets/${ass.id}`);
+            }}
 
             search={search}
-            searchPlaceholder="Anlage suchen..."
+            searchPlaceholder="Suchen..."
             onSearchChange={setSearch}
 
             actions={[{
-                label: 'Neue Anlage',
+                label: 'Dokument/Medieninhalt hinzufügen',
                 icon: <AddOutlinedIcon/>,
-                tooltip: 'Neue Anlage anlegen',
-                onClick: () => navigate(`/assets/new`),
+                tooltip: 'Neues Dokument oder neuen Medieninhalt anlegen',
+                onClick: () => {
+                    navigate('/assets/new');
+                },
             }]}
         />
     );

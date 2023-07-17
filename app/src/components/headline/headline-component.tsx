@@ -1,8 +1,9 @@
 import {Typography, useTheme} from '@mui/material';
-import {HeadlineElement} from '../../models/elements/form/content/headline-element';
-import {BaseViewProps} from "../../views/base-view";
 
-export function HeadlineComponent({content, small}: {content: string, small: boolean}) {
+export function HeadlineComponent({
+                                      content,
+                                      small,
+                                  }: {content: string, small: boolean}) {
     const theme = useTheme();
     return (
         <Typography

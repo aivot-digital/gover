@@ -1,39 +1,42 @@
-import {Box, Button, Container, TextField, Typography} from '@mui/material';
+import {Box, Button, Container, Typography} from '@mui/material';
 import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {useDispatch, useSelector} from 'react-redux';
-import {authenticate, logout, selectAuthenticationState} from '../../../slices/auth-slice';
-import {AuthState} from "../../../data/auth-state";
 import {Logo} from '../../../components/static-components/logo/logo';
+import {authenticate, selectUser} from '../../../slices/user-slice';
+import {isInvalidUser} from '../../../models/entities/user';
+import {type Credentials} from '../../../models/dtos/credentials';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 
-export function Login() {
+export function Login(): JSX.Element {
     const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const authState = useSelector(selectAuthenticationState);
+    const user = useSelector(selectUser);
 
     const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [credentials, setCredentials] = useState<Credentials>({
+        email: '',
+        password: '',
+    });
 
     useEffect(() => {
-        if (authState === AuthState.Authenticated) {
-            navigate('/overview');
-        }
-        if (authState === AuthState.AuthenticationFailed) {
+        if (user != null && isInvalidUser(user)) {
             setIsAuthenticating(false);
         }
-    }, [navigate, authState]);
+    }, [user]);
 
-    const handleAuthenticate = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleAuthenticate = (event: React.FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
-        dispatch(logout());
-        dispatch(authenticate({email: email.trim(), password}));
+
         setIsAuthenticating(true);
-        return false;
+        dispatch(authenticate(credentials));
     };
+
+    let loginError: string | undefined;
+    if (user != null && isInvalidUser(user)) {
+        loginError = 'Es existiert keine Benutzer:in mit dieser Kombination aus E-Mail-Adresse und Passwort';
+    }
 
     return (
         <>
@@ -41,17 +44,25 @@ export function Login() {
                 title="Anmelden"
             />
 
-            <Container sx={{mt: 5}}>
+            <Container
+                sx={{
+                    mt: 5,
+                }}
+            >
                 <Box
                     sx={{
                         px: 11,
                         py: 9,
                         mt: 5,
                         mb: 8,
-                        border: '1px solid #efefef'
+                        border: '1px solid #efefef',
                     }}
                 >
-                    <Box sx={{mb: 4}}>
+                    <Box
+                        sx={{
+                            mb: 4,
+                        }}
+                    >
                         <Logo
                             width={200}
                             height={100}
@@ -67,43 +78,67 @@ export function Login() {
 
                     <Typography
                         variant="body2"
-                        sx={{mt: 1}}
+                        sx={{
+                            mt: 1,
+                        }}
                     >
                         Zur Nutzung dieser Anwendung ist ein Benutzer-Account notwendig.
                     </Typography>
 
-                    <Box sx={{mt: 1, mb: 5}}>
+                    <Box
+                        sx={{
+                            mt: 1,
+                            mb: 5,
+                        }}
+                    >
                         <form
                             onSubmit={handleAuthenticate}
-                            style={{maxWidth: '600px'}}
+                            style={{
+                                maxWidth: '600px',
+                            }}
                         >
-                            <TextField
-                                value={email}
-                                onChange={event => setEmail(event.target.value)}
+                            <TextFieldComponent
+                                value={credentials.email}
+                                onChange={(val) => {
+                                    setCredentials({
+                                        ...credentials,
+                                        email: val ?? '',
+                                    });
+                                }}
                                 type="email"
                                 label="E-Mail-Adresse"
                                 placeholder="max.muster@gover.digital"
-                                helperText={authState === AuthState.AuthenticationFailed && "Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort"}
-                                error={authState === AuthState.AuthenticationFailed}
+                                error={loginError}
                                 disabled={isAuthenticating}
                             />
-                            <TextField
-                                value={password}
-                                onChange={event => setPassword(event.target.value)}
+
+                            <TextFieldComponent
+                                value={credentials.password}
+                                onChange={(val) => {
+                                    setCredentials({
+                                        ...credentials,
+                                        password: val ?? '',
+                                    });
+                                }}
                                 type="password"
                                 label="Passwort"
-                                helperText={authState === AuthState.AuthenticationFailed && "Es existiert kein Benutzer mit dieser Kombination aus E-Mail-Adresse und Passwort"}
-                                error={authState === AuthState.AuthenticationFailed}
+                                error={loginError}
                                 disabled={isAuthenticating}
                             />
+
                             <Button
                                 type="submit"
-                                sx={{mt: 2}}
+                                sx={{
+                                    mt: 2,
+                                }}
                                 variant="contained"
-                                size={'large'}
+                                size="large"
                                 startIcon={
                                     <LoginOutlinedIcon
-                                        sx={{marginTop: '-2px', marginRight: '4px'}}
+                                        sx={{
+                                            marginTop: '-2px',
+                                            marginRight: '4px',
+                                        }}
                                     />
                                 }
                                 disabled={isAuthenticating}

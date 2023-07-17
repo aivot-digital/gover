@@ -1,12 +1,12 @@
 import {Alert, Button, TextField, Typography} from '@mui/material';
-import React, {FormEvent, useCallback, useState} from 'react';
+import React, {type FormEvent, useCallback, useState} from 'react';
 import {UsersService} from '../../../../services/users-service';
-import {isStringNullOrEmpty} from "../../../../utils/string-utils";
-import {useAppSelector} from "../../../../hooks/use-app-selector";
-import {selectUser} from "../../../../slices/user-slice";
+import {isStringNullOrEmpty} from '../../../../utils/string-utils';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../slices/user-slice';
 
 
-export function ProfilePasswordChange() {
+export function ProfilePasswordChange(): JSX.Element {
     const user = useAppSelector(selectUser);
     const [newPassword, setNewPassword] = useState('');
     const [newPassword2, setNewPassword2] = useState('');
@@ -35,7 +35,7 @@ export function ProfilePasswordChange() {
             ...user,
             password: newPassword,
         })
-            .catch(err => {
+            .catch((err) => {
                 setPasswordError('Passwort konnte nicht gesetzt werden');
                 console.error(err);
             });
@@ -57,7 +57,7 @@ export function ProfilePasswordChange() {
                 type="password"
                 value={newPassword}
                 required
-                onChange={event => {
+                onChange={(event) => {
                     setNewPassword(event.target.value);
                     setPasswordChanged(false);
                     setPasswordError(undefined);
@@ -70,7 +70,7 @@ export function ProfilePasswordChange() {
                 type="password"
                 value={newPassword2}
                 required
-                onChange={event => {
+                onChange={(event) => {
                     setNewPassword2(event.target.value);
                     setPasswordChanged(false);
                     setPasswordError(undefined);

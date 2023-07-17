@@ -1,38 +1,29 @@
 import React, {useEffect, useState} from 'react';
 import {Typography} from '@mui/material';
-import {BaseEditorProps} from "../../editors/base-editor";
-import {RootElement} from "../../models/elements/root-element";
-import {Department} from "../../models/entities/department";
-import {DepartmentsService} from "../../services/departments-service";
-import {TextFieldComponent} from "../text-field/text-field-component";
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectLoadedApplication, updateAppModel} from "../../slices/app-slice";
-import {Application} from "../../models/entities/application";
-import {SelectFieldComponent} from "../select-field/select-field-component";
-import {NumberFieldComponent} from "../number-field/number-field-component";
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {type RootElement} from '../../models/elements/root-element';
+import {type Department} from '../../models/entities/department';
+import {DepartmentsService} from '../../services/departments-service';
+import {TextFieldComponent} from '../text-field/text-field-component';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {SelectFieldComponent} from '../select-field/select-field-component';
+import {NumberFieldComponent} from '../number-field/number-field-component';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {Application} from '../../models/entities/application';
 
-export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>) {
+export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
-    const application = useAppSelector(selectLoadedApplication);
     const [departments, setDepartments] = useState<Department[]>([]);
 
     useEffect(() => {
         DepartmentsService
             .list()
-            .then(setDepartments);
+            .then(setDepartments)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Die Liste der Fachbereiche konnte nicht geladen werden'));
+            });
     }, []);
-
-    const patchApplication = (patch: Partial<Application>) => {
-        if (application == null) {
-            return;
-        }
-
-        dispatch(updateAppModel({
-            ...application,
-            ...patch,
-        }));
-    }
 
     const departmentOptions = departments.map((department) => ({
         value: department.id.toString(),
@@ -49,34 +40,45 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
 
             <SelectFieldComponent
                 label="Text für das Impressum"
-                value={application?.imprintDepartment?.toString() ?? undefined}
-                onChange={val => patchApplication({
-                    imprintDepartment: val != null ? parseInt(val) : undefined,
-                })}
+                value={props.entity.imprintDepartment?.toString() ?? undefined}
+                onChange={(val) => {
+                    props.onPatchEntity({
+                        imprintDepartment: val != null ? parseInt(val) : undefined,
+                    });
+                }}
                 options={departmentOptions}
+                disabled={!props.editable}
             />
 
             <SelectFieldComponent
                 label="Text für die Datenschutzerklärung"
-                value={application?.privacyDepartment?.toString() ?? undefined}
-                onChange={val => patchApplication({
-                    privacyDepartment: val != null ? parseInt(val) : undefined,
-                })}
+                value={props.entity.privacyDepartment?.toString() ?? undefined}
+                onChange={(val) => {
+                    props.onPatchEntity({
+                        privacyDepartment: val != null ? parseInt(val) : undefined,
+                    });
+                }}
                 options={departmentOptions}
+                disabled={!props.editable}
             />
 
             <SelectFieldComponent
                 label="Text für die Erklärung der Barrierefreiheit"
-                value={application?.accessibilityDepartment?.toString() ?? undefined}
-                onChange={val => patchApplication({
-                    accessibilityDepartment: val != null ? parseInt(val) : undefined,
-                })}
+                value={props.entity.accessibilityDepartment?.toString() ?? undefined}
+                onChange={(val) => {
+                    props.onPatchEntity({
+                        accessibilityDepartment: val != null ? parseInt(val) : undefined,
+                    });
+                }}
                 options={departmentOptions}
+                disabled={!props.editable}
             />
 
             <Typography
                 variant="h6"
-                sx={{mt: 4}}
+                sx={{
+                    mt: 4,
+                }}
             >
                 Informationen zum Datenschutz
             </Typography>
@@ -85,9 +87,12 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 value={props.element.privacyText ?? ''}
                 label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
                 multiline
-                onChange={val => props.onPatch({
-                    privacyText: val,
-                })}
+                onChange={(val) => {
+                    props.onPatch({
+                        privacyText: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
             <Typography>
@@ -95,40 +100,53 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement>)
                 umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}.
             </Typography>
 
-            <Typography sx={{mt: 2}}>
+            <Typography
+                sx={{
+                    mt: 2,
+
+                }}
+            >
                 Z.B.: <strong>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</strong>
             </Typography>
 
 
             <Typography
                 variant="h6"
-                sx={{mt: 4}}
+                sx={{
+                    mt: 4,
+                }}
             >
                 Lösch- und Zugriffsfristen
             </Typography>
 
             <NumberFieldComponent
                 label="Löschfrist in Wochen"
-                hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie -1 ein um Anträge nicht zu löschen."
+                hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie 0 ein um Anträge nicht zu löschen."
                 placeholder="2"
-                value={application?.submissionDeletionWeeks ?? undefined}
-                onChange={val => patchApplication({
-                    submissionDeletionWeeks: val,
-                })}
+                value={props.entity.submissionDeletionWeeks ?? undefined}
+                onChange={(val) => {
+                    props.onPatchEntity({
+                        submissionDeletionWeeks: val,
+                    });
+                }}
                 decimalPlaces={0}
                 suffix="Wochen"
+                disabled={!props.editable}
             />
 
             <NumberFieldComponent
                 label="Zugriffsfrist in Stunden"
-                hint="Die Zeit in Stunden, in der Bürger:innen noch auf die von ihnen gestellten Anträge zugreifen und diese herunterladen können."
+                hint="Die Zeit in Stunden, in der Nutzer:innen noch auf die von Ihnen gestellten Anträge zugreifen und diese herunterladen können."
                 placeholder="4"
-                value={application?.customerAccessHours ?? undefined}
-                onChange={val => patchApplication({
-                    customerAccessHours: val,
-                })}
+                value={props.entity.customerAccessHours ?? undefined}
+                onChange={(val) => {
+                    props.onPatchEntity({
+                        customerAccessHours: val,
+                    });
+                }}
                 decimalPlaces={0}
                 suffix="Stunden"
+                disabled={!props.editable}
             />
         </>
     );

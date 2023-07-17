@@ -1,4 +1,3 @@
-
 import {StepIcon} from '../models/step-icon';
 import {ElementType} from './element-type/element-type';
 import {StepElement} from "../models/elements/steps/step-element";

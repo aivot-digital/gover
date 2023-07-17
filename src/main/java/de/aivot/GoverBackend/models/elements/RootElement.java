@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.models.elements;
 
 import de.aivot.GoverBackend.exceptions.ValidationException;
-import de.aivot.GoverBackend.models.elements.form.BaseFormElement;
 import de.aivot.GoverBackend.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.models.elements.steps.SubmitStepElement;
@@ -15,7 +14,6 @@ import java.util.*;
 public class RootElement extends BaseElement {
     private String headline;
     private String tabTitle;
-    private String theme;
     private Collection<StepElement> children;
 
     private String expiring;
@@ -35,8 +33,6 @@ public class RootElement extends BaseElement {
     public void applyValues(Map<String, Object> values) {
         headline = MapUtils.getString(values, "headline");
         tabTitle = MapUtils.getString(values, "tabTitle");
-        theme = MapUtils.getString(values, "theme");
-
 
         children = MapUtils.getCollection(values, "children", StepElement::new);
 
@@ -98,28 +94,6 @@ public class RootElement extends BaseElement {
                 .findFirst();
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj == null) {
-            return false;
-        }
-
-        if (obj instanceof RootElement rObj) {
-            return rObj.getId().equals(getId());
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return getId().hashCode();
-    }
-
     // region Getters & Setters
 
     public String getHeadline() {
@@ -136,14 +110,6 @@ public class RootElement extends BaseElement {
 
     public void setTabTitle(String tabTitle) {
         this.tabTitle = tabTitle;
-    }
-
-    public String getTheme() {
-        return theme;
-    }
-
-    public void setTheme(String theme) {
-        this.theme = theme;
     }
 
     public Collection<StepElement> getChildren() {

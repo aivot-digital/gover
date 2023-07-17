@@ -6,7 +6,12 @@ import deLocale from 'date-fns/locale/de';
 import {useCallback} from 'react';
 import {BaseViewProps} from "../../views/base-view";
 
-export function TimeFieldComponentView({element, value, error, setValue}: BaseViewProps<TimeFieldElement, string>) {
+export function TimeFieldComponentView({
+                                           element,
+                                           value,
+                                           error,
+                                           setValue,
+                                       }: BaseViewProps<TimeFieldElement, string>) {
     const dateValue = value != null ? new Date(value) : null;
 
     const handleChange = useCallback((changedValue: unknown | null) => {
@@ -14,7 +19,7 @@ export function TimeFieldComponentView({element, value, error, setValue}: BaseVi
             if (changedValue != null) {
                 if (changedValue instanceof Date) {
                     if (isNaN(changedValue.getTime())) {
-                        setValue(undefined)
+                        setValue(undefined);
                     } else {
                         setValue(changedValue.toISOString() ?? '');
                     }

@@ -1,11 +1,8 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {
-    FileUploadElement,
-    FileUploadElementItem
-} from "../../models/elements/form/input/file-upload-element";
+import {FileUploadElement, FileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
 
 const maxSizeInMegaBytes = 10;
-const maxSizeInBytes = maxSizeInMegaBytes * 1000 * 1000 // 10 MB
+const maxSizeInBytes = maxSizeInMegaBytes * 1000 * 1000; // 10 MB
 
 export class FileUploadValidator extends BaseInputElementValidator<FileUploadElementItem[], FileUploadElement> {
     protected checkEmpty(comp: FileUploadElement, value: FileUploadElementItem[]): boolean {

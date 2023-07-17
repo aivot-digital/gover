@@ -2,10 +2,13 @@ import {Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography} fr
 import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {faPlus} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {BaseEditorProps} from "../../editors/base-editor";
+import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {BaseEditorProps} from '../../editors/base-editor';
+import {NumberFieldComponent} from '../number-field/number-field-component';
+import {Application} from '../../models/entities/application';
+import {Preset} from '../../models/entities/preset';
 
-export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement>) {
+export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, Application | Preset>) {
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
     const minRequiredError = (
         props.element.minimumRequiredRows != null &&
@@ -18,58 +21,31 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
         <>
             {
                 props.element.required &&
-                <TextField
-                    value={props.element.minimumRequiredRows?.toString() ?? ''}
+                <NumberFieldComponent
+                    value={props.element.minimumRequiredRows}
                     label="Mindestanzahl der hinzuzufügenden Zeilen"
-                    margin="normal"
-                    helperText={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Mindestanzahl zu fordern'}
-                    onChange={event => {
-                        if (event.target.value === '') {
-                            props.onPatch({
-                                minimumRequiredRows: undefined,
-                            });
-                            return;
-                        }
-                        let val = parseInt(event.target.value ?? '0');
-                        if (isNaN(val)) {
-                            val = 0;
-                        }
+                    hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
+                    error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                    onChange={(val) => {
                         props.onPatch({
                             minimumRequiredRows: val,
                         });
                     }}
-                    onBlur={() => {
-                        if (props.element.minimumRequiredRows == null || props.element.minimumRequiredRows === 0) {
-                            props.onPatch({
-                                required: false,
-                            });
-                        }
-                    }}
-                    error={minRequiredError}
+                    disabled={!props.editable}
                 />
             }
 
-            <TextField
-                value={props.element.maximumRows?.toString() ?? ''}
+            <NumberFieldComponent
+                value={props.element.maximumRows}
                 label="Maximalanzahl der hinzuzufügenden Zeilen"
-                margin="normal"
-                helperText={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Maximalanzahl zu fordern.'}
-                onChange={event => {
-                    if (event.target.value === '') {
-                        props.onPatch({
-                            maximumRows: undefined,
-                        });
-                        return;
-                    }
-                    let val = parseInt(event.target.value ?? '0');
-                    if (isNaN(val)) {
-                        val = 0;
-                    }
+                hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                onChange={(val) => {
                     props.onPatch({
                         maximumRows: val,
                     });
                 }}
-                error={minRequiredError}
+                disabled={!props.editable}
             />
 
             <Typography
@@ -78,6 +54,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
             >
                 Spalten
             </Typography>
+
             {
                 (props.element.fields ?? []).map((column, index) => {
                     const onChange = (patch: Partial<TableFieldComponentColumnModel>) => {
@@ -85,7 +62,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         patchedList[index] = {
                             ...patchedList[index],
                             ...patch,
-                        }
+                        };
                         props.onPatch({
                             fields: patchedList,
                         });
@@ -115,6 +92,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         })}
                                         error={columnLabelErrors[index] != null}
                                         helperText={columnLabelErrors[index]}
+                                        disabled={!props.editable}
                                     />
                                 </Grid>
                                 <Grid
@@ -131,6 +109,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             placeholder: (column.placeholder ?? '').trim(),
                                         })}
+                                        disabled={!props.editable}
                                     />
                                 </Grid>
                                 {
@@ -158,11 +137,17 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                                     });
                                                 }
                                             }}
+                                            disabled={!props.editable}
                                         />
                                     </Grid>
                                 }
                             </Grid>
-                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
                                 <Box>
                                     <FormControlLabel
                                         control={
@@ -171,6 +156,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                                 onChange={event => onChange({
                                                     datatype: event.target.checked ? 'number' : 'string',
                                                 })}
+                                                disabled={!props.editable}
                                             />
                                         }
                                         label="Zahl-Angabe"
@@ -182,6 +168,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                                 onChange={event => onChange({
                                                     optional: event.target.checked,
                                                 })}
+                                                disabled={!props.editable}
                                             />
                                         }
                                         label="Optionale Angabe"
@@ -194,6 +181,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                                 onChange={event => onChange({
                                                     disabled: event.target.checked,
                                                 })}
+                                                disabled={!props.editable}
                                             />
                                         }
                                         label="Eingabe deaktiviert"
@@ -208,6 +196,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                             fields: updatedFields,
                                         });
                                     }}
+                                    disabled={!props.editable}
                                 >
                                     Spalte löschen
                                 </Button>
@@ -227,10 +216,11 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             {
                                 label: 'Neue Spalte',
                                 datatype: 'string',
-                            }
+                            },
                         ],
-                    })
+                    });
                 }}
+                disabled={!props.editable}
             >
                 Spalte Hinzufügen
             </Button>

@@ -1,13 +1,13 @@
 import React from 'react';
-import {Box, Button, Container, SxProps, Typography, useTheme} from '@mui/material';
-import {AppFooterProps} from './app-footer-props';
+import {Box, Button, Container, type SxProps, Typography, useTheme} from '@mui/material';
+import {type AppFooterProps} from './app-footer-props';
 import {AppMode} from '../../data/app-mode';
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {MetaDialog, showMetaDialog} from "../../slices/app-slice";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
-import {AssetService} from "../../services/asset-service";
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {MetaDialog, showMetaDialog} from '../../slices/app-slice';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
+import {Logo} from '../static-components/logo/logo';
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 
 const buttonStyle: SxProps = {
@@ -17,11 +17,10 @@ const buttonStyle: SxProps = {
     fontSize: '1.3125rem',
 };
 
-export function AppFooter({mode}: AppFooterProps) {
+export function AppFooter({mode}: AppFooterProps): JSX.Element {
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const logo = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.logo));
 
     return (
         <Box sx={{boxShadow: 'inset 0px 10px 20px rgba(0, 0, 0, 0.06)'}}>
@@ -36,15 +35,12 @@ export function AppFooter({mode}: AppFooterProps) {
                         [theme.breakpoints.down('md')]: {
                             flexDirection: 'column',
                             alignItems: 'flex-start',
-                        }
+                        },
                     }}
                 >
-                    <img
-                        src={AssetService.getLink(logo)}
-                        alt={name}
+                    <Logo
                         width={200}
                         height={100}
-                        style={{objectFit: 'contain'}}
                     />
 
                     <Box>
@@ -81,7 +77,10 @@ export function AppFooter({mode}: AppFooterProps) {
                             <Typography
                                 variant={'h6'}
                                 align="right"
-                                sx={{opacity: 0.5, mr: 1}}
+                                sx={{
+                                    opacity: 0.5,
+                                    mr: 1,
+                                }}
                             >
                                 {name}
                             </Typography>
@@ -89,7 +88,13 @@ export function AppFooter({mode}: AppFooterProps) {
                     </Box>
                 </Box>
             </Container>
-            <Box sx={{textAlign: 'center', backgroundColor: '#F2F2F2', p: 0.5}}>
+            <Box
+                sx={{
+                    textAlign: 'center',
+                    backgroundColor: '#F2F2F2',
+                    p: 0.5,
+                }}
+            >
                 <Typography
                     variant="caption"
                     color="#444444"

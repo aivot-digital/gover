@@ -22,7 +22,7 @@ export const CheckboxEvaluator: BaseEvaluator<boolean> = {
         if (valueB === falseValue && (valueA == null || !valueA)) {
             return false;
         }
-        return!(valueB === trueValue && valueA != null && valueA);
+        return !(valueB === trueValue && valueA != null && valueA);
     },
 
     [ConditionOperator.Empty]: (valueA, _) => {

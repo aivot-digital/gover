@@ -1,0 +1,14 @@
+Hallo,
+
+für Sie wurde ein neues Benutzerkonto in Gover angelegt.
+
+
+E-Mail-Adresse: [(${email})]
+Passwort: [(${password})]
+
+
+Sie können sich unter [(${hostname})] anmelden.
+
+
+Diese E-Mail ist automatisch generiert.
+Bitte nicht antworten.

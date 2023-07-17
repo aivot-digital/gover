@@ -3,7 +3,12 @@ import {SelectFieldElement} from "../models/elements/form/input/select-field-ele
 import {SelectFieldComponent} from "../components/select-field/select-field-component";
 
 
-export const SelectFieldView: BaseView<SelectFieldElement, string> = ({element, error, value, setValue}) => {
+export const SelectFieldView: BaseView<SelectFieldElement, string> = ({
+                                                                          element,
+                                                                          error,
+                                                                          value,
+                                                                          setValue,
+                                                                      }) => {
     return (
         <SelectFieldComponent
             label={element.label ?? ''}
@@ -20,5 +25,5 @@ export const SelectFieldView: BaseView<SelectFieldElement, string> = ({element, 
             }))}
         />
     );
-}
+};
 

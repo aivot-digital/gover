@@ -223,6 +223,7 @@ public class SubmitController {
         submission.setApplication(application);
         submission.setAssignee(null);
         submission.setCustomerInput(customerInput);
+        submission.setIsTestSubmission(application.getStatus() != ApplicationStatus.Published);
         if (application.getDestination() != null) {
             submission.setDestination(application.getDestination());
         }
@@ -286,7 +287,8 @@ public class SubmitController {
                 usersToNotify = departmentMembershipRepository
                         .findAllByDepartmentId(application.getResponsibleDepartment().getId());
             } else {
-                usersToNotify = null;
+                usersToNotify  = departmentMembershipRepository
+                        .findAllByDepartmentId(application.getDevelopingDepartment().getId());
             }
 
             if (usersToNotify != null) {
@@ -295,9 +297,9 @@ public class SubmitController {
                         .map(DepartmentMembership::getUser)
                         .filter(User::isActive)
                         .forEach(user -> {
-                            mailService.sendInfoMail(
-                                    "Neuer Online-Antrag für " + application.getTitle(),
-                                    "In Gover ist ein neuer Antrag für das Formular \"" + application.getTitle() + "\" eingegangen.",
+                            mailService.sendNewSubmissionMail(
+                                    application,
+                                    submission,
                                     user.getEmail()
                             );
                         });

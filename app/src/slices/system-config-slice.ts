@@ -1,4 +1,4 @@
-import {createAsyncThunk, createSlice} from '@reduxjs/toolkit'
+import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 import {SystemConfigsService} from '../services/system-configs-service';
 import {RootState} from '../store';
 
@@ -13,14 +13,14 @@ export const fetchSystemConfig = createAsyncThunk(
     'systemConfig/fetchSystemConfig',
     async (_) => {
         return await SystemConfigsService.list();
-    }
+    },
 );
 
 export const fetchPublicSystemConfig = createAsyncThunk(
     'systemConfig/fetchPublicSystemConfig',
     async (_) => {
         return await SystemConfigsService.listPublicSystemConfigs();
-    }
+    },
 );
 
 export const systemConfigSlice = createSlice({

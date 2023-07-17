@@ -1,20 +1,15 @@
-import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
-import {
-    selectUseIdsInComponentTree,
-    selectUseTestMode,
-    selectWarnDuplicateIds,
-    setExpandElementTree,
-    toggleIdsInComponentTree,
-    toggleTestMode,
-    toggleWarnDuplicateIds
-} from '../../../../slices/admin-settings-slice';
 import React, {useState} from 'react';
+import {Box, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
+import {selectUseIdsInComponentTree, selectUseTestMode, selectWarnDuplicateIds, setExpandElementTree, toggleIdsInComponentTree, toggleTestMode, toggleWarnDuplicateIds} from '../../../../slices/admin-settings-slice';
 import {useTheme} from '@mui/material/styles';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {ElementEditor} from '../element-editor/element-editor';
-import {ElementTreeHeaderProps} from './element-tree-header-props';
-import {AnyElement} from '../../../../models/elements/any-element';
+import {type ElementTreeHeaderProps} from './element-tree-header-props';
+import {type RootElement} from '../../../../models/elements/root-element';
+import {type Application} from '../../../../models/entities/application';
+import {type Preset} from '../../../../models/entities/preset';
+import {type GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import ExpandOutlinedIcon from '@mui/icons-material/ExpandOutlined';
@@ -22,7 +17,7 @@ import CompressOutlinedIcon from '@mui/icons-material/CompressOutlined';
 import IntegrationInstructionsOutlinedIcon from '@mui/icons-material/IntegrationInstructionsOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
-export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeaderProps<T>) {
+export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends Application | Preset>(props: ElementTreeHeaderProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();
 
     const testMode = useAppSelector(selectUseTestMode);
@@ -32,11 +27,11 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
     const [showEditor, setShowEditor] = useState(false);
     const [cTMenuAnchorEl, setCTMenuAnchorEl] = useState<null | HTMLElement>(null);
 
-    const handleOpenCTMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleOpenCTMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setCTMenuAnchorEl(event.currentTarget);
     };
 
-    const handleCloseCTMenu = () => {
+    const handleCloseCTMenu = (): void => {
         setCTMenuAnchorEl(null);
     };
 
@@ -44,12 +39,26 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
 
     return (
         <>
-            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, mb: 1, padding: 1,}}>
-                <Box sx={{display: 'flex', alignItems: 'center'}}>
-
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mt: 1,
+                    mb: 1,
+                    padding: 1,
+                }}
+            >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}
+                >
                     <AccountTreeOutlinedIcon sx={{
                         color: theme.palette.primary.dark,
                     }}/>
+
                     <Typography
                         variant="h4"
                         color="primary"
@@ -64,7 +73,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Suchen"
                         arrow
                     >
-                        <IconButton size="small" onClick={props.onToggleSearch}>
+                        <IconButton size="small"
+                                    onClick={props.onToggleSearch}>
                             <SearchOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -73,7 +83,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles ausklappen"
                         arrow
                     >
-                        <IconButton size="small" onClick={() => dispatch(setExpandElementTree('expanded'))}>
+                        <IconButton size="small"
+                                    onClick={() => dispatch(setExpandElementTree('expanded'))}>
                             <ExpandOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -82,7 +93,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Alles einklappen"
                         arrow
                     >
-                        <IconButton size="small" onClick={() => dispatch(setExpandElementTree('collapsed'))}>
+                        <IconButton size="small"
+                                    onClick={() => dispatch(setExpandElementTree('collapsed'))}>
                             <CompressOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -91,7 +103,8 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                         title="Einstellungen für Entwickler:innen"
                         arrow
                     >
-                        <IconButton size="small" onClick={handleOpenCTMenu}>
+                        <IconButton size="small"
+                                    onClick={handleOpenCTMenu}>
                             <IntegrationInstructionsOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -104,7 +117,9 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                             onClick={() => {
                                 setShowEditor(true);
                             }}
-                            sx={{marginRight: '7px'}}
+                            sx={{
+                                marginRight: '7px',
+                            }}
                         >
                             <SettingsOutlinedIcon/>
                         </IconButton>
@@ -163,14 +178,16 @@ export function ElementTreeHeader<T extends AnyElement>(props: ElementTreeHeader
                 showEditor &&
                 <ElementEditor
                     parents={[] /* Uppermost element so no parents here */}
-                    element={props.element}
-                    onSave={update => {
+                    entity={props.entity}
+                    element={props.entity.root as any /* TODO: Fix this any type */}
+                    onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
                         setShowEditor(false);
-                        props.onPatch(update);
+                        props.onPatch(updatedElement, updatedApplication);
                     }}
                     onCancel={() => {
                         setShowEditor(false);
                     }}
+                    editable={props.editable}
                 />
             }
         </>

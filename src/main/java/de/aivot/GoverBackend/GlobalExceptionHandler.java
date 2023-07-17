@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend;
 
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.services.MailService;
+import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.ResponseEntity;
@@ -14,16 +16,22 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private final MailService mailService;
+    private final GoverConfig goverConfig;
 
     @Autowired
-    public GlobalExceptionHandler(MailService mailService) {
+    public GlobalExceptionHandler(MailService mailService, GoverConfig goverConfig) {
         this.mailService = mailService;
+        this.goverConfig = goverConfig;
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> exception(Exception ex, WebRequest request) throws Exception {
         if (!(ex instanceof ResourceNotFoundException || ex instanceof ResponseStatusException || ex instanceof AccessDeniedException)) {
-            mailService.sendExceptionMail(ex);
+            if (goverConfig.getSentryServer() != null && !goverConfig.getSentryServer().isEmpty()) {
+                Sentry.captureException(ex);
+            } else {
+                mailService.sendExceptionMail(ex);
+            }
         }
         return super.handleException(ex, request);
     }

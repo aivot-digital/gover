@@ -49,7 +49,7 @@ function evaluateFunctionNoCode(
     allElements: AnyElement[],
     func: FunctionModel,
     customerInput: CustomerInput,
-    ignoreEmptyValues: boolean
+    ignoreEmptyValues: boolean,
 ): string | null {
     return func.conditionSet != null ? evaluateConditionSet(idPrefix, allElements, func.conditionSet, customerInput, ignoreEmptyValues) : null;
 }
@@ -59,7 +59,7 @@ function evaluateConditionSet(
     allElements: AnyElement[],
     conditionSet: ConditionSet,
     customerInput: CustomerInput,
-    ignoreEmptyValues: boolean
+    ignoreEmptyValues: boolean,
 ): string | null {
     switch (conditionSet.operator) {
         case ConditionSetOperator.All:

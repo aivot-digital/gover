@@ -6,164 +6,170 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {ElementTreeItemTitle} from '../element-tree-item-title/element-tree-item-title';
 import {ElementTreeItemList} from '../element-tree-item-list/element-tree-item-list';
 import {ElementEditor} from '../element-editor/element-editor';
-import {ElementTreeItemProps} from './element-tree-item-props';
-import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
-import {AnyElement} from '../../../../models/elements/any-element';
+import {type ElementTreeItemProps} from './element-tree-item-props';
+import {type AnyElementWithChildren, isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import {type AnyElement} from '../../../../models/elements/any-element';
 import {AddElementDialog} from '../../../../dialogs/add-element-dialog/add-element-dialog';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {findNoCodeUsage, findNoCodeUsageOfChildren} from "../../../../utils/find-no-code-usage";
-import {generateComponentTitle} from "../../../../utils/generate-component-title";
-import {isChildOf} from "../../../../utils/is-child-of";
-import {useAppSelector} from "../../../../hooks/use-app-selector";
+import {findNoCodeUsage, findNoCodeUsageOfChildren} from '../../../../utils/find-no-code-usage';
+import {generateComponentTitle} from '../../../../utils/generate-component-title';
+import {isChildOf} from '../../../../utils/is-child-of';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {type Application} from '../../../../models/entities/application';
+import {type Preset} from '../../../../models/entities/preset';
 
-export function ElementTreeItem<T extends AnyElement>({
-                                                          parents,
-                                                          element,
-                                                          onPatch,
-                                                          onDelete,
-                                                          onClone,
-                                                      }: ElementTreeItemProps<T>
-) {
+export function ElementTreeItem<T extends AnyElement, E extends Application | Preset>(props: ElementTreeItemProps<T, E>,
+): JSX.Element {
     const dispatch = useAppDispatch();
-    const expandStatus = useAppSelector(state => state.adminSettings.expandElementTree);
+    const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
 
-    const [expanded, toggleExpanded] = useReducer(p => !p, false);
-    const [showEditor, toggleShowEditor] = useReducer(p => !p, false);
-    const [showAddDialog, toggleShowAddDialog] = useReducer(p => !p, false);
+    const [expanded, setExpanded] = useState(false);
+    const [showEditor, toggleShowEditor] = useReducer<(f: boolean) => boolean>((p) => !p, false);
+    const [showAddDialog, toggleShowAddDialog] = useReducer<(f: boolean) => boolean>((p) => !p, false);
 
-    const isLayoutElement = isAnyElementWithChildren(element);
+    const isLayoutElement = isAnyElementWithChildren(props.element);
 
     useEffect(() => {
-        if (expandStatus === 'expanded' && !expanded) {
-            toggleExpanded();
-        } else if (expandStatus === 'collapsed' && expanded) {
-            toggleExpanded();
+        if (isLayoutElement) {
+            if (expandStatus === 'expanded') {
+                setExpanded(true);
+            } else if (expandStatus === 'collapsed') {
+                setExpanded(false);
+            }
         }
     }, [expandStatus]);
 
-    useEffect(() => {
-        if (expanded && expandStatus === 'collapsed') {
-            dispatch(setExpandElementTree(undefined));
-        } else if (!expanded && expandStatus === 'expanded') {
-            dispatch(setExpandElementTree(undefined));
-        }
-    },[expanded]);
-
     const [{isDragging}, drag] = useDrag(() => ({
-        item: element,
-        type: element.type.toString(),
+        item: props.element,
+        type: props.element.type.toString(),
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
         end: (element, monitor) => {
             if (!monitor.didDrop()) {
-                onPatch({});
+                props.onPatch({}, {});
             }
             dispatch(setIsDraggingTreeElement(false));
         },
-    }), [element]);
+    }), [props.element]);
 
-    useEffect((() => {
+    useEffect(() => {
         if (isDragging) {
             dispatch(setIsDraggingTreeElement(isDragging));
-            onDelete();
+            props.onDelete();
         }
-    }), [dispatch, isDragging, onDelete]);
+    }, [dispatch, isDragging, props.onDelete]);
 
-    const handleAddElement = (addedElement: AnyElement) => {
-        if (isAnyElementWithChildren(element)) {
-            onPatch({
-                ...element,
+    const handleAddElement = (addedElement: AnyElement): void => {
+        if (isAnyElementWithChildren(props.element)) {
+            props.onPatch({
+                ...props.element,
                 children: [
-                    ...element.children,
+                    ...props.element.children,
                     addedElement,
                 ],
-            } as any)
+            }, {});
             toggleShowAddDialog();
             if (!expanded) {
-                toggleExpanded();
+                setExpanded(true);
             }
         }
     };
 
-    const handleDeleteElement = () => {
-        const directUsages = findNoCodeUsage(element, parents[0]);
+    const handleDeleteElement = (): void => {
+        const directUsages = findNoCodeUsage(props.element, props.parents[0]);
 
-        if (directUsages.length > 0 && !(directUsages.length === 1 && directUsages[0].id === element.id)) {
-            alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${directUsages.map(u => generateComponentTitle(u)).join(', ')}`);
+        if (directUsages.length > 0 && !(directUsages.length === 1 && directUsages[0].id === props.element.id)) {
+            alert(`Dieses Element kann nicht gelöscht werden. Es wird aktuell von den folgenden Elementen referenziert: ${directUsages.map((u) => generateComponentTitle(u)).join(', ')}`);
             return;
         }
 
-        if (isAnyElementWithChildren(element)) {
-            const childUsages = findNoCodeUsageOfChildren(element, parents[0]);
+        if (isAnyElementWithChildren(props.element)) {
+            const childUsages = findNoCodeUsageOfChildren(props.element, props.parents[0]);
             if (childUsages.length > 0) {
-                const allReferencesArechildrenOfElement = childUsages.every(([_, referencingElements]) => referencingElements.every(e => isChildOf(e, element)));
-                if (!allReferencesArechildrenOfElement) {
-                    alert(`Dieses Element kann nicht gelöscht werden. Mindestens eins der Kind-Elemente wird von einer No-Code-Funktion referenziert.`);
+                const allReferencesAreChildrenOfElement = childUsages.every(([_, referencingElements]) => referencingElements.every((e) => isChildOf(e, props.element as AnyElementWithChildren)));
+                if (!allReferencesAreChildrenOfElement) {
+                    alert('Dieses Element kann nicht gelöscht werden. Mindestens eins der Kind-Elemente wird von einer No-Code-Funktion referenziert.');
                     return;
                 }
             }
         }
 
-        onDelete();
+        props.onDelete();
         toggleShowEditor();
     };
 
     return (
         <Box
-            ref={drag}
-            sx={{opacity: isDragging ? 0 : 1}}
+            ref={props.editable ? drag : undefined}
+            sx={{
+                opacity: isDragging ? 0 : 1,
+            }}
         >
             <ElementTreeItemTitle
                 isExpanded={expanded}
-                onToggleExpanded={isLayoutElement ? toggleExpanded : undefined}
-                element={element}
+                onToggleExpanded={
+                    isLayoutElement ?
+                        () => {
+                            dispatch(setExpandElementTree(undefined));
+                            setExpanded(!expanded);
+                        } :
+                        undefined
+                }
+                element={props.element}
                 onShowAddDialog={isLayoutElement ? toggleShowAddDialog : undefined}
                 onSelect={toggleShowEditor}
+                editable={props.editable}
             />
 
             {
-                isLayoutElement &&
                 expanded &&
+                isAnyElementWithChildren(props.element) &&
                 <ElementTreeItemList
-                    parents={parents}
-                    element={element}
-                    onPatch={onPatch}
+                    parents={props.parents}
+                    entity={props.entity}
+                    element={props.element}
+                    onPatch={props.onPatch}
+                    editable={props.editable}
                 />
             }
 
-            {
-                showAddDialog &&
-                <AddElementDialog
-                    parentType={element.type}
-                    onAddElement={handleAddElement}
-                    onClose={toggleShowAddDialog}
-                />
-            }
+            <AddElementDialog
+                show={showAddDialog}
+                parentType={props.element.type}
+                onAddElement={handleAddElement}
+                onClose={toggleShowAddDialog}
+            />
 
             {
                 showEditor &&
                 <ElementEditor
-                    parents={parents}
-                    element={element}
-                    onSave={(update) => {
-                        onPatch(update);
+                    parents={props.parents}
+                    element={props.element}
+                    entity={props.entity}
+                    onSave={(updatedElement, updatedApplication) => {
+                        props.onPatch(updatedElement, updatedApplication);
                         toggleShowEditor();
                     }}
                     onCancel={toggleShowEditor}
                     onDelete={(
-                        element.type === ElementType.IntroductionStep ||
-                        element.type === ElementType.SummaryStep ||
-                        element.type === ElementType.SubmitStep
-                    ) ? undefined : handleDeleteElement}
+                        props.element.type === ElementType.IntroductionStep ||
+                        props.element.type === ElementType.SummaryStep ||
+                        props.element.type === ElementType.SubmitStep
+                    ) ?
+                        undefined :
+                        handleDeleteElement}
                     onClone={(
-                        element.type === ElementType.IntroductionStep ||
-                        element.type === ElementType.SummaryStep ||
-                        element.type === ElementType.SubmitStep
-                    ) ? undefined : () => {
-                        onClone();
-                        toggleShowEditor();
-                    }}
+                        props.element.type === ElementType.IntroductionStep ||
+                        props.element.type === ElementType.SummaryStep ||
+                        props.element.type === ElementType.SubmitStep
+                    ) ?
+                        undefined :
+                        () => {
+                            props.onClone();
+                            toggleShowEditor();
+                        }}
+                    editable={props.editable}
                 />
             }
         </Box>

@@ -8,7 +8,11 @@ interface AddPresetDialogProps extends DialogProps {
 }
 
 export function AddPresetDialog(props: AddPresetDialogProps) {
-    const {onSavePreset, onClose, ...passTroughProps} = props;
+    const {
+        onSavePreset,
+        onClose,
+        ...passTroughProps
+    } = props;
 
     const [newPresetTitle, setNewPresetTitle] = useState('');
 

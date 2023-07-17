@@ -37,8 +37,6 @@ import java.util.*;
 
 @Component
 public class MailService {
-    private static final Logger logger = LoggerFactory.getLogger(MailService.class);
-
     private final GoverConfig goverConfig;
     private final JavaMailSender mailSender;
     private final SubmissionStorageService submissionStorageService;
@@ -71,7 +69,14 @@ public class MailService {
 
         Path pdfPath = submissionStorageService.getSubmissionPdfPath(submission.getId());
 
-        sendMail(to, subject, MailTemplate.CustomerMail, mailData, List.of(pdfPath));
+        sendMail(
+                to,
+                Optional.empty(),
+                Optional.empty(),
+                subject,
+                MailTemplate.CustomerMail,
+                mailData, Optional.of(List.of(pdfPath))
+        );
     }
 
     public void sendDestinationMail(Submission submission, Collection<SubmissionAttachment> attachments) throws MessagingException, MailException, IOException {
@@ -108,24 +113,6 @@ public class MailService {
         );
     }
 
-    public void sendInfoMail(String title, String message) {
-        sendInfoMail(title, message, goverConfig.getReportMail());
-    }
-
-    public void sendInfoMail(String title, String message, String to) {
-        Map<String, Object> mailData = new HashMap<>();
-        mailData.put("title", title);
-        mailData.put("message", message);
-
-        String subject = "[Gover / " + goverConfig.getEnvironment() + "] Informationen";
-
-        try {
-            sendMail(to, subject, MailTemplate.SystemInfoMail, mailData);
-        } catch (MessagingException | MailException | IOException e) {
-            logger.error("Failed to send info admin mail", e);
-        }
-    }
-
     public void sendExceptionMail(Exception exception) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -136,35 +123,81 @@ public class MailService {
         mailData.put("message", exception.getMessage());
         mailData.put("stackTrace", sStackTrace);
 
-        String subject = "[Gover / " + goverConfig.getEnvironment() + "] Fehler im Betrieb";
+        String subject = "Fehler im Betrieb";
 
         try {
-            sendMail(goverConfig.getReportMail(), subject, MailTemplate.ExceptionMail, mailData);
+            sendMail(
+                    goverConfig.getReportMail(),
+                    Optional.empty(),
+                    Optional.empty(),
+                    subject,
+                    MailTemplate.SystemExceptionMail,
+                    mailData,
+                    Optional.empty()
+            );
         } catch (MessagingException | MailException | IOException e) {
-            logger.error("Failed to send exception admin mail", e);
+            throw new RuntimeException(e);
         }
     }
 
+    public void sendUserCreatedEmail(String email, String password, String to) {
+        Map<String, Object> mailData = new HashMap<>();
+        mailData.put("email", email);
+        mailData.put("password", password);
+        mailData.put("hostname", goverConfig.getHostname());
+
+        try {
+            sendMail(
+                    to,
+                    Optional.empty(),
+                    Optional.empty(),
+                    "Nutzerkonto angelegt",
+                    MailTemplate.UserCreatedMail,
+                    mailData,
+                    Optional.empty()
+            );
+        } catch (MessagingException | MailException | IOException e) {
+            sendExceptionMail(e);
+        }
+    }
+
+    public void sendNewSubmissionMail(Application application, Submission submission, String to) {
+
+        Map<String, Object> mailData = new HashMap<>();
+        mailData.put("title", application.getTitle());
+        mailData.put("version", application.getVersion());
+        mailData.put("applicationId", application.getId());
+        mailData.put("submissionId", submission.getId());
+        mailData.put("hostname", goverConfig.getHostname());
+
+        try {
+            sendMail(
+                    to,
+                    Optional.empty(),
+                    Optional.empty(),
+                    submission.getIsTestSubmission() ? "[Test] Neuer Online-Antrag" : "Neuer Online-Antrag",
+                    MailTemplate.NewSubmissionMail,
+                    mailData,
+                    Optional.empty()
+            );
+        } catch (MessagingException | MailException | IOException e) {
+            sendExceptionMail(e);
+        }
+    }
+
+    public void sendTestMail(String to) throws MessagingException, IOException {
+        sendMail(
+                to,
+                Optional.empty(),
+                Optional.empty(),
+                "SMTP-Test",
+                MailTemplate.SystemTestMail,
+                new HashMap<>(),
+                Optional.empty()
+        );
+    }
+
     // region Utils
-
-    public void sendMail(
-            String to,
-            String subject,
-            MailTemplate template,
-            Map<String, Object> data
-    ) throws MessagingException, MailException, IOException {
-        sendMail(to, Optional.empty(), Optional.empty(), subject, template, data, Optional.empty());
-    }
-
-    private void sendMail(
-            String to,
-            String subject,
-            MailTemplate template,
-            Map<String, Object> data,
-            Collection<Path> attachmentPaths
-    ) throws MessagingException, MailException, IOException {
-        sendMail(to, Optional.empty(), Optional.empty(), subject, template, data, Optional.of(attachmentPaths));
-    }
 
     private void sendMail(
             String to,
@@ -197,8 +230,8 @@ public class MailService {
             );
         }
 
-        String textMessage = loadTemplate(template.getKey() + ".txt", data);
-        String htmlMessage = loadTemplate(template.getKey() + ".html", data);
+        String textMessage = loadTemplate(template.getKey() + "/mail.txt", data);
+        String htmlMessage = loadTemplate(template.getKey() + "/mail.html", data);
 
         message.setFrom(goverConfig.getFromMail());
         message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");

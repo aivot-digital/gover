@@ -1,33 +1,18 @@
+import React from 'react';
 import {Box, TextField} from '@mui/material';
-import {TextFieldComponentProps} from "./text-field-component-props";
-import {humanizeNumber} from "../../utils/huminization-utils";
+import {type TextFieldComponentProps} from './text-field-component-props';
 
-export function TextFieldComponent({
-                                       label,
-                                       placeholder,
-                                       required,
-                                       disabled,
-                                       multiline,
-                                       value,
-                                       error,
-                                       hint,
-                                       maxCharacters,
-                                       minCharacters,
-                                       onChange,
-                                       onBlur,
-                                       rows,
-                                       type,
-                                   }: TextFieldComponentProps) {
+export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element {
     return (
         <TextField
-            label={label}
-            type={type}
-            placeholder={placeholder}
+            label={props.label}
+            type={props.type}
+            placeholder={props.placeholder}
             variant="outlined"
             fullWidth
-            error={error != null}
-            multiline={multiline}
-            rows={multiline ? (rows ?? 4) : undefined}
+            error={props.error != null}
+            multiline={props.multiline}
+            rows={props.multiline === true ? (props.rows ?? 4) : undefined}
             FormHelperTextProps={{
                 // @ts-ignore
                 component: 'div',
@@ -40,54 +25,62 @@ export function TextFieldComponent({
                     }}
                 >
                     <Box>
-                        {error != null ? error : hint}
+                        {props.error != null ? props.error : props.hint}
                     </Box>
 
                     {
-                        maxCharacters != null &&
-                        maxCharacters > 0 &&
+                        props.maxCharacters != null &&
+                        props.maxCharacters > 0 &&
                         (
-                            minCharacters == null ||
-                            minCharacters === 0 ||
-                            (value ?? '').length >= minCharacters
+                            props.minCharacters == null ||
+                            props.minCharacters === 0 ||
+                            (props.value ?? '').length >= props.minCharacters
                         ) &&
-                        <Box sx={{ml: 3}}>
-                            {(value ?? '').length}/{maxCharacters}
+                        <Box
+                            sx={{
+                                ml: 3,
+                            }}
+                        >
+                            {(props.value ?? '').length}/{props.maxCharacters}
                         </Box>
                     }
 
                     {
-                        minCharacters != null &&
-                        minCharacters > 0 &&
-                        (value ?? '').length < minCharacters &&
-                        <Box sx={{ml: 3}}>
-                            Noch mindestens {minCharacters - (value?.length ?? 0)} Zeichen
+                        props.minCharacters != null &&
+                        props.minCharacters > 0 &&
+                        (props.value ?? '').length < props.minCharacters &&
+                        <Box
+                            sx={{
+                                ml: 3,
+                            }}
+                        >
+                            Noch mindestens {props.minCharacters - (props.value?.length ?? 0)} Zeichen
                         </Box>
                     }
                 </Box>
             }
-            value={value ?? ''}
-            onChange={event => {
+            value={props.value ?? ''}
+            onChange={(event) => {
                 const val = event.target.value;
-                onChange(val.length === 0 ? undefined : val);
+                props.onChange(val.length === 0 ? undefined : val);
             }}
             onBlur={() => {
-                if (value != null) {
-                    const trimmedValue = value.trim();
+                if (props.value != null) {
+                    const trimmedValue = props.value.trim();
                     const blurValue = trimmedValue.length === 0 ? undefined : trimmedValue;
-                    onChange(blurValue);
-                    if (onBlur != null) {
-                        onBlur(blurValue);
+                    props.onChange(blurValue);
+                    if (props.onBlur != null) {
+                        props.onBlur(blurValue);
                     }
                 }
             }}
             inputProps={
-                maxCharacters ? {
-                    maxLength: maxCharacters,
+                props.maxCharacters ? {
+                    maxLength: props.maxCharacters,
                 } : undefined
             }
-            disabled={disabled}
-            required={required}
+            disabled={props.disabled}
+            required={props.required}
         />
     );
 }

@@ -1,18 +1,20 @@
+import React, {useState} from 'react';
 import {Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
-import React from 'react';
-import {ElementEditorActionsProps} from './element-editor-actions-props';
+import {type ElementEditorActionsProps} from './element-editor-actions-props';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 
-export function ElementEditorActions(props: ElementEditorActionsProps) {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Element {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setAnchorEl(event.currentTarget);
     };
-    const handleClose = () => {
+
+    const handleClose = (): void => {
         setAnchorEl(null);
     };
 
@@ -34,23 +36,29 @@ export function ElementEditorActions(props: ElementEditorActionsProps) {
                         variant="contained"
                         onClick={props.onSave}
                         startIcon={<SaveOutlinedIcon
-                            sx={{marginTop: '-2px'}}
+                            sx={{
+                                marginTop: '-2px',
+                            }}
                         />}
-                        sx={{ml: 'auto'}}
+                        sx={{
+                            ml: 'auto',
+                        }}
                     >
                         Speichern
                     </Button>
                     <Button
                         color="primary"
                         onClick={props.onCancel}
-                        sx={{ml: 2}}
+                        sx={{
+                            ml: 2,
+                        }}
                     >
                         Abbrechen
                     </Button>
                     {
                         (
-                            props.onClone ||
-                            props.onSaveAsPreset
+                            (props.onClone != null) ||
+                            (props.onSaveAsPreset != null)
                         ) &&
                         <IconButton
                             color="primary"
@@ -62,13 +70,15 @@ export function ElementEditorActions(props: ElementEditorActionsProps) {
                 </Box>
 
                 {
-                    props.onDelete &&
+                    (props.onDelete != null) &&
                     <Button
                         color="error"
                         onClick={props.onDelete}
-                        variant={'outlined'}
+                        variant="outlined"
                         startIcon={<DeleteForeverOutlinedIcon
-                            sx={{marginTop: '-4px'}}
+                            sx={{
+                                marginTop: '-4px',
+                            }}
                         />}
                     >
                         Löschen
@@ -81,7 +91,7 @@ export function ElementEditorActions(props: ElementEditorActionsProps) {
                 onClose={handleClose}
             >
                 {
-                    props.onSaveAsPreset &&
+                    (props.onSaveAsPreset != null) &&
                     <MenuItem
                         onClick={() => {
                             props.onSaveAsPreset!();
@@ -90,16 +100,18 @@ export function ElementEditorActions(props: ElementEditorActionsProps) {
                     >
                         <ListItemIcon>
                             <LibraryAddOutlinedIcon
-                                sx={{marginTop: '-4px'}}
+                                sx={{
+                                    marginTop: '-4px',
+                                }}
                             />
                         </ListItemIcon>
                         <ListItemText>
-                            Als Vorlage Speichern
+                            Als Vorlage speichern
                         </ListItemText>
                     </MenuItem>
                 }
                 {
-                    props.onClone &&
+                    (props.onClone != null) &&
                     <MenuItem
                         onClick={() => {
                             props.onClone!();
@@ -108,7 +120,9 @@ export function ElementEditorActions(props: ElementEditorActionsProps) {
                     >
                         <ListItemIcon>
                             <ContentCopyOutlinedIcon
-                                sx={{marginTop: '-4px'}}
+                                sx={{
+                                    marginTop: '-4px',
+                                }}
                             />
                         </ListItemIcon>
                         <ListItemText>

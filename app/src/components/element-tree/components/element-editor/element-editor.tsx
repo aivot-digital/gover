@@ -1,4 +1,4 @@
-import {Box, Drawer,} from '@mui/material';
+import {Box, Drawer} from '@mui/material';
 import React, {useState} from 'react';
 import {PresetsService} from '../../../../services/presets.service';
 import {AddPresetDialog} from '../../../../dialogs/add-preset/add-preset.dialog';
@@ -9,50 +9,64 @@ import {selectUseTestMode} from '../../../../slices/admin-settings-slice';
 import {ElementEditorTabs} from './components/element-editor-tabs';
 import {ElementEditorContent} from './components/element-editor-content/element-editor-content';
 import {ElementEditorActions} from './components/element-editor-actions/element-editor-actions';
-import {ElementEditorProps} from './element-editor-props';
+import {type ElementEditorProps} from './element-editor-props';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {AnyElement} from '../../../../models/elements/any-element';
+import {type AnyElement} from '../../../../models/elements/any-element';
 import {ElementType} from '../../../../data/element-type/element-type';
 import ProjectPackage from '../../../../../package.json';
-import Editors from "../../../../editors";
+import Editors from '../../../../editors';
+import {type Application} from '../../../../models/entities/application';
+import {type Preset} from '../../../../models/entities/preset';
 
-export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>) {
+export function ElementEditor<T extends AnyElement, E extends Application | Preset>(props: ElementEditorProps<T, E>): JSX.Element | null {
     const dispatch = useAppDispatch();
 
     const testMode = useAppSelector(selectUseTestMode);
 
     const [updatedElement, setUpdatedElement] = useState<T>();
+    const [updatedEntity, setUpdatedEntity] = useState<E>();
     const [currentTab, setCurrentTab] = useState(testMode ? DefaultTabs.test : DefaultTabs.properties);
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
-    const handleSave = () => {
-        if (updatedElement != null) {
-            props.onSave({
-                ...updatedElement,
-                appVersion: ProjectPackage.version,
-            });
-        } else {
-            props.onSave(props.element);
-        }
+    const handleSave = (): void => {
+        props.onSave(
+            updatedElement != null ?
+                {
+                    ...updatedElement,
+                    appVersion: ProjectPackage.version,
+                } :
+                {},
+            updatedEntity ?? {},
+        );
     };
 
-    const handleSetCurrentTab = (newTab: string) => {
+    const handleSetCurrentTab = (newTab: string): void => {
         setCurrentTab(newTab);
     };
 
-    const handleShowPresetDialog = () => {
+    const handleShowPresetDialog = (): void => {
         setShowCreatePresetDialog(true);
     };
 
-    const handleClosePresetDialog = () => {
+    const handleClosePresetDialog = (): void => {
         setShowCreatePresetDialog(false);
     };
 
-    const handleChange = (update: T) => {
-        setUpdatedElement(update);
+    const handleChange = (update: Partial<T>): void => {
+        setUpdatedElement({
+            ...(updatedElement ?? props.element),
+            ...update,
+        });
     };
 
-    const handleSavePreset = (presetName: string) => {
+    const handleEntityChange = (update: Partial<E>): void => {
+        setUpdatedEntity({
+            ...(updatedEntity ?? props.entity),
+            ...update,
+        });
+    };
+
+    const handleSavePreset = (presetName: string): void => {
         if (props.element.type === ElementType.Container) {
             PresetsService.create({
                 id: 0,
@@ -64,17 +78,17 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
                 updated: '',
             })
                 .then(() => {
-                    dispatch(showSuccessSnackbar('Preset Saved!'));
+                    dispatch(showSuccessSnackbar('Vorlage erfolgreich gespeichert'));
                 })
-                .catch(err => {
+                .catch((err) => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Failed to save preset...'));
+                    dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
                 });
         }
         handleClosePresetDialog();
     };
 
-    const handleClose = () => {
+    const handleClose = (): void => {
         if (updatedElement != null) {
             const conf = window.confirm('Sollen die Änderungen am Element wirklich verworfen werden?');
             if (conf) {
@@ -125,19 +139,25 @@ export function ElementEditor<T extends AnyElement>(props: ElementEditorProps<T>
                     <ElementEditorContent
                         parents={props.parents}
                         element={updatedElement ?? props.element}
+                        entity={updatedEntity ?? props.entity}
                         currentTab={currentTab}
                         additionalTabs={additionalTabs}
                         onChange={handleChange}
+                        onChangeEntity={handleEntityChange}
+                        editable={props.editable}
                     />
                 </Box>
 
-                <ElementEditorActions
-                    onSave={handleSave}
-                    onCancel={handleClose}
-                    onDelete={props.onDelete}
-                    onSaveAsPreset={(updatedElement ?? props.element).type === ElementType.Container ? handleShowPresetDialog : undefined}
-                    onClone={props.onClone}
-                />
+                {
+                    props.editable &&
+                    <ElementEditorActions
+                        onSave={handleSave}
+                        onCancel={handleClose}
+                        onDelete={props.onDelete}
+                        onSaveAsPreset={(updatedElement ?? props.element).type === ElementType.Container ? handleShowPresetDialog : undefined}
+                        onClone={props.onClone}
+                    />
+                }
 
                 <AddPresetDialog
                     open={showCreatePresetDialog}

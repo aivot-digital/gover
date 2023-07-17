@@ -47,11 +47,11 @@ class _ApplicationService extends ApiService<Application, ListApplication, numbe
             {
                 email,
                 pdfLink,
-            }
+            },
         );
     }
 
-    async getMaxFileSize(application: Application): Promise<{ maxFileSize: number }> {
+    async getMaxFileSize(application: Application): Promise<{maxFileSize: number}> {
         return await ApiService.get('public/max-file-size/' + application.id);
     }
 }

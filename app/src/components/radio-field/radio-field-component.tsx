@@ -1,7 +1,5 @@
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@mui/material';
-import {RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {BaseViewProps} from "../../views/base-view";
 
 export interface RadioFieldComponentProps {
     label: string;

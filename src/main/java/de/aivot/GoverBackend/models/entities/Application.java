@@ -1,9 +1,5 @@
 package de.aivot.GoverBackend.models.entities;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.converters.JacksonRootElementDeserializer;
-import de.aivot.GoverBackend.converters.JacksonRootElementSerializer;
 import de.aivot.GoverBackend.converters.RootElementConverter;
 import de.aivot.GoverBackend.enums.ApplicationStatus;
 import de.aivot.GoverBackend.models.elements.RootElement;
@@ -49,38 +45,39 @@ public class Application {
 
     @NotNull
     @Convert(converter = RootElementConverter.class)
-    @JsonSerialize(converter = JacksonRootElementSerializer.class)
-    @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
     @Column(columnDefinition = "jsonb")
     private RootElement root;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     private Destination destination;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department legalSupportDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department technicalSupportDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department imprintDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department privacyDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department accessibilityDepartment;
 
     @NotNull
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department developingDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department managingDepartment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Department responsibleDepartment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Theme theme;
 
     @NotNull
     private LocalDateTime created;
@@ -91,6 +88,15 @@ public class Application {
     private Integer customerAccessHours;
 
     private Integer submissionDeletionWeeks;
+
+    @Column(updatable = false)
+    private Integer openSubmissions;
+
+    @Column(updatable = false)
+    private Integer inProgressSubmissions;
+
+    @Column(updatable = false)
+    private Integer totalSubmissions;
 
 
     // region Signales
@@ -252,6 +258,14 @@ public class Application {
         this.responsibleDepartment = responsibleDepartment;
     }
 
+    public Theme getTheme() {
+        return theme;
+    }
+
+    public void setTheme(Theme theme) {
+        this.theme = theme;
+    }
+
     public LocalDateTime getCreated() {
         return created;
     }
@@ -282,6 +296,30 @@ public class Application {
 
     public void setSubmissionDeletionWeeks(Integer submissionDeletionWeeks) {
         this.submissionDeletionWeeks = submissionDeletionWeeks;
+    }
+
+    public Integer getTotalSubmissions() {
+        return totalSubmissions;
+    }
+
+    public void setTotalSubmissions(Integer totalSubmissions) {
+        this.totalSubmissions = totalSubmissions;
+    }
+
+    public Integer getOpenSubmissions() {
+        return openSubmissions;
+    }
+
+    public void setOpenSubmissions(Integer openSubmissions) {
+        this.openSubmissions = openSubmissions;
+    }
+
+    public Integer getInProgressSubmissions() {
+        return inProgressSubmissions;
+    }
+
+    public void setInProgressSubmissions(Integer inProgressSubmissions) {
+        this.inProgressSubmissions = inProgressSubmissions;
     }
 
 

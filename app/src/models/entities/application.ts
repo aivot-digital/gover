@@ -1,30 +1,25 @@
-import {ApplicationStatus} from "../../data/application-status/application-status";
-import {RootElement} from "../elements/root-element";
+import {type RootElement} from '../elements/root-element';
+import {type ListApplication} from './list-application';
 
 
-export interface Application {
-    id: number;
-    slug: string;
-    version: string;
-    title: string;
-    status: ApplicationStatus;
+export interface Application extends ListApplication {
     root: RootElement;
 
     destination?: number | null;
-
-    developingDepartment: number;
 
     legalSupportDepartment?: number | null;
     technicalSupportDepartment?: number | null;
     imprintDepartment?: number | null;
     privacyDepartment?: number | null;
     accessibilityDepartment?: number | null;
-    managingDepartment?: number | null;
-    responsibleDepartment?: number | null;
 
     customerAccessHours?: number | null;
     submissionDeletionWeeks?: number | null;
 
     created: string;
     updated: string;
+}
+
+export function isApplication(obj: any): obj is Application {
+    return obj != null && 'slug' in obj;
 }

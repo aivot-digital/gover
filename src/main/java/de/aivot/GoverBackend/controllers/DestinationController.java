@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.controllers;
 
+import de.aivot.GoverBackend.models.dtos.ApplicationListDto;
 import de.aivot.GoverBackend.models.entities.Destination;
 import de.aivot.GoverBackend.permissions.IsAdmin;
+import de.aivot.GoverBackend.repositories.ApplicationRepository;
 import de.aivot.GoverBackend.repositories.DestinationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,10 +17,12 @@ import java.util.Optional;
 @RestController
 public class DestinationController {
     private final DestinationRepository repository;
+    private final ApplicationRepository applicationRepository;
 
     @Autowired
-    public DestinationController(DestinationRepository repository) {
+    public DestinationController(DestinationRepository repository, ApplicationRepository applicationRepository) {
         this.repository = repository;
+        this.applicationRepository = applicationRepository;
     }
 
     @GetMapping("/api/destinations")
@@ -40,6 +44,15 @@ public class DestinationController {
         return repository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping("/api/destinations/{id}/applications")
+    public Collection<ApplicationListDto> retrieveApplications(@PathVariable Integer id) {
+        return applicationRepository
+                .findAllByDestinationId(id)
+                .stream()
+                .map(ApplicationListDto::new)
+                .toList();
     }
 
     @IsAdmin
@@ -79,6 +92,10 @@ public class DestinationController {
         Optional<Destination> optDest = repository.findById(id);
         if (optDest.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        if (applicationRepository.existsByDestination_Id(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
         repository.delete(optDest.get());

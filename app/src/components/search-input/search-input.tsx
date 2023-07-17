@@ -1,7 +1,5 @@
 import {styled} from '@mui/material/styles';
 import {InputBase} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faMagnifyingGlass} from '@fortawesome/pro-regular-svg-icons';
 import React from 'react';
 import {SearchInputProps} from './search-input-props';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
@@ -50,7 +48,11 @@ const StyledInputBase = styled(InputBase)(({theme}) => ({
     },
 }));
 
-export function SearchInput({value, onChange, placeholder}: SearchInputProps) {
+export function SearchInput({
+                                value,
+                                onChange,
+                                placeholder,
+                            }: SearchInputProps) {
     return (
         <Search>
             <SearchIconWrapper>

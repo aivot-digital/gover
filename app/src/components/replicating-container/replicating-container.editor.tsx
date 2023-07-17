@@ -1,9 +1,12 @@
 import React from 'react';
-import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
-import {TextField} from '@mui/material';
-import {BaseEditorProps} from "../../editors/base-editor";
+import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {TextFieldComponent} from '../text-field/text-field-component';
+import {NumberFieldComponent} from '../number-field/number-field-component';
+import {Application} from '../../models/entities/application';
+import {Preset} from '../../models/entities/preset';
 
-export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
+export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout, Application | Preset>): JSX.Element {
     const minRequiredError = (
         props.element.minimumRequiredSets != null &&
         props.element.maximumSets != null &&
@@ -13,86 +16,67 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
 
     return (
         <>
-            <TextField
+            <TextFieldComponent
                 value={props.element.headlineTemplate ?? ''}
                 label="Überschrift des einzelnen Datensatzes"
-                margin="normal"
-                helperText='Verwenden Sie "#" um die aktuelle Nummer des Datensatzes in der Überschrift einzusetzen.'
-                onChange={event => props.onPatch({
-                    headlineTemplate: event.target.value,
-                })}
+                hint='Verwenden Sie "#" um die aktuelle Nummer des Datensatzes in der Überschrift einzusetzen.'
+                onChange={(val) => {
+                    props.onPatch({
+                        headlineTemplate: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
-            <TextField
+            <TextFieldComponent
                 value={props.element.addLabel ?? ''}
                 label='Label-Text für Aktion "Hinzufügen"'
-                margin="normal"
-                onChange={event => props.onPatch({
-                    addLabel: event.target.value,
-                })}
+                onChange={(val) => {
+                    props.onPatch({
+                        addLabel: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
-            <TextField
+            <TextFieldComponent
                 value={props.element.removeLabel ?? ''}
                 label='Label-Text für Aktion "Löschen"'
-                margin="normal"
-                onChange={event => props.onPatch({
-                    removeLabel: event.target.value,
-                })}
+                onChange={(val) => {
+                    props.onPatch({
+                        removeLabel: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
             {
                 props.element.required &&
-                <TextField
-                    value={props.element.minimumRequiredSets?.toString() ?? ''}
+                <NumberFieldComponent
+                    value={props.element.minimumRequiredSets}
                     label="Mindestanzahl der hinzuzufügenden Datensätze"
-                    margin="normal"
-                    helperText={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Mindestanzahl zu fordern.'}
-                    onChange={event => {
-                        if (event.target.value === '') {
-                            props.onPatch({
-                                minimumRequiredSets: undefined,
-                            });
-                            return;
-                        }
-                        let val = parseInt(event.target.value ?? '0');
-                        if (isNaN(val)) {
-                            val = 0;
-                        }
+                    hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
+                    onChange={(val) => {
                         props.onPatch({
                             minimumRequiredSets: val,
                         });
                     }}
-                    onBlur={() => {
-                        props.onPatch({
-                            required: props.element.minimumRequiredSets != null && props.element.minimumRequiredSets > 0,
-                        });
-                    }}
-                    error={minRequiredError}
+                    error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}
+                    disabled={!props.editable}
                 />
             }
 
-            <TextField
-                value={props.element.maximumSets?.toString() ?? ''}
+            <NumberFieldComponent
+                value={props.element.maximumSets}
                 label="Maximalanzahl der hinzuzufügenden Datensätze"
-                margin="normal"
-                helperText={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : 'Geben Sie 0 ein, um keine Maximalanzahl zu fordern.'}
-                onChange={event => {
-                    if (event.target.value === '') {
-                        props.onPatch({
-                            maximumSets: undefined,
-                        });
-                        return;
-                    }
-                    let val = parseInt(event.target.value ?? '0');
-                    if (isNaN(val)) {
-                        val = 0;
-                    }
+                hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}
+                onChange={(val) => {
                     props.onPatch({
                         maximumSets: val,
                     });
                 }}
-                error={minRequiredError}
+                disabled={!props.editable}
             />
         </>
     );

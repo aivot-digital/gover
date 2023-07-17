@@ -8,4 +8,4 @@ export enum DestinationType {
 export const DestinationTypeIcons = {
     [DestinationType.Mail]: faEnvelope,
     [DestinationType.HTTP]: faCode,
-}
+};

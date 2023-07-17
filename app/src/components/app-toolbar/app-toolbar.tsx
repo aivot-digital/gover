@@ -1,12 +1,12 @@
 import React from 'react';
-import {AppToolbarProps} from './app-toolbar-props';
+import {type AppToolbarProps} from './app-toolbar-props';
 import {AppBar, Box, IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {Link, useNavigate} from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import {getPath} from '../../apps/staff-app-routes';
 
-export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
+export function AppToolbar(props: AppToolbarProps) {
     const navigate = useNavigate();
 
     return (
@@ -18,7 +18,7 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                             size="small"
                             edge="start"
                             component={Link}
-                            to="/overview"
+                            to={getPath('applicationList')}
                             color="inherit"
                         >
                             <HomeOutlinedIcon/>
@@ -30,7 +30,9 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                         <IconButton
                             size="small"
                             edge="start"
-                            onClick={() => navigate(-1)}
+                            onClick={() => {
+                                navigate(-1);
+                            }}
                             color="inherit"
                             sx={{
                                 ml: 1,
@@ -48,49 +50,62 @@ export function AppToolbar({title, actions, noPlaceholder}: AppToolbarProps) {
                             ml: 2,
                         }}
                     >
-                        {title}
+                        {props.title}
                     </Typography>
 
-                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                        }}
+                    >
                         {
-                            actions?.map((action, index) => typeof action === 'string' ? (
-                                <Box
-                                    key={action}
-                                    sx={{
-                                        ml: 2,
-                                        width: '1px',
-                                        height: '2em',
-                                        backgroundColor: 'white',
-                                        opacity: '.25',
-                                    }}
-                                >
-                                </Box>
-                            ) : (
-                                <Tooltip
-                                    key={index}
-                                    title={action.tooltip}
-                                    arrow
-                                >
-                                    <IconButton
-                                        size="small"
-                                        color="inherit"
-                                        sx={{ml: 2}}
-                                        onClick={'onClick' in action ? action.onClick : undefined}
-                                        component={'onClick' in action ? 'button' : 'a'}
-                                        href={'href' in action ? action.href : undefined}
-                                        target={'href' in action ? '_blank' : undefined}
+                            props.actions?.map((action, index) => typeof action === 'string' ?
+                                (
+                                    <Box
+                                        key={action}
+                                        sx={{
+                                            ml: 2,
+                                            width: '1px',
+                                            height: '2em',
+                                            backgroundColor: 'white',
+                                            opacity: '.25',
+                                        }}
                                     >
-                                        {action.icon}
-                                    </IconButton>
-                                </Tooltip>
-                            ))
+                                    </Box>
+                                ) :
+                                (
+                                    <Tooltip
+                                        key={index}
+                                        title={action.tooltip}
+                                        arrow
+                                    >
+                                        <IconButton
+                                            size="small"
+                                            color="inherit"
+                                            sx={{
+                                                ml: 2,
+                                            }}
+                                            onClick={'onClick' in action ? action.onClick : undefined}
+                                            component={'onClick' in action ? 'button' : 'a'}
+                                            href={'href' in action ? action.href : undefined}
+                                            target={'href' in action ? '_blank' : undefined}
+                                        >
+                                            {action.icon}
+                                        </IconButton>
+                                    </Tooltip>
+                                ))
                         }
                     </Box>
                 </Toolbar>
             </AppBar>
             {
-                !noPlaceholder &&
-                <Box sx={{height: '4rem'}}/>
+                !(props.noPlaceholder ?? false) &&
+                <Box
+                    sx={{
+                        height: '4rem',
+                    }}
+                />
             }
         </>
     );

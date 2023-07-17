@@ -2,19 +2,25 @@ import {Grid, Typography} from '@mui/material';
 import {BaseSummary} from "./base-summary";
 import {CheckboxFieldElement} from "../models/elements/form/input/checkbox-field-element";
 
-export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = ({model, value}) => {
+export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = ({
+                                                                                     model,
+                                                                                     value,
+                                                                                 }) => {
     return (
         <Grid
             container
             sx={{
                 borderBottom: "1px solid #D4D4D4",
-                py: 1
+                py: 1,
             }}
         >
             <Grid
                 item
                 xs={4}
-                sx={{textAlign: "right", pr: 5}}
+                sx={{
+                    textAlign: "right",
+                    pr: 5,
+                }}
             >
                 <Typography variant={"body2"}>
                     {model.label}
@@ -32,4 +38,4 @@ export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = 
             </Grid>
         </Grid>
     );
-}
+};

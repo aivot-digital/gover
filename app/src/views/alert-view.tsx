@@ -10,4 +10,4 @@ export const AlertView: BaseView<AlertElement, any> = ({element}) => {
             color={element.alertType ?? 'info'}
         />
     );
-}
+};

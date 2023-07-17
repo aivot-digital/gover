@@ -1,19 +1,22 @@
 import {Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Department} from '../../models/entities/department';
+import {type Department} from '../../models/entities/department';
 import {DepartmentsService} from '../../services/departments-service';
 import {useSelector} from 'react-redux';
-import {AccessibilityDialogProps} from './accessibility-dialog-props';
+import {type AccessibilityDialogProps} from './accessibility-dialog-props';
 import {selectLoadedApplication} from '../../slices/app-slice';
 
-export function AccessibilityDialog(props: AccessibilityDialogProps) {
+export function AccessibilityDialog(props: AccessibilityDialogProps): JSX.Element {
     const application = useSelector(selectLoadedApplication);
 
     const [department, setDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (application != null && application.accessibilityDepartment != null && department == null) {
+        if (
+            application?.accessibilityDepartment != null &&
+            (department == null || department.id !== application.accessibilityDepartment)
+        ) {
             DepartmentsService
                 .retrieve(application.accessibilityDepartment)
                 .then(setDepartment);
@@ -43,7 +46,10 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                 <Button
                     size="large"
                     onClick={props.onHide}
-                    sx={{mr: 2, mb: 2}}
+                    sx={{
+                        mr: 2,
+                        mb: 2,
+                    }}
                     variant="outlined"
                 >
                     Barrierefreiheit schließen

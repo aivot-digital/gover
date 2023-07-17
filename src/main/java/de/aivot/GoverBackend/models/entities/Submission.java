@@ -38,6 +38,9 @@ public class Submission {
 
     private Boolean destinationSuccess;
 
+    @NotNull
+    private Boolean isTestSubmission;
+
     @PrePersist
     public void prePersist() {
         created = LocalDateTime.now();
@@ -115,6 +118,14 @@ public class Submission {
 
     public void setDestinationSuccess(Boolean destinationSuccess) {
         this.destinationSuccess = destinationSuccess;
+    }
+
+    public Boolean getIsTestSubmission() {
+        return isTestSubmission;
+    }
+
+    public void setIsTestSubmission(Boolean testSubmission) {
+        isTestSubmission = testSubmission;
     }
 
     // endregion

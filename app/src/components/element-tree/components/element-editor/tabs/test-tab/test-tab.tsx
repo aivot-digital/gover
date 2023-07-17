@@ -1,17 +1,17 @@
 import {Box, Checkbox, FormControlLabel, Typography} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {useSelector} from 'react-redux';
-import {format} from 'date-fns';
-import {User} from '../../../../../../models/entities/user';
+import {format, parseISO} from 'date-fns';
+import {type User} from '../../../../../../models/entities/user';
 import {UsersService} from '../../../../../../services/users-service';
 import {getFunctionStatus} from '../../../../../../utils/function-status-utils';
-import {UserRole} from '../../../../../../data/user-role';
 import {selectUser} from '../../../../../../slices/user-slice';
-import {TestTabProps} from './test-tab-props';
-import {AnyElement} from '../../../../../../models/elements/any-element';
-import {TestProtocol as TestProtocolModel} from "../../../../../../models/lib/test-protocol";
+import {type TestTabProps} from './test-tab-props';
+import {type AnyElement} from '../../../../../../models/elements/any-element';
+import {type TestProtocol as TestProtocolModel} from '../../../../../../models/lib/test-protocol';
+import {CheckboxFieldComponent} from '../../../../../checkbox-field/checkbox-field-component';
 
-export function TestTab<T extends AnyElement>({elementModel, onPatch}: TestTabProps<T>) {
+export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Element {
     const user = useSelector(selectUser);
 
     return (
@@ -22,35 +22,45 @@ export function TestTab<T extends AnyElement>({elementModel, onPatch}: TestTabPr
                 >
                     Fachliche Prüfung
                 </Typography>
+
                 <Typography
                     variant="body1"
-                    sx={{mt: 1, mb: 1}}
+                    sx={{
+                        mt: 1,
+                        mb: 1,
+                    }}
                 >
                     Eine Überprüfung der Umsetzung von vorab definierten fachlichen Anforderungen.
                 </Typography>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={elementModel.testProtocolSet?.professionalTest != null}
-                            onChange={event => onPatch({
-                                ...elementModel.testProtocolSet,
-                                professionalTest: user != null && event.target.checked ? {
+
+                <CheckboxFieldComponent
+                    value={props.elementModel.testProtocolSet?.professionalTest != null}
+                    onChange={(checked) => {
+                        props.onPatch({
+                            ...props.elementModel.testProtocolSet,
+                            professionalTest: user != null && checked ?
+                                {
                                     userId: user.id,
                                     timestamp: new Date().toISOString(),
-                                } : undefined
-                            })}
-                        />
+                                } :
+                                undefined,
+                        });
+                    }}
+                    label={
+                        props.elementModel.testProtocolSet?.professionalTest != null ?
+                            'Fachliche Prüfung erfolgreich' :
+                            'Ich habe die Fachliche Prüfung erfolgreich durchgeführt'
                     }
-                    label={elementModel.testProtocolSet?.professionalTest != null ? 'Fachliche Prüfung erfolgreich' : 'Ich habe die Fachliche Prüfung erfolgreich durchgeführt'}
+                    disabled={!props.editable}
                 />
 
                 {
-                    elementModel.testProtocolSet?.professionalTest != null &&
-                    <TestProtocol {...elementModel.testProtocolSet.professionalTest} />
+                    props.elementModel.testProtocolSet?.professionalTest != null &&
+                    <TestProtocol {...props.elementModel.testProtocolSet.professionalTest} />
                 }
             </Box>
             {
-                getFunctionStatus(elementModel).length > 0 &&
+                getFunctionStatus(props.elementModel).length > 0 &&
                 <Box>
                     <Typography
                         variant="h6"
@@ -60,28 +70,35 @@ export function TestTab<T extends AnyElement>({elementModel, onPatch}: TestTabPr
                     </Typography>
                     <Typography
                         variant="body1"
-                        sx={{mt: 1, mb: 1}}
+                        sx={{
+                            mt: 1,
+                            mb: 1,
+                        }}
                     >
                         Eine Überprüfung der technischen Implementierung von individuellen Funktionen.
                     </Typography>
                     <FormControlLabel
                         control={
                             <Checkbox
-                                checked={elementModel.testProtocolSet?.technicalTest != null}
-                                onChange={event => onPatch({
-                                    ...elementModel.testProtocolSet,
-                                    technicalTest: user != null && event.target.checked ? {
-                                        userId: user.id,
-                                        timestamp: new Date().toISOString(),
-                                    } : undefined,
-                                })}
+                                checked={props.elementModel.testProtocolSet?.technicalTest != null}
+                                onChange={(event) => {
+                                    props.onPatch({
+                                        ...props.elementModel.testProtocolSet,
+                                        technicalTest: user != null && event.target.checked ?
+                                            {
+                                                userId: user.id,
+                                                timestamp: new Date().toISOString(),
+                                            } :
+                                            undefined,
+                                    });
+                                }}
                             />
                         }
-                        label={elementModel.testProtocolSet?.technicalTest ? 'Technische Prüfung erfolgreich' : 'Ich habe die Technische Prüfung erfolgreich durchgeführt'}
+                        label={((props.elementModel.testProtocolSet?.technicalTest) != null) ? 'Technische Prüfung erfolgreich' : 'Ich habe die Technische Prüfung erfolgreich durchgeführt'}
                     />
                     {
-                        elementModel.testProtocolSet?.technicalTest  != null &&
-                        <TestProtocol {...elementModel.testProtocolSet.technicalTest} />
+                        props.elementModel.testProtocolSet?.technicalTest != null &&
+                        <TestProtocol {...props.elementModel.testProtocolSet.technicalTest} />
                     }
                 </Box>
             }
@@ -89,34 +106,33 @@ export function TestTab<T extends AnyElement>({elementModel, onPatch}: TestTabPr
     );
 }
 
-function TestProtocol(protocol: TestProtocolModel) {
+function TestProtocol(protocol: TestProtocolModel): JSX.Element | null {
     const [user, setUser] = useState<User>();
 
     useEffect(() => {
-        UsersService.retrieve(protocol.userId)
-            .then(user => {
-                if (user) {
-                    setUser(user);
-                } else {
-                    setUser({
-                        id: protocol.userId,
-                        name: 'Inaktiver Nutzer',
-                        email: '',
-                        password: '',
-                        active: false,
-                        admin: false,
-                        created: '',
-                        updated: '',
-                    });
-                }
+        UsersService
+            .retrieve(protocol.userId)
+            .then(setUser)
+            .catch((err) => {
+                console.error(err);
+                setUser({
+                    id: protocol.userId,
+                    name: 'Inaktiver Nutzer',
+                    email: '',
+                    password: '',
+                    active: false,
+                    admin: false,
+                    created: '',
+                    updated: '',
+                });
             });
     }, [protocol.userId]);
-
-    const timestamp = new Date(protocol.timestamp);
 
     if (user == null) {
         return null;
     }
+
+    const timestamp = parseISO(protocol.timestamp);
 
     return (
         <Typography>

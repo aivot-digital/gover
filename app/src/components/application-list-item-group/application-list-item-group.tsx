@@ -1,9 +1,9 @@
 import React, {useReducer} from 'react';
 import {Box, Button} from '@mui/material';
-import {ApplicationListItemGroupProps} from "./application-list-item-group-props";
-import {ApplicationListItem} from "../application-list-item/application-list-item";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faChevronDown, faChevronUp} from "@fortawesome/pro-light-svg-icons";
+import {type ApplicationListItemGroupProps} from './application-list-item-group-props';
+import {ApplicationListItem} from '../application-list-item/application-list-item';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faChevronDown, faChevronUp} from '@fortawesome/pro-light-svg-icons';
 
 
 export function ApplicationListItemGroup({
@@ -12,7 +12,8 @@ export function ApplicationListItemGroup({
                                              onDelete,
                                              onNewVersion,
                                              memberships,
-                                         }: ApplicationListItemGroupProps) {
+                                             user,
+                                         }: ApplicationListItemGroupProps): JSX.Element {
     const [isCollapsed, toggleCollapsed] = useReducer(p => !p, true);
 
     const [first, ...rest] = group.applications;
@@ -30,6 +31,7 @@ export function ApplicationListItemGroup({
                 onDelete={onDelete}
                 onNewVersion={onNewVersion}
                 memberships={memberships}
+                user={user}
             />
 
             {
@@ -70,7 +72,7 @@ export function ApplicationListItemGroup({
                             }}
                         >
                             {
-                                rest.map(app => (
+                                rest.map((app) => (
                                     <ApplicationListItem
                                         key={app.slug + app.version}
                                         application={app}
@@ -78,6 +80,7 @@ export function ApplicationListItemGroup({
                                         onDelete={onDelete}
                                         onNewVersion={onNewVersion}
                                         memberships={memberships}
+                                        user={user}
                                     />
                                 ))
                             }

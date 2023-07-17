@@ -4,9 +4,7 @@ import styles from './application-list-item.module.scss';
 import {Link} from 'react-router-dom';
 import {faExternalLinkAlt, faFileText} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {getColorPalette} from '../../theming/themes';
-import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
-import {PublicListApplication} from "../../models/entities/public-list-application";
+import {type PublicListApplication} from '../../models/entities/public-list-application';
 
 
 interface ApplicationListItemDisplayProps {
@@ -14,9 +12,8 @@ interface ApplicationListItemDisplayProps {
 }
 
 export function ApplicationListItemPublic({
-                                               application,
-                                           }: ApplicationListItemDisplayProps) {
-
+                                              application,
+                                          }: ApplicationListItemDisplayProps) {
     return (
         <Box className={styles.listItem}>
             <Box
@@ -25,12 +22,14 @@ export function ApplicationListItemPublic({
                 <FontAwesomeIcon
                     icon={faFileText}
                     size="2x"
-                    color={(getColorPalette(application.theme).primary as SimplePaletteColorOptions).main}
                 />
             </Box>
             <Box
                 className={styles.listItemInfo}
-                sx={{ml: 2.5, py: '8px'}}
+                sx={{
+                    ml: 2.5,
+                    py: '8px',
+                }}
             >
                 <Typography
                     variant="h6"

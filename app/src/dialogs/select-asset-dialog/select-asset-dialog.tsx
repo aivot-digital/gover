@@ -25,7 +25,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
     const handleSelect = (asset: string) => {
         setSearch('');
         props.onSelect(asset);
-    }
+    };
 
     const filteredAssets = assets == null ? undefined : assets.filter(ass => ass.toLowerCase().includes(search.toLowerCase()));
 

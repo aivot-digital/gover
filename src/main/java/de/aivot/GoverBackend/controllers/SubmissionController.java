@@ -52,24 +52,54 @@ public class SubmissionController {
     public Collection<SubmissionListDto> list(
             Authentication authentication,
             @PathVariable Integer applicationId,
-            @RequestParam(required = false) Boolean archived,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeArchived,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeTest,
             @RequestParam(required = false) Integer assignee
     ) {
         testPermission(authentication, applicationId);
 
         Collection<Submission> submissions;
-        if (Boolean.TRUE.equals(archived) && assignee != null) {
-            submissions = submissionRepository
-                    .findAllByApplicationIdAndAssigneeId(applicationId, assignee);
-        } else if (Boolean.TRUE.equals(archived)) {
-            submissions = submissionRepository
-                    .findAllByApplicationId(applicationId);
-        } else if (assignee != null) {
-            submissions = submissionRepository
-                    .findAllByApplicationIdAndArchivedIsNullAndAssigneeId(applicationId, assignee);
+
+        if (assignee != null) {
+            if (includeArchived && includeTest) {
+                submissions = submissionRepository
+                        .findAllByApplicationIdAndAssigneeId(applicationId, assignee);
+            }
+
+            else if (includeArchived) {
+                submissions = submissionRepository
+                        .findAllByApplicationIdAndAssigneeIdAndIsTestSubmissionFalse(applicationId, assignee);
+            }
+
+            else if (includeTest) {
+                submissions = submissionRepository
+                        .findAllByApplicationIdAndAssigneeIdAndArchivedIsNull(applicationId, assignee);
+            }
+
+            else {
+                submissions = submissionRepository
+                        .findAllByApplicationIdAndAssigneeIdAndArchivedIsNullAndIsTestSubmissionFalse(applicationId, assignee);
+            }
         } else {
-            submissions = submissionRepository
-                    .findAllByApplicationIdAndArchivedIsNull(applicationId);
+            if (includeArchived && includeTest) {
+                submissions = submissionRepository
+                        .findAllByApplicationId(applicationId);
+            }
+
+            else if (includeArchived) {
+                submissions = submissionRepository
+                        .findAllByApplicationIdAndIsTestSubmissionFalse(applicationId);
+            }
+
+            else if (includeTest) {
+                submissions = submissionRepository
+                        .findAllByApplicationIdAndArchivedIsNull(applicationId);
+            }
+
+            else {
+                submissions = submissionRepository
+                        .findAllByApplicationIdAndArchivedIsNullAndIsTestSubmissionFalse(applicationId);
+            }
         }
 
         return submissions
@@ -150,6 +180,10 @@ public class SubmissionController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (sub.getDestination() == null || sub.getDestinationSuccess()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
+        if (sub.getArchived() == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 

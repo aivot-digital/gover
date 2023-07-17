@@ -7,7 +7,7 @@ public class ApplicationListPublicDto {
     private String slug;
     private String version;
     private String headline;
-    private String theme;
+    private Integer theme;
 
     public static ApplicationListPublicDto valueOf(Application app) {
         ApplicationListPublicDto la = new ApplicationListPublicDto();
@@ -16,7 +16,9 @@ public class ApplicationListPublicDto {
         la.slug = app.getSlug();
         la.version = app.getVersion();
         la.headline = app.getRoot().getHeadline();
-        la.theme = app.getRoot().getTheme();
+        if (app.getTheme() != null) {
+            la.theme = app.getTheme().getId();
+        }
 
         return la;
     }
@@ -55,14 +57,13 @@ public class ApplicationListPublicDto {
         this.headline = headline;
     }
 
-    public String getTheme() {
+    public Integer getTheme() {
         return theme;
     }
 
-    public void setTheme(String theme) {
+    public void setTheme(Integer theme) {
         this.theme = theme;
     }
-
 
     // endregion
 }

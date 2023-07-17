@@ -5,14 +5,14 @@ import {faPlusCircle, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {useCallback, useEffect} from 'react';
 import {stringOrDefault} from "../../utils/string-utils";
-import {generateElementIdForReplicatingContainerChild, generateElementIdForType} from "../../utils/id-utils";
+import {generateElementIdForReplicatingContainerChild} from "../../utils/id-utils";
 import {BaseViewProps} from "../../views/base-view";
 
 export function ReplicatingContainerView({
                                              allElements,
                                              setValue,
                                              element,
-                                             value
+                                             value,
                                          }: BaseViewProps<ReplicatingContainerLayout, string[]>) {
     useEffect(() => {
         if (element.minimumRequiredSets != null && element.minimumRequiredSets > 0 && (value == null || value.length < element.minimumRequiredSets)) {
@@ -54,7 +54,11 @@ export function ReplicatingContainerView({
                             border: '1px solid #D4D4D4',
                         }}
                     >
-                        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}>
                             <Typography
                                 variant="h6"
                                 sx={{fontSize: '1.125rem'}}
@@ -110,7 +114,10 @@ export function ReplicatingContainerView({
                             icon={faPlusCircle}
                             style={{marginTop: '-2px'}}
                         />}
-                        sx={{mt: 2, mb: 3}}
+                        sx={{
+                            mt: 2,
+                            mb: 3,
+                        }}
                         onClick={handleAdd}
                         variant={'outlined'}
                         disabled={element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets}

@@ -5,34 +5,38 @@ import {styled} from '@mui/material/styles';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faChevronDown} from '@fortawesome/pro-light-svg-icons';
 import MuiAccordionDetails from '@mui/material/AccordionDetails';
-import MuiAccordion, {AccordionProps} from '@mui/material/Accordion';
-import MuiAccordionSummary, {AccordionSummaryProps,} from '@mui/material/AccordionSummary';
+import MuiAccordion, {type AccordionProps} from '@mui/material/Accordion';
+import MuiAccordionSummary, {type AccordionSummaryProps} from '@mui/material/AccordionSummary';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
-import {Department} from '../../models/entities/department';
+import {type Department} from '../../models/entities/department';
 import {useSelector} from 'react-redux';
 import {DepartmentsService} from '../../services/departments-service';
-import {HelpDialogProps} from './help-dialog-props';
+import {type HelpDialogProps} from './help-dialog-props';
 import {selectLoadedApplication} from '../../slices/app-slice';
 
 
-export function HelpDialog(props: HelpDialogProps) {
+export function HelpDialog(props: HelpDialogProps): JSX.Element {
     const application = useSelector(selectLoadedApplication);
     const [technicalDepartment, setTechnicalDepartment] = useState<Department>();
     const [specialDepartment, setSpecialDepartment] = useState<Department>();
 
     useEffect(() => {
-        if (application != null) {
-            if (technicalDepartment == null && application.technicalSupportDepartment != null) {
-                DepartmentsService
-                    .retrieve(application.technicalSupportDepartment)
-                    .then(setTechnicalDepartment);
-            }
+        if (
+            application?.technicalSupportDepartment != null &&
+            (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartment)
+        ) {
+            DepartmentsService
+                .retrieve(application.technicalSupportDepartment)
+                .then(setTechnicalDepartment);
+        }
 
-            if (specialDepartment == null && application.legalSupportDepartment != null) {
-                DepartmentsService
-                    .retrieve(application.legalSupportDepartment)
-                    .then(setSpecialDepartment);
-            }
+        if (
+            application?.legalSupportDepartment != null &&
+            (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartment)
+        ) {
+            DepartmentsService
+                .retrieve(application.legalSupportDepartment)
+                .then(setSpecialDepartment);
         }
     }, [application, technicalDepartment, specialDepartment]);
 
@@ -50,35 +54,38 @@ export function HelpDialog(props: HelpDialogProps) {
                 Hilfe für diesen Antrag
             </DialogTitleWithClose>
             <DialogContent>
-
-                <Grid
-                    container
-                    spacing={4}
-                    sx={{mt: -3.6, mb: 4}}
-                >
+                {
+                    application != null &&
+                    specialDepartment != null &&
+                    technicalDepartment != null &&
                     <Grid
-                        item
-                        xs={6}
+                        container
+                        spacing={4}
+                        sx={{
+                            mt: -3.6,
+                            mb: 4,
+                        }}
                     >
-                        <BoxLink
-                            link={`mailto:${specialDepartment?.specialSupportAddress}?subject=Fachlicher Support: ${application?.title}`}
+                        <Grid
+                            item
+                            xs={6}
                         >
-                            <span>Fachlicher Support</span><br/>
-                            Unterstützung zum Inhalt <br/>und Ausfüllen des Antrages
-                        </BoxLink>
-                    </Grid>
-                    <Grid
-                        item
-                        xs={6}
-                    >
-                        <BoxLink
-                            link={`mailto:${technicalDepartment?.technicalSupportAddress}?subject=Technischer Support: ${application?.title}`}
+                            <BoxLink
+                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.title}`}
+                                text={'Fachlicher Support\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
+                            />
+                        </Grid>
+                        <Grid
+                            item
+                            xs={6}
                         >
-                            <span>Technischer Support</span><br/>
-                            Unterstützung bei technischen Problemen und Fehlern
-                        </BoxLink>
+                            <BoxLink
+                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.title}`}
+                                text={'Technischer Support\nUnterstützung bei technischen Problemen und Fehlern'}
+                            />
+                        </Grid>
                     </Grid>
-                </Grid>
+                }
 
                 <DialogContentText component="div">
                     <Box sx={{mb: 4}}>
@@ -86,7 +93,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             variant={'h6'}
                             sx={{color: '#16191F'}}
                         >Häufig gestellte Fragen (FAQ)</Typography>
-                        Für eine schnelle Hilfe haben wir Ihnen nachfolgend die häufigsten Fragen zu diesem Antrag
+                        Für eine schnelle Hilfe haben wir Ihnen nachfolgend die häufigsten Fragen zu diesem Formular
                         zusammengestellt. Sollten Sie auf Ihre Frage keine Antwort finden, so nutzen Sie
                         gerne die oben gezeigten Möglichkeiten, um Kontakt mit uns aufzunehmen. Vielen Dank!
                     </Box>
@@ -101,12 +108,11 @@ export function HelpDialog(props: HelpDialogProps) {
                         <AccordionDetails>
                             <Typography>
                                 Bitte füllen Sie zunächst alle mit * gekennzeichneten Pflichtfelder aus. Über die
-                                Schaltflächen "Weiter" und "Zurück" werden die von Ihnen eingegebenen Daten im
+                                Schaltflächen "Weiter" und "Zurück zum vorherigen Schritt" werden die von Ihnen eingegebenen Daten im
                                 jeweiligen Formular-Register geprüft. Zum Abschluss des Formulars erfolgt eine
-                                Gesamtprüfung über die Schaltfläche „Antrag abschicken“. Sind alle Eingaben korrekt,
+                                Gesamtprüfung über die Schaltfläche „Antrag verbindlich einreichen“. Sind alle Eingaben korrekt,
                                 wird Ihr Antrag direkt an die zuständige Behörde medienbruchfrei weitergeleitet.
-                                Beinhaltet das Antragsformular noch fehlerhafte Eingaben, werden die Felder rot umrahmt.
-                                Zusätzlich können die Fehlermeldungen im Bereich „Meldungen“ angezeigt werden. Nach
+                                Beinhaltet das Antragsformular noch fehlerhafte Eingaben, werden die Felder rot umrahmt. Nach
                                 erfolgreicher Korrektur ist erneut die jeweilige Schaltfläche zu betätigen. Das
                                 ausgefüllte Antragsformular können Sie sich über die Schaltfläche „PDF erstellen“ lokal
                                 abspeichern oder per E-Mail zusenden lassen.
@@ -230,7 +236,7 @@ const Accordion = styled((props: AccordionProps) => (
         {...props}
     />
 ))(({theme}) => ({
-    border: `1px solid ${theme.palette.primary.dark}`,
+    'border': `1px solid ${theme.palette.primary.dark}`,
     '&:not(:last-child)': {
         borderBottom: 0,
     },
@@ -244,8 +250,8 @@ const AccordionSummary = styled((props: AccordionSummaryProps) => (
         {...props}
     />
 ))(({theme}) => ({
-    flexDirection: 'row-reverse',
-    transition: '200ms all ease-in-out',
+    'flexDirection': 'row-reverse',
+    'transition': '200ms all ease-in-out',
     '&.Mui-expanded': {
         backgroundColor: theme.palette.primary.main,
     },

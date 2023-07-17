@@ -1,11 +1,14 @@
 import React from 'react';
-import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {FormGroup, InputLabel, TextField, Typography} from '@mui/material';
-import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {CheckboxTree} from "../checkbox-tree/checkbox-tree";
-import {StringListInput} from "../string-list-input/string-list-input";
-import {CheckboxTreeOption} from "../checkbox-tree/checkbox-tree-option";
-import {BaseEditorProps} from "../../editors/base-editor";
+import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {FormGroup, InputLabel, Typography} from '@mui/material';
+import {CheckboxTree} from '../checkbox-tree/checkbox-tree';
+import {StringListInput} from '../string-list-input/string-list-input';
+import {type CheckboxTreeOption} from '../checkbox-tree/checkbox-tree-option';
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {TextFieldComponent} from '../text-field/text-field-component';
+import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {Application} from '../../models/entities/application';
+import {Preset} from '../../models/entities/preset';
 
 const eligibleEntities: CheckboxTreeOption[] = [
     {
@@ -73,100 +76,107 @@ function orderEligiblePersons(value: string[]): string[] {
             }
         }
         return flattened;
-    }
+    };
 
     return flattenTreeOptions(eligibleEntities)
-        .filter(opt => value.includes(opt));
+        .filter((opt) => value.includes(opt));
 }
 
-export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
+export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, Application | Preset>): JSX.Element {
     return (
         <>
             <Typography
                 variant="h6"
-                sx={{mt: 4}}
+                sx={{
+                    mt: 4,
+                }}
             >
-                Zugehörige Initiative
+                Zusätzliche Informationen
             </Typography>
 
-            <TextField
-                value={props.element.initiativeName ?? ''}
-                label="Initiative"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    initiativeName: event.target.value,
-                })}
-            />
-
-            <TextField
+            <TextFieldComponent
                 value={props.element.initiativeLogoLink ?? ''}
-                label="Logo der Initiative"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    initiativeLogoLink: event.target.value,
-                })}
-                helperText={'Link zu einer Grafik-Datei mit transparentem oder weißem Hintergrund.'}
+                label="Zusätzliches Logo"
+                onChange={(val) => {
+                    props.onPatch({
+                        initiativeLogoLink: val,
+                    });
+                }}
+                hint="Link zu einer Grafik-Datei mit transparentem oder weißem Hintergrund."
+                disabled={!props.editable}
             />
 
-            <TextField
-                label="URL zur Webseite der Initiative"
-                margin="normal"
-                helperText={'Das dargestellte Logo der Initiative verlinkt auf diese Webseite.'}
-                value={props.element.initiativeLink ?? ''}
-                onChange={event => props.onPatch({
-                    initiativeLink: event.target.value,
-                })}
+            <TextFieldComponent
+                value={props.element.initiativeName ?? ''}
+                label="Beschreibungstext des Logos"
+                onChange={(val) => {
+                    props.onPatch({
+                        initiativeName: val,
+                    });
+                }}
+                hint="Beschrieben Sie kurz, was auf dem Logo zu sehen ist."
+                disabled={!props.editable}
             />
 
             <Typography
                 variant="h6"
-                sx={{mt: 4}}
+                sx={{
+                    mt: 4,
+                }}
             >
                 Informationen für Antragstellende
             </Typography>
 
-            <TextField
+            <RichTextEditorComponentView
                 value={props.element.teaserText ?? ''}
                 label="Kurzbeschreibung"
-                margin="normal"
-                helperText="Schildern Sie kurz und präzise das Formular und dessen Zweck."
-                multiline
-                rows={4}
-                onChange={event => props.onPatch({
-                    teaserText: event.target.value,
-                })}
+                hint="Schildern Sie kurz und präzise das Formular und dessen Zweck."
+                onChange={(val) => {
+                    props.onPatch({
+                        teaserText: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
-            <FormGroup sx={{mt: 2}}>
-                <InputLabel sx={{mb: 1}}>Antragsberechtigte</InputLabel>
+            <FormGroup
+                sx={{
+                    mt: 2,
+                }}
+            >
+                <InputLabel
+                    sx={{
+                        mb: 1,
+                    }}
+                >Antragsberechtigte</InputLabel>
                 <CheckboxTree
                     options={eligibleEntities}
                     value={props.element.eligiblePersons ?? []}
-                    onChange={update => props.onPatch({
-                        eligiblePersons: orderEligiblePersons(update),
-                    })}
+                    onChange={(update) => {
+                        props.onPatch({
+                            eligiblePersons: orderEligiblePersons(update),
+                        });
+                    }}
+                    disabled={!props.editable}
                 />
             </FormGroup>
 
-            <TextField
+            <TextFieldComponent
                 value={props.element.expectedCosts ?? ''}
                 label="Gebühren des Antrages"
-                margin="normal"
-                onChange={event => props.onPatch({
-                    expectedCosts: event.target.value,
-                })}
-                onBlur={() => {
-                    if (isStringNullOrEmpty(props.element.expectedCosts)) {
-                        props.onPatch({
-                            expectedCosts: undefined,
-                        });
-                    }
+                onChange={(val) => {
+                    props.onPatch({
+                        expectedCosts: val,
+                    });
                 }}
+                disabled={!props.editable}
             />
 
             <Typography
                 variant="h6"
-                sx={{mt: 4}}
+                sx={{
+                    mt: 4,
+                }}
             >
                 Dokumente des Antrags
             </Typography>
@@ -177,10 +187,13 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine relevanten Dokumente angegeben"
                 value={props.element.supportingDocuments}
-                onChange={supportingDocuments => props.onPatch({
-                    supportingDocuments: supportingDocuments,
-                })}
+                onChange={(supportingDocuments) => {
+                    props.onPatch({
+                        supportingDocuments,
+                    });
+                }}
                 allowEmpty={true}
+                disabled={!props.editable}
             />
 
             <StringListInput
@@ -189,10 +202,13 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine einzureichenden Dokumente angegeben"
                 value={props.element.documentsToAttach}
-                onChange={supportingDocuments => props.onPatch({
-                    documentsToAttach: supportingDocuments,
-                })}
+                onChange={(supportingDocuments) => {
+                    props.onPatch({
+                        documentsToAttach: supportingDocuments,
+                    });
+                }}
                 allowEmpty={true}
+                disabled={!props.editable}
             />
 
         </>

@@ -6,7 +6,7 @@ export function MultiCheckboxFieldComponentView({
                                                     element,
                                                     value,
                                                     error,
-                                                    setValue
+                                                    setValue,
                                                 }: BaseViewProps<MultiCheckboxFieldElement, string[]>) {
     return (
         <>

@@ -2,14 +2,14 @@ import {Checkbox, FormControl, FormControlLabel, FormHelperText} from '@mui/mate
 import {CheckboxFieldComponentProps} from "./checkbox-field-component-props";
 
 export function CheckboxFieldComponent({
-                                               label,
-                                               error,
-                                               hint,
-                                               required,
-                                               disabled,
-                                               value,
-                                               onChange,
-                                           }: CheckboxFieldComponentProps) {
+                                           label,
+                                           error,
+                                           hint,
+                                           required,
+                                           disabled,
+                                           value,
+                                           onChange,
+                                       }: CheckboxFieldComponentProps) {
     return (
         <FormControl
             error={error != null}

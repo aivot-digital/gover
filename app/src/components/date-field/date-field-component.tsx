@@ -11,19 +11,19 @@ const formatMap = {
     [DateFieldComponentModelMode.Date]: 'dd.MM.yyyy',
     [DateFieldComponentModelMode.Month]: 'MM.yyyy',
     [DateFieldComponentModelMode.Year]: 'yyyy',
-}
+};
 
 const maskMap = {
     [DateFieldComponentModelMode.Date]: '__.__.____',
     [DateFieldComponentModelMode.Month]: '__.____',
     [DateFieldComponentModelMode.Year]: '____',
-}
+};
 
 const placeholderMap = {
     [DateFieldComponentModelMode.Date]: 'TT.MM.JJJJ',
     [DateFieldComponentModelMode.Month]: 'MM.JJJJ',
     [DateFieldComponentModelMode.Year]: 'JJJJ',
-}
+};
 
 const viewsMap: {
     [k in DateFieldComponentModelMode]: ('day' | 'month' | 'year')[];
@@ -31,7 +31,7 @@ const viewsMap: {
     [DateFieldComponentModelMode.Date]: ['day', 'month', 'year'],
     [DateFieldComponentModelMode.Month]: ['month', 'year'],
     [DateFieldComponentModelMode.Year]: ['year'],
-}
+};
 
 const OpenIcon = () => <FontAwesomeIcon icon={faCalendarDay}/>;
 

@@ -1,4 +1,4 @@
-import { ElementType } from "./element-type/element-type";
+import {ElementType} from "./element-type/element-type";
 import {ElementTypesMap} from "./element-type/element-types-map";
 
 export enum ConditionOperator {
@@ -88,12 +88,12 @@ export const ConditionOperatorIsUnary: ConditionOperatorMap<boolean> = {
     [ConditionOperator.NotIncludesPattern]: false,
     [ConditionOperator.Empty]: true,
     [ConditionOperator.NotEmpty]: true,
-    [ConditionOperator.YearsInPast]:  false,
-    [ConditionOperator.MonthsInPast]:  false,
-    [ConditionOperator.DaysInPast]:  false,
-    [ConditionOperator.YearsInFuture]:  false,
-    [ConditionOperator.MonthsInFuture]:  false,
-    [ConditionOperator.DaysInFuture]:  false,
+    [ConditionOperator.YearsInPast]: false,
+    [ConditionOperator.MonthsInPast]: false,
+    [ConditionOperator.DaysInPast]: false,
+    [ConditionOperator.YearsInFuture]: false,
+    [ConditionOperator.MonthsInFuture]: false,
+    [ConditionOperator.DaysInFuture]: false,
 };
 
 export const ConditionOperatorMessage: ConditionOperatorMap<(valueA: any, valueB: any) => string> = {
@@ -113,7 +113,7 @@ export const ConditionOperatorMessage: ConditionOperatorMap<(valueA: any, valueB
     [ConditionOperator.NotEndsWith]: (valueA, valueB) => `${valueA} darf nicht mit ${valueB} enden.`,
     [ConditionOperator.MatchesPattern]: (valueA, valueB) => `${valueA} muss dem Muster ${valueB} entsprechen.`,
     [ConditionOperator.NotMatchesPattern]: (valueA, valueB) => `${valueA} darf nicht dem Muster ${valueB} entsprechen.`,
-    [ConditionOperator.IncludesPattern]: (valueA, valueB) =>  `${valueA} muss das Muster ${valueB} enthalten.`,
+    [ConditionOperator.IncludesPattern]: (valueA, valueB) => `${valueA} muss das Muster ${valueB} enthalten.`,
     [ConditionOperator.NotIncludesPattern]: (valueA, valueB) => `${valueA} darf das Muster ${valueB} nicht enthalten.`,
     [ConditionOperator.Empty]: (valueA, valueB) => `${valueA} muss ausgefüllt sein.`,
     [ConditionOperator.NotEmpty]: (valueA, valueB) => `${valueA} darf nicht ausgefüllt sein.`,
@@ -161,7 +161,7 @@ export const ConditionOperatorHint: ElementTypesMap<OptionalConditionOperatorMap
     [ElementType.SummaryStep]: null,
     [ElementType.Image]: null,
     [ElementType.SubmittedStep]: null,
-    [ElementType.FileUpload]: null
+    [ElementType.FileUpload]: null,
 };
 
 export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {

@@ -19,5 +19,5 @@ export function CustomStepIconFactory(iconDef?: IconDefinition) {
                 color={active ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.4)'}
             />
         );
-    }
+    };
 }

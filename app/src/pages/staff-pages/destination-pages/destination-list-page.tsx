@@ -1,20 +1,20 @@
-import {useAuthGuard} from "../../../hooks/use-auth-guard";
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {Destination} from "../../../models/entities/destination";
-import {DestinationsService} from "../../../services/destinations-service";
-import {GridColDef} from "@mui/x-data-grid";
-import {useUserGuard} from "../../../hooks/use-user-guard";
-import {DestinationType, DestinationTypeIcons} from "../../../data/destination-type/destination-type";
-import {TablePageWrapper} from "../../../components/table-page-wrapper/table-page-wrapper";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {type Destination} from '../../../models/entities/destination';
+import {DestinationsService} from '../../../services/destinations-service';
+import {type GridColDef} from '@mui/x-data-grid';
+import {DestinationType, DestinationTypeIcons} from '../../../data/destination-type/destination-type';
+import {TablePageWrapper} from '../../../components/table-page-wrapper/table-page-wrapper';
+import {filterItems} from '../../../utils/filter-items';
+import {useAdminGuard} from '../../../hooks/use-admin-guard';
 
-const columns: GridColDef<Destination>[] = [
+const columns: Array<GridColDef<Destination>> = [
     {
         field: 'type',
         headerName: 'Typ',
-        renderCell: params => (
+        renderCell: (params) => (
             <>
                 <FontAwesomeIcon
                     icon={DestinationTypeIcons[params.row.type]}
@@ -33,37 +33,56 @@ const columns: GridColDef<Destination>[] = [
     {
         field: 'target',
         headerName: 'Ziel',
-        valueGetter: params => params.row.type === DestinationType.HTTP ? params.row.apiAddress : params.row.mailTo,
+        valueGetter: (params) => params.row.type === DestinationType.HTTP ? params.row.apiAddress : params.row.mailTo,
         flex: 1,
     },
 ];
 
 
-export function DestinationListPage() {
-    useAuthGuard();
-    useUserGuard(user => user?.admin ?? false);
+export function DestinationListPage(): JSX.Element {
+    useAdminGuard();
 
     const navigate = useNavigate();
 
     const [search, setSearch] = useState('');
     const [destinations, setDestinations] = useState<Destination[]>();
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadError, setLoadError] = useState<string>();
 
     useEffect(() => {
+        setIsLoading(true);
+        setLoadError(undefined);
+
         DestinationsService
             .list()
-            .then(setDestinations);
+            .then(setDestinations)
+            .catch((err) => {
+                console.error(err);
+                setLoadError('Die Liste der Schnittstellen konnte nicht geladen werden.');
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
     }, []);
 
-    const filtered = destinations != null ? destinations.filter(dest => dest.name.toLowerCase().includes(search.toLowerCase())) : undefined;
+    const filtered = filterItems(destinations, 'name', search);
 
     return (
         <TablePageWrapper
             title="Schnittstellen"
-            isLoading={filtered == null}
+            isLoading={isLoading}
+            error={loadError}
+
+            hint={{
+                text: 'Hier können Sie Schnittstellen anlegen, an die abgesendete Anträge gesendet werden können.',
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/schnittstellenkonzept' /* TODO: Link anpassen */,
+            }}
 
             columns={columns}
             rows={filtered ?? []}
-            onRowClick={dest => navigate(`/destinations/${dest.id}`)}
+            onRowClick={(dest) => {
+                navigate(`/destinations/${dest.id}`);
+            }}
 
             search={search}
             searchPlaceholder="Schnittstelle suchen..."
@@ -73,7 +92,7 @@ export function DestinationListPage() {
                 label: 'Neue Schnittstelle',
                 icon: <AddOutlinedIcon/>,
                 tooltip: 'Neue Schnittstelle anlegen',
-                onClick: () => navigate(`/destinations/new`),
+                link: '/destinations/new',
             }]}
         />
     );

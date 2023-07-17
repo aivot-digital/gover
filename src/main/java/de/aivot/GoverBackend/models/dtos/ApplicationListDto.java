@@ -10,7 +10,7 @@ public class ApplicationListDto {
     private String slug;
     private String version;
     private String headline;
-    private String theme;
+    private Integer theme;
     private String title;
     private ApplicationStatus status;
     private Integer developingDepartment;
@@ -18,6 +18,9 @@ public class ApplicationListDto {
     private Integer responsibleDepartment;
     private LocalDateTime created;
     private LocalDateTime updated;
+    private Integer openSubmissions;
+    private Integer inProgressSubmissions;
+    private Integer totalSubmissions;
 
     public ApplicationListDto() {
     }
@@ -27,7 +30,9 @@ public class ApplicationListDto {
         slug = app.getSlug();
         version = app.getVersion();
         headline = app.getRoot().getHeadline();
-        theme = app.getRoot().getTheme();
+        if (app.getTheme() != null) {
+            theme = app.getTheme().getId();
+        }
         title = app.getTitle();
         status = app.getStatus();
         developingDepartment = app.getDevelopingDepartment().getId();
@@ -39,6 +44,9 @@ public class ApplicationListDto {
         }
         created = app.getCreated();
         updated = app.getUpdated();
+        openSubmissions = app.getOpenSubmissions();
+        inProgressSubmissions = app.getInProgressSubmissions();
+        totalSubmissions = app.getTotalSubmissions();
     }
 
     // region Getters & Setters
@@ -75,11 +83,11 @@ public class ApplicationListDto {
         this.headline = headline;
     }
 
-    public String getTheme() {
+    public Integer getTheme() {
         return theme;
     }
 
-    public void setTheme(String theme) {
+    public void setTheme(Integer theme) {
         this.theme = theme;
     }
 
@@ -137,6 +145,30 @@ public class ApplicationListDto {
 
     public void setUpdated(LocalDateTime updated) {
         this.updated = updated;
+    }
+
+    public Integer getTotalSubmissions() {
+        return totalSubmissions;
+    }
+
+    public void setTotalSubmissions(Integer totalSubmissions) {
+        this.totalSubmissions = totalSubmissions;
+    }
+
+    public Integer getOpenSubmissions() {
+        return openSubmissions;
+    }
+
+    public void setOpenSubmissions(Integer openSubmissions) {
+        this.openSubmissions = openSubmissions;
+    }
+
+    public Integer getInProgressSubmissions() {
+        return inProgressSubmissions;
+    }
+
+    public void setInProgressSubmissions(Integer inProgressSubmissions) {
+        this.inProgressSubmissions = inProgressSubmissions;
     }
 
 

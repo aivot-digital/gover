@@ -36,8 +36,10 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
         Collection<Map<String, String>> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
-            if (cValue instanceof Map<?,?> mValue) {
-                res.add((Map<String, String>) mValue);
+            for (Object o : cValue) {
+                if (o instanceof Map<?,?> mValue) {
+                    res.add((Map<String, String>) mValue);
+                }
             }
         }
 
@@ -46,12 +48,16 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
 
     @Override
     public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Collection<Map<String, String>> value, ScriptEngine scriptEngine) throws ValidationException {
-        if (Boolean.TRUE.equals(getRequired()) && value.isEmpty()) {
+        if (Boolean.TRUE.equals(getRequired()) && (value == null || value.isEmpty())) {
             throw new RequiredValidationException(this);
         }
 
-        if (minimumRequiredRows != null && value.size() < minimumRequiredRows) {
+        if (minimumRequiredRows != null && (value == null || value.size() < minimumRequiredRows)) {
             throw new ValidationException(this, "Not enough rows");
+        }
+
+        if (value == null || value.isEmpty()) {
+            return;
         }
 
         if (maximumRows != null && value.size() > maximumRows) {
@@ -89,7 +95,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
 
         List<List<String>> columnValues = new LinkedList<>();
 
-        if (value != null) {
+        if (value != null && !value.isEmpty()) {
             for (Map<String, String> row : value) {
                 List<String> fields = new LinkedList<>();
                 for (TableFieldColumnDefinition col : this.fields) {
@@ -118,6 +124,12 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
                 }
                 columnValues.add(fields);
             }
+        } else {
+            List<String> emptyRow = new LinkedList<>();
+            for (TableFieldColumnDefinition col : this.fields) {
+                emptyRow.add("Keine Angaben");
+            }
+            columnValues.add(emptyRow);
         }
 
         List<BasePdfRowDto> fields = new LinkedList<>();

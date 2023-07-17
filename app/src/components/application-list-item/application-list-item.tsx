@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
-import {format, isToday} from 'date-fns';
+import {format, isToday, parseISO} from 'date-fns';
 import {ApplicationStatusNames} from '../../data/application-status/application-status-names';
 import {ApplicationStatus} from '../../data/application-status/application-status';
 import {Link} from 'react-router-dom';
@@ -9,95 +9,81 @@ import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
-import {
-    faArrowUpRightFromSquare,
-    faBars,
-    faClipboard,
-    faClone,
-    faEdit,
-    faFileExport,
-    faFileText,
-    faTrashCanXmark,
-    faUpFromDottedLine,
-    faFiles,
-} from '@fortawesome/pro-regular-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {ApplicationService} from '../../services/application-service';
-import {getColorPalette} from '../../theming/themes';
-import {SimplePaletteColorOptions} from '@mui/material/styles/createPalette';
-import {downloadConfigFile} from "../../utils/download-utils";
-import {showSuccessSnackbar} from "../../slices/snackbar-slice";
-import {useAppDispatch} from "../../hooks/use-app-dispatch";
-import {Department} from "../../models/entities/department";
-import {DepartmentsService} from "../../services/departments-service";
-import {ApplicationListItemProps} from "./application-list-item-props";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectUser} from "../../slices/user-slice";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import {downloadConfigFile} from '../../utils/download-utils';
+import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {type Department} from '../../models/entities/department';
+import {DepartmentsService} from '../../services/departments-service';
+import {type ApplicationListItemProps} from './application-list-item-props';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
-export function ApplicationListItem({
-                                        application,
-                                        onClone,
-                                        onDelete,
-                                        onNewVersion,
-                                        memberships,
-                                    }: ApplicationListItemProps) {
+
+export function ApplicationListItem(props: ApplicationListItemProps): JSX.Element {
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectUser);
     const [department, setDepartment] = useState<Department>();
     const [optionAnchorEl, setOptionAnchorEl] = useState<null | HTMLElement>(null);
     const showOptions = Boolean(optionAnchorEl);
 
     useEffect(() => {
-        DepartmentsService
-            .retrieve(application.developingDepartment)
-            .then(setDepartment);
-    }, [application]);
+        if (department == null) {
+            DepartmentsService
+                .retrieve(props.application.developingDepartment)
+                .then(setDepartment);
+        }
+    }, [props.application]);
 
-    const handleOptionsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleOptionsClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setOptionAnchorEl(event.currentTarget);
     };
 
-    const handleCloseOptions = () => {
+    const handleCloseOptions = (): void => {
         setOptionAnchorEl(null);
     };
 
-    const handleNewVersion = () => {
-        onNewVersion(application);
+    const handleNewVersion = (): void => {
+        props.onNewVersion(props.application);
     };
 
-    const handleClone = () => {
-        onClone(application);
+    const handleClone = (): void => {
+        props.onClone(props.application);
         handleCloseOptions();
     };
 
-    const handleDelete = () => {
-        if (application.title != null && application.title.length > 0) {
-            const res = prompt(`Sind Sie sicher, dass sie den Antrag "${application.title}" löschen möchten? Bitte geben Sie den Titel des Antrages ("${application.title}") zur Bestätigung der Löschung ein.`);
-            if (res != null && res.trim() === application.title) {
-                onDelete(application);
-            }
-        } else {
-            onDelete(application);
-        }
+    const handleDelete = (): void => {
+        props.onDelete(props.application);
         handleCloseOptions();
     };
 
-    const handleDownloadConfig = () => {
+    const handleDownloadConfig = (): void => {
         ApplicationService
-            .retrieve(application.id)
+            .retrieve(props.application.id)
             .then(downloadConfigFile);
         handleCloseOptions();
     };
 
-    const isDeveloper = user?.admin || (memberships ?? []).some(mem => mem.department === application.developingDepartment);
-    const isEditor = user?.admin || (memberships ?? []).some(mem => mem.department === application.managingDepartment || mem.department === application.responsibleDepartment);
-    const lastUpdate = application.updated ? new Date(application.updated) : new Date();
+    const isDeveloper =
+        props.user.admin ||
+        props.memberships
+            .some((mem) => {
+                return mem.department === props.application.developingDepartment;
+            });
+
+    const isEditor =
+        props.user.admin ||
+        props.memberships
+            .some((mem) => {
+                return (
+                    mem.department === props.application.managingDepartment ||
+                    mem.department === props.application.responsibleDepartment
+                );
+            });
+    const lastUpdate = parseISO(props.application.updated);
 
     return (
         <Box className={styles.listItem}>
@@ -105,25 +91,28 @@ export function ApplicationListItem({
                 className={styles.listItemIcon}
             >
                 <DescriptionOutlinedIcon
-                    sx={{ color: (getColorPalette(application.theme).primary as SimplePaletteColorOptions).main }}
+                    sx={{color: 'primary'}}
                     fontSize="large"
                 />
             </Box>
             <Box
                 className={styles.listItemInfo}
-                sx={{ml: 2.5, py: '8px'}}
+                sx={{
+                    ml: 2.5,
+                    py: '8px',
+                }}
             >
                 <Typography
                     variant="h5"
                     sx={{mb: 0.5}}
                 >
-                    {application.title}
+                    {props.application.title}
 
                     <Typography
                         variant="caption"
                         sx={{ml: 1}}
                     >
-                        {application.version}
+                        {props.application.version}
                     </Typography>
                 </Typography>
 
@@ -146,8 +135,15 @@ export function ApplicationListItem({
                         lineHeight: '1.5rem',
                     }}
                 >
-                    {ApplicationStatusNames[application.status ?? ApplicationStatus.Drafted]} • Zuletzt
-                                                                                              bearbeitet: {isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} Uhr
+                    {ApplicationStatusNames[props.application.status ?? ApplicationStatus.Drafted]} • Zuletzt
+                    bearbeitet: {isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} Uhr
+                </Typography>
+
+
+                <Typography
+                    variant="caption"
+                >
+                    Anträge: Offen {props.application.openSubmissions} | In Bearbeitung {props.application.inProgressSubmissions} | Gesamt {props.application.totalSubmissions}
                 </Typography>
             </Box>
             <Box className={styles.listItemActions}>
@@ -155,11 +151,10 @@ export function ApplicationListItem({
                     isEditor &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={<FolderSharedOutlinedIcon sx={{marginTop: '-2px' }} />}
+                            startIcon={<FolderSharedOutlinedIcon sx={{marginTop: '-2px'}}/>}
                             component={Link}
-                            to={'/submissions/' + application.id}
+                            to={`/submissions/${props.application.id}`}
                         >
-
                             Anträge einsehen
                         </Button>
                     </Box>
@@ -169,9 +164,12 @@ export function ApplicationListItem({
                     isDeveloper &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={<DriveFileRenameOutlineOutlinedIcon sx={{marginTop: '-2px' }} />}
+                            startIcon={<DriveFileRenameOutlineOutlinedIcon sx={{
+                                marginTop: '-2px',
+                            }}
+                            />}
                             component={Link}
-                            to={'/edit/' + application.id}
+                            to={`/edit/${props.application.id}`}
                         >
                             Bearbeiten
                         </Button>
@@ -182,7 +180,10 @@ export function ApplicationListItem({
                     isDeveloper &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
-                            startIcon={<DriveFolderUploadOutlinedIcon sx={{marginTop: '-2px' }} />}
+                            startIcon={<DriveFolderUploadOutlinedIcon sx={{
+                                marginTop: '-2px',
+                            }}
+                            />}
                             onClick={handleNewVersion}
                         >
                             Neue Version
@@ -192,7 +193,10 @@ export function ApplicationListItem({
 
                 <Box className={styles.listItemActionsContainer}>
                     <Button
-                        startIcon={<MenuOutlinedIcon sx={{marginTop: '-2px' }} />}
+                        startIcon={<MenuOutlinedIcon sx={{
+                            marginTop: '-2px',
+                        }}
+                        />}
                         onClick={handleOptionsClick}
                     >
                         Optionen
@@ -208,28 +212,36 @@ export function ApplicationListItem({
                                 <FileCopyOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
-                                Antrag duplizieren
+                                Formular duplizieren
                             </ListItemText>
                         </MenuItem>
 
                         <MenuItem
                             component="a"
-                            href={'/#/' + application.slug + '/' + application.version}
+                            href={`/#/ ${props.application.slug}/${props.application.version}`}
                             target="_blank"
                         >
                             <ListItemIcon>
                                 <OpenInNewOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
-                                Antrag als Antragsteller:in öffnen (in neuem Tab)
+                                Formular als Antragsteller:in öffnen (in neuem Tab)
                             </ListItemText>
                         </MenuItem>
 
                         <MenuItem
                             onClick={() => {
-                                const link = `${window.location.protocol}//${window.location.host}/#/${application.slug}/${application.version}`;
-                                navigator.clipboard.writeText(link);
-                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                const link = `${window.location.protocol}//${window.location.host}/#/${props.application.slug}/${props.application.version}`;
+                                navigator
+                                    .clipboard
+                                    .writeText(link)
+                                    .then(() => {
+                                        dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert'));
+                                    })
+                                    .catch((err) => {
+                                        console.error(err);
+                                        dispatch(showSuccessSnackbar('Formularlink konnte nicht kopiert werden'));
+                                    });
                                 handleCloseOptions();
                             }}
                         >
@@ -237,7 +249,7 @@ export function ApplicationListItem({
                                 <ContentPasteOutlinedIcon/>
                             </ListItemIcon>
                             <ListItemText>
-                                Link in Zwischenablage kopieren
+                                Formularlink in Zwischenablage kopieren
                             </ListItemText>
                         </MenuItem>
 
@@ -248,7 +260,7 @@ export function ApplicationListItem({
                                     <ImportExportOutlinedIcon/>
                                 </ListItemIcon>
                                 <ListItemText>
-                                    Antrag als .gov-Datei exportieren
+                                    Formular exportieren
                                 </ListItemText>
                             </MenuItem>
                         }
@@ -260,7 +272,7 @@ export function ApplicationListItem({
                                     <DeleteForeverOutlinedIcon/>
                                 </ListItemIcon>
                                 <ListItemText>
-                                    Antrag löschen
+                                    Formular löschen
                                 </ListItemText>
                             </MenuItem>
                         }

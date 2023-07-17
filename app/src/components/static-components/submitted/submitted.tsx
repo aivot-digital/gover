@@ -1,37 +1,17 @@
-import {
-    Box,
-    Button,
-    Checkbox,
-    Divider,
-    FormControl,
-    FormControlLabel,
-    FormHelperText,
-    Grid,
-    TextField,
-    Typography,
-    useTheme
-} from '@mui/material';
-import Rating, {IconContainerProps} from '@mui/material/Rating';
+import {Box, Button, Checkbox, Divider, FormControl, FormControlLabel, FormHelperText, Grid, TextField, Typography, useTheme} from '@mui/material';
+import Rating, {type IconContainerProps} from '@mui/material/Rating';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {
-    faEnvelope,
-    faFaceFrown,
-    faFaceFrownSlight,
-    faFaceLaugh,
-    faFaceMeh,
-    faFaceSmile,
-    faFilePdf
-} from '@fortawesome/pro-light-svg-icons';
+import {faEnvelope, faFaceFrown, faFaceFrownSlight, faFaceLaugh, faFaceMeh, faFaceSmile, faFilePdf} from '@fortawesome/pro-light-svg-icons';
 import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
 import {useSelector} from 'react-redux';
 import {ApplicationService} from '../../../services/application-service';
 import {selectLoadedApplication} from '../../../slices/app-slice';
-import {validateEmail} from "../../../utils/validate-email";
-import {isStringNullOrEmpty} from "../../../utils/string-utils";
-import {AnyElement} from "../../../models/elements/any-element";
-import {InfoDialog} from "../../../dialogs/info-dialog/info-dialog";
+import {validateEmail} from '../../../utils/validate-email';
+import {isStringNullOrEmpty} from '../../../utils/string-utils';
+import {type AnyElement} from '../../../models/elements/any-element';
+import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -43,22 +23,26 @@ interface SubmittedProps {
     pdfLink: string;
 }
 
-export function Submitted({allElements, pdfLink}: SubmittedProps) {
+export function Submitted({
+                              allElements,
+                              pdfLink,
+                          }: SubmittedProps) {
     const application = useSelector(selectLoadedApplication);
     const submitStep = application?.root.submitStep;
     const theme = useTheme();
 
-    const customIcons: {
-        [index: string]: {
-            icon: React.ReactElement;
-            label: string;
-        };
-    } = {
+    const customIcons: Record<string, {
+        icon: React.ReactElement;
+        label: string;
+    }> = {
         1: {
             icon: <FontAwesomeIcon
                 icon={faFaceFrown}
                 fixedWidth
-                style={{fontSize: '40px', margin: '0 5px'}}
+                style={{
+                    fontSize: '40px',
+                    margin: '0 5px',
+                }}
             />,
             label: 'Sehr Unzufrieden',
         },
@@ -66,7 +50,10 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
             icon: <FontAwesomeIcon
                 icon={faFaceFrownSlight}
                 fixedWidth
-                style={{fontSize: '40px', margin: '0 5px'}}
+                style={{
+                    fontSize: '40px',
+                    margin: '0 5px',
+                }}
             />,
             label: 'Unzufrieden',
         },
@@ -74,7 +61,10 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
             icon: <FontAwesomeIcon
                 icon={faFaceMeh}
                 fixedWidth
-                style={{fontSize: '40px', margin: '0 5px'}}
+                style={{
+                    fontSize: '40px',
+                    margin: '0 5px',
+                }}
             />,
             label: 'Neutral',
         },
@@ -82,7 +72,10 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
             icon: <FontAwesomeIcon
                 icon={faFaceSmile}
                 fixedWidth
-                style={{fontSize: '40px', margin: '0 5px'}}
+                style={{
+                    fontSize: '40px',
+                    margin: '0 5px',
+                }}
             />,
             label: 'Zufrieden',
         },
@@ -90,14 +83,20 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
             icon: <FontAwesomeIcon
                 icon={faFaceLaugh}
                 fixedWidth
-                style={{fontSize: '40px', margin: '0 5px'}}
+                style={{
+                    fontSize: '40px',
+                    margin: '0 5px',
+                }}
             />,
             label: 'Sehr Zufrieden',
         },
     };
 
     function IconContainer(props: IconContainerProps) {
-        const {value, ...other} = props;
+        const {
+            value,
+            ...other
+        } = props;
         return <span {...other}>{customIcons[value].icon}</span>;
     }
 
@@ -107,17 +106,17 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
         width: '100%',
         height: '100%',
         top: 0,
-        left: 0
+        left: 0,
     };
 
-    // @ts-ignore
+    // @ts-expect-error
     function getAnimationSettings(angle, originX) {
         return {
             particleCount: 3,
             angle,
             spread: 55,
             origin: {x: originX},
-            colors: ['#003087', '#BC082F', '#137673', '#BA3B76', '#8B596C']
+            colors: ['#003087', '#BC082F', '#137673', '#BA3B76', '#8B596C'],
         };
     }
 
@@ -130,23 +129,23 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
 
     const nextTickAnimation = useCallback(() => {
         if (refAnimationInstance.current) {
-            // @ts-ignore
+            // @ts-expect-error
             refAnimationInstance.current(getAnimationSettings(60, 0));
-            // @ts-ignore
+            // @ts-expect-error
             refAnimationInstance.current(getAnimationSettings(120, 1));
         }
     }, []);
 
     const startAnimation = useCallback(() => {
         if (!intervalId) {
-            // @ts-ignore
+            // @ts-expect-error
             setIntervalId(setInterval(nextTickAnimation, 16));
         }
     }, [nextTickAnimation, intervalId]);
 
     const pauseAnimation = useCallback(() => {
         clearInterval(intervalId);
-        // @ts-ignore
+        // @ts-expect-error
         setIntervalId(null);
     }, [intervalId]);
 
@@ -206,10 +205,12 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
     return (
         <>
             {
+                submitStep?.textPostSubmit != null &&
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
-                    allElements={allElements}
-                    text={submitStep?.textPostSubmit ?? ''}
+                    text={submitStep?.textPostSubmit}
+                    logoLink={application?.root.introductionStep.initiativeLogoLink}
+                    logoAlt={application?.root.introductionStep.initiativeName}
                 />
             }
 
@@ -230,7 +231,10 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                         Antrag als PDF herunterladen
                     </Typography>
                     <Typography
-                        sx={{mt: 1, mb: 4}}
+                        sx={{
+                            mt: 1,
+                            mb: 4,
+                        }}
                         variant={'body2'}
                     >
                         Über die Schaltfläche “Antrag als PDF herunterladen” können Sie sich den von Ihnen
@@ -263,7 +267,10 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                         Antrag per E-Mail erhalten
                     </Typography>
                     <Typography
-                        sx={{mt: 1, mb: 2.4}}
+                        sx={{
+                            mt: 1,
+                            mb: 2.4,
+                        }}
                         variant={'body2'}
                     >
                         Lassen Sie sich Ihren eingereichten Antrag durch das Ausfüllen des folgenden Formulars an
@@ -275,7 +282,9 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                         placeholder="max.mustermann@mail.de"
                         value={email}
                         disabled={mailSent}
-                        onChange={event => setEmail(event.target.value)}
+                        onChange={(event) => {
+                            setEmail(event.target.value);
+                        }}
                         error={mailInvalid}
                         helperText={mailInvalid ? 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' : undefined}
                     />
@@ -284,7 +293,9 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                             sx={{mt: 2}}
                             control={<Checkbox
                                 checked={privacy}
-                                onChange={(_, checked) => setPrivacy(checked)}
+                                onChange={(_, checked) => {
+                                    setPrivacy(checked);
+                                }}
                                 color={privacyError != null ? 'primary' : 'error'}
                             />}
                             disabled={mailSent}
@@ -323,16 +334,25 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                 Wie hat Ihnen dieser Prozess gefallen?
             </Typography>
             <Typography
-                sx={{textAlign: 'center', mt: 1}}
+                sx={{
+                    textAlign: 'center',
+                    mt: 1,
+                }}
                 variant={'body2'}
             >
                 Ihre Rückmeldung wird anonym an uns übertragen und hilft uns <br/>
                 bei der Verbesserung unserer Anträge &amp; Prozesse. Vielen Dank!
             </Typography>
-            <Box sx={{display: 'flex', justifyContent: 'center', mt: 4}}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    mt: 4,
+                }}
+            >
                 <Rating
                     sx={{
-                        color: theme.palette.primary.main
+                        color: theme.palette.primary.main,
                     }}
                     name="highlight-selected-only"
                     IconContainerComponent={IconContainer}
@@ -343,7 +363,7 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
 
             <ReactCanvasConfetti
                 refConfetti={getInstance}
-                // @ts-ignore
+                // @ts-expect-error
                 style={canvasStyles}
             />
 
@@ -351,7 +371,9 @@ export function Submitted({allElements, pdfLink}: SubmittedProps) {
                 title="E-Mail versendet"
                 severity="success"
                 open={showMailSentDialog}
-                onClose={() => setShowMailSentDialog(false)}
+                onClose={() => {
+                    setShowMailSentDialog(false);
+                }}
             >
                 Eine E-Mail mit dem eingereichten Antrag wurde an die angegebene E-Mail-Adresse versendet.
             </InfoDialog>

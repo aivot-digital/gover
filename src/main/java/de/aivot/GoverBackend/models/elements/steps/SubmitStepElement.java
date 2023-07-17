@@ -21,7 +21,7 @@ public class SubmitStepElement extends BaseElement {
         textPreSubmit = MapUtils.getString(values, "textPreSubmit");
         textPostSubmit = MapUtils.getString(values, "textPostSubmit");
         textProcessingTime = MapUtils.getString(values, "textProcessingTime");
-        documentsToReceive = MapUtils.get(values, "documentsToReceive", Collection.class);
+        documentsToReceive = MapUtils.getStringCollection(values, "documentsToReceive");
     }
 
     //region Getters & Setters

@@ -2,16 +2,15 @@ package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.models.dtos.DepartmentMembershipDto;
+import de.aivot.GoverBackend.models.entities.AccessibleApplication;
 import de.aivot.GoverBackend.models.entities.DepartmentMembership;
 import de.aivot.GoverBackend.models.entities.User;
-import de.aivot.GoverBackend.repositories.AccessibleDepartmentRepository;
-import de.aivot.GoverBackend.repositories.DepartmentMembershipRepository;
-import de.aivot.GoverBackend.repositories.DepartmentRepository;
-import de.aivot.GoverBackend.repositories.UserRepository;
+import de.aivot.GoverBackend.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
@@ -23,17 +22,24 @@ public class DepartmentMembershipController {
     private final DepartmentRepository departmentRepository;
     private final AccessibleDepartmentRepository accessibleDepartmentRepository;
     private final DepartmentMembershipRepository membershipRepository;
+    private final SubmissionRepository submissionRepository;
+    private final AccessibleApplicationRepository accessibleApplicationRepository;
 
     @Autowired
     public DepartmentMembershipController(
             UserRepository userRepository,
             DepartmentRepository departmentRepository,
-            AccessibleDepartmentRepository accessibleDepartmentRepository, DepartmentMembershipRepository membershipRepository
+            AccessibleDepartmentRepository accessibleDepartmentRepository,
+            DepartmentMembershipRepository membershipRepository,
+            SubmissionRepository submissionRepository,
+            AccessibleApplicationRepository accessibleApplicationRepository
     ) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.accessibleDepartmentRepository = accessibleDepartmentRepository;
         this.membershipRepository = membershipRepository;
+        this.submissionRepository = submissionRepository;
+        this.accessibleApplicationRepository = accessibleApplicationRepository;
     }
 
     @GetMapping("/api/department-memberships")
@@ -107,6 +113,36 @@ public class DepartmentMembershipController {
         return DepartmentMembershipDto.valueOf(membershipRepository.save(membership));
     }
 
+    @PutMapping("/api/department-memberships/{id}")
+    public DepartmentMembershipDto update(
+            Authentication authentication,
+            @PathVariable Integer id,
+            @RequestBody DepartmentMembershipDto updatedMembership
+    ) {
+        var requester = (User) authentication.getPrincipal();
+
+        Optional<DepartmentMembership> membershipToUpdate = membershipRepository.findById(id);
+        if (membershipToUpdate.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        var membership = membershipToUpdate.get();
+
+        if (!requester.isAdmin()) {
+            boolean isAdminMember = accessibleDepartmentRepository.existsByDepartmentIdAndUserIdAndRole(
+                    membership.getDepartment().getId(),
+                    requester.getId(),
+                    UserRole.Admin
+            );
+            if (!isAdminMember) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            }
+        }
+
+        membership.setRole(updatedMembership.getRole());
+
+        return DepartmentMembershipDto.valueOf(membershipRepository.save(membership));
+    }
+
     @DeleteMapping("/api/department-memberships/{id}")
     public void destroy(
             Authentication authentication,
@@ -130,6 +166,19 @@ public class DepartmentMembershipController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 
-        membershipRepository.delete(membershipToDelete.get());
+        var membership = membershipToDelete.get();
+
+        var accessibleApplications = accessibleApplicationRepository
+                .findAllByKey_MembershipId(membership.getId())
+                .stream()
+                .map(a -> a.getKey().getApplicationId())
+                .toList();
+
+        var activeSubmissionsExists = submissionRepository.existsByApplication_IdInAndArchivedIsNull(accessibleApplications);
+        if (activeSubmissionsExists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
+        membershipRepository.delete(membership);
     }
 }

@@ -1,55 +1,48 @@
-import React, {useEffect, useState} from "react";
-import {cloneElement} from "../../../utils/clone-element";
-import {GoverStoreService} from "../../../services/gover-store.service";
-import {BaseTabProps} from "./base-tab-props";
-import {
-    LoadingPlaceholderComponentView
-} from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
-import {
-    Box,
-    DialogContent,
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Tooltip,
-    Typography,
-    useTheme
-} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {AlertComponent} from "../../../components/alert/alert-component";
-import {Link} from "react-router-dom";
-import {useAppSelector} from "../../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../../data/system-config-keys";
-import {faCubes, faInfoCircle, faLock} from "@fortawesome/pro-light-svg-icons";
-import {TextFieldComponent} from "../../../components/text-field/text-field-component";
-import {StoreListModule} from "../../../models/entities/store-list-module";
+import React, {useEffect, useState} from 'react';
+import {cloneElement} from '../../../utils/clone-element';
+import {GoverStoreService} from '../../../services/gover-store.service';
+import {type BaseTabProps} from './base-tab-props';
+import {LoadingPlaceholderComponentView} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
+import {Box, DialogContent, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Tooltip, Typography, useTheme} from '@mui/material';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {AlertComponent} from '../../../components/alert/alert-component';
+import {Link} from 'react-router-dom';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../data/system-config-keys';
+import {faCubes, faInfoCircle, faLock} from '@fortawesome/pro-light-svg-icons';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {type StoreListModule} from '../../../models/entities/store-list-module';
 
-export function StoreTab({parentType, onAddElement, showModuleId, hightlightedModuleId}: BaseTabProps & {
+export function StoreTab({
+                             parentType,
+                             onAddElement,
+                             showModuleId,
+                             highlightedModuleId,
+                         }: BaseTabProps & {
     showModuleId: (id: string) => void;
-    hightlightedModuleId?: string;
-}) {
+    highlightedModuleId?: string;
+}): JSX.Element {
     const theme = useTheme();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
     const [modules, setModules] = useState<StoreListModule[]>();
     const [search, setSearch] = useState<string>();
 
     useEffect(() => {
-        GoverStoreService.listModules(0, '', storeKey)
-            .then(res => {
+        GoverStoreService
+            .listModules(0, '', storeKey)
+            .then((res) => {
                 setModules(res.items);
             });
     }, [parentType, setModules]);
 
-    const addModuleElement = (module: StoreListModule) => {
-        GoverStoreService.fetchModuleCode(module.id, module.current_version, storeKey)
-            .then(group => {
+    const addModuleElement = (module: StoreListModule): void => {
+        GoverStoreService
+            .fetchModuleCode(module.id, module.current_version, storeKey)
+            .then((group) => {
                 onAddElement(cloneElement(group, true));
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error(err);
             });
     };
@@ -80,8 +73,9 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                     Bitte beachten Sie, dass Sie für das Veröffentlichen von Bausteinen einen Gover Store Schlüssel
                     benötigen. Mehr dazu finden Sie
                     im <a
-                    href="https://store.gover.digital/contribute"
+                    href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
                     target="_blank"
+                    rel="noreferrer"
                 >Gover Store</a>.
                 </Typography>
             </DialogContent>
@@ -105,22 +99,28 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                 <List dense>
                     {
                         modules
-                            .filter(m => search == null || m.title.toLowerCase().includes(search.toLowerCase()))
-                            .map(module => (
+                            .filter((m) => search == null || m.title.toLowerCase().includes(search.toLowerCase()))
+                            .map((module) => (
                                 <ListItem
                                     key={module.id}
                                     disablePadding
                                     secondaryAction={
                                         <Tooltip title="Mehr Informationen">
-                                            <IconButton onClick={() => showModuleId(module.id)}>
+                                            <IconButton
+                                                onClick={() => {
+                                                    showModuleId(module.id);
+                                                }}
+                                            >
                                                 <FontAwesomeIcon icon={faInfoCircle}/>
                                             </IconButton>
                                         </Tooltip>
                                     }
                                 >
                                     <ListItemButton
-                                        onClick={() => addModuleElement(module)}
-                                        selected={hightlightedModuleId === module.id}
+                                        onClick={() => {
+                                            addModuleElement(module);
+                                        }}
+                                        selected={highlightedModuleId === module.id}
                                     >
                                         <ListItemIcon sx={{pl: 1.5}}>
                                             <FontAwesomeIcon
@@ -130,7 +130,10 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                                         <ListItemText
                                             disableTypography
                                             primary={
-                                                <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                }}>
                                                     {
                                                         !module.is_public &&
                                                         <Tooltip
@@ -158,7 +161,10 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                                             secondary={
                                                 <Box>
                                                     <Typography
-                                                        sx={{display: 'inline', fontSize: '90%'}}
+                                                        sx={{
+                                                            display: 'inline',
+                                                            fontSize: '90%',
+                                                        }}
                                                     >
                                                         @{module.organization}
                                                     </Typography>
@@ -167,7 +173,7 @@ export function StoreTab({parentType, onAddElement, showModuleId, hightlightedMo
                                                         sx={{
                                                             display: 'inline',
                                                             fontSize: '90%',
-                                                            color: theme.palette.grey["500"]
+                                                            color: theme.palette.grey['500'],
                                                         }}
                                                     >
                                                         {module.description_short}

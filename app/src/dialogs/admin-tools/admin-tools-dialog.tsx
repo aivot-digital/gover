@@ -1,24 +1,8 @@
 import React from 'react';
-import {
-    Box,
-    Button,
-    Dialog,
-    DialogContent,
-    FormControlLabel,
-    FormGroup,
-    FormHelperText,
-    Switch,
-    Typography
-} from '@mui/material';
+import {Box, Button, Dialog, DialogContent, FormControlLabel, FormGroup, FormHelperText, Switch, Typography} from '@mui/material';
 import {useDispatch} from 'react-redux';
 import {AppDispatch, RootState} from '../../store';
-import {
-    AdminSettingsState,
-    toggleShowDebugOutput,
-    toggleShowUserInput,
-    toggleValidation,
-    toggleVisibility
-} from '../../slices/admin-settings-slice';
+import {AdminSettingsState, toggleShowDebugOutput, toggleShowUserInput, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
 import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import {AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedApplication} from "../../slices/app-slice";
@@ -59,7 +43,10 @@ const switches: {
     },
 ];
 
-export function AdminToolsDialog({open, onClose}: AdminToolsDialogProps) {
+export function AdminToolsDialog({
+                                     open,
+                                     onClose,
+                                 }: AdminToolsDialogProps) {
     const dispatch = useDispatch();
 
     const adminSettings = useAppSelector((state: RootState) => state.adminSettings);

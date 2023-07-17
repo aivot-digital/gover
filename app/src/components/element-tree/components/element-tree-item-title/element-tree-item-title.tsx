@@ -1,5 +1,5 @@
 import styles from './element-tree-item-title.module.scss';
-import {Box, IconButton, SvgIcon, Tooltip, Typography} from '@mui/material';
+import {Box, IconButton, type SvgIcon, Tooltip, Typography} from '@mui/material';
 import {ElementIcons} from '../../../../data/element-type/element-icons';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {checkId} from '../../../../utils/id-utils';
@@ -10,21 +10,15 @@ import {ElementNames} from '../../../../data/element-type/element-names';
 import {useTheme} from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
 import {hasUntestedChild} from '../../../../utils/has-untested-child';
-import {RootElement} from '../../../../models/elements/root-element';
+import {type RootElement} from '../../../../models/elements/root-element';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {
-    selectTreeElementSearch,
-    selectUseIdsInComponentTree,
-    selectUseTestMode,
-    selectWarnDuplicateIds
-} from '../../../../slices/admin-settings-slice';
-import {ElementTreeItemTitleProps} from './element-tree-item-title-props';
-import {AnyElement} from '../../../../models/elements/any-element';
+import {selectTreeElementSearch, selectUseIdsInComponentTree, selectUseTestMode, selectWarnDuplicateIds} from '../../../../slices/admin-settings-slice';
+import {type ElementTreeItemTitleProps} from './element-tree-item-title-props';
+import {type AnyElement} from '../../../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
 import {getStepIcon} from '../../../../data/step-icons';
 import {selectLoadedApplication} from '../../../../slices/app-slice';
-import {stringOrDefault} from "../../../../utils/string-utils";
-import {findNoCodeUsage} from "../../../../utils/find-no-code-usage";
+import {findNoCodeUsage} from '../../../../utils/find-no-code-usage';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
 import KeyboardArrowRightOutlinedIcon from '@mui/icons-material/KeyboardArrowRightOutlined';
@@ -39,49 +33,49 @@ import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 const highlightOutlineStyle = '#86FFD388 solid 2px';
 const highlightBoxShadowStyle = '0px 4px 20px rgba(179, 242, 219, 0.5)';
 
-export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>) {
+export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeItemTitleProps<T>): JSX.Element {
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
     const root = useAppSelector(selectLoadedApplication)?.root;
     const treeElementSearch = useAppSelector(selectTreeElementSearch);
 
-    const handleSelect = () => {
+    const handleSelect = (): void => {
         if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
         }
         props.onSelect();
     };
 
-    const addHighlightElement = () => {
+    const addHighlightElement = (): void => {
         const elem = document.getElementById(props.element.id);
-        if (elem) {
+        if (elem != null) {
             elem.style.outline = highlightOutlineStyle;
             elem.style.boxShadow = highlightBoxShadowStyle;
         }
     };
 
-    const removeHighlightElement = () => {
+    const removeHighlightElement = (): void => {
         const elem = document.getElementById(props.element.id);
-        if (elem) {
+        if (elem != null) {
             elem.style.outline = 'none';
             elem.style.boxShadow = 'none';
         }
     };
 
-    const handleToggleExpand = (event?: React.MouseEvent<HTMLElement>) => {
-        if (props.onToggleExpanded) {
+    const handleToggleExpand = (event?: React.MouseEvent<HTMLElement>): boolean => {
+        if (props.onToggleExpanded != null) {
             props.onToggleExpanded();
         }
-        if (event) {
+        if (event != null) {
             event.stopPropagation();
             event.preventDefault();
         }
         return false;
     };
 
-    const preventBubble = (event?: React.MouseEvent<HTMLElement>) => {
-        if (event) {
+    const preventBubble = (event?: React.MouseEvent<HTMLElement>): boolean => {
+        if (event != null) {
             event.stopPropagation();
             event.preventDefault();
         }
@@ -109,31 +103,33 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
             onMouseLeave={removeHighlightElement}
         >
             {
-                props.onToggleExpanded ? (
-                    <IconButton
-                        onClick={handleToggleExpand}
-                        onDoubleClick={preventBubble}
-                        size={'small'}
-                        sx={{mr: 1}}
-                    >
-                        <Typography
-                            component="span"
-                            sx={{
-                                width: '18px',
-                                height: '18px',
-                                display: 'inline-block',
-                                textAlign: 'center'
-                            }}
+                (props.onToggleExpanded != null) ?
+                    (
+                        <IconButton
+                            onClick={handleToggleExpand}
+                            onDoubleClick={preventBubble}
+                            size={'small'}
+                            sx={{mr: 1}}
                         >
-                            {
-                                props.isExpanded ? <KeyboardArrowDownOutlinedIcon
-                                        sx={{transform: 'translate(-0.125rem, -0.125rem)'}}/> :
-                                    <KeyboardArrowRightOutlinedIcon
-                                        sx={{transform: 'translate(-0.125rem, -0.125rem)'}}/>
-                            }
-                        </Typography>
-                    </IconButton>
-                ) : <Box sx={{pl: 4.5}}/>
+                            <Typography
+                                component="span"
+                                sx={{
+                                    width: '18px',
+                                    height: '18px',
+                                    display: 'inline-block',
+                                    textAlign: 'center',
+                                }}
+                            >
+                                {
+                                    props.isExpanded ? <KeyboardArrowDownOutlinedIcon
+                                            sx={{transform: 'translate(-0.125rem, -0.125rem)'}}/> :
+                                        <KeyboardArrowRightOutlinedIcon
+                                            sx={{transform: 'translate(-0.125rem, -0.125rem)'}}/>
+                                }
+                            </Typography>
+                        </IconButton>
+                    ) :
+                    <Box sx={{pl: 4.5}}/>
             }
 
             <Tooltip
@@ -146,18 +142,25 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                         color: theme.palette.primary.dark,
                     }}
                 >
-                    <ElementIcon sx={{fontSize: "1.75rem", transform: 'translateY(2px)', mr: 0.5}}/>
+                    <ElementIcon sx={{
+                        fontSize: "1.75rem",
+                        transform: 'translateY(2px)',
+                        mr: 0.5,
+                    }}/>
                     {/*<FontAwesomeIcon
-                        icon={elementIcon}
+                        icon={ elementIcon }
                         fixedWidth
-                        size={'lg'}
+                        size={ 'lg' }
                     />*/}
                 </Box>
             </Tooltip>
 
             <Typography
                 variant="body1"
-                sx={{fontSize: '1rem', color: '#16191F'}}
+                sx={{
+                    fontSize: '1rem',
+                    color: '#16191F',
+                }}
             >
                 {
                     useIdsInComponentTree ?
@@ -183,7 +186,7 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                     sx={{
                         ml: 1,
                         color: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd',
-                        borderColor: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd'
+                        borderColor: props.element.type === ElementType.Step ? theme.palette.primary.dark : '#bdbdbd',
                     }}
                     size="small"
                     label="Abschnitt"
@@ -192,14 +195,14 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
             }
 
             <div
-                style={{marginLeft: 'auto'}}
+                style={{
+                    marginLeft: 'auto',
+                }}
             >
-
                 {
-                    statusIcons.map(icon => {
+                    statusIcons.map((icon) => {
                         const Icon = icon.icon;
-                        return (
-                            <Tooltip
+                        return (<Tooltip
                                 title={icon.tooltip}
                                 arrow
                                 key={icon.tooltip}
@@ -208,12 +211,13 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                                     <Icon/>
                                 </IconButton>
                             </Tooltip>
-                        )
+                        );
                     })
                 }
 
                 {
-                    props.onShowAddDialog &&
+                    props.editable &&
+                    (props.onShowAddDialog != null) &&
                     <Tooltip
                         title="Element hinzufügen"
                         arrow
@@ -289,18 +293,18 @@ function determineIcons(useTestMode: boolean, warnDuplicateIds: boolean, root: R
     }
 
     if (functionStatus.length > 0) {
-        if (functionStatus.every(s => s.status === 'done')) {
+        if (functionStatus.every((s) => s.status === 'done')) {
             icons.push({
                 icon: BuildCircleOutlinedIcon,
                 tooltip: 'Individuelle Funktionen definiert',
             });
-        } else if (functionStatus.some(s => s.status === 'todo')) {
+        } else if (functionStatus.some((s) => s.status === 'todo')) {
             icons.push({
                 color: 'error',
                 icon: BuildCircleOutlinedIcon,
                 tooltip: 'Individuelle Funktionen erforderlich',
             });
-        } else if (functionStatus.some(s => s.status === 'unnecessary')) {
+        } else if (functionStatus.some((s) => s.status === 'unnecessary')) {
             icons.push({
                 color: 'error',
                 icon: HelpOutlineOutlinedIcon,

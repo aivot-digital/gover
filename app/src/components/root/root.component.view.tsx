@@ -12,9 +12,7 @@ import Tooltip from '@mui/material/Tooltip';
 import {Submitted} from '../static-components/submitted/submitted';
 import {SummaryAttachmentsTooLargeKey, SummaryUserInputKey} from '../summary/summary.component.view';
 import {SubmitHumanKey} from '../submit/submit.component.view';
-import {
-    ProcessingDataLoaderComponentView
-} from '../static-components/processing-data-loader/processing-data-loader.component.view';
+import {ProcessingDataLoaderComponentView} from '../static-components/processing-data-loader/processing-data-loader.component.view';
 import {UserInputService} from '../../services/user-input-service';
 import {ApplicationService} from '../../services/application-service';
 import {AppFooter} from '../app-footer/app-footer';
@@ -39,7 +37,10 @@ import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 const checkTimeoutMinMs = 2000;
 const submissionTimeoutMinMs = 3000;
 
-export function RootComponentView({allElements, element}: BaseViewProps<RootElement, void>) {
+export function RootComponentView({
+                                      allElements,
+                                      element,
+                                  }: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
     const [$debug] = useLogging();
 
@@ -220,17 +221,24 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
         }
 
         $debug.end();
-    }
+    };
 
     return (
         <>
             <AppHeader mode={AppMode.Customer}/>
 
-            <Container sx={{mt: 5, mb: 5}}>
+            <Container sx={{
+                mt: 5,
+                mb: 5,
+            }}>
                 {
                     currentStep < allSteps.length &&
                     <Stepper
-                        sx={{mt: 10, mb: 12, ml: '20px'}}
+                        sx={{
+                            mt: 10,
+                            mb: 12,
+                            ml: '20px',
+                        }}
                         activeStep={currentStep}
                         orientation="vertical"
                     >
@@ -245,7 +253,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                                         previousLabel={index > 0 ? 'Zurück zum vorherigen Schritt' : undefined}
                                         onPrevious={() => {
                                             dispatch(previousStep());
-                                            setValidatedWithErrors(false)
+                                            setValidatedWithErrors(false);
                                         }}
                                         active={currentStep === index}
                                         validatedWithErrors={validatedWithErrors}
@@ -264,7 +272,11 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                 {
                     currentStep === allSteps.length &&
                     <Stepper
-                        sx={{mt: 10, mb: 12, ml: '20px'}}
+                        sx={{
+                            mt: 10,
+                            mb: 12,
+                            ml: '20px',
+                        }}
                         orientation="vertical"
                     >
                         <CustomStep
@@ -272,7 +284,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                                 id: '',
                                 type: ElementType.SubmittedStep,
                                 appVersion: ProjectPackage.version,
-                                pdfLink: pdfLink
+                                pdfLink: pdfLink,
                             }}
                             title="Ihr Antrag wurde erfolgreich eingereicht"
                         >
@@ -294,7 +306,7 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                         mb: 8,
                         [theme.breakpoints.up('md')]: {
                             textAlign: 'right',
-                        }
+                        },
                     }}
                 >
                     <Tooltip
@@ -302,8 +314,15 @@ export function RootComponentView({allElements, element}: BaseViewProps<RootElem
                         arrow
                     >
                         <Chip
-                            sx={{pl: 1, pr: 1, cursor: 'help'}}
-                            icon={<span style={{color: 'var(--hw-primary)', transform: 'translateY(1px)'}}><GppGoodOutlinedIcon fontSize={"small"}/></span>}
+                            sx={{
+                                pl: 1,
+                                pr: 1,
+                                cursor: 'help',
+                            }}
+                            icon={<span style={{
+                                color: 'var(--hw-primary)',
+                                transform: 'translateY(1px)',
+                            }}><GppGoodOutlinedIcon fontSize={"small"}/></span>}
                             label="Lokal auf Ihrem Gerät zwischengespeichert"
                             variant="outlined"
                         />

@@ -340,9 +340,18 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     label="Einfaches Dropdown"
                     value={'2'}
                     options={[
-                        {label: 'Option 1', value: '1'},
-                        {label: 'Option 2', value: '2'},
-                        {label: 'Option 3', value: '3'},
+                        {
+                            label: 'Option 1',
+                            value: '1',
+                        },
+                        {
+                            label: 'Option 2',
+                            value: '2',
+                        },
+                        {
+                            label: 'Option 3',
+                            value: '3',
+                        },
                     ]}
                     onChange={() => {
                     }}
@@ -355,9 +364,18 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     label="Einfaches Dropdown"
                     value={'3'}
                     options={[
-                        {label: 'Option 1', value: '1'},
-                        {label: 'Option 2', value: '2'},
-                        {label: 'Option 3', value: '3'},
+                        {
+                            label: 'Option 1',
+                            value: '1',
+                        },
+                        {
+                            label: 'Option 2',
+                            value: '2',
+                        },
+                        {
+                            label: 'Option 3',
+                            value: '3',
+                        },
                     ]}
                     onChange={() => {
                     }}
@@ -371,9 +389,18 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     label="Einfaches Dropdown"
                     value={undefined}
                     options={[
-                        {label: 'Option 1', value: '1'},
-                        {label: 'Option 2', value: '2'},
-                        {label: 'Option 3', value: '3'},
+                        {
+                            label: 'Option 1',
+                            value: '1',
+                        },
+                        {
+                            label: 'Option 2',
+                            value: '2',
+                        },
+                        {
+                            label: 'Option 3',
+                            value: '3',
+                        },
                     ]}
                     onChange={() => {
                     }}
@@ -485,9 +512,12 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
-}
+};
 
-export function ElementInfoTab({type, onClose}: { type: ElementType, onClose: () => void }) {
+export function ElementInfoTab({
+                                   type,
+                                   onClose,
+                               }: {type: ElementType, onClose: () => void}) {
     return (
         <DialogContent>
             <Box

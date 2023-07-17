@@ -109,5 +109,6 @@ public class ApplicationDetailsMinimalDto extends ApplicationListDto {
     public void setSubmissionDeletionWeeks(Integer submissionDeletionWeeks) {
         this.submissionDeletionWeeks = submissionDeletionWeeks;
     }
-// endregion
+
+    // endregion
 }

@@ -3,7 +3,12 @@ import {DateFieldComponentModelMode, DateFieldElement} from "../models/elements/
 import {DateFieldComponent} from "../components/date-field/date-field-component";
 
 
-export const DateFieldView: BaseView<DateFieldElement, string> = ({setValue, element, value, error}) => {
+export const DateFieldView: BaseView<DateFieldElement, string> = ({
+                                                                      setValue,
+                                                                      element,
+                                                                      value,
+                                                                      error,
+                                                                  }) => {
     return (
         <DateFieldComponent
             label={element.label ?? ''}
@@ -16,4 +21,4 @@ export const DateFieldView: BaseView<DateFieldElement, string> = ({setValue, ele
             mode={element.mode ?? DateFieldComponentModelMode.Date}
         />
     );
-}
+};

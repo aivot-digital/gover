@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html
+        lang="de"
+>
+    <head>
+        <meta charset="UTF-8">
+        <title>Neuer Online-Antrag</title>
+    </head>
+    <body>
+        <p>
+            Hallo, <br/>
+            für das Online-Formular <a
+                th:href="${hostname + '/submissions/' + applicationId}"
+                th:text="${title + ' ' + version}"
+        ></a> ist ein neuer Online-Antrag eingegangen.
+        </p>
+
+        <p>
+            Mehr Informationen zu dem eingegangenen Antrag finden Sie unter <a
+                th:href="${hostname + '/submissions/' + applicationId + '/' + submissionId}"
+                th:text="${hostname + '/submissions/' + applicationId + '/' + submissionId}"
+        ></a>.
+        </p>
+
+        <p>
+            Diese E-Mail ist automatisch generiert.
+            Bitte nicht antworten.
+        </p>
+    </body>
+</html>

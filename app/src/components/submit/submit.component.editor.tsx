@@ -1,59 +1,66 @@
 import React from 'react';
-import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
-import {TextField} from '@mui/material';
-import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {BaseEditorProps} from "../../editors/base-editor";
+import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import {type BaseEditorProps} from '../../editors/base-editor';
+import {type Application} from '../../models/entities/application';
+import {TextFieldComponent} from '../text-field/text-field-component';
+import {StringListInput} from '../string-list-input/string-list-input';
 
-export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>) {
+export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, Application>): JSX.Element {
     return (
         <>
-            <TextField
+            <TextFieldComponent
                 value={props.element.textPreSubmit ?? ''}
                 label="Text vor dem Absenden des Antrages"
-                margin="normal"
                 multiline
                 rows={4}
-                onChange={event => props.onPatch({
-                    textPreSubmit: event.target.value,
-                })}
+                onChange={(val) => {
+                    props.onPatch({
+                        textPreSubmit: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
-            <TextField
+            <TextFieldComponent
                 value={props.element.textPostSubmit ?? ''}
                 label="Text nach dem Absenden des Antrages"
-                margin="normal"
                 multiline
                 rows={4}
-                onChange={event => props.onPatch({
-                    textPostSubmit: event.target.value,
-                })}
+                onChange={(val) => {
+                    props.onPatch({
+                        textPostSubmit: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
-            <TextField
+            <TextFieldComponent
                 value={props.element.textProcessingTime ?? ''}
                 label="Bearbeitungszeit des Antrages"
-                margin="normal"
-                helperText={'Ungefähre Bearbeitungszeit der zuständigen und/oder bewirtschaftenden Stelle.'}
+                hint="Ungefähre Bearbeitungszeit der zuständigen und/oder bewirtschaftenden Stelle."
                 multiline
                 rows={4}
-                onChange={event => props.onPatch({
-                    textProcessingTime: event.target.value,
-                })}
+                onChange={(val) => {
+                    props.onPatch({
+                        textProcessingTime: val,
+                    });
+                }}
+                disabled={!props.editable}
             />
 
-            <TextField
-                value={(props.element.documentsToReceive ?? []).join('\n')}
+            <StringListInput
+                value={props.element.documentsToReceive}
                 label="Dokumente die Antragstellende erhalten"
-                margin="normal"
-                multiline
-                rows={4}
-                onChange={event => props.onPatch({
-                    documentsToReceive: event.target.value.split('\n'),
-                })}
-                onBlur={() => props.onPatch({
-                    documentsToReceive: (props.element.documentsToReceive ?? []).filter(ln => !isStringNullOrEmpty(ln)),
-                })}
-                helperText="Durch die zuständige und/oder bewirtschaftende Stelle auszustellende Dokumente. Bitte geben Sie pro Zeile ein Dokument an."
+                onChange={(val) => {
+                    props.onPatch({
+                        documentsToReceive: val,
+                    });
+                }}
+                hint="Durch die zuständige und/oder bewirtschaftende Stelle auszustellende Dokumente. Bitte geben Sie pro Zeile ein Dokument an."
+                disabled={!props.editable}
+                allowEmpty
+                addLabel="Dokument hinzufügen"
+                noItemsHint="Keine Dokumente angegeben"
             />
         </>
     );

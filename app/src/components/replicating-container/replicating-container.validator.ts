@@ -1,4 +1,4 @@
-import { BaseInputElementValidator } from "../../validators/base-input-element-validator";
+import {BaseInputElementValidator} from "../../validators/base-input-element-validator";
 import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 
 export class ReplicatingContainerValidator extends BaseInputElementValidator<string[], ReplicatingContainerLayout> {

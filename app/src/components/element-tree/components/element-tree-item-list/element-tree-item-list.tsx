@@ -2,48 +2,45 @@ import React from 'react';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {Box, Typography} from '@mui/material';
 import {ElementTreeItemDropTarget} from '../element-tree-item-drop-target/element-tree-item-drop-target';
-import {ElementTreeItemListProps} from './element-tree-item-list-props';
+import {type ElementTreeItemListProps} from './element-tree-item-list-props';
 import {selectIsDraggingTreeElement} from '../../../../slices/admin-settings-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
-import {cloneElement} from "../../../../utils/clone-element";
-import {ElementTreeItem} from "../element-tree-item/element-tree-item";
+import {type AnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
+import {cloneElement} from '../../../../utils/clone-element';
+import {ElementTreeItem} from '../element-tree-item/element-tree-item';
+import {type Application} from '../../../../models/entities/application';
+import {type Preset} from '../../../../models/entities/preset';
 
-export function ElementTreeItemList<T extends AnyElementWithChildren>({
-                                                                          parents,
-                                                                          element,
-                                                                          isRootList,
-                                                                          onPatch,
-                                                                      }: ElementTreeItemListProps<T>
-) {
+export function ElementTreeItemList<T extends AnyElementWithChildren, E extends Application | Preset>(props: ElementTreeItemListProps<T, E>): JSX.Element {
     const isDraggingTreeElement = useAppSelector(selectIsDraggingTreeElement);
 
     return (
         <Box
             sx={{
-                paddingLeft: isRootList ? '0' : '2em'
+                paddingLeft: (props.isRootList ?? false) ? '0' : '2em',
             }}
         >
             {
-                element.children.map((child, index) => (
+                props.element.children.map((child, index) => (
                     <ElementTreeItemDropTarget
                         key={child.id}
-                        element={element}
-                        onDrop={droppedElement => {
-                            const updatedChildren = [...element.children];
+                        element={props.element}
+                        onDrop={(droppedElement) => {
+                            const updatedChildren = [...props.element.children];
                             // @ts-ignore
                             updatedChildren.splice(index, 0, droppedElement);
                             // @ts-ignore
-                            onPatch({
+                            props.onPatch({
                                 children: updatedChildren,
                             });
                         }}
                     >
                         <ElementTreeItem
-                            parents={[...parents, element]}
+                            parents={[...props.parents, props.element]}
+                            entity={props.entity}
                             element={child}
-                            onPatch={patch => {
-                                const updatedChildren = [...element.children];
+                            onPatch={(patch) => {
+                                const updatedChildren = [...props.element.children];
                                 const index = updatedChildren.indexOf(child);
                                 if (index >= 0) {
                                     // @ts-ignore
@@ -53,45 +50,47 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>({
                                     };
                                 }
                                 // @ts-ignore
-                                onPatch({
+                                props.onPatch({
                                     children: updatedChildren,
                                 });
                             }}
                             onDelete={() => {
-                                const updatedChildren = [...element.children];
+                                const updatedChildren = [...props.element.children];
                                 const index = updatedChildren.indexOf(child);
                                 if (index >= 0) {
                                     updatedChildren.splice(index, 1);
                                 }
                                 // @ts-ignore
-                                onPatch({
+                                props.onPatch({
                                     children: updatedChildren,
                                 });
                             }}
                             onClone={() => {
-                                const updatedChildren = [...element.children];
+                                const updatedChildren = [...props.element.children];
                                 const index = updatedChildren.indexOf(child);
                                 if (index >= 0) {
                                     const clonedElem = cloneElement(child);
                                     updatedChildren.splice(index, 0, clonedElem);
                                 }
                                 // @ts-ignore
-                                onPatch({
+                                props.onPatch({
                                     children: updatedChildren,
                                 });
                             }}
+                            editable={props.editable}
                         />
                     </ElementTreeItemDropTarget>
                 ))
             }
+
             {
-                element.children.length === 0 &&
+                props.element.children.length === 0 &&
                 <ElementTreeItemDropTarget
-                    element={element}
+                    element={props.element}
                     isPlaceholder
-                    onDrop={droppedElement => {
+                    onDrop={(droppedElement) => {
                         // @ts-ignore
-                        onPatch({
+                        props.onPatch({
                             children: [droppedElement],
                         });
                     }}
@@ -103,22 +102,23 @@ export function ElementTreeItemList<T extends AnyElementWithChildren>({
                             fontStyle: 'italic',
                         }}
                     >
-                        Noch keine {element.type === ElementType.Root ? 'Abschnitte' : 'Elemente'} vorhanden
+                        Noch keine {props.element.type === ElementType.Root ? 'Abschnitte' : 'Elemente'} vorhanden
                     </Typography>
                 </ElementTreeItemDropTarget>
             }
+
             {
-                element.children.length > 0 &&
+                props.element.children.length > 0 &&
                 isDraggingTreeElement &&
                 <ElementTreeItemDropTarget
-                    element={element}
+                    element={props.element}
                     isPlaceholder
-                    onDrop={droppedElement => {
-                        const updatedChildren = [...element.children];
+                    onDrop={(droppedElement) => {
+                        const updatedChildren = [...props.element.children];
                         // @ts-ignore
                         updatedChildren.push(droppedElement);
                         // @ts-ignore
-                        onPatch({
+                        props.onPatch({
                             children: updatedChildren,
                         });
                     }}

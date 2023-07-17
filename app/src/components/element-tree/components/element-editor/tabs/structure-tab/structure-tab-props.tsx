@@ -1,6 +1,7 @@
-import {AnyElement} from '../../../../../../models/elements/any-element';
+import {type AnyElement} from '../../../../../../models/elements/any-element';
 
 export interface StructureTabProps<T extends AnyElement> {
     elementModel: T;
-    onChange: (newElementStructure: AnyElement) => void;
+    onChange: (newElementStructure: T) => void;
+    editable: boolean;
 }

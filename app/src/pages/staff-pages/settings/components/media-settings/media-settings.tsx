@@ -1,99 +1,138 @@
 import {Box, Button, Typography} from '@mui/material';
 import React, {useReducer} from 'react';
-import {useAppSelector} from "../../../../../hooks/use-app-selector";
-import {fetchSystemConfig, selectSystemConfigValue} from "../../../../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../../../../data/system-config-keys";
-import {AssetService} from "../../../../../services/asset-service";
-import {SelectAssetDialog} from "../../../../../dialogs/select-asset-dialog/select-asset-dialog";
-import {SystemConfigsService} from "../../../../../services/system-configs-service";
-import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
+import {useAppSelector} from '../../../../../hooks/use-app-selector';
+import {fetchSystemConfig, selectSystemConfigValue} from '../../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../../data/system-config-keys';
+import {AssetService} from '../../../../../services/asset-service';
+import {SelectAssetDialog} from '../../../../../dialogs/select-asset-dialog/select-asset-dialog';
+import {SystemConfigsService} from '../../../../../services/system-configs-service';
+import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../../../slices/snackbar-slice';
 
+const logoPrefix = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
 
-export function MediaSettings() {
+export function MediaSettings(): JSX.Element {
     const dispatch = useAppDispatch();
 
-    const [showFaviconSelect, toggleFaviconSelect] = useReducer(p => !p, false);
-    const [showLogoSelect, toggleLogoSelect] = useReducer(p => !p, false);
+    const [showFaviconSelect, toggleFaviconSelect] = useReducer((p) => !p, false);
+    const [showLogoSelect, toggleLogoSelect] = useReducer((p) => !p, false);
 
     const faviconConfigKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.favicon));
     const logoConfigKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.logo));
 
-    const handleSetFavicon = (favicon: string) => {
-        SystemConfigsService.update(SystemConfigKeys.system.favicon, {
-            key: SystemConfigKeys.system.favicon,
-            value: favicon,
-            publicConfig: true,
-            created: '',
-            updated: '',
-        });
+    const handleSetFavicon = (favicon: string): void => {
+        SystemConfigsService
+            .update(SystemConfigKeys.system.favicon, {
+                key: SystemConfigKeys.system.favicon,
+                value: favicon,
+                publicConfig: true,
+                created: '',
+                updated: '',
+            })
+            .then(() => {
+                dispatch(fetchSystemConfig());
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Favicon konnte nicht gespeichert werden'));
+            });
         toggleFaviconSelect();
-        dispatch(fetchSystemConfig());
     };
 
-    const handleSetLogo = (logo: string) => {
-        SystemConfigsService.update(SystemConfigKeys.system.logo, {
-            key: SystemConfigKeys.system.logo,
-            value: logo,
-            publicConfig: true,
-            created: '',
-            updated: '',
-        });
+    const handleSetLogo = (logo: string): void => {
+        SystemConfigsService
+            .update(SystemConfigKeys.system.logo, {
+                key: SystemConfigKeys.system.logo,
+                value: logo,
+                publicConfig: true,
+                created: '',
+                updated: '',
+            })
+            .then(() => {
+                dispatch(fetchSystemConfig());
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Logo konnte nicht gespeichert werden'));
+            });
         toggleLogoSelect();
-        dispatch(fetchSystemConfig());
     };
 
     return (
         <>
-            <Box sx={{mt: 2}}>
+            <Box
+                sx={{
+                    mt: 2,
+                }}
+            >
                 <Typography
                     variant="subtitle1"
-                    sx={{mb: 2}}
+                    sx={{
+                        mb: 2,
+                    }}
                 >
                     Favicon
                 </Typography>
 
                 {
                     faviconConfigKey != null &&
-                    <Box sx={{mb: 2}}>
+                    <Box
+                        sx={{
+                            mb: 2,
+                        }}
+                    >
                         <img
-                            src={AssetService.getLink(faviconConfigKey)}
+                            src={logoPrefix + AssetService.getLink(faviconConfigKey)}
                             alt="Favicon"
                         />
                     </Box>
                 }
 
-
                 <Button
-                    sx={{mt: 2}}
+                    sx={{
+                        mt: 2,
+                    }}
                     onClick={toggleFaviconSelect}
                 >
                     Auswählen
                 </Button>
             </Box>
 
-            <Box sx={{mt: 2}}>
+            <Box
+                sx={{
+                    mt: 8,
+                }}
+            >
                 <Typography
                     variant="subtitle1"
-                    sx={{mb: 2}}
+                    sx={{
+                        mb: 2,
+                    }}
                 >
                     Logo
                 </Typography>
 
                 {
                     logoConfigKey != null &&
-                    <Box sx={{mb: 2}}>
+                    <Box
+                        sx={{
+                            mb: 2,
+                        }}
+                    >
                         <img
-                            src={AssetService.getLink(logoConfigKey)}
+                            src={logoPrefix + AssetService.getLink(logoConfigKey)}
                             alt="Logo"
                         />
                     </Box>
                 }
 
                 <Button
-                    sx={{mt: 2}}
+                    sx={{
+                        mt: 2,
+                    }}
                     onClick={toggleLogoSelect}
                 >
-                    Hochladen
+                    Auswählen
                 </Button>
             </Box>
 

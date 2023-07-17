@@ -7,4 +7,4 @@ export const ApplicationStatusNames: {
     [ApplicationStatus.InReview]: 'Wartet auf Freigabe',
     [ApplicationStatus.Published]: 'Veröffentlicht',
     [ApplicationStatus.Revoked]: 'Zurückgezogen',
-}
+};

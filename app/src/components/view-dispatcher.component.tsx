@@ -25,7 +25,7 @@ interface DispatcherComponentProps<M extends AnyElement> {
 export function ViewDispatcherComponent<M extends AnyElement, V>({
                                                                      allElements,
                                                                      element,
-                                                                     idPrefix
+                                                                     idPrefix,
                                                                  }: DispatcherComponentProps<M>) {
     const dispatch = useAppDispatch();
 

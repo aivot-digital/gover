@@ -56,7 +56,10 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
                 <DialogTitleWithClose
                     onClose={onClose}
                 >
-                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}>
                         <FontAwesomeIcon
                             icon={icon}
                             color={color}

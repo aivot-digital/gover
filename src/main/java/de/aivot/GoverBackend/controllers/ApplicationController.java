@@ -20,6 +20,9 @@ public class ApplicationController {
     private final AccessibleDepartmentRepository accessibleDepartmentRepository;
     private final DepartmentRepository departmentRepository;
     private final DestinationRepository destinationRepository;
+    private final ThemeRepository themeRepository;
+
+    private final SubmissionRepository submissionRepository;
 
     @Autowired
     public ApplicationController(
@@ -27,30 +30,47 @@ public class ApplicationController {
             AccessibleApplicationRepository accessibleApplicationRepository,
             AccessibleDepartmentRepository accessibleDepartmentRepository,
             DepartmentRepository departmentRepository,
-            DestinationRepository destinationRepository
-    ) {
+            DestinationRepository destinationRepository,
+            ThemeRepository themeRepository, SubmissionRepository submissionRepository) {
         this.applicationRepository = applicationRepository;
         this.accessibleApplicationRepository = accessibleApplicationRepository;
         this.accessibleDepartmentRepository = accessibleDepartmentRepository;
         this.departmentRepository = departmentRepository;
         this.destinationRepository = destinationRepository;
+        this.themeRepository = themeRepository;
+        this.submissionRepository = submissionRepository;
     }
 
     @GetMapping("/api/applications")
     public Collection<ApplicationListDto> list(
-            Authentication authentication
+            Authentication authentication,
+            @RequestParam(required = false) Integer department
     ) {
         User requester = (User) authentication.getPrincipal();
 
         Collection<Application> applications;
         if (requester.isAdmin()) {
-            applications = applicationRepository
-                    .findAll();
+            if (department != null) {
+                applications = applicationRepository
+                        .findAllByDevelopingDepartmentId(department);
+            } else {
+                applications = applicationRepository
+                        .findAll();
+            }
         } else {
-            var accessibleIds = accessibleApplicationRepository
-                    .findAllByKey_UserId(requester.getId())
+            Collection<AccessibleApplication> accessibleApplications;
+            if (department != null) {
+                accessibleApplications = accessibleApplicationRepository
+                        .findAllByKey_UserIdAndKey_DepartmentId(requester.getId(), department);
+            } else {
+                accessibleApplications = accessibleApplicationRepository
+                        .findAllByKey_UserId(requester.getId());
+            }
+
+            var accessibleIds = accessibleApplications
                     .stream()
-                    .map(acc -> acc.getKey().getApplicationId())
+                    .map(AccessibleApplication::getKey)
+                    .map(AccessibleApplication.AccessibleApplicationKey::getApplicationId)
                     .toList();
             applications = applicationRepository
                     .findAllByIdIn(accessibleIds);
@@ -89,6 +109,14 @@ public class ApplicationController {
         boolean exists = applicationRepository.existsBySlugAndVersion(newApp.getSlug(), newApp.getVersion());
         if (exists) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
+        boolean slugExists = applicationRepository.existsBySlug(newApp.getSlug());
+        if (slugExists) {
+            boolean inSameDepartment = applicationRepository.existsBySlugAndDevelopingDepartment_Id(newApp.getSlug(), newApp.getDevelopingDepartment());
+            if (!inSameDepartment) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT);
+            }
         }
 
         var application = new Application();
@@ -152,6 +180,12 @@ public class ApplicationController {
             departmentRepository
                     .findById(newApp.getResponsibleDepartment())
                     .ifPresent(application::setResponsibleDepartment);
+        }
+
+        if (newApp.getTheme() != null) {
+            themeRepository
+                    .findById(newApp.getTheme())
+                    .ifPresent(application::setTheme);
         }
 
         var createdApplication = applicationRepository.save(application);
@@ -240,52 +274,82 @@ public class ApplicationController {
             existingApp.setSubmissionDeletionWeeks(updatedApp.getSubmissionDeletionWeeks());
             existingApp.setCustomerAccessHours(updatedApp.getCustomerAccessHours());
 
+            if (updatedApp.getDevelopingDepartment() != null) {
+                departmentRepository
+                        .findById(updatedApp.getDevelopingDepartment())
+                        .ifPresent(existingApp::setDevelopingDepartment);
+            }
+
             if (updatedApp.getDestination() != null) {
                 destinationRepository
                         .findById(updatedApp.getDestination())
                         .ifPresent(existingApp::setDestination);
+            } else {
+                existingApp.setDestination(null);
             }
 
             if (updatedApp.getLegalSupportDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getLegalSupportDepartment())
                         .ifPresent(existingApp::setLegalSupportDepartment);
+            } else {
+                existingApp.setLegalSupportDepartment(null);
             }
 
             if (updatedApp.getTechnicalSupportDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getTechnicalSupportDepartment())
                         .ifPresent(existingApp::setTechnicalSupportDepartment);
+            } else {
+                existingApp.setTechnicalSupportDepartment(null);
             }
 
             if (updatedApp.getImprintDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getImprintDepartment())
                         .ifPresent(existingApp::setImprintDepartment);
+            } else {
+                existingApp.setImprintDepartment(null);
             }
 
             if (updatedApp.getPrivacyDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getPrivacyDepartment())
                         .ifPresent(existingApp::setPrivacyDepartment);
+            } else {
+                existingApp.setPrivacyDepartment(null);
             }
 
             if (updatedApp.getAccessibilityDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getAccessibilityDepartment())
                         .ifPresent(existingApp::setAccessibilityDepartment);
+            } else {
+                existingApp.setAccessibilityDepartment(null);
             }
 
             if (updatedApp.getManagingDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getManagingDepartment())
                         .ifPresent(existingApp::setManagingDepartment);
+            } else {
+                existingApp.setManagingDepartment(null);
             }
 
             if (updatedApp.getResponsibleDepartment() != null) {
                 departmentRepository
                         .findById(updatedApp.getResponsibleDepartment())
                         .ifPresent(existingApp::setResponsibleDepartment);
+            } else {
+                existingApp.setResponsibleDepartment(null);
+            }
+
+            if (updatedApp.getTheme() != null) {
+                themeRepository
+                        .findById(updatedApp.getTheme())
+                        .ifPresent(existingApp::setTheme);
+            } else {
+                existingApp.setTheme(null);
             }
         }
 
@@ -300,10 +364,15 @@ public class ApplicationController {
     ) {
         var requester = (User) authentication.getPrincipal();
 
+        Optional<Application> app = applicationRepository.findById(id);
+        if (app.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
         if (!requester.isAdmin()) {
             boolean membershipExists = accessibleDepartmentRepository
                     .existsByDepartmentIdAndUserId(
-                            id,
+                            app.get().getId(),
                             requester.getId()
                     );
             if (!membershipExists) {
@@ -311,9 +380,8 @@ public class ApplicationController {
             }
         }
 
-        Optional<Application> app = applicationRepository.findById(id);
-        if (app.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (submissionRepository.existsByApplication_IdAndArchivedIsNull(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
         applicationRepository.delete(app.get());

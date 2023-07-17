@@ -1,36 +1,26 @@
-import {
-    Alert,
-    AlertTitle,
-    Box,
-    Button,
-    IconButton,
-    ListItemIcon,
-    ListItemText,
-    Menu,
-    MenuItem,
-    Typography
-} from '@mui/material';
+import {Alert, AlertTitle, Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import React from 'react';
 import {RichTextEditorComponentView} from '../../../../../richt-text-editor/rich-text-editor.component.view';
-import {Function} from "../../../../../../models/functions/function";
-import {ConditionSetOperator} from "../../../../../../data/condition-set-operator";
-import {AnyElement} from "../../../../../../models/elements/any-element";
-import {CodeTabCodeEditor} from "./components/code-tab-code-editor";
-import {CodeTabNoCodeEditor} from "./components/code-tab-no-code-editor";
-import {ConditionOperator} from "../../../../../../data/condition-operator";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faEllipsisVertical, faTrashCanXmark} from "@fortawesome/pro-light-svg-icons";
-import {RootElement} from "../../../../../../models/elements/root-element";
-import {StepElement} from "../../../../../../models/elements/steps/step-element";
-import {GroupLayout} from "../../../../../../models/elements/form/layout/group-layout";
-import {ReplicatingContainerLayout} from "../../../../../../models/elements/form/layout/replicating-container-layout";
+import {type Function} from '../../../../../../models/functions/function';
+import {ConditionSetOperator} from '../../../../../../data/condition-set-operator';
+import {type AnyElement} from '../../../../../../models/elements/any-element';
+import {CodeTabCodeEditor} from './components/code-tab-code-editor';
+import {CodeTabNoCodeEditor} from './components/code-tab-no-code-editor';
+import {ConditionOperator} from '../../../../../../data/condition-operator';
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faEllipsisVertical, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
+import {type RootElement} from '../../../../../../models/elements/root-element';
+import {type StepElement} from '../../../../../../models/elements/steps/step-element';
+import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
+import {type ReplicatingContainerLayout} from '../../../../../../models/elements/form/layout/replicating-container-layout';
 
 export type CodeTabProps = {
-    parents: (RootElement | StepElement | GroupLayout | ReplicatingContainerLayout)[];
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
     element: AnyElement;
     resultTitle: string;
     resultHint: string;
     shouldReturnString: boolean;
+    editable: boolean;
 } & ({
     allowNoCode: true;
     func?: Function;
@@ -39,7 +29,7 @@ export type CodeTabProps = {
     allowNoCode: false;
     func?: Function;
     onChange: (updatedFunc: Function | undefined) => void;
-})
+});
 
 function newCodeFunction(func: Function | undefined): Function {
     return {
@@ -75,20 +65,27 @@ export function CodeTab({
                             func,
                             allowNoCode,
                             shouldReturnString,
-                            onChange
-                        }: CodeTabProps) {
+                            onChange,
+                            editable,
+                        }: CodeTabProps): JSX.Element {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setAnchorEl(event.currentTarget);
     };
-    const handleClose = () => {
+    const handleClose = (): void => {
         setAnchorEl(null);
     };
 
     return (
-        <Box sx={{m: 4}}>
+        <Box
+            sx={{
+                m: 4,
+            }}
+        >
             <Typography
-                sx={{mb: 2}}
+                sx={{
+                    mb: 2,
+                }}
                 variant="subtitle1"
             >
                 Fachliche Anforderungen
@@ -96,20 +93,28 @@ export function CodeTab({
 
             <RichTextEditorComponentView
                 value={func?.requirements ?? ''}
-                onChange={req => {
+                onChange={(req) => {
                     onChange({
                         ...func,
-                        requirements: req,
+                        requirements: req ?? '',
                     });
                 }}
+                disabled={!editable}
             />
 
             {
+                editable &&
                 (
                     func == null ||
                     (func.code == null && func.conditionSet == null)
                 ) &&
-                <Box sx={{display: 'flex', mt: 4, alignItems: 'stretch'}}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        mt: 4,
+                        alignItems: 'stretch',
+                    }}
+                >
                     {
                         allowNoCode &&
                         <Box
@@ -122,7 +127,9 @@ export function CodeTab({
                             <Typography
                                 variant="subtitle1"
                                 align="center"
-                                sx={{mb: 2}}
+                                sx={{
+                                    mb: 2,
+                                }}
                             >
                                 No-Code Funktion anlegen
                             </Typography>
@@ -133,12 +140,22 @@ export function CodeTab({
                                 Programmierkenntnisse einzupflegen.
                             </Typography>
 
-                            <Box sx={{flex: '1'}}/>
+                            <Box
+                                sx={{
+                                    flex: '1',
+                                }}
+                            />
 
-                            <Box sx={{mt: 2}}>
+                            <Box
+                                sx={{
+                                    mt: 2,
+                                }}
+                            >
                                 <Button
                                     fullWidth
-                                    onClick={() => onChange(newNoCodeFunction(func, element))}
+                                    onClick={() => {
+                                        onChange(newNoCodeFunction(func, element));
+                                    }}
                                 >
                                     Jetzt No-Code Funktion anlegen
                                 </Button>
@@ -167,7 +184,9 @@ export function CodeTab({
                         <Typography
                             variant="subtitle1"
                             align="center"
-                            sx={{mb: 2}}
+                            sx={{
+                                mb: 2,
+                            }}
                         >
                             Programmcode anlegen
                         </Typography>
@@ -177,12 +196,22 @@ export function CodeTab({
                             Mit Programmcode kann dynamisches Verhalten implementiert werden.
                         </Typography>
 
-                        <Box sx={{flex: '1'}}/>
+                        <Box
+                            sx={{
+                                flex: '1',
+                            }}
+                        />
 
-                        <Box sx={{mt: 2}}>
+                        <Box
+                            sx={{
+                                mt: 2,
+                            }}
+                        >
                             <Button
                                 fullWidth
-                                onClick={() => onChange(newCodeFunction(func))}
+                                onClick={() => {
+                                    onChange(newCodeFunction(func));
+                                }}
                             >
                                 Jetzt Programmcode anlegen
                             </Button>
@@ -199,7 +228,9 @@ export function CodeTab({
                 ) &&
                 <>
                     <Alert
-                        sx={{mt: 8}}
+                        sx={{
+                            mt: 8,
+                        }}
                         severity="info"
                     >
                         <AlertTitle>
@@ -224,6 +255,7 @@ export function CodeTab({
 
                         <Box>
                             {
+                                editable &&
                                 allowNoCode &&
                                 func.conditionSet != null &&
                                 <Button
@@ -239,6 +271,7 @@ export function CodeTab({
                             }
 
                             {
+                                editable &&
                                 allowNoCode &&
                                 func.code != null &&
                                 <Button
@@ -253,14 +286,18 @@ export function CodeTab({
                                 </Button>
                             }
 
-                            <IconButton
-                                onClick={handleClick}
-                            >
-                                <FontAwesomeIcon
-                                    icon={faEllipsisVertical}
-                                    fixedWidth
-                                />
-                            </IconButton>
+                            {
+
+                                editable &&
+                                <IconButton
+                                    onClick={handleClick}
+                                >
+                                    <FontAwesomeIcon
+                                        icon={faEllipsisVertical}
+                                        fixedWidth
+                                    />
+                                </IconButton>
+                            }
 
                             <Menu
                                 open={anchorEl != null}
@@ -292,12 +329,17 @@ export function CodeTab({
                         </Box>
                     </Box>
 
-                    <Box sx={{mt: 2}}>
+                    <Box
+                        sx={{
+                            mt: 2,
+                        }}
+                    >
                         {
                             func.code != null &&
                             <CodeTabCodeEditor
                                 func={func}
                                 onChange={onChange}
+                                editable={editable}
                             />
                         }
 
@@ -310,6 +352,7 @@ export function CodeTab({
                                 func={func}
                                 onChange={onChange}
                                 shouldReturnString={shouldReturnString}
+                                editable={editable}
                             />
                         }
                     </Box>

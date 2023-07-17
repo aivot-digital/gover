@@ -17,17 +17,19 @@ import './rich-text-editor.component.scss';
 interface RichTextEditorComponentViewProps {
     label?: string;
     value: string;
-    onChange: (text: string) => void;
+    onChange: (text: string | undefined) => void;
     required?: boolean;
     error?: string;
+    disabled?: boolean;
+    hint?: string;
 }
 
-export function RichTextEditorComponentView({value, onChange, label, required, error}: RichTextEditorComponentViewProps) {
+export function RichTextEditorComponentView(props: RichTextEditorComponentViewProps): JSX.Element {
     const onChangeCallback = useEventCallback(({editor}: any) => {
         if (editor.isEmpty) {
-            onChange('');
+            props.onChange(undefined);
         } else {
-            onChange(editor.getHTML());
+            props.onChange(editor.getHTML());
         }
     });
 
@@ -52,26 +54,40 @@ export function RichTextEditorComponentView({value, onChange, label, required, e
             Strike,
         ],
         onUpdate: onChangeCallback,
+        editable: !(props.disabled ?? false),
     });
 
     useEffect(() => {
         if (editor != null && editor.isEmpty) {
-            editor.commands.setContent(value ?? '');
+            editor.commands.setContent(props.value ?? '');
         }
-    }, [value, editor]);
+    }, [props.value, editor]);
 
     return (
         <>
             {
-                label &&
-                <Typography sx={{mb: 2}}>
-                    {label} {required ? ' *' : ''}
+                props.label != null &&
+                <Typography
+                    sx={{
+                        mb: 2,
+                    }}
+                >
+                    {props.label} {props.required === true ? ' *' : ''}
                 </Typography>
             }
-            <RichTextEditorMenuComponentView editor={editor}/>
+
+            {
+                !(props.disabled ?? false) &&
+                <RichTextEditorMenuComponentView editor={editor}/>
+            }
+
             <Paper
                 elevation={0}
-                sx={{mt: 2, py: 1, px: 2}}
+                sx={{
+                    mt: 2,
+                    py: 1,
+                    px: 2,
+                }}
                 className="editorWrapper"
                 onClick={() => {
                     if (editor != null && !editor.isFocused) {
@@ -79,13 +95,21 @@ export function RichTextEditorComponentView({value, onChange, label, required, e
                     }
                 }}
             >
-                <EditorContent editor={editor}/>
+                <EditorContent
+                    editor={editor}
+                />
             </Paper>
 
             {
-                error != null &&
-                <Typography variant="caption" color="error">
-                    {error}
+                (
+                    props.hint != null ||
+                    props.error != null
+                ) &&
+                <Typography
+                    variant="caption"
+                    color={props.error != null ? 'error' : undefined}
+                >
+                    {props.error ?? props.hint}
                 </Typography>
             }
         </>

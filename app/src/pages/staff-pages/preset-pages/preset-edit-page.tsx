@@ -1,35 +1,25 @@
-import {Container, Grid, Theme, ThemeProvider} from '@mui/material';
 import React, {useEffect, useState} from 'react';
-import {
-    LoadingPlaceholderComponentView
-} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
+import {Container, Grid, ThemeProvider} from '@mui/material';
+import {LoadingPlaceholderComponentView} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
 import {useNavigate, useParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
-import {createAppTheme} from '../../../theming/themes';
+import {createDefaultAppTheme} from '../../../theming/themes';
 import {NotFoundPage} from '../../../components/static-components/not-found-page/not-found-page';
 import {MetaElement} from '../../../components/meta-element/meta-element';
-import {useAuthGuard} from '../../../hooks/use-auth-guard';
 import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
-import {useAppSelector} from '../../../hooks/use-app-selector';
 import {PresetsService} from '../../../services/presets.service';
-import {Preset} from '../../../models/entities/preset';
-import {selectSystemConfigValue} from '../../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../../data/system-config-keys';
+import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ElementTree} from '../../../components/element-tree/element-tree';
-import {flattenElements} from "../../../utils/flatten-elements";
-import {ConfirmDialog} from "../../../dialogs/confirm-dialog/confirm-dialog";
+import {flattenElements} from '../../../utils/flatten-elements';
+import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
-export function PresetEditPage() {
-    useAuthGuard();
-
+export function PresetEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const params = useParams();
-
-    const defaultTheme = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const [preset, setPreset] = useState<Preset>();
     const [failedToLoad, setFailedToLoad] = useState<boolean>();
@@ -37,9 +27,9 @@ export function PresetEditPage() {
 
     useEffect(() => {
         if (params.id != null) {
-            const id = parseInt(params.id)
+            const id = parseInt(params.id);
             PresetsService.retrieve(id)
-                .then(result => {
+                .then((result) => {
                     setPreset(result);
                 })
                 .catch(() => {
@@ -51,29 +41,48 @@ export function PresetEditPage() {
     useEffect(() => {
         if (preset != null) {
             PresetsService.update(preset.id, preset)
-                .catch(err => {
+                .catch((err) => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Failed to save preset'));
+                    dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
                 });
         }
     }, [preset]);
 
-    if (failedToLoad) {
+    const handleDelete = (): void => {
+        if (preset == null) {
+            return;
+        }
+
+        PresetsService
+            .destroy(preset.id)
+            .then(() => {
+                navigate('/presets');
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Vorlage konnte nicht gelöscht werden'));
+            });
+    };
+
+    if (failedToLoad === true) {
         return (
             <>
                 <AppToolbar
                     title="Nicht gefunden"
                 />
-                <NotFoundPage/>
+                <NotFoundPage
+                    title="Vorlage nicht gefunden"
+                    msg="Die von Ihnen aufgerufene Vorlage konnte nicht gefunden werden."
+                />
             </>
-        )
+        );
     } else if (preset == null) {
         return <LoadingPlaceholderComponentView/>;
     } else {
         const allElements = flattenElements(preset.root);
 
         return (
-            <ThemeProvider theme={(baseTheme: Theme) => createAppTheme(defaultTheme, baseTheme)}>
+            <ThemeProvider theme={createDefaultAppTheme}>
                 <MetaElement
                     title={`Vorlagen-Editor - ${preset.root.name ?? ''}`}
                 />
@@ -84,10 +93,9 @@ export function PresetEditPage() {
                     actions={[{
                         icon: <DeleteForeverOutlinedIcon/>,
                         tooltip: 'Vorlage löschen',
-                        onClick: () => setConfirmDelete(() => () => {
-                            PresetsService.destroy(preset.id);
-                            navigate('/presets');
-                        })
+                        onClick: () => {
+                            setConfirmDelete(() => handleDelete);
+                        },
                     }]}
                 />
 
@@ -111,14 +119,14 @@ export function PresetEditPage() {
                         }}
                     >
                         <ElementTree
-                            element={preset.root}
-                            onPatch={patch => setPreset({
-                                ...preset,
-                                root: {
-                                    ...preset.root,
+                            entity={preset}
+                            onPatch={(patch) => {
+                                setPreset({
+                                    ...preset,
                                     ...patch,
-                                },
-                            })}
+                                });
+                            }}
+                            editable={true}
                         />
                     </Grid>
 
@@ -143,7 +151,9 @@ export function PresetEditPage() {
                 <ConfirmDialog
                     title="Vorlage wirklich löschen"
                     onConfirm={confirmDelete}
-                    onCancel={() => setConfirmDelete(undefined)}
+                    onCancel={() => {
+                        setConfirmDelete(undefined);
+                    }}
                 >
                     Sind Sie sicher, dass Sie die Vorlage <strong>{preset.root.name}</strong> wirklich löschen wollen?
                     Bitte beachten Sie, dass dies <u>nicht rückgängig</u> gemacht werden kann!

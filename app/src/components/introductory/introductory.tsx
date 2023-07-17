@@ -18,13 +18,13 @@ export function Introductory({mode}: IntroductoryProps) {
     const theme = useTheme();
     const systemConfig = useAppSelector(state => state.systemConfig);
 
-    const [show, setShow] = useState(!LocalStorageService.loadFlag(LocalstorageKey.IntoDismissed));
+    const [show, setShow] = useState(!LocalStorageService.loadFlag(LocalstorageKey.IntroDismissed));
 
 
     const onDismiss = () => {
         setShow(false);
-        LocalStorageService.storeFlag(LocalstorageKey.IntoDismissed, true);
-    }
+        LocalStorageService.storeFlag(LocalstorageKey.IntroDismissed, true);
+    };
 
     if (!show) {
         return null;
@@ -46,7 +46,10 @@ export function Introductory({mode}: IntroductoryProps) {
                 >
                     {
                         mode === AppMode.Staff &&
-                        <Box sx={{position: 'absolute', right: theme.spacing(7)}}>
+                        <Box sx={{
+                            position: 'absolute',
+                            right: theme.spacing(7),
+                        }}>
                             <Tooltip
                                 title="Diese Meldung ausblenden"
                             >
@@ -74,7 +77,9 @@ export function Introductory({mode}: IntroductoryProps) {
                             fontWeight={800}
                             lineHeight={'2.625rem'}
                             color={'white'}
-                            sx={{mt: 2}}
+                            sx={{
+                                mt: 2,
+                            }}
                         >
                             <span style={{color: theme.palette.secondary.main}}>
                                 Online-Antrags-Management
@@ -116,7 +121,11 @@ export function Introductory({mode}: IntroductoryProps) {
                                             },
                                         }]}
                                 >
-                                    <ArrowForwardOutlinedIcon style={{marginRight: '6px', flexShrink: 0, fontSize: '0.9em'}}/>
+                                    <ArrowForwardOutlinedIcon sx={{
+                                        marginRight: '6px',
+                                        flexShrink: 0,
+                                        fontSize: '0.9em',
+                                    }}/>
                                     <span>Zur Benutzereinführung (inkl. Video-Kurs)</span>
                                 </Typography>
 
@@ -141,7 +150,11 @@ export function Introductory({mode}: IntroductoryProps) {
                                             },
                                         }]}
                                 >
-                                    <NorthWestOutlinedIcon style={{marginRight: '6px', flexShrink: 0, fontSize: '0.9em'}}/>
+                                    <NorthWestOutlinedIcon style={{
+                                        marginRight: '6px',
+                                        flexShrink: 0,
+                                        fontSize: '0.9em',
+                                    }}/>
                                     <span>Alles neu – was jetzt? Die neuen Arbeitsabläufe und Prozessschritte für Online-Formulare einfach erklärt</span>
                                 </Typography>
                             </>
