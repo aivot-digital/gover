@@ -76,6 +76,8 @@ export function ApplicationEditPage(): JSX.Element {
                 .catch((err) => {
                     console.error(err);
                 });
+        } else {
+            setTheme(undefined);
         }
     }, [application]);
 
