@@ -1,24 +1,28 @@
-import {ApiService} from "./api-service";
+import {ApiService} from './api-service';
+import {type Health} from '../models/dtos/health';
 
 
 class _SystemService {
-
     public async testSmtp(targetEmail: string): Promise<{result?: string}> {
-        return ApiService.post('system/test-smtp', {
+        return await ApiService.post('system/test-smtp', {
             targetMail: targetEmail,
         });
     }
 
     public async getSentryDns(): Promise<string[]> {
-        return ApiService.get('public/sentry-dns');
+        return await ApiService.get('public/sentry-dns');
     }
 
     public async getFileExtensions(): Promise<string[]> {
-        return ApiService.get('system/file-extensions');
+        return await ApiService.get('system/file-extensions');
     }
 
     public async getContentTypes(): Promise<string[]> {
-        return ApiService.get('system/content-types');
+        return await ApiService.get('system/content-types');
+    }
+
+    public async checkHealth(): Promise<Health> {
+        return await ApiService.get('public/actuator/health');
     }
 }
 

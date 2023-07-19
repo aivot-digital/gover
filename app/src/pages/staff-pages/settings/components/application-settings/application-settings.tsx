@@ -34,7 +34,7 @@ export function ApplicationSettings(): JSX.Element {
                 console.error(err);
                 dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
             });
-    });
+    }, []);
 
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();

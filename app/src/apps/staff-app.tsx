@@ -59,9 +59,11 @@ function StaffApp(): JSX.Element {
 
     useEffect(() => {
         if (themeId != null && isStringNotNullOrEmpty(themeId)) {
-            ThemesService
-                .retrieve(parseInt(themeId))
-                .then(setTheme);
+            if (theme == null || theme.id !== parseInt(themeId)) {
+                ThemesService
+                    .retrieve(parseInt(themeId))
+                    .then(setTheme);
+            }
         } else {
             setTheme(undefined);
         }

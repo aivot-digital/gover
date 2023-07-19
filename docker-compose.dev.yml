@@ -20,3 +20,16 @@ services:
     restart: 'always'
     ports:
       - '3310:3310'
+
+  influxdb:
+    image: influxdb
+    restart: 'always'
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: 'setup'
+      DOCKER_INFLUXDB_INIT_USERNAME: 'gover'
+      DOCKER_INFLUXDB_INIT_PASSWORD: 'gover-password'
+      DOCKER_INFLUXDB_INIT_ORG: 'gover'
+      DOCKER_INFLUXDB_INIT_BUCKET: 'gover'
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: 'gover'
+    ports:
+      - '8086:8086'

@@ -36,7 +36,7 @@ export function UserEditPageMembershipsTab(props: UserEditPageMembershipsTabProp
         UsersService
             .listMemberships(props.user)
             .then(setMemberships);
-    });
+    }, []);
 
     if (memberships.length === 0) {
         return (
