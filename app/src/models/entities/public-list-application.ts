@@ -4,4 +4,5 @@ export interface PublicListApplication {
     version: string;
     headline: string;
     theme: string;
+    updated: string;
 }

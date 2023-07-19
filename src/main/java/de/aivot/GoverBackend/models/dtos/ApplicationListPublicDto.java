@@ -2,12 +2,15 @@ package de.aivot.GoverBackend.models.dtos;
 
 import de.aivot.GoverBackend.models.entities.Application;
 
+import java.time.LocalDateTime;
+
 public class ApplicationListPublicDto {
     private Integer id;
     private String slug;
     private String version;
     private String headline;
     private Integer theme;
+    private LocalDateTime updated;
 
     public static ApplicationListPublicDto valueOf(Application app) {
         ApplicationListPublicDto la = new ApplicationListPublicDto();
@@ -19,6 +22,7 @@ public class ApplicationListPublicDto {
         if (app.getTheme() != null) {
             la.theme = app.getTheme().getId();
         }
+        la.updated = app.getUpdated();
 
         return la;
     }
@@ -63,6 +67,14 @@ public class ApplicationListPublicDto {
 
     public void setTheme(Integer theme) {
         this.theme = theme;
+    }
+
+    public LocalDateTime getUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(LocalDateTime updated) {
+        this.updated = updated;
     }
 
     // endregion
