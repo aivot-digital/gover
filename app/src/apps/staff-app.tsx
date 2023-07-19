@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {createBrowserRouter, RouterProvider} from 'react-router-dom';
+import {createHashRouter, RouterProvider} from 'react-router-dom';
 import {logout, refreshMemberships, refreshUser, selectUser} from '../slices/user-slice';
 import {fetchPublicSystemConfig, fetchSystemConfig, selectSystemConfigValue} from '../slices/system-config-slice';
 import {Alert, Backdrop, CircularProgress, Snackbar, type Theme as MuiTheme, ThemeProvider, Typography} from '@mui/material';
@@ -16,7 +16,7 @@ import {type Theme} from '../models/entities/theme';
 import {isStringNotNullOrEmpty} from '../utils/string-utils';
 import {ThemesService} from '../services/themes-service';
 
-const router = createBrowserRouter(
+const router = createHashRouter(
     Object.keys(staffAppRoutes).map((key) => staffAppRoutes[key]),
 );
 

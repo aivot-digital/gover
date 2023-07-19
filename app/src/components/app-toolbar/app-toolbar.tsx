@@ -1,12 +1,12 @@
 import React from 'react';
 import {type AppToolbarProps} from './app-toolbar-props';
-import {AppBar, Box, IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
+import {AppBar, Box, Button, IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
 import {Link, useNavigate} from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import {getPath} from '../../apps/staff-app-routes';
 
-export function AppToolbar(props: AppToolbarProps) {
+export function AppToolbar(props: AppToolbarProps): JSX.Element {
     const navigate = useNavigate();
 
     return (
@@ -80,19 +80,39 @@ export function AppToolbar(props: AppToolbarProps) {
                                         title={action.tooltip}
                                         arrow
                                     >
-                                        <IconButton
-                                            size="small"
-                                            color="inherit"
-                                            sx={{
-                                                ml: 2,
-                                            }}
-                                            onClick={'onClick' in action ? action.onClick : undefined}
-                                            component={'onClick' in action ? 'button' : 'a'}
-                                            href={'href' in action ? action.href : undefined}
-                                            target={'href' in action ? '_blank' : undefined}
-                                        >
-                                            {action.icon}
-                                        </IconButton>
+                                        {
+                                            'label' in action ?
+                                                (
+                                                    <Button
+                                                        size="small"
+                                                        color="inherit"
+                                                        sx={{
+                                                            ml: 2,
+                                                        }}
+                                                        onClick={'onClick' in action ? action.onClick : undefined}
+                                                        component={'onClick' in action ? 'button' : 'a'}
+                                                        href={'href' in action ? action.href : undefined}
+                                                        target={'href' in action ? '_blank' : undefined}
+                                                        startIcon={action.icon}
+                                                    >
+                                                        {action.label}
+                                                    </Button>
+                                                ) : (
+                                                    <IconButton
+                                                        size="small"
+                                                        color="inherit"
+                                                        sx={{
+                                                            ml: 2,
+                                                        }}
+                                                        onClick={'onClick' in action ? action.onClick : undefined}
+                                                        component={'onClick' in action ? 'button' : 'a'}
+                                                        href={'href' in action ? action.href : undefined}
+                                                        target={'href' in action ? '_blank' : undefined}
+                                                    >
+                                                        {action.icon}
+                                                    </IconButton>
+                                                )
+                                        }
                                     </Tooltip>
                                 ))
                         }

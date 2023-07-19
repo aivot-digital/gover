@@ -1,4 +1,4 @@
-import {SvgIconProps} from "@mui/material";
+import {type SvgIconProps} from '@mui/material';
 
 export type AppToolbarPropsAction = ({
     tooltip: string;
@@ -8,7 +8,17 @@ export type AppToolbarPropsAction = ({
     tooltip: string;
     icon: SvgIconProps;
     href: string;
-} | 'separator');
+} | {
+    tooltip: string;
+    icon: SvgIconProps;
+    label: string;
+    onClick: () => void;
+} | {
+    tooltip: string;
+    icon: SvgIconProps;
+    label: string;
+    href: string;
+}  | 'separator');
 
 export interface AppToolbarProps {
     title: string;
