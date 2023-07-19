@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {type Destination} from '../../../models/entities/destination';
 import {DestinationsService} from '../../../services/destinations-service';
 import {type GridColDef} from '@mui/x-data-grid';
