@@ -3,13 +3,12 @@ import {UsersService} from '../services/users-service';
 import {LocalStorageService} from '../services/local-storage-service';
 import {type RootState} from '../store';
 import {LocalstorageKey} from '../data/localstorage-key';
-import {type AnonymousUser, type InvalidUser, type User} from '../models/entities/user';
+import {type AnyUser, NewAnonymousUser, type User} from '../models/entities/user';
 import {type DepartmentMembership} from '../models/entities/department-membership';
 import {DepartmentMembershipsService} from '../services/department-memberships-service';
-import {type Credentials} from '../models/dtos/credentials';
 
 interface UserState {
-    user: User | AnonymousUser | InvalidUser | undefined;
+    user: AnyUser | undefined;
     memberships: DepartmentMembership[];
 }
 
@@ -18,6 +17,7 @@ const initialState: UserState = {
     memberships: [],
 };
 
+/*
 export const authenticate = createAsyncThunk(
     'user/authenticate',
     async (credentials: Credentials, _): Promise<User> => {
@@ -26,6 +26,7 @@ export const authenticate = createAsyncThunk(
         return await UsersService.getProfile();
     },
 );
+*/
 
 export const refreshUser = createAsyncThunk(
     'user/refreshUser',
@@ -33,16 +34,7 @@ export const refreshUser = createAsyncThunk(
         const jwt = LocalStorageService.loadString(LocalstorageKey.JWT);
 
         if (jwt == null) {
-            return {
-                id: -1,
-                name: 'Anonymous',
-                email: '',
-                password: '',
-                active: false,
-                admin: false,
-                created: '',
-                updated: '',
-            };
+            return NewAnonymousUser();
         }
 
         return await UsersService.getProfile();
@@ -60,52 +52,24 @@ const userSlice = createSlice({
     name: 'user',
     initialState,
     reducers: {
+        setUser: (state, action: PayloadAction<AnyUser>) => {
+            state.user = action.payload;
+        },
+        setMemberships: (state, action: PayloadAction<DepartmentMembership[]>) => {
+            state.memberships = action.payload;
+        },
         logout: (state, _: PayloadAction) => {
-            state.user = {
-                id: -1,
-                name: 'Anonymous',
-                email: '',
-                password: '',
-                active: false,
-                admin: false,
-                created: '',
-                updated: '',
-            };
+            state.user = NewAnonymousUser();
             state.memberships = [];
             LocalStorageService.clearItem(LocalstorageKey.JWT);
         },
     },
     extraReducers: (builder) => {
-        builder.addCase(authenticate.fulfilled, (state, action) => {
-            state.user = action.payload;
-        });
-        builder.addCase(authenticate.rejected, (state, _) => {
-            state.user = {
-                id: -2,
-                name: 'Invalid',
-                email: '',
-                password: '',
-                active: false,
-                admin: false,
-                created: '',
-                updated: '',
-            };
-        });
-
         builder.addCase(refreshUser.fulfilled, (state, action) => {
             state.user = action.payload;
         });
         builder.addCase(refreshUser.rejected, (state, _) => {
-            state.user = {
-                id: -1,
-                name: 'Anonymous',
-                email: '',
-                password: '',
-                active: false,
-                admin: false,
-                created: '',
-                updated: '',
-            };
+            state.user = NewAnonymousUser();
             state.memberships = [];
             LocalStorageService.clearItem(LocalstorageKey.JWT);
         });
@@ -114,25 +78,20 @@ const userSlice = createSlice({
             state.memberships = action.payload;
         });
         builder.addCase(refreshMemberships.rejected, (state, _) => {
-            state.user = {
-                id: -1,
-                name: 'Anonymous',
-                email: '',
-                password: '',
-                active: false,
-                admin: false,
-                created: '',
-                updated: '',
-            };
+            state.user = NewAnonymousUser();
             state.memberships = [];
             LocalStorageService.clearItem(LocalstorageKey.JWT);
         });
     },
 });
 
-export const {logout} = userSlice.actions;
+export const {
+    setUser,
+    setMemberships,
+    logout,
+} = userSlice.actions;
 
-export const selectUser = (state: RootState): User | undefined => state.user.user;
+export const selectUser = (state: RootState): AnyUser | undefined => state.user.user;
 export const selectMemberships = (state: RootState): DepartmentMembership[] => state.user.memberships;
 
 export const userReducer = userSlice.reducer;
