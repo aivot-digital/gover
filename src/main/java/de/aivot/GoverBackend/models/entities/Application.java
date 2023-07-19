@@ -90,12 +90,15 @@ public class Application {
     private Integer submissionDeletionWeeks;
 
     @Column(updatable = false)
+    @ColumnDefault("0")
     private Integer openSubmissions;
 
     @Column(updatable = false)
+    @ColumnDefault("0")
     private Integer inProgressSubmissions;
 
     @Column(updatable = false)
+    @ColumnDefault("0")
     private Integer totalSubmissions;
 
 
