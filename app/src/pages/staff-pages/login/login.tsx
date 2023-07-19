@@ -37,7 +37,6 @@ export function Login(): JSX.Element {
                 dispatch(setUser(user));
             })
             .catch((err) => {
-                console.log(JSON.stringify(err));
                 if (err.status === 401) {
                     setAuthError('Es existiert keine Benutzer:in mit dieser Kombination aus E-Mail-Adresse und Passwort');
                 } else if (err.status === 409) {
