@@ -48,10 +48,6 @@ Gover depends on a few other services to fully function:
 
 * [PostgreSQL](https://www.postgresql.org/)
 
-## Prerequisites
-
-**Attention:** This projects requires [FontawesomePro](https://fontawesome.com/) Version 6 or higher.
-
 ## Download
 Clone this repository and enter it via:
 
@@ -59,19 +55,6 @@ Clone this repository and enter it via:
 git clone https://github.com/aivot-digital/gover.git ./gover
 cd ./gover
 ```
-
-## Authenticate FontawesomePro
-
-To pull the required FontawesomPro packages, edit the file `./app/.npmrc` and insert your FontawesomePro Key.
-
-The file should look like this:
-
-```
-@fortawesome:registry=https://npm.fontawesome.com/
-//npm.fontawesome.com/:_authToken=<YOUR_FONT_AWESOME_KEY>
-```
-
-More information about the FontawesomePro setup, can be found here: <https://fontawesome.com/docs/web/setup/packages>.
 
 ## DockerCompose Setup
 
