@@ -51,10 +51,6 @@ export function ProfileInformationChange(): JSX.Element {
 
     return (
         <form onSubmit={handleSave}>
-            <Typography variant="subtitle1">
-                Benutzerdaten
-            </Typography>
-
             <TextFieldComponent
                 label="Name"
                 placeholder="Max Mustermann"
