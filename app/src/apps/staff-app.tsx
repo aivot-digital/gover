@@ -48,14 +48,14 @@ function StaffApp(): JSX.Element {
                 }
             }
 
-            if (response.status === 401 && user != null && !isAnonymousUser(user)) {
+            if (response.status === 401) {
                 console.log('Unauthorized response received. Logging out.');
                 dispatch(logout());
             }
 
             return response;
         };
-    }, [dispatch]);
+    }, []);
 
     useEffect(() => {
         if (themeId != null && isStringNotNullOrEmpty(themeId)) {
