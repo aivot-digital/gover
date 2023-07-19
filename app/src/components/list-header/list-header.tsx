@@ -35,6 +35,7 @@ export function ListHeader(props: ListHeaderProps): JSX.Element {
                     <HelpIconOutlined
                         sx={{
                             ml: 1,
+                            color: "#a6a6a6"
                         }}
                     />
                 </HintTooltip>
@@ -95,8 +96,22 @@ const HintTooltip = styled(({ className, ...props }: TooltipProps) => (
     <Tooltip {...props} classes={{ popper: className }} />
 ))(({ theme }) => ({
     [`& .${tooltipClasses.tooltip}`]: {
-        backgroundColor: '#fafafa',
-        color: 'black',
+        backgroundColor: '#fff',
+        color: '#444',
         maxWidth: 220,
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+        padding: '10px 12px',
+        border: '1px solid #ccc',
+    },
+    [`& .${tooltipClasses.tooltip} a`]: {
+        color: '#444',
+        marginTop: '4px',
+        display: 'block',
+    },
+    [`& .${tooltipClasses.arrow}`]: {
+        color: '#fff',
+    },
+    [`& .${tooltipClasses.arrow}:before`]: {
+        border: '1px solid #ccc',
     },
 }));
