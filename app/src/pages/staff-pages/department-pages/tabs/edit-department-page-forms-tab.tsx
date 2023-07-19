@@ -41,7 +41,7 @@ export function EditDepartmentPageFormsTab(props: EditDepartmentPageMembersTabPr
             search={search}
             searchPlaceholder="Formular suchen"
             onSearchChange={setSearch}
-            actions={[]}
+            smallTitle={true}
         />
     );
 }

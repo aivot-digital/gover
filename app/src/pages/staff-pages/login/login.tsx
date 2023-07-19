@@ -1,42 +1,55 @@
 import {Box, Button, Container, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {Logo} from '../../../components/static-components/logo/logo';
-import {authenticate, selectUser} from '../../../slices/user-slice';
-import {isInvalidUser} from '../../../models/entities/user';
+import {setUser} from '../../../slices/user-slice';
 import {type Credentials} from '../../../models/dtos/credentials';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
+import {UsersService} from '../../../services/users-service';
+import {LocalStorageService} from '../../../services/local-storage-service';
+import {LocalstorageKey} from '../../../data/localstorage-key';
 
 export function Login(): JSX.Element {
     const dispatch = useDispatch();
-    const user = useSelector(selectUser);
 
     const [isAuthenticating, setIsAuthenticating] = useState(false);
+    const [authError, setAuthError] = useState<string>();
 
     const [credentials, setCredentials] = useState<Credentials>({
         email: '',
         password: '',
     });
 
-    useEffect(() => {
-        if (user != null && isInvalidUser(user)) {
-            setIsAuthenticating(false);
-        }
-    }, [user]);
-
     const handleAuthenticate = (event: React.FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
 
         setIsAuthenticating(true);
-        dispatch(authenticate(credentials));
-    };
 
-    let loginError: string | undefined;
-    if (user != null && isInvalidUser(user)) {
-        loginError = 'Es existiert keine Benutzer:in mit dieser Kombination aus E-Mail-Adresse und Passwort';
-    }
+        UsersService
+            .login(credentials.email, credentials.password)
+            .then((auth) => {
+                LocalStorageService.storeString(LocalstorageKey.JWT, auth.jwtToken);
+                return UsersService.getProfile();
+            })
+            .then((user) => {
+                dispatch(setUser(user));
+            })
+            .catch((err) => {
+                if (err.status === 401) {
+                    setAuthError('Es existiert keine Benutzer:in mit dieser Kombination aus E-Mail-Adresse und Passwort');
+                } else if (err.status === 409) {
+                    setAuthError('Diese Benutzer:in ist gesperrt. Ein Login ist nicht möglich.');
+                } else {
+                    console.error(err);
+                    setAuthError('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.');
+                }
+            })
+            .finally(() => {
+                setIsAuthenticating(false);
+            });
+    };
 
     return (
         <>
@@ -108,7 +121,7 @@ export function Login(): JSX.Element {
                                 type="email"
                                 label="E-Mail-Adresse"
                                 placeholder="max.muster@gover.digital"
-                                error={loginError}
+                                error={authError}
                                 disabled={isAuthenticating}
                             />
 
@@ -122,7 +135,7 @@ export function Login(): JSX.Element {
                                 }}
                                 type="password"
                                 label="Passwort"
-                                error={loginError}
+                                error={authError}
                                 disabled={isAuthenticating}
                             />
 

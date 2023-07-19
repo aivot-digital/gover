@@ -131,6 +131,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 }}
                 decimalPlaces={0}
                 suffix="Wochen"
+                error={props.entity.submissionDeletionWeeks != null && props.entity.submissionDeletionWeeks < 0 ? 'Bitte geben Sie eine Löschfrist ein, die größer oder gleich 0 ist.' : undefined}
                 disabled={!props.editable}
             />
 
@@ -146,6 +147,7 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 }}
                 decimalPlaces={0}
                 suffix="Stunden"
+                error={props.entity.customerAccessHours != null && props.entity.customerAccessHours <= 0 ? 'Bitte geben Sie eine Zugriffsfrist ein, die größer als 0 ist.' : undefined}
                 disabled={!props.editable}
             />
         </>

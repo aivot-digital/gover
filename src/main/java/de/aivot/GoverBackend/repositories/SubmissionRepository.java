@@ -13,28 +13,28 @@ public interface SubmissionRepository extends JpaRepository<Submission, String> 
     Optional<Submission> findByIdAndApplicationId(String id, Integer applicationId);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationIdAndArchivedIsNull(Integer applicationId);
+    Collection<Submission> findAllByApplicationIdAndArchivedIsNullOrderByCreatedDesc(Integer applicationId);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationIdAndIsTestSubmissionFalse(Integer applicationId);
+    Collection<Submission> findAllByApplicationIdAndIsTestSubmissionFalseOrderByCreatedDesc(Integer applicationId);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationIdAndAssigneeIdAndIsTestSubmissionFalse(Integer applicationId, Integer assigneeId);
+    Collection<Submission> findAllByApplicationIdAndAssigneeIdAndIsTestSubmissionFalseOrderByCreatedDesc(Integer applicationId, Integer assigneeId);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationIdAndAssigneeId(Integer applicationId, Integer assignee);
+    Collection<Submission> findAllByApplicationIdAndAssigneeIdOrderByCreatedDesc(Integer applicationId, Integer assignee);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationIdAndAssigneeIdAndArchivedIsNull(Integer applicationId, Integer assignee);
+    Collection<Submission> findAllByApplicationIdAndAssigneeIdAndArchivedIsNullOrderByCreatedDesc(Integer applicationId, Integer assignee);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationIdAndAssigneeIdAndArchivedIsNullAndIsTestSubmissionFalse(Integer applicationId, Integer assignee);
+    Collection<Submission> findAllByApplicationIdAndAssigneeIdAndArchivedIsNullAndIsTestSubmissionFalseOrderByCreatedDesc(Integer applicationId, Integer assignee);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationId(Integer applicationId);
+    Collection<Submission> findAllByApplicationIdOrderByCreatedDesc(Integer applicationId);
 
     @Transactional(readOnly = true)
-    Collection<Submission> findAllByApplicationIdAndArchivedIsNullAndIsTestSubmissionFalse(Integer applicationId);
+    Collection<Submission> findAllByApplicationIdAndArchivedIsNullAndIsTestSubmissionFalseOrderByCreatedDesc(Integer applicationId);
 
     @Transactional(readOnly = true)
     boolean existsByApplication_IdInAndArchivedIsNull(Collection<Integer> applications);

@@ -19,7 +19,7 @@ import DashboardCustomizeOutlinedIcon from '@mui/icons-material/DashboardCustomi
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
 import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
-import ColorLensIcon from '@mui/icons-material/ColorLens';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
@@ -138,7 +138,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                 (user?.admin ?? false) &&
                 <LinkMenuItem
                     label="Farbschemata"
-                    icon={<ColorLensIcon/>}
+                    icon={<PaletteOutlinedIcon/>}
                     to="/themes"
                 />
             }

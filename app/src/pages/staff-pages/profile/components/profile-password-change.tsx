@@ -49,9 +49,6 @@ export function ProfilePasswordChange(): JSX.Element {
 
     return (
         <form onSubmit={handlePasswordSet}>
-            <Typography variant="subtitle1">
-                Passwort
-            </Typography>
             <TextField
                 label="Passwort"
                 type="password"

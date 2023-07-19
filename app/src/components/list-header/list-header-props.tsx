@@ -5,9 +5,10 @@ export interface ListHeaderProps {
     search: string;
     searchPlaceholder: string;
     onSearchChange: (search: string) => void;
-    actions: ListHeaderAction[];
+    actions?: ListHeaderAction[];
     hint?: {
         text: string;
         moreLink?: string;
     };
+    smallTitle?: boolean;
 }

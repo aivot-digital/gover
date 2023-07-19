@@ -2,12 +2,14 @@ package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.models.dtos.ApplicationListDto;
+import de.aivot.GoverBackend.models.dtos.DepartmentMembershipWithUserDto;
 import de.aivot.GoverBackend.models.entities.AccessibleDepartment;
 import de.aivot.GoverBackend.models.entities.Department;
 import de.aivot.GoverBackend.models.entities.User;
 import de.aivot.GoverBackend.permissions.IsAdmin;
 import de.aivot.GoverBackend.repositories.AccessibleDepartmentRepository;
 import de.aivot.GoverBackend.repositories.ApplicationRepository;
+import de.aivot.GoverBackend.repositories.DepartmentMembershipRepository;
 import de.aivot.GoverBackend.repositories.DepartmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,15 +25,17 @@ import java.util.Optional;
 public class DepartmentController {
     private final DepartmentRepository departmentRepository;
     private final AccessibleDepartmentRepository accessibleDepartmentRepository;
+    private final DepartmentMembershipRepository departmentMembershipRepository;
     private final ApplicationRepository applicationRepository;
 
     @Autowired
     public DepartmentController(
             DepartmentRepository departmentRepository,
             AccessibleDepartmentRepository accessibleDepartmentRepository,
-            ApplicationRepository applicationRepository) {
+            DepartmentMembershipRepository departmentMembershipRepository, ApplicationRepository applicationRepository) {
         this.departmentRepository = departmentRepository;
         this.accessibleDepartmentRepository = accessibleDepartmentRepository;
+        this.departmentMembershipRepository = departmentMembershipRepository;
         this.applicationRepository = applicationRepository;
     }
 
@@ -92,6 +96,15 @@ public class DepartmentController {
                 .findAllByDevelopingDepartmentId(id)
                 .stream()
                 .map(ApplicationListDto::new)
+                .toList();
+    }
+
+    @GetMapping("/api/departments/{id}/memberships")
+    public Collection<DepartmentMembershipWithUserDto> retrieveMemberships(@PathVariable Integer id) {
+        return departmentMembershipRepository
+                .findAllByDepartmentId(id)
+                .stream()
+                .map(DepartmentMembershipWithUserDto::new)
                 .toList();
     }
 

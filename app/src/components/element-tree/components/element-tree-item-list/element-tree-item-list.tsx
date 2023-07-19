@@ -27,32 +27,37 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                         element={props.element}
                         onDrop={(droppedElement) => {
                             const updatedChildren = [...props.element.children];
-                            // @ts-ignore
+                            // @ts-expect-error
                             updatedChildren.splice(index, 0, droppedElement);
-                            // @ts-ignore
-                            props.onPatch({
+                            // @ts-expect-error
+                            const patch: Partial<T> = {
                                 children: updatedChildren,
-                            });
+                            };
+
+                            props.onPatch(patch, {});
                         }}
                     >
                         <ElementTreeItem
                             parents={[...props.parents, props.element]}
                             entity={props.entity}
                             element={child}
-                            onPatch={(patch) => {
+                            onPatch={(updatedElement, updatedEntity) => {
                                 const updatedChildren = [...props.element.children];
                                 const index = updatedChildren.indexOf(child);
                                 if (index >= 0) {
-                                    // @ts-ignore
+                                    // @ts-expect-error
                                     updatedChildren[index] = {
                                         ...child,
-                                        ...patch,
+                                        ...updatedElement,
                                     };
                                 }
-                                // @ts-ignore
-                                props.onPatch({
+
+                                // @ts-expect-error
+                                const patch: Partial<T> = {
                                     children: updatedChildren,
-                                });
+                                };
+
+                                props.onPatch(patch, updatedEntity);
                             }}
                             onDelete={() => {
                                 const updatedChildren = [...props.element.children];
@@ -60,10 +65,13 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                 if (index >= 0) {
                                     updatedChildren.splice(index, 1);
                                 }
-                                // @ts-ignore
-                                props.onPatch({
+
+                                // @ts-expect-error
+                                const patch: Partial<T> = {
                                     children: updatedChildren,
-                                });
+                                };
+
+                                props.onPatch(patch, {});
                             }}
                             onClone={() => {
                                 const updatedChildren = [...props.element.children];
@@ -72,10 +80,13 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                     const clonedElem = cloneElement(child);
                                     updatedChildren.splice(index, 0, clonedElem);
                                 }
-                                // @ts-ignore
-                                props.onPatch({
+
+                                // @ts-expect-error
+                                const patch: Partial<T> = {
                                     children: updatedChildren,
-                                });
+                                };
+
+                                props.onPatch(patch, {});
                             }}
                             editable={props.editable}
                         />
@@ -89,10 +100,12 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                     element={props.element}
                     isPlaceholder
                     onDrop={(droppedElement) => {
-                        // @ts-ignore
-                        props.onPatch({
+                        // @ts-expect-error
+                        const patch: Partial<T> = {
                             children: [droppedElement],
-                        });
+                        };
+
+                        props.onPatch(patch, {});
                     }}
                 >
                     <Typography
@@ -114,13 +127,15 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                     element={props.element}
                     isPlaceholder
                     onDrop={(droppedElement) => {
-                        const updatedChildren = [...props.element.children];
-                        // @ts-ignore
-                        updatedChildren.push(droppedElement);
-                        // @ts-ignore
-                        props.onPatch({
-                            children: updatedChildren,
-                        });
+                        // @ts-expect-error
+                        const patch: Partial<T> = {
+                            children: [
+                                ...props.element.children,
+                                droppedElement,
+                            ],
+                        };
+
+                        props.onPatch(patch, {});
                     }}
                 >
                     <Typography

@@ -18,6 +18,7 @@ import {TableWrapper} from '../../../components/table-wrapper/table-wrapper';
 import {filterItems} from '../../../utils/filter-items';
 import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
+import {PresetColor} from 'react-color/lib/components/sketch/Sketch';
 
 const columns: Array<GridColDef<ListApplication>> = [
     {
@@ -210,7 +211,7 @@ export function ThemeEditPage(): JSX.Element {
                                                 search={searchRelatedApplication}
                                                 searchPlaceholder="Formular suchen"
                                                 onSearchChange={setSearchRelatedApplication}
-                                                actions={[]}
+                                                smallTitle={true}
                                             />
                                         }
                                     </>
@@ -371,6 +372,207 @@ export function ThemeEditPage(): JSX.Element {
     );
 }
 
+const colors: PresetColor[] = [
+    {
+        title: 'Standard-Blau',
+        color: '#253e63',
+    },
+    {
+        title: 'Standard-Blau (Dunkel)',
+        color: '#142638',
+    },
+    {
+        title: 'Standard-Gelb',
+        color: '#ffd481',
+    },
+    {
+        title: 'Standard-Fehler',
+        color: '#BF261D',
+    },
+    {
+        title: 'Standard-Warnung',
+        color: '#D18D23',
+    },
+    {
+        title: 'Standard-Info',
+        color: '#1D7C9C',
+    },
+    {
+        title: 'Standard-Erfolg',
+        color: '#449456',
+    },
+
+
+    {
+        title: 'Rot',
+        color: '#f44336',
+    },
+    {
+        title: 'Rot (Dunkel)',
+        color: '#aa2e25',
+    },
+    {
+        title: 'Rot (Akzentuiert)',
+        color: '#ff1744',
+    },
+
+    {
+        title: 'Pink',
+        color: '#e91e63',
+    },
+    {
+        title: 'Pink (Dunkel)',
+        color: '#a31545',
+    },
+    {
+        title: 'Pink (Akzentuiert)',
+        color: '#f50057',
+    },
+
+    {
+        title: 'Flieder',
+        color: '#9c27b0',
+    },
+    {
+        title: 'Flieder (Dunkel)',
+        color: '#6d1b7b',
+    },
+    {
+        title: 'Flieder (Akzentuiert)',
+        color: '#d500f9',
+    },
+
+    {
+        title: 'Violett',
+        color: '#673ab7',
+    },
+    {
+        title: 'Violett (Dunkel)',
+        color: '#482880',
+    },
+    {
+        title: 'Violett (Akzentuiert)',
+        color: '#651fff',
+    },
+
+    {
+        title: 'Indigo',
+        color: '#3f51b5',
+    },
+    {
+        title: 'Indigo (Dunkel)',
+        color: '#2c387e',
+    },
+    {
+        title: 'Indigo (Akzentuiert)',
+        color: '#3d5afe',
+    },
+
+    {
+        title: 'Blau',
+        color: '#2196f3',
+    },
+    {
+        title: 'Blau (Dunkel)',
+        color: '#1769aa',
+    },
+    {
+        title: 'Blau (Akzentuiert)',
+        color: '#2979ff',
+    },
+
+    {
+        title: 'Cyan',
+        color: '#00bcd4',
+    },
+    {
+        title: 'Cyan (Dunkel)',
+        color: '#008394',
+    },
+    {
+        title: 'Cyan (Akzentuiert)',
+        color: '#00e5ff',
+    },
+
+    {
+        title: 'Blaugrün',
+        color: '#009688',
+    },
+    {
+        title: 'Blaugrün (Dunkel)',
+        color: '#00695f',
+    },
+    {
+        title: 'Blaugrün (Akzentuiert)',
+        color: '#1de9b6',
+    },
+
+    {
+        title: 'Grün',
+        color: '#4caf50',
+    },
+    {
+        title: 'Grün (Dunkel)',
+        color: '#357a38',
+    },
+    {
+        title: 'Grün (Akzentuiert)',
+        color: '#00e676',
+    },
+
+    {
+        title: 'Limette',
+        color: '#cddc39',
+    },
+    {
+        title: 'Limette (Dunkel)',
+        color: '#8f9a27',
+    },
+    {
+        title: 'Limette (Akzentuiert)',
+        color: '#c6ff00',
+    },
+
+    {
+        title: 'Gelb',
+        color: '#ffeb3b',
+    },
+    {
+        title: 'Gelb (Dunkel)',
+        color: '#b2a429',
+    },
+    {
+        title: 'Gelb (Akzentuiert)',
+        color: '#ffea00',
+    },
+
+    {
+        title: 'Bernstein',
+        color: '#ffc107',
+    },
+    {
+        title: 'Bernstein (Dunkel)',
+        color: '#b28704',
+    },
+    {
+        title: 'Bernstein (Akzentuiert)',
+        color: '#ffc400',
+    },
+
+    {
+        title: 'Orange',
+        color: '#ff5722',
+    },
+    {
+        title: 'Orange (Dunkel)',
+        color: '#b23c17',
+    },
+    {
+        title: 'Orange (Dunkel)',
+        color: '#ff3d00',
+    },
+];
+
 function ColorPicker({
                          label,
                          value,
@@ -419,18 +621,15 @@ function ColorPicker({
                 }}
                 disableAlpha={true}
                 width="256px"
-                presetColors={[
-                    '#113a8d',
-                    '#d73234',
-                    '#60865e',
-                    '#fdc022',
-                    '#bc457c',
-                    '#2e3d45',
-                    '#BF261D',
-                    '#D18D23',
-                    '#1D7C9C',
-                    '#449456',
-                ]}
+                styles={{
+                    default: {
+                        picker: {
+                            boxShadow: 'none',
+                            border: '1px solid #ccc',
+                        },
+                    },
+                }}
+                presetColors={colors}
             />
         </Grid>
     );

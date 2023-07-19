@@ -17,6 +17,7 @@ export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithCh
         onSearchChange,
         actions,
         hint,
+        smallTitle,
 
         ...pageWrapperProps
     } = props;
@@ -33,6 +34,7 @@ export function TablePageWrapper<T extends GridValidRowModel>(props: PropsWithCh
                 onSearchChange={onSearchChange}
                 actions={actions}
                 hint={hint}
+                smallTitle={smallTitle}
             >
                 {children}
             </TableWrapper>

@@ -127,6 +127,9 @@ public class ApplicationController {
         application.setRoot(newApp.getRoot());
         application.setSubmissionDeletionWeeks(newApp.getSubmissionDeletionWeeks());
         application.setCustomerAccessHours(newApp.getCustomerAccessHours());
+        application.setOpenSubmissions(0);
+        application.setInProgressSubmissions(0);
+        application.setTotalSubmissions(0);
 
         if (newApp.getDestination() != null) {
             destinationRepository

@@ -20,20 +20,20 @@ import {resetUserInput} from '../../slices/customer-input-slice';
 import {resetErrors} from '../../slices/customer-input-errors-slice';
 import {resetStepper} from '../../slices/stepper-slice';
 import {clearAppModel} from '../../slices/app-slice';
+import {AlertComponent} from '../../components/alert/alert-component';
 
-export function ListPage() {
+export function ListPage(): JSX.Element {
     const dispatch = useAppDispatch();
     const [failedToLoad, setFailedToLoad] = useState(false);
     const [applications, setApplications] = useState<PublicListApplication[]>();
     const [search, setSearch] = useState('');
 
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const systemTheme = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     useEffect(() => {
         ApplicationService.listPublic()
             .then((apps) => {
-                setApplications(apps.sort());
+                setApplications(apps.sort((a, b) => b.updated.localeCompare(a.updated)));
             })
             .catch((err) => {
                 console.error(err);
@@ -78,32 +78,48 @@ export function ListPage() {
                             py: 4,
                         }}
                     >
-                        <ListHeader
-                            title="Unsere Formulare"
-                            search={search}
-                            onSearchChange={setSearch}
-                            searchPlaceholder="Formular suchen..."
-                            actions={[]}
-                        />
+                        {
+                            filteredApplications.length === 0 &&
+                            <AlertComponent
+                                color="info"
+                                title="Noch keine Formulare veröffentlicht"
+                            >
+                                Es wurden noch keine Formulare veröffentlicht.
+                                Schauen Sie einfach später wieder vorbei.
+                            </AlertComponent>
+                        }
 
-                        <Box
-                            sx={{
-                                mt: 3,
-                                mb: 5,
-                            }}
-                        >
-                            <List>
-                                {
-                                    filteredApplications.map((app) => (
-                                        <ApplicationListItemPublic
-                                            key={app.slug + app.version}
-                                            application={app}
-                                        />
-                                    ))
-                                    // TODO: Empty state and cleaning
-                                }
-                            </List>
-                        </Box>
+                        {
+                            filteredApplications.length > 0 &&
+                            <>
+                                <ListHeader
+                                    title="Unsere Formulare"
+                                    search={search}
+                                    onSearchChange={setSearch}
+                                    searchPlaceholder="Formular suchen..."
+                                    actions={[]}
+                                />
+
+                                <Box
+                                    sx={{
+                                        mt: 3,
+                                        mb: 5,
+                                    }}
+                                >
+                                    <List>
+                                        {
+                                            filteredApplications.map((app) => (
+                                                <ApplicationListItemPublic
+                                                    key={app.slug + app.version}
+                                                    application={app}
+                                                />
+                                            ))
+                                            // TODO: Empty state and cleaning
+                                        }
+                                    </List>
+                                </Box>
+                            </>
+                        }
                     </Container>
                 </Box>
 

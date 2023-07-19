@@ -63,42 +63,42 @@ public class SubmissionController {
         if (assignee != null) {
             if (includeArchived && includeTest) {
                 submissions = submissionRepository
-                        .findAllByApplicationIdAndAssigneeId(applicationId, assignee);
+                        .findAllByApplicationIdAndAssigneeIdOrderByCreatedDesc(applicationId, assignee);
             }
 
             else if (includeArchived) {
                 submissions = submissionRepository
-                        .findAllByApplicationIdAndAssigneeIdAndIsTestSubmissionFalse(applicationId, assignee);
+                        .findAllByApplicationIdAndAssigneeIdAndIsTestSubmissionFalseOrderByCreatedDesc(applicationId, assignee);
             }
 
             else if (includeTest) {
                 submissions = submissionRepository
-                        .findAllByApplicationIdAndAssigneeIdAndArchivedIsNull(applicationId, assignee);
+                        .findAllByApplicationIdAndAssigneeIdAndArchivedIsNullOrderByCreatedDesc(applicationId, assignee);
             }
 
             else {
                 submissions = submissionRepository
-                        .findAllByApplicationIdAndAssigneeIdAndArchivedIsNullAndIsTestSubmissionFalse(applicationId, assignee);
+                        .findAllByApplicationIdAndAssigneeIdAndArchivedIsNullAndIsTestSubmissionFalseOrderByCreatedDesc(applicationId, assignee);
             }
         } else {
             if (includeArchived && includeTest) {
                 submissions = submissionRepository
-                        .findAllByApplicationId(applicationId);
+                        .findAllByApplicationIdOrderByCreatedDesc(applicationId);
             }
 
             else if (includeArchived) {
                 submissions = submissionRepository
-                        .findAllByApplicationIdAndIsTestSubmissionFalse(applicationId);
+                        .findAllByApplicationIdAndIsTestSubmissionFalseOrderByCreatedDesc(applicationId);
             }
 
             else if (includeTest) {
                 submissions = submissionRepository
-                        .findAllByApplicationIdAndArchivedIsNull(applicationId);
+                        .findAllByApplicationIdAndArchivedIsNullOrderByCreatedDesc(applicationId);
             }
 
             else {
                 submissions = submissionRepository
-                        .findAllByApplicationIdAndArchivedIsNullAndIsTestSubmissionFalse(applicationId);
+                        .findAllByApplicationIdAndArchivedIsNullAndIsTestSubmissionFalseOrderByCreatedDesc(applicationId);
             }
         }
 

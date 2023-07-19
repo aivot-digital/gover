@@ -1,29 +1,29 @@
 package de.aivot.GoverBackend.models.dtos;
 
+import de.aivot.GoverBackend.models.entities.Department;
 import de.aivot.GoverBackend.models.entities.DepartmentMembership;
 
 
-public class DepartmentMembershipDto extends DepartmentMembershipBaseDto {
+public class DepartmentMembershipWithDepartmentDto extends DepartmentMembershipBaseDto {
 
-    private Integer department;
+    private Department department;
 
     private Integer user;
 
-
-    public DepartmentMembershipDto(DepartmentMembership departmentMembership) {
+    public DepartmentMembershipWithDepartmentDto(DepartmentMembership departmentMembership) {
         super(departmentMembership);
 
-        department = departmentMembership.getDepartment().getId();
+        department = departmentMembership.getDepartment();
         user = departmentMembership.getUser().getId();
     }
 
     // region Getters & Setters
 
-    public Integer getDepartment() {
+    public Department getDepartment() {
         return department;
     }
 
-    public void setDepartment(Integer department) {
+    public void setDepartment(Department department) {
         this.department = department;
     }
 

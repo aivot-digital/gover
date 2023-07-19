@@ -15,6 +15,8 @@ import {ElementTree} from '../../../components/element-tree/element-tree';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import {PublishPresetDialog} from '../../../dialogs/publish-preset-dialog/publish-preset-dialog';
+import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
 export function PresetEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
@@ -24,6 +26,7 @@ export function PresetEditPage(): JSX.Element {
     const [preset, setPreset] = useState<Preset>();
     const [failedToLoad, setFailedToLoad] = useState<boolean>();
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
+    const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     useEffect(() => {
         if (params.id != null) {
@@ -90,13 +93,23 @@ export function PresetEditPage(): JSX.Element {
                 <AppToolbar
                     title={preset.root.name ?? ''}
                     noPlaceholder={true}
-                    actions={[{
-                        icon: <DeleteForeverOutlinedIcon/>,
-                        tooltip: 'Vorlage löschen',
-                        onClick: () => {
-                            setConfirmDelete(() => handleDelete);
+                    actions={[
+                        {
+                            icon: <PublishOutlinedIcon/>,
+                            tooltip: 'Vorlage veröffentlichen',
+                            label: 'Veröffentlichen',
+                            onClick: () => {
+                                setShowPublishDialog(true);
+                            },
                         },
-                    }]}
+                        {
+                            icon: <DeleteForeverOutlinedIcon/>,
+                            tooltip: 'Vorlage löschen',
+                            onClick: () => {
+                                setConfirmDelete(() => handleDelete);
+                            },
+                        },
+                    ]}
                 />
 
                 <Grid
@@ -158,6 +171,13 @@ export function PresetEditPage(): JSX.Element {
                     Sind Sie sicher, dass Sie die Vorlage <strong>{preset.root.name}</strong> wirklich löschen wollen?
                     Bitte beachten Sie, dass dies <u>nicht rückgängig</u> gemacht werden kann!
                 </ConfirmDialog>
+
+                <PublishPresetDialog
+                    preset={showPublishDialog ? preset : undefined}
+                    onClose={() => {
+                        setShowPublishDialog(false);
+                    }}
+                />
             </ThemeProvider>
         );
     }

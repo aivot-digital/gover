@@ -1,14 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import {createBrowserRouter, RouterProvider} from 'react-router-dom';
+import {createHashRouter, RouterProvider} from 'react-router-dom';
 import {logout, refreshMemberships, refreshUser, selectUser} from '../slices/user-slice';
-import {fetchSystemConfig, selectSystemConfigValue} from '../slices/system-config-slice';
+import {fetchPublicSystemConfig, fetchSystemConfig, selectSystemConfigValue} from '../slices/system-config-slice';
 import {Alert, Backdrop, CircularProgress, Snackbar, type Theme as MuiTheme, ThemeProvider, Typography} from '@mui/material';
 import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {resetSnackbar} from '../slices/snackbar-slice';
 import {InfoDialog} from '../dialogs/info-dialog/info-dialog';
-import {isAnonymousUser, isInvalidUser} from '../models/entities/user';
+import {isAnonymousUser} from '../models/entities/user';
 import {staffAppRoutes} from './staff-app-routes';
 import {Login} from '../pages/staff-pages/login/login';
 import {SystemConfigKeys} from '../data/system-config-keys';
@@ -16,7 +16,7 @@ import {type Theme} from '../models/entities/theme';
 import {isStringNotNullOrEmpty} from '../utils/string-utils';
 import {ThemesService} from '../services/themes-service';
 
-const router = createBrowserRouter(
+const router = createHashRouter(
     Object.keys(staffAppRoutes).map((key) => staffAppRoutes[key]),
 );
 
@@ -48,19 +48,22 @@ function StaffApp(): JSX.Element {
                 }
             }
 
-            if (response.status === 401 && user != null && !isAnonymousUser(user) && !isInvalidUser(user)) {
+            if (response.status === 401) {
+                console.log('Unauthorized response received. Logging out.');
                 dispatch(logout());
             }
 
             return response;
         };
-    }, [dispatch]);
+    }, []);
 
     useEffect(() => {
         if (themeId != null && isStringNotNullOrEmpty(themeId)) {
-            ThemesService
-                .retrieve(parseInt(themeId))
-                .then(setTheme);
+            if (theme == null || theme.id !== parseInt(themeId)) {
+                ThemesService
+                    .retrieve(parseInt(themeId))
+                    .then(setTheme);
+            }
         } else {
             setTheme(undefined);
         }
@@ -74,11 +77,15 @@ function StaffApp(): JSX.Element {
 
 
     useEffect(() => {
-        dispatch(fetchSystemConfig());
+        if (user != null && !isAnonymousUser(user)) {
+            dispatch(fetchSystemConfig());
+        } else {
+            dispatch(fetchPublicSystemConfig());
+        }
     }, [user]);
 
     useEffect(() => {
-        if (user != null && !isAnonymousUser(user) && !isInvalidUser(user)) {
+        if (user != null && !isAnonymousUser(user)) {
             dispatch(refreshMemberships(user));
         }
     }, [user]);
@@ -110,7 +117,7 @@ function StaffApp(): JSX.Element {
         );
     }
 
-    if (isAnonymousUser(user) || isInvalidUser(user)) {
+    if (isAnonymousUser(user)) {
         return (
             <ThemeProvider theme={createDefaultAppTheme}>
                 <Login/>

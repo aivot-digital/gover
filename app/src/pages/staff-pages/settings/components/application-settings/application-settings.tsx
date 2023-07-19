@@ -6,7 +6,7 @@ import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
 import {SystemConfigKeys, SystemConfigPublic} from '../../../../../data/system-config-keys';
-import {showErrorSnackbar} from '../../../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
 import {shallowEquals} from '../../../../../utils/equality-utils';
 import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
 import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
@@ -20,7 +20,7 @@ export function ApplicationSettings(): JSX.Element {
 
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
 
-    const hasChanged = editedConfig != null && !shallowEquals(config, editedConfig);
+    const hasChanged = editedConfig != null && Object.keys(editedConfig).length > 0 && !shallowEquals(config, editedConfig);
 
     useEffect(() => {
         ThemesService.list()
@@ -34,7 +34,7 @@ export function ApplicationSettings(): JSX.Element {
                 console.error(err);
                 dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
             });
-    });
+    }, []);
 
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
@@ -54,6 +54,7 @@ export function ApplicationSettings(): JSX.Element {
             Promise.all(updatePromises)
                 .then(() => {
                     setEditedConfig({});
+                    dispatch(showSuccessSnackbar('Konfiguration erfolgreich gespeichert'));
                     return dispatch(fetchSystemConfig());
                 })
                 .catch((err) => {
