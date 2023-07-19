@@ -1,8 +1,9 @@
 import {DialogProps} from "@mui/material/Dialog/Dialog";
 import {Box, Dialog, DialogContent, DialogTitle, Typography, useTheme} from "@mui/material";
 import {DialogTitleWithClose} from "../../components/static-components/dialog-title-with-close/dialog-title-with-close";
-import {faCheckCircle, faExclamationCircle, faInfoCircle} from "@fortawesome/pro-light-svg-icons";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 interface InfoDialogProps {
     title: string;
@@ -13,15 +14,14 @@ interface InfoDialogProps {
 const severityIconMap: {
     [key: string]: any;
 } = {
-    'success': faCheckCircle,
-    'error': faExclamationCircle,
-    'warning': faInfoCircle,
-    'info': faInfoCircle,
+    'success': CheckCircleOutlinedIcon,
+    'error': ErrorOutlineOutlinedIcon,
+    'warning': InfoOutlinedIcon,
+    'info': InfoOutlinedIcon,
 };
 
 export function InfoDialog(props: InfoDialogProps & DialogProps) {
     const theme = useTheme();
-
     const {
         title,
         severity,
@@ -29,7 +29,7 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
         ...dialogProps
     } = props;
 
-    const icon = severityIconMap[severity];
+    const Icon = severityIconMap[severity];
     let color: string = theme.palette.primary.main;
     switch (severity) {
         case 'success':
@@ -60,9 +60,8 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
                         display: 'flex',
                         alignItems: 'center',
                     }}>
-                        <FontAwesomeIcon
-                            icon={icon}
-                            color={color}
+                        <Icon
+                            sx={{color: color}}
                         />
 
                         <Typography
@@ -77,9 +76,8 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
             {
                 onClose == null &&
                 <DialogTitle>
-                    <FontAwesomeIcon
-                        icon={icon}
-                        color={color}
+                    <Icon
+                        sx={{color: color}}
                     />
 
                     <Typography>

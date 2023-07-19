@@ -1,12 +1,12 @@
 import React, {useRef, useState} from 'react';
 import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faCloudArrowUp, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {FileUploadElement, FileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
 import {useAppDispatch} from "../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../slices/snackbar-slice";
 import {humanizeFileSize, humanizeNumber, pluralize} from "../../utils/huminization-utils";
 import {BaseViewProps} from '../../views/base-view';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 
 export function FileUploadView({
                                    element,
@@ -127,18 +127,16 @@ export function FileUploadView({
                                                     <IconButton
                                                         onClick={() => handleRemove(file)}
                                                     >
-                                                        <FontAwesomeIcon
-                                                            size="xs"
-                                                            icon={faTrashCanXmark}
+                                                        <DeleteForeverOutlinedIcon
+                                                            fontSize={"small"}
                                                         />
                                                     </IconButton> :
                                                     <Button
                                                         variant="outlined"
                                                         onClick={() => handleRemove(file)}
                                                         startIcon={
-                                                            <FontAwesomeIcon
-                                                                size="xs"
-                                                                icon={faTrashCanXmark}
+                                                            <DeleteForeverOutlinedIcon
+                                                                fontSize={"small"}
                                                             />
                                                         }
                                                     >
@@ -203,10 +201,9 @@ export function FileUploadView({
                         }}
                     >
 
-                        <FontAwesomeIcon
-                            icon={faCloudArrowUp}
-                            size="xl"
-                            color={fileMaximumReached ? theme.palette.grey["500"] : theme.palette.grey["700"]}
+                        <BackupOutlinedIcon
+                            fontSize="large"
+                            sx={{color: fileMaximumReached ? theme.palette.grey["500"] : theme.palette.grey["700"]}}
                         />
 
                         <Typography

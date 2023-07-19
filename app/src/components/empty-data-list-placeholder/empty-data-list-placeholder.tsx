@@ -1,8 +1,7 @@
 import {Box, Button, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faPlus} from '@fortawesome/pro-light-svg-icons';
 import React from 'react';
 import {EmptyDataListPlaceholderProps} from './empty-data-list-placeholder-props';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 export function EmptyDataListPlaceholder(props: EmptyDataListPlaceholderProps) {
     return (
@@ -12,7 +11,7 @@ export function EmptyDataListPlaceholder(props: EmptyDataListPlaceholderProps) {
             </Typography>
             <Button
                 sx={{mt: 2}}
-                endIcon={<FontAwesomeIcon icon={faPlus}/>}
+                endIcon={<AddOutlinedIcon/>}
                 variant="text"
                 onClick={props.onAdd}
             >

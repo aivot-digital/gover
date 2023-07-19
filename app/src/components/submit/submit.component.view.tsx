@@ -3,9 +3,6 @@ import {type SubmitStepElement} from '../../models/elements/steps/submit-step-el
 import {Preamble} from '../static-components/preamble/preamble';
 import {Box, Button, CircularProgress, FormHelperText, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../static-components/fading-paper/fading-paper';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faFileArrowUp} from '@fortawesome/pro-light-svg-icons';
-
 import {selectCustomerInputValue, updateUserInput} from '../../slices/customer-input-slice';
 import {type Department} from '../../models/entities/department';
 import {DepartmentsService} from '../../services/departments-service';
@@ -17,6 +14,7 @@ import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import GppGoodTwoToneIcon from '@mui/icons-material/GppGoodTwoTone';
 import SmartToyTwoToneIcon from '@mui/icons-material/SmartToyTwoTone';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
 export const SubmitHumanKey = '__human__';
 
@@ -179,11 +177,9 @@ export function SubmitComponentView({
                                             disableGutters
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
-                                                <FontAwesomeIcon
-                                                    icon={faFileArrowUp}
-                                                    fixedWidth
-                                                    size={'lg'}
-                                                    color={theme.palette.primary.main}
+                                                <UploadFileOutlinedIcon
+                                                    fontSize={'large'}
+                                                    sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>
                                             <ListItemText>

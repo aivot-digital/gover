@@ -14,15 +14,17 @@ const columns: Array<GridColDef<Destination>> = [
     {
         field: 'type',
         headerName: 'Typ',
-        renderCell: (params) => (
-            <>
-                <FontAwesomeIcon
-                    icon={DestinationTypeIcons[params.row.type]}
-                    style={{marginRight: '1em'}}
-                />
-                {params.row.type}
-            </>
-        ),
+        renderCell: (params) => {
+            const Icon = DestinationTypeIcons[params.row.type];
+            return (
+                <>
+                    <Icon
+                        sx={{marginRight: '1em'}}
+                    />
+                    {params.row.type}
+                </>
+            )
+        },
         flex: 1,
     },
     {

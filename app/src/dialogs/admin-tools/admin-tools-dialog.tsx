@@ -7,9 +7,8 @@ import {DialogTitleWithClose} from '../../components/static-components/dialog-ti
 import {AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedApplication} from "../../slices/app-slice";
 import {useAppSelector} from "../../hooks/use-app-selector";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFileExport} from '@fortawesome/pro-light-svg-icons';
 import {downloadConfigFile} from "../../utils/download-utils";
+import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
 
 const switches: {
     label: string;
@@ -99,7 +98,7 @@ export function AdminToolsDialog({
                                 downloadConfigFile(application);
                             }}
                             endIcon={
-                                <FontAwesomeIcon icon={faFileExport}/>
+                                <ImportExportOutlinedIcon/>
                             }
                         >
                             Formular als .gov-Datei exportieren

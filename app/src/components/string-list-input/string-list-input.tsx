@@ -1,8 +1,9 @@
 import {Alert, Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Tooltip, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faAdd, faArrowRightArrowLeft, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 interface StringListInputProps {
     label: string;
@@ -52,9 +53,7 @@ export function StringListInput({
                             size="small"
                             onClick={() => setRawMode(!rawMode)}
                         >
-                            <FontAwesomeIcon
-                                icon={faArrowRightArrowLeft}
-                            />
+                            <SwapHorizOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
                 }
@@ -72,9 +71,7 @@ export function StringListInput({
                             ml: 'auto',
                         }}
                         startIcon={
-                            <FontAwesomeIcon
-                                icon={faAdd}
-                            />
+                            <AddOutlinedIcon/>
                         }
                         onClick={() => onChange([...(value ?? []), ''])}
                     >
@@ -141,9 +138,7 @@ export function StringListInput({
                                                 <Button
                                                     color="error"
                                                     startIcon={
-                                                        <FontAwesomeIcon
-                                                            icon={faTrashCanXmark}
-                                                        />
+                                                        <DeleteForeverOutlinedIcon/>
                                                     }
                                                     onClick={() => {
                                                         const updatedValue = [...value];

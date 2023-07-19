@@ -1,8 +1,6 @@
 import {Box, Button, Checkbox, Divider, FormControl, FormControlLabel, FormHelperText, Grid, TextField, Typography, useTheme} from '@mui/material';
 import Rating, {type IconContainerProps} from '@mui/material/Rating';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {faEnvelope, faFaceFrown, faFaceFrownSlight, faFaceLaugh, faFaceMeh, faFaceSmile, faFilePdf} from '@fortawesome/pro-light-svg-icons';
 import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
 import {useSelector} from 'react-redux';
@@ -12,6 +10,13 @@ import {validateEmail} from '../../../utils/validate-email';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {type AnyElement} from '../../../models/elements/any-element';
 import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
+import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined';
+import SentimentNeutralOutlinedIcon from '@mui/icons-material/SentimentNeutralOutlined';
+import SentimentSatisfiedAltOutlinedIcon from '@mui/icons-material/SentimentSatisfiedAltOutlined';
+import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -36,10 +41,8 @@ export function Submitted({
         label: string;
     }> = {
         1: {
-            icon: <FontAwesomeIcon
-                icon={faFaceFrown}
-                fixedWidth
-                style={{
+            icon: <MoodBadOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -47,10 +50,8 @@ export function Submitted({
             label: 'Sehr Unzufrieden',
         },
         2: {
-            icon: <FontAwesomeIcon
-                icon={faFaceFrownSlight}
-                fixedWidth
-                style={{
+            icon: <SentimentDissatisfiedOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -58,10 +59,8 @@ export function Submitted({
             label: 'Unzufrieden',
         },
         3: {
-            icon: <FontAwesomeIcon
-                icon={faFaceMeh}
-                fixedWidth
-                style={{
+            icon: <SentimentNeutralOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -69,10 +68,8 @@ export function Submitted({
             label: 'Neutral',
         },
         4: {
-            icon: <FontAwesomeIcon
-                icon={faFaceSmile}
-                fixedWidth
-                style={{
+            icon: <SentimentSatisfiedAltOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -80,10 +77,8 @@ export function Submitted({
             label: 'Zufrieden',
         },
         5: {
-            icon: <FontAwesomeIcon
-                icon={faFaceLaugh}
-                fixedWidth
-                style={{
+            icon: <EmojiEmotionsOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -244,9 +239,8 @@ export function Submitted({
 
                     <Button
                         variant="contained"
-                        startIcon={<FontAwesomeIcon
-                            icon={faFilePdf}
-                            style={{marginTop: '-2px'}}
+                        startIcon={<PictureAsPdfOutlinedIcon
+                            sx={{marginTop: '-2px'}}
                         />}
                         component="a"
                         target="_blank"
@@ -311,9 +305,8 @@ export function Submitted({
                     <Button
                         sx={{mt: 4}}
                         variant="contained"
-                        startIcon={<FontAwesomeIcon
-                            icon={faEnvelope}
-                            style={{marginTop: '-2px'}}
+                        startIcon={<EmailOutlinedIcon
+                            sx={{marginTop: '-2px'}}
                         />}
                         onClick={sendApplicationCopyMail}
                         size={'large'}

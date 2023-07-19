@@ -1,8 +1,6 @@
 import {type AnyElement} from '../../../../../../../models/elements/any-element';
 import {type Condition} from '../../../../../../../models/functions/conditions/condition';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faRefresh, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {type ConditionOperator, ConditionOperatorIsUnary, ConditionOperatorLabel, getConditionOperatorHint} from '../../../../../../../data/condition-operator';
 import React from 'react';
 import {ElementType} from '../../../../../../../data/element-type/element-type';
@@ -11,6 +9,8 @@ import {SelectFieldComponent} from '../../../../../../select-field/select-field-
 import {generateComponentTitle} from '../../../../../../../utils/generate-component-title';
 import {TextFieldComponent} from '../../../../../../text-field/text-field-component';
 import {NumberFieldComponent} from '../../../../../../number-field/number-field-component';
+import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 interface CodeTabConditionProps {
     allElements: AnyElement[];
@@ -66,9 +66,8 @@ export function CodeTabCondition({
                         color="error"
                         onClick={onDelete}
                     >
-                        <FontAwesomeIcon
-                            icon={faTrashCanXmark}
-                            size="sm"
+                        <DeleteForeverOutlinedIcon
+                            fontSize="small"
                         />
                     </IconButton>
                 }
@@ -263,9 +262,8 @@ export function CodeTabCondition({
                                                     });
                                                 }}
                                             >
-                                                <FontAwesomeIcon
-                                                    size="sm"
-                                                    icon={faRefresh}
+                                                <CachedOutlinedIcon
+                                                    fontSize={"small"}
                                                 />
                                             </IconButton>
                                         </Tooltip>

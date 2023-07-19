@@ -1,12 +1,11 @@
 import Editor from '@monaco-editor/react';
 import {Box, Button, FormControlLabel, Switch} from '@mui/material';
 import React, {type ChangeEvent, useCallback, useRef, useState} from 'react';
-import {faSave} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {type StructureTabProps} from './structure-tab-props';
 import {type AnyElement} from '../../../../../../models/elements/any-element';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../../../slices/snackbar-slice';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 
 export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -70,10 +69,8 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
                         label="Struktur manuell überschreiben"
                     />
                     <Button
-                        startIcon={<FontAwesomeIcon
-                            icon={faSave}
-                            style={{marginTop: '-2px'}}
-                            fixedWidth
+                        startIcon={<SaveOutlinedIcon
+                            sx={{marginTop: '-2px'}}
                         />}
                         disabled={!editable}
                         variant="outlined"

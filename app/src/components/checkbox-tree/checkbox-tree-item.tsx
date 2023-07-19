@@ -1,10 +1,10 @@
 import {CheckboxTreeOptionItem} from './checkbox-tree-option-item';
 import React, {useState} from 'react';
 import {Box, Checkbox, FormControlLabel, IconButton} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faChevronDown, faChevronUp} from '@fortawesome/pro-light-svg-icons';
 import {CheckboxTree} from './checkbox-tree';
 import {CheckboxTreeOption} from './checkbox-tree-option';
+import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
+import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 
 function getChildValues(treeOption: CheckboxTreeOption): string[] {
     const vals: string[] = [];
@@ -63,10 +63,16 @@ export function CheckboxTreeItem({
                         sx={{ml: 'auto'}}
                         onClick={() => setIsExtended(!isExtended)}
                     >
-                        <FontAwesomeIcon
-                            size="xs"
-                            icon={isExtended ? faChevronUp : faChevronDown}
-                        />
+                        {
+                            isExtended ?
+                                <ExpandLessOutlinedIcon
+                                    fontSize="small"
+                                />
+                                :
+                                <ExpandMoreOutlinedIcon
+                                    fontSize="small"
+                                />
+                        }
                     </IconButton>
                 }
             </Box>

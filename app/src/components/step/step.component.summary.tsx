@@ -37,7 +37,7 @@ export function StepComponentSummary({model}: BaseSummaryProps<StepElement, any>
                 variant="h6"
                 color="primary"
             >
-                <Icon sx={{marginRight: '6px'}}/>
+                <Icon sx={{marginRight: '8px', fontSize: '1rem', transform: 'scale(1.6) translateY(1px)'}}/>
                 &nbsp;
                 {
                     model.title ? model.title : 'Unbenannter Abschnitt'

@@ -2,8 +2,6 @@ import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Gr
 import {BoxLink} from '../../components/box-link/box-link';
 import React, {useEffect, useState} from 'react';
 import {styled} from '@mui/material/styles';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faChevronDown} from '@fortawesome/pro-light-svg-icons';
 import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import MuiAccordion, {type AccordionProps} from '@mui/material/Accordion';
 import MuiAccordionSummary, {type AccordionSummaryProps} from '@mui/material/AccordionSummary';
@@ -13,7 +11,7 @@ import {useSelector} from 'react-redux';
 import {DepartmentsService} from '../../services/departments-service';
 import {type HelpDialogProps} from './help-dialog-props';
 import {selectLoadedApplication} from '../../slices/app-slice';
-
+import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 
 export function HelpDialog(props: HelpDialogProps): JSX.Element {
     const application = useSelector(selectLoadedApplication);
@@ -99,7 +97,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                     </Box>
                     <Accordion sx={{mt: 4}}>
                         <AccordionSummary
-                            expandIcon={<FontAwesomeIcon icon={faChevronDown}/>}
+                            expandIcon={<ExpandMoreOutlinedIcon/>}
                             aria-controls="panel1a-content"
                             id="panel1a-header"
                         >
@@ -121,7 +119,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                     </Accordion>
                     <Accordion>
                         <AccordionSummary
-                            expandIcon={<FontAwesomeIcon icon={faChevronDown}/>}
+                            expandIcon={<ExpandMoreOutlinedIcon/>}
                             aria-controls="panel2a-content"
                             id="panel2a-header"
                         >
@@ -137,7 +135,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                     </Accordion>
                     <Accordion>
                         <AccordionSummary
-                            expandIcon={<FontAwesomeIcon icon={faChevronDown}/>}
+                            expandIcon={<ExpandMoreOutlinedIcon/>}
                             aria-controls="panel3a-content"
                             id="panel3a-header"
                         >
@@ -156,7 +154,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                     </Accordion>
                     <Accordion>
                         <AccordionSummary
-                            expandIcon={<FontAwesomeIcon icon={faChevronDown}/>}
+                            expandIcon={<ExpandMoreOutlinedIcon/>}
                             aria-controls="panel4a-content"
                             id="panel4a-header"
                         >
@@ -181,7 +179,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                     </Accordion>
                     <Accordion>
                         <AccordionSummary
-                            expandIcon={<FontAwesomeIcon icon={faChevronDown}/>}
+                            expandIcon={<ExpandMoreOutlinedIcon/>}
                             aria-controls="panel5a-content"
                             id="panel5a-header"
                         >
@@ -196,7 +194,7 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                     </Accordion>
                     <Accordion>
                         <AccordionSummary
-                            expandIcon={<FontAwesomeIcon icon={faChevronDown}/>}
+                            expandIcon={<ExpandMoreOutlinedIcon/>}
                             aria-controls="panel6a-content"
                             id="panel6a-header"
                         >

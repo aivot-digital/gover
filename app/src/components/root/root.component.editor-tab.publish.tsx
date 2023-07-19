@@ -1,7 +1,5 @@
 import React from 'react';
 import {Alert, AlertTitle, Button, Checkbox, Divider, List, ListItem, ListItemText, Tooltip, Typography} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faPaperPlane, faPauseCircle} from '@fortawesome/pro-light-svg-icons';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -14,6 +12,8 @@ import {UserRole} from '../../data/user-role';
 import {AlertComponent} from '../alert/alert-component';
 import {updateAppModel} from '../../slices/app-slice';
 import {Application} from '../../models/entities/application';
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
 
 export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -159,7 +159,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                         <Button
                             variant="outlined"
                             endIcon={
-                                <FontAwesomeIcon icon={faPauseCircle}/>
+                                <PauseCircleOutlineOutlinedIcon/>
                             }
                             color="warning"
                             onClick={() => {
@@ -221,7 +221,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                     <Button
                         variant="contained"
                         endIcon={
-                            <FontAwesomeIcon icon={faPaperPlane}/>
+                            <SendOutlinedIcon/>
                         }
                         onClick={() => {
                             dispatch(updateAppModel({

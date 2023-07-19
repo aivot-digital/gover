@@ -4,14 +4,13 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {DepartmentsService} from '../../services/departments-service';
 import {SelectFieldComponent} from '../select-field/select-field-component';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faClipboard} from '@fortawesome/pro-light-svg-icons';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {type SelectFieldComponentOption} from '../select-field/select-field-component-option';
 import {ThemesService} from '../../services/themes-service';
 import {Application} from '../../models/entities/application';
+import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -95,7 +94,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                                 });
                         }}
                     >
-                        <FontAwesomeIcon icon={faClipboard}/>
+                        <ContentPasteOutlinedIcon/>
                     </IconButton>
                 </Tooltip>
             </Paper>

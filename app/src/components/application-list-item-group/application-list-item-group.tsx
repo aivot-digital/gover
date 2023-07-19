@@ -2,9 +2,8 @@ import React, {useReducer} from 'react';
 import {Box, Button} from '@mui/material';
 import {type ApplicationListItemGroupProps} from './application-list-item-group-props';
 import {ApplicationListItem} from '../application-list-item/application-list-item';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faChevronDown, faChevronUp} from '@fortawesome/pro-light-svg-icons';
-
+import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
+import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 
 export function ApplicationListItemGroup({
                                              group,
@@ -55,9 +54,10 @@ export function ApplicationListItemGroup({
                             }}
                             size="small"
                             endIcon={
-                                <FontAwesomeIcon
-                                    icon={isCollapsed ? faChevronDown : faChevronUp}
-                                />
+                                isCollapsed ?
+                                    <ExpandMoreOutlinedIcon/>
+                                    :
+                                    <ExpandLessOutlinedIcon/>
                             }
                         >
                             Ältere Versionen {isCollapsed ? 'anzeigen' : 'ausblenden'}
