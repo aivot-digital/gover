@@ -35,7 +35,8 @@ export function ListHeader(props: ListHeaderProps): JSX.Element {
                     <HelpIconOutlined
                         sx={{
                             ml: 1,
-                            color: "#a6a6a6"
+                            color: '#a6a6a6',
+                            cursor: 'help'
                         }}
                     />
                 </HintTooltip>
