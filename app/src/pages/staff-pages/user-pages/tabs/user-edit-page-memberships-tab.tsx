@@ -6,6 +6,7 @@ import {UserRoleLabels} from '../../../../data/user-role';
 import {UsersService} from '../../../../services/users-service';
 import {Link, useNavigate} from 'react-router-dom';
 import {AlertComponent} from '../../../../components/alert/alert-component';
+import {User} from '../../../../models/entities/user';
 
 const columns: Array<GridColDef<DepartmentMembershipWithDepartmentDto>> = [
     {
@@ -23,7 +24,7 @@ const columns: Array<GridColDef<DepartmentMembershipWithDepartmentDto>> = [
 ];
 
 interface UserEditPageMembershipsTabProps {
-    user: number;
+    user: User;
 }
 
 export function UserEditPageMembershipsTab(props: UserEditPageMembershipsTabProps): JSX.Element {
@@ -34,9 +35,20 @@ export function UserEditPageMembershipsTab(props: UserEditPageMembershipsTabProp
 
     useEffect(() => {
         UsersService
-            .listMemberships(props.user)
+            .listMemberships(props.user.id)
             .then(setMemberships);
     }, []);
+
+    if (props.user.admin) {
+        return (
+            <AlertComponent
+                color="info"
+                title="Globale Administrator:in"
+            >
+                Diese Mitarbeiter:in ist globale Administrator:in und hat uneingeschränkten Zugriff auf alle Fachbereiche.
+            </AlertComponent>
+        );
+    }
 
     if (memberships.length === 0) {
         return (

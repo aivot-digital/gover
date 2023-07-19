@@ -28,7 +28,7 @@ export function Profile(): JSX.Element {
                     value={1}
                 />
                 <Tab
-                    label="Fachbereiche"
+                    label="Fachbereiche und Rollen"
                     value={2}
                 />
             </Tabs>

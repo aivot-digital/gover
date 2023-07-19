@@ -50,6 +50,17 @@ export function UserEditPageMembershipsTab(): JSX.Element {
         }
     }, [user]);
 
+    if (user?.admin === true) {
+        return (
+            <AlertComponent
+                color="info"
+                title="Globale Administrator:in"
+            >
+                Sie sind globale Administrator:in und haben uneingeschränkten Zugriff auf alle Fachbereiche.
+            </AlertComponent>
+        );
+    }
+
     if (memberships == null) {
         return (
             <Skeleton

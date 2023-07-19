@@ -162,7 +162,7 @@ export function UserEditPage(): JSX.Element {
                     [
                         {
                             label: 'Fachbereiche und Rollen',
-                            content: <UserEditPageMembershipsTab user={editedUser.id}/>,
+                            content: <UserEditPageMembershipsTab user={editedUser}/>,
                         },
                     ] :
                     undefined
