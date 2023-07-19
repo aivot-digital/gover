@@ -419,6 +419,14 @@ function ColorPicker({
                 }}
                 disableAlpha={true}
                 width="256px"
+                styles={{
+                    default: {
+                        picker: {
+                            boxShadow: 'none',
+                            border: '1px solid #ccc',
+                        },
+                    },
+                }}
                 presetColors={[
                     '#113a8d',
                     '#d73234',
