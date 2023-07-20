@@ -1,10 +1,10 @@
-import {GroupLayout} from "../models/elements/form/layout/group-layout";
-import {StoreListResponse} from "../models/entities/store-list-response";
-import {StoreListForm} from "../models/entities/store-list-form";
-import {StoreCreateForm} from "../models/entities/store-create-form";
-import {StoreListModule} from "../models/entities/store-list-module";
-import {StoreDetailModule} from "../models/entities/store-detail-module";
-import {StoreCreateModule} from "../models/entities/store-create-module";
+import {type GroupLayout} from '../models/elements/form/layout/group-layout';
+import {type StoreListResponse} from '../models/entities/store-list-response';
+import {type StoreListForm} from '../models/entities/store-list-form';
+import {type StoreCreateForm} from '../models/entities/store-create-form';
+import {type StoreListModule} from '../models/entities/store-list-module';
+import {type StoreDetailModule} from '../models/entities/store-detail-module';
+import {type StoreCreateModule} from '../models/entities/store-create-module';
 
 export const storeBaseUrl = 'https://store.gover.digital/api/';
 
@@ -12,13 +12,16 @@ class _GoverStoreService {
     async listForms(page: number, search?: string, key?: string): Promise<StoreListResponse<StoreListForm>> {
         const resp = await fetch(
             `${storeBaseUrl}forms/?page=${page}&size=20&search=${search ?? ''}`,
-            key != null ? {
-                headers: {
-                    Authorization: key,
-                },
-            } : undefined,
+            key != null ?
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': key,
+                    },
+                } :
+                undefined,
         );
-        return resp.json();
+        return await resp.json();
     }
 
     async publishForm(
@@ -31,33 +34,40 @@ class _GoverStoreService {
                 method: 'POST',
                 body: JSON.stringify(form),
                 headers: {
-                    Authorization: key,
+                    'Content-Type': 'application/json',
+                    'Authorization': key,
                 },
             },
         );
-        return resp.json();
+        return await resp.json();
     }
 
     async listModules(page: number, search?: string, key?: string): Promise<StoreListResponse<StoreListModule>> {
         const resp = await fetch(
             `${storeBaseUrl}modules/?page=${page}&size=999&search=${search ?? ''}`,
-            key != null ? {
-                headers: {
-                    Authorization: key,
-                },
-            } : undefined,
+            key != null ?
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': key,
+                    },
+                } :
+                undefined,
         );
-        return resp.json();
+        return await resp.json();
     }
 
     async fetchModule(id: string, key?: string): Promise<StoreDetailModule> {
         const resp = await fetch(
             `${storeBaseUrl}modules/${id}/`,
-            key != null ? {
-                headers: {
-                    Authorization: key,
-                },
-            } : undefined,
+            key != null ?
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': key,
+                    },
+                } :
+                undefined,
         );
         return await resp.json();
     }
@@ -65,11 +75,14 @@ class _GoverStoreService {
     async fetchModuleCode(id: string, version: string, key: string | undefined): Promise<GroupLayout> {
         const resp = await fetch(
             `${storeBaseUrl}modules/${id}/${version}/`,
-            key != null ? {
-                headers: {
-                    Authorization: key,
-                },
-            } : undefined,
+            key != null ?
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': key,
+                    },
+                } :
+                undefined,
         );
         return await resp.json();
     }
@@ -84,11 +97,12 @@ class _GoverStoreService {
                 method: 'POST',
                 body: JSON.stringify(module),
                 headers: {
-                    Authorization: key,
+                    'Content-Type': 'application/json',
+                    'Authorization': key,
                 },
             },
         );
-        return resp.json();
+        return await resp.json();
     }
 }
 
