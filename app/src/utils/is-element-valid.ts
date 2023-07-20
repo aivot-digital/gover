@@ -1,14 +1,14 @@
-import {Dispatch} from '@reduxjs/toolkit';
+import {type Dispatch} from '@reduxjs/toolkit';
 import {isElementVisible} from './is-element-visible';
-import {BaseValidator} from '../validators/base-validator';
+import {type BaseValidator} from '../validators/base-validator';
 import {addError} from '../slices/customer-input-errors-slice';
 import {ElementType} from '../data/element-type/element-type';
-import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
-import {AnyElement} from '../models/elements/any-element';
-import {Logger} from "../hooks/use-logging";
-import {generateComponentPatch} from "./generate-component-patch";
-import {isAnyElementWithChildren} from "../models/elements/any-element-with-children";
-import Validators from "../validators";
+import {type AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
+import {type AnyElement} from '../models/elements/any-element';
+import {type Logger} from '../hooks/use-logging';
+import {generateComponentPatch} from './generate-component-patch';
+import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
+import Validators from '../validators';
 
 export function isElementValid(
     $debug: Logger,
@@ -38,6 +38,9 @@ export function isElementValid(
     if (isAnyInputElement(comp)) {
         const validator: BaseValidator<AnyInputElement> | null = Validators[comp.type];
         if (validator != null) {
+            if (idPrefix != null) {
+                console.log(idPrefix);
+            }
             const error = validator.makeErrors(allElements, idPrefix, _comp.id, comp, userInput);
             if (error != null) {
                 isValid = false;
@@ -55,14 +58,14 @@ export function isElementValid(
             .map((child: AnyElement) => {
                 if (comp.type === ElementType.ReplicatingContainer) {
                     const values: string[] | null = userInput[id];
-                    return (values ?? []).map(val =>
+                    return (values ?? []).map((val) =>
                         isElementValid($debug, `${id}_${val}_`, allElements, dispatch, child, userInput),
-                    ).every(val => val);
+                    ).every((val) => val);
                 } else {
                     return isElementValid($debug, idPrefix, allElements, dispatch, child, userInput);
                 }
             })
-            .every(val => val);
+            .every((val) => val);
     }
 
     $debug.log(`Element ${comp.id} is ${isValid ? '' : 'in'}valid`);

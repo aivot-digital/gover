@@ -1,8 +1,8 @@
 import {BaseValidator} from './base-validator';
 import {isElementVisible} from '../utils/is-element-visible';
-import {AnyInputElement} from "../models/elements/form/input/any-input-element";
-import {evaluateFunction} from "../utils/evaluate-function";
-import {AnyElement} from "../models/elements/any-element";
+import {type AnyInputElement} from '../models/elements/form/input/any-input-element';
+import {evaluateFunction} from '../utils/evaluate-function';
+import {type AnyElement} from '../models/elements/any-element';
 
 export abstract class BaseInputElementValidator<T, M extends AnyInputElement> extends BaseValidator<M> {
     makeErrors(allElements: AnyElement[], idPrefix: string | undefined, id: string, comp: M, userInput: any): string | null {
@@ -11,7 +11,7 @@ export abstract class BaseInputElementValidator<T, M extends AnyInputElement> ex
             return null;
         }
 
-        const value: T | undefined = userInput[id]; // TODO: Compute value ?? comp.computeValue;
+        const value: T | undefined = userInput[idPrefix != null ? idPrefix + id : id]; // TODO: Compute value ?? comp.computeValue;
 
         if (comp.required && (value == null || this.checkEmpty(comp, value))) {
             return this.getEmptyErrorText(comp);
