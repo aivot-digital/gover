@@ -217,7 +217,7 @@ export function UserEditPage(): JSX.Element {
                         active: val,
                     });
                 }}
-                hint="Deaktivieren sie Benutzer:innen damit diese sich nicht mehr anmelden können."
+                hint="Deaktivieren Sie Benutzer:innen, damit diese sich nicht mehr anmelden können."
             />
 
             <Typography
