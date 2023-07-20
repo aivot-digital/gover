@@ -167,7 +167,7 @@ export function SubmissionEditPage(): JSX.Element {
                 })
                 .catch((err) => {
                     if (err.response?.status === 409) {
-                        dispatch(showErrorSnackbar('Der Antrag wurde bereits archiviert'));
+                        dispatch(showErrorSnackbar('Der Vorgang wurde bereits archiviert'));
                     } else {
                         console.error(err);
                         dispatch(showErrorSnackbar('Antrag konnte nicht gespeichert werden'));
@@ -194,14 +194,14 @@ export function SubmissionEditPage(): JSX.Element {
                         setOriginalSubmission(archivedSubmission);
                         setEditedSubmission(archivedSubmission);
                         setConfirmArchive(undefined);
-                        dispatch(showSuccessSnackbar('Antrag erfolgreich archiviert'));
+                        dispatch(showSuccessSnackbar('Vorgang erfolgreich archiviert'));
                     })
                     .catch((err) => {
                         if (err.response?.status === 409) {
-                            dispatch(showErrorSnackbar('Der Antrag wurde bereits archiviert'));
+                            dispatch(showErrorSnackbar('Der Vorgang wurde bereits archiviert'));
                         } else {
                             console.error(err);
-                            dispatch(showErrorSnackbar('Antrag konnte nicht archiviert werden'));
+                            dispatch(showErrorSnackbar('Vorgang konnte nicht archiviert werden'));
                         }
                     })
                     .finally(() => {
@@ -289,7 +289,7 @@ export function SubmissionEditPage(): JSX.Element {
                 [
                     {
                         icon: <FolderZipOutlinedIcon/>,
-                        tooltip: 'Antrag abschließen',
+                        tooltip: 'Vorgang abschließen',
                         onClick: handleArchive,
                     },
                 ] :
