@@ -115,6 +115,24 @@ export function ModuleInfoTab({
                         </a>
                     </Box>
 
+                    {
+                        module.datenfeld_id != null &&
+                        isStringNotNullOrEmpty(module.datenfeld_id) &&
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <a
+                                href={`https://fimportal.de/detail/D/${module.datenfeld_id}`}
+                                target="_blank"
+                            >
+                                Datenfeld {module.datenfeld_id}
+                            </a>
+                        </Box>
+                    }
+
                     <Divider sx={{my: 4}}>
                         Informationen
                     </Divider>
