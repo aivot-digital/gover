@@ -10,6 +10,9 @@ public class DepartmentMembershipWithUserDto extends DepartmentMembershipBaseDto
 
     private User user;
 
+    public DepartmentMembershipWithUserDto() {
+    }
+
     public DepartmentMembershipWithUserDto(DepartmentMembership departmentMembership) {
         super(departmentMembership);
 

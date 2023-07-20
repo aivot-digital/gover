@@ -9,6 +9,9 @@ public abstract class DepartmentMembershipBaseDto {
 
     private UserRole role;
 
+    public DepartmentMembershipBaseDto() {
+    }
+
     public DepartmentMembershipBaseDto(DepartmentMembership departmentMembership) {
         id = departmentMembership.getId();
         role = departmentMembership.getRole();
