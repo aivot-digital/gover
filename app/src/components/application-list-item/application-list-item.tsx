@@ -218,7 +218,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         <MenuItem
                             component="a"
-                            href={`/#/ ${props.application.slug}/${props.application.version}`}
+                            href={`/#/${props.application.slug}/${props.application.version}`}
                             target="_blank"
                         >
                             <ListItemIcon>
