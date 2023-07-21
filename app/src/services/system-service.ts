@@ -9,7 +9,7 @@ class _SystemService {
         });
     }
 
-    public async getSentryDns(): Promise<string[]> {
+    public async getSentryDsn(): Promise<string[]> {
         return await ApiService.get('public/sentry-dns');
     }
 
