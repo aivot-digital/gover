@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.controllers;
 
 import de.aivot.GoverBackend.enums.ApplicationStatus;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.dtos.CustomerSubmissionCopyRequestDto;
 import de.aivot.GoverBackend.models.dtos.SubmissionListDto;
 import de.aivot.GoverBackend.models.elements.RootElement;
@@ -18,6 +19,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.*;
+import org.springframework.mail.MailException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +44,7 @@ public class SubmitController {
     private final DestinationSubmitService destinationSubmitService;
     private final MailService mailService;
     private final SubmissionStorageService submissionStorageService;
+    private final GoverConfig goverConfig;
 
     @Autowired
     public SubmitController(
@@ -53,7 +56,7 @@ public class SubmitController {
             PdfService pdfService,
             DestinationSubmitService destinationSubmitService,
             MailService mailService,
-            SubmissionStorageService submissionStorageService) {
+            SubmissionStorageService submissionStorageService, GoverConfig goverConfig) {
         this.applicationRepository = applicationRepository;
         this.submissionRepository = submissionRepository;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
@@ -63,6 +66,7 @@ public class SubmitController {
         this.destinationSubmitService = destinationSubmitService;
         this.mailService = mailService;
         this.submissionStorageService = submissionStorageService;
+        this.goverConfig = goverConfig;
     }
 
     @GetMapping("/api/public/prints/{uuid}")
@@ -224,6 +228,8 @@ public class SubmitController {
         submission.setAssignee(null);
         submission.setCustomerInput(customerInput);
         submission.setIsTestSubmission(application.getStatus() != ApplicationStatus.Published);
+        submission.setCopySent(false);
+        submission.setCopyTries(0);
         if (application.getDestination() != null) {
             submission.setDestination(application.getDestination());
         }
@@ -320,12 +326,24 @@ public class SubmitController {
 
         testSubmissionExpired(submission);
 
+        if (submission.getCopySent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        if (submission.getCopyTries() >= goverConfig.getMaxSubmissionCopyRetryCount()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
         try {
             mailService.sendApplicationCopyMail(customerSubmissionCopyRequestDto.getEmail(), submission);
+            submission.setCopySent(true);
+            submissionRepository.save(submission);
+        } catch (MailException | MessagingException e) {
+            submission.setCopyTries(submission.getCopyTries() + 1);
+            submissionRepository.save(submission);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         } catch (IOException e) {
             mailService.sendExceptionMail(e);
-            throw new RuntimeException(e);
-        } catch (MessagingException e) {
             throw new RuntimeException(e);
         }
 

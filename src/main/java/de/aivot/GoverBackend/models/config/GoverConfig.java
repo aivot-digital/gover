@@ -16,6 +16,7 @@ public class GoverConfig {
     private List<String> fileExtensions;
     private List<String> contentTypes;
     private String hostname;
+    private Integer maxSubmissionCopyRetryCount;
 
     
     // region Getters & Setters
@@ -82,6 +83,14 @@ public class GoverConfig {
 
     public void setHostname(String hostname) {
         this.hostname = hostname;
+    }
+
+    public Integer getMaxSubmissionCopyRetryCount() {
+        return maxSubmissionCopyRetryCount;
+    }
+
+    public void setMaxSubmissionCopyRetryCount(Integer maxSubmissionCopyRetryCount) {
+        this.maxSubmissionCopyRetryCount = maxSubmissionCopyRetryCount;
     }
 
 
