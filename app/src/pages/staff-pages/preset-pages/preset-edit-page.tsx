@@ -10,23 +10,33 @@ import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
 import {PresetsService} from '../../../services/presets.service';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {ElementTree} from '../../../components/element-tree/element-tree';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {PublishPresetDialog} from '../../../dialogs/publish-preset-dialog/publish-preset-dialog';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
+import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
+import {isElementValid} from '../../../utils/is-element-valid';
+import {useLogging} from '../../../hooks/use-logging';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectCustomerInput} from '../../../slices/customer-input-slice';
+import {resetErrors} from '../../../slices/customer-input-errors-slice';
 
 export function PresetEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const params = useParams();
 
+    const [$debug] = useLogging();
+
     const [preset, setPreset] = useState<Preset>();
     const [failedToLoad, setFailedToLoad] = useState<boolean>();
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
     const [showPublishDialog, setShowPublishDialog] = useState(false);
+
+    const customerData = useAppSelector(selectCustomerInput);
 
     useEffect(() => {
         if (params.id != null) {
@@ -84,6 +94,23 @@ export function PresetEditPage(): JSX.Element {
     } else {
         const allElements = flattenElements(preset.root);
 
+        const handleValidate = (): void => {
+            dispatch(resetErrors());
+            const isValid = isElementValid(
+                $debug,
+                undefined,
+                allElements,
+                dispatch,
+                preset.root,
+                customerData,
+            );
+            if (isValid) {
+                dispatch(showSuccessSnackbar('Eingaben sind valide'));
+            } else {
+                dispatch(showErrorSnackbar('Eingaben sind nicht valide'));
+            }
+        };
+
         return (
             <ThemeProvider theme={createDefaultAppTheme}>
                 <MetaElement
@@ -94,6 +121,12 @@ export function PresetEditPage(): JSX.Element {
                     title={preset.root.name ?? ''}
                     noPlaceholder={true}
                     actions={[
+                        {
+                            icon: <DoneAllOutlinedIcon/>,
+                            tooltip: 'Validierung durchführen',
+                            label: 'Validieren',
+                            onClick: handleValidate,
+                        },
                         {
                             icon: <PublishOutlinedIcon/>,
                             tooltip: 'Vorlage veröffentlichen',
