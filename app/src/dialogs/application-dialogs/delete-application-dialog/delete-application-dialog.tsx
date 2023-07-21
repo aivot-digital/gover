@@ -46,6 +46,8 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps): JS
         ApplicationService
             .destroy(props.application.id)
             .then(() => {
+                setFormTitle(undefined);
+                setSubmissions(undefined);
                 props.onDelete();
             })
             .catch((err) => {
