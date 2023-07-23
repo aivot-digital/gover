@@ -275,6 +275,7 @@ export function DestinationEditPage(): JSX.Element {
                     }}
                     required
                     maxCharacters={96}
+                    minCharacters={3}
                     error={errors.name}
                 />
 
