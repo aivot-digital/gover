@@ -15,17 +15,16 @@ import {type Department} from '../../../../models/entities/department';
 import {type DepartmentMembershipWithUserDto} from '../../../../models/dtos/department-membership-with-user-dto';
 import {DepartmentsService} from '../../../../services/departments-service';
 import {filterItems} from '../../../../utils/filter-items';
-
-interface MembershipUser {
-    membership: DepartmentMembership;
-    user: User;
-}
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 
 interface EditDepartmentPageMembersTabProps {
     department: Department;
 }
 
 export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMembersTabProps): JSX.Element {
+    const dispatch = useAppDispatch();
+
     const [showAddMembership, toggleShowAddMembership] = useReducer((p) => !p, false);
     const [search, setSearch] = useState('');
 
@@ -51,8 +50,18 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
     const handleDelete = (membershipId: number): void => {
         if (memberships != null) {
             DepartmentMembershipsService
-                .destroy(membershipId);
-            setMemberships(memberships.filter((mem) => mem.id !== membershipId));
+                .destroy(membershipId)
+                .then(() => {
+                    setMemberships(memberships.filter((mem) => mem.id !== membershipId));
+                })
+                .catch((err) => {
+                    if (err.status === 409) {
+                        dispatch(showErrorSnackbar('Mitarbeiter:in kann nicht entfernt werden, da sie noch mindestens zu einem offenen Antrag zugeordnet ist.'));
+                    } else {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Mitarbeiter:in kann nicht entfernt werden, bitte probieren Sie es später erneut.'));
+                    }
+                });
         }
     };
 

@@ -37,7 +37,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, String> 
     Collection<Submission> findAllByApplicationIdAndArchivedIsNullAndIsTestSubmissionFalseOrderByCreatedDesc(Integer applicationId);
 
     @Transactional(readOnly = true)
-    boolean existsByApplication_IdInAndArchivedIsNull(Collection<Integer> applications);
+    boolean existsByApplication_IdInAndAssignee_IdAndArchivedIsNull(Collection<Integer> applications, Integer assignee);
 
     @Transactional(readOnly = true)
     boolean existsByApplication_IdAndArchivedIsNull(Integer application);
