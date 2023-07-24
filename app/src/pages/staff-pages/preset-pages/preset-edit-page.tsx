@@ -23,8 +23,6 @@ import {useLogging} from '../../../hooks/use-logging';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectCustomerInput} from '../../../slices/customer-input-slice';
 import {resetErrors} from '../../../slices/customer-input-errors-slice';
-import {PublishPresetDialog} from '../../../dialogs/publish-preset-dialog/publish-preset-dialog';
-import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
 export function PresetEditPage(): JSX.Element {
     const dispatch = useAppDispatch();
