@@ -139,7 +139,8 @@ export function StoreTab({
                                                             title="Privater Baustein"
                                                         >
                                                             <LockOutlinedIcon
-                                                                sx={{marginRight: '0.5em'}}
+                                                                fontSize="small"
+                                                                sx={{marginRight: '0.25em'}}
                                                             />
                                                         </Tooltip>
                                                     }

@@ -178,7 +178,6 @@ export function SubmitComponentView({
                                         >
                                             <ListItemIcon sx={{minWidth: '34px'}}>
                                                 <UploadFileOutlinedIcon
-                                                    fontSize={'large'}
                                                     sx={{color: theme.palette.primary.main}}
                                                 />
                                             </ListItemIcon>

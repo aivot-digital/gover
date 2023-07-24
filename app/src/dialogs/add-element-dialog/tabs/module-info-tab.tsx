@@ -54,7 +54,10 @@ export function ModuleInfoTab({
                             !module.is_public &&
                             <Tooltip title="Privater Baustein">
                                 <LockOutlinedIcon
-                                    sx={{marginRight: '0.5em'}}
+                                    fontSize="small"
+                                    sx={{
+                                        marginRight: '0.25em',
+                                    }}
                                 />
                             </Tooltip>
                         }

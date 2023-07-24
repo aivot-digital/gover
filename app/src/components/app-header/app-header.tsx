@@ -139,7 +139,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                                     <IconButton
                                         color="primary"
                                         component={mode === AppMode.Staff ? 'a' : 'button'}
-                                        href={mode === AppMode.Staff ? 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' : undefined}
+                                        href={mode === AppMode.Staff ? 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home' : undefined}
                                         target={mode === AppMode.Staff ? '_blank' : undefined}
                                         onClick={mode === AppMode.Staff ? undefined : () => {
                                             dispatch(showMetaDialog(MetaDialog.Help));

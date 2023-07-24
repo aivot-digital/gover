@@ -52,7 +52,7 @@ export function ThemeListPage(): JSX.Element {
 
             hint={{
                 text: 'Hier können Sie Farbschemata anlegen, mit denen Sie die Farben Ihrer Formulare anpassen können.',
-                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home' /* TODO: Link anpassen */,
             }}
 
             columns={columns}

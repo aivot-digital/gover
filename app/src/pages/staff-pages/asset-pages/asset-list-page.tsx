@@ -72,7 +72,7 @@ export function AssetListPage(): JSX.Element {
 
             hint={{
                 text: 'Hier können Sie Dokumente und Medieninhalte anlegen, auf die Sie dann in Ihren Formularen bezug nehmen können.',
-                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
+                moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home' /* TODO: Link anpassen */,
             }}
 
             columns={columns}

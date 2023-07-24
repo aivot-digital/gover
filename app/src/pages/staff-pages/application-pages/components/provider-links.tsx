@@ -39,7 +39,7 @@ export function ProviderLinks(): JSX.Element {
                     md={6}
                 >
                     <BoxLink
-                        link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch"
+                        link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
                         text={'Über Gover\nHilfen, Anleitungen und FAQs'}
                     />
                 </Grid>

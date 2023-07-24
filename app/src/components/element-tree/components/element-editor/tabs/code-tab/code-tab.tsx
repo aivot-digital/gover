@@ -313,9 +313,7 @@ export function CodeTab({
                                     }}
                                 >
                                     <ListItemIcon>
-                                        <DeleteForeverOutlinedIcon
-                                            sx={{marginTop: '-4px'}}
-                                        />
+                                        <DeleteForeverOutlinedIcon/>
                                     </ListItemIcon>
                                     <ListItemText>
                                         Funktion entfernen

@@ -24,26 +24,15 @@ export function ProcessingDataLoaderComponentView({message}: {message?: string})
                 >
                     {message ? message : 'Daten werden verarbeitet'}…
                 </Typography>
-                <Box sx={{
-                    width: '40px',
-                    mr: 1,
-                    flexShrink: 0,
-                    position: 'relative',
-                }}>
-                    <GppGoodOutlinedIcon
-                        fontSize={'large'}
-                        sx={{
-                            position: 'absolute',
-                            color: theme.palette.secondary.dark,
-                            bottom: '0px',
-                            left: '-3px',
-                            padding: 2,
-                            backgroundColor: '#ffffff',
-                            borderRadius: '4px',
-                        }}
-                    />
-                    {/* TODO: FIX LOGO <Logo color={theme.palette.primary.main} /> */}
-                </Box>
+
+                <GppGoodOutlinedIcon
+                    fontSize={'large'}
+                    sx={{
+                        color: theme.palette.secondary.dark,
+                        margin: 2,
+                    }}
+                />
+
             </Box>
             <LinearProgress sx={{mt: 2}}/>
         </Container>

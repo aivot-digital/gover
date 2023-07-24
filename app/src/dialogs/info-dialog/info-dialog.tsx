@@ -1,9 +1,10 @@
-import {DialogProps} from "@mui/material/Dialog/Dialog";
-import {Box, Dialog, DialogContent, DialogTitle, Typography, useTheme} from "@mui/material";
-import {DialogTitleWithClose} from "../../components/static-components/dialog-title-with-close/dialog-title-with-close";
+import {type DialogProps} from '@mui/material/Dialog/Dialog';
+import {Box, Dialog, DialogContent, DialogTitle, Typography, useTheme} from '@mui/material';
+import {DialogTitleWithClose} from '../../components/static-components/dialog-title-with-close/dialog-title-with-close';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
 
 interface InfoDialogProps {
     title: string;
@@ -11,12 +12,10 @@ interface InfoDialogProps {
     onClose?: () => void;
 }
 
-const severityIconMap: {
-    [key: string]: any;
-} = {
+const severityIconMap: Record<string, any> = {
     'success': CheckCircleOutlinedIcon,
     'error': ErrorOutlineOutlinedIcon,
-    'warning': InfoOutlinedIcon,
+    'warning': ReportOutlinedIcon,
     'info': InfoOutlinedIcon,
 };
 
@@ -61,7 +60,7 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
                         alignItems: 'center',
                     }}>
                         <Icon
-                            sx={{color: color}}
+                            sx={{color}}
                         />
 
                         <Typography
@@ -77,7 +76,7 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
                 onClose == null &&
                 <DialogTitle>
                     <Icon
-                        sx={{color: color}}
+                        sx={{color}}
                     />
 
                     <Typography>
