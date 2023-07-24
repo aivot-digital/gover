@@ -1,7 +1,6 @@
 import {Box, Container, LinearProgress, Typography} from '@mui/material';
 import React from 'react';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faCloud} from '@fortawesome/pro-solid-svg-icons';
+import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 
 export function LoadingPlaceholderComponentView({message}: {message?: string}) {
     return (
@@ -45,9 +44,8 @@ function LoadingIcon({color}: {color: string}) {
                 flexShrink: 0,
             }}
         >
-            <FontAwesomeIcon
-                color={color}
-                icon={faCloud}
+            <CloudOutlinedIcon
+                sx={{color: color}}
             />
         </Box>
     );

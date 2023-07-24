@@ -1,7 +1,6 @@
 import React from "react";
 import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faClose} from "@fortawesome/pro-light-svg-icons";
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import {ElementNames} from "../../../data/element-type/element-names";
 import {ElementTypesMap} from "../../../data/element-type/element-types-map";
 import {ElementType} from "../../../data/element-type/element-type";
@@ -534,7 +533,7 @@ export function ElementInfoTab({
                         onClick={onClose}
                         size="small"
                     >
-                        <FontAwesomeIcon icon={faClose}/>
+                        <CloseOutlinedIcon/>
                     </IconButton>
                 </Tooltip>
             </Box>

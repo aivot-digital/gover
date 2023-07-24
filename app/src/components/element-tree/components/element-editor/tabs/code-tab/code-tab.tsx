@@ -7,12 +7,12 @@ import {type AnyElement} from '../../../../../../models/elements/any-element';
 import {CodeTabCodeEditor} from './components/code-tab-code-editor';
 import {CodeTabNoCodeEditor} from './components/code-tab-no-code-editor';
 import {ConditionOperator} from '../../../../../../data/condition-operator';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faEllipsisVertical, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {type RootElement} from '../../../../../../models/elements/root-element';
 import {type StepElement} from '../../../../../../models/elements/steps/step-element';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {type ReplicatingContainerLayout} from '../../../../../../models/elements/form/layout/replicating-container-layout';
+import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 export type CodeTabProps = {
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
@@ -292,10 +292,7 @@ export function CodeTab({
                                 <IconButton
                                     onClick={handleClick}
                                 >
-                                    <FontAwesomeIcon
-                                        icon={faEllipsisVertical}
-                                        fixedWidth
-                                    />
+                                    <MoreVertOutlinedIcon/>
                                 </IconButton>
                             }
 
@@ -316,9 +313,8 @@ export function CodeTab({
                                     }}
                                 >
                                     <ListItemIcon>
-                                        <FontAwesomeIcon
-                                            icon={faTrashCanXmark}
-                                            style={{marginTop: '-4px'}}
+                                        <DeleteForeverOutlinedIcon
+                                            sx={{marginTop: '-4px'}}
                                         />
                                     </ListItemIcon>
                                     <ListItemText>

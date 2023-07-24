@@ -1,14 +1,11 @@
 import React, {type ChangeEvent, useEffect, useState} from 'react';
-import {Box, Chip, FormControlLabel, Switch} from '@mui/material';
+import {Box, Chip, FormControlLabel, SvgIconTypeMap, Switch} from '@mui/material';
 import {useNavigate, useParams} from 'react-router-dom';
 import {ApplicationService} from '../../../services/application-service';
 import {type Application} from '../../../models/entities/application';
 import {type SubmissionListDto} from '../../../models/entities/submission-list-dto';
 import {SubmissionService} from '../../../services/submission-service';
 import {format, parseISO} from 'date-fns';
-import {type IconProp} from '@fortawesome/fontawesome-svg-core';
-import {faBracketsCurly, faCircleCheck, faCircleX, faFileCirclePlus, faFilePen, faFileZipper, faUserEdit, faVialCircleCheck} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {LocalStorageService} from '../../../services/local-storage-service';
 import {LocalstorageKey} from '../../../data/localstorage-key';
 import {UsersService} from '../../../services/users-service';
@@ -23,6 +20,15 @@ import {TablePageWrapper} from '../../../components/table-page-wrapper/table-pag
 import {delayPromise} from '../../../utils/with-delay';
 import {filterItems} from '../../../utils/filter-items';
 import Tooltip from '@mui/material/Tooltip';
+import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
+import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
+import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
+import FolderZipOutlinedIcon from '@mui/icons-material/FolderZipOutlined';
+import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import {OverridableComponent} from "@mui/material/OverridableComponent";
 
 type Submission = SubmissionListDto & {
     resolvedAssignee?: User;
@@ -33,33 +39,36 @@ const columns: Array<GridColDef<Submission>> = [
     {
         field: 'status',
         headerName: 'Status',
-        renderCell: (params) => (
-            <>
-                <Chip
-                    label={determineLabel(params.row)}
-                    icon={<FontAwesomeIcon icon={determineIcon(params.row)}/>}
-                    color={determineColor(params.row)}
-                    variant="outlined"
-                    sx={{
-                        px: 4,
-                        width: '16em',
-                    }}
-                />
+        renderCell: (params) => {
+            const Icon = determineIcon(params.row);
+            return (
+                <>
+                    <Chip
+                        label={determineLabel(params.row)}
+                        icon={<Icon/>}
+                        color={determineColor(params.row)}
+                        variant="outlined"
+                        sx={{
+                            px: 4,
+                            width: '16em',
+                        }}
+                    />
 
-                {
-                    params.row.isTestSubmission &&
-                    <Tooltip title="Test-Antrag">
-                        <Box
-                            sx={{
-                                ml: 2,
-                            }}
-                        >
-                            <FontAwesomeIcon icon={faVialCircleCheck}/>
-                        </Box>
-                    </Tooltip>
-                }
-            </>
-        ),
+                    {
+                        params.row.isTestSubmission &&
+                        <Tooltip title="Test-Antrag">
+                            <Box
+                                sx={{
+                                    ml: 2,
+                                }}
+                            >
+                                <ScienceOutlinedIcon/>
+                            </Box>
+                        </Tooltip>
+                    }
+                </>
+            )
+        },
         valueGetter: (params) => determineLabel(params.row),
         flex: 1,
     },
@@ -87,17 +96,15 @@ const columns: Array<GridColDef<Submission>> = [
             <>
                 {
                     params.row.destination != null &&
-                    <FontAwesomeIcon
-                        icon={faBracketsCurly}
-                        style={{marginRight: '0.5em'}}
+                    <DataObjectOutlinedIcon
+                        sx={{marginRight: '0.5em'}}
                     />
                 }
 
                 {
                     params.row.assignee != null &&
-                    <FontAwesomeIcon
-                        icon={faUserEdit}
-                        style={{marginRight: '0.5em'}}
+                    <ManageAccountsOutlinedIcon
+                        sx={{marginRight: '0.5em'}}
                     />
                 }
 
@@ -277,19 +284,19 @@ function determineLabel(sub: SubmissionListDto): string {
     }
 }
 
-function determineIcon(sub: SubmissionListDto): IconProp {
+function determineIcon(sub: SubmissionListDto): OverridableComponent<SvgIconTypeMap> {
     if (sub.destination != null) {
         if (sub?.destinationSuccess ?? false) {
-            return faCircleCheck;
+            return CheckCircleOutlineOutlinedIcon;
         } else {
-            return faCircleX;
+            return HighlightOffOutlinedIcon;
         }
     } else if (sub.archived != null) {
-        return faFileZipper;
+        return FolderZipOutlinedIcon;
     } else if (sub.assignee != null) {
-        return faFilePen;
+        return DriveFileRenameOutlineOutlinedIcon;
     } else {
-        return faFileCirclePlus;
+        return NoteAddOutlinedIcon;
     }
 }
 

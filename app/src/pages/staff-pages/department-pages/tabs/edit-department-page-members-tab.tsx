@@ -4,8 +4,6 @@ import {DepartmentMembershipsService} from '../../../../services/department-memb
 import {type DepartmentMembership} from '../../../../models/entities/department-membership';
 import {type User} from '../../../../models/entities/user';
 import {UsersService} from '../../../../services/users-service';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faAdd, faEdit, faTrashAlt} from '@fortawesome/pro-light-svg-icons';
 import {SearchInput} from '../../../../components/search-input/search-input';
 import {SelectUserDialog} from '../../../../dialogs/select-user-dialog/select-user-dialog';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
@@ -17,6 +15,14 @@ import {DepartmentsService} from '../../../../services/departments-service';
 import {filterItems} from '../../../../utils/filter-items';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+
+interface MembershipUser {
+    membership: DepartmentMembership;
+    user: User;
+}
 
 interface EditDepartmentPageMembersTabProps {
     department: Department;
@@ -148,7 +154,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                                 ml: 2,
                             }}
                             startIcon={
-                                <FontAwesomeIcon icon={faAdd}/>
+                                <AddOutlinedIcon/>
                             }
                             onClick={toggleShowAddMembership}
                         >
@@ -202,7 +208,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                                                         ml: 1,
                                                     }}
                                                 >
-                                                    <FontAwesomeIcon icon={faEdit}/>
+                                                    <DriveFileRenameOutlineOutlinedIcon/>
                                                 </IconButton>
                                             </TableCell>
                                             <TableCell>
@@ -216,7 +222,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                                                             handleDelete(mem.id);
                                                         }}
                                                     >
-                                                        <FontAwesomeIcon icon={faTrashAlt}/>
+                                                        <DeleteOutlinedIcon/>
                                                     </IconButton>
                                                 </Tooltip>
                                             </TableCell>

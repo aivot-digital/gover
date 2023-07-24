@@ -3,8 +3,7 @@ import {DateFieldComponentModelMode} from '../../models/elements/form/input/date
 import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';
-import {faCalendarDay} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import TodayOutlinedIcon from '@mui/icons-material/TodayOutlined';
 import {DateFieldComponentProps} from "./date-field-component-props";
 
 const formatMap = {
@@ -33,7 +32,7 @@ const viewsMap: {
     [DateFieldComponentModelMode.Year]: ['year'],
 };
 
-const OpenIcon = () => <FontAwesomeIcon icon={faCalendarDay}/>;
+const OpenIcon = () => <TodayOutlinedIcon/>;
 
 export function DateFieldComponent({
                                        label,

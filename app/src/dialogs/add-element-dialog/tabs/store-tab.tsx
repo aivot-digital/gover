@@ -4,15 +4,16 @@ import {GoverStoreService} from '../../../services/gover-store.service';
 import {type BaseTabProps} from './base-tab-props';
 import {LoadingPlaceholderComponentView} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
 import {Box, DialogContent, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Tooltip, Typography, useTheme} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {AlertComponent} from '../../../components/alert/alert-component';
 import {Link} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
-import {faCubes, faInfoCircle, faLock} from '@fortawesome/pro-light-svg-icons';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {type StoreListModule} from '../../../models/entities/store-list-module';
+import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 export function StoreTab({
                              parentType,
@@ -111,7 +112,7 @@ export function StoreTab({
                                                     showModuleId(module.id);
                                                 }}
                                             >
-                                                <FontAwesomeIcon icon={faInfoCircle}/>
+                                                <InfoOutlinedIcon/>
                                             </IconButton>
                                         </Tooltip>
                                     }
@@ -123,9 +124,7 @@ export function StoreTab({
                                         selected={highlightedModuleId === module.id}
                                     >
                                         <ListItemIcon sx={{pl: 1.5}}>
-                                            <FontAwesomeIcon
-                                                icon={faCubes}
-                                            />
+                                            <ExtensionOutlinedIcon/>
                                         </ListItemIcon>
                                         <ListItemText
                                             disableTypography
@@ -139,9 +138,8 @@ export function StoreTab({
                                                         <Tooltip
                                                             title="Privater Baustein"
                                                         >
-                                                            <FontAwesomeIcon
-                                                                icon={faLock}
-                                                                style={{marginRight: '0.5em'}}
+                                                            <LockOutlinedIcon
+                                                                sx={{marginRight: '0.5em'}}
                                                             />
                                                         </Tooltip>
                                                     }

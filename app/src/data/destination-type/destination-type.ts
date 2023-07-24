@@ -1,4 +1,5 @@
-import {faCode, faEnvelope} from "@fortawesome/pro-light-svg-icons";
+import HttpOutlinedIcon from '@mui/icons-material/HttpOutlined';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 
 export enum DestinationType {
     Mail = 'Mail',
@@ -6,6 +7,6 @@ export enum DestinationType {
 }
 
 export const DestinationTypeIcons = {
-    [DestinationType.Mail]: faEnvelope,
-    [DestinationType.HTTP]: faCode,
+    [DestinationType.Mail]: EmailOutlinedIcon,
+    [DestinationType.HTTP]: HttpOutlinedIcon,
 };

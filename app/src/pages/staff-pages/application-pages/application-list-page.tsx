@@ -273,7 +273,7 @@ export function ApplicationListPage(): JSX.Element {
                                         },
                                     ]}
                                     hint={{
-                                        text: 'Hier finden Sie alle Formulare, für die Sie eine Zugriffsberechtigung haben.',
+                                        text: 'Hier finden Sie alle Formulare, für die Sie eine Berechtigung besitzen.',
                                         moreLink: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch' /* TODO: Link anpassen */,
                                     }}
                                 />

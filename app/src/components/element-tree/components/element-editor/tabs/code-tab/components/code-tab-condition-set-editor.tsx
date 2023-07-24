@@ -4,9 +4,9 @@ import {type ConditionSet} from '../../../../../../../models/functions/condition
 import {Box, Button, Divider, IconButton, MenuItem, TextField, Typography} from '@mui/material';
 import {ConditionSetOperator} from '../../../../../../../data/condition-set-operator';
 import {ConditionOperator} from '../../../../../../../data/condition-operator';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faAdd, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
 import {CodeTabCondition} from './code-tab-condition';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 interface CodeTabConditionSetEditorProps {
     element: AnyElement;
@@ -129,7 +129,7 @@ export function CodeTabConditionSetEditor({
                         >
                             <Button
                                 startIcon={
-                                    <FontAwesomeIcon icon={faAdd}/>
+                                    <AddOutlinedIcon/>
                                 }
                                 onClick={() => {
                                     onChange({
@@ -233,7 +233,7 @@ export function CodeTabConditionSetEditor({
                                     });
                                 }}
                                 startIcon={
-                                    <FontAwesomeIcon icon={faAdd}/>
+                                    <AddOutlinedIcon/>
                                 }
                             >
                                 Bedingungsgruppe hinzufügen
@@ -267,9 +267,8 @@ export function CodeTabConditionSetEditor({
                                                 });
                                             }}
                                         >
-                                            <FontAwesomeIcon
-                                                icon={faTrashCanXmark}
-                                                size="sm"
+                                            <DeleteForeverOutlinedIcon
+                                                fontSize="small"
                                             />
                                         </IconButton>
                                     }

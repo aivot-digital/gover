@@ -2,11 +2,10 @@ import React from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
 import {Link} from 'react-router-dom';
-import {faExternalLinkAlt, faFileText} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {type PublicListApplication} from '../../models/entities/public-list-application';
 import {format, parseISO} from 'date-fns';
-
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 
 interface ApplicationListItemDisplayProps {
     application: PublicListApplication;
@@ -18,9 +17,8 @@ export function ApplicationListItemPublic(props: ApplicationListItemDisplayProps
             <Box
                 className={styles.listItemIcon}
             >
-                <FontAwesomeIcon
-                    icon={faFileText}
-                    size="2x"
+                <DescriptionOutlinedIcon
+                    fontSize="large"
                 />
             </Box>
             <Box
@@ -43,9 +41,8 @@ export function ApplicationListItemPublic(props: ApplicationListItemDisplayProps
             <Box className={styles.listItemActions}>
                 <Box className={styles.listItemActionsContainer}>
                     <Button
-                        startIcon={<FontAwesomeIcon
-                            icon={faExternalLinkAlt}
-                            style={{marginTop: '-2px'}}
+                        startIcon={<OpenInNewOutlinedIcon
+                            sx={{marginTop: '-2px'}}
                         />}
                         component={Link}
                         target="_blank"

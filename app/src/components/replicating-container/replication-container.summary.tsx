@@ -3,12 +3,11 @@ import {ReplicatingContainerLayout} from '../../models/elements/form/layout/repl
 import {flattenElementsForSummary} from '../summary/summary.component.view';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
-import {faTurnDown} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {AnyElement} from '../../models/elements/any-element';
 import {useSelector} from "react-redux";
 import {selectCustomerInput} from "../../slices/customer-input-slice";
 import {BaseSummaryProps} from "../../summaries/base-summary";
+import SubdirectoryArrowLeftOutlinedIcon from '@mui/icons-material/SubdirectoryArrowLeftOutlined';
 
 export function ReplicationContainerSummary({
                                                 allElements,
@@ -100,11 +99,11 @@ export function ReplicationContainerSummary({
                                 >
                                     {
                                         (model.headlineTemplate ?? '').replace('#', (index + 1).toFixed())
-                                    } <FontAwesomeIcon
-                                    icon={faTurnDown}
-                                    style={{
+                                    } <SubdirectoryArrowLeftOutlinedIcon
+                                    sx={{
                                         marginLeft: '6px',
-                                        transform: 'translateY(6px)',
+                                        fontSize: '1rem',
+                                        transform: 'translateY(2px)',
                                     }}
                                 />
                                 </Typography>

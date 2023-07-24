@@ -6,13 +6,11 @@ import {type SubmissionDetailsDto} from '../../../models/entities/submission-det
 import {ApplicationService} from '../../../services/application-service';
 import {SubmissionService} from '../../../services/submission-service';
 import {format, formatISO, parseISO} from 'date-fns';
-import {faFileDownload, faFilePdf} from '@fortawesome/pro-light-svg-icons';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {UsersService} from '../../../services/users-service';
 import {type SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {type User} from '../../../models/entities/user';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {type SubmissionAttachmentListDto} from '../../../models/entities/submission-attachment-list-dto';
 import {downloadBlobFile} from '../../../utils/download-utils';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -27,6 +25,8 @@ import FolderZipOutlinedIcon from '@mui/icons-material/FolderZipOutlined';
 import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
 import {delayPromise} from '../../../utils/with-delay';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 
 async function fetchData(formId: string, submissionId: string): Promise<{
     form: Application;
@@ -496,9 +496,7 @@ export function SubmissionEditPage(): JSX.Element {
             <Button
                 onClick={handleDownloadPrint}
                 endIcon={
-                    <FontAwesomeIcon
-                        icon={faFilePdf}
-                    />
+                    <PictureAsPdfOutlinedIcon/>
                 }
             >
                 Antrags-PDF herunterladen
@@ -542,7 +540,7 @@ export function SubmissionEditPage(): JSX.Element {
                                                         handleDownloadAttachment(att);
                                                     }}
                                                     endIcon={
-                                                        <FontAwesomeIcon icon={faFileDownload}/>
+                                                        <FileDownloadOutlinedIcon/>
                                                     }
                                                 >
                                                     Herunterladen

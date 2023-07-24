@@ -4,13 +4,13 @@ import {UserInputService} from '../../services/user-input-service';
 import {useDispatch} from 'react-redux';
 import {setUserInput} from '../../slices/customer-input-slice';
 import {format} from 'date-fns';
-import {faArrowRotateLeft, faFileImport} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {PrivacyUserInputKey} from '../../components/general-information/general-information.component.view';
 import {Application} from '../../models/entities/application';
 import {Logo} from '../../components/static-components/logo/logo';
 import {CustomerInput} from "../../models/customer-input";
 import {isFileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
+import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
+import SettingsBackupRestoreOutlinedIcon from '@mui/icons-material/SettingsBackupRestoreOutlined';
 
 interface LoadUserInputDialogProps {
     application: Application;
@@ -129,12 +129,10 @@ export function LoadUserInputDialog({application}: LoadUserInputDialogProps) {
                     size="large"
                     variant="contained"
                     startIcon={
-                        <FontAwesomeIcon
-                            icon={faFileImport}
-                            style={{
+                        <ImportExportOutlinedIcon
+                            sx={{
                                 marginTop: '-4px',
                             }}
-                            fixedWidth
                         />
                     }
                 >
@@ -147,12 +145,10 @@ export function LoadUserInputDialog({application}: LoadUserInputDialogProps) {
                     }}
                     size="large"
                     startIcon={
-                        <FontAwesomeIcon
-                            icon={faArrowRotateLeft}
-                            style={{
+                        <SettingsBackupRestoreOutlinedIcon
+                            sx={{
                                 marginTop: '-4px',
                             }}
-                            fixedWidth
                         />
                     }
                 >

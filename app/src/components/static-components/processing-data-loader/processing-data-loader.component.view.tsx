@@ -1,7 +1,6 @@
-import {faShieldCheck} from '@fortawesome/pro-solid-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {Box, Container, LinearProgress, Typography, useTheme} from '@mui/material';
 import React from 'react';
+import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 
 export function ProcessingDataLoaderComponentView({message}: {message?: string}) {
     const theme = useTheme();
@@ -31,10 +30,9 @@ export function ProcessingDataLoaderComponentView({message}: {message?: string})
                     flexShrink: 0,
                     position: 'relative',
                 }}>
-                    <FontAwesomeIcon
-                        icon={faShieldCheck}
-                        size={'lg'}
-                        style={{
+                    <GppGoodOutlinedIcon
+                        fontSize={'large'}
+                        sx={{
                             position: 'absolute',
                             color: theme.palette.secondary.dark,
                             bottom: '0px',

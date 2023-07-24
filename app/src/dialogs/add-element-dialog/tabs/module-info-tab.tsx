@@ -1,7 +1,5 @@
 import React, {useEffect, useState} from "react";
 import {Box, DialogContent, Divider, IconButton, Tooltip, Typography} from "@mui/material";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faClose, faExternalLink, faLock} from "@fortawesome/pro-light-svg-icons";
 import {useAppSelector} from "../../../hooks/use-app-selector";
 import {selectSystemConfigValue} from "../../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../../data/system-config-keys";
@@ -9,7 +7,9 @@ import {GoverStoreService} from "../../../services/gover-store.service";
 import {LoadingPlaceholderComponentView} from "../../../components/static-components/loading-placeholder/loading-placeholder.component.view";
 import {isStringNotNullOrEmpty} from "../../../utils/string-utils";
 import {StoreDetailModule} from "../../../models/entities/store-detail-module";
-
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 export function ModuleInfoTab({
                                   moduleId,
@@ -53,9 +53,8 @@ export function ModuleInfoTab({
                         {
                             !module.is_public &&
                             <Tooltip title="Privater Baustein">
-                                <FontAwesomeIcon
-                                    icon={faLock}
-                                    style={{marginRight: '0.5em'}}
+                                <LockOutlinedIcon
+                                    sx={{marginRight: '0.5em'}}
                                 />
                             </Tooltip>
                         }
@@ -85,7 +84,7 @@ export function ModuleInfoTab({
                                     href={`https://store.gover.digital/modules/${module.id}/`}
                                     target="_blank"
                                 >
-                                    <FontAwesomeIcon icon={faExternalLink}/>
+                                    <OpenInNewOutlinedIcon/>
                                 </IconButton>
                             </Tooltip>
                         }
@@ -96,7 +95,7 @@ export function ModuleInfoTab({
                                 size="small"
                                 sx={{ml: 'auto'}}
                             >
-                                <FontAwesomeIcon icon={faClose}/>
+                                <CloseOutlinedIcon/>
                             </IconButton>
                         </Tooltip>
 

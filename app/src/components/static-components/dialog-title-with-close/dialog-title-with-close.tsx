@@ -1,7 +1,6 @@
 import {DialogTitle, IconButton, Tooltip} from '@mui/material';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faXmark} from '@fortawesome/pro-regular-svg-icons';
 import React from 'react';
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 
 interface DialogTitleProps {
     children?: React.ReactNode;
@@ -41,9 +40,8 @@ export const DialogTitleWithClose = (props: DialogTitleProps) => {
                             color: (theme) => theme.palette.grey[500],
                         }}
                     >
-                        <FontAwesomeIcon
-                            icon={faXmark}
-                            style={{width: '24px'}}
+                        <CloseOutlinedIcon
+                            sx={{width: '24px'}}
                         />
                     </IconButton>
                 </Tooltip>

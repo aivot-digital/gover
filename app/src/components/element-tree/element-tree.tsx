@@ -7,8 +7,6 @@ import {HTML5Backend} from 'react-dnd-html5-backend';
 import {type ElementTreeProps} from './element-tree-props';
 import {ElementTreeHeader} from './components/element-tree-header/element-tree-header';
 import {ElementTreeItemList} from './components/element-tree-item-list/element-tree-item-list';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faClose} from '@fortawesome/pro-light-svg-icons';
 import {ElementType} from '../../data/element-type/element-type';
 import {AddElementDialog} from '../../dialogs/add-element-dialog/add-element-dialog';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -23,6 +21,7 @@ import {type Application, isApplication} from '../../models/entities/application
 import {type Preset} from '../../models/entities/preset';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 
 export function ElementTree<T extends Application | Preset>(props: ElementTreeProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -110,7 +109,7 @@ export function ElementTree<T extends Application | Preset>(props: ElementTreePr
                                     onClick={handleToggleSearch}
                                     size="small"
                                 >
-                                    <FontAwesomeIcon icon={faClose}/>
+                                    <CloseOutlinedIcon/>
                                 </IconButton>
                             </Tooltip>
 

@@ -1,12 +1,11 @@
 import {Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
 import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
-import {faPlus} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import {Application} from '../../models/entities/application';
 import {Preset} from '../../models/entities/preset';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, Application | Preset>) {
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
@@ -207,7 +206,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
             }
             <Button
                 sx={{mt: 2}}
-                startIcon={<FontAwesomeIcon icon={faPlus}/>}
+                startIcon={<AddOutlinedIcon/>}
                 variant="contained"
                 onClick={() => {
                     props.onPatch({

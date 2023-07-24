@@ -1,12 +1,12 @@
 import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {Box, Button, FormHelperText, FormLabel, Grid, Typography} from '@mui/material';
-import {faPlusCircle, faTrashCanXmark} from '@fortawesome/pro-light-svg-icons';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {useCallback, useEffect} from 'react';
 import {stringOrDefault} from "../../utils/string-utils";
 import {generateElementIdForReplicatingContainerChild} from "../../utils/id-utils";
 import {BaseViewProps} from "../../views/base-view";
+import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 export function ReplicatingContainerView({
                                              allElements,
@@ -74,9 +74,8 @@ export function ReplicatingContainerView({
                                     <Button
                                         color="error"
                                         size={'small'}
-                                        endIcon={<FontAwesomeIcon
-                                            icon={faTrashCanXmark}
-                                            style={{marginTop: '-4px'}}
+                                        endIcon={<DeleteForeverOutlinedIcon
+                                            sx={{marginTop: '-4px'}}
                                         />}
                                         onClick={() => handleDelete(val)}
                                         disabled={element.minimumRequiredSets != null && element.minimumRequiredSets > 0 && (value ?? []).length <= element.minimumRequiredSets}
@@ -110,9 +109,8 @@ export function ReplicatingContainerView({
                 !element.disabled &&
                 <div>
                     <Button
-                        startIcon={<FontAwesomeIcon
-                            icon={faPlusCircle}
-                            style={{marginTop: '-2px'}}
+                        startIcon={<AddCircleOutlineOutlinedIcon
+                            sx={{marginTop: '-2px'}}
                         />}
                         sx={{
                             mt: 2,

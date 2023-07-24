@@ -1,8 +1,6 @@
 import {Box, Button, Divider, Grid, Typography, useTheme} from '@mui/material';
 import Rating, {type IconContainerProps} from '@mui/material/Rating';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {faEnvelope, faFaceFrown, faFaceFrownSlight, faFaceLaugh, faFaceMeh, faFaceSmile, faFilePdf} from '@fortawesome/pro-light-svg-icons';
 import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
 import {useSelector} from 'react-redux';
@@ -16,6 +14,13 @@ import {TextFieldComponent} from '../../text-field/text-field-component';
 import {CheckboxFieldComponent} from '../../checkbox-field/checkbox-field-component';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
+import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined';
+import SentimentNeutralOutlinedIcon from '@mui/icons-material/SentimentNeutralOutlined';
+import SentimentSatisfiedAltOutlinedIcon from '@mui/icons-material/SentimentSatisfiedAltOutlined';
+import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -34,10 +39,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
         label: string;
     }> = {
         1: {
-            icon: <FontAwesomeIcon
-                icon={faFaceFrown}
-                fixedWidth
-                style={{
+            icon: <MoodBadOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -45,10 +48,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             label: 'Sehr Unzufrieden',
         },
         2: {
-            icon: <FontAwesomeIcon
-                icon={faFaceFrownSlight}
-                fixedWidth
-                style={{
+            icon: <SentimentDissatisfiedOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -56,10 +57,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             label: 'Unzufrieden',
         },
         3: {
-            icon: <FontAwesomeIcon
-                icon={faFaceMeh}
-                fixedWidth
-                style={{
+            icon: <SentimentNeutralOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -67,10 +66,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             label: 'Neutral',
         },
         4: {
-            icon: <FontAwesomeIcon
-                icon={faFaceSmile}
-                fixedWidth
-                style={{
+            icon: <SentimentSatisfiedAltOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -78,10 +75,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             label: 'Zufrieden',
         },
         5: {
-            icon: <FontAwesomeIcon
-                icon={faFaceLaugh}
-                fixedWidth
-                style={{
+            icon: <EmojiEmotionsOutlinedIcon
+                sx={{
                     fontSize: '40px',
                     margin: '0 5px',
                 }}
@@ -263,9 +258,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         props.submission != null &&
                         <Button
                             variant="contained"
-                            startIcon={<FontAwesomeIcon
-                                icon={faFilePdf}
-                                style={{marginTop: '-2px'}}
+                            startIcon={<PictureAsPdfOutlinedIcon
+                                sx={{marginTop: '-2px'}}
                             />}
                             component="a"
                             target="_blank"
@@ -322,9 +316,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     <Button
                         sx={{mt: 4}}
                         variant="contained"
-                        startIcon={<FontAwesomeIcon
-                            icon={faEnvelope}
-                            style={{marginTop: '-2px'}}
+                        startIcon={<EmailOutlinedIcon
+                            sx={{marginTop: '-2px'}}
                         />}
                         onClick={sendApplicationCopyMail}
                         size={'large'}
