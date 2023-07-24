@@ -150,7 +150,7 @@ public class SubmissionController {
                 .findByIdAndApplicationId(id, applicationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        if (sub.getArchived() != null && sub.getArchived().isAfter(LocalDateTime.now())) {
+        if (sub.getArchived() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
@@ -161,14 +161,14 @@ public class SubmissionController {
             sub.setAssignee(assignee);
         }
         sub.setFileNumber(update.getFileNumber());
-        sub.setArchived(update.getArchived());
+        sub.setArchived(update.getArchived() != null ? LocalDateTime.now() : null);
         submissionRepository.save(sub);
 
         return new SubmissionDetailsDto(sub);
     }
 
     @PostMapping("/api/submissions/{applicationId}/{id}/resend")
-    public SubmissionDetailsDto update(
+    public SubmissionDetailsDto resend(
             Authentication authentication,
             @PathVariable Integer applicationId,
             @PathVariable String id
@@ -183,7 +183,7 @@ public class SubmissionController {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 
-        if (sub.getArchived() == null) {
+        if (sub.getArchived() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 

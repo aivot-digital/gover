@@ -5,7 +5,7 @@ import {type Application} from '../../../models/entities/application';
 import {type SubmissionDetailsDto} from '../../../models/entities/submission-details-dto';
 import {ApplicationService} from '../../../services/application-service';
 import {SubmissionService} from '../../../services/submission-service';
-import {format, parseISO} from 'date-fns';
+import {format, formatISO, parseISO} from 'date-fns';
 import {faFileDownload, faFilePdf} from '@fortawesome/pro-light-svg-icons';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
@@ -197,8 +197,9 @@ export function SubmissionEditPage(): JSX.Element {
                         dispatch(showSuccessSnackbar('Vorgang erfolgreich archiviert'));
                     })
                     .catch((err) => {
-                        if (err.response?.status === 409) {
+                        if (err.status === 409) {
                             dispatch(showErrorSnackbar('Der Vorgang wurde bereits archiviert'));
+                            setConfirmArchive(undefined);
                         } else {
                             console.error(err);
                             dispatch(showErrorSnackbar('Vorgang konnte nicht archiviert werden'));
@@ -319,6 +320,7 @@ export function SubmissionEditPage(): JSX.Element {
             {
                 editedSubmission?.destination == null &&
                 editedSubmission?.assignee == null &&
+                editedSubmission?.archived == null &&
                 <Box
                     sx={{mb: 4}}
                 >

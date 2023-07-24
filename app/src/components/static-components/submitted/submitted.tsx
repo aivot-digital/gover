@@ -180,7 +180,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                             setShowMailSentDialog(true);
                         })
                         .catch((err) => {
-                            console.log(err, JSON.stringify(err));
                             if (err.status === 400) {
                                 setMailError('Es konnte keine E-Mail an diese Adresse verschickt werden.');
                                 setMailSent(false);
