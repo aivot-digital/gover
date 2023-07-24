@@ -134,11 +134,11 @@ export function DestinationEditPage(): JSX.Element {
                     }
                 }
 
-                if (editedDest.mailCC != null && isStringNotNullOrEmpty(editedDest.mailCC) && editedDest.mailCC.split(',').every((mail) => validateEmail(mail.trim()))) {
+                if (editedDest.mailCC != null && isStringNotNullOrEmpty(editedDest.mailCC) && !editedDest.mailCC.split(',').every((mail) => validateEmail(mail.trim()))) {
                     errors.mailCC = 'Bitte geben Sie nur gültige Mail CC-Adressen ein';
                 }
 
-                if (editedDest.mailBCC != null && isStringNotNullOrEmpty(editedDest.mailBCC) && editedDest.mailBCC.split(',').every((mail) => validateEmail(mail.trim()))) {
+                if (editedDest.mailBCC != null && isStringNotNullOrEmpty(editedDest.mailBCC) && !editedDest.mailBCC.split(',').every((mail) => validateEmail(mail.trim()))) {
                     errors.mailBCC = 'Bitte geben Sie nur gültige Mail CC-Adressen ein';
                 }
             } else {
