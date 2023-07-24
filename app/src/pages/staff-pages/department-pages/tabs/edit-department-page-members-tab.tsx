@@ -272,10 +272,10 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                     >
                         Mehr Informationen zu den Rollen finden Sie
                         im <a
-                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/rollenkonzept"
+                        href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/konzepte/rollenkonzept"
                         target="_blank"
                     >Rollenkonzept</a> des <a
-                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch"
+                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
                         target="_blank"
                     >Benutzerhandbuchs</a>.
                     </Typography>
@@ -328,7 +328,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                         href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/rollenkonzept"
                         target="_blank"
                     >Rollenkonzept</a> des <a
-                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch"
+                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
                         target="_blank"
                     >Benutzerhandbuchs</a>.
                     </Typography>
