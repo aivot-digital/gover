@@ -139,12 +139,15 @@ export function DepartmentEditPage(): JSX.Element {
                     DepartmentsService
                         .create(editedDepartment)
                         .then((createdDepartment) => {
+                            setOriginalDepartment(createdDepartment);
+                            setEditedDepartment(createdDepartment);
                             dispatch(showSuccessSnackbar('Fachbereich erfolgreich erstellt!'));
-                            navigate(`/departments/${createdDepartment.id}`, {replace: true});
                         })
                         .catch((err) => {
                             console.error(err);
                             dispatch(showErrorSnackbar('Fachbereich konnte nicht gespeichert werden!'));
+                        })
+                        .finally(() => {
                             setIsBusy(false);
                         });
                 } else {
