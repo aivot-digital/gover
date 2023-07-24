@@ -325,6 +325,12 @@ public class SubmissionController {
             return;
         }
 
+        canAccess = app.getDevelopingDepartment() != null && accessibleDepartmentRepository
+                .existsByDepartmentIdAndUserId(app.getDevelopingDepartment().getId(), requester.getId());
+        if (canAccess) {
+            return;
+        }
+
         throw new ResponseStatusException(HttpStatus.FORBIDDEN);
     }
 }
