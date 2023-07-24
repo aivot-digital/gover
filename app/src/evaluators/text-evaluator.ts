@@ -1,6 +1,6 @@
-import {ConditionOperator} from "../data/condition-operator";
-import {BaseEvaluator} from "./base-evaluator";
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../utils/string-utils";
+import {ConditionOperator} from '../data/condition-operator';
+import {type BaseEvaluator} from './base-evaluator';
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../utils/string-utils';
 
 
 export const TextEvaluator: BaseEvaluator<string> = {

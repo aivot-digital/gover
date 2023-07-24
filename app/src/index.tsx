@@ -3,10 +3,13 @@ import ReactDOM from 'react-dom';
 import reportWebVitals from './reportWebVitals';
 import {Provider as StoreProvide} from 'react-redux';
 import {store} from './store';
+import * as Sentry from '@sentry/react';
 
 import './index.scss';
 import {ThemeProvider} from '@mui/material';
 import {BaseTheme} from './theming/base-theme';
+import {SystemService} from './services/system-service';
+import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} from 'react-router-dom';
 
 async function importAppTarget() {
     if (process.env.REACT_APP_BUILD_TARGET === 'customer') {
@@ -19,6 +22,43 @@ async function importAppTarget() {
         );
     }
 }
+
+SystemService
+    .getSentryDsn()
+    .then((sentryDsn) => {
+        if (sentryDsn != null && sentryDsn.length > 0) {
+            Sentry.init({
+                dsn: sentryDsn[0],
+                integrations: [
+                    new Sentry.BrowserTracing({
+                        routingInstrumentation: Sentry.reactRouterV6Instrumentation(
+                            React.useEffect,
+                            useLocation,
+                            useNavigationType,
+                            createRoutesFromChildren,
+                            matchRoutes,
+                        ),
+                    }),
+                    new Sentry.Replay(),
+                ],
+
+                // Set tracesSampleRate to 0.2 to capture 20%
+                // of transactions for performance monitoring
+                tracesSampleRate: 0.2,
+
+                // Set distributed tracing to default
+                tracePropagationTargets: ['localhost', /^\//],
+
+                // Capture Replay for 10% of all sessions,
+                // plus for 100% of sessions with an error
+                replaysSessionSampleRate: 0.1,
+                replaysOnErrorSampleRate: 1.0,
+            });
+        }
+    })
+    .catch((err) => {
+        console.warn('Failed to initialize Sentry', err);
+    });
 
 importAppTarget()
     .then(({default: Environment}) => {

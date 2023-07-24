@@ -13,6 +13,8 @@ import {type Department} from '../../../../models/entities/department';
 import {type DepartmentMembershipWithUserDto} from '../../../../models/dtos/department-membership-with-user-dto';
 import {DepartmentsService} from '../../../../services/departments-service';
 import {filterItems} from '../../../../utils/filter-items';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
@@ -27,6 +29,8 @@ interface EditDepartmentPageMembersTabProps {
 }
 
 export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMembersTabProps): JSX.Element {
+    const dispatch = useAppDispatch();
+
     const [showAddMembership, toggleShowAddMembership] = useReducer((p) => !p, false);
     const [search, setSearch] = useState('');
 
@@ -52,8 +56,18 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
     const handleDelete = (membershipId: number): void => {
         if (memberships != null) {
             DepartmentMembershipsService
-                .destroy(membershipId);
-            setMemberships(memberships.filter((mem) => mem.id !== membershipId));
+                .destroy(membershipId)
+                .then(() => {
+                    setMemberships(memberships.filter((mem) => mem.id !== membershipId));
+                })
+                .catch((err) => {
+                    if (err.status === 409) {
+                        dispatch(showErrorSnackbar('Mitarbeiter:in kann nicht entfernt werden, da sie noch mindestens zu einem offenen Antrag zugeordnet ist.'));
+                    } else {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Mitarbeiter:in kann nicht entfernt werden, bitte probieren Sie es später erneut.'));
+                    }
+                });
         }
     };
 
@@ -264,10 +278,10 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                     >
                         Mehr Informationen zu den Rollen finden Sie
                         im <a
-                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/rollenkonzept"
+                        href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/konzepte/rollenkonzept"
                         target="_blank"
                     >Rollenkonzept</a> des <a
-                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch"
+                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
                         target="_blank"
                     >Benutzerhandbuchs</a>.
                     </Typography>
@@ -320,7 +334,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                         href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/konzepte/rollenkonzept"
                         target="_blank"
                     >Rollenkonzept</a> des <a
-                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch"
+                        href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
                         target="_blank"
                     >Benutzerhandbuchs</a>.
                     </Typography>

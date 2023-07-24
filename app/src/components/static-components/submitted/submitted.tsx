@@ -1,4 +1,4 @@
-import {Box, Button, Checkbox, Divider, FormControl, FormControlLabel, FormHelperText, Grid, TextField, Typography, useTheme} from '@mui/material';
+import {Box, Button, Divider, Grid, Typography, useTheme} from '@mui/material';
 import Rating, {type IconContainerProps} from '@mui/material/Rating';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
@@ -8,8 +8,12 @@ import {ApplicationService} from '../../../services/application-service';
 import {selectLoadedApplication} from '../../../slices/app-slice';
 import {validateEmail} from '../../../utils/validate-email';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
-import {type AnyElement} from '../../../models/elements/any-element';
 import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
+import {type SubmissionListDto} from '../../../models/entities/submission-list-dto';
+import {TextFieldComponent} from '../../text-field/text-field-component';
+import {CheckboxFieldComponent} from '../../checkbox-field/checkbox-field-component';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
@@ -21,17 +25,11 @@ import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined
 const animationStartDelay = 200;
 const animationDuration = 2000;
 
-// TODO: Localization
-
 interface SubmittedProps {
-    allElements: AnyElement[];
-    pdfLink: string;
+    submission?: SubmissionListDto;
 }
 
-export function Submitted({
-                              allElements,
-                              pdfLink,
-                          }: SubmittedProps) {
+export function Submitted(props: SubmittedProps): JSX.Element {
     const application = useSelector(selectLoadedApplication);
     const submitStep = application?.root.submitStep;
     const theme = useTheme();
@@ -87,7 +85,7 @@ export function Submitted({
         },
     };
 
-    function IconContainer(props: IconContainerProps) {
+    function IconContainer(props: IconContainerProps): JSX.Element {
         const {
             value,
             ...other
@@ -154,24 +152,43 @@ export function Submitted({
     }, [intervalId]);
      */
 
+    const dispatch = useAppDispatch();
+
     const [email, setEmail] = useState('');
     const [privacy, setPrivacy] = useState(false);
     const [privacyError, setPrivacyError] = useState<string>();
-    const [mailInvalid, setMailInvalid] = useState(false);
+    const [mailError, setMailError] = useState<string>();
     const [mailSent, setMailSent] = useState(false);
     const [showMailSentDialog, setShowMailSentDialog] = useState(false);
 
-    const sendApplicationCopyMail = () => {
-        if (application != null) {
+    const sendApplicationCopyMail = (): void => {
+        if (props.submission != null) {
             if (privacy) {
                 if (validateEmail(email)) {
-                    ApplicationService.sendApplicationCopy(application, pdfLink, email);
                     setMailSent(true);
                     setPrivacyError(undefined);
-                    setMailInvalid(false);
-                    setShowMailSentDialog(true);
+                    setMailError(undefined);
+
+                    ApplicationService
+                        .sendApplicationCopy(props.submission, email)
+                        .then(() => {
+                            setShowMailSentDialog(true);
+                        })
+                        .catch((err) => {
+                            if (err.status === 400) {
+                                setMailError('Es konnte keine E-Mail an diese Adresse verschickt werden.');
+                                setMailSent(false);
+                            } else if (err.status === 409) {
+                                setMailError('Sie hatten bereits zu viele Fehlversuche.');
+                            } else if (err.status === 406) {
+                                setMailError('Sie haben bereits eine E-Mail für diesen Antrag verschickt.');
+                            } else {
+                                console.error(err);
+                                dispatch(showErrorSnackbar('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
+                            }
+                        });
                 } else {
-                    setMailInvalid(true);
+                    setMailError('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
                 }
             } else {
                 setPrivacyError('Sie müssen Ihr Einverständnis zum Versand der E-Mail geben.');
@@ -237,18 +254,21 @@ export function Submitted({
                         Antrag als PDF herunterladen.
                     </Typography>
 
-                    <Button
-                        variant="contained"
-                        startIcon={<PictureAsPdfOutlinedIcon
-                            sx={{marginTop: '-2px'}}
-                        />}
-                        component="a"
-                        target="_blank"
-                        href={pdfLink}
-                        size={'large'}
-                    >
-                        Antrag als PDF herunterladen
-                    </Button>
+                    {
+                        props.submission != null &&
+                        <Button
+                            variant="contained"
+                            startIcon={<PictureAsPdfOutlinedIcon
+                                sx={{marginTop: '-2px'}}
+                            />}
+                            component="a"
+                            target="_blank"
+                            href={`/api/public/prints/${props.submission.id}`}
+                            size={'large'}
+                        >
+                            Antrag als PDF herunterladen
+                        </Button>
+                    }
                 </Grid>
                 <Grid
                     item
@@ -260,6 +280,7 @@ export function Submitted({
                     >
                         Antrag per E-Mail erhalten
                     </Typography>
+
                     <Typography
                         sx={{
                             mt: 1,
@@ -271,37 +292,27 @@ export function Submitted({
                         die
                         von Ihnen angegebene E-Mail-Adresse zusenden.
                     </Typography>
-                    <TextField
-                        label="E-Mail-Adresse *"
+
+                    <TextFieldComponent
+                        label="E-Mail-Adresse"
                         placeholder="max.mustermann@mail.de"
                         value={email}
                         disabled={mailSent}
-                        onChange={(event) => {
-                            setEmail(event.target.value);
+                        onChange={(val) => {
+                            setEmail(val ?? '');
                         }}
-                        error={mailInvalid}
-                        helperText={mailInvalid ? 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' : undefined}
+                        required
+                        error={mailError}
                     />
-                    <FormControl error={privacyError != null}>
-                        <FormControlLabel
-                            sx={{mt: 2}}
-                            control={<Checkbox
-                                checked={privacy}
-                                onChange={(_, checked) => {
-                                    setPrivacy(checked);
-                                }}
-                                color={privacyError != null ? 'primary' : 'error'}
-                            />}
-                            disabled={mailSent}
-                            label="Ich erteile mein Einverständnis, dass der Antrag inklusive hochgeladener Unterlagen per unverschlüsselter E-Mail versandt wird."
-                        />
-                        {
-                            privacyError != null &&
-                            <FormHelperText>
-                                {privacyError}
-                            </FormHelperText>
-                        }
-                    </FormControl>
+
+                    <CheckboxFieldComponent
+                        label="Ich erteile mein Einverständnis, dass der Antrag per unverschlüsselter E-Mail versandt wird."
+                        value={privacy}
+                        onChange={setPrivacy}
+                        error={privacyError}
+                        disabled={mailSent}
+                    />
+
                     <Button
                         sx={{mt: 4}}
                         variant="contained"
@@ -350,7 +361,7 @@ export function Submitted({
                     name="highlight-selected-only"
                     IconContainerComponent={IconContainer}
                     highlightSelectedOnly
-                    size={'large'}
+                    size="large"
                 />
             </Box>
 

@@ -7,6 +7,7 @@ import {UsersService} from '../../../../services/users-service';
 import {Link, useNavigate} from 'react-router-dom';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {User} from '../../../../models/entities/user';
+import {filterItems} from '../../../../utils/filter-items';
 
 const columns: Array<GridColDef<DepartmentMembershipWithDepartmentDto>> = [
     {
@@ -65,9 +66,11 @@ export function UserEditPageMembershipsTab(props: UserEditPageMembershipsTabProp
     return (
         <TableWrapper
             columns={columns}
-            rows={memberships ?? []}
+            rows={memberships.filter((value) => {
+                return search.length === 0 || value.department.name.toLowerCase().includes(search.toLowerCase());
+            })}
             onRowClick={(dep) => {
-                navigate(`/departments/${dep.id}`);
+                navigate(`/departments/${dep.department.id}`);
             }}
             title="Fachbereiche und Rollen"
             search={search}

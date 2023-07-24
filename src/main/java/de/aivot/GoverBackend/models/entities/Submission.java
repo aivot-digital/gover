@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.models.entities;
 
 import de.aivot.GoverBackend.converters.JsonObjectConverter;
+import org.hibernate.annotations.ColumnDefault;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -40,6 +41,14 @@ public class Submission {
 
     @NotNull
     private Boolean isTestSubmission;
+
+    @NotNull
+    @ColumnDefault("FALSE")
+    private Boolean copySent;
+
+    @NotNull
+    @ColumnDefault("0")
+    private Integer copyTries;
 
     @PrePersist
     public void prePersist() {
@@ -126,6 +135,22 @@ public class Submission {
 
     public void setIsTestSubmission(Boolean testSubmission) {
         isTestSubmission = testSubmission;
+    }
+
+    public Boolean getCopySent() {
+        return copySent;
+    }
+
+    public void setCopySent(Boolean copySent) {
+        this.copySent = copySent;
+    }
+
+    public Integer getCopyTries() {
+        return copyTries;
+    }
+
+    public void setCopyTries(Integer copyTries) {
+        this.copyTries = copyTries;
     }
 
     // endregion

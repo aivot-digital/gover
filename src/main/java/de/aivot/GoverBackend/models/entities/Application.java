@@ -70,10 +70,10 @@ public class Application {
     @ManyToOne(fetch = FetchType.LAZY)
     private Department developingDepartment;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     private Department managingDepartment;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     private Department responsibleDepartment;
 
     @ManyToOne(fetch = FetchType.LAZY)

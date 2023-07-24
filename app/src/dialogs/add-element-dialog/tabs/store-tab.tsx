@@ -74,7 +74,7 @@ export function StoreTab({
                     Bitte beachten Sie, dass Sie für das Veröffentlichen von Bausteinen einen Gover Store Schlüssel
                     benötigen. Mehr dazu finden Sie
                     im <a
-                    href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
+                    href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/store/schluessel-beantragen"
                     target="_blank"
                     rel="noreferrer"
                 >Gover Store</a>.

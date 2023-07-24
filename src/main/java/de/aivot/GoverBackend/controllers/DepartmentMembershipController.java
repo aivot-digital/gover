@@ -172,7 +172,7 @@ public class DepartmentMembershipController {
                 .map(a -> a.getKey().getApplicationId())
                 .toList();
 
-        var activeSubmissionsExists = submissionRepository.existsByApplication_IdInAndArchivedIsNull(accessibleApplications);
+        var activeSubmissionsExists = submissionRepository.existsByApplication_IdInAndAssignee_IdAndArchivedIsNull(accessibleApplications, membership.getUser().getId());
         if (activeSubmissionsExists) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }

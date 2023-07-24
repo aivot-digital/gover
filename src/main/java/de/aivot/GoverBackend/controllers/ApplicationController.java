@@ -375,7 +375,7 @@ public class ApplicationController {
         if (!requester.isAdmin()) {
             boolean membershipExists = accessibleDepartmentRepository
                     .existsByDepartmentIdAndUserId(
-                            app.get().getId(),
+                            app.get().getDevelopingDepartment().getId(),
                             requester.getId()
                     );
             if (!membershipExists) {

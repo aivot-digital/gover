@@ -118,7 +118,7 @@ export function PublishPresetDialog(props: PublishPresetDialogProps): JSX.Elemen
                                 Gehen Sie dazu in die <Link to="/settings">Anwendungseinstellungen</Link> und geben Sie
                                 Ihren
                                 Schlüssel im entsprechenden Feld ein. Mehr Informationen zum Gover Store finden Sie unter <a
-                                href="https://store.gover.digital/contribute"
+                                href="https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/store/schluessel-beantragen"
                                 target="_blank"
                                 rel="noreferrer"
                             >

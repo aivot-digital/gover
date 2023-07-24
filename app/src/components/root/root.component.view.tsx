@@ -53,7 +53,7 @@ export function RootComponentView({
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [pdfLink, setPdfLink] = useState('');
+    const [submission, setSubmission] = useState<SubmissionListDto>();
 
     const [validatedWithErrors, setValidatedWithErrors] = useState(false);
 
@@ -193,7 +193,7 @@ export function RootComponentView({
                         (submission) => {
                             if (submission != null) {
                                 setValidatedWithErrors(false);
-                                setPdfLink(`/api/public/prints/${submission.id}`);
+                                setSubmission(submission);
                                 dispatch(nextStep());
                                 dispatch(resetUserInput());
                                 UserInputService.cleanUserInput(application);
@@ -284,13 +284,11 @@ export function RootComponentView({
                                 id: '',
                                 type: ElementType.SubmittedStep,
                                 appVersion: ProjectPackage.version,
-                                pdfLink: pdfLink,
                             }}
                             title="Ihr Antrag wurde erfolgreich eingereicht"
                         >
                             <Submitted
-                                allElements={allElements}
-                                pdfLink={pdfLink}
+                                submission={submission}
                             />
                         </CustomStep>
                     </Stepper>
@@ -322,7 +320,7 @@ export function RootComponentView({
                             icon={<span style={{
                                 color: 'var(--hw-primary)',
                                 transform: 'translateY(1px)',
-                            }}><GppGoodOutlinedIcon fontSize={"small"}/></span>}
+                            }}><GppGoodOutlinedIcon fontSize="small" /></span>}
                             label="Lokal auf Ihrem Gerät zwischengespeichert"
                             variant="outlined"
                         />

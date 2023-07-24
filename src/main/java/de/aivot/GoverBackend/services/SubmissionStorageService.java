@@ -23,7 +23,7 @@ public class SubmissionStorageService {
     }
 
     public Path getSubmissionPdfPath(String id) {
-        return Paths.get(ROOT + id + "/print.pdf");
+        return Paths.get(ROOT + id + "/Antrag.pdf");
     }
 
     public Path getSubmissionHtmlPath(String id) {

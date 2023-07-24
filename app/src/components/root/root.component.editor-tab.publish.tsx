@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Alert, AlertTitle, Button, Checkbox, Divider, List, ListItem, ListItemText, Tooltip, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -21,8 +21,8 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
 
-    const isPublished = props.entity.status === ApplicationStatus.Published;
-    const isRevoked = props.entity.status === ApplicationStatus.Revoked;
+    const [isPublished, setIsPublished] = useState(props.entity.status === ApplicationStatus.Published);
+    const [isRevoked, setIsRevoked] = useState(props.entity.status === ApplicationStatus.Revoked);
 
     const checklist: Array<{
         label: string;
@@ -167,6 +167,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                                     ...props.entity,
                                     status: ApplicationStatus.Revoked,
                                 }));
+                                setIsRevoked(true);
                             }}
                         >
                             Formular Zurückziehen
@@ -228,6 +229,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                                 ...props.entity,
                                 status: ApplicationStatus.Published,
                             }));
+                            setIsPublished(true);
                         }}
                     >
                         Formular Veröffentlichen
