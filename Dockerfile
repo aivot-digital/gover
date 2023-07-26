@@ -72,6 +72,19 @@ RUN ./mvnw -DskipTests install
 # App
 FROM --platform=linux/amd64 eclipse-temurin:17 as app
 
+ARG buildDate
+ARG version
+
+# Set app metadata
+LABEL org.opencontainers.image.created=$buildDate
+LABEL org.opencontainers.image.url="https://github.com/aivot-digital/gover"
+LABEL org.opencontainers.image.documentation="https://wiki.teamaivot.de/de/dokumentation/gover"
+LABEL org.opencontainers.image.source="https://github.com/aivot-digital/gover"
+LABEL org.opencontainers.image.version=$version
+LABEL org.opencontainers.image.vendor="Aivot"
+LABEL org.opencontainers.image.title="Gover"
+LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online applications."
+
 # Set locale env config
 ENV TZ "Europe/Berlin"
 ENV LANG de_DE.UTF-8

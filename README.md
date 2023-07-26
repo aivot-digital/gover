@@ -41,14 +41,17 @@ Currently top secret. If you want to get an introduction into using Gover contac
 
 
 # Setup
-Gover was developed as a cloud native application and works best with Docker. 
-If you want to deploy Gover without docker, read more at the [native setup section](./README.md#Native-Setup).
+Gover was developed as a cloud native application and works best with Docker.
 
 Gover depends on a few other services to fully function:
 
 * [PostgreSQL](https://www.postgresql.org/)
+* [ClamAV](https://www.clamav.net/)
+* [InfluxDB](https://www.influxdata.com/)
 
-## Download
+## Development Setup
+To develop with the Gover application, follow these steps:
+
 Clone this repository and enter it via:
 
 ```bash
@@ -56,41 +59,133 @@ git clone https://github.com/aivot-digital/gover.git ./gover
 cd ./gover
 ```
 
-## DockerCompose Setup
+Start the development environment with:
 
-**This is one of two options. For the native setup, refer to the [native setup guide](./README.md#Native-Setup) below.**
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+Start the customer frontend with:
+
+```bash
+cd ./app
+npm run start:customer
+# or for windows
+npm run start:customer:win
+```
+
+The customer frontend is now avaiable at <http://localhost:3000>.
+
+Start the admin frontend with:
+
+```bash
+cd ./app
+npm run start:staff
+# or for windows
+npm run start:staff:win
+```
+
+The admin frontend is now avaiable at <http://localhost:3001>.
+
+Make sure, that the environment variable for `JAVA_HOME` is set to the correct JDK path and start the backend with:
+
+```bash
+mvnw spring-boot:run
+```
+
+The Gover backend is now available at <http://localhost:8080>.
+
+## Docker Setup
+
+To run the prebuilt docker container, follow these steps:
 
 ### Prerequisites
 
-Configure the gover installation by editing the file `./config/application.properties`.
-The `application.properties` contains all configs for the Gover application.
+Make sure docker and the docker compose plugin is installed.
 
-If you plan to use docker-compose, you do not need to change the `application.properties` at all.
+### Configuration
 
-The config `application.properties` should contain the following data.
+Create a docker-compose file `docker-compose.yml` with the following content:
 
-```properties
-spring.datasource.url=jdbc:postgresql://<POSTGRES_HOST>:<POSTGRES_PORT>/<POSTGRES_DATABASE>
-spring.datasource.username=<POSTGRES_USERNAME>
-spring.datasource.password=<POSTGRES_PASSWORD>
+```yaml
+# docker-compose.yml
+version: '3.1'
 
-spring.mail.host=<SMTP_HOST>
-spring.mail.port=<SMTP_PORT>
-spring.mail.username=<SMTP_USERNAME>
-spring.mail.password=<SMTP_PASSWORD>
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
+services:
 
-gover.fromMail=<FROM_MAIL_ADDRESS>
-gover.reportMail=<REPORT_MAIL_ADDRESS>
+  database:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: gover
+      POSTGRES_PASSWORD: gover
+      POSTGRES_DB: gover
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./pg:/var/lib/postgresql/data
+
+  clamav:
+    image: clamav/clamav:1.1
+    restart: always
+
+  influx:
+    image: influxdb:2.7
+    restart: 'always'
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: 'setup'
+      DOCKER_INFLUXDB_INIT_USERNAME: 'gover'
+      DOCKER_INFLUXDB_INIT_PASSWORD: 'gover-password'
+      DOCKER_INFLUXDB_INIT_ORG: 'gover'
+      DOCKER_INFLUXDB_INIT_BUCKET: 'gover'
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: 'gover'
+
+  gover:
+    image: ghcr.io/aivot-digital/gover:3.0.0
+    depends_on:
+      - database
+      - clamav
+    restart: always
+    volumes:
+      - ./gv_data:/app/data
+    environment:
+      GOVER_DB_HOST: database
+      GOVER_DB_PORT: 5432
+      GOVER_DB_DATABASE: gover
+      GOVER_DB_USERNAME: gover
+      GOVER_DB_PASSWORD: gover
+
+      GOVER_CLAM_HOST: clamav
+      GOVER_CLAM_PORT: 3310
+
+      GOVER_INFLUX_HOST: influx
+      GOVER_INFLUX_PORT: 8086
+      GOVER_INFLUX_ORG: gover
+      GOVER_INFLUX_BUCKET: gover
+      GOVER_INFLUX_TOKEN: gover
+
+      GOVER_SMTP_HOST: localhost
+      GOVER_SMTP_PORT: 25
+      GOVER_SMTP_USERNAME: gover
+      GOVER_SMTP_PASSWORD: gover
+
+      GOVER_LOG_LEVEL: WARN
+      GOVER_JWT_SECRET: geheimnis-fuer-lokales-testen
+      GOVER_FROM_MAIL: '"Lokal" <noreply@localhost>'
+      GOVER_REPORT_MAIL: noreply@localhost
+      GOVER_SENTRY_SERVER: ""
+      GOVER_SENTRY_WEB_APP: ""
+      GOVER_ENVIRONMENT: Lokal
+      GOVER_HOSTNAME: "http://localhost:8080"
+      GOVER_FILE_EXTENSIONS: pdf, png, jpg, jpeg, doc, docx, xls, xlsx, ppt, pptx, odt, fodt, ods, fods, odp, fodp, odg, fodg, odf
+      GOVER_CONTENT_TYPES: application/pdf, image/png, image/jpeg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msexcel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/mspowerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.oasis.opendocument.text, application/vnd.oasis.opendocument.spreadsheet, application/vnd.oasis.opendocument.presentation, application/vnd.oasis.opendocument.graphics, application/vnd.oasis.opendocument.formula
+    ports:
+      - "8080:8080/tcp"
 ```
-
-Replace all data in the angle brackets with your respective data.
 
 ### Running Gover
 
-If you have docker-compose installed get started by running `docker-compose up`.
-Gover is now available at <http://localhost:8080/admin>.
+Start the containers with `docker compose up -d` and monitor the startup with `docker compose logs -f gover`.
+Gover is now available at <http://localhost:8080> and <http://localhost:8080/admin>.
 
 **Please note**, that the Gover application prints initial login data for an admin user to the console. 
 Use these credentials for your first login.
@@ -100,87 +195,23 @@ If you have the smtp correctly configured, an email with the credentials is also
 ... Created default admin with email "admin@gover.aivot.de" and password "dkmWySOPpQAr"
 ```
 
-## Native Setup
-
-**The native setup guide was made for unix platforms only.**
-
-**This is one of two options. For the docker setup, refer to the [docker setup guide](./README.md#DockerCompose-Setup) above.**
-
-### Prerequisites
-
-* Working [PostgreSQL](https://www.postgresql.org/)
-* Working [wkhtmltopdf](https://wkhtmltopdf.org/)
-* [node.js 17](https://nodejs.org/en/)
-* [openjdk17](https://openjdk.org/projects/jdk/17/)
-
-Clone this repository with its submodules anywhere and change into the cloned repository:
-
-```bash
-git clone git@github.com:aivot-digital/gover.git ./gover
-cd ./gover
-``` 
-
-### Adjusting backend config
-
-Edit the file `./config/application.properties` and insert the credentials for PostgreSQL and your SMTP.
-
-### Build
-
-Run the following command: `./mvnw -DskipTests install`.
-This will build a JAR file at `./target/Gover-2.1.8.jar`.
-
-### Run Gover
-After everything is set up, you can now run the Gover instance.
-Simply run `java -jar ./target/Gover-2.1.8.jar` or `nohup java -jar ./target/Gover-2.1.8.jar`.
-
-## Customization
-
-You can customize some parts of the Gover application.
-All customizations must be applied, before the Gover application is built.
-
-### Customize Theming
-
-To customize the theming, edit the `custom-themes.json` at `./app/src/custom-themes.json`.
-This file contains a list of custom themes, which will be compiled into the Gover frontend application. A config for a new theme called `Candy` looks as follows.
-
-```json
-[
-  {
-    "name": "Candy",
-    "primary": "#FF8DC7",
-    "primaryDark": "#BF6B9C",
-    "accent": "#FFDDD2"
-  }
-]
-```
-
-### Customize E-Mail-Templates
-
-The E-Mail-Templates used for sending Mails to the customer and staff, can be edited.
-All files are located at `./gover-backend/src/main/resources/templates/mail/`.
-Please note, that the templates must follow the rules for the [Thymeleaf](https://www.thymeleaf.org/) templating engine.
-
-
 
 # Documentation
-Code documentation is stored in the project's [GitHub wiki](../../wiki) so that it is as close to the code as possible.
-
-If you are looking for end user documentation visit our [documentation overview](https://aivot.de/docs) and select
+If you are looking for code documentation as well as end user documentation visit our [documentation overview](https://aivot.de/docs) and select
 the respective project.
 
 
 
 
 # Contributing
-Anyone can support us. There are many ways to contribute to Gover. There is certainly one for you as well.
+Anyone can support us. There are many different ways to contribute to Gover. There is certainly one for you as well.
 
-| Support opportunity               | Remark                                                                                                                                                                                                                           |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Spread the word                   | Share your thoughts on this project on social media. Feel free to link to our website or this GitHub repository.                                                                                                                 |
-| Share your ideas or give feedback | Share your ideas with us or report a bug. With GitHub Issues and our templates, you can easily bring something up for discussion. Ideally you should read the [contributing guideline](./CONTRIBUTING.md) first.                 |
-| Develop                           | Develop together with us on the project. Contributions are managed via GitHub. Please read the [contributing guideline](./CONTRIBUTING.md) first.                                                                                |
-| Write out a Bounty                | "Share your ideas" on steroids. If you have a business critical idea and want to see it implemented, you have the chance to set a bounty and accelerate a possible development.                                                  |
-| Support us financially            | Donate via [GitHub Sponsors](https://github.com/sponsors/aivot-digital) or [open collective](https://opencollective.com/aivot-digital). All funds are managed transparently and go directly into the development of the project. |
+| Support opportunity               | Remark                                                                                                                                                                                                                                                                 |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Spread the word                   | Share your thoughts on this project on social media. Feel free to link to our website or this GitHub repository.                                                                                                                                                       |
+| Share your ideas or give feedback | Share your ideas with us or report a bug. With GitHub Issues and our templates, you can easily bring something up for discussion. Ideally you should read the [contributing guideline](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md) first. |
+| Develop                           | Develop together with us on the project. Contributions are managed via GitHub. Please read the [contributing guideline](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md) first.                                                                |
+| Write out a Bounty                | "Share your ideas" on steroids. If you have a business critical idea and want to see it implemented, you have the chance to set a bounty and accelerate a possible development.                                                                                        |
 
 ❤ Thank you for contributing! ❤
 
@@ -200,13 +231,13 @@ Future functionalities and improvements in prioritized order can be found in the
 
 
 # License
-This project is licensed under the terms of the [Business Source License](./LICENSE.md).
+This project is licensed under the terms of the [Sustainable Use License](./LICENSE.md).
 
 
 
 
-# Sponsoring services
-These great services sponsor Aivot's core infrastructure:
+# Services used
+These great services build Aivot's core infrastructure for this project:
 
 [<img loading="lazy" alt="GitHub" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Logo.png" height="25">](https://github.com/)
 
