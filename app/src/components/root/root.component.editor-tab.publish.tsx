@@ -131,7 +131,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                     <Alert
                         severity="success"
                     >
-                        Formular Veröffentlicht
+                        Formular veröffentlicht
                     </Alert>
 
                     <Divider
@@ -148,8 +148,8 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                             Formular zurückziehen
                         </AlertTitle>
 
-                        Sie können einen veröffentlichtes Formular jederzeit zurückziehen.
-                        Dieser wird dann nicht mehr ausgespielt.
+                        Sie können ein veröffentlichtes Formular jederzeit zurückziehen.
+                        Dieses steht dann nicht mehr öffentlich zur Verfügung.
                         Sie können zurückgezogene Formulare jederzeit wieder veröffentlichen.
                     </Alert>
 
