@@ -35,10 +35,6 @@ export function ElementEditor<T extends AnyElement, E extends Application | Pres
                 ...updatedElement,
                 appVersion: ProjectPackage.version,
             };
-
-            if (props.element.testProtocolSet != null) {
-                elementToSave.testProtocolSet = undefined;
-            }
         }
 
         let entityToSave: Partial<E> = {};

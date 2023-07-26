@@ -10,7 +10,7 @@ import {type AnyElement} from '../../../../../../models/elements/any-element';
 import {type ElementEditorContentProps} from './element-editor-content-props';
 import {type AnyFormElement} from '../../../../../../models/elements/form/any-form-element';
 import {type BaseInputElement} from '../../../../../../models/elements/form/base-input-element';
-import {isAnyInputElement} from '../../../../../../models/elements/form/input/any-input-element';
+import {AnyInputElement, isAnyInputElement} from '../../../../../../models/elements/form/input/any-input-element';
 import {TextFieldComponent} from '../../../../../text-field/text-field-component';
 import {SelectFieldComponent} from '../../../../../select-field/select-field-component';
 import {CheckboxFieldComponent} from '../../../../../checkbox-field/checkbox-field-component';
@@ -18,9 +18,30 @@ import {type Application} from '../../../../../../models/entities/application';
 import {type Preset} from '../../../../../../models/entities/preset';
 
 export function ElementEditorContent<T extends AnyElement, E extends Application | Preset>(props: ElementEditorContentProps<T, E>): JSX.Element | null {
+    const {
+        onChange,
+        ...passProps
+    } = props;
+
     switch (props.currentTab) {
         case DefaultTabs.properties:
-            return <DefaultEditor {...props}/>;
+            return (
+                <DefaultEditor
+                    onChange={(element) => {
+                        if (props.element.testProtocolSet?.professionalTest != null) {
+                            if (props.element.testProtocolSet.technicalTest == null) {
+                                element.testProtocolSet = undefined;
+                            } else {
+                                element.testProtocolSet = {
+                                    technicalTest: props.element.testProtocolSet.technicalTest,
+                                };
+                            }
+                        }
+                        onChange(element);
+                    }}
+                    {...passProps}
+                />
+            );
         case DefaultTabs.visibility:
             return (
                 <CodeTab
@@ -33,10 +54,19 @@ export function ElementEditorContent<T extends AnyElement, E extends Application
                     allowNoCode={true}
                     shouldReturnString={false}
                     onChange={(updatedFunc) => {
-                        // @ts-expect-error
-                        props.onChange({
+                        const updatedElement: Partial<AnyInputElement> = {
                             isVisible: updatedFunc,
-                        });
+                        };
+                        if (props.element.testProtocolSet?.technicalTest != null) {
+                            if (props.element.testProtocolSet.professionalTest == null) {
+                                updatedElement.testProtocolSet = undefined;
+                            } else {
+                                updatedElement.testProtocolSet = {
+                                    professionalTest: props.element.testProtocolSet.professionalTest,
+                                };
+                            }
+                        }
+                        props.onChange(updatedElement as Partial<T>);
                     }}
                     editable={props.editable}
                 />
@@ -53,10 +83,19 @@ export function ElementEditorContent<T extends AnyElement, E extends Application
                     allowNoCode={true}
                     shouldReturnString={true}
                     onChange={(updatedFunc) => {
-                        props.onChange({
-                            // @ts-expect-error
+                        const updatedElement: Partial<AnyInputElement> = {
                             validate: updatedFunc,
-                        });
+                        };
+                        if (props.element.testProtocolSet?.technicalTest != null) {
+                            if (props.element.testProtocolSet.professionalTest == null) {
+                                updatedElement.testProtocolSet = undefined;
+                            } else {
+                                updatedElement.testProtocolSet = {
+                                    professionalTest: props.element.testProtocolSet.professionalTest,
+                                };
+                            }
+                        }
+                        props.onChange(updatedElement as Partial<T>);
                     }}
                     editable={props.editable}
                 />
@@ -73,10 +112,19 @@ export function ElementEditorContent<T extends AnyElement, E extends Application
                     allowNoCode={false}
                     shouldReturnString={false}
                     onChange={(updatedFunc) => {
-                        props.onChange({
-                            // @ts-expect-error
+                        const updatedElement: Partial<AnyInputElement> = {
                             computeValue: updatedFunc,
-                        });
+                        };
+                        if (props.element.testProtocolSet?.technicalTest != null) {
+                            if (props.element.testProtocolSet.professionalTest == null) {
+                                updatedElement.testProtocolSet = undefined;
+                            } else {
+                                updatedElement.testProtocolSet = {
+                                    professionalTest: props.element.testProtocolSet.professionalTest,
+                                };
+                            }
+                        }
+                        props.onChange(updatedElement as Partial<T>);
                     }}
                     editable={props.editable}
                 />
@@ -93,10 +141,18 @@ export function ElementEditorContent<T extends AnyElement, E extends Application
                     allowNoCode={false}
                     shouldReturnString={false}
                     onChange={(updatedFunc) => {
-                        // @ts-expect-error
-                        props.onChange({
+                        const updatedElement: Partial<AnyInputElement> = {
                             patchElement: updatedFunc,
-                        });
+                        };
+                        if (props.element.testProtocolSet?.technicalTest != null) {
+                            if (props.element.testProtocolSet.professionalTest == null) {
+                                updatedElement.testProtocolSet = undefined;
+                            } else {
+                                updatedElement.testProtocolSet = {
+                                    professionalTest: props.element.testProtocolSet.professionalTest,
+                                };
+                            }
+                        }
                     }}
                     editable={props.editable}
                 />
