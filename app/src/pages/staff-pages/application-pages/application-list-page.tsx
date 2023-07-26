@@ -233,7 +233,7 @@ export function ApplicationListPage(): JSX.Element {
                                 Noch keinem Fachbereich zugeordnet
                             </Typography>
                             <Typography>
-                                Ein Administrator muss Sie noch einem Fachbereich zuordnen und Ihnen eine Rolle geben.
+                                Eine Administrator:in muss Sie noch einem Fachbereich zuordnen und Ihnen eine Rolle zuweisen.
                                 Erst dann können Sie hier loslegen.
                             </Typography>
                         </Paper>
