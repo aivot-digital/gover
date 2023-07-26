@@ -29,15 +29,30 @@ export function ElementEditor<T extends AnyElement, E extends Application | Pres
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
     const handleSave = (): void => {
-        props.onSave(
-            updatedElement != null ?
-                {
-                    ...updatedElement,
-                    appVersion: ProjectPackage.version,
-                } :
-                {},
-            updatedEntity ?? {},
-        );
+        let elementToSave: Partial<T> = {};
+        if (updatedElement != null) {
+            elementToSave = {
+                ...updatedElement,
+                appVersion: ProjectPackage.version,
+            };
+
+            if (props.element.testProtocolSet != null) {
+                elementToSave.testProtocolSet = undefined;
+            }
+        }
+
+        let entityToSave: Partial<E> = {};
+        if (updatedEntity != null) {
+            entityToSave = {
+                ...updatedEntity,
+            };
+
+            if (props.element.testProtocolSet != null) {
+                elementToSave.testProtocolSet = undefined;
+            }
+        }
+
+        props.onSave(elementToSave, entityToSave);
     };
 
     const handleSetCurrentTab = (newTab: string): void => {

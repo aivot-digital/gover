@@ -16,6 +16,7 @@ import ExpandOutlinedIcon from '@mui/icons-material/ExpandOutlined';
 import CompressOutlinedIcon from '@mui/icons-material/CompressOutlined';
 import IntegrationInstructionsOutlinedIcon from '@mui/icons-material/IntegrationInstructionsOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import GradingOutlinedIcon from '@mui/icons-material/GradingOutlined';
 
 export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends Application | Preset>(props: ElementTreeHeaderProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -55,9 +56,11 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         alignItems: 'center',
                     }}
                 >
-                    <AccountTreeOutlinedIcon sx={{
-                        color: theme.palette.primary.dark,
-                    }}/>
+                    <AccountTreeOutlinedIcon
+                        sx={{
+                            color: theme.palette.primary.dark,
+                        }}
+                    />
 
                     <Typography
                         variant="h4"
@@ -66,6 +69,23 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                     >
                         Struktur
                     </Typography>
+
+                    {
+                        testMode &&
+                        props.element.testProtocolSet == null &&
+                        <Tooltip title="Fachliche Prüfung ausstehend">
+                            <IconButton
+                                sx={{
+                                    ml: 1,
+                                }}
+                            >
+                                <GradingOutlinedIcon
+                                    fontSize="small"
+                                    color="warning"
+                                />
+                            </IconButton>
+                        </Tooltip>
+                    }
                 </Box>
 
                 <Box>
@@ -73,8 +93,10 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Suchen"
                         arrow
                     >
-                        <IconButton size="small"
-                                    onClick={props.onToggleSearch}>
+                        <IconButton
+                            size="small"
+                            onClick={props.onToggleSearch}
+                        >
                             <SearchOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -83,8 +105,10 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Alles ausklappen"
                         arrow
                     >
-                        <IconButton size="small"
-                                    onClick={() => dispatch(setExpandElementTree('expanded'))}>
+                        <IconButton
+                            size="small"
+                            onClick={() => dispatch(setExpandElementTree('expanded'))}
+                        >
                             <ExpandOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -93,8 +117,10 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Alles einklappen"
                         arrow
                     >
-                        <IconButton size="small"
-                                    onClick={() => dispatch(setExpandElementTree('collapsed'))}>
+                        <IconButton
+                            size="small"
+                            onClick={() => dispatch(setExpandElementTree('collapsed'))}
+                        >
                             <CompressOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
@@ -103,8 +129,10 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         title="Einstellungen für Entwickler:innen"
                         arrow
                     >
-                        <IconButton size="small"
-                                    onClick={handleOpenCTMenu}>
+                        <IconButton
+                            size="small"
+                            onClick={handleOpenCTMenu}
+                        >
                             <IntegrationInstructionsOutlinedIcon/>
                         </IconButton>
                     </Tooltip>
