@@ -1,127 +1,72 @@
-# Business Source License 1.1
+# License
+Portions of this software are licensed as follows:
 
-## Parameters
+- Content of branches other than the main branch (i.e. "main") are not licensed.
+- All third party components incorporated into the software are licensed under the original license
+  provided by the owner of the applicable component.
+- Content outside of the above mentioned files or restrictions is available under the "Sustainable Use
+  License" as defined below.
 
-Licensor: Aivot UG
+## Sustainable Use License
+Version 1.0
 
-Licensed Work: Gover  
-The Licensed Work is &copy; 2022 Aivot UG
+### Acceptance
+By using the software, you agree to all of the terms and conditions below.
 
-Additional Use Grant: You may make use of the Licensed Work, provided that you do
-not use the Licensed Work for an eGovernment Service.
+### Copyright License
+The licensor grants you a non-exclusive, royalty-free, worldwide, non-sublicensable, non-transferable license
+to use, copy, distribute, make available, and prepare derivative works of the software, in each case subject
+to the limitations below.
 
-```
-An "eGovernment Service" is a commercial offering
-that allows third parties (other than your employees and
-contractors directly associated with your Organization) to access the functionality of the
-Licensed Work so that such third parties directly benefit from the
-eGovernment features of the Licensed Work.  
-Furthermore an "eGovernment Service" is a commercial offering where work results (exported files),
-that are directly achieved using the Licensed Work, are passed on to third parties
-(other than your employees and contractors directly associated with your Organization) so that these
-third parties derive a direct benefit from importing the work results (exported files) into
-the Licensed Work.
+### Limitations
+You may use or modify the software only for your own internal business purposes or for non-commercial or
+personal use. You may distribute the software or provide it to others only if you do so free of charge for
+non-commercial purposes. You may not alter, remove, or obscure any licensing, copyright, or other notices of
+the licensor in the software. Any use of the licensor’s trademarks is subject to applicable law.
 
-Examples:
-An "eGovernment Service" exists when you host the Licensed Work within your administration
-and make it available to other administrations so that you and/or other administrations
-can access the features of the Licensed Work.
+### Patents
+The licensor grants you a license, under any patent claims the licensor can license, or becomes able to
+license, to make, have made, use, sell, offer for sale, import and have imported the software, in each case
+subject to the limitations and conditions in this license. This license does not cover any patent claims that
+you cause to be infringed by modifications or additions to the software. If you or your company make any
+written claim that the software infringes or contributes to infringement of any patent, your patent license
+for the software granted under these terms ends immediately. If your company makes such a claim, your patent
+license ends immediately for work on behalf of your company.
 
-An "eGovernment Service" exists when you use the Licensed Work and its features to achieve a work result which
-you then export and share with other administrations so that that those administrations not associated with you
-can import your work result into the Licensed Work and use/benefit from it.
+### Notices
+You must ensure that anyone who gets a copy of any part of the software from you also gets a copy of these
+terms. If you modify the software, you must include in any modified copies of the software a prominent notice
+stating that you have modified the software.
 
-An "eGovernment Service" DOES NOT EXIST if you host the Licensed Work within your administration
-and make it available only to your employees and contractors directly associated with your
-organization.
+### No Other Rights
+These terms do not imply any licenses other than those expressly granted in these terms.
 
-An "eGovernment Service" DOES NOT EXIST if you use the Licensed Work and its features to achieve a work result
-which you just keep to yourself.
-```
+### Termination
+If you use the software in violation of these terms, such use is not licensed, and your license will
+automatically terminate. If the licensor provides you with a notice of your violation, and you cease all
+violation of this license no later than 30 days after you receive that notice, your license will be reinstated
+retroactively. However, if you violate these terms after such reinstatement, any additional violation of these
+terms will cause your license to terminate automatically and permanently.
 
-Change Date:          17.03.2025
+### No Liability
+As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will
+not be liable to you for any damages arising out of these terms or the use or nature of the software, under
+any kind of legal claim.
 
-Change License:       Apache License, Version 2.0
+### Definitions
+The “licensor” is the entity offering these terms.
 
-For information about alternative licensing arrangements for the Software,
-please visit: https://aivot.de/gover/pricing/
+The “software” is the software the licensor makes available under these terms, including any portion of it.
 
-## Notice
+“You” refers to the individual or entity agreeing to these terms.
 
-The Business Source License (this document, or the "License") is not an Open
-Source license. However, the Licensed Work will eventually be made available
-under an Open Source License, as stated in this License.
+“Your company” is any legal entity, sole proprietorship, or other kind of organization that you work for, plus
+all organizations that have control over, are under the control of, or are under common control with that
+organization. Control means ownership of substantially all the assets of an entity, or the power to direct its
+management and policies by vote, contract, or otherwise. Control can be direct or indirect.
 
-License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
-"Business Source License" is a trademark of MariaDB Corporation Ab.
+“Your license” is the license granted to you for the software under these terms.
 
----
+“Use” means anything you do with the software requiring your license.
 
-# Business Source License 1.1
-
-## Terms
-
-The Licensor hereby grants you the right to copy, modify, create derivative
-works, redistribute, and make non-production use of the Licensed Work. The
-Licensor may make an Additional Use Grant, above, permitting limited
-production use.
-
-Effective on the Change Date, or the fourth anniversary of the first publicly
-available distribution of a specific version of the Licensed Work under this
-License, whichever comes first, the Licensor hereby grants you rights under
-the terms of the Change License, and the rights granted in the paragraph
-above terminate.
-
-If your use of the Licensed Work does not comply with the requirements
-currently in effect as described in this License, you must purchase a
-commercial license from the Licensor, its affiliated entities, or authorized
-resellers, or you must refrain from using the Licensed Work.
-
-All copies of the original and modified Licensed Work, and derivative works
-of the Licensed Work, are subject to this License. This License applies
-separately for each version of the Licensed Work and the Change Date may vary
-for each version of the Licensed Work released by Licensor.
-
-You must conspicuously display this License on each original or modified copy
-of the Licensed Work. If you receive the Licensed Work in original or
-modified form from a third party, the terms and conditions set forth in this
-License apply to your use of that work.
-
-Any use of the Licensed Work in violation of this License will automatically
-terminate your rights under this License for the current and all other
-versions of the Licensed Work.
-
-This License does not grant you any right in any trademark or logo of
-Licensor or its affiliates (provided that you may use a trademark or logo of
-Licensor as expressly required by this License).
-
-TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON
-AN "AS IS" BASIS. LICENSOR HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS,
-EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
-TITLE.
-
-MariaDB hereby grants you permission to use this License’s text to license
-your works, and to refer to it using the trademark "Business Source License",
-as long as you comply with the Covenants of Licensor below.
-
-## Covenants of Licensor
-
-In consideration of the right to use this License’s text and the "Business
-Source License" name and trademark, Licensor covenants to MariaDB, and to all
-other recipients of the licensed work to be provided by Licensor:
-
-1. To specify as the Change License the GPL Version 2.0 or any later version,
-   or a license that is compatible with GPL Version 2.0 or a later version,
-   where "compatible" means that software provided under the Change License can
-   be included in a program with software provided under GPL Version 2.0 or a
-   later version. Licensor may specify additional Change Licenses without
-   limitation.
-
-2. To either: (a) specify an additional grant of rights to use that does not
-   impose any additional restriction on the right granted in this License, as
-   the Additional Use Grant; or (b) insert the text "None".
-
-3. To specify a Change Date.
-
-4. Not to modify this License in any other way.
+“Trademark” means trademarks, service marks, and similar rights.

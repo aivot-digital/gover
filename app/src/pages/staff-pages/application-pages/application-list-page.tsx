@@ -27,7 +27,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {DeleteApplicationDialog} from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 import {ProviderLinks} from './components/provider-links';
-import {Department} from '../../../models/entities/department';
+import {type Department} from '../../../models/entities/department';
 import {DepartmentsService} from '../../../services/departments-service';
 import {ApplicationStatus} from '../../../data/application-status/application-status';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -266,7 +266,7 @@ export function ApplicationListPage(): JSX.Element {
                                         },
                                         {
                                             tooltip: 'Formular importieren',
-                                            icon: <CloudUploadOutlinedIcon sx={{transform: "scale(1.2)"}}/>,
+                                            icon: <CloudUploadOutlinedIcon sx={{transform: 'scale(1.2)'}}/>,
                                             onClick: () => {
                                                 setShowImportApplicationDialog(true);
                                             },

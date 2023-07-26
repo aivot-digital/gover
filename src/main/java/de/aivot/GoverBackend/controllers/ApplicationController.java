@@ -383,7 +383,7 @@ public class ApplicationController {
             }
         }
 
-        if (submissionRepository.existsByApplication_IdAndArchivedIsNull(id)) {
+        if (submissionRepository.existsByApplication_IdAndArchivedIsNullAndIsTestSubmissionIsFalse(id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
 

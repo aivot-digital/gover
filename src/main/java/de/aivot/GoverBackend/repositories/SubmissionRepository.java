@@ -40,5 +40,5 @@ public interface SubmissionRepository extends JpaRepository<Submission, String> 
     boolean existsByApplication_IdInAndAssignee_IdAndArchivedIsNull(Collection<Integer> applications, Integer assignee);
 
     @Transactional(readOnly = true)
-    boolean existsByApplication_IdAndArchivedIsNull(Integer application);
+    boolean existsByApplication_IdAndArchivedIsNullAndIsTestSubmissionIsFalse(Integer application);
 }
