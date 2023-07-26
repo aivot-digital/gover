@@ -56,6 +56,9 @@ public class AssetsController {
             } catch (IOException e) {
                 contentType = MediaType.APPLICATION_OCTET_STREAM.getType();
             }
+            if (contentType == null) {
+                contentType = MediaType.APPLICATION_OCTET_STREAM.getType();
+            }
             if (resource.exists() && resource.isReadable()) {
                 return ResponseEntity
                         .ok()
