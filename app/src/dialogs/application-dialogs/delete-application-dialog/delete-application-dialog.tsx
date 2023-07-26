@@ -23,7 +23,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps): JS
 
         setIsBusy(true);
         SubmissionService
-            .list(props.application.id, false, true, undefined)
+            .list(props.application.id, false, false, undefined)
             .then((submissions) => {
                 setSubmissions(submissions);
             })
