@@ -168,6 +168,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                                     status: ApplicationStatus.Revoked,
                                 }));
                                 setIsRevoked(true);
+                                setIsPublished(false);
                             }}
                         >
                             Formular Zurückziehen
@@ -230,6 +231,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                                 status: ApplicationStatus.Published,
                             }));
                             setIsPublished(true);
+                            setIsRevoked(false);
                         }}
                     >
                         Formular Veröffentlichen
