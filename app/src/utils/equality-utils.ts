@@ -1,5 +1,5 @@
 export function shallowEquals(obj1: any, obj2: any): boolean {
-    if (obj1 == obj2) {
+    if (obj1 === obj2) {
         return true;
     }
 
@@ -7,5 +7,8 @@ export function shallowEquals(obj1: any, obj2: any): boolean {
         return false;
     }
 
-    return Object.keys(obj1).every(key => obj1[key] === obj2[key]);
+    return (
+        Object.keys(obj1).length === Object.keys(obj2).length &&
+        Object.keys(obj1).every((key) => obj1[key] === obj2[key])
+    );
 }

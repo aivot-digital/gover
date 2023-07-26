@@ -20,7 +20,7 @@ export function ApplicationSettings(): JSX.Element {
 
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
 
-    const hasChanged = editedConfig != null && Object.keys(editedConfig).length > 0 && !shallowEquals(config, editedConfig);
+    const hasNotChanged = shallowEquals(config, editedConfig);
 
     useEffect(() => {
         ThemesService.list()
@@ -53,7 +53,6 @@ export function ApplicationSettings(): JSX.Element {
 
             Promise.all(updatePromises)
                 .then(() => {
-                    setEditedConfig({});
                     dispatch(showSuccessSnackbar('Konfiguration erfolgreich gespeichert'));
                     return dispatch(fetchSystemConfig());
                 })
@@ -141,7 +140,7 @@ export function ApplicationSettings(): JSX.Element {
             >
                 <Button
                     type="submit"
-                    disabled={!hasChanged}
+                    disabled={hasNotChanged}
                 >
                     Speichern
                 </Button>
@@ -152,7 +151,7 @@ export function ApplicationSettings(): JSX.Element {
                     }}
                     type="button"
                     color="error"
-                    disabled={!hasChanged}
+                    disabled={hasNotChanged}
                     onClick={() => {
                         setEditedConfig({});
                     }}
