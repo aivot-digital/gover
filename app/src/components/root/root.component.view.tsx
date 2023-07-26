@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
-import {RootElement} from '../../models/elements/root-element';
+import {type RootElement} from '../../models/elements/root-element';
 import {addError, resetErrors, selectCustomerInputErrors} from '../../slices/customer-input-errors-slice';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {isElementValid} from '../../utils/is-element-valid';
@@ -25,29 +25,29 @@ import {resetUserInput, selectCustomerInput} from '../../slices/customer-input-s
 import {nextStep, previousStep, selectCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {useLogging} from "../../hooks/use-logging";
-import {ElementNames} from "../../data/element-type/element-names";
-import {FileUploadElementItem, isFileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
+import {useLogging} from '../../hooks/use-logging';
+import {ElementNames} from '../../data/element-type/element-names';
+import {type FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import ProjectPackage from '../../../package.json';
-import {BaseViewProps} from "../../views/base-view";
-import {withTimeout} from "../../utils/with-timeout";
-import {SubmissionListDto} from "../../models/entities/submission-list-dto";
+import {type BaseViewProps} from '../../views/base-view';
+import {withTimeout} from '../../utils/with-timeout';
+import {type SubmissionListDto} from '../../models/entities/submission-list-dto';
 import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 
 const checkTimeoutMinMs = 2000;
 const submissionTimeoutMinMs = 3000;
 
 export function RootComponentView({
-                                      allElements,
-                                      element,
-                                  }: BaseViewProps<RootElement, void>) {
+    allElements,
+    element,
+}: BaseViewProps<RootElement, void>) {
     const theme = useTheme();
     const [$debug] = useLogging();
 
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedApplication);
     const customerData = useAppSelector(selectCustomerInput);
-    const adminSettings = useAppSelector(state => state.adminSettings);
+    const adminSettings = useAppSelector((state) => state.adminSettings);
     const currentStep = useAppSelector(selectCurrentStep);
     const errors = useAppSelector(selectCustomerInputErrors);
 
@@ -57,7 +57,7 @@ export function RootComponentView({
 
     const [validatedWithErrors, setValidatedWithErrors] = useState(false);
 
-    const visibleChildSteps = (element.children ?? []).filter(elem => adminSettings.disableVisibility || isElementVisible(undefined, allElements, elem.id, elem, customerData));
+    const visibleChildSteps = (element.children ?? []).filter((elem) => adminSettings.disableVisibility || isElementVisible(undefined, allElements, elem.id, elem, customerData));
 
     const generalInformationStepIndex = 0;
     const summaryStepIndex = visibleChildSteps.length + 1;
@@ -112,15 +112,15 @@ export function RootComponentView({
 
             if (isValid) {
                 await withTimeout<number | null>(
-                    () => setIsLoading(true),
+                    () => {setIsLoading(true);},
                     async () => {
                         try {
                             const {maxFileSize} = await ApplicationService.getMaxFileSize(application!);
                             const maxFileSizeBytes = maxFileSize * 1000 * 1000;
                             const totalFileSize = Object.keys(customerData)
-                                .map(c => customerData[c])
-                                .filter(c => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
-                                .map(c => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
+                                .map((c) => customerData[c])
+                                .filter((c) => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
+                                .map((c) => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
                                 .reduce((acc, size) => acc + size, 0);
                             if (totalFileSize > maxFileSizeBytes) {
                                 return (maxFileSize);
@@ -180,13 +180,17 @@ export function RootComponentView({
             if (currentStep === (allSteps.length - 1)) {
                 if (application != null) {
                     await withTimeout<SubmissionListDto | null>(
-                        () => setIsSubmitting(true),
+                        () => {setIsSubmitting(true);},
                         async () => {
                             try {
                                 return await ApplicationService.submit(application, customerData);
-                            } catch (error) {
-                                console.error(error);
-                                dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                            } catch (err: any) {
+                                if (err.status === 406) {
+                                    dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. In den von Ihnen hochgeladenen Dokumenten wurde Schadsoftware erkannt.'));
+                                } else {
+                                    console.error(err);
+                                    dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                                }
                                 return null;
                             }
                         },
