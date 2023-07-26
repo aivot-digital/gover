@@ -126,7 +126,7 @@ export function ApplicationListPage(): JSX.Element {
         ApplicationService
             .retrieve(appToClone.id)
             .then((app) => {
-                setApplicationToUpgrade({
+                setApplicationToClone({
                     ...app,
                     status: ApplicationStatus.Drafted,
                 });
