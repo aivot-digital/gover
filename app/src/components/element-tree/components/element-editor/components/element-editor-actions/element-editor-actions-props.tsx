@@ -4,4 +4,5 @@ export interface ElementEditorActionsProps {
     onDelete?: () => void;
     onSaveAsPreset?: () => void;
     onClone?: () => void;
+    editable: boolean;
 }

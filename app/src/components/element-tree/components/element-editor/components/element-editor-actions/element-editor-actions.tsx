@@ -6,6 +6,7 @@ import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 
 export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Element {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -31,6 +32,21 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                 }}
             >
                 <Box>
+                    {
+                        !props.editable &&
+                        <Button
+                            color="primary"
+                            variant="contained"
+                            onClick={props.onCancel}
+                            startIcon={<CloseOutlinedIcon/>}
+                            sx={{
+                                mr: 2,
+                            }}
+                        >
+                            Schließen
+                        </Button>
+                    }
+
                     <Button
                         color="primary"
                         variant="contained"
@@ -43,6 +59,7 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                         sx={{
                             ml: 'auto',
                         }}
+                        disabled={!props.editable}
                     >
                         Speichern
                     </Button>
@@ -52,10 +69,13 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                         sx={{
                             ml: 2,
                         }}
+                        disabled={!props.editable}
                     >
                         Abbrechen
                     </Button>
                     {
+
+                        props.editable &&
                         (
                             (props.onClone != null) ||
                             (props.onSaveAsPreset != null)
@@ -80,6 +100,7 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                                 marginTop: '-4px',
                             }}
                         />}
+                        disabled={!props.editable}
                     >
                         Löschen
                     </Button>

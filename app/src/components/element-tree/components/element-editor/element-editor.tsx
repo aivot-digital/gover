@@ -159,16 +159,14 @@ export function ElementEditor<T extends AnyElement, E extends Application | Pres
                     />
                 </Box>
 
-                {
-                    props.editable &&
-                    <ElementEditorActions
-                        onSave={handleSave}
-                        onCancel={handleClose}
-                        onDelete={props.onDelete}
-                        onSaveAsPreset={(updatedElement ?? props.element).type === ElementType.Container ? handleShowPresetDialog : undefined}
-                        onClone={props.onClone}
-                    />
-                }
+                <ElementEditorActions
+                    onSave={handleSave}
+                    onCancel={handleClose}
+                    onDelete={props.onDelete}
+                    onSaveAsPreset={(updatedElement ?? props.element).type === ElementType.Container ? handleShowPresetDialog : undefined}
+                    onClone={props.onClone}
+                    editable={props.editable}
+                />
 
                 <AddPresetDialog
                     open={showCreatePresetDialog}

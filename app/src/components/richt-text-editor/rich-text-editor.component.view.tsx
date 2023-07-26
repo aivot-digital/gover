@@ -87,6 +87,7 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
                     mt: 2,
                     py: 1,
                     px: 2,
+                    backgroundColor: (props.disabled ?? false) ? '#F8F8F8' : undefined,
                 }}
                 className="editorWrapper"
                 onClick={() => {
@@ -97,6 +98,9 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
             >
                 <EditorContent
                     editor={editor}
+                    style={{
+                        backgroundColor: (props.disabled ?? false) ? '#F8F8F8' : undefined,
+                    }}
                 />
             </Paper>
 

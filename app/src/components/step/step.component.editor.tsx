@@ -4,7 +4,7 @@ import {Box, FormControl, InputLabel, ListItemIcon, ListItemText, MenuItem, Sele
 import {StepIcons} from '../../data/step-icons';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {Application} from '../../models/entities/application';
+import {type Application} from '../../models/entities/application';
 
 export function StepComponentEditor(props: BaseEditorProps<StepElement, Application>): JSX.Element {
     return (
@@ -23,7 +23,10 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
             <FormControl
                 margin="normal"
             >
-                <InputLabel id="icon-select-label">
+                <InputLabel
+                    id="icon-select-label"
+                    disabled={!props.editable}
+                >
                     Icon
                 </InputLabel>
                 <Select
@@ -40,7 +43,8 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                     {
                         StepIcons.map((stepIcon) => {
                             const Icon = stepIcon.def;
-                            return (<MenuItem
+                            return (
+                                <MenuItem
                                     key={stepIcon.id}
                                     value={stepIcon.id}
                                 >
