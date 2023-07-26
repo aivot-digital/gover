@@ -10,10 +10,11 @@ import de.aivot.GoverBackend.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.pdf.TablePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import javax.script.ScriptEngine;
 import java.util.*;
 
-public class TableField extends BaseInputElement<Collection<Map<String, String>>> {
+public class TableField extends BaseInputElement<Collection<Map<String, Object>>> {
     private Collection<TableFieldColumnDefinition> fields;
     private Integer maximumRows;
     private Integer minimumRequiredRows;
@@ -32,13 +33,13 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
     }
 
     @Override
-    protected Collection<Map<String, String>> formatValue(Object value) {
-        Collection<Map<String, String>> res = new LinkedList<>();
+    protected Collection<Map<String, Object>> formatValue(Object value) {
+        Collection<Map<String, Object>> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
             for (Object o : cValue) {
                 if (o instanceof Map<?,?> mValue) {
-                    res.add((Map<String, String>) mValue);
+                    res.add((Map<String, Object>) mValue);
                 }
             }
         }
@@ -47,7 +48,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
     }
 
     @Override
-    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Collection<Map<String, String>> value, ScriptEngine scriptEngine) throws ValidationException {
+    public void validate(String idPrefix, RootElement root, Map<String, Object> customerInput, Collection<Map<String, Object>> value, ScriptEngine scriptEngine) throws ValidationException {
         if (Boolean.TRUE.equals(getRequired()) && (value == null || value.isEmpty())) {
             throw new RequiredValidationException(this);
         }
@@ -64,21 +65,29 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
             throw new ValidationException(this, "Too many rows");
         }
 
-        for (Map<String, String> row : value) {
+        for (Map<String, Object> row : value) {
             for (TableFieldColumnDefinition col : fields) {
-                String val = row.get(col.getLabel());
+                Object val = row.get(col.getLabel());
 
                 if (!Boolean.TRUE.equals(col.getOptional())) {
-                    if (val == null || val.trim().isEmpty()) {
+                    if (val == null) {
                         throw new ValidationException(this, "No value in required column " + col.getLabel());
+                    } else {
+                        if (val instanceof String sVal && sVal.trim().isEmpty()) {
+                            throw new ValidationException(this, "No value in required column " + col.getLabel());
+                        }
                     }
                 }
 
                 if (TableColumnDataType.Number == col.getDatatype()) {
-                    try {
-                        Double.parseDouble(val);
-                    } catch (NumberFormatException e) {
-                        throw new ValidationException(this, "Failed to parse number value in column " + col.getLabel() + " in table: " + e.getMessage());
+                    if (!(val instanceof Integer || val instanceof Double || val instanceof Float || val instanceof Long || val instanceof Short)) {
+                        throw new ValidationException(this, "Failed to parse number value in column " + col.getLabel() + " in table");
+                    }
+                }
+
+                if (TableColumnDataType.String == col.getDatatype()) {
+                    if (!(val instanceof String)) {
+                        throw new ValidationException(this, "Failed to parse string value in column " + col.getLabel() + " in table");
                     }
                 }
             }
@@ -86,7 +95,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
     }
 
     @Override
-    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<Map<String, String>> value, String idPrefix, ScriptEngine scriptEngine) {
+    public List<BasePdfRowDto> toPdfRows(RootElement root, Map<String, Object> customerInput, Collection<Map<String, Object>> value, String idPrefix, ScriptEngine scriptEngine) {
         List<String> columnHeaders = new LinkedList<>();
 
         for (TableFieldColumnDefinition col : fields) {
@@ -96,29 +105,34 @@ public class TableField extends BaseInputElement<Collection<Map<String, String>>
         List<List<String>> columnValues = new LinkedList<>();
 
         if (value != null && !value.isEmpty()) {
-            for (Map<String, String> row : value) {
+            for (Map<String, Object> row : value) {
                 List<String> fields = new LinkedList<>();
                 for (TableFieldColumnDefinition col : this.fields) {
-                    String cellValue = row.get(col.getLabel());
+                    Object cellValue = row.get(col.getLabel());
                     TableColumnDataType colType = col.getDatatype();
                     if (colType == null) {
                         colType = TableColumnDataType.String;
                     }
                     switch (colType) {
                         case String -> {
-                            fields.add(cellValue);
+                            if (cellValue instanceof String sCellValue) {
+                                fields.add(sCellValue);
+                            }
                         }
                         case Number -> {
-                            int decimalPlaces = col.getDecimalPlaces() == null ? col.getDecimalPlaces() : 2;
-                            String decimalFormat = "%." + decimalPlaces + "f";
-
-                            try {
-                                Double val = Double.parseDouble((String) cellValue);
-                                fields.add(String.format(decimalFormat, val));
-                            } catch (Exception e) {
-                                fields.add((String) cellValue);
+                            if (cellValue instanceof Integer iCellValue) {
+                                fields.add(String.format("%d", iCellValue));
+                            } else if (cellValue instanceof Long lCellValue) {
+                                fields.add(String.format("%d", lCellValue));
+                            } else if (cellValue instanceof Double dCellValue) {
+                                int decimalPlaces = col.getDecimalPlaces() == null ? col.getDecimalPlaces() : 2;
+                                String decimalFormat = "%." + decimalPlaces + "f";
+                                fields.add(String.format(decimalFormat, dCellValue));
+                            } else if (cellValue instanceof Float fCellValue) {
+                                int decimalPlaces = col.getDecimalPlaces() == null ? col.getDecimalPlaces() : 2;
+                                String decimalFormat = "%." + decimalPlaces + "f";
+                                fields.add(String.format(decimalFormat, fCellValue));
                             }
-
                         }
                     }
                 }
