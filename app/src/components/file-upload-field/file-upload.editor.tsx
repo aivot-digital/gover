@@ -86,7 +86,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Appli
                         extensions: val,
                     });
                 }}
-                hint="Die Bürger:in kann nur Dateien mit diesen Endungen hochladen."
+                hint="Die Antragsteller:in kann nur Dateien mit diesen Endungen hochladen."
                 error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
                 options={allowedExtensions ?? []}
                 required
