@@ -1,7 +1,7 @@
-import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {createAsyncThunk, createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {ApplicationService} from '../services/application-service';
-import {RootState} from '../store';
-import {Application} from "../models/entities/application";
+import {type RootState} from '../store';
+import {type Application} from '../models/entities/application';
 
 export enum MetaDialog {
     Privacy = 'privacy',
@@ -13,6 +13,7 @@ export enum MetaDialog {
 const initialState: {
     loadedApplication?: Application;
     applicationLoadFailed?: boolean;
+    applicationSaveFailed?: boolean;
 
     showMetaDialog?: MetaDialog;
 } = {};
@@ -38,18 +39,25 @@ const appSlice = createSlice({
         clearAppModel: (state, _: PayloadAction<void>) => {
             state.loadedApplication = undefined;
             state.applicationLoadFailed = false;
+            state.applicationSaveFailed = false;
             state.showMetaDialog = undefined;
         },
 
         setAppModel: (state, action: PayloadAction<Application>) => {
             state.loadedApplication = action.payload;
             state.applicationLoadFailed = false;
+            state.applicationSaveFailed = false;
         },
 
         updateAppModel: (state, action: PayloadAction<Application>) => {
             state.loadedApplication = action.payload;
             state.applicationLoadFailed = false;
-            ApplicationService.update(action.payload.id, action.payload);
+            ApplicationService
+                .update(action.payload.id, action.payload)
+                .catch((err) => {
+                    console.error(err);
+                    state.applicationSaveFailed = true;
+                });
         },
 
         showMetaDialog: (state, action: PayloadAction<MetaDialog | undefined>) => {
@@ -60,19 +68,23 @@ const appSlice = createSlice({
         builder.addCase(fetchApplicationById.fulfilled, (state, action) => {
             state.loadedApplication = action.payload;
             state.applicationLoadFailed = false;
+            state.applicationSaveFailed = false;
         });
         builder.addCase(fetchApplicationById.rejected, (state, _) => {
             state.loadedApplication = undefined;
             state.applicationLoadFailed = true;
+            state.applicationSaveFailed = false;
         });
 
         builder.addCase(fetchApplicationBySlug.fulfilled, (state, action) => {
             state.loadedApplication = action.payload;
             state.applicationLoadFailed = false;
+            state.applicationSaveFailed = false;
         });
         builder.addCase(fetchApplicationBySlug.rejected, (state, _) => {
             state.loadedApplication = undefined;
             state.applicationLoadFailed = true;
+            state.applicationSaveFailed = false;
         });
     },
 });
@@ -86,5 +98,6 @@ export const {
 
 export const selectLoadedApplication = (state: RootState) => state.app.loadedApplication;
 export const selectApplicationLoadFailed = (state: RootState) => state.app.applicationLoadFailed;
+export const selectApplicationSaveFailed = (state: RootState) => state.app.applicationSaveFailed;
 
 export const appReducer = appSlice.reducer;
