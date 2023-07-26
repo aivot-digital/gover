@@ -215,7 +215,7 @@ export function SystemInformation(): JSX.Element {
                                             {
                                                 diskSpace != null && diskSpace.details.free > diskSpaceThresholdBytes &&
                                                 <span>
-                                                    Noch {humanizeFileSize(diskSpace.details.free)} { humanizeFileSize(diskSpace.details.total) } frei
+                                                    Noch {humanizeFileSize(diskSpace.details.free)} von { humanizeFileSize(diskSpace.details.total) } frei
                                                 </span>
                                             }
                                         </Typography>
