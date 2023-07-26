@@ -311,7 +311,7 @@ export function SubmissionEditPage(): JSX.Element {
                 >
                     <AlertComponent
                         title="Test-Antrag"
-                        text="Bei diesem Antrag handelt es sich im einen Test-Antrag. Der Antrag wurde für ein Formular abgesendet, dass noch nicht veröffentlicht wurde."
+                        text="Bei diesem Antrag handelt es sich um einen Test-Antrag. Der Antrag wurde für ein Formular abgesendet, dass noch nicht veröffentlicht wurde."
                         color="info"
                     />
                 </Box>
