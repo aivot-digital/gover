@@ -17,17 +17,6 @@ const initialState: UserState = {
     memberships: [],
 };
 
-/*
-export const authenticate = createAsyncThunk(
-    'user/authenticate',
-    async (credentials: Credentials, _): Promise<User> => {
-        const auth = await UsersService.login(credentials.email, credentials.password);
-        LocalStorageService.storeString(LocalstorageKey.JWT, auth.jwtToken);
-        return await UsersService.getProfile();
-    },
-);
-*/
-
 export const refreshUser = createAsyncThunk(
     'user/refreshUser',
     async (): Promise<User> => {

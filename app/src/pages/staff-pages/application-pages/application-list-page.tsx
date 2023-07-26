@@ -22,7 +22,7 @@ import {type ListApplication} from '../../../models/entities/list-application';
 import {type ListApplicationGroup} from '../../../models/lib/list-application-group';
 import {compareVersions} from '../../../utils/version-utils';
 import {ApplicationListItemGroup} from '../../../components/application-list-item-group/application-list-item-group';
-import {selectMemberships, selectUser} from '../../../slices/user-slice';
+import {refreshMemberships, selectMemberships, selectUser} from '../../../slices/user-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {DeleteApplicationDialog} from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
@@ -90,6 +90,12 @@ export function ApplicationListPage(): JSX.Element {
                 console.error(err);
             });
     }, []);
+
+    useEffect(() => {
+        if (user != null) {
+            dispatch(refreshMemberships(user));
+        }
+    }, [user]);
 
     const handleAdd = (application: Application, navigateToEditAfterwards: boolean): void => {
         if (applications != null) {
