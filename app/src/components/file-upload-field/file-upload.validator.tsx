@@ -1,5 +1,5 @@
 import {BaseInputElementValidator} from '../../validators/base-input-element-validator';
-import {FileUploadElement, FileUploadElementItem} from "../../models/elements/form/input/file-upload-element";
+import {type FileUploadElement, type FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 
 const maxSizeInMegaBytes = 10;
 const maxSizeInBytes = maxSizeInMegaBytes * 1000 * 1000; // 10 MB
@@ -27,14 +27,14 @@ export class FileUploadValidator extends BaseInputElementValidator<FileUploadEle
                 for (const val of value) {
                     const extension = val.name.split('.').pop();
                     if (extension == null || !(comp.extensions.includes(extension))) {
-                        return `Die Anlage ${val.name} hat eine nicht zugelassene Dateiendung.`;
+                        return `Die Anlage "${val.name}" hat eine unzulässige Dateiendung.`;
                     }
                 }
             }
 
             for (const val of value) {
                 if (val.size > maxSizeInBytes) {
-                    return `Die Anlage ${val.name} überschreitet die maximale Dateigröße pro Datei von ${maxSizeInMegaBytes} MB`;
+                    return `Die Anlage "${val.name}" überschreitet die maximale Dateigröße pro Datei von ${maxSizeInMegaBytes} MB`;
                 }
             }
         }
