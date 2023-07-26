@@ -33,6 +33,7 @@ import LaunchOutlinedIcon from '@mui/icons-material/LaunchOutlined';
 import {ThemesService} from '../../../services/themes-service';
 import {type Theme} from '../../../models/entities/theme';
 import {ApplicationStatus} from '../../../data/application-status/application-status';
+import {selectMemberships, selectUser} from '../../../slices/user-slice';
 
 export function ApplicationEditPage(): JSX.Element {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -46,6 +47,8 @@ export function ApplicationEditPage(): JSX.Element {
     const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
     const application = useAppSelector(selectLoadedApplication);
     const failedToLoad = useAppSelector(selectApplicationLoadFailed);
+    const user = useAppSelector(selectUser);
+    const memberships = useAppSelector(selectMemberships);
     const metaDialog = useAppSelector((state) => state.app.showMetaDialog);
 
     const [theme, setTheme] = useState<Theme>();
@@ -175,7 +178,11 @@ export function ApplicationEditPage(): JSX.Element {
                                 }}
                                 editable={
                                     application.status !== ApplicationStatus.Published &&
-                                    application.status !== ApplicationStatus.Revoked
+                                    application.status !== ApplicationStatus.Revoked &&
+                                    (
+                                        user?.admin === true ||
+                                        memberships.some((mem) => mem.department === application.developingDepartment)
+                                    )
                                 }
                             />
                         </Grid>

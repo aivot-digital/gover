@@ -177,6 +177,22 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                 }
 
                 {
+                    isEditor &&
+                    <Box className={styles.listItemActionsContainer}>
+                        <Button
+                            startIcon={<DriveFileRenameOutlineOutlinedIcon sx={{
+                                marginTop: '-2px',
+                            }}
+                            />}
+                            component={Link}
+                            to={`/edit/${props.application.id}`}
+                        >
+                            Formular einsehen
+                        </Button>
+                    </Box>
+                }
+
+                {
                     isDeveloper &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
