@@ -40,7 +40,7 @@ export function Login(): JSX.Element {
                 if (err.status === 401) {
                     setAuthError('Es existiert keine Benutzer:in mit dieser Kombination aus E-Mail-Adresse und Passwort');
                 } else if (err.status === 409) {
-                    setAuthError('Diese Benutzer:in ist gesperrt. Ein Login ist nicht möglich.');
+                    setAuthError('Diese Mitarbeiter:in ist gesperrt. Ein Login ist nicht möglich.');
                 } else {
                     console.error(err);
                     setAuthError('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.');

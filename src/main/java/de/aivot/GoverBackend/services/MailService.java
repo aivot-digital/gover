@@ -151,7 +151,7 @@ public class MailService {
                     to,
                     Optional.empty(),
                     Optional.empty(),
-                    "Nutzerkonto angelegt",
+                    "Zugangsdaten für Ihr neues Nutzerkonto",
                     MailTemplate.UserCreatedMail,
                     mailData,
                     Optional.empty()

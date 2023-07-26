@@ -6,8 +6,7 @@ import {UserRoleLabels} from '../../../../data/user-role';
 import {UsersService} from '../../../../services/users-service';
 import {Link, useNavigate} from 'react-router-dom';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import {User} from '../../../../models/entities/user';
-import {filterItems} from '../../../../utils/filter-items';
+import {type User} from '../../../../models/entities/user';
 
 const columns: Array<GridColDef<DepartmentMembershipWithDepartmentDto>> = [
     {
@@ -57,8 +56,8 @@ export function UserEditPageMembershipsTab(props: UserEditPageMembershipsTabProp
                 color="info"
                 title="Keinem Fachbereich zugeordnet"
             >
-                Dieser Benutzer ist noch keinem Fachbereich zugeordnet.
-                Fügen Sie diesen in einem Ihrer <Link to="/departments">Fachbereiche</Link> hinzu.
+                Diese Mitarbeiter:in ist noch keinem Fachbereich zugeordnet. Fügen Sie diese einem
+                Ihrer <Link to="/departments">Fachbereiche</Link> hinzu.
             </AlertComponent>
         );
     }

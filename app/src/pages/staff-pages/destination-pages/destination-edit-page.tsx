@@ -139,7 +139,7 @@ export function DestinationEditPage(): JSX.Element {
                 }
 
                 if (editedDest.mailBCC != null && isStringNotNullOrEmpty(editedDest.mailBCC) && !editedDest.mailBCC.split(',').every((mail) => validateEmail(mail.trim()))) {
-                    errors.mailBCC = 'Bitte geben Sie nur gültige Mail CC-Adressen ein';
+                    errors.mailBCC = 'Bitte geben Sie nur gültige Mail BCC-Adressen';
                 }
             } else {
                 if (isStringNullOrEmpty(editedDest.apiAddress)) {

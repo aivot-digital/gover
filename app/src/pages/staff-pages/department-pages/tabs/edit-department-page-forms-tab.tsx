@@ -37,7 +37,7 @@ export function EditDepartmentPageFormsTab(props: EditDepartmentPageMembersTabPr
             onRowClick={(row) => {
                 navigate(`/edit/${row.id}`);
             }}
-            title="Die folgenden Formulare sind dem Fachbereich zugeordnet"
+            title="Die folgenden Formulare sind dem Fachbereich zur Entwicklung zugeordnet"
             search={search}
             searchPlaceholder="Formular suchen"
             onSearchChange={setSearch}

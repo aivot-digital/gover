@@ -149,7 +149,7 @@ export function UserEditPage(): JSX.Element {
 
     return (
         <FormPageWrapper
-            title="Benutzer bearbeiten"
+            title="Mitarbeiter:in bearbeiten"
             isLoading={isUserLoading}
             is404={isUserNotFound}
 
@@ -194,7 +194,7 @@ export function UserEditPage(): JSX.Element {
                 }}
                 required
                 maxCharacters={255}
-                hint="Mit der E-Mail-Adresse muss sich die Benutzer:in anmelden. Bitte beachten Sie, dass die E-Mail-Adresse einzigartig sein muss."
+                hint="Mit der E-Mail-Adresse muss sich die Mitarbeiter:in anmelden. Bitte beachten Sie, dass die E-Mail-Adresse einzigartig sein muss."
                 error={errors.email}
             />
 
@@ -206,18 +206,18 @@ export function UserEditPage(): JSX.Element {
                         admin: val,
                     });
                 }}
-                hint="Globale Administrator:innen können Benutzer:innen und Fachbereiche verwalten. Sie haben systemweiten Zugriff auf alle Fachbereiche, Formulare und Anträge."
+                hint="Globale Administrator:innen können Mitarbeiter:innen und Fachbereiche verwalten. Sie haben systemweiten Zugriff auf alle Fachbereiche, Formulare und Anträge."
             />
 
             <CheckboxFieldComponent
-                label="Benutzer ist Aktiv"
+                label="Mitarbeiter:in ist aktiv"
                 value={editedUser?.active ?? false}
                 onChange={(val) => {
                     handlePatch({
                         active: val,
                     });
                 }}
-                hint="Deaktivieren Sie Benutzer:innen, damit diese sich nicht mehr anmelden können."
+                hint="Deaktivieren Sie Mitarbeiter:innen, damit diese sich nicht mehr anmelden können."
             />
 
             <Typography
@@ -261,8 +261,8 @@ export function UserEditPage(): JSX.Element {
                     color="info"
                     title="Versand der Einladung"
                 >
-                    Bitte beachten Sie, nach dem Speichern der Mitarbeiter:in automatisch eine E-Mail mit den
-                    Login-Daten an die angegebene E-Mail-Adresse versendet wird.
+                    Bitte beachten Sie, dass nach dem Speichern der Mitarbeiter:in automatisch
+                    eine E-Mail mit den Login-Daten an die angegebene E-Mail-Adresse versendet wird.
                 </AlertComponent>
             }
         </FormPageWrapper>

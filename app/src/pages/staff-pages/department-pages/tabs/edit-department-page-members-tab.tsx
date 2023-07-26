@@ -62,7 +62,7 @@ export function EditDepartmentPageMembersTab({department}: EditDepartmentPageMem
                 })
                 .catch((err) => {
                     if (err.status === 409) {
-                        dispatch(showErrorSnackbar('Mitarbeiter:in kann nicht entfernt werden, da sie noch mindestens zu einem offenen Antrag zugeordnet ist.'));
+                        dispatch(showErrorSnackbar('Die Mitarbeiter:in kann nicht entfernt werden, da sie noch mindestens einem offenen Antrag zugeordnet ist.'));
                     } else {
                         console.error(err);
                         dispatch(showErrorSnackbar('Mitarbeiter:in kann nicht entfernt werden, bitte probieren Sie es später erneut.'));

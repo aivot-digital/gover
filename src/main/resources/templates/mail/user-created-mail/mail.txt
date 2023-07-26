@@ -1,6 +1,6 @@
 Hallo,
 
-für Sie wurde ein neues Benutzerkonto in Gover angelegt.
+für Sie wurde ein neues Nutzerkonto in Gover angelegt.
 
 
 E-Mail-Adresse: [(${email})]

@@ -157,7 +157,7 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
 
                 {
                     mode === 'new-version' &&
-                    'Neuen Version anlegen'
+                    'Neue Version anlegen'
                 }
 
                 {
@@ -249,7 +249,7 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                 </Typography>
 
                 <TextFieldComponent
-                    label="URL-Element (Titel des Antrages innerhalb der URL)"
+                    label="URL-Element (Titel des Formulars innerhalb der URL)"
                     placeholder="antrag-hundesteueranmeldung"
                     value={application.slug}
                     onChange={(val) => {
