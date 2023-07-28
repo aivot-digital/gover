@@ -113,7 +113,7 @@ export function ApplicationListPage(): JSX.Element {
                 })
                 .catch((err) => {
                     if (err.status === 409) {
-                        dispatch(showErrorSnackbar('Formular konnte nicht angelegt werden. Es existiert bereits ein Formular mit dieser URL und dieser Version.'));
+                        dispatch(showErrorSnackbar('Formular konnte nicht angelegt werden. Es existiert bereits ein Formular mit dieser URL in einem Fachbereich, dem Sie nicht zugehörig sind.'));
                     } else {
                         dispatch(showErrorSnackbar('Formular konnte nicht angelegt werden.'));
                         console.error(err);

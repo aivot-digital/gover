@@ -178,6 +178,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                 {
                     isEditor &&
+                    !isDeveloper &&
                     <Box className={styles.listItemActionsContainer}>
                         <Button
                             startIcon={<DriveFileRenameOutlineOutlinedIcon sx={{

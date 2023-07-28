@@ -1,9 +1,9 @@
 import {Grid, type Theme as MuiTheme, ThemeProvider} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {type RootState} from '../../../store';
-import {clearAppModel, fetchApplicationById, MetaDialog, selectApplicationLoadFailed, selectApplicationSaveFailed, selectLoadedApplication, showMetaDialog, updateAppModel} from '../../../slices/app-slice';
+import {clearAppModel, fetchApplicationById, MetaDialog, selectApplicationLoadFailed, selectLoadedApplication, showMetaDialog, updateAppModel} from '../../../slices/app-slice';
 import {LoadingPlaceholderComponentView} from '../../../components/static-components/loading-placeholder/loading-placeholder.component.view';
-import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {createAppTheme} from '../../../theming/themes';
 import {NotFoundPage} from '../../../components/static-components/not-found-page/not-found-page';
@@ -35,12 +35,12 @@ import {type Theme} from '../../../models/entities/theme';
 import {ApplicationStatus} from '../../../data/application-status/application-status';
 import {selectMemberships, selectUser} from '../../../slices/user-slice';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {ApplicationService} from '../../../services/application-service';
 
 export function ApplicationEditPage(): JSX.Element {
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = searchParams.get('dialog');
 
-    const navigate = useNavigate();
     const params = useParams();
     const dispatch = useAppDispatch();
 
@@ -49,7 +49,6 @@ export function ApplicationEditPage(): JSX.Element {
     const adminSettings = useAppSelector((state: RootState) => state.adminSettings);
     const application = useAppSelector(selectLoadedApplication);
     const failedToLoad = useAppSelector(selectApplicationLoadFailed);
-    const failedToSave = useAppSelector(selectApplicationSaveFailed);
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
     const metaDialog = useAppSelector((state) => state.app.showMetaDialog);
@@ -62,13 +61,6 @@ export function ApplicationEditPage(): JSX.Element {
             setSearchParams({});
         }
     }, [metaDialogName]);
-
-    useEffect(() => {
-        if (failedToSave === true) {
-            dispatch(showErrorSnackbar('Die notwendigen Rechte zur Bearbeitung wurden entzogen.'));
-            navigate('/');
-        }
-    }, [failedToSave]);
 
     useEffect(() => {
         dispatch(clearAppModel());
@@ -181,10 +173,32 @@ export function ApplicationEditPage(): JSX.Element {
                             <ElementTree
                                 entity={application}
                                 onPatch={(patch) => {
-                                    dispatch(updateAppModel({
-                                        ...application,
-                                        ...patch,
-                                    }));
+                                    if (application != null) {
+                                        const canEdit = memberships.some((mem) => mem.department === application.developingDepartment);
+                                        if (canEdit) {
+                                            const updatedAppModel = {
+                                                ...application,
+                                                ...patch,
+                                            };
+                                            const orignalApplication = {
+                                                ...application,
+                                            };
+                                            dispatch(updateAppModel(updatedAppModel));
+                                            ApplicationService
+                                                .update(application.id, updatedAppModel)
+                                                .catch((err) => {
+                                                    if (err.status === 403) {
+                                                        dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
+                                                    } else {
+                                                        console.error(err);
+                                                        dispatch(showErrorSnackbar('Das Formular konnte nicht gespeichert werden.'));
+                                                    }
+                                                    dispatch(updateAppModel(orignalApplication));
+                                                });
+                                        } else {
+                                            dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
+                                        }
+                                    }
                                 }}
                                 editable={
                                     application.status !== ApplicationStatus.Published &&

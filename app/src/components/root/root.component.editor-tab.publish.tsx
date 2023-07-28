@@ -14,6 +14,8 @@ import {updateAppModel} from '../../slices/app-slice';
 import {Application} from '../../models/entities/application';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
+import {ApplicationService} from '../../services/application-service';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
 
 export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -110,6 +112,7 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                 {
                     checklist.map((item) => (
                         <ListItem
+                            key={item.label}
                             secondaryAction={
                                 <Checkbox
                                     edge="start"
@@ -163,10 +166,27 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                             }
                             color="warning"
                             onClick={() => {
-                                dispatch(updateAppModel({
+                                const updatedAppModel = {
                                     ...props.entity,
                                     status: ApplicationStatus.Revoked,
-                                }));
+                                };
+                                const orignalApplication = {
+                                    ...props.entity,
+                                };
+                                dispatch(updateAppModel(updatedAppModel));
+                                ApplicationService
+                                    .update(props.entity.id, updatedAppModel)
+                                    .catch((err) => {
+                                        if (err.status === 403) {
+                                            dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
+                                        } else {
+                                            console.error(err);
+                                            dispatch(showErrorSnackbar('Das Formular konnte nicht gespeichert werden.'));
+                                        }
+                                        dispatch(updateAppModel(orignalApplication));
+                                        setIsPublished(orignalApplication.status === ApplicationStatus.Published);
+                                        setIsRevoked(orignalApplication.status === ApplicationStatus.Revoked);
+                                    });
                                 setIsRevoked(true);
                                 setIsPublished(false);
                             }}
@@ -226,10 +246,27 @@ export function RootComponentEditorTabPublish(props: BaseEditorProps<RootElement
                             <SendOutlinedIcon/>
                         }
                         onClick={() => {
-                            dispatch(updateAppModel({
+                            const updatedAppModel = {
                                 ...props.entity,
                                 status: ApplicationStatus.Published,
-                            }));
+                            };
+                            const orignalApplication = {
+                                ...props.entity,
+                            };
+                            dispatch(updateAppModel(updatedAppModel));
+                            ApplicationService
+                                .update(props.entity.id, updatedAppModel)
+                                .catch((err) => {
+                                    if (err.status === 403) {
+                                        dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
+                                    } else {
+                                        console.error(err);
+                                        dispatch(showErrorSnackbar('Das Formular konnte nicht gespeichert werden.'));
+                                    }
+                                    dispatch(updateAppModel(orignalApplication));
+                                    setIsPublished(orignalApplication.status === ApplicationStatus.Published);
+                                    setIsRevoked(orignalApplication.status === ApplicationStatus.Revoked);
+                                });
                             setIsPublished(true);
                             setIsRevoked(false);
                         }}

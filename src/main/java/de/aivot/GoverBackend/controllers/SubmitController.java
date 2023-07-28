@@ -227,7 +227,7 @@ public class SubmitController {
         submission.setApplication(application);
         submission.setAssignee(null);
         submission.setCustomerInput(customerInput);
-        submission.setIsTestSubmission(application.getStatus() != ApplicationStatus.Published);
+        submission.setIsTestSubmission(application.getStatus() != ApplicationStatus.Published || (authentication != null && authentication.isAuthenticated()));
         submission.setCopySent(false);
         submission.setCopyTries(0);
         if (application.getDestination() != null) {
