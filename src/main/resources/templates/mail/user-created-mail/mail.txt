@@ -7,7 +7,7 @@ E-Mail-Adresse: [(${email})]
 Passwort: [(${password})]
 
 
-Sie können sich unter [(${hostname})] anmelden.
+Sie können sich unter [(${hostname})]/admin anmelden.
 
 
 Diese E-Mail ist automatisch generiert.
