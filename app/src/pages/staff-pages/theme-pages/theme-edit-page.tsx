@@ -244,7 +244,7 @@ export function ThemeEditPage(): JSX.Element {
                     }}
                 >
                     <ColorPicker
-                        label="Pimärfarbe"
+                        label="Primärfarbe"
                         value={editedTheme?.main}
                         onChange={(color) => {
                             handlePatch({
@@ -254,7 +254,7 @@ export function ThemeEditPage(): JSX.Element {
                     />
 
                     <ColorPicker
-                        label="Pimärfarbe (Dunkel)"
+                        label="Primärfarbe (Dunkel)"
                         value={editedTheme?.mainDark}
                         onChange={(color) => {
                             handlePatch({
