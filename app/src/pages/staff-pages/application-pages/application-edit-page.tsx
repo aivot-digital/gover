@@ -174,7 +174,7 @@ export function ApplicationEditPage(): JSX.Element {
                                 entity={application}
                                 onPatch={(patch) => {
                                     if (application != null) {
-                                        const canEdit = memberships.some((mem) => mem.department === application.developingDepartment);
+                                        const canEdit = (user?.admin === true) || memberships.some((mem) => mem.department === application.developingDepartment);
                                         if (canEdit) {
                                             const updatedAppModel = {
                                                 ...application,
