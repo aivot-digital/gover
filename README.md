@@ -144,6 +144,7 @@ services:
     depends_on:
       - database
       - clamav
+      - influx
     restart: always
     volumes:
       - ./gv_data:/app/data
@@ -184,7 +185,13 @@ services:
 
 ### Running Gover
 
-Start the containers with `docker compose up -d` and monitor the startup with `docker compose logs -f gover`.
+Start the base containers with
+```bash
+docker compose up -d database clamav influx
+```
+
+Wait for the containers to come up and initialize.
+Start the gover with `docker compose up -d gover` and monitor the startup with `docker compose logs -f gover`.
 Gover is now available at <http://localhost:8080> and <http://localhost:8080/admin>.
 
 **Please note**, that the Gover application prints initial login data for an admin user to the console. 
