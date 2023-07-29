@@ -30,6 +30,14 @@ public class SubmissionStorageService {
         return Paths.get(ROOT + id + "/template.html");
     }
 
+    public Path getSubmissionHeaderHtmlPath(String id) {
+        return Paths.get(ROOT + id + "/header_template.html");
+    }
+
+    public Path getSubmissionFooterHtmlPath(String id) {
+        return Paths.get(ROOT + id + "/footer_template.html");
+    }
+
     public Path getSubmissionAttachmentPath(String id, String attachmentName) {
         return Paths.get(ROOT + id + "/attachments/" + attachmentName);
     }

@@ -214,7 +214,7 @@ public class SubmitController {
 
         // Generate print
         try {
-            pdfService.generatePdf(application, applicationDto, submissionId);
+            pdfService.generatePdf(applicationDto, submissionId);
         } catch (IOException | InterruptedException e) {
             mailService.sendExceptionMail(e);
             throw new RuntimeException(e);

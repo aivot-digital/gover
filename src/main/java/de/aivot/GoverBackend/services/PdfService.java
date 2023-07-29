@@ -26,46 +26,63 @@ public class PdfService {
 
 
     public void generatePdf(
-            Application application,
             ApplicationPdfDto applicationDto,
             String uuid
     ) throws IOException, InterruptedException {
         submissionStorageService.initSubmission(uuid);
-        Path pathHtml = submissionStorageService.getSubmissionHtmlPath(uuid);
-        Path pathPdf = submissionStorageService.getSubmissionPdfPath(uuid);
 
-        String template = loadTemplate(applicationDto);
+        Path pathHtml = submissionStorageService.getSubmissionHtmlPath(uuid);
+        String template = loadContentTemplate(applicationDto);
         Files.writeString(pathHtml, template);
 
-        String pdfTitle = application.getApplicationTitle().replaceAll("\\r?\\n", " ");
+        Path pathHeaderHtml = submissionStorageService.getSubmissionHeaderHtmlPath(uuid);
+        String headerTemplate = loadHeaderTemplate(applicationDto);
+        Files.writeString(pathHeaderHtml, headerTemplate);
 
+        Path pathFooterHtml = submissionStorageService.getSubmissionFooterHtmlPath(uuid);
+        String footerTemplate = loadFooterTemplate(applicationDto);
+        Files.writeString(pathFooterHtml, footerTemplate);
+
+        Path pathPdf = submissionStorageService.getSubmissionPdfPath(uuid);
         Process generateToPdf = new ProcessBuilder(
                 "wkhtmltopdf",
                 "--encoding",
                 "UTF-8",
                 "--margin-top",
-                "25mm",
+                "20mm",
                 "--header-spacing",
                 "5",
                 "--margin-bottom",
-                "25mm",
+                "20mm",
                 "--footer-spacing",
                 "5",
-                "--header-left",
-                pdfTitle,
-                "--footer-left",
-                "[date] [time] Uhr",
-                "--footer-right",
-                "[page]/[toPage]",
+                "--header-html",
+                pathHeaderHtml.toString(),
+                "--footer-html",
+                pathFooterHtml.toString(),
                 pathHtml.toString(),
                 pathPdf.toString()
         ).start();
         generateToPdf.waitFor();
 
         Files.delete(pathHtml);
+        Files.delete(pathHeaderHtml);
+        Files.delete(pathFooterHtml);
     }
 
-    private String loadTemplate(ApplicationPdfDto applicationDto) {
+    private String loadContentTemplate(ApplicationPdfDto applicationDto) {
+        return loadTemplate("application.html", applicationDto);
+    }
+
+    private String loadHeaderTemplate(ApplicationPdfDto applicationDto) {
+        return loadTemplate("application_header.html", applicationDto);
+    }
+
+    private String loadFooterTemplate(ApplicationPdfDto applicationDto) {
+        return loadTemplate("application_footer.html", applicationDto);
+    }
+
+    private String loadTemplate(String templateName, ApplicationPdfDto applicationDto) {
         ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
         templateResolver.setPrefix("templates/");
         templateResolver.setTemplateMode(TemplateMode.HTML);
@@ -76,6 +93,6 @@ public class PdfService {
         Context context = new Context();
         context.setVariable("data", applicationDto);
 
-        return templateEngine.process("application.html", context);
+        return templateEngine.process(templateName, context);
     }
 }
