@@ -50,6 +50,8 @@ public class Submission {
     @ColumnDefault("0")
     private Integer copyTries;
 
+    private Integer reviewScore;
+
     @PrePersist
     public void prePersist() {
         created = LocalDateTime.now();
@@ -151,6 +153,14 @@ public class Submission {
 
     public void setCopyTries(Integer copyTries) {
         this.copyTries = copyTries;
+    }
+
+    public Integer getReviewScore() {
+        return reviewScore;
+    }
+
+    public void setReviewScore(Integer reviewScore) {
+        this.reviewScore = reviewScore;
     }
 
     // endregion

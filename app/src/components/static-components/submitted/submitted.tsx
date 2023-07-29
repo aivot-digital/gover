@@ -1,5 +1,4 @@
 import {Box, Button, Divider, Grid, Typography, useTheme} from '@mui/material';
-import Rating, {type IconContainerProps} from '@mui/material/Rating';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import ReactCanvasConfetti from 'react-canvas-confetti';
@@ -16,11 +15,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
-import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined';
-import SentimentNeutralOutlinedIcon from '@mui/icons-material/SentimentNeutralOutlined';
-import SentimentSatisfiedAltOutlinedIcon from '@mui/icons-material/SentimentSatisfiedAltOutlined';
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
+import {Rating} from '../../rating/rating';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -33,65 +28,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
     const application = useSelector(selectLoadedApplication);
     const submitStep = application?.root.submitStep;
     const theme = useTheme();
-
-    const customIcons: Record<string, {
-        icon: React.ReactElement;
-        label: string;
-    }> = {
-        1: {
-            icon: <MoodBadOutlinedIcon
-                sx={{
-                    fontSize: '40px',
-                    margin: '0 5px',
-                }}
-            />,
-            label: 'Sehr Unzufrieden',
-        },
-        2: {
-            icon: <SentimentDissatisfiedOutlinedIcon
-                sx={{
-                    fontSize: '40px',
-                    margin: '0 5px',
-                }}
-            />,
-            label: 'Unzufrieden',
-        },
-        3: {
-            icon: <SentimentNeutralOutlinedIcon
-                sx={{
-                    fontSize: '40px',
-                    margin: '0 5px',
-                }}
-            />,
-            label: 'Neutral',
-        },
-        4: {
-            icon: <SentimentSatisfiedAltOutlinedIcon
-                sx={{
-                    fontSize: '40px',
-                    margin: '0 5px',
-                }}
-            />,
-            label: 'Zufrieden',
-        },
-        5: {
-            icon: <EmojiEmotionsOutlinedIcon
-                sx={{
-                    fontSize: '40px',
-                    margin: '0 5px',
-                }}
-            />,
-            label: 'Sehr Zufrieden',
-        },
-    };
-
-    function IconContainer(props: IconContainerProps): JSX.Element {
-        const {
-            value,
-            ...other
-        } = props;
-        return <span {...other}>{customIcons[value].icon}</span>;
-    }
 
     const canvasStyles = {
         position: 'fixed',
@@ -355,13 +291,12 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                 }}
             >
                 <Rating
-                    sx={{
-                        color: theme.palette.primary.main,
+                    onChange={(newValue) => {
+                        if (props.submission != null && newValue != null) {
+                            ApplicationService
+                                .rateApplication(props.submission, newValue);
+                        }
                     }}
-                    name="highlight-selected-only"
-                    IconContainerComponent={IconContainer}
-                    highlightSelectedOnly
-                    size="large"
                 />
             </Box>
 

@@ -1,5 +1,5 @@
 import React, {type FormEvent, useEffect, useState} from 'react';
-import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
+import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useTheme} from '@mui/material';
 import {Link, useParams} from 'react-router-dom';
 import {type Application} from '../../../models/entities/application';
 import {type SubmissionDetailsDto} from '../../../models/entities/submission-details-dto';
@@ -27,6 +27,7 @@ import {delayPromise} from '../../../utils/with-delay';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import {Rating} from '../../../components/rating/rating';
 
 async function fetchData(formId: string, submissionId: string): Promise<{
     form: Application;
@@ -106,6 +107,7 @@ async function fetchData(formId: string, submissionId: string): Promise<{
 }
 
 export function SubmissionEditPage(): JSX.Element {
+    const theme = useTheme();
     const dispatch = useAppDispatch();
 
     const {
@@ -382,37 +384,6 @@ export function SubmissionEditPage(): JSX.Element {
                 </Box>
             }
 
-            <Typography
-                variant="h6"
-                sx={{mb: 2}}
-            >
-                Antragsinformationen
-            </Typography>
-
-            <TableContainer>
-                <Table>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell scope="th">
-                                Eingangsdatum
-                            </TableCell>
-                            <TableCell>
-                                {(created != null) && format(created, 'dd.MM.yyyy')}
-                            </TableCell>
-                        </TableRow>
-
-                        <TableRow>
-                            <TableCell scope="th">
-                                Eingangsuhrzeit
-                            </TableCell>
-                            <TableCell>
-                                {(created != null) && format(created, 'HH:mm')} Uhr
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
             {
                 editedSubmission?.destination == null &&
                 <form onSubmit={handleSubmit}>
@@ -482,6 +453,71 @@ export function SubmissionEditPage(): JSX.Element {
                     }
                 </form>
             }
+
+            <Typography
+                variant="h6"
+                sx={{
+                    mt: 4,
+                    mb: 2,
+                }}
+            >
+                Antragsinformationen
+            </Typography>
+
+            <TableContainer>
+                <Table>
+                    <TableBody>
+                        <TableRow>
+                            <TableCell scope="th">
+                                Eingangsdatum
+                            </TableCell>
+                            <TableCell>
+                                {(created != null) && format(created, 'dd.MM.yyyy')}
+                            </TableCell>
+                        </TableRow>
+
+                        <TableRow>
+                            <TableCell scope="th">
+                                Eingangsuhrzeit
+                            </TableCell>
+                            <TableCell>
+                                {(created != null) && format(created, 'HH:mm')} Uhr
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+
+            <Box
+                sx={{
+                    mt: 4,
+                }}
+            >
+                <Typography
+                    variant="h6"
+                    sx={{
+                        mt: 4,
+                        mb: 2,
+                    }}
+                >
+                    Bewertung des Formulars
+                </Typography>
+
+                {
+                    editedSubmission?.reviewScore != null &&
+                    <Rating
+                        value={editedSubmission?.reviewScore ?? undefined}
+                    />
+                }
+
+                {
+                    editedSubmission?.reviewScore == null &&
+                    <Typography>
+                        Keine Bewertung abgegeben.
+                    </Typography>
+                }
+            </Box>
 
             <Typography
                 variant="h6"

@@ -350,6 +350,16 @@ public class SubmitController {
         return ResponseEntity.ok(HttpStatus.OK);
     }
 
+    @GetMapping("/api/public/rate/{submissionId}")
+    public ResponseEntity<HttpStatus> rate(@PathVariable String submissionId, @RequestParam(required = true) Integer score) {
+        submissionRepository.findById(submissionId).ifPresent(submission -> {
+            submission.setReviewScore(score);
+            submissionRepository.save(submission);
+        });
+
+        return ResponseEntity.ok(HttpStatus.OK);
+    }
+
     private void testSubmissionExpired(Submission submission) {
         Integer accessHours;
         if (submission.getApplication().getCustomerAccessHours() != null) {

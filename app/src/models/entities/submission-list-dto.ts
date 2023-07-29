@@ -8,4 +8,5 @@ export interface SubmissionListDto {
     destination: number | null;
     destinationSuccess: boolean | null;
     isTestSubmission: boolean;
+    reviewScore: number | null;
 }

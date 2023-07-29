@@ -24,6 +24,8 @@ public class SubmissionListDto {
 
     private Boolean isTestSubmission;
 
+    private Integer reviewScore;
+
     public SubmissionListDto() {
     }
 
@@ -41,6 +43,7 @@ public class SubmissionListDto {
         }
         destinationSuccess = submission.getDestinationSuccess();
         isTestSubmission = submission.getIsTestSubmission();
+        reviewScore = submission.getReviewScore();
     }
 
     // region Getters & Setters
@@ -115,6 +118,14 @@ public class SubmissionListDto {
 
     public void setIsTestSubmission(Boolean testSubmission) {
         isTestSubmission = testSubmission;
+    }
+
+    public Integer getReviewScore() {
+        return reviewScore;
+    }
+
+    public void setReviewScore(Integer reviewScore) {
+        this.reviewScore = reviewScore;
     }
 
 // endregion

@@ -50,6 +50,12 @@ class _ApplicationService extends ApiService<Application, ListApplication, numbe
         );
     }
 
+    async rateApplication(submission: SubmissionListDto, score: number): Promise<string> {
+        return await ApiService.get(
+            `public/rate/${submission.id}?score=${score.toFixed(0)}`,
+        );
+    }
+
     async getMaxFileSize(application: Application): Promise<{maxFileSize: number}> {
         return await ApiService.get(`public/max-file-size/${application.id}`);
     }
