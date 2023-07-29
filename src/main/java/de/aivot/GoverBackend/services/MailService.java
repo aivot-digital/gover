@@ -7,8 +7,7 @@ import de.aivot.GoverBackend.models.entities.Application;
 import de.aivot.GoverBackend.models.entities.Destination;
 import de.aivot.GoverBackend.models.entities.Submission;
 import de.aivot.GoverBackend.models.entities.SubmissionAttachment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.aivot.GoverBackend.repositories.SystemConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -40,12 +39,14 @@ public class MailService {
     private final GoverConfig goverConfig;
     private final JavaMailSender mailSender;
     private final SubmissionStorageService submissionStorageService;
+    private final SystemConfigRepository systemConfigRepository;
 
     @Autowired
-    public MailService(GoverConfig goverConfig, JavaMailSender mailSender, SubmissionStorageService submissionStorageService) {
+    public MailService(GoverConfig goverConfig, JavaMailSender mailSender, SubmissionStorageService submissionStorageService, SystemConfigRepository systemConfigRepository) {
         this.goverConfig = goverConfig;
         this.mailSender = mailSender;
         this.submissionStorageService = submissionStorageService;
+        this.systemConfigRepository = systemConfigRepository;
     }
 
     public void sendApplicationCopyMail(String to, Submission submission) throws MessagingException, IOException, MailException {
@@ -56,6 +57,13 @@ public class MailService {
 
         Map<String, Object> mailData = new HashMap<>();
         mailData.put("title", title);
+
+        mailData.put("vendor", "");
+        systemConfigRepository
+                .findById("ProviderName")
+                .ifPresent(
+                        systemConfig -> mailData.put("vendor", systemConfig.getValue())
+                );
 
         String departmentName;
         if (application.getManagingDepartment() != null) {
