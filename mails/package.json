@@ -1,0 +1,21 @@
+{
+  "name": "mails",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:dev:mjml": "mjml -r ./templates/*.mjml -o ../src/main/resources/templates/mail",
+    "build:dev:text": "cp ./templates/*.txt ../src/main/resources/templates/mail",
+    "build:dev": "mkdir -p ../src/main/resources/templates/mail && npm run build:dev:mjml && npm run build:dev:text",
+
+    "build:prod:mjml": "mjml -r ./templates/*.mjml -o ./dist",
+    "build:prod:text": "cp ./templates/*.txt ./dist",
+    "build:prod": "mkdir -p ./dist && npm run build:prod:mjml && npm run build:prod:text"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mjml": "^4.15.3"
+  }
+}

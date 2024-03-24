@@ -1,0 +1,5 @@
+Hallo,
+
+der Test der SMTP-Verbindung war erfolgreich.
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

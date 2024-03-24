@@ -1,0 +1,22 @@
+.listItem {
+  cursor: pointer;
+  user-select: none;
+
+  padding: 0.25em 0.5em;
+  border-radius: 0.25em;
+
+  min-height: 48px;
+
+  display: flex;
+  align-items: center;
+
+  transition: background-color 125ms ease-in-out;
+
+  &:hover {
+    background-color: #182E8811;
+  }
+
+  p {
+    margin-left: 0.4em;
+  }
+}

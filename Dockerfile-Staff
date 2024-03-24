@@ -1,0 +1,52 @@
+# Build app
+FROM node:21-alpine as build_app
+
+ARG version
+
+# Install dependencies
+RUN apk add --update git
+
+# Prepare frontend working directoy
+WORKDIR /gover
+
+# Copy frontend project files
+COPY app/package.json package.json
+COPY app/package-lock.json package-lock.json
+
+# Set version in package.json
+RUN sed -i 's/"version": "X.X.X"/"version": "'"$version"'"/g' package.json
+
+# Install frontend dependencies
+RUN npm ci
+
+# Copy frontend source files
+COPY app/public public
+COPY app/src src
+COPY app/tsconfig.json tsconfig.json
+
+ENV NODE_ENV production
+ENV REACT_APP_BUILD_TARGET staff
+ENV PUBLIC_URL /staff
+ENV DISABLE_ESLINT_PLUGIN true
+
+RUN npm run build
+
+# App
+FROM nginx:1.25-alpine
+
+ARG buildDate
+ARG version
+
+# Set app metadata
+LABEL org.opencontainers.image.created=$buildDate
+LABEL org.opencontainers.image.url="https://github.com/aivot-digital/gover"
+LABEL org.opencontainers.image.documentation="https://wiki.teamaivot.de/de/dokumentation/gover"
+LABEL org.opencontainers.image.source="https://github.com/aivot-digital/gover"
+LABEL org.opencontainers.image.version=$version
+LABEL org.opencontainers.image.vendor="Aivot"
+LABEL org.opencontainers.image.title="Gover Staff App"
+LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
+
+# Copy app files
+COPY docker/nginx.staff.conf /etc/nginx/conf.d/default.conf
+COPY --from=build_app /gover/build /usr/share/nginx/html/staff

@@ -1,0 +1,38 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Es ist ein Fehler aufgetreten
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        es ist ein Fehler aufgetreten am Host <b th:text="${base.config.goverHostname}">https://gover.digital</b>.
+                    </p>
+
+                    <p>
+                        Die Fehlernachricht lautet:
+                        <br/>
+                        <b th:text="${message}">Message</b>
+                    </p>
+
+                    <p>
+                        Der StackTrace zum Fehler:
+                    </p>
+
+                    <pre>
+                        <code th:text="${stackTrace}">StackTrace</code>
+                    </pre>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+    </mj-body>
+</mjml>

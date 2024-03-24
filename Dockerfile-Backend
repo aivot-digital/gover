@@ -1,0 +1,79 @@
+# Build mails
+FROM node:16 as build_mails
+
+WORKDIR /app
+
+COPY mails/package.json package.json
+COPY mails/package-lock.json package-lock.json
+
+RUN npm install
+
+COPY mails/partials partials
+COPY mails/templates templates
+
+RUN npm run build:prod
+
+# Build app
+FROM  maven:3.9.6-eclipse-temurin-21 as build_app
+
+ARG version=0.0.0
+
+# Prepare backend working directoy
+WORKDIR /gover
+
+# Copy backend project files
+COPY pom.xml pom.xml
+
+# Set version in pom.xml
+RUN sed -i 's%<version>X.X.X</version>%<version>'"$version"'</version>%g' pom.xml
+
+# Copy backend source files
+COPY src/main src/main
+
+# Copy mails files
+COPY --from=build_mails /app/dist src/main/resources/templates/mail
+
+# Build app
+RUN mvn install -DskipTests
+
+
+# App
+FROM eclipse-temurin:21.0.2_13-jre
+
+ARG buildDate=unknown
+ARG version=0.0.0
+ARG TARGETARCH
+
+# Set app metadata
+LABEL org.opencontainers.image.created=$buildDate
+LABEL org.opencontainers.image.url="https://github.com/aivot-digital/gover"
+LABEL org.opencontainers.image.documentation="https://wiki.teamaivot.de/de/dokumentation/gover"
+LABEL org.opencontainers.image.source="https://github.com/aivot-digital/gover"
+LABEL org.opencontainers.image.version=$version
+LABEL org.opencontainers.image.vendor="Aivot"
+LABEL org.opencontainers.image.title="Gover Backend"
+LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
+
+# Set locale env config
+ENV TZ "Europe/Berlin"
+ENV LANG de_DE.UTF-8
+ENV LANGUAGE de_DE:de
+ENV LC_ALL de_DE.UTF-8
+
+# Prepare app working directoy
+WORKDIR /app
+
+# Install locale dependencies
+RUN apt-get update && \
+    apt-get -y install tzdata locales && \
+    wget -O /tmp/wkhtmltox.deb https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_$TARGETARCH.deb && \
+    apt-get install -y -f /tmp/wkhtmltox.deb && \
+    rm /tmp/wkhtmltox.deb && \
+    ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
+# Copy app files
+COPY --from=build_app /gover/target/Gover-$version.jar /app/gover.jar
+
+ENTRYPOINT ["java"]
+CMD  ["-jar", "/app/gover.jar"]

@@ -1,0 +1,8 @@
+Hallo,
+
+Sie wurden in Gover einem Fachbereich zugeordnet.
+Fachbereich: [(${department.name})]
+Rolle: [(${membership.role.getLabel})]
+Zugeordnet durch: [(${admin.getFullName()})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

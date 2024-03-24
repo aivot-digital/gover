@@ -1,0 +1,9 @@
+Hallo,
+
+es wurde ein bestehendes Formular in Gover gelöscht.
+Formular: [(${form.title})] (Hinweis der Redaktion: Interner Formularname)
+Version: [(${form.version})]
+Entwickelnder Fachbereich: [(${department.name})]
+Gelöscht durch: [(${triggeringUser.getFullName})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
