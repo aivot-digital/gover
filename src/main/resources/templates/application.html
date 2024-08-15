@@ -1,0 +1,1055 @@
+<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.models.entities.Form"*/-->
+<!--/*@thymesVar id="submission" type="de.aivot.GoverBackend.models.entities.Submission"*/-->
+<!--/*@thymesVar id="theme" type="de.aivot.GoverBackend.models.entities.Theme"*/-->
+<!--/*@thymesVar id="department" type="de.aivot.GoverBackend.models.entities.Department"*/-->
+<!--/*@thymesVar id="elements" type="java.util.Collection<de.aivot.GoverBackend.services.pdf.PdfElement>"*/-->
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.services.pdf.PdfContext"*/-->
+<!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
+<!--/*@thymesVar id="#numberformat" type="de.aivot.GoverBackend.services.pdf.NumberFormatDialect"*/-->
+
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+        lang="de"
+>
+    <head th:title="${ form.getApplicationTitle() }">
+        <meta charset="UTF-8" />
+
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            }
+
+            .d-flex {
+                display: flex;
+            }
+
+            h2 {
+                margin-top: 2em;
+            }
+
+            h6 {
+                font-size: 1em;
+            }
+
+            #briefkopf {
+                display: flex;
+            }
+
+            #logo {
+                margin-left: auto;
+            }
+
+            #logo img {
+                max-height: 100px;
+                max-width: 200px;
+            }
+
+            .checked::before {
+                content: '\2611';
+                font-size: 1.5em;
+                line-height: 1em;
+            }
+
+            .unchecked::before {
+                content: '\2610';
+                font-size: 1.5em;
+                line-height: 1em;
+            }
+
+            .page-break-before {
+                break-before: page;
+            }
+
+            .avoid-break-inside {
+                break-inside: avoid;
+            }
+
+            .indent-1 {
+                margin-left: 1em;
+            }
+
+            .indent-2 {
+                margin-left: 2em;
+            }
+
+            .indent-3 {
+                margin-left: 3em;
+            }
+
+            .indent-4 {
+                margin-left: 4em;
+            }
+
+            .form-field {
+                margin-top: 1.5em;
+                break-inside: avoid;
+            }
+
+            .form-field.breakable {
+                break-inside: auto;
+            }
+
+            .group-start {
+                padding-top: 1em;
+                border-top: 1px solid gray;
+            }
+
+            .group-start,
+            .group-item,
+            .group-end {
+                padding: 0 1.5em;
+                border-left: 1px solid gray;
+                border-right: 1px solid gray;
+
+                overflow: auto;
+            }
+
+            .group-end {
+                padding-bottom: 1em;
+                border-bottom: 1px solid gray;
+                margin-bottom: 1.5em;
+            }
+
+            .form-field .form-field-label {
+                font-size: 0.75em;
+            }
+
+            .form-field .select-list {
+                list-style-type: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .form-field .form-field-input {
+                padding: 0.5em 0.5em;
+                margin-top: 0.5em;
+                border-left: 1px solid gray;
+                border-bottom: 1px solid gray;
+                display: flex;
+                min-height: 1.25em;
+            }
+
+            .form-field .form-field-hint {
+                margin-top: 0.25em;
+                font-size: 0.875em;
+            }
+
+            .form-table {
+                display: table;
+                border-collapse: collapse;
+                border-spacing: 0;
+                table-layout: fixed;
+                margin-bottom: 1.5em;
+                width: 100%;
+            }
+
+            .form-table th {
+                border-bottom: 2px solid gray;
+                font-weight: normal;
+                padding: 0.5em 1em;
+            }
+
+            .form-table td {
+                border: 1px solid gray;
+                padding: 1.5em 1em;
+            }
+
+            a::after {
+                content: " (" attr(href) ") ";
+            }
+
+            a.do-not-print-link::after {
+                content: none;
+            }
+
+            .signature-container {
+                display: flex;
+                margin-top: 4em;
+                border-top: 1px solid black;
+            }
+
+            .signature-container div {
+                flex: 1;
+            }
+        </style>
+    </head>
+    <body>
+
+        <!-- ***********************************************************************
+        Bereich für den Briefkopf des Formulars.
+        ************************************************************************ -->
+
+        <header id="briefkopf">
+            <div id="anschrift">
+                <p>
+                    <!-- Der Name des Betreibers wird aus dem Basis-Kontext abgeleitet -->
+                    <span th:text="${ base.providerName() }">Name der Kommune</span>
+                    <br />
+
+                    <!-- Der Name des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet -->
+                    <span th:text="${ department.name }">Name des zuständigen Fachbereichs</span>
+                    <br />
+
+                    <!-- Der Adresse des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet.
+                    Über das #strings.replace Util werden alle Zeilenumbrüche mit dem HTML-Tag <br /> ersetzt -->
+                    <span th:utext="${ #strings.replace(department.address,'\n', '&lt;br /&gt;') }">Adresse des Fachbereichs</span>
+                    <br />
+                </p>
+            </div>
+            <div id="logo">
+                <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->
+                <img
+                        th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName)}"
+                        th:alt="${ 'Logo ' + base.providerName() }"
+                />
+            </div>
+        </header>
+
+        <!-- ***********************************************************************
+        Die Überschrift des Formulars.
+        ************************************************************************ -->
+
+        <h1
+                id="formulartitel"
+                th:text="${ form.getFormTitle() }"
+        >
+            Titel des Formulars
+        </h1>
+
+        <!-- ***********************************************************************
+        Bereich für die "Allgemeinen Informationen".
+        ************************************************************************ -->
+
+        <section>
+            <h2>Allgemeine Informationen</h2>
+
+            <div
+                    th:if="${!#strings.isEmpty(form.getRoot().getIntroductionStep().getTeaserText())}"
+                    th:utext="${ form.getRoot().getIntroductionStep().getTeaserText() }"
+            >
+                Allgemeine Informationen für antragstellende Personen
+            </div>
+
+            <div
+                    class="avoid-break-inside"
+                    th:if="${form.getRoot().getIntroductionStep().getEligiblePersons() != null && !form.getRoot().getIntroductionStep().getEligiblePersons().isEmpty()}"
+            >
+                <h3>Antragsberechtigte</h3>
+                <ul>
+                    <li
+                            th:each="doc : ${ form.getRoot().getIntroductionStep().getEligiblePersons() }"
+                            th:text="${ doc }"
+                    >
+                        Person
+                    </li>
+                </ul>
+            </div>
+
+            <div
+                    class="avoid-break-inside"
+                    th:if="${form.getRoot().getIntroductionStep().getSupportingDocuments() != null && !form.getRoot().getIntroductionStep().getSupportingDocuments().isEmpty()}"
+            >
+                <h3>Relevante Dokumente</h3>
+                <ul>
+                    <li
+                            th:each="doc : ${ form.getRoot().getIntroductionStep().getSupportingDocuments() }"
+                            th:text="${ doc }"
+                    >
+                        Dokument
+                    </li>
+                </ul>
+            </div>
+
+            <div
+                    class="avoid-break-inside"
+                    th:if="${form.getRoot().getIntroductionStep().getDocumentsToAttach() != null && !form.getRoot().getIntroductionStep().getDocumentsToAttach().isEmpty()}"
+            >
+                <h3>Einzureichende Dokumente</h3>
+                <ul>
+                    <li
+                            th:each="doc : ${ form.getRoot().getIntroductionStep().getDocumentsToAttach() }"
+                            th:text="${ doc }"
+                    >
+                        Dokument
+                    </li>
+                </ul>
+            </div>
+
+            <div
+                    class="avoid-break-inside"
+                    th:if="${form.getRoot().getExpiring() != null && !form.getRoot().getExpiring().isEmpty()}"
+            >
+                <h3>Antragsfristen</h3>
+                <div th:utext="${ form.getRoot().getExpiring() }">
+                    Antragsfristen
+                </div>
+            </div>
+
+            <div
+                    class="avoid-break-inside"
+                    th:if="${form.getRoot().getIntroductionStep().getExpectedCosts() != null && !form.getRoot().getIntroductionStep().getExpectedCosts().isEmpty()}"
+            >
+                <h3>Gebühren dieses Antrages</h3>
+                <div th:utext="${ form.getRoot().getIntroductionStep().getExpectedCosts() }">
+                    Gebühren
+                </div>
+            </div>
+
+            <div class="avoid-break-inside">
+                <h3>
+                    Hinweise zum Datenschutz
+                </h3>
+
+                <div th:utext="${ form.getRoot().getCleanedPrivacyText() }">
+                    Datenschutzhinweise
+                </div>
+
+                <span th:if="${base.isForm()}">
+            <a
+                    class="do-not-print-link"
+                    th:utext="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
+                    th:href="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
+                    target="_blank"
+            >
+                Datenschutzerklärung
+            </a>
+        </span>
+                <div th:if="${base.isSummary()}">
+                    <div>
+                        <a
+                                class="do-not-print-link"
+                                th:utext="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
+                                th:href="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
+                                target="_blank"
+                        >
+                            Datenschutzerklärung
+                        </a>
+                    </div>
+                    <div>
+                        <br />
+                        <span
+                                class="checked"
+                        ></span>
+                        <span>Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ***********************************************************************
+            Bereich für Informationen über die Ausfüllbarkeit dieses Antrags online.
+            ************************************************************************ -->
+
+            <div
+                    th:if="${ base.isForm() }"
+                    class="avoid-break-inside d-flex"
+            >
+                <div>
+                    <h2>Wussten Sie schon?</h2>
+                    <p>
+                        Sie können diesen Antrag auch online ausfüllen und absenden.
+                        Besuchen Sie dazu einfach
+                        <a
+                                class="do-not-print-link"
+                                th:href="${ base.createUrl(form.getSlug() + '/' + form.getVersion()) }"
+                                th:text="${ base.createUrl(form.getSlug() + '/' + form.getVersion()) }"
+                        ></a>
+                        oder scannen Sie den QR-Code.
+                    </p>
+                </div>
+                <div>
+                    <img
+                            th:src="${ #qrcode.create(base.createUrl(form.getSlug() + '/' + form.getVersion())) }"
+                            width="196px"
+                            height="196px"
+                    >
+                </div>
+            </div>
+        </section>
+
+        <!-- ***********************************************************************
+        Bereich für die "Zahlungsinformationen".
+
+        Wird nur angezeigt, wenn Zahlungsinformationen sowie ein Zahlungslink im
+        Antrag vorhanden sind.
+        ************************************************************************ -->
+
+        <section
+                class="page-break-before"
+                th:if="${ submission != null && submission.paymentInformation != null }"
+        >
+            <h2>Zahlungsinformationen</h2>
+
+            <div
+                    class="d-flex"
+                    th:if="${submission.paymentInformation.getStatus().name() != 'PAYED'}"
+            >
+                <div style="flex: 1">
+                    <p>
+                        Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
+                        <br />
+                        Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
+                        <br />
+                        <strong>Wichtig:</strong>
+                        Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet. Sollten Sie die Gebühren bereits entrichtet haben, sind keine weiteren Schritte Ihrerseits erforderlich.
+                    </p>
+
+                    <ul>
+                        <li th:each="item : ${submission.paymentRequest.items}">
+                            <span th:text="${item.description}"></span>
+                            <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                        </li>
+                    </ul>
+
+                    <hr />
+
+                    <p>
+                        Gesamtbetrag:
+                        <strong th:text="${ #numberformat.format(submission.paymentRequest.getGrosAmount(), 2) } + ' Euro'"></strong>
+                    </p>
+
+                    <p>
+                        <a
+                                class="do-not-print-link"
+                                th:href="${submission.paymentInformation.transactionRedirectUrl}"
+                                th:text="${submission.paymentInformation.transactionRedirectUrl}"
+                        >
+                            Link zur Bezahlung
+                        </a>
+                    </p>
+                </div>
+
+                <div style="margin-left: 0.5em">
+                    <img
+                            th:src="${ #qrcode.create(submission.paymentInformation.getTransactionRedirectUrl()) }"
+                            width="196px"
+                            height="196px"
+                            alt="QR-Code mit Link zur Zahlung"
+                    />
+                </div>
+            </div>
+
+            <div th:if="${submission.paymentInformation.getStatus().name() == 'PAYED'}">
+                <p>
+                    Die Gebühr wurde bereits bezahlt.
+                </p>
+
+                <table>
+                    <tbody>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsdienstleister:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ submission.paymentProvider.getLabel() }"></span>
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsdatum:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ #numberformat.formatISOTimestamp(submission.paymentInformation.getTransactionTimestamp(), 'dd.MM.yyyy HH:mm') }"></span>
+                                Uhr
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsstatus:</strong>
+                            </td>
+                            <td>
+                                Bezahlt
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Transaktions-ID:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ submission.paymentInformation.transactionId }"></span>
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Gebühr:</strong>
+                            </td>
+                            <td>
+                                Insgesamt entrichtete Gebühr:
+                                <span th:text="${ #numberformat.format(submission.paymentRequest.getGrosAmount(), 2) }"></span>
+                                Euro inkl. Steuern
+
+                                <ul>
+                                    <li th:each="item : ${submission.paymentRequest.items}">
+                                        <span th:text="${item.description}"></span>
+                                        <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                                    </li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsmittel:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ submission.paymentInformation.paymentMethod.getLabel() }"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ***********************************************************************
+        Bereich für Elemente des Formulars.
+        ************************************************************************ -->
+
+        <th:block th:each="container : ${elements}">
+            <th:block th:switch="${ container.element.type.name() }">
+
+                <!-- ***********************************************************************
+                Abschnitt
+                ************************************************************************ -->
+                <div
+                        th:case="Step"
+                        class="page-break-before"
+                >
+                    <h2 th:text="${container.element.title}"></h2>
+                </div>
+
+                <!-- ***********************************************************************
+                Überschrift
+                ************************************************************************ -->
+                <div
+                        th:case="Headline"
+                        th:class="${container.getClasses()}"
+                >
+                    <div>
+                        <h3
+                                th:if="${container.element.size == 3}"
+                                th:text="${container.element.content}"
+                        ></h3>
+                        <h4
+                                th:if="${container.element.size == 4}"
+                                th:text="${container.element.content}"
+                        ></h4>
+                        <h5
+                                th:if="${container.element.size == 5}"
+                                th:text="${container.element.content}"
+                        ></h5>
+                        <h6
+                                th:if="${container.element.size == 6}"
+                                th:text="${container.element.content}"
+                        ></h6>
+                    </div>
+                </div>
+
+
+                <!-- ***********************************************************************
+                Checkbox
+                ************************************************************************ -->
+                <div
+                        th:case="Checkbox"
+                        th:class="${container.getClasses()}"
+                >
+                    <div class="form-field">
+                        <div class="form-field">
+                            <div class="d-flex">
+                                <div>
+                                    <span
+                                            th:if="${container.value}"
+                                            class="checked"
+                                    ></span>
+                                    <span
+                                            th:unless="${container.value}"
+                                            class="unchecked"
+                                    ></span>
+                                </div>
+                                <div style="margin-left: 0.5em">
+                                    <span th:text="${container.element.label}"></span>
+                                    <span th:if="${container.element.required}">(Pflichtangabe)</span>
+                                </div>
+                            </div>
+                            <div
+                                    class="form-field-hint"
+                                    th:text="${container.element.hint}"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                Select
+                ************************************************************************ -->
+                <div
+                        th:case="Select"
+                        th:class="${container.getClasses()}"
+                >
+                    <div th:class="'form-field' + ${ container.element.options.size() > 20 ? ' breakable' : '' }">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${base.isForm()}">(<span th:if="${container.element.required}">Pflichtangabe, </span>Bitte nur eine Option auswählen)</span>
+                        </div>
+                        <ul class="select-list">
+                            <li
+                                    th:each="option : ${container.element.options}"
+                                    th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+                            >
+                                <span
+                                        th:if="${base.isSummary() && container.hasValue() && container.value.equals(value)}"
+                                        class="checked"
+                                ></span>
+                                <span
+                                        th:unless="${base.isSummary() && container.hasValue() && container.value.equals(value)}"
+                                        class="unchecked"
+                                ></span>
+
+                                <span th:text="${label}"></span>
+                            </li>
+                        </ul>
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                Radio
+                ************************************************************************ -->
+                <div
+                        th:case="Radio"
+                        th:class="${container.getClasses()}"
+                >
+                    <div th:class="'form-field' + ${ container.element.options.size() > 20 ? ' breakable' : '' }">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${base.isForm()}">(<span th:if="${container.element.required}">Pflichtangabe, </span>Bitte nur eine Option auswählen)</span>
+                        </div>
+                        <ul class="select-list">
+                            <li
+                                    th:each="option : ${container.element.options}"
+                                    th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+                            >
+                                <span
+                                        th:if="${base.isSummary() && container.hasValue() && container.value.equals(value)}"
+                                        class="checked"
+                                ></span>
+                                <span
+                                        th:unless="${base.isSummary() && container.hasValue() && container.value.equals(value)}"
+                                        class="unchecked"
+                                ></span>
+
+                                <span th:text="${label}"></span>
+                            </li>
+                        </ul>
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                MultiCheckbox
+                ************************************************************************ -->
+                <div
+                        th:case="MultiCheckbox"
+                        th:class="${container.getClasses()}"
+                >
+                    <div th:class="'form-field' + ${ container.element.options.size() > 20 ? ' breakable' : '' }">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${base.isForm()}">(<span th:if="${container.element.required}">Pflichtangabe, </span>Es können mehrere Optionen ausgewählt werden)</span>
+                        </div>
+                        <ul class="select-list">
+                            <li
+                                    th:each="option : ${container.element.options}"
+                                    th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+                            >
+                                <span
+                                        th:if="${base.isSummary() && container.hasValue() && container.value.contains(value)}"
+                                        class="checked"
+                                ></span>
+                                <span
+                                        th:unless="${base.isSummary() && container.hasValue() && container.value.contains(value)}"
+                                        class="unchecked"
+                                ></span>
+
+                                <span th:text="${label}"></span>
+                            </li>
+                        </ul>
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                TextInput
+                ************************************************************************ -->
+                <div
+                        th:case="Text"
+                        th:class="${container.getClasses()}"
+                >
+                    <div class="form-field">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${base.isForm() && container.element.required}">(Pflichtangabe)</span>
+                        </div>
+                        <div
+                                class="form-field-input"
+                                th:if="${base.isSummary()}"
+                        >
+                            <span th:text="${container.element().toDisplayValue(container.value())}"></span>
+                        </div>
+                        <div
+                                class="form-field-input"
+                                th:if="${base.isForm()}"
+                                th:style="${container.element().getIsMultiline() ? 'height: 12em;' : ''}"
+                        >
+                        </div>
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                        <div
+                                class="form-field-hint"
+                                th:if="${container.element.minCharacters != null && container.element.minCharacters > 0}"
+                        >
+                            Mindestens
+                            <span th:text="${container.element.minCharacters}"></span>
+                            Zeichen
+                        </div>
+                        <div
+                                class="form-field-hint"
+                                th:if="${container.element.maxCharacters != null && container.element.maxCharacters > 0}"
+                        >
+                            Maximal
+                            <span th:text="${container.element.maxCharacters}"></span>
+                            Zeichen
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                NumberInput
+                ************************************************************************ -->
+                <div
+                        th:case="Number"
+                        th:class="${container.getClasses()}"
+                >
+                    <div class="form-field">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${base.isForm() && container.element.required}">(Pflichtangabe)</span>
+                        </div>
+                        <div class="form-field-input">
+                    <span
+                            th:if="${base.isSummary()}"
+                            th:text="${container.element().toDisplayValue(container.value())}"
+                    ></span>
+                            <span
+                                    style="margin-left: auto"
+                                    th:text="${container.element.suffix}"
+                            ></span>
+                        </div>
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                DateInput
+                ************************************************************************ -->
+                <div
+                        th:case="Date"
+                        th:class="${container.getClasses()}"
+                >
+                    <div class="form-field">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${base.isForm() && container.element.required}">(Pflichtangabe)</span>
+                        </div>
+                        <div class="form-field-input">
+                    <span
+                            th:if="${base.isSummary() && container.hasValue()}"
+                            th:text="${container.element().toDisplayValue(container.value())}"
+                    ></span>
+
+                            <span
+                                    th:if="${base.isSummary() && !container.hasValue()}"
+                            >Keine Angabe
+                    </span>
+                            <span
+                                    style="margin-left: auto"
+                                    th:if="${base.isForm() && (container.element.mode == null || container.element.mode.name() == 'Day')}"
+                            >TT.MM.JJJJ</span>
+                            <span
+                                    style="margin-left: auto"
+                                    th:if="${base.isForm() && container.element.mode != null && container.element.mode.name() == 'Month'}"
+                            >MM.JJJJ</span>
+                            <span
+                                    style="margin-left: auto"
+                                    th:if="${base.isForm() && container.element.mode != null && container.element.mode.name() == 'Year'}"
+                            >JJJJ</span>
+                        </div>
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                TimeInput
+                ************************************************************************ -->
+                <div
+                        th:case="Time"
+                        th:class="${container.getClasses()}"
+                >
+                    <div class="form-field">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${base.isForm() && container.element.required}">(Pflichtangabe)</span>
+                        </div>
+                        <div class="form-field-input">
+                <span
+                        th:if="${base.isSummary()}"
+                        th:text="${container.element().toDisplayValue(container.value())}"
+                ></span>
+                        </div>
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                ReplicatingListContainer
+                ************************************************************************ -->
+                <div
+                        th:case="ReplicatingContainer"
+                        th:class="${container.getClasses()}"
+                >
+                    <div class="form-field">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${container.element.required && (container.element.minimumRequiredSets == null || container.element.minimumRequiredSets == 0)}">
+                                Pflichtangabe, mindestens 1 Datensätze ausfüllen
+                            </span>
+                            <span th:if="${container.element.minimumRequiredSets != null && container.element.minimumRequiredSets > 0}">
+                                Pflichtangabe, mindestens <span th:text="${container.element.minimumRequiredSets}"></span> Datensätze ausfüllen
+                            </span>
+                        </div>
+                        <hr />
+                        <div
+                                class="form-field-hint"
+                                th:text="${container.element.hint}"
+                        ></div>
+                    </div>
+                </div>
+
+
+                <!-- ***********************************************************************
+                Table
+                ************************************************************************ -->
+                <div
+                        th:case="Table"
+                        th:class="${container.getClasses()}"
+                >
+                    <div class="form-field">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                            <span th:if="${container.element.required && (container.element.minimumRequiredRows == null || container.element.minimumRequiredRows == 0)}">
+                                Pflichtangabe, mindestens 1 Zeilen ausfüllen
+                            </span>
+                            <span th:if="${container.element.minimumRequiredRows != null && container.element.minimumRequiredRows > 0}">
+                                Pflichtangabe, mindestens <span th:text="${container.element.minimumRequiredRows}"></span> Zeilen ausfüllen
+                            </span>
+                        </div>
+                        <hr />
+                        <table class="form-table">
+                            <thead>
+                                <tr>
+                                    <th
+                                            th:each="field: ${container.element.fields}"
+                                            th:text="${field.label + (field.optional ? '' : ' (Pflichtangabe)')}"
+                                    ></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                        th:if="${container.value() == null && base.isForm()}"
+                                        th:each="i: ${ #numbers.sequence(1, container.element.maximumRows != null ? container.element.maximumRows : (container.element.minimumRequiredRows != null ? container.element.minimumRequiredRows : 6)) }"
+                                >
+                                    <td
+                                            th:each="field: ${container.element.fields}"
+                                    ></td>
+                                </tr>
+
+                                <tr
+                                        th:if="${(container.value() == null || container.value().isEmpty()) && base.isSummary()}"
+                                >
+                                    <td
+                                            th:colspan="${container.element.fields.size()}"
+                                            style="text-align: center"
+                                    >
+                                        Keine Angaben
+                                    </td>
+                                </tr>
+
+                                <tr
+                                        th:if="${container.value() != null}"
+                                        th:each="row: ${container.value()}"
+                                >
+                                    <td
+                                            th:each="field: ${container.element.fields}"
+                                            th:text="${row.get(field.label)}"
+                                    ></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ***********************************************************************
+                RichText
+                ************************************************************************ -->
+                <div
+                        th:case="Richtext"
+                        th:class="'form-field ' + ${container.getClasses()}"
+                        th:utext="${container.element.content}"
+                >
+                </div>
+
+                <!-- ***********************************************************************
+                Image
+                ************************************************************************ -->
+                <div
+                        th:case="Image"
+                        th:class="'form-field ' + ${container.getClasses()}"
+                >
+                    <img
+                            th:src="${container.element.src}"
+                            th:alt="${container.element.alt}"
+                    />
+                </div>
+
+                <!-- ***********************************************************************
+                Alert
+                ************************************************************************ -->
+                <div
+                        th:case="Alert"
+                        th:class="${container.getClasses()}"
+                >
+                    <div
+                            class="form-field"
+                            th:if="${container.element.alertType.name() == 'Info'}"
+                    >
+                        <div>
+                            <strong th:text="${container.element.title}"></strong>
+                        </div>
+                        <div th:utext="${container.element.text}"></div>
+                    </div>
+
+                    <!-- Nur Hinweise vom Typ Info werden angezeigt -->
+                </div>
+
+                <!-- ***********************************************************************
+                FileUploadField
+                ************************************************************************ -->
+                <div
+                        th:case="FileUpload"
+                        th:class="'form-field ' + ${container.getClasses()}"
+                >
+                    <div th:if="${base.isForm()}">
+                        <span th:if="${container.element.required}">Folgende Anlage ist verpflichtend anzuhängen:</span>
+                        <span th:unless="${container.element.required}">Folgende Anlage kann optional angehangen werden:</span>
+                        <span><strong th:text="${container.element.label}"></strong></span>
+                    </div>
+
+                    <th:block th:if="${base.isSummary()}">
+                        <div class="form-field-label">
+                            <span><strong th:text="${container.element.label}"></strong></span>
+                        </div>
+                        <div th:if="${container.hasValue() && not container.value().isEmpty()}">
+                            <ul>
+                                <li th:each="file : ${container.value}">
+                                    <span th:text="${file.name}"></span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div th:unless="${container.hasValue() && not container.value().isEmpty()}">
+                            Keine Anlagen hinzugefügt
+                        </div>
+                    </th:block>
+
+                    <div
+                            class="form-field-hint"
+                            th:text="${container.element.hint}"
+                    ></div>
+                </div>
+            </th:block>
+        </th:block>
+
+        <section
+                th:if="${not #lists.isEmpty(attachments)}"
+                class="avoid-break-inside"
+        >
+            <h2>Anlagen</h2>
+            <p>
+                Bitte reichen Sie die folgenden Anlagen ein:
+            </p>
+            <ul>
+                <li th:each="container : ${attachments}">
+                    <strong th:text="${container.element.label}"></strong>
+                    <span th:if="${container.element.required}">(Pflichtanlage)</span>
+                    <br />
+                    <span th:text="${container.element.hint}"></span>
+                </li>
+            </ul>
+        </section>
+
+        <section
+                th:if="${ base.isForm() && form.getRoot().getOfflineSignatureNeeded() || (form.getRoot().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRoot().getOfflineSubmissionText())) }"
+                class="avoid-break-inside"
+        >
+            <th:block
+                    th:if="${form.getRoot().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRoot().getOfflineSubmissionText())}"
+            >
+                <h2>Hinweise zur Einreichung des ausgefüllten Antrages</h2>
+                <p>
+                    Bitte reichen Sie das ausgefüllte Formular auf nachstehendem Weg ein:
+                </p>
+                <div th:utext="${ form.getRoot().getOfflineSubmissionText() }"></div>
+            </th:block>
+
+            <th:block
+                    th:if="${form.getRoot().getOfflineSignatureNeeded()}"
+            >
+                <h2>Unterschrift</h2>
+                <div class="signature-container">
+                    <div>
+                        Ort, Datum
+                    </div>
+                    <div>
+                        Unterschrift
+                    </div>
+                </div>
+            </th:block>
+        </section>
+    </body>
+</html>

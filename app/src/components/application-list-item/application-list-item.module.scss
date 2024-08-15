@@ -1,0 +1,46 @@
+.listItem {
+  background: #FFFFFF;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-bottom: 15px;
+
+  display: flex;
+  align-items: center;
+}
+
+.listItemIcon {
+  border-right: 1px solid #F3F3F3;
+  padding: 14px 18px;
+}
+
+.listItemInfo {
+
+}
+
+.metaText {
+  margin-top: -8px;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.listItemActions {
+  display: flex;
+  margin-left: auto;
+  border-left: 1px solid #F3F3F3;
+  padding: 14px 18px;
+  height: 75px;
+}
+
+.listItemActionsContainer {
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  border-left: 1px solid #F3F3F3;
+
+  &:first-child {
+    border-left: none;
+  }
+
+  button, a {
+    text-transform: none;
+  }
+}
