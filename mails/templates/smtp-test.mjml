@@ -1,0 +1,26 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-preview>
+            SMTP-Test
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        der Test der SMTP-Verbindung war erfolgreich.
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

@@ -1,0 +1,9 @@
+Hallo,
+
+ein neuer Antrag ist in Gover eingegangen.
+Antrag auf: [(${form.title})] - Version [(${form.version})]
+Antragseingang: [(${#temporals.format(submission.created, 'dd.MM.yyyy HH:mm')})] Uhr
+
+Sie können den Antrag über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

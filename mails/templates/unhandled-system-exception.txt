@@ -1,0 +1,20 @@
+Hallo,
+
+es ist ein Fehler aufgetreten am Host [(${base.config.goverHostname})].
+
+[# th:if="${additionalContext != null}"]
+Weitere Informationen:
+
+[# th:each="entry : ${additionalContext.entrySet()}"]
+[(${entry.key})]: [(${entry.value})]
+[/]
+
+[/]
+
+Die Fehlernachricht lautet:
+[(${message})]
+
+Der StackTrace zum Fehler:
+[(${stackTrace})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

@@ -1,0 +1,11 @@
+Hallo,
+
+die Übertragung an die hinterlegte Schnittstelle ist fehlgeschlagen.
+Antrag auf: [(${form.title})] - Version [(${form.version})]
+Hinterlegte Schnittstelle: [(${destination.name})]
+Fehlermeldung: [(${submission.destinationResult})]
+Zeitpunkt des Übertragungsfehlers: [(${#temporals.format(submission.destinationTimestamp, 'dd.MM.yyyy HH:mm')})]
+
+Sie können den Antrag über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

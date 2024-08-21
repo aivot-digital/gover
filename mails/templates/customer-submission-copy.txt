@@ -1,0 +1,9 @@
+Hallo,
+
+im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "[(${title})]".
+
+Mit freundlichen Grüßen
+[(${base.providerName})]
+[(${department.name})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

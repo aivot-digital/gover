@@ -1,0 +1,11 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.services.pdf.PdfContext"*/-->
+<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.models.entities.Form"*/-->
+<!--/*@thymesVar id="submission" type="de.aivot.GoverBackend.models.entities.Submission"*/-->
+
+<div style="width: 100%; display: flex; align-items: flex-end; padding: 0 12px;">
+    <span style="font-size: 12px;" th:if="${ submission != null }" th:text="${ #temporals.format(submission.created, 'dd.MM.yyyy HH:mm') }"></span>
+    <span style="font-size: 12px;" th:if="${ base.isForm() }" th:text="${ form.title + ' - ' + form.version }"></span>
+    <span style="font-size: 12px; margin-left: auto">
+        Seite <span class="pageNumber"></span> von <span class="totalPages"></span>
+    </span>
+</div>"
