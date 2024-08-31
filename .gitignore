@@ -1,0 +1,34 @@
+### Jetbrains ###
+/.idea/shelf/
+/.idea/codeStyles/
+/.idea/dataSources/
+/.idea/dictionaries/
+/.idea/copilot/
+/.idea/workspace.xml
+/.idea/usage.statistics.xml
+/.idea/dataSources.xml
+/.idea/dataSources.local.xml
+*.iws
+*.iml
+*.ipr
+
+### Backend ###
+/target/
+/data/
+/fakesmtp/
+/test-files/
+
+### App ###
+/app/node_modules/
+/app/build/
+
+### Mails ###
+/mails/node_modules/
+/mails/dist/
+/src/main/resources/templates/mail
+
+### macOS ###
+.DS_Store
+
+### Dependencies ###
+/pg_data/
