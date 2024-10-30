@@ -1,0 +1,277 @@
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Dieses Beispiel zeigt die Konfiguration für die Bereitstellung von Gover auf einem Server mit Docker-Compose.
+#
+# Bitte beachten Sie, dass diese Konfiguration Erklärungen für alle Konfigurationsoptionen enthält, jedoch nicht alle Zeilen angepasst werden müssen, um Gover zu starten.
+#
+# Passen Sie die Werte in den geschweiften Klammern an Ihre Umgebung an und entfernen Sie die geschweiften Klammern.
+# Sollten Optionen nicht benötigt werden, können diese, inklusive der geschweiften Klammern, entfernt werden.
+#
+# Diese Konfiguration sieht Traefik als Reverse-Proxy vor.
+# In der Standardkonfiguration werden alle benötigten SSL-Zertifikate automatisch von Let's Encrypt erstellt.
+# Sollten Sie eine vorgeschaltete Verwaltung der SSL-Zertifikate bevorzugen, können Sie die entsprechenden SSl Konfigurationen für Traefik entfernen.
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+services:
+
+
+  gover_database:
+    image: postgres:15.7
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: "{{ GOVER_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
+      POSTGRES_USER: "{{ GOVER_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      POSTGRES_DB: gover
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - gover_database_data:/var/lib/postgresql/data
+    networks:
+      - gover
+
+
+  keycloak_database:
+    image: postgres:15.7
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: "{{ KEYCLOAK_DB_PASSWORD }}" # Setzen Sie das Passwort für die Keycloak-Datenbank. Passen Sie dieses Passwort unbedingt an.
+      POSTGRES_USER: "{{ KEYCLOAK_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Keycloak-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      POSTGRES_DB: keycloak
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - keycloak_database_data:/var/lib/postgresql/data
+    networks:
+      - keycloak
+
+
+  clamav:
+    image: clamav/clamav-debian:1.3.1
+    restart: always
+    networks:
+      - gover
+
+
+  redis:
+    image: redis:7.2.5
+    restart: always
+    networks:
+      - gover
+
+
+  puppet:
+    image: ghcr.io/aivot-digital/puppet-pdf:1.3.3
+    restart: always
+    networks:
+      - gover
+
+
+  keycloak:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.0.2.0
+    restart: always
+    depends_on:
+      - keycloak_database
+    command: start
+    environment:
+      KC_HTTP_ENABLED: true
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: "{{ HOSTNAME }}" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      KC_HOSTNAME_PATH: /idp
+      KC_HTTP_RELATIVE_PATH: /idp
+
+      KC_HEALTH_ENABLED: true
+
+      KEYCLOAK_ADMIN: "{{ KEYCLOAK_ADMIN_USERNAME }}" # Setzen Sie den initialen Benutzernamen für den Keycloak-Admin. Passen Sie diesen Benutzernamen unbedingt an.
+      KEYCLOAK_ADMIN_PASSWORD: "{{ KEYCLOAK_ADMIN_PASSWORD }}" # Setzen Sie das initiale Passwort für den Keycloak-Admin. Passen Sie dieses Passwort unbedingt an.
+
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
+      KC_DB_USERNAME: "{{ KEYCLOAK_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Keycloak-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      KC_DB_PASSWORD: "{{ KEYCLOAK_DB_PASSWORD }}" # Setzen Sie das Passwort für die Keycloak-Datenbank. Passen Sie dieses Passwort unbedingt an.
+      KC_FEATURES: transient-users,update-email
+
+      KC_SPI_EGOV_BUNDID_ENABLED: true # Aktivieren Sie die Keycloak-Erweiterung für den BundID-Service. Geben Sie hier false ein, wenn Sie den BundID-Service nicht nutzen möchten.
+      KC_SPI_EGOV_BUNDID_SP_NAME: Online-Antrags-Management
+      KC_SPI_EGOV_BUNDID_SP_DESCRIPTION: Online-Antrags-Management
+      KC_SPI_EGOV_BUNDID_ORG_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BundID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BUNDID_ORG_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BundID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BUNDID_ORG_URL: "{{ ORG_WEBSITE }}" # Setzen Sie die Website Ihrer Organisation. Diese Website wird an den BundID-Service übermittelt.
+      KC_SPI_EGOV_BUNDID_TECHNICAL_CONTACT_NAME: "{{ TECHNICAL_CONTACT_NAME }}" # Setzen Sie den Namen des Ansprechpartners für technische Fragen in Ihrer Organisation. Der Name sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BUNDID_TECHNICAL_CONTACT_EMAIL: "{{ TECHNICAL_CONTACT_EMAIL }}" # Setzen Sie die E-Mail-Adresse des Ansprechpartners für technische Fragen in Ihrer Organisation.
+      KC_SPI_EGOV_BUNDID_SUPPORT_CONTACT_NAME: "{{ SUPPORT_CONTACT_NAME }}" # Setzen Sie den Namen des Ansprechpartners für allgemeine Fragen in Ihrer Organisation. Der Name sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BUNDID_SUPPORT_CONTACT_EMAIL: "{{ SUPPORT_CONTACT_EMAIL }}" # Setzen Sie die E-Mail-Adresse des Ansprechpartners für allgemeine Fragen in Ihrer Organisation.
+
+      KC_SPI_EGOV_BAYERNID_ENABLED: true # Aktivieren Sie die Keycloak-Erweiterung für den BayernID-Service. Geben Sie hier false ein, wenn Sie den BayernID-Service nicht nutzen möchten.
+      KC_SPI_EGOV_BAYERNID_SP_NAME: Online-Antrags-Management
+      KC_SPI_EGOV_BAYERNID_SP_DESCRIPTION: Online-Antrags-Management
+      KC_SPI_EGOV_BAYERNID_ORG_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BayernID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BAYERNID_ORG_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BayernID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BAYERNID_ORG_URL: "{{ ORG_WEBSITE }}" # Setzen Sie die Website Ihrer Organisation. Diese Website wird an den BayernID-Service übermittelt.
+      KC_SPI_EGOV_BAYERNID_TECHNICAL_CONTACT_NAME: "{{ TECHNICAL_CONTACT_NAME }}" # Setzen Sie den Namen des Ansprechpartners für technische Fragen in Ihrer Organisation. Der Name sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BAYERNID_TECHNICAL_CONTACT_EMAIL: "{{ TECHNICAL_CONTACT_EMAIL }}" # Setzen Sie die E-Mail-Adresse des Ansprechpartners für technische Fragen in Ihrer Organisation.
+      KC_SPI_EGOV_BAYERNID_SUPPORT_CONTACT_NAME: "{{ SUPPORT_CONTACT_NAME }}" # Setzen Sie den Namen des Ansprechpartners für allgemeine Fragen in Ihrer Organisation. Der Name sollte nicht mehr als 50 Zeichen enthalten.
+      KC_SPI_EGOV_BAYERNID_SUPPORT_CONTACT_EMAIL: "{{ SUPPORT_CONTACT_EMAIL }}" # Setzen Sie die E-Mail-Adresse des Ansprechpartners für allgemeine Fragen in Ihrer Organisation.
+      KC_SPI_EGOV_BAYERNID_DISPLAY_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BayernID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten. Der Name wird auf der Login-Seite des BayernID-Service angezeigt.
+      KC_SPI_EGOV_BAYERNID_DISPLAY_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BayernID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten. Die Beschreibung wird auf der Login-Seite des BayernID-Service angezeigt.
+
+      KC_SPI_EGOV_DATAPORT_ENABLED: true # Aktivieren Sie die Keycloak-Erweiterung für den Servicekonto-Schleswig-Holstein-Service. Geben Sie hier false ein, wenn Sie den Servicekonto-Schleswig-Holstein-Service nicht nutzen möchten.
+
+      QUARKUS_HTTP_LIMITS_MAX_FORM_ATTRIBUTE_SIZE: "10M"
+    networks:
+      - keycloak
+      - common
+    labels:
+      - "traefik.http.routers.keycloak.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/idp`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+      - "traefik.http.routers.keycloak.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.keycloak.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+
+
+  gover:
+    image: ghcr.io/aivot-digital/gover:4.2.6
+    depends_on:
+      - gover_database
+      - clamav
+      - redis
+      - puppet
+      - keycloak
+      - gover_customer_app
+      - gover_staff_app
+    restart: always
+    command: serve
+    environment:
+      GOVER_DB_HOST: gover_database
+      GOVER_DB_PORT: 5432
+      GOVER_DB_DATABASE: gover
+      GOVER_DB_USERNAME: "{{ GOVER_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
+      GOVER_DB_PASSWORD: "{{ GOVER_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
+
+      GOVER_CLAM_HOST: clamav
+      GOVER_CLAM_PORT: 3310
+
+      GOVER_PUPPET_PDF_HOST: puppet
+      GOVER_PUPPET_PDF_PORT: 3000
+
+      GOVER_SMTP_HOST: "{{ SMTP_HOST }}" # Setzen Sie den Hostnamen des Mail-Servers. Passen Sie diesen Hostnamen unbedingt an.
+      GOVER_SMTP_PORT: "{{ SMTP_PORT }}" # Setzen Sie den Port des Mail-Servers. Passen Sie diesen Port unbedingt an.
+      GOVER_SMTP_AUTH: "true" # Aktiviert die Authentifizierung für den Mail-Server. Setzen Sie diesen Wert auf false, wenn keine Authentifizierung benötigt wird.
+      GOVER_SMTP_TLS: "true" # Aktiviert TLS für den Mail-Server. Setzen Sie diesen Wert auf false, wenn TLS nicht benötigt wird.
+      GOVER_SMTP_USERNAME: "{{ SMTP_USERNAME }}" # Setzen Sie den Benutzernamen für den Mail-Server. Passen Sie diesen Benutzernamen unbedingt an.
+      GOVER_SMTP_PASSWORD: "{{ SMTP_PASSWORD }}" # Setzen Sie das Passwort für den Mail-Server. Passen Sie dieses Passwort unbedingt an.
+
+      GOVER_LOG_LEVEL: "INFO"
+      GOVER_TELEMETRY_KEY: "{{ TELEMETRY_KEY }}" # Setzen Sie den Telemetry-Schlüssel für die Gover-Anwendung. Passen Sie diesen Schlüssel unbedingt an. Entfernen Sie diese Zeile, um die Telemetrie zu deaktivieren.
+
+      GOVER_FROM_MAIL: '"{{ MAIL_SENDER_NAME }}" <{{ MAIL_SENDER_ADDRESS }}@{{ HOSTNAME }}>' # Setzen Sie die Absenderadresse für E-Mails. Passen Sie diese Absenderadresse unbedingt an.
+      GOVER_REPORT_MAIL: "{{ FALLBACK_E_MAIL }}" # Setzen Sie die E-Mail-Adresse für den Empfang von Fehlerberichten. Passen Sie diese E-Mail-Adresse unbedingt an. An diese Adresse werden Fehlerberichte gesendet.
+
+      GOVER_SENTRY_SERVER: "{{ SERVER_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Backend-Anwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+      GOVER_SENTRY_WEB_APP: "{{ WEB_APP_SENTRY_DSN }}" # Setzen Sie die Sentry DSN (Data Source Name) für die Gover-Webanwendung. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+      GOVER_ENVIRONMENT: "{{ SENTRY_ENVIRONMENT }}" # Setzen Sie die Umgebung für Sentry. Diese wird verwendet, um Fehlermeldungen in Sentry zu gruppieren. Passen Sie diese Umgebung unbedingt an. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
+
+      GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
+
+      GOVER_FILE_EXTENSIONS: pdf, png, jpg, jpeg, doc, docx, xls, xlsx, ppt, pptx, odt, fodt, ods, fods, odp, fodp, odg, fodg, odf
+      GOVER_CONTENT_TYPES: application/pdf, image/png, image/jpeg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msexcel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/mspowerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.oasis.opendocument.text, application/vnd.oasis.opendocument.spreadsheet, application/vnd.oasis.opendocument.presentation, application/vnd.oasis.opendocument.graphics, application/vnd.oasis.opendocument.formula
+
+      GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
+      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
+      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Das Geheimnis können Sie dem Backend-Client in Keycloak entnehmen.
+      GOVER_KEYCLOAK_OIDC_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      GOVER_KEYCLOAK_OIDC_REALM: staff
+
+      GOVER_KEYCLOAK_ID_CLIENT: app
+      GOVER_KEYCLOAK_ID_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      GOVER_KEYCLOAK_ID_REALM: customer
+
+      GOVER_REDIS_HOST: redis
+      GOVER_REDIS_PORT: 6379
+      GOVER_REDIS_DATABASE: 0
+
+      GOVER_PAYMENT_EPAYBL_CERT: /mnt/epaybl/cert.p12 # Entfernen Sie diese Zeile, wenn Sie den ePayBL-Service nicht nutzen möchten.
+      GOVER_PAYMENT_EPAYBL_CERT_PASS: "{{ EPAYBL_CERT_PASS }}" # Setzen Sie das Passwort für das Zertifikat für den ePayBL-Service. Passen Sie dieses Passwort unbedingt an. Entfernen Sie diese Zeile, wenn Sie den ePayBL-Service nicht nutzen möchten.
+      GOVER_PAYMENT_EPAYBL_URL: https://epayment.landsh.de/konnektor/epayment/ # Entfernen Sie diese Zeile, wenn Sie den ePayBL-Service nicht nutzen möchten.
+
+      GOVER_PAYMENT_PMPAYMENT_URL: https://payment.govconnect.de/ # Entfernen Sie diese Zeile, wenn Sie den pmPayment-Service nicht nutzen möchten.
+      GOVER_PAYMENT_PMPAYMENT_OAUTH_URL: https://payment.govconnect.de/oauth2/token # Entfernen Sie diese Zeile, wenn Sie den pmPayment-Service nicht nutzen möchten.
+      GOVER_PAYMENT_PMPAYMENT_CLIENT_ID: "{{ PMPAYMENT_CLIENT_ID }}" # Setzen Sie die Client-ID für den pmPayment-Service. Passen Sie diese Client-ID unbedingt an. Entfernen Sie diese Zeile, wenn Sie den pmPayment-Service nicht nutzen möchten.
+      GOVER_PAYMENT_PMPAYMENT_CLIENT_SECRET: "{{ PMPAYMENT_CLIENT_SECRET }}" # Setzen Sie das Client-Geheimnis für den pmPayment-Service. Passen Sie dieses Client-Geheimnis unbedingt an. Entfernen Sie diese Zeile, wenn Sie den pmPayment-Service nicht nutzen möchten.
+
+      GOVER_PAYMENT_GIROPAY_URL: https://payment.girosolution.de/girocheckout/api/v2/transaction/start # Entfernen Sie diese Zeile, wenn Sie den Giropay-Service nicht nutzen möchten.
+      GOVER_PAYMENT_GIROPAY_PROJECT_PASSWORD: "{{ GIROPAY_PROJECT_PASSWORD }}" # Setzen Sie das Projekt-Passwort für den Giropay-Service. Passen Sie dieses Projekt-Passwort unbedingt an. Entfernen Sie diese Zeile, wenn Sie den Giropay-Service nicht nutzen möchten.
+    volumes:
+      - gover_data:/app/data
+      - ./epaybl:/mnt/epaybl
+    networks:
+      - gover
+      - common
+    labels:
+      - "traefik.http.routers.gover_api.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/api`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
+      - "traefik.http.services.gover_api.loadbalancer.server.port=8080"
+      - "traefik.http.routers.gover_api.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.gover_api.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+
+
+  gover_staff_app:
+    image: ghcr.io/aivot-digital/gover:4.2.6
+    restart: always
+    command: staff
+    networks:
+      - common
+    labels:
+      - "traefik.http.routers.gover_staff_app.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/staff`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
+      - "traefik.http.services.gover_staff_app.loadbalancer.server.port=80"
+      - "traefik.http.routers.gover_staff_app.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.gover_staff_app.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+
+
+  gover_customer_app:
+    image: ghcr.io/aivot-digital/gover:4.2.6
+    restart: always
+    command: customer
+    networks:
+      - common
+    labels:
+      - "traefik.http.routers.gover_customer_app.rule=Host(`{{ HOSTNAME }}`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
+      - "traefik.http.services.gover_customer_app.loadbalancer.server.port=80"
+      - "traefik.http.routers.gover_customer_app.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.http.routers.gover_customer_app.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+
+
+  traefik:
+    image: traefik:2.11.7
+    restart: always
+    command:
+      - --providers.docker
+      - --api.dashboard=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443 # Aktiviert den sicheren Web-Endpunkt für Traefik. Entfernen Sie diese Zeile, wenn Sie keine TLS-Verschlüsselung verwenden möchten.
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure # Aktiviert die Weiterleitung von HTTP auf HTTPS. Entfernen Sie diese Zeile, wenn Sie keine TLS-Verschlüsselung verwenden möchten.
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https # Aktiviert die Weiterleitung von HTTP auf HTTPS. Entfernen Sie diese Zeile, wenn Sie keine TLS-Verschlüsselung verwenden möchten.
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true # Aktiviert die permanente Weiterleitung von HTTP auf HTTPS. Entfernen Sie diese Zeile, wenn Sie keine TLS-Verschlüsselung verwenden möchten.
+      - --certificatesresolvers.ssl_resolver.acme.email={{ FALLBACK_E_MAIL }} # Setzen Sie die E-Mail-Adresse für die Benachrichtigungen von Let's Encrypt. Passen Sie diese E-Mail-Adresse unbedingt an.
+      - --certificatesresolvers.ssl_resolver.acme.storage=/var/traefik/acme.json # Speichert die Zertifikate von Let's Encrypt. Entfernen Sie diese Zeile, wenn Sie keine TLS-Verschlüsselung verwenden möchten.
+      - --certificatesresolvers.ssl_resolver.acme.httpchallenge.entrypoint=web # Aktiviert die HTTP-Herausforderung für Let's Encrypt. Entfernen Sie diese Zeile, wenn Sie keine TLS-Verschlüsselung verwenden möchten.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_data:/var/traefik
+    networks:
+      - common
+    ports:
+      - 80:80
+      - 443:443 # Entfernen Sie diese Zeile, wenn Sie keine TLS-Verschlüsselung verwenden möchten.
+
+
+
+# Definiert die Volumes für die Datenbanken, die Daten von Gover und Traefik.
+volumes:
+  gover_database_data:
+  gover_storage_data:
+  keycloak_database_data:
+  gover_data:
+  traefik_data:
+
+
+
+# Definiert die Netzwerke für die Services.
+networks:
+  keycloak:
+  gover:
+  common:

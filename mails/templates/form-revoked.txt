@@ -1,0 +1,11 @@
+Hallo,
+
+es wurde ein Formular in Gover zurückgezogen.
+Formular: [(${form.title})]
+Version: [(${form.version})]
+Entwickelnder Fachbereich: [(${department.name})]
+Zurückgezogen durch: [(${triggeringUser.getFullName})]
+
+Sie können das Formular über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/staff/forms/' + form.id)})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

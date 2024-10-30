@@ -1,0 +1,15 @@
+<mj-section>
+    <mj-column>
+        <mj-image align="center"
+                  css-class="logo">
+        </mj-image>
+
+        <mj-text align="center"
+                 font-weight="bold"
+                 font-size="16px">
+            <span th:text="${title}">
+                Beispieltitle
+            </span>
+        </mj-text>
+    </mj-column>
+</mj-section>

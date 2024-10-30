@@ -1,0 +1,53 @@
+env:
+  browser: true
+  es2021: true
+extends:
+  - standard-with-typescript
+  - plugin:react/recommended
+  - google
+parserOptions:
+  ecmaVersion: latest
+  project:
+    - ./tsconfig.json
+plugins:
+  - react
+rules:
+  'template-curly-spacing': off
+  semi:
+    - 'error'
+    - 'always'
+  'max-len':
+    - 'error'
+    - 240
+  '@typescript-eslint/semi':
+    - 'error'
+    - 'always'
+  'indent':
+    - 'error'
+    - 4
+    - 'SwitchCase': 1
+  '@typescript-eslint/indent':
+    - 'error'
+    - 4
+  'require-jsdoc': off
+  '@typescript-eslint/space-before-function-paren': off
+  '@typescript-eslint/comma-dangle':
+    - 'error'
+    - 'only-multiline'
+  '@typescript-eslint/promise-function-async': off
+  '@typescript-eslint/member-delimiter-style':
+    - 'error'
+    - multiline:
+        delimiter: 'semi'
+        requireLast: true
+      singleline:
+        delimiter: 'comma'
+        requireLast: false
+  'object-curly-spacing': off
+  '@typescript-eslint/object-curly-spacing': off
+  'no-console':
+    - 'error'
+    - allow:
+        - 'warn'
+        - 'error'
+  'linebreak-style': off

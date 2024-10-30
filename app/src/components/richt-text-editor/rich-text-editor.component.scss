@@ -1,0 +1,12 @@
+.editorWrapper {
+  .ProseMirror-focused {
+    outline: none !important;
+  }
+
+  .ProseMirror {
+    max-height: 50vh;
+    overflow-y: scroll;
+  }
+
+  font-family: 'Public Sans', sans-serif;
+}

@@ -1,0 +1,7 @@
+Hallo,
+
+Sie wurden in Gover aus einem Fachbereich entfernt.
+Fachbereich: [(${department.name})]
+Entfernt durch: [(${admin.getFullName()})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

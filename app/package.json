@@ -1,0 +1,88 @@
+{
+  "name": "gover",
+  "version": "X.X.X",
+  "private": true,
+  "dependencies": {
+    "@date-io/date-fns": "^2.16.0",
+    "@emotion/react": "^11.7.1",
+    "@emotion/styled": "^11.6.0",
+    "@monaco-editor/react": "^4.3.1",
+    "@mui/icons-material": "^5.15.9",
+    "@mui/material": "^5.15.9",
+    "@mui/x-data-grid": "^5.17.26",
+    "@mui/x-date-pickers": "^6.0.0",
+    "@reduxjs/toolkit": "^1.7.1",
+    "@sentry/react": "^7.57.0",
+    "@testing-library/jest-dom": "^5.16.1",
+    "@testing-library/react": "^12.1.2",
+    "@testing-library/user-event": "^13.5.0",
+    "@tiptap/extension-link": "^2.0.3",
+    "@tiptap/pm": "^2.0.3",
+    "@tiptap/react": "^2.0.3",
+    "@tiptap/starter-kit": "^2.0.3",
+    "date-fns": "^2.28.0",
+    "qrcode": "^1.5.3",
+    "react": "^17.0.2",
+    "react-canvas-confetti": "^1.3.0",
+    "react-color": "^2.19.3",
+    "react-dnd": "^15.1.2",
+    "react-dnd-html5-backend": "^15.1.3",
+    "react-dom": "^17.0.2",
+    "react-helmet": "^6.1.0",
+    "react-markdown": "^7.1.1",
+    "react-redux": "^7.2.6",
+    "react-router-dom": "^6.14.0",
+    "react-virtuoso": "^4.7.7",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.0",
+    "@types/node": "^16.11.17",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^17.0.38",
+    "@types/react-color": "^3.0.6",
+    "@types/react-dom": "^17.0.11",
+    "@types/react-helmet": "^6.1.5",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^5.61.0",
+    "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
+    "eslint": "^8.44.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-standard-with-typescript": "^36.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.7.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-react": "^7.32.2",
+    "glob": "^8.0.3",
+    "react-scripts": "5.0.1",
+    "sass": "^1.45.2",
+    "typescript": "^4.9.5",
+    "web-vitals": "^2.1.2"
+  },
+  "scripts": {
+    "start:customer": "REACT_APP_BUILD_TARGET=customer PORT=3000 ESLINT_NO_DEV_ERRORS=true react-scripts start",
+    "start:staff": "REACT_APP_BUILD_TARGET=staff PORT=3001 ESLINT_NO_DEV_ERRORS=true PUBLIC_URL=/staff react-scripts start",
+    "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
