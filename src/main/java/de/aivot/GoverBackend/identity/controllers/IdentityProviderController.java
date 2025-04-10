@@ -94,7 +94,9 @@ public class IdentityProviderController {
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
+                .orElseThrow(ResponseException::unauthorized)
+                .asAdmin()
+                .orElseThrow(ResponseException::forbidden);
 
         var preparedEntity = identityProviderService
                 .prepare(requestDTO.endpoint());
