@@ -33,6 +33,10 @@ public class IdentityScopesConverter implements AttributeConverter<List<String>,
 
     @Override
     public String convertToDatabaseColumn(List<String> attributes) {
+        if (attributes == null) {
+            return null;
+        }
+
         var objectMapper = new ObjectMapper();
 
         String dbData;
@@ -47,6 +51,10 @@ public class IdentityScopesConverter implements AttributeConverter<List<String>,
 
     @Override
     public List<String> convertToEntityAttribute(String dbData) {
+        if (dbData == null) {
+            return null;
+        }
+
         var objectMapper = new ObjectMapper()
                 .readerForListOf(String.class);
 

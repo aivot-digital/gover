@@ -30,6 +30,8 @@ class IdentityAdditionalParametersConverterTest {
         assertTrue(json.contains("\"value\":\"value1\""));
         assertTrue(json.contains("\"key\":\"param2\""));
         assertTrue(json.contains("\"value\":\"value2\""));
+
+        assertNull(converter.convertToDatabaseColumn(null));
     }
 
     @Test
@@ -60,5 +62,7 @@ class IdentityAdditionalParametersConverterTest {
         var param2 = parameters.get(1);
         assertEquals("param2", param2.getKey());
         assertEquals("value2", param2.getValue());
+
+        assertNull(converter.convertToEntityAttribute(null));
     }
 }

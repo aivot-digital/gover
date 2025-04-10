@@ -32,6 +32,8 @@ class IdentityAttributesConverterTest {
         assertTrue(json.contains("\"label\":\"Name\""));
         assertTrue(json.contains("\"description\":\"The user's full name\""));
         assertTrue(json.contains("\"keyInData\":\"name\""));
+
+        assertNull(converter.convertToDatabaseColumn(null));
     }
 
     @Test
@@ -66,5 +68,7 @@ class IdentityAttributesConverterTest {
         assertEquals("Name", attr2.getLabel());
         assertEquals("The user's full name", attr2.getDescription());
         assertEquals("name", attr2.getKeyInData());
+
+        assertNull(converter.convertToEntityAttribute(null));
     }
 }

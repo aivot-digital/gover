@@ -10,6 +10,8 @@ import de.aivot.GoverBackend.enums.*;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +23,8 @@ import org.json.JSONPropertyIgnore;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 @Entity
 @Table(name = "forms", uniqueConstraints = {
@@ -132,6 +136,13 @@ public class Form {
 
     @Column(length = 36)
     private String paymentProvider;
+
+    @Column(columnDefinition = "boolean")
+    private Boolean identityRequired = false;
+
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = IdentityProviderLinksConverter.class)
+    private List<IdentityProviderLink> identityProviders = new LinkedList<>();
 
     // region Signales
 
@@ -465,6 +476,23 @@ public class Form {
         this.paymentDescription = paymentDescription;
     }
 
+    public Boolean getIdentityRequired() {
+        return identityRequired;
+    }
+
+    public Form setIdentityRequired(Boolean identityRequired) {
+        this.identityRequired = identityRequired;
+        return this;
+    }
+
+    public List<IdentityProviderLink> getIdentityProviders() {
+        return identityProviders;
+    }
+
+    public Form setIdentityProviders(List<IdentityProviderLink> identityProviders) {
+        this.identityProviders = identityProviders;
+        return this;
+    }
 
     // endregion
 }

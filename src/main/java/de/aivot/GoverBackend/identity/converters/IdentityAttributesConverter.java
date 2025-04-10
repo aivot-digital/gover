@@ -41,6 +41,10 @@ public class IdentityAttributesConverter implements AttributeConverter<List<Iden
 
     @Override
     public String convertToDatabaseColumn(List<IdentityAttributeMapping> attributes) {
+        if (attributes == null) {
+            return null;
+        }
+
         var objectMapper = new ObjectMapper();
 
         String dbData;
@@ -55,6 +59,10 @@ public class IdentityAttributesConverter implements AttributeConverter<List<Iden
 
     @Override
     public List<IdentityAttributeMapping> convertToEntityAttribute(String dbData) {
+        if (dbData == null) {
+            return null;
+        }
+
         var objectMapper = new ObjectMapper()
                 .readerForListOf(IdentityAttributeMapping.class);
 

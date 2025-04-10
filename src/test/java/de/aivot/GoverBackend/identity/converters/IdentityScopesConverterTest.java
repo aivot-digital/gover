@@ -19,6 +19,8 @@ class IdentityScopesConverterTest {
         assertTrue(json.contains("\"scope1\""));
         assertTrue(json.contains("\"scope2\""));
         assertTrue(json.contains("\"scope3\""));
+
+        assertNull(converter.convertToDatabaseColumn(null));
     }
 
     @Test
@@ -33,5 +35,7 @@ class IdentityScopesConverterTest {
         assertEquals("scope1", scopes.get(0));
         assertEquals("scope2", scopes.get(1));
         assertEquals("scope3", scopes.get(2));
+
+        assertNull(converter.convertToEntityAttribute(null));
     }
 }
