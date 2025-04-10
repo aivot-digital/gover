@@ -191,6 +191,6 @@ values (gen_random_uuid(),
 
 update forms as fms
 set identity_providers = fms.identity_providers || json_build_array(json_object(
-        array['identityProviderKey', 'additionalScopes'],
-        array[(select idps.key from identity_providers as idps where idps.type = 4 limit 1)::varchar, '']))::jsonb
+        'identityProviderKey' : (select idps.key from identity_providers as idps where idps.type = 3 limit 1),
+        'additionalScopes' : json_build_array()))::jsonb
 where fms.muk_enabled;
