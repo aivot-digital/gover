@@ -12,6 +12,7 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
         "de.aivot.GoverBackend.department.repositories",
         "de.aivot.GoverBackend.destination.repositories",
         "de.aivot.GoverBackend.form.repositories",
+        "de.aivot.GoverBackend.identity.repositories",
         "de.aivot.GoverBackend.payment.repositories",
         "de.aivot.GoverBackend.preset.repositories",
         "de.aivot.GoverBackend.providerLink.repositories",
