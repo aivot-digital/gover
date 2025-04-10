@@ -1,0 +1,46 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-preview>
+            Mitteilung über die Zuweisung eines Antrages
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        Ihnen wurde ein Antrag in Gover zugewiesen.
+                        <br/>
+                        <br/>
+                        Antrag auf: <b th:text="${form.title}">Beispielformular</b> - Version
+                        <b th:text="${form.version}">1.0.0</b>
+                        <br/>
+                        Aktenzeichen:
+                        <b th:text="${fileNumber}">Aktenzeichen</b>
+                        <br/>
+                        Zuständige Mitarbeiter:in:
+                        <b th:text="${user.getFullName}">Max Mustermann</b>
+                        <br/>
+                        Zugewiesen durch:
+                        <b th:text="${triggeringUser.getFullName}">Erika Musterfrau</b>
+                    </p>
+
+                    <p>
+                        Sie können den Antrag über den nachfolgenden Link aufrufen:
+                        <a th:href="${base.config.createUrl('/staff/submissions/' + submission.id)}"
+                           th:text="${base.config.createUrl('/staff/submissions/' + submission.id)}">Beispiel-Link
+                        </a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

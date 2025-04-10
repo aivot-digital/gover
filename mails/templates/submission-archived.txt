@@ -1,0 +1,13 @@
+Hallo,
+
+ein Antrag wurde in Gover abgeschlossen.
+Antrag auf: [(${form.title})] - Version [(${form.version})]
+Aktenzeichen: [(${fileNumber})]
+[# th:if="${assignee != null}"]Zuständige Mitarbeiter:in: [(${assignee.getFullName})][/]
+Abgeschlossen durch: [(${triggeringUser.getFullName})]
+
+Sie können den Antrag über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/staff/submissions/' + submission.id)})]
+
+Bitte beachten Sie: Die hinterlegte Löschfrist beginnt ab sofort zu laufen. Die Daten werden nach Ablauf der Löschfrist automatisch gelöscht.
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

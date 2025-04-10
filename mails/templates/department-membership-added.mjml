@@ -1,0 +1,32 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Information zur Aufnahme in einen Fachbereich
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        Sie wurden in Gover einem Fachbereich zugeordnet.
+                        <br/>
+                        Fachbereich: <b th:text="${department.name}">Beispiel-Fachbereich</b>
+                        <br/>
+                        Rolle: <b th:text="${membership.role.getLabel}">Rolle</b>
+                        <br/>
+                        Zugeordnet durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

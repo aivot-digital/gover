@@ -1,0 +1,144 @@
+# -------------------------- Usage --------------------------
+# Start this with: docker compose -f ./docker-compose.yml up -d
+# -----------------------------------------------------------
+
+services:
+
+  gover_database:
+    image: postgres:16.4-alpine3.20
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: gover
+      POSTGRES_USER: gover
+      POSTGRES_DB: gover
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - gover_pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  clamav:
+    image: clamav/clamav-debian:1.4.1
+    restart: always
+    ports:
+      - "3310:3310"
+
+  redis:
+    image: redis:7.4.1-alpine3.20
+    restart: always
+    ports:
+      - "6379:6379"
+
+  puppet:
+    image: ghcr.io/aivot-digital/puppet-pdf:2.0.0
+    restart: always
+    environment:
+      PORT: 9090
+    network_mode: host
+
+  minio:
+    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: adminpassword
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  mailpit:
+    image: axllent/mailpit
+    restart: always
+    volumes:
+      - mailpit_data:/data
+    ports:
+      - "9025:8025"
+      - "2025:1025"
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  lldap:
+    image: lldap/lldap:stable
+    restart: always
+    ports:
+      - "3890:3890"
+      - "6360:6360"
+      - "17170:17170"
+    volumes:
+      - "lldap_data:/data"
+    environment:
+      - UID=1000
+      - GID=1000
+      - TZ=Europe/Berlin
+      - LLDAP_JWT_SECRET=faskn23hwex1oip0buo90x1w9biu1df3
+      - LLDAP_KEY_SEED=d3w1nb91wd7g1wx0hx1w91wx8x1w
+      - LLDAP_LDAP_BASE_DN=dc=aivot,dc=de
+      - LLDAP_LDAP_USER_PASS=adminpassword
+    networks:
+      - keycloak
+
+  keycloak_database:
+    image: postgres:16.4-alpine3.20
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_DB: keycloak
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - keycloak_pg_data:/var/lib/postgresql/data
+    networks:
+      - keycloak
+
+  keycloak:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.0.2.0
+    restart: always
+    depends_on:
+      - keycloak_database
+    command: [ 'start-dev', '--http-port=8080' ]
+    environment:
+      KC_HTTP_ENABLED: true
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8888
+      KC_HOSTNAME_PATH: /idp
+      KC_HTTP_RELATIVE_PATH: /idp
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_FEATURES: transient-users,update-email
+    networks:
+      - keycloak
+      - common
+
+  reverse_proxy:
+    image: nginx:1.27.2-alpine
+    depends_on:
+      - keycloak
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - common
+    ports:
+      - "8888:8888"
+
+volumes:
+  gover_pg_data:
+  keycloak_pg_data:
+  minio_data:
+  mailpit_data:
+  lldap_data:
+
+networks:
+  keycloak:
+  common:

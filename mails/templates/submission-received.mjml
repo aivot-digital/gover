@@ -1,0 +1,39 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-preview>
+            Eingang eines neuen Antrages – zur weiteren Bearbeitung
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        ein neuer Antrag ist in Gover eingegangen.
+                        <br/>
+                        <br/>
+                        Antrag auf: <b th:text="${form.title}">Beispielformular</b> - Version
+                        <b th:text="${form.version}">1.2.3</b>
+                        <br/>
+                        Antragseingang: <b th:text="${#temporals.format(submission.created, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
+                    </p>
+
+                    <p>
+                        Sie können den Antrag über den nachfolgenden Link aufrufen:
+                        <a th:href="${base.config.createUrl('/staff/submissions/' + submission.id)}"
+                           th:text="${base.config.createUrl('/staff/submissions/' + submission.id)}">Beispiel-Link
+                        </a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

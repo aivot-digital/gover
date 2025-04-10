@@ -1,0 +1,52 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-preview>
+            Benachrichtigung über die Archivierung eines Antrags
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        ein Antrag wurde in Gover abgeschlossen.
+                        <br/>
+                        <br/>
+                        Antrag auf: <b th:text="${form.title}">Beispielformular</b> - Version
+                        <b th:text="${form.version}">1.0.0</b>
+                        <br/>
+                        Aktenzeichen:
+                        <b th:text="${fileNumber}">Aktenzeichen</b>
+                        <br/>
+                        <th:block th:if="${assignee != null}">
+                            Zuständige Mitarbeiter:in:
+                            <b th:text="${assignee.getFullName}">Max Mustermann</b>
+                            <br/>
+                        </th:block>
+                        Abgeschlossen durch:
+                        <b th:text="${triggeringUser.getFullName}">Erika Musterfrau</b>
+                    </p>
+
+                    <p>
+                        Sie können den Antrag über den nachfolgenden Link aufrufen:
+                        <a th:href="${base.config.createUrl('/staff/submissions/' + submission.id)}"
+                           th:text="${base.config.createUrl('/staff/submissions/' + submission.id)}">Beispiel-Link
+                        </a>
+                    </p>
+
+                    <p>
+                        Bitte beachten Sie: Die hinterlegte Löschfrist beginnt ab sofort zu laufen. Die Daten werden nach Ablauf der Löschfrist automatisch gelöscht.
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

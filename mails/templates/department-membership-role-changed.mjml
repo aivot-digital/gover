@@ -1,0 +1,34 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Mitteilung zur Änderung Ihrer Rolle in einem Fachbereich
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        Ihnen wurde in einem Gover Fachbereich eine neue Rolle zugewiesen.
+                        <br/>
+                        Fachbereich: <b th:text="${department.name}">Beispiel-Fachbereich</b>
+                        <br/>
+                        Neue Rolle: <b th:text="${newRole.getLabel}">Neue Rolle</b>
+                        <br/>
+                        Bisherige Rolle: <b th:text="${oldRole.getLabel}">Bisherige Rolle</b>
+                        <br/>
+                        Änderung durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

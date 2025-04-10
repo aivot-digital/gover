@@ -1,0 +1,52 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Mitteilung zum Rückzug eines veröffentlichten Formulars
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        es wurde ein Formular in Gover zurückgezogen.
+                        <br/>
+                        <br/>
+                        Formular: <b th:text="${form.title}">Beispielformular</b>
+                        <br/>
+                        Version: <b th:text="${form.version}">1.2.3</b>
+                        <br/>
+                        <span>
+                            Entwickelnder Fachbereich:
+                            <b th:text="${developingDepartment.name}">—</b>
+                        </span>
+                        <br th:if="${responsibleDepartment != null}" />
+                        <span th:if="${responsibleDepartment != null}">
+                            Zuständiger Fachbereich:
+                            <b th:text="${responsibleDepartment.name}">—</b>
+                        </span>
+                        <br th:if="${managingDepartment != null}" />
+                        <span th:if="${managingDepartment != null}">
+                            Bewirtschaftender Fachbereich:
+                            <b th:text="${managingDepartment.name}">—</b>
+                        </span>
+                        <br/>
+                        Zurückgezogen durch: <b th:text="${triggeringUser.getFullName}">Max Mustermann</b>
+                    </p>
+
+                    <p>
+                        Sie können das Formular über den nachfolgenden Link aufrufen: <a th:href="${base.config.createUrl('/staff/forms/' + form.id)}" th:text="${base.config.createUrl('/staff/forms/' + form.id)}">Beispiel-Link</a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

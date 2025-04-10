@@ -1,0 +1,45 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Information über eine nicht erfolgreich abgeschlossene Zahlung
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        bei der Abwicklung einer Zahlung ist ein Fehler aufgetreten.
+                        <br/>
+                        <br/>
+                        Antrag auf: <b th:text="${form.title}">Beispielformular</b> - Version
+                        <b th:text="${form.version}">1.0.0</b>
+                        <br/>
+                        Hinterlegter Zahlungsdienstleister: <b th:text="${paymentProvider.name}">Beispiel-Zahlungsdienstleister</b>
+                        <br/>
+                        Fehlermeldung:
+                        <b th:if="${#strings.isEmpty(paymentTransaction.paymentError)}">Unbekannter Fehler</b>
+                        <b th:unless="${#strings.isEmpty(paymentTransaction.paymentError)}" th:text="${paymentTransaction.paymentError}">Beispiel-Fehlermeldung</b>
+                        <br/>
+                        Zeitpunkt des Fehlers: <b th:text="${#temporals.format(paymentTransaction.updated, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
+                    </p>
+
+                    <p>
+                        Sie können den Antrag über den nachfolgenden Link aufrufen:
+                        <a th:href="${base.config.createUrl('/staff/submissions/' + submission.id)}"
+                           th:text="${base.config.createUrl('/staff/submissions/' + submission.id)}">Beispiel-Link
+                        </a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

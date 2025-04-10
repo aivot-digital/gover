@@ -1,0 +1,155 @@
+package de.aivot.GoverBackend.payment.services;
+
+import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
+import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
+import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.*;
+
+@Service
+public class PaymentProviderService implements EntityService<PaymentProviderEntity, String> {
+    private final Map<String, PaymentProviderDefinition> paymentProviderDefinitionMap;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final FormRepository formRepository;
+
+    @Autowired
+    public PaymentProviderService(
+            List<PaymentProviderDefinition> paymentProviderDefinitions,
+            PaymentProviderRepository paymentProviderRepository,
+            FormRepository formRepository
+    ) {
+        this.formRepository = formRepository;
+        this.paymentProviderDefinitionMap = new HashMap<>();
+        for (var definition : paymentProviderDefinitions) {
+            paymentProviderDefinitionMap.put(definition.getKey(), definition);
+        }
+        this.paymentProviderRepository = paymentProviderRepository;
+    }
+
+    @Nonnull
+    public Optional<PaymentProviderDefinition> getProviderDefinition(@Nonnull String providerKey) {
+        if (paymentProviderDefinitionMap.containsKey(providerKey)) {
+            return Optional.of(paymentProviderDefinitionMap.get(providerKey));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @Nonnull
+    @Override
+    public PaymentProviderEntity create(
+            @Nonnull PaymentProviderEntity paymentProviderEntity
+    ) throws ResponseException {
+        // Retrieve the payment provider definition
+        getProviderDefinition(paymentProviderEntity.getProviderKey())
+                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
+
+        // Create new key for the payment provider entity
+        paymentProviderEntity.setKey(UUID.randomUUID().toString());
+
+        // Save and return the payment provider entity
+        return paymentProviderRepository.save(paymentProviderEntity);
+    }
+
+    @NotNull
+    @Override
+    public Page<PaymentProviderEntity> performList(
+            @Nonnull Pageable pageable,
+            @Nullable Specification<PaymentProviderEntity> specification,
+            Filter<PaymentProviderEntity> filter) {
+        return paymentProviderRepository
+                .findAll(specification, pageable);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<PaymentProviderEntity> retrieve(
+            @Nonnull String key
+    ) {
+        return paymentProviderRepository
+                .findById(key);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<PaymentProviderEntity> retrieve(
+            @Nonnull Specification<PaymentProviderEntity> specification
+    ) {
+        return paymentProviderRepository
+                .findOne(specification);
+    }
+
+    @Override
+    public boolean exists(@Nonnull String id) {
+        return paymentProviderRepository.existsById(id);
+    }
+
+    @Override
+    public boolean exists(@Nonnull Specification<PaymentProviderEntity> specification) {
+        return paymentProviderRepository.exists(specification);
+    }
+
+    @Nonnull
+    @Override
+    public PaymentProviderEntity performUpdate(
+            @Nonnull String id,
+            @Nonnull PaymentProviderEntity entity,
+            @Nonnull PaymentProviderEntity existingEntity
+    ) throws ResponseException {
+        // Retrieve the payment provider definition
+        var providerDefinition = getProviderDefinition(entity.getProviderKey())
+                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
+
+        // Test if the provider key is valid
+        if (providerDefinition == null) {
+            throw new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden");
+        }
+
+        // Update the existing payment provider entity
+        existingEntity.setName(entity.getName());
+        existingEntity.setDescription(entity.getDescription());
+        // Do not update the provider key because changing the provider key can break existing transactions
+        // existingEntity.setProviderKey(entity.getProviderKey());
+        existingEntity.setConfig(entity.getConfig());
+        existingEntity.setTestProvider(entity.getTestProvider());
+
+        return paymentProviderRepository
+                .save(existingEntity);
+    }
+
+    @Override
+    public void performDelete(
+            @Nonnull PaymentProviderEntity entity
+    ) throws ResponseException {
+        var formSpec = new FormFilter()
+                .setPaymentProvider(entity.getKey())
+                .build();
+
+        if (formRepository.exists(formSpec)) {
+            throw new ResponseException(HttpStatus.CONFLICT, "Der Zahlungsanbieter wird noch in Formularen verwendet");
+        }
+
+        paymentProviderRepository.delete(entity);
+    }
+
+    public boolean isTestProvider(String providerKey) {
+        return paymentProviderRepository.findById(providerKey)
+                .map(PaymentProviderEntity::getTestProvider)
+                .orElse(false);
+    }
+
+}

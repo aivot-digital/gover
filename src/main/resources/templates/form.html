@@ -1,0 +1,1382 @@
+<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.Form"*/-->
+<!--/*@thymesVar id="submission" type="de.aivot.GoverBackend.submission.entities.Submission"*/-->
+<!--/*@thymesVar id="paymentTransaction" type="de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity"*/-->
+<!--/*@thymesVar id="paymentProvider" type="de.aivot.GoverBackend.payment.entities.PaymentProviderEntity"*/-->
+<!--/*@thymesVar id="theme" type="de.aivot.GoverBackend.theme.entities.Theme"*/-->
+<!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.DepartmentEntity"*/-->
+<!--/*@thymesVar id="elements" type="java.util.Collection<de.aivot.GoverBackend.services.pdf.PdfElement>"*/-->
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="authData" type="de.aivot.GoverBackend.pdf.models.FormPdfAuthData"*/-->
+<!--/*@thymesVar id="attachments" type="java.util.List<de.aivot.GoverBackend.elements.models.form.input.FileUploadField>"*/-->
+<!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
+<!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
+<!--/*@thymesVar id="#numberformat" type="de.aivot.GoverBackend.services.pdf.NumberFormatDialect"*/-->
+
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+        lang="de"
+>
+    <head th:title="${ form.getApplicationTitle() }">
+        <meta charset="UTF-8" />
+        <style>
+            /* Public Sans webfonts */
+
+            /* public-sans-regular - latin */
+            @font-face {
+                font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+                font-family: 'Public Sans';
+                font-style: normal;
+                font-weight: 400;
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-regular.eot')})]'); /* IE9 Compat Modes */
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-regular.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-regular.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-regular.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-regular.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-regular.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+            }
+
+            /* public-sans-italic - latin */
+            @font-face {
+                font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+                font-family: 'Public Sans';
+                font-style: italic;
+                font-weight: 400;
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-italic.eot')})]'); /* IE9 Compat Modes */
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-italic.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-italic.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-italic.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-italic.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-italic.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+            }
+
+            /* public-sans-700 - latin */
+            @font-face {
+                font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+                font-family: 'Public Sans';
+                font-style: normal;
+                font-weight: 700;
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700.eot')})]'); /* IE9 Compat Modes */
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+            }
+
+            /* public-sans-700italic - latin */
+            @font-face {
+                font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+                font-family: 'Public Sans';
+                font-style: italic;
+                font-weight: 700;
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700italic.eot')})]'); /* IE9 Compat Modes */
+                src: url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700italic.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700italic.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700italic.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700italic.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+                url('[(${base.config.createUrl('/public/assets/fonts/public-sans/public-sans-v14-latin-700italic.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+            }
+
+
+            html, body {
+                margin: 0;
+                padding: 0;
+                font-size: 12px;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
+
+            }
+
+            .d-flex {
+                display: flex;
+            }
+
+            h1, h2, h3, h4, h5, h6 {
+                margin-top: 0;
+                margin-bottom: 0;
+            }
+
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+            }
+
+            h2 {
+                font-size: 1.625rem;
+                margin-top: 1.75rem;
+                margin-bottom: 1rem;
+            }
+
+            h3 {
+                font-size: 1.375rem;
+                margin-top: 1.25rem;
+                margin-bottom: 0.75rem;
+            }
+
+            h4 {
+                font-size: 1.25rem;
+                margin-top: 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            a {
+                color: inherit;
+            }
+
+            #briefkopf {
+                display: flex;
+                margin-bottom: 2rem;
+            }
+
+            #logo {
+                margin-left: auto;
+            }
+
+            #logo img {
+                max-height: 100px;
+                max-width: 200px;
+            }
+
+            .alert-title p {
+                margin-top: 0.25rem;
+                padding-top: 0;
+            }
+
+            .step {
+                margin-bottom: 1rem;
+            }
+
+            .richtext {
+                margin-top: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .input-element {
+                break-inside: avoid;
+            }
+
+            .input-element.replicating-element,
+            .input-element.table-element {
+                break-inside: unset;
+            }
+
+            .input-element .input {
+                border: 1px solid #949494;
+                background-color: red;
+                width: 100%;
+                padding: 0.25rem 0.5rem;
+                margin-bottom: -1px;
+            }
+
+            .input-element .input .label {
+                font-size: 0.85rem;
+            }
+
+            .input-element .input .content {
+                display: flex;
+                align-items: baseline;
+                min-height: 1.5rem;
+                margin-top: 0.25rem;
+            }
+
+            .input-element.replicating-element {
+                margin: 0.75rem 0 1.5rem;
+                /*border: 1px solid #949494;
+                padding: 0.25rem 0.5rem;
+                margin-bottom: -1px;*/
+            }
+
+            .input-element.replicating-element > .label {
+                margin-bottom: 0.5rem;
+                font-size: 1.125rem;
+            }
+
+            .input-element.replicating-element > .content {
+                border-left: 1px solid #949494;
+                padding:  0.25rem 0 0.25rem 1rem;
+            }
+
+            .input-element.replicating-element > .content .child > h4 {
+                font-size: 1rem;
+            }
+
+            .input-element.replicating-element > .content .child {
+                margin-bottom: 0.5rem;
+            }
+
+            .input-element.checkbox-element .input,
+            .input-element.select-element .input,
+            .input-element.radio-element .input,
+            .input-element.multi-checkbox-element .input {
+                display: flex;
+                align-items: center;
+            }
+
+            .input-element.checkbox-element .input .label {
+                margin-left: 0.5rem;
+                font-size: 1rem;
+            }
+
+            .input-element.select-element .input .label,
+            .input-element.radio-element .input .label,
+            .input-element.multi-checkbox-element .input .label {
+                margin-bottom: 0.5rem;
+            }
+
+            .input-element.number-element .input .content .suffix,
+            .input-element.date-element .input .content .suffix,
+            .input-element.time-element .input .content .suffix {
+                margin-left: auto;
+                font-size: 0.85rem;
+            }
+
+            .input-element.select-element .input,
+            .input-element.radio-element .input,
+            .input-element.multi-checkbox-element .input {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .input-element.select-element .input ul,
+            .input-element.radio-element .input ul,
+            .input-element.multi-checkbox-element .input ul {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                gap: 0.5rem;
+            }
+
+            .input-element.select-element .input ul li,
+            .input-element.radio-element .input ul li,
+            .input-element.multi-checkbox-element .input ul li {
+                display: flex;
+                gap: 0.25rem;
+                align-items: center;
+            }
+
+            .input-element.table-element {
+                break-inside: avoid;
+                margin: 0.75rem 0 1.5rem;
+                /*border: 1px solid #949494;
+                margin-bottom: -1px;
+                padding-top: 0.5rem;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;*/
+            }
+
+            .input-element.table-element .input {
+            }
+
+            .input-element.table-element .label {
+                margin-bottom: 0.5rem;
+            }
+
+            .input-element.table-element .table {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+                margin-bottom: 0.5rem;
+            }
+
+            .input-element.table-element .table .table-header-cell {
+                text-align: left;
+                font-weight: normal;
+                font-size: 0.85rem;
+                border: 1px solid #949494;
+                border-bottom-with: 2px;
+                padding: 0.5rem 0.25rem 0.25rem 0.25rem;
+            }
+
+            .input-element.table-element .table .table-value-cell {
+                border: 1px solid #949494;
+                padding: 0.25rem;
+                height: 2.75rem;
+            }
+
+            .input-element.table-element .table .table-header-cell.number,
+            .input-element.table-element .table .table-value-cell.number {
+                text-align: right;
+            }
+
+            .input-element.file-upload-element .file-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            .input-element .hint-wrapper:has(.hint) {
+                border-left: 1px solid #949494;
+                border-bottom: 1px solid #949494;
+                color: #727272;
+                margin-bottom: -1px;
+                padding: 0.25rem 0.5rem 0.55rem 0.5rem;
+            }
+
+            .input-element.replicating-element > .hint-wrapper:has(.hint),
+            .input-element.table-element > .hint-wrapper:has(.hint){
+                padding-left: 0;
+                padding-right: 0;
+                margin-bottom: 0;
+                border-left: 0;
+                border-bottom: 0;
+            }
+
+            .input-element .hint {
+                font-size: 0.85rem;
+                display: inline;
+            }
+
+            .input-element .hint::after {
+                content: "|";
+                color: #949494;
+                margin-left: 0.25rem;
+                margin-right: 0.25rem;
+            }
+
+            .input-element .hint:last-of-type::after {
+                content: "";
+                display: none;
+            }
+
+            .checked::before {
+                content: '\2611';
+                font-size: 1.5rem;
+                line-height: 1rem;
+            }
+
+            .unchecked::before {
+                content: '\2610';
+                font-size: 1.5rem;
+                line-height: 1rem;
+            }
+
+            .page-break-before {
+                break-before: page;
+            }
+
+            .avoid-break-inside {
+                break-inside: avoid;
+            }
+
+            a::after {
+                content: " (" attr(href) ") ";
+            }
+
+            a.do-not-print-link::after {
+                content: none;
+            }
+
+            .signature-container {
+                display: flex;
+                margin-top: 4em;
+                border-top: 1px solid #949494;
+            }
+
+            .signature-container div {
+                flex: 1;
+            }
+
+            .content-without-margin-on-childs {
+                & p:first-child {
+                    margin-top: 0
+                }
+
+                & p:last-child {
+                    margin-bottom: 0
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!--/* ***********************************************************************
+        Bereich für den Briefkopf des Formulars.
+        Der Briefkopf wird nur auf ausfüllbaren Formularen und von Bürger:innen ausgefüllten Formularen angezeigt
+        *********************************************************************** */-->
+        <header
+                id="briefkopf"
+                th:if="${ base.isBlankPrint() || base.isCitizenPrint() }"
+        >
+            <div id="anschrift">
+                <p>
+                    <!-- Der Name des Betreibers wird aus dem Basis-Kontext abgeleitet -->
+                    <strong><span th:text="${ base.providerName }">Name der Kommune</span></strong>
+                    <br />
+
+                    <!-- Der Name des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet -->
+                    <span th:text="${ department.name }">Name des zuständigen Fachbereichs</span>
+                    <br />
+
+                    <!-- Der Adresse des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet.
+                    Über das #strings.replace Util werden alle Zeilenumbrüche mit dem HTML-Tag <br /> ersetzt -->
+                    <span th:utext="${ #strings.replace(department.address,'\n', '&lt;br /&gt;') }">Adresse des Fachbereichs</span>
+                </p>
+            </div>
+
+            <div id="logo">
+                <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->
+                <img
+                        th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName)}"
+                        th:alt="${ 'Logo ' + base.providerName }"
+                />
+            </div>
+        </header>
+
+        <!--/* ***********************************************************************
+        Die Überschrift des Formulars.
+        *********************************************************************** */-->
+        <h1
+                id="formulartitel"
+                th:text="${ form.getFormTitle() }"
+        >
+            Titel des Formulars
+        </h1>
+
+        <!--/* ***********************************************************************
+        Bereich für die "Allgemeinen Informationen".
+
+        Der Bereich für die "Allgemeinen Informationen" wird nur auf ausfüllbaren Formularen und von Bürger:innen ausgefüllten Formularen angezeigt
+        *********************************************************************** */-->
+        <section
+                id="general-information"
+                th:if="${ base.isBlankPrint() || base.isCitizenPrint() }"
+        >
+            <h2>Allgemeine Informationen</h2>
+
+            <!--/* Hier wird der Teaser-Text angezeigt welcher grob das Formular zusammenfasst. */-->
+            <div
+                    th:if="${not #strings.isEmpty(form.getRoot().getIntroductionStep().getTeaserText())}"
+                    th:utext="${ form.getRoot().getIntroductionStep().getTeaserText() }"
+                    class="content-without-margin-on-childs"
+            >
+                Allgemeine Informationen für antragstellende Personen
+            </div>
+
+            <!--/* Die Liste der antragsberechtigten Personen des Formulars. Dient als Fragment, welches später wiederverwendet werden kann. */-->
+            <th:block th:with="list=${form.getRoot().getIntroductionStep().getEligiblePersons()},label='Antragsberechtigte'">
+                <div
+                        class="avoid-break-inside"
+                        th:fragment="list"
+                        th:if="${list != null && not list.isEmpty()}"
+                >
+                    <h4 th:text="${label}"></h4>
+                    <ul>
+                        <li
+                                th:each="doc : ${ list }"
+                                th:text="${ doc }"
+                        >
+                            Person
+                        </li>
+                    </ul>
+                </div>
+            </th:block>
+
+            <!--/* Die Liste der relevanten Dokumente */-->
+            <th:block th:with="list=${form.getRoot().getIntroductionStep().getSupportingDocuments()},label='Relevante Dokumente'">
+                <th:block th:replace="~{::list}"></th:block>
+            </th:block>
+
+            <!--/* Die Liste der einzureichenden Dokumente */-->
+            <th:block th:with="list=${form.getRoot().getIntroductionStep().getDocumentsToAttach()},label='Einzureichende Dokumente'">
+                <th:block th:replace="~{::list}"></th:block>
+            </th:block>
+
+            <!--/* Informationen über die Antragsfristen */-->
+            <div
+                    class="avoid-break-inside"
+                    th:if="${not #strings.isEmpty(form.getRoot().getExpiring())}"
+            >
+                <h4>Antragsfristen</h4>
+                <div th:utext="${ form.getRoot().getExpiring() }">
+                    Antragsfristen
+                </div>
+            </div>
+
+            <!--/* Informationen über die Gebühren des Antrages */-->
+            <div
+                    class="avoid-break-inside"
+                    th:if="${not #strings.isEmpty(form.getRoot().getIntroductionStep().getExpectedCosts())}"
+            >
+                <h4>Gebühren dieses Antrages</h4>
+                <div th:utext="${ form.getRoot().getIntroductionStep().getExpectedCosts() }" class="content-without-margin-on-childs">
+                    Gebühren
+                </div>
+            </div>
+
+            <!--/* Informationen zum Datenschutz */-->
+            <div class="avoid-break-inside">
+                <h3>
+                    Hinweise zum Datenschutz
+                </h3>
+
+                <div th:utext="${ form.getRoot().getCleanedPrivacyText() }">
+                    Datenschutzhinweise
+                </div>
+
+                <div th:if="${ base.isBlankPrint() || base.isCitizenPrint() || base.isDestinationPrint() }">
+                    <a
+                            class="do-not-print-link"
+                            th:utext="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
+                            th:href="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
+                            target="_blank"
+                    >
+                        Link zur Datenschutzerklärung
+                    </a>
+                </div>
+
+                <div th:if="${ base.isCitizenPrint() }">
+                    <span
+                            class="checked"
+                    ></span>
+                    Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen.
+                </div>
+            </div>
+
+            <!--/* ***********************************************************************
+            Bereich für Informationen über die Ausfüllbarkeit dieses Antrags online.
+            *********************************************************************** */-->
+
+            <!-- Der Bereich für die "Online-Ausfüllbarkeit" wird nur auf ausfüllbaren Formularen angezeigt -->
+            <div
+                    class="avoid-break-inside d-flex"
+                    th:if="${ base.isBlankPrint() }"
+                    style="margin-top: 2rem"
+            >
+                <div style="margin-right: 2rem;">
+                    <h2>Wussten Sie schon? Sie können dieses Formular <br/>bequem online ausfüllen und einreichen.</h2>
+                    <p>
+                        Besuchen Sie dazu die folgende URL bzw. den Link
+                        <a
+                                class="do-not-print-link"
+                                th:href="${ base.createUrl(form.getSlug() + '/' + form.getVersion()) }"
+                                th:text="${ base.createUrl(form.getSlug() + '/' + form.getVersion()) }"
+                        ></a>
+                        mit Ihrem Webbrowser oder scannen Sie den nebenstehenden QR-Code mit der Kamera Ihres mobilen Endgeräts.
+                    </p>
+                </div>
+                <div style="margin-left: auto; margin-top: -1rem;">
+                    <img
+                            th:src="${ #qrcode.create(base.createUrl(form.getSlug() + '/' + form.getVersion())) }"
+                            width="160px"
+                            height="160px"
+                    >
+                </div>
+            </div>
+        </section>
+
+        <!--/* ***********************************************************************
+        Bereich für die "Zahlungsinformationen".
+
+        Wird nur angezeigt, wenn Zahlungsinformationen sowie ein Zahlungslink im
+        Antrag vorhanden sind.
+        *********************************************************************** */-->
+        <section
+                th:class="${ base.isCitizenPrint() ? 'page-break-before' : '' }"
+                th:if="${ base.isNotBlankPrint() && paymentTransaction != null }"
+        >
+            <h2>Zahlungsinformationen</h2>
+
+            <div
+                    class="d-flex"
+                    th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'INITIAL' }"
+            >
+                <div style="flex: 1">
+                    <p th:if="${ base.isCitizenPrint() }">
+                        Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
+                        <br />
+                        Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
+                        <br />
+                        <strong>Wichtig:</strong>
+                        Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet. Sollten Sie die Gebühren bereits entrichtet haben, sind keine weiteren Schritte Ihrerseits erforderlich.
+                    </p>
+                    <p th:unless="${ base.isCitizenPrint() }">
+                        Die Gebühr wurde noch nicht bezahlt.
+                    </p>
+
+                    <ul>
+                        <li th:each="item : ${paymentTransaction.paymentRequest.items}">
+                            <span th:text="${item.description}"></span>
+                            <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                            <span th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}" th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"></span>
+                        </li>
+                    </ul>
+
+                    <hr />
+
+                    <p>
+                        Gesamtbetrag:
+                        <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
+                    </p>
+
+                    <p>
+                        <a
+                                class="do-not-print-link"
+                                th:href="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
+                                th:text="${paymentTransaction.paymentInformation.transactionRedirectUrl}"
+                        >
+                            Link zur Bezahlung
+                        </a>
+                    </p>
+                </div>
+
+                <div style="margin-left: auto">
+                    <img
+                            th:src="${ #qrcode.create(paymentTransaction.paymentInformation.getTransactionRedirectUrl()) }"
+                            width="160px"
+                            height="160px"
+                            alt="QR-Code mit Link zur Zahlung"
+                    />
+                </div>
+            </div>
+
+            <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'PAYED' }">
+                <p>
+                    Die Gebühr wurde bereits bezahlt.
+                </p>
+
+                <table>
+                    <tbody>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsdienstleister:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ paymentProviderDefinition.getProviderName() }"></span>
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsdatum:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ #numberformat.formatISOTimestamp(paymentTransaction.paymentInformation.getTransactionTimestamp(), 'dd.MM.yyyy HH:mm') }"></span>
+                                Uhr
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsstatus:</strong>
+                            </td>
+                            <td>
+                                Bezahlt
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Transaktions-ID:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ paymentTransaction.paymentInformation.transactionId }"></span>
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Gebühr:</strong>
+                            </td>
+                            <td>
+                                Insgesamt entrichtete Gebühr:
+                                <span th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) }"></span>
+                                Euro inkl. Steuern
+
+                                <ul>
+                                    <li th:each="item : ${paymentTransaction.paymentRequest.items}">
+                                        <span th:text="${item.description}"></span>
+                                        <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                                        <span th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}" th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"></span>
+                                    </li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr style="vertical-align: top">
+                            <td>
+                                <strong>Zahlungsmittel:</strong>
+                            </td>
+                            <td>
+                                <span th:text="${ paymentTransaction.paymentInformation.paymentMethod.getLabel() }"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${ paymentTransaction.paymentInformation.getStatus().name() == 'FAILED' or  paymentTransaction.paymentInformation.getStatus().name() == 'CANCELED' }">
+                <p th:if="${ base.isCitizenPrint() }">
+                    Die Bezahlung der Gebühren ist fehlgeschlagen.
+                    Bitte wenden Sie sich an die zuständige Dienststelle.
+                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: <span th:text="${ submission.getId() }"></span>.
+                </p>
+
+                <p th:if="${ base.isStaffPrint() }">
+                    Die Bezahlung der Gebühren ist fehlgeschlagen.
+                </p>
+
+                <ul>
+                    <li th:each="item : ${paymentTransaction.paymentRequest.items}">
+                        <span th:text="${item.description}"></span>
+                        <span th:text="${ #numberformat.format(item.getBruttoAmount(), 2) } + ' Euro'"></span>
+                        <span th:if="${item.getTaxRate() != null && item.getTaxRate() > 0}" th:text="'inkl. ' + ${ #numberformat.format(item.getTaxRate(), 0) } + '% Steuern'"></span>
+                    </li>
+                </ul>
+
+                <hr />
+
+                <p>
+                    Gesamtbetrag:
+                    <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
+                </p>
+            </div>
+        </section>
+
+        <!--/* ***********************************************************************
+        Bereich für Elemente des Formulars.
+        *********************************************************************** */-->
+        <!--/* Iteriere über jeden Abschnitt des Formulars, dass gerendert werden soll */-->
+        <th:block th:each="step : ${elements}">
+            <section th:class="'step ' + ${ base.isBlankPrint() ? 'page-break-before' : '' }">
+                <!--/* Überschriften von Abschnitten haben immer die größe H2 */-->
+                <h2 th:if="${#strings.isEmpty(step.element.title)}" th:style="${ base.isBlankPrint() ? 'margin-top: 0;' : '' }">
+                    Unbenannter Abschnitt
+                </h2>
+                <h2 th:unless="${#strings.isEmpty(step.element.title)}" th:text="${step.element.title}" th:style="${ base.isBlankPrint() ? 'margin-top: 0;' : '' }">
+                    Titel des Abschnitts
+                </h2>
+
+                <!--/* Erzeuge einen Container, der die Kinder und Kindes-Kinder des Abschnittes beinhaltet. */-->
+                <div style="display: flex; flex-wrap: wrap;">
+                    <!--/* Iteriere über alle Kinder des Abschnittes */-->
+                    <th:block
+                            th:each="child : ${step.children}"
+                    >
+                        <!--/* Erzeuge einen Container für das Kind-Element. Dieser Container ist ein Fragment, dass später für z.B. das Gruppen-Layout und die Replizierende Liste wiederverwendet wird. */-->
+                        <div
+                                th:fragment="dispatcher"
+                                th:class="'element-wrapper element-wrapper-' + ${ child.element.type.name().toLowerCase() }"
+                                th:style="'width: ' + ${child.element.weight == null ? 100 : (child.element.weight / 12 * 100)} + '%'"
+                        >
+                            <th:block th:switch="${ child.element.type.name() }">
+                                <!--/* ***********************************************************************
+                                Gruppe
+                                *********************************************************************** */-->
+                                <th:block th:case="Group">
+                                    <div style="display: flex; flex-wrap: wrap;">
+                                        <!--/* Referenziere das Fragment in dieser Datei */-->
+                                        <th:block th:each="child: ${child.children}">
+                                            <th:block th:replace="~{::dispatcher}"></th:block>
+                                        </th:block>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Replizierende Liste
+                                *********************************************************************** */-->
+                                <th:block th:case="ReplicatingContainer">
+                                    <div class="input-element replicating-element">
+                                        <div class="label">
+                                            <strong th:text="${child.element.label}"></strong>
+                                            <span th:if="${base.isBlankPrint() && child.element.required && (child.element.minimumRequiredSets == null || child.element.minimumRequiredSets == 0)}">
+                                                (Pflichtangabe, mindestens einen Datensatz ausfüllen)
+                                            </span>
+                                            <span th:if="${base.isBlankPrint() && child.element.minimumRequiredSets != null && child.element.minimumRequiredSets > 0}">
+                                                (Pflichtangabe, mindestens
+                                                <span th:text="${child.element.minimumRequiredSets > 1 ? child.element.minimumRequiredSets + ' Datensätze' : 'einen Datensatz'}"></span> ausfüllen)
+                                            </span>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <div
+                                                    class="hint"
+                                                    th:if="${base.isBlankPrint()}"
+                                                    th:text="${child.element.hint}"
+                                            ></div>
+                                        </div>
+
+                                        <div
+                                                class="content"
+                                                th:if="${child.value == null || child.value.isEmpty()}"
+                                        >
+                                            Keine Angaben
+                                        </div>
+
+                                        <div
+                                                class="content"
+                                                th:unless="${child.value == null || child.value.isEmpty()}"
+                                                th:with="parent=${child.element}"
+                                        >
+                                            <div
+                                                    th:each="child: ${child.children}"
+                                                    class="child"
+                                            >
+                                                <h4 th:text="${parent.getResolvedHeadline(child.value())}"></h4>
+
+                                                <!--/* Referenziere das Fragment in dieser Datei */-->
+                                                <th:block th:replace="~{::dispatcher}">
+                                                </th:block>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Überschrift
+                                *********************************************************************** */-->
+                                <th:block th:case="Headline">
+                                    <h3
+                                            th:text="${child.element.content}"
+                                            th:if="${!child.element.small}"
+                                    >
+                                        Großes Überschriftenelement
+                                    </h3>
+                                    <h4
+                                            th:text="${child.element.content}"
+                                            th:if="${child.element.small}"
+                                    >
+                                        Kleines Überschriftenelement
+                                    </h4>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                RichText
+                                *********************************************************************** */-->
+
+                                <th:block
+                                        th:case="Richtext"
+                                        th:if="${base.isNotStaffPrint()}"
+                                >
+                                    <div
+                                            class="richtext"
+                                            th:utext="${child.element.content}"
+                                    >
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Image
+                                *********************************************************************** */-->
+                                <th:block
+                                        th:case="Image"
+                                        th:if="${base.isNotStaffPrint()}"
+                                >
+                                    <div style="margin-top: 1rem; margin-bottom: 1rem;">
+                                        <img
+                                                th:src="${child.element.src}"
+                                                th:alt="${child.element.alt}"
+                                        />
+                                        <div
+                                                style="font-size: 0.85rem; margin-top: 0.25rem; margin-bottom: 0.25rem;"
+                                                th:unless="${child.element.caption.isEmpty()}"
+                                                th:text="${child.element.caption}"
+                                        >
+                                            Caption des Bildes
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Alert
+                                *********************************************************************** */-->
+                                <th:block
+                                        th:case="Alert"
+                                        th:if="${child.element.alertType.name() == 'Info' && base.isNotStaffPrint()}"
+                                >
+                                    <div style="margin-top: 1rem; margin-bottom: 1rem;">
+                                        <strong th:text="${child.element.title}"></strong>
+                                        <div
+                                                class="alert-title"
+                                                th:utext="${child.element.text}"
+                                        ></div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Checkbox
+                                *********************************************************************** */-->
+                                <th:block th:case="Checkbox">
+                                    <div class="input-element checkbox-element">
+                                        <div class="input">
+                                            <!--/* Checked-Icon */-->
+                                            <div
+                                                    th:if="${child.value}"
+                                                    class="checked"
+                                            ></div>
+
+                                            <!--/* Unchecked-Icon */-->
+                                            <div
+                                                    th:unless="${child.value}"
+                                                    class="unchecked"
+                                            ></div>
+
+                                            <!--/* Beschriftung der Checkbox */-->
+                                            <div class="label">
+                                                <span th:text="${child.element.label}"></span>
+                                                <span th:if="${child.element.required}">(Pflichtangabe)</span>
+                                            </div>
+                                        </div>
+
+                                        <!--/* Hinweis wird nur angezeigt bei einem ausfüllbaren Formular */-->
+                                        <div class="hint-wrapper">
+                                            <div
+                                                class="hint"
+                                                th:fragment="hint"
+                                                th:if="${base.isBlankPrint() && not #strings.isEmpty(child.element.hint)}"
+                                                th:text="${child.element.hint}"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                TextInput
+                                *********************************************************************** */-->
+                                <th:block th:case="Text">
+                                    <div class="input-element text-element">
+                                        <div class="input">
+                                            <div class="label">
+                                                <strong th:text="${child.element.label}"></strong>
+                                                <span th:if="${base.isBlankPrint() && child.element.required}">(Pflichtangabe)</span>
+                                            </div>
+
+                                            <div
+                                                    class="content"
+                                                    th:text="${base.isBlankPrint() ? '' : child.element().toDisplayValue(child.value())}"
+                                                    th:style="${base.isBlankPrint() && child.element().getIsMultiline() ? 'min-height: 12em;' : ''}"
+                                            >
+                                            </div>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+
+                                            <div
+                                                    class="hint"
+                                                    th:if="${base.isBlankPrint() && child.element.minCharacters != null && child.element.minCharacters > 0}"
+                                            >
+                                                Mindestens
+                                                <span th:text="${child.element.minCharacters}"></span>
+                                                Zeichen
+                                            </div>
+                                            <div
+                                                    class="hint"
+                                                    th:if="${base.isBlankPrint() && child.element.maxCharacters != null && child.element.maxCharacters > 0}"
+                                            >
+                                                Maximal
+                                                <span th:text="${child.element.maxCharacters}"></span>
+                                                Zeichen
+                                            </div>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+
+                                <!--/* ***********************************************************************
+                                NumberInput
+                                *********************************************************************** */-->
+                                <th:block th:case="Number">
+                                    <div class="input-element number-element">
+                                        <div class="input">
+                                            <div class="label">
+                                                <strong th:text="${child.element.label}"></strong>
+                                                <span th:if="${base.isBlankPrint() && child.element.required}">(Pflichtangabe)</span>
+                                            </div>
+
+                                            <div class="content">
+                                                <span
+                                                        th:if="${base.isNotBlankPrint()}"
+                                                        th:text="${child.element().toDisplayValue(child.value())}"
+                                                ></span>
+                                                <span
+                                                        class="suffix"
+                                                        th:text="${child.element.suffix}"
+                                                ></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                DateInput
+                                *********************************************************************** */-->
+                                <th:block th:case="Date">
+                                    <div class="input-element date-element">
+                                        <div class="input">
+                                            <div class="label">
+                                                <strong th:text="${child.element.label}"></strong>
+                                                <span th:if="${base.isBlankPrint() && child.element.required}">(Pflichtangabe)</span>
+                                            </div>
+
+                                            <div class="content">
+                                                <span
+                                                        th:if="${base.isNotBlankPrint()}"
+                                                        th:text="${child.element().toDisplayValue(child.value())}"
+                                                ></span>
+
+                                                <span
+                                                        class="suffix"
+                                                        th:if="${base.isBlankPrint() && (child.element.mode == null || child.element.mode.name() == 'Day')}"
+                                                >TT.MM.JJJJ</span>
+                                                <span
+                                                        class="suffix"
+                                                        th:if="${base.isBlankPrint() && child.element.mode != null && child.element.mode.name() == 'Month'}"
+                                                >MM.JJJJ</span>
+                                                <span
+                                                        class="suffix"
+                                                        th:if="${base.isBlankPrint() && child.element.mode != null && child.element.mode.name() == 'Year'}"
+                                                >JJJJ</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                TimeInput
+                                *********************************************************************** */-->
+                                <th:block th:case="Time">
+                                    <div class="input-element time-element">
+                                        <div class="input">
+                                            <div class="label">
+                                                <strong th:text="${child.element.label}"></strong>
+                                                <span th:if="${base.isBlankPrint() && child.element.required}">(Pflichtangabe)</span>
+                                            </div>
+
+                                            <div class="content">
+                                                <span
+                                                        th:if="${base.isNotBlankPrint()}"
+                                                        th:text="${child.element().toDisplayValue(child.value())}"
+                                                ></span>
+                                                <span
+                                                        class="suffix"
+                                                        th:if="${base.isBlankPrint()}"
+                                                >HH:MM</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Select
+                                *********************************************************************** */-->
+                                <th:block th:case="Select">
+                                    <div class="input-element select-element">
+                                        <div class="input">
+                                            <div class="label">
+                                                <strong th:text="${child.element.label}"></strong>
+                                                <span th:if="${base.isBlankPrint()}">(<span th:if="${child.element.required}">Pflichtangabe, </span>Bitte nur eine Option auswählen)</span>
+                                            </div>
+
+                                            <ul class="content">
+                                                <!--/* Iteriere über alle Optionen des Select-Elements */-->
+                                                <th:block
+                                                        th:each="option : ${child.element.options}"
+                                                        th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+                                                >
+                                                    <!--/* Erzeuge ein Listenelement für jede Option, falls der Wert gewählt wurde oder es sich um das ausfüllbare Formular handelt */-->
+                                                    <li th:if="${base.isBlankPrint() || (child.hasValue() && child.value.equals(value))}">
+                                                        <!--/* Checked-Icon */-->
+                                                        <div
+                                                                th:if="${base.isNotBlankPrint() && child.hasValue() && child.value.equals(value)}"
+                                                                class="checked"
+                                                        ></div>
+
+                                                        <!--/* Unchecked-Icon */-->
+                                                        <div
+                                                                th:unless="${base.isNotBlankPrint() && child.hasValue() && child.value.equals(value)}"
+                                                                class="unchecked"
+                                                        ></div>
+
+                                                        <!--/* Beschriftung der Checkbox */-->
+                                                        <div th:text="${label}"></div>
+                                                    </li>
+                                                </th:block>
+                                                <li th:if="${ base.isNotBlankPrint() && !child.hasValue() }">
+                                                    Keine Angabe
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Radio
+                                *********************************************************************** */-->
+                                <th:block th:case="Radio">
+                                    <div class="input-element radio-element">
+                                        <div class="input">
+                                            <div class="label">
+                                                <strong th:text="${child.element.label}"></strong>
+                                                <span th:if="${base.isBlankPrint()}">(<span th:if="${child.element.required}">Pflichtangabe, </span>Bitte nur eine Option auswählen)</span>
+                                            </div>
+
+                                            <ul class="content">
+                                                <!--/* Iteriere über alle Optionen des Radio-Elements */-->
+                                                <th:block
+                                                        th:each="option : ${child.element.options}"
+                                                        th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+                                                >
+                                                    <!--/* Erzeuge ein Listenelement für jede Option, falls der Wert gewählt wurde oder es sich um das ausfüllbare Formular handelt */-->
+                                                    <li th:if="${base.isBlankPrint() || (child.hasValue() && child.value.equals(value))}">
+                                                        <!--/* Checked-Icon */-->
+                                                        <div
+                                                                th:if="${base.isNotBlankPrint() && child.hasValue() && child.value.equals(value)}"
+                                                                class="checked"
+                                                        ></div>
+
+                                                        <!--/* Unchecked-Icon */-->
+                                                        <div
+                                                                th:unless="${base.isNotBlankPrint() && child.hasValue() && child.value.equals(value)}"
+                                                                class="unchecked"
+                                                        ></div>
+
+                                                        <!--/* Beschriftung der Checkbox */-->
+                                                        <div th:text="${label}"></div>
+                                                    </li>
+                                                </th:block>
+                                                <li th:if="${ base.isNotBlankPrint() && !child.hasValue() }">
+                                                    Keine Angabe
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Multi-Checkbox
+                                *********************************************************************** */-->
+                                <th:block th:case="MultiCheckbox">
+                                    <div class="input-element multi-checkbox-element">
+                                        <div class="input">
+                                            <div class="label">
+                                                <strong th:text="${child.element.label}"></strong>
+                                                <span th:if="${base.isBlankPrint()}">(<span th:if="${child.element.required}">Pflichtangabe, </span>Es können mehrere Optionen ausgewählt werden)</span>
+                                            </div>
+
+                                            <ul class="content">
+                                                <!--/* Iteriere über alle Optionen des Multi-Checkbox-Elements */-->
+                                                <th:block
+                                                        th:each="option : ${child.element.options}"
+                                                        th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+                                                >
+                                                    <!--/* Erzeuge ein Listenelement für jede Option, falls der Wert gewählt wurde oder es sich um das ausfüllbare Formular handelt */-->
+                                                    <li th:if="${base.isBlankPrint() || (child.hasValue() && child.value.contains(value))}">
+                                                        <!--/* Checked-Icon */-->
+                                                        <div
+                                                                th:if="${base.isNotBlankPrint() && child.hasValue() && child.value.contains(value)}"
+                                                                class="checked"
+                                                        ></div>
+
+                                                        <!--/* Unchecked-Icon */-->
+                                                        <div
+                                                                th:unless="${base.isNotBlankPrint() && child.hasValue() && child.value.contains(value)}"
+                                                                class="unchecked"
+                                                        ></div>
+
+                                                        <!--/* Beschriftung der Checkbox */-->
+                                                        <div th:text="${label}"></div>
+                                                    </li>
+                                                </th:block>
+                                                <li th:if="${ base.isNotBlankPrint() && !child.hasValue() }">
+                                                    Keine Angabe
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                Table
+                                *********************************************************************** */-->
+                                <th:block th:case="Table">
+                                    <div class="input-element table-element">
+                                        <div class="label">
+                                            <strong th:text="${child.element.label}"></strong>
+                                            <span th:if="${base.isBlankPrint() && child.element.required && (child.element.minimumRequiredRows == null || child.element.minimumRequiredRows == 0)}">
+                                                (Pflichtangabe, mindestens eine Zeile ausfüllen)
+                                            </span>
+                                            <span th:if="${base.isBlankPrint() && child.element.minimumRequiredRows != null && child.element.minimumRequiredRows > 0}">
+                                                (Pflichtangabe, mindestens
+                                                <span th:text="${child.element.minimumRequiredRows > 1 ? child.element.minimumRequiredRows + ' Zeilen' : 'eine Zeile'}"></span> ausfüllen)
+                                            </span>
+                                        </div>
+
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th
+                                                            th:each="field: ${child.element.fields}"
+                                                            th:class="'table-header-cell' + ${field.datatype.name() == 'Number' ? ' number' : ''}"
+                                                    >
+                                                        <strong th:text="${field.label}"></strong>
+                                                        <span th:if="${!(base.isNotBlankPrint() || field.optional)}">(Pflichtangabe)</span>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr
+                                                    th:if="${child.value == null || child.value.isEmpty()}"
+                                                >
+                                                    <td
+                                                            th:colspan="${child.element.fields.size()}"
+                                                            class="table-value-cell"
+                                                    >
+                                                        Keine Angaben
+                                                    </td>
+                                                </tr>
+                                                <tr
+                                                        th:unless="${child.value() == null || child.value.isEmpty()}"
+                                                        th:each="row: ${child.value()}"
+                                                >
+                                                    <td
+                                                            th:each="field: ${child.element.fields}"
+                                                            th:class="'table-value-cell' + ${field.datatype.name() == 'Number' ? ' number' : ''}"
+                                                            th:text="${row.get(field.label)}"
+                                                    ></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                FileUploadField
+                                *********************************************************************** */-->
+                                <th:block th:case="FileUpload">
+                                    <div class="input-element file-upload-element">
+                                        <div class="input">
+                                            <div
+                                                    class="label"
+                                                    th:if="${base.isBlankPrint()}"
+                                            >
+                                                <span th:if="${child.element.required}">Folgende Anlage ist verpflichtend anzuhängen:</span>
+                                                <span th:unless="${child.element.required}">Folgende Anlage kann optional angehangen werden:</span>
+                                                <strong th:text="${child.element.label}"></strong>
+                                            </div>
+
+                                            <div
+                                                    class="label"
+                                                    th:unless="${base.isBlankPrint()}"
+                                            >
+                                                <strong th:text="${child.element.label}"></strong>
+                                            </div>
+
+                                            <div class="content">
+                                                <ul
+                                                        class="file-list"
+                                                        th:if="${child.hasValue() && not child.value().isEmpty()}"
+                                                >
+                                                    <li th:each="file : ${child.value}">
+                                                        <span th:text="${file.name}"></span>
+                                                    </li>
+                                                </ul>
+
+                                                <span th:unless="${(child.hasValue() && not child.value().isEmpty()) || base.isBlankPrint()}">Keine Anlagen hinzugefügt</span>
+
+                                                <div th:if="${base.isBlankPrint()}">
+                                                    <span class="unchecked"></span>
+                                                    <span>Die Anlage ist angehangen</span>
+                                                    <span th:if="${child.element.required}">(Pflichtangabe)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="hint-wrapper">
+                                            <th:block th:replace="~{::hint}"></th:block>
+                                        </div>
+                                    </div>
+                                </th:block>
+                            </th:block>
+                        </div>
+                    </th:block>
+                </div>
+            </section>
+        </th:block>
+
+        <section
+                th:if="${base.isBlankPrint() && not #lists.isEmpty(attachments)}"
+                class="avoid-break-inside"
+        >
+            <h2>Anlagen</h2>
+            <p>
+                Bitte reichen Sie die folgenden Anlagen ein:
+            </p>
+            <ul>
+                <li th:each="container : ${attachments}" style="margin-bottom: 0.5rem;">
+                    <strong th:text="${container.label}"></strong>
+                    <span th:if="${container.required}">(Pflichtanlage)</span>
+                    <span th:unless="${container.required}">(optionale Anlage)</span>
+                    <br />
+                    <span th:text="${container.hint}"></span>
+                </li>
+            </ul>
+        </section>
+
+        <section
+                th:if="${ base.isBlankPrint() && form.getRoot().getOfflineSignatureNeeded() || (form.getRoot().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRoot().getOfflineSubmissionText())) }"
+                class="avoid-break-inside"
+        >
+            <th:block
+                    th:if="${form.getRoot().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRoot().getOfflineSubmissionText())}"
+            >
+                <h2>Hinweise zur Einreichung des ausgefüllten Antrages</h2>
+                <p>
+                    Bitte reichen Sie das ausgefüllte Formular auf nachstehendem Weg ein:
+                </p>
+                <div th:utext="${ form.getRoot().getOfflineSubmissionText() }" class="content-without-margin-on-childs"></div>
+            </th:block>
+
+            <th:block
+                    th:if="${form.getRoot().getOfflineSignatureNeeded()}"
+            >
+                <h2>Unterschrift</h2>
+                <div class="signature-container">
+                    <div>
+                        Ort, Datum
+                    </div>
+                    <div>
+                        Unterschrift
+                    </div>
+                </div>
+            </th:block>
+        </section>
+    </body>
+</html>

@@ -1,0 +1,9 @@
+Hallo,
+
+Ihre Rolle in einem Gover Fachbereich wurde geändert.
+Fachbereich: [(${department.name})]
+Neue Rolle: [(${newRole.getLabel})]
+Bisherige Rolle: [(${oldRole.getLabel})]
+Änderung durch: [(${admin.getFullName()})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

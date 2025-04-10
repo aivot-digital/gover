@@ -1,0 +1,35 @@
+.boxLink {
+  font-size: 1.5rem;
+  line-height: 1;
+  border: 2px solid var(--hw-primary);
+  color: #16191F;
+  transition: 100ms all ease-in-out;
+  font-family: "Public Sans", sans-serif;
+  font-weight: 500;
+  min-height: 10rem;
+  padding: 1.25rem 1.25rem 3.25rem 1.25rem;
+  position: relative;
+  display: block;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.boxLink span {
+  color: var(--hw-primary);
+}
+
+.boxLink:hover {
+  color: white;
+  background-color: var(--hw-primary);
+  cursor: pointer;
+}
+
+.boxLink:hover span {
+  color: var(--hw-secondary);
+}
+
+.boxLinkIcon {
+  display: block;
+  position: absolute;
+  bottom: 1rem;
+}

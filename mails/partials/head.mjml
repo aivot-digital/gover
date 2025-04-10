@@ -1,0 +1,16 @@
+<mj-html-attributes>
+    <mj-selector path=".logo img">
+        <mj-html-attribute name="th:src">${base.config.createUrl('api/public/assets/', base.logoAssetKey, base.logoAssetName)}</mj-html-attribute>
+        <mj-html-attribute name="th:alt">${base.providerName}</mj-html-attribute>
+    </mj-selector>
+</mj-html-attributes>
+
+<mj-style>
+    .logo img {
+        max-width: 200px;
+        max-height: 100px;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 auto;
+    }
+</mj-style>

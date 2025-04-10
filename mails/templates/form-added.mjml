@@ -1,0 +1,42 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Benachrichtigung über die Erstellung eines neuen Formulars
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        es wurde ein neues Formular in Gover erstellt.
+                        <br/>
+                        <br/>
+                        Formular: <b th:text="${form.title}">Beispielformular</b>
+                        <br/>
+                        Version: <b th:text="${form.version}">1.2.3</b>
+                        <br/>
+                        <span>
+                            Entwickelnder Fachbereich:
+                            <b th:text="${developingDepartment.name}">—</b>
+                        </span>
+                        <br/>
+                        Angelegt durch: <b th:text="${triggeringUser.getFullName}">Max Mustermann</b>
+                    </p>
+
+                    <p>
+                        Sie können das Formular über den nachfolgenden Link aufrufen: <a th:href="${base.config.createUrl('/staff/forms/' + form.id)}" th:text="${base.config.createUrl('/staff/forms/' + form.id)}">Beispiel-Link</a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

@@ -1,0 +1,43 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Hinweis auf eine fehlgeschlagene Übertragung an eine Schnittstelle
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        die Übertragung an die hinterlegte Schnittstelle ist fehlgeschlagen.
+                        <br/>
+                        <br/>
+                        Antrag auf: <b th:text="${form.title}">Beispielformular</b> - Version
+                        <b th:text="${form.version}">1.0.0</b>
+                        <br/>
+                        Hinterlegte Schnittstelle: <b th:text="${destination.name}">Beispiel-Schnittstelle</b>
+                        <br/>
+                        Fehlermeldung: <b th:text="${submission.destinationResult}">Beispiel-Fehlermeldung</b>
+                        <br/>
+                        Zeitpunkt des Übertragungsfehlers: <b th:text="${#temporals.format(submission.destinationTimestamp, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
+                    </p>
+
+                    <p>
+                        Sie können den Antrag über den nachfolgenden Link aufrufen:
+                        <a th:href="${base.config.createUrl('/staff/submissions/' + submission.id)}"
+                           th:text="${base.config.createUrl('/staff/submissions/' + submission.id)}">Beispiel-Link
+                        </a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

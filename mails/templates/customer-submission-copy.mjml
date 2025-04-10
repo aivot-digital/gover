@@ -1,0 +1,34 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml" />
+
+        <mj-preview>
+            Ihre eingereichten Antragsdaten als PDF
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml" />
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "<b th:text="${form.getApplicationTitle}">Beispielformular</b>".
+                    </p>
+
+                    <p>
+                        Mit freundlichen Grüßen
+                        <br/>
+                        <b th:text="${base.providerName}">Beispielkommune</b>
+                        <br/>
+                        <b th:text="${department.name}">Beispiel-Fachbereich</b>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

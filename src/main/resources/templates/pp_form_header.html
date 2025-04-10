@@ -1,0 +1,7 @@
+<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.Form"*/-->
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+
+<div style="width: 100%; display: flex; align-items: flex-start; padding: 0 18px; color: #626262;">
+    <span style="font-size: 10px;" th:if="${ base.isCitizenPrint() }" th:text="${ form.getApplicationTitle() }"></span>
+    <span style="font-size: 10px;" th:unless="${ base.isCitizenPrint() }" th:text="${ form.getTitle() }"></span>
+</div>

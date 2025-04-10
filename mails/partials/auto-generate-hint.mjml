@@ -1,0 +1,10 @@
+<mj-section>
+    <mj-column>
+        <mj-text>
+            <p>
+                Diese E-Mail wurde automatisch generiert.
+                Bitte nicht darauf antworten.
+            </p>
+        </mj-text>
+    </mj-column>
+</mj-section>

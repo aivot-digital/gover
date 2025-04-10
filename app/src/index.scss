@@ -1,0 +1,282 @@
+body {
+  margin: 0;
+  font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Class to hide elements as an alternative to opacity, hidden, etc. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Fix position of step icon for summary */
+.MuiStepLabel-iconContainer .fa-circle-exclamation-check {
+  transform: translateX(3px);
+}
+
+.element-tree-item-icon .fa-circle-exclamation-check {
+  transform: translateX(1px);
+}
+
+.MuiStep-vertical.Mui-completed .MuiStepLabel-iconContainer svg {
+  color: #16191F;
+}
+
+.MuiStepContent-last {
+  position: relative;
+}
+
+.MuiStepContent-last::before {
+  content: '';
+  width: 1px;
+  background-color: #bdbdbd;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  position: absolute;
+}
+
+.Mui-disabled ~ .MuiStepContent-last::before {
+  display: none;
+}
+
+.MuiTypography-body2 > a,
+.MuiAccordionDetails-root a {
+  color: var(--hw-primary);
+  text-decoration: none;
+  position: relative;
+  transition: all 150ms ease-in-out;
+  z-index: 1;
+  padding: 2px 0;
+  display: inline-block;
+}
+
+.MuiTypography-body2 > a::before,
+.MuiAccordionDetails-root a::before {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.3);
+  transition: all 150ms ease-in-out;
+  z-index: 0;
+}
+
+.MuiTypography-body2 > a::after,
+.MuiAccordionDetails-root a::after {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #EEF2EE;
+  transition: all 150ms ease-in-out;
+  z-index: -1;
+}
+
+.MuiTypography-body2 > a:hover::after,
+.MuiAccordionDetails-root a:hover::after {
+  height: 100%;
+}
+
+.MuiTypography-body2 > a:hover,
+.MuiAccordionDetails-root a:hover {
+  color: var(--hw-primary-dark);
+}
+
+.MuiTypography-body2 > a:hover::before,
+.MuiAccordionDetails-root a:hover::before {
+  height: 1px;
+  background-color: var(--hw-primary);
+}
+
+/* Public Sans webfonts */
+
+/* public-sans-regular - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-regular.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-regular.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-regular.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-regular.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-regular.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-italic - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: italic;
+  font-weight: 400;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-italic.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-italic.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-italic.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-italic.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-italic.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-italic.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-500 - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 500;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-500.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-500.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-500italic - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: italic;
+  font-weight: 500;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-500italic.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-500italic.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500italic.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500italic.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500italic.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-500italic.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-600 - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 600;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-600.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-600.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-600italic - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: italic;
+  font-weight: 600;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-600italic.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-600italic.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600italic.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600italic.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600italic.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-600italic.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-700 - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-700.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-700.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-700italic - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: italic;
+  font-weight: 700;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-700italic.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-700italic.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700italic.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700italic.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700italic.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-700italic.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-800 - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 800;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-800.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-800.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+/* public-sans-800italic - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Public Sans';
+  font-style: italic;
+  font-weight: 800;
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-800italic.eot'); /* IE9 Compat Modes */
+  src: url('../public/assets/fonts/public-sans/public-sans-v14-latin-800italic.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800italic.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800italic.woff') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800italic.ttf') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+  url('../public/assets/fonts/public-sans/public-sans-v14-latin-800italic.svg#PublicSans') format('svg'); /* Legacy iOS */
+}
+
+.content-without-margin-on-childs {
+  & p:first-child {
+    margin-top: 0
+  }
+
+  & p:last-child {
+    margin-bottom: 0
+  }
+}
+
+#idp-login {
+   scroll-margin-top: 32px;
+ }
+
+/* respect prefers-reduced-motion globally and disable animations (https://css-tricks.com/revisiting-prefers-reduced-motion-the-reduced-motion-media-query/) */
+/* disabled due to lack of support of MUI, breaks some interface elements like loaders and confetti completely */
+/*@media screen and
+(prefers-reduced-motion: reduce),
+(update: slow) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}*/
+
+/* Disable smooth scrolling if user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

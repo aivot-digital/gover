@@ -1,0 +1,13 @@
+Hallo,
+
+es wurde ein Formular in Gover veröffentlicht.
+Formular: [(${form.title})]
+Version: [(${form.version})]
+Entwickelnder Fachbereich: [(${developingDepartment != null ? developingDepartment.name : '—'})]
+[(${responsibleDepartment != null ? 'Zuständiger Fachbereich: ' + responsibleDepartment.name : ''})]
+[(${managingDepartment != null ? 'Bewirtschaftender Fachbereich: ' + managingDepartment.name : ''})]
+Veröffentlicht durch: [(${triggeringUser.getFullName})]
+
+Sie können das Formular über den nachfolgenden Link aufrufen: [(${base.config.createUrl('/' + form.slug + '/' + form.version)})]
+
+Diese E-Mail ist automatisch generiert. Bitte nicht antworten.
