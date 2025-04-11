@@ -58,6 +58,24 @@ public class IdentityProviderController {
                 .map(IdentityProviderListDTO::from);
     }
 
+    @PostMapping("prepare/")
+    public IdentityProviderDetailsDTO prepare(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @Valid @RequestBody IdentityProviderPrepareDTO requestDTO
+    ) throws ResponseException {
+        UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized)
+                .asAdmin()
+                .orElseThrow(ResponseException::forbidden);
+
+        var preparedEntity = identityProviderService
+                .prepare(requestDTO.endpoint());
+
+        return IdentityProviderDetailsDTO
+                .from(preparedEntity);
+    }
+
     @PostMapping("")
     public IdentityProviderDetailsDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -85,24 +103,6 @@ public class IdentityProviderController {
 
         return IdentityProviderDetailsDTO
                 .from(created);
-    }
-
-    @PostMapping("prepare/")
-    public IdentityProviderDetailsDTO prepare(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @Valid @RequestBody IdentityProviderPrepareDTO requestDTO
-    ) throws ResponseException {
-        UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asAdmin()
-                .orElseThrow(ResponseException::forbidden);
-
-        var preparedEntity = identityProviderService
-                .prepare(requestDTO.endpoint());
-
-        return IdentityProviderDetailsDTO
-                .from(preparedEntity);
     }
 
     @GetMapping("{key}/")
