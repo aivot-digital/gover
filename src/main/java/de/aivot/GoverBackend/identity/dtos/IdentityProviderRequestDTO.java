@@ -34,17 +34,15 @@ public record IdentityProviderRequestDTO(
         @NotNull(message = "Der Tokenendpunkt des Nutzerkontenanbieters ist erforderlich.")
         @Size(min = 1, max = 255, message = "Der Tokenendpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String tokenEndpoint,
-        @Nonnull
-        @NotNull(message = "Der Benutzerinfoendpunkt des Nutzerkontenanbieters ist erforderlich.")
+        @Nullable
         @Size(min = 1, max = 255, message = "Der Benutzerinfoendpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String userinfoEndpoint,
-        @Nonnull
+        @Nullable
         @Size(min = 1, max = 255, message = "Der End-Session-Endpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
-        @NotNull(message = "Der End-Session-Endpunkt des Nutzerkontenanbieters ist erforderlich.")
         String endSessionEndpoint,
         @Nonnull
         @NotNull(message = "Die Client-ID des Nutzerkontenanbieters ist erforderlich.")
-        @Size(min = 1, max = 32, message = "Die Client-ID des Nutzerkontenanbieters muss zwischen 1 und 32 Zeichen lang sein.")
+        @Size(min = 1, max = 128, message = "Die Client-ID des Nutzerkontenanbieters muss zwischen 1 und 32 Zeichen lang sein.")
         String clientId,
         @Nullable
         String clientSecretKey,

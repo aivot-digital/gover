@@ -42,7 +42,7 @@ public class IdentityProviderEntity {
     private String metadataIdentifier;
 
     @Nonnull
-    @Column(length = 16, columnDefinition = "smallint")
+    @Column(columnDefinition = "smallint")
     private IdentityProviderType type;
 
     @Nonnull
@@ -58,23 +58,23 @@ public class IdentityProviderEntity {
     private String iconAssetKey;
 
     @Nonnull
-    @Column(length = 64)
+    @Column(length = 255)
     private String authorizationEndpoint;
 
     @Nonnull
-    @Column(length = 64)
+    @Column(length = 255)
     private String tokenEndpoint;
 
-    @Nonnull
-    @Column(length = 64)
+    @Nullable
+    @Column(length = 255)
     private String userinfoEndpoint;
 
-    @Nonnull
-    @Column(length = 64)
+    @Nullable
+    @Column(length = 255)
     private String endSessionEndpoint;
 
     @Nonnull
-    @Column(length = 32)
+    @Column(length = 128)
     private String clientId;
 
     @Nullable
@@ -108,7 +108,7 @@ public class IdentityProviderEntity {
         if (object == null || getClass() != object.getClass()) return false;
 
         IdentityProviderEntity provider = (IdentityProviderEntity) object;
-        return key.equals(provider.key) && metadataIdentifier.equals(provider.metadataIdentifier) && type == provider.type && name.equals(provider.name) && description.equals(provider.description) && Objects.equals(iconAssetKey, provider.iconAssetKey) && authorizationEndpoint.equals(provider.authorizationEndpoint) && tokenEndpoint.equals(provider.tokenEndpoint) && userinfoEndpoint.equals(provider.userinfoEndpoint) && endSessionEndpoint.equals(provider.endSessionEndpoint) && clientId.equals(provider.clientId) && Objects.equals(clientSecretKey, provider.clientSecretKey) && Objects.equals(attributes, provider.attributes) && defaultScopes.equals(provider.defaultScopes) && additionalParams.equals(provider.additionalParams) && isEnabled.equals(provider.isEnabled) && isTestProvider.equals(provider.isTestProvider);
+        return key.equals(provider.key) && metadataIdentifier.equals(provider.metadataIdentifier) && type == provider.type && name.equals(provider.name) && description.equals(provider.description) && Objects.equals(iconAssetKey, provider.iconAssetKey) && authorizationEndpoint.equals(provider.authorizationEndpoint) && tokenEndpoint.equals(provider.tokenEndpoint) && Objects.equals(userinfoEndpoint, provider.userinfoEndpoint) && Objects.equals(endSessionEndpoint, provider.endSessionEndpoint) && clientId.equals(provider.clientId) && Objects.equals(clientSecretKey, provider.clientSecretKey) && Objects.equals(attributes, provider.attributes) && defaultScopes.equals(provider.defaultScopes) && additionalParams.equals(provider.additionalParams) && isEnabled.equals(provider.isEnabled) && isTestProvider.equals(provider.isTestProvider);
     }
 
     @Override
@@ -121,8 +121,8 @@ public class IdentityProviderEntity {
         result = 31 * result + Objects.hashCode(iconAssetKey);
         result = 31 * result + authorizationEndpoint.hashCode();
         result = 31 * result + tokenEndpoint.hashCode();
-        result = 31 * result + userinfoEndpoint.hashCode();
-        result = 31 * result + endSessionEndpoint.hashCode();
+        result = 31 * result + Objects.hashCode(userinfoEndpoint);
+        result = 31 * result + Objects.hashCode(endSessionEndpoint);
         result = 31 * result + clientId.hashCode();
         result = 31 * result + Objects.hashCode(clientSecretKey);
         result = 31 * result + Objects.hashCode(attributes);
@@ -217,22 +217,22 @@ public class IdentityProviderEntity {
         return this;
     }
 
-    @Nonnull
+    @Nullable
     public String getUserinfoEndpoint() {
         return userinfoEndpoint;
     }
 
-    public IdentityProviderEntity setUserinfoEndpoint(@Nonnull String userinfoEndpoint) {
+    public IdentityProviderEntity setUserinfoEndpoint(@Nullable String userinfoEndpoint) {
         this.userinfoEndpoint = userinfoEndpoint;
         return this;
     }
 
-    @Nonnull
+    @Nullable
     public String getEndSessionEndpoint() {
         return endSessionEndpoint;
     }
 
-    public IdentityProviderEntity setEndSessionEndpoint(@Nonnull String endSessionEndpoint) {
+    public IdentityProviderEntity setEndSessionEndpoint(@Nullable String endSessionEndpoint) {
         this.endSessionEndpoint = endSessionEndpoint;
         return this;
     }
