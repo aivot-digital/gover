@@ -23,6 +23,7 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
 })
 @EnableRedisRepositories(basePackages = {
         "de.aivot.GoverBackend.form.cache.repositories",
+        "de.aivot.GoverBackend.identity.cache.repositories",
         "de.aivot.GoverBackend.user.cache.repositories",
 })
 public class GoverBackendApplication {
