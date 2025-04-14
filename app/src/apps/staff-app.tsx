@@ -33,6 +33,7 @@ import * as monaco from 'monaco-editor';
 import {AppProvider} from '../providers/app-provider';
 import {UsersApiService} from '../modules/users/users-api-service';
 import {ExpirationTimer} from '../components/auth-token-debugger/auth-token-debugger';
+import {identityRoutes} from '../modules/identity/identity-routes';
 
 loader.config({monaco});
 
@@ -46,6 +47,7 @@ const router = createRouter(
                     .keys(staffAppRoutes)
                     .map((key) => staffAppRoutes[key]),
                 ...departmentsRoutes,
+                ...identityRoutes,
                 ...providerLinksRoutes,
                 ...secretsRoutes,
             ],

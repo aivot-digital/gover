@@ -34,6 +34,7 @@ import {useApi} from '../../hooks/use-api';
 import {AppConfig} from '../../app-config';
 import {ConfirmDialog} from "../../dialogs/confirm-dialog/confirm-dialog";
 import DriveFolderUploadOutlinedIcon from "@mui/icons-material/DriveFolderUploadOutlined";
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
@@ -224,6 +225,16 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                         label="Zahlungsdienstleister"
                         icon={PaymentOutlinedIcon}
                         to="/payment-providers"
+                    />
+                }
+
+                {
+                    props.mode === AppMode.Staff &&
+                    isUserAdmin &&
+                    <LinkMenuItem
+                        label="Nutzerkontenanbieter"
+                        icon={BadgeOutlinedIcon}
+                        to="/identity-providers"
                     />
                 }
 
