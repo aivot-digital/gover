@@ -9,5 +9,6 @@ export interface ElementMetadata {
     bayernIdMapping?: BayernIdAttribute;
     shIdMapping?: ShIdAttribute;
     mukMapping?: MukAttribute;
+    identityMappings?: Record<string, string>;
     userInfoIdentifier?: UserInfoIdentifier;
 }

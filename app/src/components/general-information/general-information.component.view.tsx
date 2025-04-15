@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Button, Divider, Grid, List, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
+import {Box, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
@@ -8,7 +8,6 @@ import {selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, sh
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import {useLocation} from 'react-router-dom';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
@@ -17,26 +16,14 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined';
-import UnfoldLessOutlinedIcon from '@mui/icons-material/UnfoldLessOutlined';
 import {useApi} from '../../hooks/use-api';
-import {BundIdInput} from '../bund-id-input/bund-id-input';
-import {BayernIdInput} from '../bayern-id-input/bayern-id-input';
-import {ShIdInput} from '../sh-id-input/sh-id-input';
-import {MukInput} from '../muk-input/muk-input';
-import {BayernIdAccessLevel} from '../../data/bayern-id-access-level';
-import {BundIdAccessLevel} from '../../data/bund-id-access-level';
-import {ShIdAccessLevel} from '../../data/sh-id-access-level';
-import {MukAccessLevel} from '../../data/muk-access-level';
-import {Form} from '../../models/entities/form';
-import {AnyElement} from '../../models/elements/any-element';
-import {IdCustomerDataKey} from '../id-input/id-input';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import ExpandableList from "../expandable-list/expandable-list";
+import ExpandableList from '../expandable-list/expandable-list';
+import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
 
 export const PrivacyUserInputKey = '__privacy__';
 
@@ -113,27 +100,36 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     }, [props.element, application?.responsibleDepartmentId, application?.managingDepartmentId]);
 
     const renderEligiblePerson = (person: string, index: number) => (
-        <ListItem disableGutters key={String(index) + person}>
-            <ListItemIcon sx={{ minWidth: '34px' }}>
-                <PersonOutlineOutlinedIcon sx={{ color: theme.palette.primary.main }} />
+        <ListItem
+            disableGutters
+            key={String(index) + person}
+        >
+            <ListItemIcon sx={{minWidth: '34px'}}>
+                <PersonOutlineOutlinedIcon sx={{color: theme.palette.primary.main}} />
             </ListItemIcon>
             <ListItemText>{person}</ListItemText>
         </ListItem>
     );
 
     const renderSupportingDocument = (document: string, index: number) => (
-        <ListItem disableGutters key={String(index) + document}>
-            <ListItemIcon sx={{ minWidth: '34px' }}>
-                <DescriptionOutlinedIcon sx={{ color: theme.palette.primary.main }} />
+        <ListItem
+            disableGutters
+            key={String(index) + document}
+        >
+            <ListItemIcon sx={{minWidth: '34px'}}>
+                <DescriptionOutlinedIcon sx={{color: theme.palette.primary.main}} />
             </ListItemIcon>
             <ListItemText>{document}</ListItemText>
         </ListItem>
     );
 
     const renderDocumentToAttach = (document: string, index: number) => (
-        <ListItem disableGutters key={String(index) + document}>
-            <ListItemIcon sx={{ minWidth: '34px' }}>
-                <UploadFileOutlinedIcon sx={{ color: theme.palette.primary.main }} />
+        <ListItem
+            disableGutters
+            key={String(index) + document}
+        >
+            <ListItemIcon sx={{minWidth: '34px'}}>
+                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}} />
             </ListItemIcon>
             <ListItemText>{document}</ListItemText>
         </ListItem>
@@ -176,19 +172,19 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 component={'h3'}
                                 variant="subtitle1"
                                 color="primary"
-                                sx={{ textTransform: 'uppercase' }}
+                                sx={{textTransform: 'uppercase'}}
                             >
                                 Zuständige Stelle
                             </Typography>
                             <Typography
-                                component={"pre"}
+                                component={'pre'}
                                 variant="body2"
                             >
                                 {[
                                     isStringNotNullOrEmpty(providerName) ? providerName : null,
                                     responsibleDepartment.name,
-                                    responsibleDepartment.address
-                                ].filter(Boolean).join("\n")}
+                                    responsibleDepartment.address,
+                                ].filter(Boolean).join('\n')}
                             </Typography>
                         </Box>
                     }
@@ -206,19 +202,19 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 component={'h3'}
                                 variant="subtitle1"
                                 color="primary"
-                                sx={{ textTransform: 'uppercase' }}
+                                sx={{textTransform: 'uppercase'}}
                             >
                                 Bewirtschaftende Stelle
                             </Typography>
                             <Typography
-                                component={"pre"}
+                                component={'pre'}
                                 variant="body2"
                             >
                                 {[
                                     isStringNotNullOrEmpty(providerName) ? providerName : null,
                                     managingDepartment.name,
-                                    managingDepartment.address
-                                ].filter(Boolean).join("\n")}
+                                    managingDepartment.address,
+                                ].filter(Boolean).join('\n')}
                             </Typography>
                         </Box>
                     }
@@ -277,7 +273,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 component={'h3'}
                                 variant="subtitle1"
                                 color="primary"
-                                sx={{ textTransform: 'uppercase' }}
+                                sx={{textTransform: 'uppercase'}}
                             >
                                 Antragsfristen
                             </Typography>
@@ -304,7 +300,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                                 component={'h3'}
                                 variant="subtitle1"
                                 color="primary"
-                                sx={{ textTransform: 'uppercase' }}
+                                sx={{textTransform: 'uppercase'}}
                             >
                                 Gebühren dieses Antrages
                             </Typography>
@@ -318,20 +314,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 </FadingPaper>
             }
 
-            {
-                application != null &&
-                (
-                    application.bayernIdEnabled ||
-                    application.bundIdEnabled ||
-                    application.shIdEnabled ||
-                    application.mukEnabled
-                ) &&
-                <NutzerkontoSelect
-                    form={application}
-                    allElements={props.allElements}
-                    isBusy={props.isBusy}
-                />
-            }
+            <IdentityButtonGroup
+                isBusy={props.isBusy}
+            />
 
             <Typography
                 component={'h4'}
@@ -388,126 +373,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         </>
     );
 }
-
-function getAccountHeadlineSuffix(form: Form){
-    if((form.bayernIdLevel != null || form.bundIdLevel != null || form.shIdLevel != null) && form.mukLevel != null){
-        return "Nutzer- oder Unternehmens-Konto";
-    } else if(!form.mukLevel){
-        return "Nutzerkonto";
-    } else {
-        return "Unternehmenskonto";
-    }
-}
-
-function NutzerkontoSelect(props: { form: Form, allElements: AnyElement[], isBusy: boolean }) {
-    const error = useAppSelector(selectCustomerInputError(IdCustomerDataKey));
-    const accountHeadlineSuffix = getAccountHeadlineSuffix(props.form);
-    return (
-        <Box
-            id={"idp-login"}
-            sx={{
-                my: 6,
-            }}
-        >
-
-            {
-                (
-                    (props.form.bayernIdLevel != null && props.form.bayernIdLevel !== BayernIdAccessLevel.Optional) ||
-                    (props.form.bundIdLevel != null && props.form.bundIdLevel !== BundIdAccessLevel.Optional) ||
-                    (props.form.shIdLevel != null && props.form.shIdLevel !== ShIdAccessLevel.Optional) ||
-                    (props.form.mukLevel != null && props.form.mukLevel !== MukAccessLevel.Optional)
-                ) ? <div>
-                    <Typography
-                        component={'h4'}
-                        variant="h6"
-                        color="primary"
-                        sx={{
-                            mt: 4,
-                        }}
-                    >
-                        Verpflichtende Authentifizierung mit einem {accountHeadlineSuffix}
-                    </Typography>
-                    <Typography sx={{mt: 1, mb: 2, maxWidth: "620px"}}>
-                        Eine Authentifizierung mittels einem der nachfolgenden Konten ist verpflichtend. Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
-                    </Typography>
-                </div> : <div>
-                    <Typography
-                        component={'h4'}
-                        variant="h6"
-                        color="primary"
-                        sx={{
-                            mt: 4,
-                        }}
-                    >
-                        Optionale Authentifizierung mit einem {accountHeadlineSuffix}
-                    </Typography>
-                    <Typography sx={{mt: 1, mb: 2, maxWidth: "600px"}}>
-                        Eine Authentifizierung mittels der nachfolgenden Konten ist optional möglich. Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
-                    </Typography>
-                </div>
-            }
-
-            <Grid container>
-                <Grid
-                    item
-                    xs={12}
-                    lg={12}
-                >
-                    {
-                        props.form.bundIdEnabled &&
-                        <BundIdInput
-                            allElements={props.allElements}
-                            form={props.form}
-                            isBusy={props.isBusy}
-                        />
-                    }
-
-                    {
-                        props.form.bayernIdEnabled &&
-                        <BayernIdInput
-                            allElements={props.allElements}
-                            form={props.form}
-                            isBusy={props.isBusy}
-                        />
-                    }
-
-                    {
-                        props.form.shIdEnabled &&
-                        <ShIdInput
-                            allElements={props.allElements}
-                            form={props.form}
-                            isBusy={props.isBusy}
-                        />
-                    }
-
-                    {
-                        props.form.mukEnabled &&
-                        <MukInput
-                            allElements={props.allElements}
-                            form={props.form}
-                            isBusy={props.isBusy}
-                        />
-                    }
-                </Grid>
-            </Grid>
-
-            {
-                error != null &&
-                <Typography
-                    variant="caption"
-                    color="error"
-                    sx={{
-                        display: 'block',
-                        mt: 2,
-                    }}
-                >
-                    {error}
-                </Typography>
-            }
-        </Box>
-    );
-}
-
 
 interface FormattedTextWithDialogTagsProps {
     text: string;

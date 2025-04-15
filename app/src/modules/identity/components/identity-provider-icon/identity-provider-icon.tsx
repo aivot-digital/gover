@@ -2,28 +2,24 @@ import {ReactComponent as BayernIdLogo} from './system-icons/bayern-id-logo.svg'
 import {ReactComponent as BundIdLogo} from './system-icons/bund-id-logo.svg';
 import {ReactComponent as MukLogo} from './system-icons/muk-logo.svg';
 import {ReactComponent as ShIdLogo} from './system-icons/sh-id-logo.svg';
-import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {AssetsApiService} from '../../../assets/assets-api-service';
 import {useMemo} from 'react';
 
 interface IdentityProviderIconProps {
-    identityProvider: IdentityProviderDetailsDTO;
-
+    name: string;
+    type: IdentityProviderType;
+    iconAssetKey?: string | null;
 }
 
 export function IdentityProviderIcon(props: IdentityProviderIconProps) {
     const {
-        identityProvider,
-    } = props;
-
-    const {
         name,
         type,
         iconAssetKey,
-    } = identityProvider;
+    } = props;
 
-    const icon = useMemo(() => {
+    return useMemo(() => {
         switch (type) {
             case IdentityProviderType.BundID:
                 return <BundIdLogo
@@ -55,7 +51,5 @@ export function IdentityProviderIcon(props: IdentityProviderIconProps) {
                 />;
         }
     }, [type, name, iconAssetKey]);
-
-    return icon;
 }
 

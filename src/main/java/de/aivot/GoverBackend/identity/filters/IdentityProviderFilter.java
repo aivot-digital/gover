@@ -6,7 +6,10 @@ import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
+    private List<String> keys;
     private String name;
     private String iconAssetKey;
     private String clientSecretKey;
@@ -22,6 +25,7 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
     public Specification<IdentityProviderEntity> build() {
         return SpecificationBuilder
                 .create(IdentityProviderEntity.class)
+                .withInList("key", keys)
                 .withContains("name", name)
                 .withEquals("iconAssetKey", iconAssetKey)
                 .withEquals("clientSecretKey", clientSecretKey)
@@ -29,6 +33,15 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
                 .withEquals("isEnabled", isEnabled)
                 .withEquals("isTestProvider", isTestProvider)
                 .build();
+    }
+
+    public List<String> getKeys() {
+        return keys;
+    }
+
+    public IdentityProviderFilter setKeys(List<String> keys) {
+        this.keys = keys;
+        return this;
     }
 
     public String getName() {

@@ -433,7 +433,9 @@ export function IdentityProviderDetailsPageIndex() {
                     md={6}
                 >
                     <IdentityProviderIcon
-                        identityProvider={identityProvider}
+                        name={identityProvider.name}
+                        type={identityProvider.type}
+                        iconAssetKey={identityProvider.iconAssetKey}
                     />
                 </Grid>
 

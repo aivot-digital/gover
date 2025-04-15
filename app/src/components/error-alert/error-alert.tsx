@@ -7,12 +7,12 @@ import {flattenElements} from '../../utils/flatten-elements';
 import {Link, Typography} from '@mui/material';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {PrivacyUserInputKey} from '../general-information/general-information.component.view';
-import {IdCustomerDataKey} from '../id-input/id-input';
 import {SummaryAttachmentsTooLargeKey, SummaryUserInputKey} from '../summary/summary.component.view';
 import {SubmitHumanKey} from '../submit/submit.component.view';
 import {ElementType} from '../../data/element-type/element-type';
 import {CheckboxFieldElement} from '../../models/elements/form/input/checkbox-field-element';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 
 interface ErrorItem {
     element: AnyElement;
@@ -21,7 +21,7 @@ interface ErrorItem {
 
 const additionErrorKeys: Record<string, string> = {
     [PrivacyUserInputKey]: 'Datenschutzrechtliche Einwilligung',
-    [IdCustomerDataKey]: 'Nutzerkonto',
+    [IdentityCustomerInputKey]: 'Nutzerkonto',
     [SummaryUserInputKey]: 'Zusammenfassung',
     [SummaryAttachmentsTooLargeKey]: 'Hinzugefügte Anlagen',
     [SubmitHumanKey]: 'Verifizierung',

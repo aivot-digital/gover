@@ -9,6 +9,10 @@ import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.form.filters.FormFilter;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
+import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
+import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.dtos.MaxFileSizeDto;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
@@ -28,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collection;
 import java.util.Map;
 
 @RestController
@@ -37,18 +42,20 @@ public class CitizenFormController {
     private final PaymentProviderService paymentProviderService;
     private final FormService formService;
     private final DestinationService destinationService;
+    private final IdentityProviderService identityProviderService;
 
     @Autowired
     public CitizenFormController(
             FormPaymentService paymentService,
             PaymentProviderService paymentProviderService,
             FormService formService,
-            DestinationService destinationService
-    ) {
+            DestinationService destinationService,
+            IdentityProviderService identityProviderService) {
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
         this.formService = formService;
         this.destinationService = destinationService;
+        this.identityProviderService = identityProviderService;
     }
 
     @GetMapping("")
@@ -188,5 +195,30 @@ public class CitizenFormController {
                 .reduce(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal::add);
 
         return new FormCostCalculationResponseDTO(costs, paymentItems, paymentProviderDefinition.get().getProviderName());
+    }
+
+    @GetMapping("{formId}/identity-providers/")
+    public Page<IdentityDetailsDTO> getIdentityProviders(
+            @PathVariable Integer formId
+    ) throws ResponseException {
+        var form = formService
+                .retrieve(formId)
+                .orElseThrow(ResponseException::notFound);
+
+        var identityProviderKeys = form
+                .getIdentityProviders()
+                .stream()
+                .map(IdentityProviderLink::getIdentityProviderKey)
+                .toList();
+
+        var filter = new IdentityProviderFilter()
+                .setKeys(identityProviderKeys)
+                .setEnabled(true);
+
+        var identityProviders = identityProviderService
+                .list(Pageable.unpaged(), filter);
+
+        return identityProviders
+                .map(IdentityDetailsDTO::from);
     }
 }

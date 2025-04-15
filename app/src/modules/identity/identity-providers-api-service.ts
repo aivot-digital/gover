@@ -5,8 +5,10 @@ import {IdentityProviderListDTO} from './models/identity-provider-list-dto';
 import {IdentityProviderRequestDTO} from './models/identity-provider-request-dto';
 import {IdentityProviderType} from './enums/identity-provider-type';
 import {IdentityProviderInfo} from './models/identity-provider-info';
+import {IdentityData} from './models/identity-data';
 
 export interface IdentityProvidersFilter {
+    keys: string[];
     name: string;
     iconAssetKey: string;
     clientSecretKey: string;
@@ -48,16 +50,11 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
         });
     }
 
-    public static async getIdentityProviderInfo(key: string): Promise<IdentityProviderInfo> {
-        const res = await fetch(`/api/public/identity/${key}/info/`);
-        return await res.json();
-    }
-
     public static createLink(key: string, additionalScopes?: string): string {
         return '/api/public/identity/' + key + '/start/' + (additionalScopes != null ? '&additionalScopes=' + additionalScopes : '');
     }
 
-    public static async fetchIdentity(): Promise<Record<string, string>> {
+    public static async fetchIdentity(): Promise<IdentityData> {
         const res = await fetch('/api/public/identity/get/');
         return await res.json();
     }

@@ -18,6 +18,7 @@ import {FormCitizenListResponseDTO} from './dtos/form-citizen-list-response-dto'
 import {FormPublishChecklistItem} from './dtos/form-publish-checklist-item';
 import {FormType} from './enums/form-type';
 import {ElementApprovalStatus} from '../elements/enums/ElementApprovalStatus';
+import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
 
 interface FormFilters {
     id: number;
@@ -177,8 +178,13 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return await this.api.destroy<void>(`forms/${id}/lock/`);
     }
 
-    async getMaxFileSize(id: number) {
+    public async getMaxFileSize(id: number) {
         return await this.api.getPublic<{ maxFileSize: number }>(`forms/${id}/max-file-size/`);
+    }
+
+    public static async getIdentityProviders(id: number): Promise<Page<IdentityProviderInfo>> {
+        const res = await fetch(`/api/public/forms/${id}/identity-providers/`);
+        return await res.json();
     }
 
     public retrieveBySlugAndVersion(slug: string, version: string | undefined) {

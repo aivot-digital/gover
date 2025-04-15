@@ -9,6 +9,9 @@ import {FormState} from '../models/dtos/form-state';
 import {AnyElement} from '../models/elements/any-element';
 import {collectReferences, Reference} from '../utils/build-references';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../utils/flatten-elements';
+import {IdentityValue} from '../modules/identity/models/identity-value';
+import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
+import {prefillElements} from '../utils/prefill-elements';
 
 
 const initialState: {
@@ -40,7 +43,7 @@ const initialState: {
     // Errors for the customer input
     errors: CustomerInputErrors;
     // Record of disabled elements
-    disabled: Record<string, boolean>;
+    disabled: Record<string, boolean>; // TODO: Rename disabled to prefilled to make it clearer
     // Record of invisible elements
     visibilities: Record<string, boolean>;
     // Record of element overrides
@@ -276,6 +279,23 @@ const appSlice = createSlice({
             tmp.shift();
             state.derivationTriggerIdQueue = tmp;
         },
+
+        prefillElementsFromIdentityProvider: (state, action: PayloadAction<IdentityValue>) => {
+            if (state.loadedForm == null) {
+                return;
+            }
+
+            const {
+                input,
+                disabled,
+            } = prefillElements(state.loadedForm, action.payload);
+
+            state.inputs = {
+                ...state.inputs,
+                ...input,
+            };
+            state.disabled = disabled;
+        },
     },
 });
 
@@ -300,6 +320,7 @@ export const {
     setFormState,
     enqueueDerivationTriggerId,
     dequeueDerivationTriggerId,
+    prefillElementsFromIdentityProvider,
 } = appSlice.actions;
 
 export const selectLoadedForm = (state: RootState) => state.app.loadedForm;

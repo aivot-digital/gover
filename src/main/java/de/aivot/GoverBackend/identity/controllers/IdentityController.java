@@ -2,9 +2,8 @@ package de.aivot.GoverBackend.identity.controllers;
 
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
-import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
 import de.aivot.GoverBackend.identity.enums.IdentityResultState;
-import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
+import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
@@ -28,34 +27,19 @@ import java.util.Map;
 public class IdentityController {
     private static final String IDENTITY_COOKIE_NAME = "identity";
 
-    private final IdentityProviderRepository identityProviderRepository;
     private final GoverConfig goverConfig;
     private final IdentityCacheRepository identityCacheRepository;
     private final IdentityService identityService;
 
     @Autowired
     public IdentityController(
-            IdentityProviderRepository identityProviderRepository,
             GoverConfig goverConfig,
             IdentityCacheRepository identityCacheRepository,
             IdentityService identityService
     ) {
-        this.identityProviderRepository = identityProviderRepository;
         this.goverConfig = goverConfig;
         this.identityCacheRepository = identityCacheRepository;
         this.identityService = identityService;
-    }
-
-    @GetMapping("{key}/info/")
-    public IdentityDetailsDTO info(
-            @Nonnull @PathVariable String key
-    ) throws ResponseException {
-        var provider = identityProviderRepository
-                .findById(key)
-                .orElseThrow(ResponseException::notFound);
-
-        return IdentityDetailsDTO
-                .from(provider);
     }
 
     @GetMapping("{key}/start/")
@@ -119,7 +103,7 @@ public class IdentityController {
     }
 
     @GetMapping("get/")
-    public Map<String, String> get(
+    public IdentityData get(
             @Nullable @CookieValue(IDENTITY_COOKIE_NAME) String identityId
     ) throws ResponseException {
         if (identityId == null) {
@@ -132,8 +116,8 @@ public class IdentityController {
                 .orElseThrow(() -> ResponseException
                         .unauthorized("Sie haben sich bisher nicht angemeldet."));
 
-        return identityCacheEntity
-                .getIdentityData();
+        return IdentityData
+                .from(identityCacheEntity);
     }
 
     // region Utility methods

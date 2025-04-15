@@ -1,6 +1,6 @@
-import React, {type FormEvent, PropsWithChildren, useEffect, useMemo, useState} from 'react';
+import React, {type FormEvent, useEffect, useMemo, useState} from 'react';
 import {Form} from '../../../../models/entities/form';
-import {Box, Button, IconButton, TableCell, TableRow, Typography} from '@mui/material';
+import {Box, Button, IconButton, Typography} from '@mui/material';
 import {format, parseISO} from 'date-fns';
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -10,11 +10,9 @@ import {Api} from '../../../../hooks/use-api';
 import {SelectFieldComponentOption} from '../../../../components/select-field/select-field-component-option';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {getFullName} from '../../../../models/entities/user';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
-import {IdCustomerDataKey} from '../../../../components/id-input/id-input';
-import {Idp} from '../../../../data/idp';
+import {LegacySystemIdpKey} from '../../../../data/legacy-system-idp-key';
 import {Destination} from '../../../../modules/destination/models/destination';
 import ReplyOutlinedIcon from '@mui/icons-material/ReplyOutlined';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
@@ -23,7 +21,6 @@ import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurned
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import {StatusTable} from '../../../../components/status-table/status-table';
-import {IdCustomerData} from '../../../../components/id-input/id-customer-data';
 import {BayernIdAttribute} from '../../../../data/bayern-id-attributes';
 import {BundIdAttribute} from '../../../../data/bund-id-attributes';
 import {ShIdAttribute} from '../../../../data/sh-id-attributes';
@@ -42,20 +39,17 @@ import SentimentSatisfiedAltOutlinedIcon from '@mui/icons-material/SentimentSati
 import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
 import {PaymentTransactionResponseDTO} from '../../../../modules/payment/dtos/payment-transaction-response-dto';
 import {DepartmentMembershipsApiService} from '../../../../modules/departments/department-memberships-api-service';
-import {UsersApiService} from '../../../../modules/users/users-api-service';
 import {DestinationsApiService} from '../../../../modules/destination/destinations-api-service';
 import {SubmissionDetailsResponseDTO} from '../../../../modules/submissions/dtos/submission-details-response-dto';
 import {SubmissionsApiService} from '../../../../modules/submissions/submissions-api-service';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {FlagOutlined} from '@mui/icons-material';
 import {determineLabel} from '../../../../utils/submission-state';
-import {DepartmentMembership} from '../../../../modules/departments/models/department-membership';
-import {Page} from '../../../../models/dtos/page';
 import {resolveUserName} from '../../../../modules/users/utils/resolve-user-name';
-import {Simulate} from 'react-dom/test-utils';
-import error = Simulate.error;
 import {departmentMembershipResponseDTOasUser} from '../../../../modules/departments/dtos/department-membership-response-dto';
-import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {IdentityValue} from '../../../../modules/identity/models/identity-value';
+import {IdentityCustomerInputKey} from '../../../../modules/identity/constants/identity-customer-input-key';
 
 interface SubmissionEditPageGeneralTabProps {
     api: Api;
@@ -186,12 +180,12 @@ function createGeneralRows(form: Form, submission: SubmissionDetailsResponseDTO,
 
 function createAuthRows(props: SubmissionEditPageGeneralTabProps) {
     const idpLabelMap: Record<string, string> = {
-        [Idp.BayernId]: 'BayernID',
-        [Idp.BundId]: 'BundID',
-        [Idp.Muk]: 'Mein Unternehmenskonto (MUK)',
-        [Idp.ShId]: 'Servicekonto Schleswig-Holstein',
+        [LegacySystemIdpKey.BayernId]: 'BayernID',
+        [LegacySystemIdpKey.BundId]: 'BundID',
+        [LegacySystemIdpKey.Muk]: 'Mein Unternehmenskonto (MUK)',
+        [LegacySystemIdpKey.ShId]: 'Servicekonto Schleswig-Holstein',
     };
-    const idData: IdCustomerData | undefined = props.submission.customerInput[IdCustomerDataKey];
+    const idData: IdentityValue | undefined = props.submission.customerInput[IdentityCustomerInputKey];
 
     const rows = [];
 
@@ -209,7 +203,7 @@ function createAuthRows(props: SubmissionEditPageGeneralTabProps) {
         });
 
         switch (idData.idp) {
-            case Idp.BayernId:
+            case LegacySystemIdpKey.BayernId:
                 rows.push({
                     icon: <SubdirectoryArrowRightOutlinedIcon />,
                     label: 'Vertrauensniveau',
@@ -228,7 +222,7 @@ function createAuthRows(props: SubmissionEditPageGeneralTabProps) {
                     children: idData.userInfo[BayernIdAttribute.LegacyPostkorbHandle],
                 });
                 break;
-            case Idp.BundId:
+            case LegacySystemIdpKey.BundId:
                 rows.push({
                     icon: <SubdirectoryArrowRightOutlinedIcon />,
                     label: 'Vertrauensniveau',
@@ -247,7 +241,7 @@ function createAuthRows(props: SubmissionEditPageGeneralTabProps) {
                     children: idData.userInfo[BundIdAttribute.LegacyPostkorbHandle],
                 });
                 break;
-            case Idp.ShId:
+            case LegacySystemIdpKey.ShId:
                 rows.push({
                     icon: <SubdirectoryArrowRightOutlinedIcon />,
                     label: 'Authentifiziert als',
@@ -272,7 +266,7 @@ function createAuthRows(props: SubmissionEditPageGeneralTabProps) {
                     children: idData.userInfo[ShIdAttribute.DataportInboxId],
                 });
                 break;
-            case Idp.Muk:
+            case LegacySystemIdpKey.Muk:
                 rows.push({
                     icon: <SubdirectoryArrowRightOutlinedIcon />,
                     label: 'Vertrauensniveau',
@@ -410,9 +404,9 @@ export function SubmissionEditPageGeneralTab(props: SubmissionEditPageGeneralTab
 
     const submission = useMemo(() => {
         return editedSubmission ?? originalSubmission;
-    }, [editedSubmission, originalSubmission])
+    }, [editedSubmission, originalSubmission]);
 
-    const { hasChanged, dialog: changeBlockerDialog } = useChangeBlocker(originalSubmission, editedSubmission ?? originalSubmission);
+    const {hasChanged, dialog: changeBlockerDialog} = useChangeBlocker(originalSubmission, editedSubmission ?? originalSubmission);
 
     useEffect(() => {
         fetchAssigneeOptions(props)
@@ -521,7 +515,7 @@ export function SubmissionEditPageGeneralTab(props: SubmissionEditPageGeneralTab
                                 value={submission.assigneeId ?? undefined}
                                 onChange={(val) => {
                                     setEditedSubmission({
-                                        ...submission ,
+                                        ...submission,
                                         assigneeId: val,
                                     });
                                 }}

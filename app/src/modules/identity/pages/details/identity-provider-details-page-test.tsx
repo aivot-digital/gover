@@ -6,8 +6,8 @@ import {useSearchParams} from 'react-router-dom';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityResultState} from '../../enums/identity-result-state';
-
-const StateQueryParameter = 'state';
+import {IdentityStateQueryParam} from '../../constants/identity-state-query-param';
+import {AlertComponent} from '../../../../components/alert/alert-component';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
@@ -28,11 +28,12 @@ export function IdentityProviderDetailsPageTest() {
     }, [identityProvider]);
 
     useEffect(() => {
-        const stateStr = urlSearchParams.get(StateQueryParameter);
+        const stateStr = urlSearchParams.get(IdentityStateQueryParam);
         const state = stateStr != null ? parseInt(stateStr) : IdentityResultState.UnknownError;
 
         switch (state) {
             case IdentityResultState.Success:
+                setIdentityError(undefined);
                 IdentityProvidersApiService
                     .fetchIdentity()
                     .then(setIdentityData)
@@ -82,6 +83,15 @@ export function IdentityProviderDetailsPageTest() {
                     <Typography variant="h6">
                         Testergebnisse
                     </Typography>
+
+                    {
+                        identityError != null &&
+                        <AlertComponent
+                            color="error"
+                            title="Fehler"
+                            text={identityError}
+                        />
+                    }
 
                     <Table>
                         <TableHead>
