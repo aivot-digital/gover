@@ -1,17 +1,11 @@
-import {BayernIdAccessLevel} from './bayern-id-access-level';
-
 export enum ShIdAccessLevel {
-    Optional = 'STORK-QAA-Level-0',
-    Niedrig = 'STORK-QAA-Level-1',
-    Mittel = 'STORK-QAA-Level-3',
-    Hoch = 'STORK-QAA-Level-4',
+    Optional = 'level0',
+    Niedrig = 'level1',
+    Mittel = 'level3',
+    Hoch = 'level4',
 }
 
 export const ShIdAccessLevelOptions = [
-    {
-        value: ShIdAccessLevel.Optional,
-        label: 'Optional',
-    },
     {
         value: ShIdAccessLevel.Niedrig,
         label: 'Basisregistrierung (STORK-QAA-Level-1)',

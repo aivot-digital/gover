@@ -6,10 +6,13 @@ import de.aivot.GoverBackend.form.entities.FormWithMembership;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 
+import javax.annotation.Nonnull;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 public record FormDetailsResponseDTO(
         Integer id,
@@ -45,7 +48,9 @@ public record FormDetailsResponseDTO(
         Collection<PaymentProduct> products,
         String paymentPurpose,
         String paymentDescription,
-        String paymentProvider
+        String paymentProvider,
+        Boolean identityRequired,
+        List<IdentityProviderLink> identityProviders
 ) {
     public static FormDetailsResponseDTO fromEntity(Form form) {
         return new FormDetailsResponseDTO(
@@ -82,7 +87,9 @@ public record FormDetailsResponseDTO(
                 form.getProducts(),
                 form.getPaymentPurpose(),
                 form.getPaymentDescription(),
-                form.getPaymentProvider()
+                form.getPaymentProvider(),
+                form.getIdentityRequired(),
+                form.getIdentityProviders()
         );
     }
 
@@ -109,19 +116,21 @@ public record FormDetailsResponseDTO(
                 form.getUpdated(),
                 form.getCustomerAccessHours(),
                 form.getSubmissionDeletionWeeks(),
-                form.getBundIdEnabled(),
-                form.getBundIdLevel(),
-                form.getBayernIdEnabled(),
-                form.getBayernIdLevel(),
-                form.getShIdEnabled(),
-                form.getShIdLevel(),
-                form.getMukEnabled(),
-                form.getMukLevel(),
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
                 form.getPdfBodyTemplateKey(),
                 form.getProducts(),
                 form.getPaymentPurpose(),
                 form.getPaymentDescription(),
-                form.getPaymentProvider()
+                form.getPaymentProvider(),
+                form.getIdentityRequired(),
+                form.getIdentityProviders()
         );
     }
 }

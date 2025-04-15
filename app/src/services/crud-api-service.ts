@@ -20,6 +20,14 @@ export abstract class CrudApiService<Request, ListRes, PublicListRes, DetailsRes
         return await this.list(0, 999, undefined, undefined, filters);
     }
 
+    public async listAllOrdered(
+        sort?: keyof DetailsRes extends string ? keyof DetailsRes : never,
+        order?: SortOrder,
+        filters?: Partial<Filter>,
+    ) {
+        return await this.list(0, 999, sort, order, filters);
+    }
+
     public async list(
         page: number,
         limit: number,

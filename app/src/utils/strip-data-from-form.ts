@@ -36,6 +36,9 @@ export function stripDataFromForm(form: Form): Form {
 
     strippedForm.themeId = null;
 
+    strippedForm.identityRequired = false;
+    strippedForm.identityProviders = [];
+
     strippedForm.root = recursivelyStripTestProtocol(strippedForm.root);
 
     return strippedForm;

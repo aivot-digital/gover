@@ -7,9 +7,11 @@ import de.aivot.GoverBackend.enums.MukAccessLevel;
 import de.aivot.GoverBackend.enums.SchleswigHolsteinIdAccessLevel;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.List;
 
 public record FormCitizenDetailsResponseDTO(
         @Nonnull
@@ -55,7 +57,11 @@ public record FormCitizenDetailsResponseDTO(
         @Nonnull
         Boolean shIdEnabled,
         @Nullable
-        SchleswigHolsteinIdAccessLevel shIdLevel
+        SchleswigHolsteinIdAccessLevel shIdLevel,
+        @Nonnull
+        Boolean identityRequired,
+        @Nonnull
+        List<IdentityProviderLink> identityProviders
 
 ) {
     public static FormCitizenDetailsResponseDTO fromEntity(Form form) {
@@ -86,7 +92,9 @@ public record FormCitizenDetailsResponseDTO(
                 form.getMukEnabled(),
                 form.getMukLevel(),
                 form.getShIdEnabled(),
-                form.getShIdLevel()
+                form.getShIdLevel(),
+                form.getIdentityRequired(),
+                form.getIdentityProviders()
         );
     }
 }

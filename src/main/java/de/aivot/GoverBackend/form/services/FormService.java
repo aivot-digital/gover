@@ -14,6 +14,8 @@ import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
+import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -25,6 +27,7 @@ import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.web.Link;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -49,6 +52,7 @@ public class FormService implements EntityService<Form, Integer> {
     private final AssetService assetService;
     private final SubmissionService submissionService;
     private final SubmissionRepository submissionRepository;
+    private final IdentityProviderService identityProviderService;
 
     @Autowired
     public FormService(
@@ -60,7 +64,7 @@ public class FormService implements EntityService<Form, Integer> {
             SystemConfigService systemConfigService,
             AssetService assetService,
             SubmissionService submissionService,
-            SubmissionRepository submissionRepository) {
+            SubmissionRepository submissionRepository, IdentityProviderService identityProviderService) {
         this.repository = repository;
         this.destinationService = destinationService;
         this.departmentService = departmentService;
@@ -70,6 +74,7 @@ public class FormService implements EntityService<Form, Integer> {
         this.assetService = assetService;
         this.submissionService = submissionService;
         this.submissionRepository = submissionRepository;
+        this.identityProviderService = identityProviderService;
     }
 
     @Nonnull
@@ -146,6 +151,9 @@ public class FormService implements EntityService<Form, Integer> {
 
         existingForm.setMukEnabled(updatedForm.getMukEnabled());
         existingForm.setMukLevel(updatedForm.getMukLevel());
+
+        existingForm.setIdentityRequired(updatedForm.getIdentityRequired());
+        existingForm.setIdentityProviders(updatedForm.getIdentityProviders());
 
         cleanRelatedData(existingForm);
 
@@ -263,6 +271,20 @@ public class FormService implements EntityService<Form, Integer> {
             form.setMukLevel(null);
         }
 
+        // Remove all non existant identity providers from the list of linked identity providers
+        var cleanedIdentityProvider = new LinkedList<IdentityProviderLink>();
+        for (var link : form.getIdentityProviders()) {
+            if (identityProviderService.exists(link.getIdentityProviderKey())) {
+                cleanedIdentityProvider.add(link);
+            }
+        }
+        form.setIdentityProviders(cleanedIdentityProvider);
+
+        // Check if an identity is required but the list ist empty. Reset the requirement if this is the case
+        if (form.getIdentityRequired() && form.getIdentityProviders().isEmpty()) {
+            form.setIdentityRequired(false);
+        }
+
         return form;
     }
 
@@ -372,10 +394,10 @@ public class FormService implements EntityService<Form, Integer> {
                         .setLabel("Beinhaltet ausschließlich produktive Zahlungsdienstleister")
                         .setDone(
                                 existingForm.getPaymentProvider() == null ||
-                                        (
-                                                paymentProviderService.exists(existingForm.getPaymentProvider()) &&
-                                                        !paymentProviderService.isTestProvider(existingForm.getPaymentProvider()) // TODO: Mit einem Filter + Exists lösen statt zwei DB calls
-                                        )
+                                (
+                                        paymentProviderService.exists(existingForm.getPaymentProvider()) &&
+                                        !paymentProviderService.isTestProvider(existingForm.getPaymentProvider()) // TODO: Mit einem Filter + Exists lösen statt zwei DB calls
+                                )
                         )
         );
 

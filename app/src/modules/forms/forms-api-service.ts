@@ -104,6 +104,9 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
             paymentPurpose: undefined,
             paymentDescription: undefined,
             paymentProvider: undefined,
+
+            identityRequired: false,
+            identityProviders: [],
         };
     }
 

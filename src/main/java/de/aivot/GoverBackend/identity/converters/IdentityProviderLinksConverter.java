@@ -7,6 +7,7 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -42,7 +43,7 @@ public class IdentityProviderLinksConverter implements AttributeConverter<List<I
     @Override
     public String convertToDatabaseColumn(List<IdentityProviderLink> attributes) {
         if (attributes == null) {
-            return null;
+            return "[]";
         }
 
         var objectMapper = new ObjectMapper();
@@ -60,7 +61,7 @@ public class IdentityProviderLinksConverter implements AttributeConverter<List<I
     @Override
     public List<IdentityProviderLink> convertToEntityAttribute(String dbData) {
         if (dbData == null) {
-            return null;
+            return new LinkedList<>();
         }
 
         var objectMapper = new ObjectMapper()

@@ -7,6 +7,7 @@ import {MukAccessLevel} from '../../data/muk-access-level';
 import {PaymentProduct} from '../payment/payment-product';
 import {PaymentProvider} from '../../data/payment-provider';
 import {FormType} from '../../modules/forms/enums/form-type';
+import {IdentityProviderLink} from '../../modules/identity/models/identity-provider-link';
 
 
 export interface Form {
@@ -53,6 +54,9 @@ export interface Form {
     paymentPurpose?: string;
     paymentDescription?: string;
     paymentProvider?: string;
+
+    identityRequired: boolean;
+    identityProviders: IdentityProviderLink[];
 }
 
 export type FormListProjection = Omit<Form, 'root'>;
