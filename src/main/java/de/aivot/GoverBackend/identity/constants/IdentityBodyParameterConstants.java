@@ -10,6 +10,4 @@ public final class IdentityBodyParameterConstants {
     public static final String LOGOUT_ENDPOINT_CLIENT_ID = "client_id";
     public static final String LOGOUT_ENDPOINT_CLIENT_SECRET = "client_secret";
     public static final String LOGOUT_ENDPOINT_REFRESH_TOKEN = "refresh_token";
-
-
 }

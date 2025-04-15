@@ -2,13 +2,13 @@ package de.aivot.GoverBackend.identity.enums;
 
 import de.aivot.GoverBackend.lib.models.Identifiable;
 
-public enum IdentityOriginState implements Identifiable<Integer> {
+public enum IdentityResultState implements Identifiable<Integer> {
     Success(0),
     UnknownError(500);
 
     private final int key;
 
-    IdentityOriginState(int key) {
+    IdentityResultState(int key) {
         this.key = key;
     }
 
@@ -19,8 +19,8 @@ public enum IdentityOriginState implements Identifiable<Integer> {
 
     @Override
     public boolean matches(Object other) {
-        if (other instanceof IdentityOriginState) {
-            return this.key == ((IdentityOriginState) other).key;
+        if (other instanceof IdentityResultState) {
+            return this.key == ((IdentityResultState) other).key;
         }
         if (other instanceof Integer) {
             return this.key == (Integer) other;

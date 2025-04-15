@@ -4,8 +4,10 @@ import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../..
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {useSearchParams} from 'react-router-dom';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import {IdentityProvidersApiService} from '../../identity-providers-api-service';
+import {IdentityResultState} from '../../enums/identity-result-state';
 
-const SuccessSearchParam = 'success';
+const StateQueryParameter = 'state';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
@@ -15,29 +17,33 @@ export function IdentityProviderDetailsPageTest() {
     } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
 
     const [identityData, setIdentityData] = useState<any>();
+    const [identityError, setIdentityError] = useState<string>();
 
     const testLink = useMemo(() => {
         if (identityProvider == null) {
             return '#';
         }
 
-        const redirectLink = new URL(window.location.href);
-        redirectLink.searchParams.append(SuccessSearchParam, 'true');
-
-        return ''; // TODO: IdentityProvidersApiService.createLink(identityProvider.key, redirectLink.toString());
+        return IdentityProvidersApiService.createLink(identityProvider.key);
     }, [identityProvider]);
 
     useEffect(() => {
-        if (urlSearchParams.has(SuccessSearchParam)) {
-            /* TODO:
-            IdentityProvidersApiService
-                .fetchIdentity()
-                .then(setIdentityData)
-                .catch(err => {
-                    console.error(err);
-                });
+        const stateStr = urlSearchParams.get(StateQueryParameter);
+        const state = stateStr != null ? parseInt(stateStr) : IdentityResultState.UnknownError;
 
-             */
+        switch (state) {
+            case IdentityResultState.Success:
+                IdentityProvidersApiService
+                    .fetchIdentity()
+                    .then(setIdentityData)
+                    .catch(err => {
+                        console.error(err);
+                    });
+                break;
+            default:
+            case IdentityResultState.UnknownError:
+                setIdentityError('Unbekannter Fehler aufgetreten. Bitte versuchen Sie es erneut.');
+                break;
         }
     }, [urlSearchParams]);
 

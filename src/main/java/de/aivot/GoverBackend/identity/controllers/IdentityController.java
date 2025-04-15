@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.identity.controllers;
 
-import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
+import de.aivot.GoverBackend.identity.enums.IdentityResultState;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
 import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -21,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/identity/")
@@ -69,7 +69,7 @@ public class IdentityController {
                 .createRedirectURL(
                         key,
                         createCallbackURI(key),
-                        request.getHeader(HttpHeaders.ORIGIN),
+                        request.getHeader(HttpHeaders.REFERER),
                         additionalScopes
                 );
 
@@ -101,16 +101,21 @@ public class IdentityController {
                 .handleCallback(
                         key,
                         authorizationCode,
-                        createCallbackURI(key)
+                        createCallbackURI(key),
+                        origin
                 );
 
         var identityCookie = new Cookie(IDENTITY_COOKIE_NAME, identityData.getId());
         identityCookie.setPath("/");
         response.addCookie(identityCookie);
 
-        // TODO: Check origin
+        var redirectUrl = UriComponentsBuilder
+                .fromUriString(origin)
+                .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.Success.getKey())
+                .build()
+                .toString();
 
-        response.sendRedirect(origin);
+        response.sendRedirect(redirectUrl);
     }
 
     @GetMapping("get/")

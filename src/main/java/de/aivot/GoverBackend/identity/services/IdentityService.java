@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository
 import de.aivot.GoverBackend.identity.constants.IdentityBodyParameterConstants;
 import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
-import de.aivot.GoverBackend.identity.enums.IdentityOriginState;
+import de.aivot.GoverBackend.identity.enums.IdentityResultState;
 import de.aivot.GoverBackend.identity.models.IdentityAuthTokenData;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
@@ -62,31 +62,31 @@ public class IdentityService {
      *
      * <p>This method builds a URL that redirects the user to the identity provider's authorization
      * endpoint with the necessary query parameters, including client ID, response type, login flag,
-     * redirect URI, and scopes. It also validates the origin and combines default and additional scopes.</p>
+     * redirect URI, and scopes. It also validates the referer and combines default and additional scopes.</p>
      *
      * @param providerKey      The key of the identity provider. Can be <code>null</code>.
      * @param callbackBaseUrl  The base URL for the callback endpoint. Must not be <code>null</code>.
-     * @param origin           The origin of the request, typically from the "Origin" header. Can be <code>null</code>.
+     * @param referer          The referer of the request, typically from the "Referer" header. Can be <code>null</code>.
      * @param additionalScopes A list of additional scopes to include in the request. Can be <code>null</code>.
      * @return A {@link URI} representing the constructed redirect URL.
-     * @throws ResponseException If the provider key is invalid, the provider is not enabled, the origin is invalid,
+     * @throws ResponseException If the provider key is invalid, the provider is not enabled, the referer is invalid,
      *                           or any required configuration is missing.
      */
     @Nonnull
     public URI createRedirectURL(
             @Nullable String providerKey,
             @Nonnull URI callbackBaseUrl,
-            @Nullable String origin,
+            @Nullable String referer,
             @Nullable List<String> additionalScopes
     ) throws ResponseException {
         var provider = getIdentityProviderEntity(providerKey);
-        var resolvedOrigin = resolveOrigin(origin, goverConfig.getGoverHostname());
+        var resolvedReferer = resolveReferer(referer, goverConfig.getGoverHostname());
         var combinedScopes = getCombinedScopes(provider, additionalScopes);
 
         // Construct the redirect URL
         var redirectUrl = UriComponentsBuilder
                 .fromUri(callbackBaseUrl)
-                .queryParam(IdentityQueryParameterConstants.ORIGIN, resolvedOrigin.toString())
+                .queryParam(IdentityQueryParameterConstants.ORIGIN, resolvedReferer.toString()) // The origin is the origin of the first request resolved from the referer header
                 .build()
                 .toString();
 
@@ -128,7 +128,7 @@ public class IdentityService {
      *
      * @param providerKey       The key of the identity provider. Can be <code>null</code>.
      * @param authorizationCode The authorization code received from the identity provider. Must not be <code>null</code>.
-     * @param callbackUrl       The callback URL used during the authorization process. Must not be <code>null</code>.
+     * @param callbackBaseUrl       The callback URL used during the authorization process. Must not be <code>null</code>.
      * @return The {@link IdentityCacheEntity} containing the cached identity data.
      * @throws ResponseException If the authorization code is missing, the identity provider is invalid or not enabled,
      *                           the token cannot be retrieved, user information cannot be fetched, or logout fails.
@@ -137,7 +137,8 @@ public class IdentityService {
     public IdentityCacheEntity handleCallback(
             @Nullable String providerKey,
             @Nullable String authorizationCode,
-            @Nonnull URI callbackUrl
+            @Nonnull URI callbackBaseUrl,
+            @Nonnull String origin
     ) throws ResponseException {
         if (authorizationCode == null) {
             throw ResponseException
@@ -146,10 +147,17 @@ public class IdentityService {
 
         var provider = getIdentityProviderEntity(providerKey);
 
+        // Construct the redirect URL
+        var redirectUrl = UriComponentsBuilder
+                .fromUri(callbackBaseUrl)
+                .queryParam(IdentityQueryParameterConstants.ORIGIN, origin) // The origin is the origin of the first request resolved from the referer header
+                .build()
+                .toUri();
+
         var authToken = fetchAuthToken(
                 provider,
                 authorizationCode,
-                callbackUrl
+                redirectUrl
         );
 
         var userInfo = fetchUserInfo(
@@ -195,12 +203,12 @@ public class IdentityService {
             @Nonnull String error,
             @Nullable String errorDescription
     ) throws ResponseException {
-        var resolvedOrigin = resolveOrigin(origin, goverConfig.getGoverHostname());
+        var resolvedOrigin = resolveReferer(origin, goverConfig.getGoverHostname());
         return UriComponentsBuilder
                 .fromUri(resolvedOrigin)
                 .queryParam(IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, error)
                 .queryParam(IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, errorDescription)
-                .queryParam(IdentityQueryParameterConstants.ORIGIN_STATE_CODE, IdentityOriginState.UnknownError.getKey())
+                .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.UnknownError.getKey())
                 .build()
                 .toString();
     }
@@ -298,41 +306,41 @@ public class IdentityService {
     }
 
     /**
-     * Validates and resolves the origin of a request against the application's configured hostname.
+     * Validates and resolves the referer of a request against the application's configured hostname.
      *
-     * <p>This method ensures that the provided origin matches the application's hostname in terms of
-     * scheme, host, and port. If the origin is invalid or does not match, a {@link ResponseException} is thrown.</p>
+     * <p>This method ensures that the provided referer matches the application's hostname in terms of
+     * scheme, host, and port. If the referer is invalid or does not match, a {@link ResponseException} is thrown.</p>
      *
      * <p>The method performs the following steps:
      * <ul>
-     *   <li>Checks if the <code>origin</code> parameter is null and throws a {@link ResponseException} if it is missing.</li>
-     *   <li>Parses the <code>origin</code> string into a {@link URI} object, throwing a {@link ResponseException} if the format is invalid.</li>
+     *   <li>Checks if the <code>referer</code> parameter is null and throws a {@link ResponseException} if it is missing.</li>
+     *   <li>Parses the <code>referer</code> string into a {@link URI} object, throwing a {@link ResponseException} if the format is invalid.</li>
      *   <li>Parses the <code>hostname</code> string into a {@link URI} object, throwing a {@link ResponseException} if the format is invalid.</li>
-     *   <li>Compares the scheme, host, and port of the <code>origin</code> URI with the application's hostname URI.</li>
-     *   <li>Returns the validated <code>origin</code> URI if all checks pass.</li>
+     *   <li>Compares the scheme, host, and port of the <code>referer</code> URI with the application's hostname URI.</li>
+     *   <li>Returns the validated <code>referer</code> URI if all checks pass.</li>
      * </ul>
      * </p>
      *
-     * @param origin   The origin of the request, typically from the "Origin" header. Can be <code>null</code>.
+     * @param referer   The referer of the request, typically from the "Origin" header. Can be <code>null</code>.
      * @param hostname The application's configured hostname. Must not be <code>null</code>.
-     * @return A {@link URI} representing the validated origin.
-     * @throws ResponseException If the origin is missing, invalid, or does not match the application's hostname.
+     * @return A {@link URI} representing the validated referer.
+     * @throws ResponseException If the referer is missing, invalid, or does not match the application's hostname.
      */
-    private static URI resolveOrigin(@Nullable String origin, @Nonnull String hostname) throws ResponseException {
-        // Check if the request has an origin header
-        if (origin == null) {
+    private static URI resolveReferer(@Nullable String referer, @Nonnull String hostname) throws ResponseException {
+        // Check if the request has a referer header
+        if (referer == null) {
             throw ResponseException
-                    .badRequest("Es wurde kein Origin-Header übergeben.");
+                    .badRequest("Es wurde kein Referer-Header übergeben.");
         }
 
-        // Check if origin header is a valid URI
-        URI originUri;
+        // Check if referer header is a valid URI
+        URI refererURI;
         try {
-            originUri = new URI(origin);
-            originUri.toURL();
+            refererURI = new URI(referer);
+            refererURI.toURL();
         } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
             throw ResponseException
-                    .badRequest("Der Origin-Header ist ungültig.");
+                    .badRequest("Der Referer-Header ist ungültig.");
         }
 
         // Get the gover hostname uri
@@ -345,21 +353,21 @@ public class IdentityService {
                     .internalServerError("Der Gover-Hostname ist ungültig.");
         }
 
-        // Check if the origin is allowed
-        if (!goverHostname.getScheme().equalsIgnoreCase(originUri.getScheme())) {
+        // Check if the referer is allowed
+        if (!goverHostname.getScheme().equalsIgnoreCase(refererURI.getScheme())) {
             throw ResponseException
-                    .badRequest("Das Protokoll des Origin-Headers ist ungültig.");
+                    .badRequest("Das Protokoll des Referer-Headers ist ungültig.");
         }
-        if (!goverHostname.getHost().equalsIgnoreCase(originUri.getHost())) {
+        if (!goverHostname.getHost().equalsIgnoreCase(refererURI.getHost())) {
             throw ResponseException
-                    .badRequest("Der Host des Origin-Headers ist ungültig.");
+                    .badRequest("Der Host des Referer-Headers ist ungültig.");
         }
-        if (goverHostname.getPort() != originUri.getPort()) {
+        if (goverHostname.getPort() != refererURI.getPort()) {
             throw ResponseException
-                    .badRequest("Der Port des Origin-Headers ist ungültig.");
+                    .badRequest("Der Port des Referer-Headers ist ungültig.");
         }
 
-        return originUri;
+        return refererURI;
     }
 
     /**
