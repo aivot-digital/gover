@@ -69,7 +69,7 @@ export function IdentityProviderDetailsPageForms() {
                             options.order,
                             {
                                 title: options.search,
-                                paymentProvider: item.key,
+                                identityProviderKey: item.key,
                             },
                         );
                 }}

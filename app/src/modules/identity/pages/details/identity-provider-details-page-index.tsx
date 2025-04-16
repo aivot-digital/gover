@@ -260,7 +260,7 @@ export function IdentityProviderDetailsPageIndex() {
         try {
             const relatedForms = await new FormsApiService(api)
                 .listAll({
-                    // identityProvider: identityProvider.key, TODO: Fix this check
+                    identityProviderKey: identityProvider.key,
                 });
 
             if (relatedForms.content.length > 0) {

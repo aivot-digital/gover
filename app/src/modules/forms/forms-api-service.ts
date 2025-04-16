@@ -37,16 +37,14 @@ interface FormFilters {
     managingDepartmentId: number;
     responsibleDepartmentId: number;
     themeId: number;
-    bundIdEnabled: boolean;
-    bayernIdEnabled: boolean;
-    mukEnabled: boolean;
-    shIdEnabled: boolean;
     pdfBodyTemplateKey: string;
     paymentProvider: string;
     userId: string;
     isDeveloper: boolean;
     isManager: boolean;
     isResponsible: boolean;
+    identityRequired: boolean;
+    identityProviderKey: string;
 }
 
 export type DerivationStepIdentifiers = string[] | ['NONE'] | ['ALL'];

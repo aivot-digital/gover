@@ -26,12 +26,10 @@ public class FormFilter implements Filter<Form> {
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
     private Integer themeId;
-    private Integer bundIdEnabled;
-    private Integer bayernIdEnabled;
-    private Integer mukEnabled;
-    private Integer shIdEnabled;
     private String pdfBodyTemplateKey;
     private String paymentProvider;
+    private Boolean identityRequired;
+    private String identityProviderKey;
 
     public static FormFilter create() {
         return new FormFilter();
@@ -58,12 +56,10 @@ public class FormFilter implements Filter<Form> {
                 .withEquals("managingDepartmentId", managingDepartmentId)
                 .withEquals("responsibleDepartmentId", responsibleDepartmentId)
                 .withEquals("themeId", themeId)
-                .withEquals("bundIdEnabled", bundIdEnabled)
-                .withEquals("bayernIdEnabled", bayernIdEnabled)
-                .withEquals("mukEnabled", mukEnabled)
-                .withEquals("shIdEnabled", shIdEnabled)
                 .withEquals("pdfBodyTemplateKey", pdfBodyTemplateKey)
                 .withEquals("paymentProvider", paymentProvider)
+                .withEquals("identityRequired", identityRequired)
+                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey)
                 .build();
     }
 
@@ -211,42 +207,6 @@ public class FormFilter implements Filter<Form> {
         return this;
     }
 
-    public Integer getBundIdEnabled() {
-        return bundIdEnabled;
-    }
-
-    public FormFilter setBundIdEnabled(Integer bundIdEnabled) {
-        this.bundIdEnabled = bundIdEnabled;
-        return this;
-    }
-
-    public Integer getBayernIdEnabled() {
-        return bayernIdEnabled;
-    }
-
-    public FormFilter setBayernIdEnabled(Integer bayernIdEnabled) {
-        this.bayernIdEnabled = bayernIdEnabled;
-        return this;
-    }
-
-    public Integer getMukEnabled() {
-        return mukEnabled;
-    }
-
-    public FormFilter setMukEnabled(Integer mukEnabled) {
-        this.mukEnabled = mukEnabled;
-        return this;
-    }
-
-    public Integer getShIdEnabled() {
-        return shIdEnabled;
-    }
-
-    public FormFilter setShIdEnabled(Integer shIdEnabled) {
-        this.shIdEnabled = shIdEnabled;
-        return this;
-    }
-
     public String getPdfBodyTemplateKey() {
         return pdfBodyTemplateKey;
     }
@@ -262,6 +222,24 @@ public class FormFilter implements Filter<Form> {
 
     public FormFilter setPaymentProvider(String paymentProvider) {
         this.paymentProvider = paymentProvider;
+        return this;
+    }
+
+    public Boolean getIdentityRequired() {
+        return identityRequired;
+    }
+
+    public FormFilter setIdentityRequired(Boolean identityRequired) {
+        this.identityRequired = identityRequired;
+        return this;
+    }
+
+    public String getIdentityProviderKey() {
+        return identityProviderKey;
+    }
+
+    public FormFilter setIdentityProviderKey(String identityProviderKey) {
+        this.identityProviderKey = identityProviderKey;
         return this;
     }
 }
