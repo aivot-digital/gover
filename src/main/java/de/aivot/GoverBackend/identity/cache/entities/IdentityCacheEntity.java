@@ -11,6 +11,7 @@ public class IdentityCacheEntity implements Serializable {
     @Id
     private String id;
     private String providerKey;
+    private String metadataIdentifier;
     private Map<String, String> identityData;
 
     // region Getters and Setters
@@ -30,6 +31,15 @@ public class IdentityCacheEntity implements Serializable {
 
     public IdentityCacheEntity setProviderKey(String providerKey) {
         this.providerKey = providerKey;
+        return this;
+    }
+
+    public String getMetadataIdentifier() {
+        return metadataIdentifier;
+    }
+
+    public IdentityCacheEntity setMetadataIdentifier(String metadataIdentifier) {
+        this.metadataIdentifier = metadataIdentifier;
         return this;
     }
 

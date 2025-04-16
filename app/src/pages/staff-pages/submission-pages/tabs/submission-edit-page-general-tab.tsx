@@ -199,10 +199,10 @@ function createAuthRows(props: SubmissionEditPageGeneralTabProps) {
         rows.push({
             icon: <CheckCircleOutlineOutlinedIcon color="success" />,
             label: 'Authentifizierung',
-            children: `Authentifiziert via ${idpLabelMap[idData.idp]}`,
+            children: `Authentifiziert via ${idpLabelMap[LegacySystemIdpKey.BayernId]}`, // TODO: Implement new idp system
         });
 
-        switch (idData.idp) {
+        switch (LegacySystemIdpKey.BayernId as string /*idData.idp*/) { // TODO: Implement new idp system
             case LegacySystemIdpKey.BayernId:
                 rows.push({
                     icon: <SubdirectoryArrowRightOutlinedIcon />,

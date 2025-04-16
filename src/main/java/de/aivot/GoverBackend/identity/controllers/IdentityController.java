@@ -20,12 +20,11 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/public/identity/")
 public class IdentityController {
-    private static final String IDENTITY_COOKIE_NAME = "identity";
+    public static final String IDENTITY_COOKIE_NAME = "identity";
 
     private final GoverConfig goverConfig;
     private final IdentityCacheRepository identityCacheRepository;
@@ -90,7 +89,7 @@ public class IdentityController {
                 );
 
         var identityCookie = new Cookie(IDENTITY_COOKIE_NAME, identityData.getId());
-        identityCookie.setPath("/");
+        identityCookie.setHttpOnly(true);
         response.addCookie(identityCookie);
 
         var redirectUrl = UriComponentsBuilder

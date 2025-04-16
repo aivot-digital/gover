@@ -78,6 +78,10 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.BAD_REQUEST, message);
     }
 
+    public static ResponseException badRequest(String message, String details) {
+        return new ResponseException(HttpStatus.BAD_REQUEST, message, details);
+    }
+
     public static ResponseException unauthorized() {
         return ResponseException.unauthorized("Sie sind nicht angemeldet. Bitte melden Sie sich an.");
     }

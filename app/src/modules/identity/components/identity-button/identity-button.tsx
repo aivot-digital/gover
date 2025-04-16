@@ -34,20 +34,7 @@ export function IdentityButton(props: IdentityButtonProps) {
         if (value == null) {
             return false;
         }
-
-        // For compatability reasons check if the idp is one of the legacy system idps
-        switch (value.idp) {
-            case LegacySystemIdpKey.BayernId:
-                return identityProviderInfo.type === IdentityProviderType.BayernID;
-            case LegacySystemIdpKey.BundId:
-                return identityProviderInfo.type === IdentityProviderType.BundID;
-            case LegacySystemIdpKey.ShId:
-                return identityProviderInfo.type === IdentityProviderType.SHID;
-            case LegacySystemIdpKey.Muk:
-                return identityProviderInfo.type === IdentityProviderType.MUK;
-            default:
-                return value.idp === identityProviderInfo.key;
-        }
+        return value.identityProviderKey === identityProviderInfo.key;
     }, [identityProviderInfo, value]);
 
     const successColorWithOpacity = useMemo(() => {

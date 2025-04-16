@@ -173,6 +173,7 @@ public class IdentityService {
         var identityEntity = new IdentityCacheEntity()
                 .setId(UUID.randomUUID().toString())
                 .setIdentityData(userInfo)
+                .setMetadataIdentifier(provider.getMetadataIdentifier())
                 .setProviderKey(provider.getKey());
 
         identityCacheRepository

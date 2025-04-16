@@ -27,17 +27,19 @@ import de.aivot.GoverBackend.lib.models.Identifiable;
  * @see Identifiable
  */
 public enum IdentityProviderType implements Identifiable<Integer> {
-    Custom(0),
-    BayernId(1),
-    BundId(2),
-    ShId(3),
-    MUK(4),
+    Custom(0, "custom"),
+    BayernId(1, "bayern_id"),
+    BundId(2, "bund_id"),
+    ShId(3, "sh_id"),
+    MUK(4, "muk"),
     ;
 
     private final Integer key;
+    private final String defaultMetadataIdentifier;
 
-    IdentityProviderType(Integer key) {
+    IdentityProviderType(Integer key, String defaultMetadataIdentifier) {
         this.key = key;
+        this.defaultMetadataIdentifier = defaultMetadataIdentifier;
     }
 
     @Override
@@ -55,5 +57,9 @@ public enum IdentityProviderType implements Identifiable<Integer> {
                 return false;
             }
         }
+    }
+
+    public String getDefaultMetadataIdentifier() {
+        return defaultMetadataIdentifier;
     }
 }

@@ -76,9 +76,10 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
         if (state === IdentityResultState.Success) {
             IdentityProvidersApiService
                 .fetchIdentity()
-                .then(({providerKey, attributes}) => {
+                .then(({providerKey, metadataIdentifier, attributes}) => {
                     dispatch(prefillElementsFromIdentityProvider({
-                        idp: providerKey,
+                        identityProviderKey: providerKey,
+                        metadataIdentifier: metadataIdentifier,
                         userInfo: attributes,
                     }));
                 })

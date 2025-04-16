@@ -285,14 +285,17 @@ const appSlice = createSlice({
                 return;
             }
 
-            const {
-                input,
-                disabled,
-            } = prefillElements(state.loadedForm, action.payload);
+            const prefilled = prefillElements(state.loadedForm, action.payload, state.inputs);
+            const disabled = Object.keys(prefilled).reduce((acc, key) => {
+                return {
+                    ...acc,
+                    [key]: true,
+                }
+            }, {});
 
             state.inputs = {
                 ...state.inputs,
-                ...input,
+                ...prefilled,
             };
             state.disabled = disabled;
         },

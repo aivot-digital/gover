@@ -1,4 +1,5 @@
 export interface IdentityValue {
-    userInfo: any;
-    idp: string;
+    userInfo: Record<string, string>;
+    identityProviderKey: string;
+    metadataIdentifier: string;
 }

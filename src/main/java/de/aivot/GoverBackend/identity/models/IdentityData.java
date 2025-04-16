@@ -9,11 +9,14 @@ public record IdentityData(
         @Nonnull
         String providerKey,
         @Nonnull
+        String metadataIdentifier,
+        @Nonnull
         Map<String, String> attributes
 ) {
     public static IdentityData from(IdentityCacheEntity entity) {
         return new IdentityData(
                 entity.getProviderKey(),
+                entity.getMetadataIdentifier(),
                 entity.getIdentityData()
         );
     }

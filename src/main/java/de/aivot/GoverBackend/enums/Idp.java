@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.elements.models.ElementMetadata;
 
 import java.util.Optional;
 
+// TODO: Remove
 public enum Idp implements Identifiable<String> {
     BAYERN_ID("bayern_id", "bayernIdMapping", "BayernID"),
     BUND_ID("bund_id", "bundIdMapping", "BundID"),
