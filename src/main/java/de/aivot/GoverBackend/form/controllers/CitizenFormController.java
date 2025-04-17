@@ -238,7 +238,7 @@ public class CitizenFormController {
 
         var filter = new IdentityProviderFilter()
                 .setKeys(identityProviderKeys)
-                .setEnabled(true);
+                .setIsEnabled(true);
 
         var pageable = Pageable
                 .unpaged(Sort.by(Sort.Direction.ASC, "name"));

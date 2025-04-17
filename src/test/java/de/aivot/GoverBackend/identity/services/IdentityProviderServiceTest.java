@@ -230,19 +230,24 @@ class IdentityProviderServiceTest {
     }
 
     @Test
-    void performUpdate_SystemIdentityProvider_ThrowsException() {
+    void performUpdate_SystemIdentityProvider_UpdatesEnabledFieldOnly() throws ResponseException {
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
         existingEntity.setKey("system-key");
         existingEntity.setType(IdentityProviderType.BundId);
+        existingEntity.setIsEnabled(false); // Initially disabled
 
         IdentityProviderEntity updatedEntity = new IdentityProviderEntity();
+        updatedEntity.setIsEnabled(true); // Attempt to enable the provider
 
-        ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityProviderService.performUpdate("id", updatedEntity, existingEntity)
-        );
+        when(identityProviderRepository.save(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertEquals("Der Nutzerkontenanbieter null (system-key) ist ein Systemanbieter und kann nicht bearbeitet werden.", exception.getMessage());
-        verify(identityProviderRepository, never()).save(any());
+        IdentityProviderEntity result = identityProviderService.performUpdate("id", updatedEntity, existingEntity);
+
+        assertEquals("system-key", result.getKey());
+        assertEquals(IdentityProviderType.BundId, result.getType());
+        assertTrue(result.getIsEnabled()); // Ensure the enabled field is updated
+        verify(identityProviderRepository, times(1)).save(result);
     }
 
     @Test

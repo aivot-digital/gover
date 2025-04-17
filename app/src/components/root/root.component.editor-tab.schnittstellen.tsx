@@ -23,6 +23,9 @@ import {BayernIdAccessLevel, BayernIdAccessLevelOptions} from '../../data/bayern
 import {BundIdAccessLevel, BundIdAccessLevelOptions} from '../../data/bund-id-access-level';
 import {ShIdAccessLevel, ShIdAccessLevelOptions} from '../../data/sh-id-access-level';
 import {IdentityProviderLink} from '../../modules/identity/models/identity-provider-link';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import NotInterestedOutlinedIcon from '@mui/icons-material/NotInterestedOutlined';
+import Tooltip from '@mui/material/Tooltip';
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const api = useApi();
@@ -234,7 +237,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                             <AlertComponent
                                 color="warning"
                                 title="Keine Nutzerkontenanbieter aktiviert"
-                                text="Bitte aktivieren Sie mindestens einen Nutzerkontenanbieter, um die Authentifizierung zu ermöglichen."
+                                text="Bitte aktivieren Sie mindestens einen Nutzerkontenanbieter, um die Authentifizierung zu ermöglichen. Diese Option wird andernfalls beim Speichern deaktiviert."
                             />
                         }
 
@@ -342,9 +345,44 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                     alignItems: 'center',
                 }}
             >
-                <Typography>
-                    {provider.name}
-                </Typography>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}
+                >
+                    <Typography>
+                        {provider.name}
+                    </Typography>
+
+                    {
+                        provider.isTestProvider &&
+                        <Tooltip
+                            title="Es handelt sich um einen Test-Nutzerkontenanbieter für z.B. ein Vorproduktionssystem."
+                            arrow={true}
+                        >
+                            <ScienceOutlinedIcon
+                                sx={{
+                                    ml: 1,
+                                }}
+                            />
+                        </Tooltip>
+                    }
+
+                    {
+                        !provider.isEnabled &&
+                        <Tooltip
+                            title="Es handelt sich um einen deaktivierte Nutzerkontenanbieter."
+                            arrow={true}
+                        >
+                            <NotInterestedOutlinedIcon
+                                sx={{
+                                    ml: 1,
+                                }}
+                            />
+                        </Tooltip>
+                    }
+                </Box>
 
                 <Box
                     sx={{
@@ -362,6 +400,12 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                         }}
                     />
                 </Box>
+            </Box>
+
+            <Box>
+                <Typography variant="caption">
+                    {provider.description}
+                </Typography>
             </Box>
 
             {

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 
 public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
+    private String key;
     private List<String> keys;
     private String name;
     private String iconAssetKey;
@@ -25,6 +26,7 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
     public Specification<IdentityProviderEntity> build() {
         return SpecificationBuilder
                 .create(IdentityProviderEntity.class)
+                .withEquals("key", key)
                 .withInList("key", keys)
                 .withContains("name", name)
                 .withEquals("iconAssetKey", iconAssetKey)
@@ -33,6 +35,15 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
                 .withEquals("isEnabled", isEnabled)
                 .withEquals("isTestProvider", isTestProvider)
                 .build();
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public IdentityProviderFilter setKey(String key) {
+        this.key = key;
+        return this;
     }
 
     public List<String> getKeys() {
@@ -80,20 +91,20 @@ public class IdentityProviderFilter implements Filter<IdentityProviderEntity> {
         return this;
     }
 
-    public Boolean getEnabled() {
+    public Boolean getIsEnabled() {
         return isEnabled;
     }
 
-    public IdentityProviderFilter setEnabled(Boolean enabled) {
+    public IdentityProviderFilter setIsEnabled(Boolean enabled) {
         isEnabled = enabled;
         return this;
     }
 
-    public Boolean getTestProvider() {
+    public Boolean getIsTestProvider() {
         return isTestProvider;
     }
 
-    public IdentityProviderFilter setTestProvider(Boolean testProvider) {
+    public IdentityProviderFilter setIsTestProvider(Boolean testProvider) {
         isTestProvider = testProvider;
         return this;
     }

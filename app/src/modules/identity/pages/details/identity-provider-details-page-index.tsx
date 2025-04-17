@@ -50,23 +50,19 @@ export const formSchema = yup.object({
         .trim()
         .min(1, 'Der Autorisierungsendpunkt ist ein Pflichtfeld.')
         .max(255, 'Der Autorisierungsendpunkt darf maximal 255 Zeichen lang sein.')
-        .url('Der Autorisierungsendpunkt muss eine gültige URL sein.')
         .required('Der Autorisierungsendpunkt ist ein Pflichtfeld.'),
     tokenEndpoint: yup.string()
         .trim()
         .min(1, 'Der Tokenendpunkt ist ein Pflichtfeld.')
         .max(255, 'Der Tokenendpunkt darf maximal 255 Zeichen lang sein.')
-        .url('Der Tokenendpunkt muss eine gültige URL sein.')
         .required('Der Tokenendpunkt ist ein Pflichtfeld.'),
     userinfoEndpoint: yup.string()
         .trim()
         .max(255, 'Der Userinfoendpunkt darf maximal 255 Zeichen lang sein.')
-        .url('Der Userinfoendpunkt muss eine gültige URL sein.')
         .nullable(),
     endSessionEndpoint: yup.string()
         .trim()
         .max(255, 'Der End-Session-Endpunkt darf maximal 255 Zeichen lang sein.')
-        .url('Der End-Session-Endpunkt muss eine gültige URL sein.')
         .nullable(),
     clientId: yup.string()
         .trim()
@@ -134,8 +130,12 @@ export function IdentityProviderDetailsPageIndex() {
     }, [api]);
 
     const inputsDisabled = useMemo(() => (
-        isBusy || identityProvider == null || identityProvider.type !== IdentityProviderType.Custom
+        isBusy || identityProvider == null
     ), [isBusy, identityProvider]);
+
+    const isSystemProvider = useMemo(() => (
+        identityProvider != null && identityProvider.type !== IdentityProviderType.Custom
+    ), [identityProvider]);
 
     if (identityProvider == null || assets == null || secrets == null) {
         return (
@@ -364,7 +364,7 @@ export function IdentityProviderDetailsPageIndex() {
                         value={identityProvider.name}
                         onChange={handleInputChange('name')}
                         onBlur={handleInputBlur('name')}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         error={errors.name}
                         hint="Name des Nutzerkontenanbieters. Sichtbar auch für Antragsteller:innen im Formular."
                     />
@@ -389,7 +389,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onChange={handleInputChange('description')}
                         onBlur={handleInputBlur('description')}
                         multiline={true}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         error={errors.description}
                         hint="Interne Beschreibung des Nutzerkontenanbieters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
                     />
@@ -416,7 +416,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 handleInputChange('iconAssetKey')(value);
                             }
                         }}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         options={
                             assets
                                 .map((secret) => ({
@@ -444,13 +444,13 @@ export function IdentityProviderDetailsPageIndex() {
                     xs={12}
                 >
                     <TextFieldComponent
-                        label="Host"
+                        label="Endpunkt zur Authorisierung"
                         placeholder="https://keycloak.example.com"
                         required
                         value={identityProvider.authorizationEndpoint}
                         onChange={handleInputChange('authorizationEndpoint')}
                         onBlur={handleInputBlur('authorizationEndpoint')}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         error={errors.authorizationEndpoint}
                         hint="Host unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
                     />
@@ -461,13 +461,13 @@ export function IdentityProviderDetailsPageIndex() {
                     xs={12}
                 >
                     <TextFieldComponent
-                        label="Realm"
+                        label="Endpunkt zum Erstellen des Tokens"
                         placeholder="z.B. master"
                         required
                         value={identityProvider.tokenEndpoint}
                         onChange={handleInputChange('tokenEndpoint')}
                         onBlur={handleInputBlur('tokenEndpoint')}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         error={errors.tokenEndpoint}
                         hint="Realm unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
                     />
@@ -478,7 +478,7 @@ export function IdentityProviderDetailsPageIndex() {
                     xs={12}
                 >
                     <TextFieldComponent
-                        label="Realm"
+                        label="Endpunkt für Informationen über die Nutzer:in"
                         placeholder="z.B. master"
                         required
                         value={identityProvider.userinfoEndpoint ?? undefined}
@@ -488,7 +488,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={val => {
                             handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
                         }}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         error={errors.userinfoEndpoint}
                         hint="Realm unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
                     />
@@ -499,7 +499,7 @@ export function IdentityProviderDetailsPageIndex() {
                     xs={12}
                 >
                     <TextFieldComponent
-                        label="Realm"
+                        label="Endpunkt zum Beenden der Session"
                         placeholder="z.B. master"
                         required
                         value={identityProvider.endSessionEndpoint ?? undefined}
@@ -509,9 +509,9 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={val => {
                             handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);
                         }}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         error={errors.endSessionEndpoint}
-                        hint="Realm unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
+                        hint="Sollte dieser Endpunkt nicht spezifiziert werden, kann sich die Nutzer:in mehrfach hintereinander authorisieren, ohne Anmeldedaten eingeben zu müssen. Dies ist besonders in Single-Sign-On Szenarien nützlich."
                     />
                 </Grid>
 
@@ -526,7 +526,7 @@ export function IdentityProviderDetailsPageIndex() {
                         value={identityProvider.clientId}
                         onChange={handleInputChange('clientId')}
                         onBlur={handleInputBlur('clientId')}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         error={errors.clientId}
                         hint="ID des Clients unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
                     />
@@ -547,7 +547,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 handleInputChange('clientSecretKey')(value);
                             }
                         }}
-                        disabled={inputsDisabled}
+                        disabled={inputsDisabled || isSystemProvider}
                         options={
                             secrets
                                 .map((secret) => ({
@@ -569,7 +569,7 @@ export function IdentityProviderDetailsPageIndex() {
                     handleInputChange('defaultScopes')(value ?? []);
                 }}
                 allowEmpty={true}
-                disabled={inputsDisabled}
+                disabled={inputsDisabled || isSystemProvider}
             />
 
             <TableFieldComponent2<IdentityAdditionalParameter>
@@ -579,13 +579,13 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'key',
                         label: 'Schlüssel',
                         type: 'string',
-                        disabled: inputsDisabled,
+                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'value',
                         label: 'Wert',
                         type: 'string',
-                        disabled: inputsDisabled,
+                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
                 createDefaultRow={() => ({key: '', value: ''})}
@@ -593,7 +593,7 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('additionalParams')(value ?? []);
                 }}
-                disabled={inputsDisabled}
+                disabled={inputsDisabled || isSystemProvider}
             />
 
             <TableFieldComponent2<IdentityAttributeMapping>
@@ -603,19 +603,19 @@ export function IdentityProviderDetailsPageIndex() {
                         key: 'label',
                         label: 'Titel',
                         type: 'string',
-                        disabled: inputsDisabled,
+                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'description',
                         label: 'Beschreibung',
                         type: 'string',
-                        disabled: inputsDisabled,
+                        disabled: inputsDisabled || isSystemProvider,
                     },
                     {
                         key: 'keyInData',
                         label: 'Feldname',
                         type: 'string',
-                        disabled: inputsDisabled,
+                        disabled: inputsDisabled || isSystemProvider,
                     },
                 ]}
                 hint="Geben Sie hier die Attributszuweisungen an, die für den Nutzerkontenanbieter gelten sollen."
@@ -624,7 +624,7 @@ export function IdentityProviderDetailsPageIndex() {
                 onChange={(value) => {
                     handleInputChange('attributes')(value ?? []);
                 }}
-                disabled={inputsDisabled}
+                disabled={inputsDisabled || isSystemProvider}
                 addTooltip="Attributszuweisung hinzufügen"
                 deleteTooltip="Attributszuweisung löschen"
                 noRowsPlaceholder="Keine Attributszuweisungen vorhanden"
@@ -650,7 +650,7 @@ export function IdentityProviderDetailsPageIndex() {
                 variant="switch"
                 error={errors.isTestProvider}
                 hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
-                disabled={inputsDisabled}
+                disabled={inputsDisabled || isSystemProvider}
             />
 
             <CheckboxFieldComponent
@@ -669,30 +669,30 @@ export function IdentityProviderDetailsPageIndex() {
                 value={identityProvider.metadataIdentifier}
                 onChange={handleInputChange('metadataIdentifier')}
                 onBlur={handleInputBlur('metadataIdentifier')}
-                disabled={inputsDisabled}
+                disabled={inputsDisabled || isSystemProvider}
                 error={errors.metadataIdentifier}
                 hint="Technisch"
             />
 
-            {
-                identityProvider.type === IdentityProviderType.Custom &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 2,
-                        gap: 2,
-                    }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 2,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
-                    <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
-                    >
-                        Speichern
-                    </Button>
+                    Speichern
+                </Button>
 
+                {
+                    !isSystemProvider &&
                     <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                         <Button
                             onClick={handleRefreshRelatedEntities}
@@ -704,24 +704,25 @@ export function IdentityProviderDetailsPageIndex() {
                         />
                         </Button>
                     </Tooltip>
+                }
 
-                    {
-                        isStringNotNullOrEmpty(identityProvider.key) &&
-                        <Button
-                            variant="outlined"
-                            onClick={checkAndHandleDelete}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-                </Box>
-            }
+                {
+                    isStringNotNullOrEmpty(identityProvider.key) &&
+                    !isSystemProvider &&
+                    <Button
+                        variant="outlined"
+                        onClick={checkAndHandleDelete}
+                        disabled={isBusy}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
+            </Box>
 
             {changeBlocker.dialog}
 

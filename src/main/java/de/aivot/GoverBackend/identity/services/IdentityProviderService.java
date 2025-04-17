@@ -257,18 +257,27 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
      *
      * <p>This method performs the following steps:</p>
      * <ul>
-     *     <li>Ensures that the identity provider being updated is of type {@link IdentityProviderType#Custom}.
-     *         If it is not, a {@link ResponseException} is thrown.</li>
-     *     <li>Preserves fixed values such as the key and type from the existing entity.</li>
-     *     <li>Validates and cleans up the {@code clientSecretKey} and {@code iconAssetKey} fields.</li>
+     *     <li>If the existing entity is not of type {@link IdentityProviderType#Custom}, only the
+     *         {@code isEnabled} field is updated. Other fields remain unchanged.</li>
+     *     <li>If the entity is of type {@link IdentityProviderType#Custom}, fixed fields such as
+     *         {@code key} and {@code type} are preserved from the existing entity.</li>
+     *     <li>Validates and cleans up the {@code clientSecretKey} and {@code iconAssetKey} fields
+     *         using helper methods.</li>
      *     <li>Saves the updated entity to the database using the {@link IdentityProviderRepository}.</li>
+     * </ul>
+     *
+     * <p>Exceptions are thrown in the following cases:</p>
+     * <ul>
+     *     <li>If the entity is not of type {@link IdentityProviderType#Custom} and an invalid update is attempted.</li>
+     *     <li>If any validation or cleanup operation fails.</li>
      * </ul>
      *
      * @param id             The ID of the entity being updated.
      * @param updatedEntity  The {@link IdentityProviderEntity} containing the updated values.
      * @param existingEntity The existing {@link IdentityProviderEntity} to be updated.
      * @return The updated and saved {@link IdentityProviderEntity}.
-     * @throws ResponseException If the entity is not of type {@link IdentityProviderType#Custom} or if an error occurs during the update process.
+     * @throws ResponseException If the entity is not of type {@link IdentityProviderType#Custom} or
+     *                           if an error occurs during the update process.
      */
     @Nonnull
     @Override
@@ -278,22 +287,22 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
             @Nonnull IdentityProviderEntity existingEntity
     ) throws ResponseException {
         if (existingEntity.getType() != IdentityProviderType.Custom) {
-            throw ResponseException.conflict(
-                    "Der Nutzerkontenanbieter %s (%s) ist ein Systemanbieter und kann nicht bearbeitet werden.",
-                    existingEntity.getName(),
-                    existingEntity.getKey()
-            );
+            // Copy only value allowed to modify for system providers
+            existingEntity.setIsEnabled(updatedEntity.getIsEnabled());
+
+            return identityProviderRepository
+                    .save(existingEntity);
+        } else {
+            // Copy fix values
+            updatedEntity.setKey(existingEntity.getKey());
+            updatedEntity.setType(existingEntity.getType());
+
+            cleanClientSecretKey(updatedEntity);
+            cleanIconAssetKey(updatedEntity);
+
+            return identityProviderRepository
+                    .save(updatedEntity);
         }
-
-        // Copy fix values
-        updatedEntity.setKey(existingEntity.getKey());
-        updatedEntity.setType(existingEntity.getType());
-
-        cleanClientSecretKey(updatedEntity);
-        cleanIconAssetKey(updatedEntity);
-
-        return identityProviderRepository
-                .save(updatedEntity);
     }
 
     /**

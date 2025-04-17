@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -27,7 +28,6 @@ import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.web.Link;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -388,18 +388,46 @@ public class FormService implements EntityService<Form, Integer> {
                         .setDone(existingForm.getCustomerAccessHours() != null && existingForm.getCustomerAccessHours() >= 0)
         );
 
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Beinhaltet ausschließlich produktive Zahlungsdienstleister")
-                        .setDone(
-                                existingForm.getPaymentProvider() == null ||
-                                (
-                                        paymentProviderService.exists(existingForm.getPaymentProvider()) &&
-                                        !paymentProviderService.isTestProvider(existingForm.getPaymentProvider()) // TODO: Mit einem Filter + Exists lösen statt zwei DB calls
-                                )
-                        )
-        );
+        if (StringUtils.isNotNullOrEmpty(existingForm.getPaymentProvider())) {
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet ausschließlich produktive Zahlungsdienstleister")
+                            .setDone(
+                                    paymentProviderService.exists(existingForm.getPaymentProvider()) &&
+                                    !paymentProviderService.isTestProvider(existingForm.getPaymentProvider()) // TODO: Mit einem Filter + Exists lösen statt zwei DB calls
+                            )
+            );
+        }
+
+        if (existingForm.getIdentityProviders() != null) {
+            var allLinkedIDPsProductive = existingForm
+                    .getIdentityProviders()
+                    .stream()
+                    .allMatch(idp -> (
+                            idp.getIdentityProviderKey() != null &&
+                            identityProviderService.exists(
+                                    new IdentityProviderFilter()
+                                            .setKey(idp.getIdentityProviderKey())
+                                            .setIsTestProvider(false)
+                                            .setIsEnabled(true)
+                            )
+                    ));
+
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet ausschließlich produktive Nutzerkontenanbieter")
+                            .setDone(allLinkedIDPsProductive)
+            );
+        } else if (existingForm.getIdentityRequired()) {
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet benötigte Nutzerkontenanbieter")
+                            .setDone(false)
+            );
+        }
 
         checklist.add(
                 FormPublishChecklistItem
@@ -413,27 +441,11 @@ public class FormService implements EntityService<Form, Integer> {
 
     @Nonnull
     public Form publish(@Nonnull Form existingForm) throws ResponseException {
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getBundIdEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBundIdSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das Nutzerkonto BundId nicht aktiviert ist");
-        }
+        var allChecklistItemsDone = getFormPublishChecklist(existingForm)
+                .stream()
+                .allMatch(FormPublishChecklistItem::getDone);
 
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getBayernIdEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBayernIdSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das Nutzerkonto BayernId nicht aktiviert ist");
-        }
-
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getShIdEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoSHIdSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das Servicekonto Schleswig-Holstein nicht aktiviert ist");
-        }
-
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getMukEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoMUKSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das MUK nicht aktiviert ist");
-        }
-
-        if (!getFormPublishChecklist(existingForm).stream().allMatch(FormPublishChecklistItem::getDone)) {
+        if (!allChecklistItemsDone) {
             throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da nicht alle Voraussetzungen erfüllt sind");
         }
 
