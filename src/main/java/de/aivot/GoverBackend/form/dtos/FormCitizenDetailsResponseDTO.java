@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.form.dtos;
 
+import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.enums.BayernIdAccessLevel;
 import de.aivot.GoverBackend.enums.BundIdAccessLevel;
 import de.aivot.GoverBackend.enums.MukAccessLevel;
 import de.aivot.GoverBackend.enums.SchleswigHolsteinIdAccessLevel;
 import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
 import javax.annotation.Nonnull;
@@ -64,11 +64,17 @@ public record FormCitizenDetailsResponseDTO(
         List<IdentityProviderLink> identityProviders
 
 ) {
-    public static FormCitizenDetailsResponseDTO fromEntity(Form form) {
+    public static FormCitizenDetailsResponseDTO fromEntity(Form form, boolean obfuscateSteps) {
         ElementStreamUtils
                 .applyAction(form.getRoot(), element -> {
-                        element.setTestProtocolSet(null);
+                    element.setTestProtocolSet(null);
                 });
+
+        if (obfuscateSteps) {
+            for (var step : form.getRoot().getChildren()) {
+                step.setChildren(List.of());
+            }
+        }
 
         return new FormCitizenDetailsResponseDTO(
                 form.getId(),

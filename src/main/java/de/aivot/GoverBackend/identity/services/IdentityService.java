@@ -138,7 +138,8 @@ public class IdentityService {
             @Nullable String providerKey,
             @Nullable String authorizationCode,
             @Nonnull URI callbackBaseUrl,
-            @Nonnull String origin
+            @Nonnull String origin,
+            @Nullable String existingIdentityId
     ) throws ResponseException {
         if (authorizationCode == null) {
             throw ResponseException
@@ -170,8 +171,13 @@ public class IdentityService {
                 authToken
         );
 
+        var identityId = existingIdentityId;
+        if (identityId == null) {
+            identityId = UUID.randomUUID().toString();
+        }
+
         var identityEntity = new IdentityCacheEntity()
-                .setId(UUID.randomUUID().toString())
+                .setId(identityId)
                 .setIdentityData(userInfo)
                 .setMetadataIdentifier(provider.getMetadataIdentifier())
                 .setProviderKey(provider.getKey());

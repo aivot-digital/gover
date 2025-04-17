@@ -144,8 +144,7 @@ public class SubmitController {
             @PathVariable Integer applicationId,
             @RequestParam(value = "inputs", required = true) String inputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
-            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId,
-            @Nonnull HttpServletResponse response
+            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
     ) throws ResponseException {
         // Fetch form
         var form = formRepository

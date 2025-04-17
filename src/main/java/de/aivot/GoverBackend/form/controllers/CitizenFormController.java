@@ -1,14 +1,16 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.destination.services.DestinationService;
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCitizenListResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.form.filters.FormFilter;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
 import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
@@ -33,8 +35,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/public/forms/")
@@ -44,6 +46,7 @@ public class CitizenFormController {
     private final FormService formService;
     private final DestinationService destinationService;
     private final IdentityProviderService identityProviderService;
+    private final IdentityCacheRepository identityCacheRepository;
 
     @Autowired
     public CitizenFormController(
@@ -51,12 +54,13 @@ public class CitizenFormController {
             PaymentProviderService paymentProviderService,
             FormService formService,
             DestinationService destinationService,
-            IdentityProviderService identityProviderService) {
+            IdentityProviderService identityProviderService, IdentityCacheRepository identityCacheRepository) {
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
         this.formService = formService;
         this.destinationService = destinationService;
         this.identityProviderService = identityProviderService;
+        this.identityCacheRepository = identityCacheRepository;
     }
 
     @GetMapping("")
@@ -77,7 +81,8 @@ public class CitizenFormController {
     public FormCitizenDetailsResponseDTO retrieveSlugVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String slug,
-            @Nonnull @PathVariable String version
+            @Nonnull @PathVariable String version,
+            @Nullable @CookieValue(IdentityController.IDENTITY_COOKIE_NAME) String identityId
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -96,14 +101,24 @@ public class CitizenFormController {
                 .retrieve(filter.build())
                 .orElseThrow(ResponseException::notFound);
 
+        var identityCache = identityId == null ? Optional.empty() : identityCacheRepository
+                .findById(identityId);
+
+        var obfuscateSteps = (
+                form.getType() == FormType.Internal &&
+                form.getIdentityRequired() &&
+                identityCache.isEmpty()
+        );
+
         return FormCitizenDetailsResponseDTO
-                .fromEntity(form);
+                .fromEntity(form, obfuscateSteps);
     }
 
     @GetMapping("{slug}/")
     public FormCitizenDetailsResponseDTO retrievePublic(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String slug
+            @PathVariable String slug,
+            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -126,8 +141,17 @@ public class CitizenFormController {
                 .retrieve(filter.build())
                 .orElseThrow(ResponseException::notFound);
 
+        var identityCache = identityId == null ? Optional.empty() : identityCacheRepository
+                .findById(identityId);
+
+        var obfuscateSteps = (
+                form.getType() == FormType.Internal &&
+                form.getIdentityRequired() &&
+                identityCache.isEmpty()
+        );
+
         return FormCitizenDetailsResponseDTO
-                .fromEntity(form);
+                .fromEntity(form, obfuscateSteps);
     }
 
 

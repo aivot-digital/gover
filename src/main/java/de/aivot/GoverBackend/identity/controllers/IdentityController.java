@@ -24,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/public/identity/")
 public class IdentityController {
-    public static final String IDENTITY_COOKIE_NAME = "identity";
+    public static final String IDENTITY_COOKIE_NAME = "GOVER_IDENTITY_ID";
 
     private final GoverConfig goverConfig;
     private final IdentityCacheRepository identityCacheRepository;
@@ -67,6 +67,7 @@ public class IdentityController {
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_AUTHORIZATION_CODE, required = false) String authorizationCode,
+            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String identityId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         if (error != null) {
@@ -85,10 +86,12 @@ public class IdentityController {
                         key,
                         authorizationCode,
                         createCallbackURI(key),
-                        origin
+                        origin,
+                        identityId
                 );
 
         var identityCookie = new Cookie(IDENTITY_COOKIE_NAME, identityData.getId());
+        identityCookie.setPath("/");
         identityCookie.setHttpOnly(true);
         response.addCookie(identityCookie);
 
@@ -103,7 +106,7 @@ public class IdentityController {
 
     @GetMapping("get/")
     public IdentityData get(
-            @Nullable @CookieValue(IDENTITY_COOKIE_NAME) String identityId
+            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) String identityId
     ) throws ResponseException {
         if (identityId == null) {
             throw ResponseException

@@ -170,7 +170,7 @@ class IdentityServiceTest {
         URI callbackUrl = URI.create("https://example.com/callback");
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, null, callbackUrl, "https://example.com/origin")
+                identityService.handleCallback(providerKey, null, callbackUrl, "https://example.com/origin", null)
         );
 
         assertEquals("Es wurde kein Autorisierungscode übergeben.", exception.getMessage());
@@ -185,7 +185,7 @@ class IdentityServiceTest {
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.empty());
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
+                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null)
         );
 
         assertEquals("Der Nutzerkontenanbieter existiert nicht.", exception.getMessage());
@@ -203,7 +203,7 @@ class IdentityServiceTest {
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
+                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null)
         );
 
         assertEquals("Der Nutzerkontenanbieter ist nicht aktiviert.", exception.getMessage());
@@ -265,7 +265,7 @@ class IdentityServiceTest {
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
         IdentityCacheEntity result = identityService
-                .handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
+                .handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null);
 
         assertNotNull(result);
         assertEquals("John Doe", result.getIdentityData().get("name"));
@@ -299,7 +299,7 @@ class IdentityServiceTest {
         )).thenReturn(mockResponse);
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
+                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null)
         );
 
         assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (valid-provider): 400", exception.getMessage());
@@ -370,7 +370,7 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
-        IdentityCacheEntity result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
+        IdentityCacheEntity result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null);
 
         assertNotNull(result);
         assertEquals("John Doe", result.getIdentityData().get("name"));
@@ -446,7 +446,7 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
-        IdentityCacheEntity result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
+        IdentityCacheEntity result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null);
 
         assertNotNull(result);
         assertEquals("John Doe", result.getIdentityData().get("name"));
