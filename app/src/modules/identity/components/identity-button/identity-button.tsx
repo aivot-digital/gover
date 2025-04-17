@@ -27,7 +27,7 @@ export function IdentityButton(props: IdentityButtonProps) {
 
     const startUri = useMemo(() => {
         return IdentityProvidersApiService
-            .createLink(identityProviderLink.identityProviderKey);
+            .createLink(identityProviderLink.identityProviderKey, identityProviderLink.additionalScopes);
     }, [identityProviderLink]);
 
     const isSuccessful = useMemo(() => {
