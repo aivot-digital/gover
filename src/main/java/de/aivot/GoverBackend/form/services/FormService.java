@@ -2,16 +2,12 @@ package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
-import de.aivot.GoverBackend.core.configs.NutzerkontoBayernIdSystemConfigDefinition;
-import de.aivot.GoverBackend.core.configs.NutzerkontoBundIdSystemConfigDefinition;
-import de.aivot.GoverBackend.core.configs.NutzerkontoMUKSystemConfigDefinition;
-import de.aivot.GoverBackend.core.configs.NutzerkontoSHIdSystemConfigDefinition;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.elements.services.ElementApprovalService;
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
@@ -25,8 +21,8 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.submission.services.SubmissionService;
 import de.aivot.GoverBackend.theme.services.ThemeService;
-import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -140,18 +136,6 @@ public class FormService implements EntityService<Form, Integer> {
 
         existingForm.setPaymentProvider(updatedForm.getPaymentProvider());
 
-        existingForm.setBundIdEnabled(updatedForm.getBundIdEnabled());
-        existingForm.setBundIdLevel(updatedForm.getBundIdLevel());
-
-        existingForm.setBayernIdEnabled(updatedForm.getBayernIdEnabled());
-        existingForm.setBayernIdLevel(updatedForm.getBayernIdLevel());
-
-        existingForm.setShIdEnabled(updatedForm.getShIdEnabled());
-        existingForm.setShIdLevel(updatedForm.getShIdLevel());
-
-        existingForm.setMukEnabled(updatedForm.getMukEnabled());
-        existingForm.setMukLevel(updatedForm.getMukLevel());
-
         existingForm.setIdentityRequired(updatedForm.getIdentityRequired());
         existingForm.setIdentityProviders(updatedForm.getIdentityProviders());
 
@@ -247,34 +231,10 @@ public class FormService implements EntityService<Form, Integer> {
             form.setPaymentProvider(null);
         }
 
-        // Disable the BundId if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getBundIdEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBundIdSystemConfigDefinition.KEY).getValue())) {
-            form.setBundIdEnabled(false);
-            form.setBundIdLevel(null);
-        }
-
-        // Disable the BayernId if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getBayernIdEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBayernIdSystemConfigDefinition.KEY).getValue())) {
-            form.setBayernIdEnabled(false);
-            form.setBayernIdLevel(null);
-        }
-
-        // Disable the SHId if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getShIdEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoSHIdSystemConfigDefinition.KEY).getValue())) {
-            form.setShIdEnabled(false);
-            form.setShIdLevel(null);
-        }
-
-        // Disable the MUK if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getMukEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoMUKSystemConfigDefinition.KEY).getValue())) {
-            form.setMukEnabled(false);
-            form.setMukLevel(null);
-        }
-
-        // Remove all non existant identity providers from the list of linked identity providers
+        // Remove all non-existing identity providers from the list of linked identity providers
         var cleanedIdentityProvider = new LinkedList<IdentityProviderLink>();
         for (var link : form.getIdentityProviders()) {
-            if (identityProviderService.exists(link.getIdentityProviderKey())) {
+            if (link.getIdentityProviderKey() != null && identityProviderService.exists(link.getIdentityProviderKey())) {
                 cleanedIdentityProvider.add(link);
             }
         }

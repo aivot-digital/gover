@@ -65,18 +65,6 @@ public record FormRequestDTO(
         Integer customerAccessHours,
         Integer submissionDeletionWeeks,
 
-        Boolean bundIdEnabled,
-        BundIdAccessLevel bundIdLevel,
-
-        Boolean bayernIdEnabled,
-        BayernIdAccessLevel bayernIdLevel,
-
-        Boolean shIdEnabled,
-        SchleswigHolsteinIdAccessLevel shIdLevel,
-
-        Boolean mukEnabled,
-        MukAccessLevel mukLevel,
-
         @Length(max = 36, message = "uuid must be 36 characters long")
         String pdfBodyTemplateKey,
 
@@ -120,14 +108,6 @@ public record FormRequestDTO(
         form.setThemeId(themeId);
         form.setCustomerAccessHours(customerAccessHours);
         form.setSubmissionDeletionWeeks(submissionDeletionWeeks);
-        form.setBundIdEnabled(bundIdEnabled);
-        form.setBundIdLevel(bundIdLevel);
-        form.setBayernIdEnabled(bayernIdEnabled);
-        form.setBayernIdLevel(bayernIdLevel);
-        form.setShIdEnabled(shIdEnabled);
-        form.setShIdLevel(shIdLevel);
-        form.setMukEnabled(mukEnabled);
-        form.setMukLevel(mukLevel);
         form.setPdfBodyTemplateKey(pdfBodyTemplateKey);
         form.setProducts(products);
         form.setPaymentPurpose(paymentPurpose);

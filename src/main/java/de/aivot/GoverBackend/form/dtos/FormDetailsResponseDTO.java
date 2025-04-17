@@ -1,15 +1,13 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.enums.*;
+import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.entities.FormWithMembership;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
-import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 
-import javax.annotation.Nonnull;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -36,14 +34,6 @@ public record FormDetailsResponseDTO(
         LocalDateTime updated,
         Integer customerAccessHours,
         Integer submissionDeletionWeeks,
-        Boolean bundIdEnabled,
-        BundIdAccessLevel bundIdLevel,
-        Boolean bayernIdEnabled,
-        BayernIdAccessLevel bayernIdLevel,
-        Boolean shIdEnabled,
-        SchleswigHolsteinIdAccessLevel shIdLevel,
-        Boolean mukEnabled,
-        MukAccessLevel mukLevel,
         String pdfBodyTemplateKey,
         Collection<PaymentProduct> products,
         String paymentPurpose,
@@ -75,14 +65,6 @@ public record FormDetailsResponseDTO(
                 form.getUpdated(),
                 form.getCustomerAccessHours(),
                 form.getSubmissionDeletionWeeks(),
-                form.getBundIdEnabled(),
-                form.getBundIdLevel(),
-                form.getBayernIdEnabled(),
-                form.getBayernIdLevel(),
-                form.getShIdEnabled(),
-                form.getShIdLevel(),
-                form.getMukEnabled(),
-                form.getMukLevel(),
                 form.getPdfBodyTemplateKey(),
                 form.getProducts(),
                 form.getPaymentPurpose(),
@@ -116,14 +98,6 @@ public record FormDetailsResponseDTO(
                 form.getUpdated(),
                 form.getCustomerAccessHours(),
                 form.getSubmissionDeletionWeeks(),
-                false,
-                null,
-                false,
-                null,
-                false,
-                null,
-                false,
-                null,
                 form.getPdfBodyTemplateKey(),
                 form.getProducts(),
                 form.getPaymentPurpose(),

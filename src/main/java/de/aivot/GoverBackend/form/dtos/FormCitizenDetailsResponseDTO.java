@@ -2,10 +2,6 @@ package de.aivot.GoverBackend.form.dtos;
 
 import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
-import de.aivot.GoverBackend.enums.BayernIdAccessLevel;
-import de.aivot.GoverBackend.enums.BundIdAccessLevel;
-import de.aivot.GoverBackend.enums.MukAccessLevel;
-import de.aivot.GoverBackend.enums.SchleswigHolsteinIdAccessLevel;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
@@ -43,22 +39,6 @@ public record FormCitizenDetailsResponseDTO(
         @Nonnull
         Integer themeId,
         @Nonnull
-        Boolean bundIdEnabled,
-        @Nullable
-        BundIdAccessLevel bundIdLevel,
-        @Nonnull
-        Boolean bayernIdEnabled,
-        @Nullable
-        BayernIdAccessLevel bayernIdLevel,
-        @Nonnull
-        Boolean mukEnabled,
-        @Nullable
-        MukAccessLevel mukLevel,
-        @Nonnull
-        Boolean shIdEnabled,
-        @Nullable
-        SchleswigHolsteinIdAccessLevel shIdLevel,
-        @Nonnull
         Boolean identityRequired,
         @Nonnull
         List<IdentityProviderLink> identityProviders
@@ -91,14 +71,6 @@ public record FormCitizenDetailsResponseDTO(
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
                 form.getThemeId(),
-                form.getBundIdEnabled(),
-                form.getBundIdLevel(),
-                form.getBayernIdEnabled(),
-                form.getBayernIdLevel(),
-                form.getMukEnabled(),
-                form.getMukLevel(),
-                form.getShIdEnabled(),
-                form.getShIdLevel(),
                 form.getIdentityRequired(),
                 form.getIdentityProviders()
         );

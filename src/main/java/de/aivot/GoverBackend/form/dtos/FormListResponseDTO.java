@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.entities.FormWithMembership;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
@@ -22,10 +22,6 @@ public record FormListResponseDTO(
         Integer themeId,
         LocalDateTime created,
         LocalDateTime updated,
-        Boolean bundIdEnabled,
-        Boolean bayernIdEnabled,
-        Boolean shIdEnabled,
-        Boolean mukEnabled,
         String paymentProvider,
         Boolean identityRequired,
         List<IdentityProviderLink> identityProviders
@@ -44,10 +40,6 @@ public record FormListResponseDTO(
                 form.getThemeId(),
                 form.getCreated(),
                 form.getUpdated(),
-                form.getBundIdEnabled(),
-                form.getBayernIdEnabled(),
-                form.getShIdEnabled(),
-                form.getMukEnabled(),
                 form.getPaymentProvider(),
                 form.getIdentityRequired(),
                 form.getIdentityProviders()
@@ -68,10 +60,6 @@ public record FormListResponseDTO(
                 form.getThemeId(),
                 form.getCreated(),
                 form.getUpdated(),
-                false,
-                false,
-                false,
-                false,
                 form.getPaymentProvider(),
                 form.getIdentityRequired(),
                 form.getIdentityProviders()

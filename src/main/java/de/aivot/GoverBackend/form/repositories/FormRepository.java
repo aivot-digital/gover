@@ -23,16 +23,6 @@ public interface FormRepository extends JpaRepository<Form, Integer>, JpaSpecifi
 
     boolean existsByThemeId(Integer theme);
 
-    boolean existsByStatusAndBundIdEnabledIsTrue(FormStatus status);
-
-    boolean existsByStatusAndBayernIdEnabledIsTrue(FormStatus status);
-
-    boolean existsByStatusAndShIdEnabledIsTrue(FormStatus status);
-
-    boolean existsByStatusAndMukEnabledIsTrue(FormStatus status);
-
-    Collection<Form> findAllByStatusNotIn(Collection<FormStatus> status);
-
     @Query(value = """
             SELECT exists(
                 SELECT 1 FROM (

@@ -22,6 +22,7 @@ import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
+import de.aivot.GoverBackend.identity.models.IdentityValue;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.CustomerMailService;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
@@ -357,12 +358,15 @@ public class SubmitController {
             customerInput.put(element.getId(), mappedValue);
         }
 
+        // Create the identity value
+        var identityValue = new IdentityValue(
+                identityCacheEntity.getProviderKey(),
+                identityCacheEntity.getMetadataIdentifier(),
+                identityCacheEntity.getIdentityData()
+        );
+
         // Add the idp data to the customer input
-        customerInput.put(IdentityValueKey.IdCustomerInputKey, Map.of(
-                "providerKey", identityCacheEntity.getProviderKey(),
-                "metadataIdentifier", identityCacheEntity.getMetadataIdentifier(),
-                "attributes", identityCacheEntity.getIdentityData()
-        ));
+        customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValue.toMap());
     }
 
     @PostMapping("/api/public/send-copy/{submissionId}/")
@@ -495,34 +499,6 @@ public class SubmitController {
                 .findById(submission.getFormId());
 
         return form.map(submission::hasExternalAccessExpired).orElse(true);
-    }
-
-    private Optional<String> extractAccessToken(Map<String, Object> customerInput) {
-        var authData = getAuthData(customerInput);
-        if (authData.isEmpty()) {
-            return Optional.empty();
-        }
-
-        var accessTokenRaw = authData.get().get("access_token");
-        if (accessTokenRaw instanceof String accessToken) {
-            if (StringUtils.isNotNullOrEmpty(accessToken)) {
-                return Optional.of(accessToken);
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private Optional<Map<?, ?>> getAuthData(Map<String, Object> customerInput) {
-        var idRaw = customerInput.get(SpecialCustomerInputKeys.IdCustomerInputKey);
-        if (idRaw instanceof Map<?, ?> id) {
-            var authDataRaw = id.get("authData");
-            if (authDataRaw instanceof Map<?, ?> authData) {
-                return Optional.of(authData);
-            }
-        }
-
-        return Optional.empty();
     }
 
     private Optional<IdentityCacheEntity> extractIdp(String identityId) {

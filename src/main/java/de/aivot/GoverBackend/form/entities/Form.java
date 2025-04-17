@@ -98,30 +98,6 @@ public class Form {
 
     private Integer submissionDeletionWeeks;
 
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean bundIdEnabled = false;
-
-    private BundIdAccessLevel bundIdLevel;
-
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean bayernIdEnabled = false;
-
-    private BayernIdAccessLevel bayernIdLevel;
-
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean shIdEnabled = false;
-
-    private SchleswigHolsteinIdAccessLevel shIdLevel;
-
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean mukEnabled = false;
-
-    private MukAccessLevel mukLevel;
-
     @Column(length = 36)
     private String pdfBodyTemplateKey;
 
@@ -370,70 +346,6 @@ public class Form {
 
     public void setSubmissionDeletionWeeks(Integer submissionDeletionWeeks) {
         this.submissionDeletionWeeks = submissionDeletionWeeks;
-    }
-
-    public Boolean getBundIdEnabled() {
-        return bundIdEnabled;
-    }
-
-    public void setBundIdEnabled(Boolean bundIdEnabled) {
-        this.bundIdEnabled = bundIdEnabled;
-    }
-
-    public Boolean getBayernIdEnabled() {
-        return bayernIdEnabled;
-    }
-
-    public void setBayernIdEnabled(Boolean bayernIdEnabled) {
-        this.bayernIdEnabled = bayernIdEnabled;
-    }
-
-    public Boolean getMukEnabled() {
-        return mukEnabled;
-    }
-
-    public void setMukEnabled(Boolean mukEnabled) {
-        this.mukEnabled = mukEnabled;
-    }
-
-    public BayernIdAccessLevel getBayernIdLevel() {
-        return bayernIdLevel;
-    }
-
-    public void setBayernIdLevel(BayernIdAccessLevel bayernIdLevel) {
-        this.bayernIdLevel = bayernIdLevel;
-    }
-
-    public BundIdAccessLevel getBundIdLevel() {
-        return bundIdLevel;
-    }
-
-    public void setBundIdLevel(BundIdAccessLevel bundIdLevel) {
-        this.bundIdLevel = bundIdLevel;
-    }
-
-    public Boolean getShIdEnabled() {
-        return shIdEnabled;
-    }
-
-    public void setShIdEnabled(Boolean shIdEnabled) {
-        this.shIdEnabled = shIdEnabled;
-    }
-
-    public SchleswigHolsteinIdAccessLevel getShIdLevel() {
-        return shIdLevel;
-    }
-
-    public void setShIdLevel(SchleswigHolsteinIdAccessLevel shIdLevel) {
-        this.shIdLevel = shIdLevel;
-    }
-
-    public MukAccessLevel getMukLevel() {
-        return mukLevel;
-    }
-
-    public void setMukLevel(MukAccessLevel mukLevel) {
-        this.mukLevel = mukLevel;
     }
 
     public String getPdfBodyTemplateKey() {
