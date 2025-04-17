@@ -102,6 +102,7 @@ export function StringListInput2(props: StringListInputProps) {
                     label: 'Eintrag',
                     type: 'string',
                     key: 'value',
+                    disabled: disabled,
                 }]}
                 disabled={disabled}
                 createDefaultRow={() => ({
