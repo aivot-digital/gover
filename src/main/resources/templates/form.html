@@ -6,7 +6,8 @@
 <!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.DepartmentEntity"*/-->
 <!--/*@thymesVar id="elements" type="java.util.Collection<de.aivot.GoverBackend.services.pdf.PdfElement>"*/-->
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
-<!--/*@thymesVar id="authData" type="de.aivot.GoverBackend.pdf.models.FormPdfAuthData"*/-->
+<!--/*@thymesVar id="identityProvider" type="de.aivot.GoverBackend.identity.entities.IdentityProviderEntity"*/-->
+<!--/*@thymesVar id="identityData" type="de.aivot.GoverBackend.identity.models.IdentityValue"*/-->
 <!--/*@thymesVar id="attachments" type="java.util.List<de.aivot.GoverBackend.elements.models.form.input.FileUploadField>"*/-->
 <!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
@@ -740,6 +741,21 @@
                     <strong th:text="${ #numberformat.format(paymentTransaction.paymentRequest.getGrosAmount(), 2) } + ' Euro inkl. Steuern'"></strong>
                 </p>
             </div>
+        </section>
+
+        <!--/* ***********************************************************************
+        Bereich für die "Nutzerkonteninformationen".
+
+        Wird nur angezeigt, wenn eine Authentifizierung erfolgt ist
+        *********************************************************************** */-->
+        <section th:if="${ (base.isStaffPrint() || base.isDestinationPrint()) && identityProvider != null && identityData != null }">
+            <h2>Authentifizierungsinformationen</h2>
+            <p>
+                Angemeldet mit dem Nutzerkonto <strong th:text="${ identityProvider.getName() }">Name des Nutzerkontenanbieters</strong>.
+            </p>
+            <p th:if="${ identityData.userInfo().containsKey('trust_level_authentication') }">
+                Das Vertrauensniveau ist <strong th:text="${ identityData.userInfo().get('trust_level_authentication') }">STORQ</strong>.
+            </p>
         </section>
 
         <!--/* ***********************************************************************
