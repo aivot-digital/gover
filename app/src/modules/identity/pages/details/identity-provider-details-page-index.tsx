@@ -617,9 +617,20 @@ export function IdentityProviderDetailsPageIndex() {
                         type: 'string',
                         disabled: inputsDisabled || isSystemProvider,
                     },
+                    {
+                        key: 'displayAttribute',
+                        label: 'Anzeigeattribut',
+                        type: 'boolean',
+                        disabled: inputsDisabled || isSystemProvider,
+                    },
                 ]}
                 hint="Geben Sie hier die Attributszuweisungen an, die für den Nutzerkontenanbieter gelten sollen."
-                createDefaultRow={() => ({label: '', description: '', keyInData: ''})}
+                createDefaultRow={() => ({
+                    label: '',
+                    description: '',
+                    keyInData: '',
+                    displayAttribute: false,
+                })}
                 value={identityProvider.attributes}
                 onChange={(value) => {
                     handleInputChange('attributes')(value ?? []);

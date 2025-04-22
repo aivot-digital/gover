@@ -50,8 +50,8 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
         });
     }
 
-    public static createLink(key: string, additionalScopes?: string): string {
-        return '/api/public/identity/' + key + '/start/' + (additionalScopes != null ? '&additionalScopes=' + additionalScopes : '');
+    public static createLink(key: string, additionalScopes?: string[]): string {
+        return '/api/public/identity/' + key + '/start/' + (additionalScopes != null ? '?additionalScopes=' + additionalScopes.join('%20') : '');
     }
 
     public static async fetchIdentity(): Promise<IdentityData> {

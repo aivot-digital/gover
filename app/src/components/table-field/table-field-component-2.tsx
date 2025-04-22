@@ -135,7 +135,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             editable: !field.disabled,
             flex: 1,
             type: field.type,
-            renderCell: (params: GridRenderCellParams<any>) => {
+            /*renderCell: (params: GridRenderCellParams<any>) => {
                 if (field.renderCell != null) {
                     return field.renderCell(params.value);
                 }
@@ -146,6 +146,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
 
                 return params.value;
             },
+             */
         }));
     }, [fields]);
 

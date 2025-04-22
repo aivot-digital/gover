@@ -32,147 +32,176 @@ values (gen_random_uuid(),
             {
                 "label": "Identitätstyp (PersTyp)",
                 "description": "Identitätstyp (PersTyp)",
-                "keyInData": "elster_identitaetstyp"
+                "keyInData": "elster_identitaetstyp",
+                "displayAttribute": false
             },
             {
                 "label": "Firmenname",
                 "description": "Firmenname",
-                "keyInData": "org_company_name"
+                "keyInData": "org_company_name",
+                "displayAttribute": false
             },
             {
                 "label": "Rechtsform (RechtsformText)",
                 "description": "Rechtsform (RechtsformText)",
-                "keyInData": "org_legal_form_text"
+                "keyInData": "org_legal_form_text",
+                "displayAttribute": false
             },
             {
                 "label": "Rechtsform Code (Rechtsform)",
                 "description": "Rechtsform Code (Rechtsform)",
-                "keyInData": "org_legal_form_code"
+                "keyInData": "org_legal_form_code",
+                "displayAttribute": false
             },
             {
                 "label": "Tätigkeit (TaetigkeitText)",
                 "description": "Tätigkeit (TaetigkeitText)",
-                "keyInData": "org_occupation_text"
+                "keyInData": "org_occupation_text",
+                "displayAttribute": false
             },
             {
                 "label": "Tätigkeit Code (Taetigkeit)",
                 "description": "Tätigkeit Code (Taetigkeit)",
-                "keyInData": "org_occupation_code"
+                "keyInData": "org_occupation_code",
+                "displayAttribute": false
             },
             {
                 "label": "Registernummer",
                 "description": "Registernummer",
-                "keyInData": "org_register_number"
+                "keyInData": "org_register_number",
+                "displayAttribute": false
             },
             {
                 "label": "Registerart",
                 "description": "Registerart",
-                "keyInData": "org_register_type"
+                "keyInData": "org_register_type",
+                "displayAttribute": false
             },
             {
                 "label": "Registergericht",
                 "description": "Registergericht",
-                "keyInData": "org_register_court"
+                "keyInData": "org_register_court",
+                "displayAttribute": false
             },
             {
                 "label": "Handelnde Person: Namensvorsatz",
                 "description": "Handelnde Person: Namensvorsatz",
-                "keyInData": "salutation"
+                "keyInData": "salutation",
+                "displayAttribute": false
             },
             {
                 "label": "Handelnde Person: Akademischer Grad",
                 "description": "Handelnde Person: Akademischer Grad",
-                "keyInData": "title"
+                "keyInData": "title",
+                "displayAttribute": false
             },
             {
                 "label": "Handelnde Person: Vorname(n)",
                 "description": "Handelnde Person: Vorname(n)",
-                "keyInData": "given_name"
+                "keyInData": "given_name",
+                "displayAttribute": false
             },
             {
                 "label": "Handelnde Person: Nachname",
                 "description": "Handelnde Person: Nachname",
-                "keyInData": "family_name"
+                "keyInData": "family_name",
+                "displayAttribute": false
             },
             {
                 "label": "Handelnde Person: Vollständiger Name",
                 "description": "Handelnde Person: Vollständiger Name",
-                "keyInData": "name"
+                "keyInData": "name",
+                "displayAttribute": false
             },
             {
                 "label": "Handelnde Person: Namenszusatz",
                 "description": "Handelnde Person: Namenszusatz",
-                "keyInData": "zusatz_name"
+                "keyInData": "zusatz_name",
+                "displayAttribute": false
             },
             {
                 "label": "Handelnde Person: Geburtsdatum",
                 "description": "Handelnde Person: Geburtsdatum",
-                "keyInData": "date_of_birth"
+                "keyInData": "date_of_birth",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Typ",
                 "description": "Unternehmensanschrift: Typ",
-                "keyInData": "org_address_type"
+                "keyInData": "org_address_type",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Straße",
                 "description": "Unternehmensanschrift: Straße",
-                "keyInData": "org_street"
+                "keyInData": "org_street",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Hausnummer",
                 "description": "Unternehmensanschrift: Hausnummer",
-                "keyInData": "org_building"
+                "keyInData": "org_building",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postleitzahl",
                 "description": "Unternehmensanschrift: Postleitzahl",
-                "keyInData": "org_zip_code"
+                "keyInData": "org_zip_code",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Ort",
                 "description": "Unternehmensanschrift: Ort",
-                "keyInData": "org_city"
+                "keyInData": "org_city",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Ortsteil",
                 "description": "Unternehmensanschrift: Ortsteil",
-                "keyInData": "org_city_district"
+                "keyInData": "org_city_district",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Adressergänzung",
                 "description": "Unternehmensanschrift: Adressergänzung",
-                "keyInData": "org_address_addition"
+                "keyInData": "org_address_addition",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Land",
                 "description": "Unternehmensanschrift: Land",
-                "keyInData": "org_country"
+                "keyInData": "org_country",
+                "displayAttribute": false
             },
             {
                 "label": "ELSTER ID",
                 "description": "ELSTER ID",
-                "keyInData": "preferred_username"
+                "keyInData": "preferred_username",
+                "displayAttribute": true
             },
             {
                 "label": "Datenübermittler Pseudonym ID",
                 "description": "Datenübermittler Pseudonym ID",
-                "keyInData": "elster_datenuebermittler"
+                "keyInData": "elster_datenuebermittler",
+                "displayAttribute": true
             },
             {
                 "label": "Datenkranz Typ",
                 "description": "Datenkranz Typ",
-                "keyInData": "elster_datenkranz_typ"
+                "keyInData": "elster_datenkranz_typ",
+                "displayAttribute": true
             },
             {
                 "label": "Vertrauensniveau Identifizierung (ElsterVertrauensniveauIdentifizierung)",
                 "description": "Vertrauensniveau Identifizierung (ElsterVertrauensniveauIdentifizierung)",
-                "keyInData": "trust_level_identification"
+                "keyInData": "trust_level_identification",
+                "displayAttribute": false
             },
             {
                 "label": "Vertrauensniveau Authentifizierung (ElsterVertrauensniveauAuthentifizierung)",
                 "description": "Vertrauensniveau Authentifizierung (ElsterVertrauensniveauAuthentifizierung)",
-                "keyInData": "trust_level_authentication"
+                "keyInData": "trust_level_authentication",
+                "displayAttribute": true
             }
         ]',
         '[

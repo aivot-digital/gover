@@ -21,11 +21,7 @@ import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurned
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import {StatusTable} from '../../../../components/status-table/status-table';
-import {BayernIdAttribute} from '../../../../data/bayern-id-attributes';
-import {BundIdAttribute} from '../../../../data/bund-id-attributes';
-import {ShIdAttribute} from '../../../../data/sh-id-attributes';
 import SubdirectoryArrowRightOutlinedIcon from '@mui/icons-material/SubdirectoryArrowRightOutlined';
-import {MukAttribute} from '../../../../data/muk-attributes';
 import {XBezahldienstePaymentStatus, XBezahldienstePaymentStatusLabels} from '../../../../data/xbezahldienste-payment-status';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {Link} from 'react-router-dom';
@@ -50,6 +46,7 @@ import {departmentMembershipResponseDTOasUser} from '../../../../modules/departm
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {IdentityValue} from '../../../../modules/identity/models/identity-value';
 import {IdentityCustomerInputKey} from '../../../../modules/identity/constants/identity-customer-input-key';
+import {IdentitySummary} from '../../../../modules/identity/components/identity-summary/identity-summary';
 
 interface SubmissionEditPageGeneralTabProps {
     api: Api;
@@ -173,123 +170,6 @@ function createGeneralRows(form: Form, submission: SubmissionDetailsResponseDTO,
             label: 'Zahlungsstatus',
             children: XBezahldienstePaymentStatusLabels[transaction.paymentInformation.status],
         });
-    }
-
-    return rows;
-}
-
-function createAuthRows(props: SubmissionEditPageGeneralTabProps) {
-    const idpLabelMap: Record<string, string> = {
-        [LegacySystemIdpKey.BayernId]: 'BayernID',
-        [LegacySystemIdpKey.BundId]: 'BundID',
-        [LegacySystemIdpKey.Muk]: 'Mein Unternehmenskonto (MUK)',
-        [LegacySystemIdpKey.ShId]: 'Servicekonto Schleswig-Holstein',
-    };
-    const idData: IdentityValue | undefined = props.submission.customerInput[IdentityCustomerInputKey];
-
-    const rows = [];
-
-    if (idData == null) {
-        rows.push({
-            icon: <CancelOutlinedIcon color="error" />,
-            label: 'Authentifizierung',
-            children: 'Nicht authentifiziert',
-        });
-    } else {
-        rows.push({
-            icon: <CheckCircleOutlineOutlinedIcon color="success" />,
-            label: 'Authentifizierung',
-            children: `Authentifiziert via ${idpLabelMap[LegacySystemIdpKey.BayernId]}`, // TODO: Implement new idp system
-        });
-
-        switch (LegacySystemIdpKey.BayernId as string /*idData.idp*/) { // TODO: Implement new idp system
-            case LegacySystemIdpKey.BayernId:
-                rows.push({
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Vertrauensniveau',
-                    children: idData.userInfo[BayernIdAttribute.TrustLevelAuthentication],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Authentifizierungsmethodik',
-                    children: isStringNotNullOrEmpty(idData.userInfo[BayernIdAttribute.AssertionProvedBy]) ? idData.userInfo[BayernIdAttribute.AssertionProvedBy] : 'Nicht übermittelt',
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Nutzenden-ID',
-                    children: idData.userInfo[BayernIdAttribute.BPk2],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Postfach',
-                    children: idData.userInfo[BayernIdAttribute.LegacyPostkorbHandle],
-                });
-                break;
-            case LegacySystemIdpKey.BundId:
-                rows.push({
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Vertrauensniveau',
-                    children: idData.userInfo[BundIdAttribute.TrustLevelAuthentication],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Authentifizierungsmethodik',
-                    children: isStringNotNullOrEmpty(idData.userInfo[BundIdAttribute.AssertionProvedBy]) ? idData.userInfo[BundIdAttribute.AssertionProvedBy] : 'Nicht übermittelt',
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Nutzenden-ID',
-                    children: idData.userInfo[BundIdAttribute.BPk2],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Postfach',
-                    children: idData.userInfo[BundIdAttribute.LegacyPostkorbHandle],
-                });
-                break;
-            case LegacySystemIdpKey.ShId:
-                rows.push({
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Authentifiziert als',
-                    children: idData.userInfo[ShIdAttribute.DataportIdentitaetstyp],
-                });
-
-                if (idData.userInfo[ShIdAttribute.DataportIdentitaetstyp] === 'Employee') {
-                    rows.push({
-                        icon: <SubdirectoryArrowRightOutlinedIcon />,
-                        label: 'Unternehmens-ID',
-                        children: idData.userInfo[ShIdAttribute.ElsterDatenuebermittler],
-                    });
-                }
-
-                rows.push({
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Vertrauensniveau',
-                    children: idData.userInfo[ShIdAttribute.TrustLevelAuthentication],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Postfach',
-                    children: idData.userInfo[ShIdAttribute.DataportInboxId],
-                });
-                break;
-            case LegacySystemIdpKey.Muk:
-                rows.push({
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Vertrauensniveau',
-                    children: idData.userInfo[MukAttribute.TrustLevelAuthentication],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Datenkranztyp',
-                    children: idData.userInfo[MukAttribute.ElsterDatenkranzTyp],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Unternehmens-ID',
-                    children: idData.userInfo[MukAttribute.ElsterDatenuebermittler],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Zertifikats-ID',
-                    children: idData.userInfo[ShIdAttribute.PreferredUsername],
-                }, {
-                    icon: <SubdirectoryArrowRightOutlinedIcon />,
-                    label: 'Postfach',
-                    children: idData.userInfo[ShIdAttribute.PreferredUsername],
-                });
-                break;
-        }
     }
 
     return rows;
@@ -470,18 +350,9 @@ export function SubmissionEditPageGeneralTab(props: SubmissionEditPageGeneralTab
                 items={createGeneralRows(props.form, props.submission)}
             />
 
-            {
-                (
-                    props.form.bundIdEnabled ||
-                    props.form.bayernIdEnabled ||
-                    props.form.mukEnabled ||
-                    props.form.shIdEnabled
-                ) &&
-                <StatusTable
-                    label="Servicekonto"
-                    items={createAuthRows(props)}
-                />
-            }
+            <IdentitySummary
+                submission={props.submission}
+            />
 
             {
                 props.submission.destinationId == null &&

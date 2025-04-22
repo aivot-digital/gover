@@ -32,187 +32,224 @@ values (gen_random_uuid(),
             {
                 "label": "Identitätstyp",
                 "description": "Identitätstyp",
-                "keyInData": "dataport_identitaetstyp"
+                "keyInData": "dataport_identitaetstyp",
+                "displayAttribute": true
             },
             {
                 "label": "Anrede",
                 "description": "Anrede",
-                "keyInData": "salutation"
+                "keyInData": "salutation",
+                "displayAttribute": false
             },
             {
                 "label": "Akademischer Titel",
                 "description": "Akademischer Titel",
-                "keyInData": "title"
+                "keyInData": "title",
+                "displayAttribute": false
             },
             {
                 "label": "Vorname(n)",
                 "description": "Vorname(n)",
-                "keyInData": "given_name"
+                "keyInData": "given_name",
+                "displayAttribute": false
             },
             {
                 "label": "Nachname",
                 "description": "Nachname",
-                "keyInData": "family_name"
+                "keyInData": "family_name",
+                "displayAttribute": false
             },
             {
                 "label": "Vollständiger Name",
                 "description": "Vollständiger Name",
-                "keyInData": "name"
+                "keyInData": "name",
+                "displayAttribute": false
             },
             {
                 "label": "Geburtsdatum",
                 "description": "Geburtsdatum",
-                "keyInData": "date_of_birth"
+                "keyInData": "date_of_birth",
+                "displayAttribute": false
             },
             {
                 "label": "Geburtsort",
                 "description": "Geburtsort",
-                "keyInData": "place_of_birth"
+                "keyInData": "place_of_birth",
+                "displayAttribute": false
             },
             {
                 "label": "Geburtsname",
                 "description": "Geburtsname",
-                "keyInData": "birth_name"
+                "keyInData": "birth_name",
+                "displayAttribute": false
             },
             {
                 "label": "Geschlecht",
                 "description": "Geschlecht",
-                "keyInData": "gender"
+                "keyInData": "gender",
+                "displayAttribute": false
             },
             {
                 "label": "Staatsangehörigkeit",
                 "description": "Staatsangehörigkeit",
-                "keyInData": "nationality"
+                "keyInData": "nationality",
+                "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Straße und Hausnummer",
                 "description": "Straße und Hausnummer",
-                "keyInData": "street_and_building"
+                "keyInData": "street_and_building",
+                "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Postleitzahl",
                 "description": "Postleitzahl",
-                "keyInData": "zip_code"
+                "keyInData": "zip_code",
+                "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Ort",
                 "description": "Ort",
-                "keyInData": "city"
+                "keyInData": "city",
+                "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Land",
                 "description": "Land",
-                "keyInData": "country"
+                "keyInData": "country",
+                "displayAttribute": false
             },
             {
                 "label": "E-Mail-Adresse",
                 "description": "E-Mail-Adresse",
-                "keyInData": "email"
+                "keyInData": "email",
+                "displayAttribute": false
             },
             {
                 "label": "Telefonnummer",
                 "description": "Telefonnummer",
-                "keyInData": "telephone"
+                "keyInData": "telephone",
+                "displayAttribute": false
             },
             {
                 "label": "Mobiltelefonnummer",
                 "description": "Mobiltelefonnummer",
-                "keyInData": "mobilephone"
+                "keyInData": "mobilephone",
+                "displayAttribute": false
             },
             {
                 "label": "Favorisierte Sprache",
                 "description": "Favorisierte Sprache",
-                "keyInData": "preferred_language"
+                "keyInData": "preferred_language",
+                "displayAttribute": false
             },
             {
                 "label": "Firmenname",
                 "description": "Firmenname",
-                "keyInData": "org_company_name"
+                "keyInData": "org_company_name",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmenseinheit",
                 "description": "Unternehmenseinheit",
-                "keyInData": "org_company_unit"
+                "keyInData": "org_company_unit",
+                "displayAttribute": false
             },
             {
                 "label": "Registernummer",
                 "description": "Registernummer",
-                "keyInData": "org_register_number"
+                "keyInData": "org_register_number",
+                "displayAttribute": false
             },
             {
                 "label": "Registergericht",
                 "description": "Registergericht",
-                "keyInData": "org_register_court"
+                "keyInData": "org_register_court",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmen: E-Mail-Adresse",
                 "description": "Unternehmen: E-Mail-Adresse",
-                "keyInData": "org_contact_mail"
+                "keyInData": "org_contact_mail",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmen: Telefonnummer",
                 "description": "Unternehmen: Telefonnummer",
-                "keyInData": "org_contact_phone"
+                "keyInData": "org_contact_phone",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Straße und Hausnummer",
                 "description": "Unternehmensanschrift: Straße und Hausnummer",
-                "keyInData": "org_street_and_building"
+                "keyInData": "org_street_and_building",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postleitzahl",
                 "description": "Unternehmensanschrift: Postleitzahl",
-                "keyInData": "org_zip_code"
+                "keyInData": "org_zip_code",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Ort",
                 "description": "Unternehmensanschrift: Ort",
-                "keyInData": "org_city"
+                "keyInData": "org_city",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Land",
                 "description": "Unternehmensanschrift: Land",
-                "keyInData": "org_country"
+                "keyInData": "org_country",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postfach-Nummer",
                 "description": "Unternehmensanschrift: Postfach-Nummer",
-                "keyInData": "org_postbox_number"
+                "keyInData": "org_postbox_number",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postfach-Postleitzahl",
                 "description": "Unternehmensanschrift: Postfach-Postleitzahl",
-                "keyInData": "org_postbox_zip_code"
+                "keyInData": "org_postbox_zip_code",
+                "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postfach-Land",
                 "description": "Unternehmensanschrift: Postfach-Land",
-                "keyInData": "org_postbox_country"
+                "keyInData": "org_postbox_country",
+                "displayAttribute": false
             },
             {
                 "label": "Datenübermittler Pseudonym ID",
                 "description": "Datenübermittler Pseudonym ID",
-                "keyInData": "elster_datenuebermittler"
+                "keyInData": "elster_datenuebermittler",
+                "displayAttribute": true
             },
             {
                 "label": "Vertrauensniveau",
                 "description": "Vertrauensniveau",
-                "keyInData": "trust_level_authentication"
+                "keyInData": "trust_level_authentication",
+                "displayAttribute": true
             },
             {
                 "label": "Servicekonto ID",
                 "description": "Servicekonto ID",
-                "keyInData": "preferred_username"
+                "keyInData": "preferred_username",
+                "displayAttribute": false
             },
             {
                 "label": "Postfach",
                 "description": "Postfach",
-                "keyInData": "dataport_inbox_id"
+                "keyInData": "dataport_inbox_id",
+                "displayAttribute": true
             },
             {
                 "label": "Servicekontotyp",
                 "description": "Servicekontotyp",
-                "keyInData": "dataport_servicekonto_type"
+                "keyInData": "dataport_servicekonto_type",
+                "displayAttribute": false
             }
         ]',
         '[

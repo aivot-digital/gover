@@ -46,18 +46,18 @@ public record IdentityValue(
                 var key = entry.getKey();
                 var value = entry.getValue();
 
-                if (!(key instanceof String)) {
-                    throw new IllegalArgumentException("userInfo key must be a String");
+                if (key instanceof String sKey) {
+                    if (value instanceof String sValue && StringUtils.isNotNullOrEmpty(sValue)) {
+                        mUserInfo.put(sKey, sValue);
+                    } else {
+                        mUserInfo.put(sKey, "Keine Angaben");
+                    }
+                } else {
+                    throw new IllegalArgumentException("userInfo key must be a String was " + key.getClass());
                 }
-
-                if (!(value instanceof String)) {
-                    throw new IllegalArgumentException("userInfo value must be a String");
-                }
-
-                mUserInfo.put((String) key, (String) value);
             }
         } else {
-            throw new IllegalArgumentException("userInfo must be a Map");
+            throw new IllegalArgumentException("userInfo must be a Map was " + userinfo.getClass());
         }
 
         return new IdentityValue(

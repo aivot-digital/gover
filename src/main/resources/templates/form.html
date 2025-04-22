@@ -753,9 +753,21 @@
             <p>
                 Angemeldet mit dem Nutzerkonto <strong th:text="${ identityProvider.getName() }">Name des Nutzerkontenanbieters</strong>.
             </p>
-            <p th:if="${ identityData.userInfo().containsKey('trust_level_authentication') }">
-                Das Vertrauensniveau ist <strong th:text="${ identityData.userInfo().get('trust_level_authentication') }">STORQ</strong>.
-            </p>
+            <ul>
+                <li
+                        th:each="attribute : ${ identityProvider.getAttributes() }"
+                        th:if="${ attribute.getDisplayAttribute() }"
+                >
+                    <span th:text="${ attribute.getLabel() }"></span>:
+                    <span
+                            th:text="${ identityData.userInfo().get(attribute.getKeyInData()) }"
+                            th:if="${ identityData.userInfo().get(attribute.getKeyInData()) != null }"
+                    ></span>
+                    <span
+                            th:if="${ identityData.userInfo().get(attribute.getKeyInData()) == null }"
+                    >Keine Angaben</span>
+                </li>
+            </ul>
         </section>
 
         <!--/* ***********************************************************************

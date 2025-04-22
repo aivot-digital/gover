@@ -85,18 +85,6 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
             customerAccessHours: 4,
             submissionDeletionWeeks: 4,
 
-            bundIdEnabled: false,
-            bundIdLevel: undefined,
-
-            bayernIdEnabled: false,
-            bayernIdLevel: undefined,
-
-            shIdEnabled: false,
-            shIdLevel: undefined,
-
-            mukEnabled: false,
-            mukLevel: undefined,
-
             pdfBodyTemplateKey: null,
 
             products: undefined,

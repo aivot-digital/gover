@@ -32,112 +32,134 @@ values (gen_random_uuid(),
             {
                 "label": "Anrede",
                 "description": "Anrede",
-                "keyInData": "salutation"
+                "keyInData": "salutation",
+                "displayAttribute": false
             },
             {
                 "label": "Akademischer Titel",
                 "description": "Akademischer Titel",
-                "keyInData": "title"
+                "keyInData": "title",
+                "displayAttribute": false
             },
             {
                 "label": "Vorname(n)",
                 "description": "Vorname(n)",
-                "keyInData": "given_name"
+                "keyInData": "given_name",
+                "displayAttribute": false
             },
             {
                 "label": "Nachname",
                 "description": "Nachname",
-                "keyInData": "family_name"
+                "keyInData": "family_name",
+                "displayAttribute": false
             },
             {
                 "label": "Vollständiger Name",
                 "description": "Vollständiger Name",
-                "keyInData": "name"
+                "keyInData": "name",
+                "displayAttribute": false
             },
             {
                 "label": "Geburtsdatum",
                 "description": "Geburtsdatum",
-                "keyInData": "date_of_birth"
+                "keyInData": "date_of_birth",
+                "displayAttribute": false
             },
             {
                 "label": "Geburtsort",
                 "description": "Geburtsort",
-                "keyInData": "place_of_birth"
+                "keyInData": "place_of_birth",
+                "displayAttribute": false
             },
             {
                 "label": "Geburtsname",
                 "description": "Geburtsname",
-                "keyInData": "birth_name"
+                "keyInData": "birth_name",
+                "displayAttribute": false
             },
             {
                 "label": "Staatsangehörigkeit",
                 "description": "Staatsangehörigkeit",
-                "keyInData": "nationality"
+                "keyInData": "nationality",
+                "displayAttribute": false
             },
             {
                 "label": "Straße und Hausnummer",
                 "description": "Straße und Hausnummer",
-                "keyInData": "street_and_building"
+                "keyInData": "street_and_building",
+                "displayAttribute": false
             },
             {
                 "label": "Postleitzahl",
                 "description": "Postleitzahl",
-                "keyInData": "zip_code"
+                "keyInData": "zip_code",
+                "displayAttribute": false
             },
             {
                 "label": "Ort",
                 "description": "Ort",
-                "keyInData": "city"
+                "keyInData": "city",
+                "displayAttribute": false
             },
             {
                 "label": "Land",
                 "description": "Land",
-                "keyInData": "country"
+                "keyInData": "country",
+                "displayAttribute": false
             },
             {
                 "label": "E-Mail-Adresse",
                 "description": "E-Mail-Adresse",
-                "keyInData": "email"
+                "keyInData": "email",
+                "displayAttribute": false
             },
             {
                 "label": "Telefonnummer",
                 "description": "Telefonnummer",
-                "keyInData": "telephone"
+                "keyInData": "telephone",
+                "displayAttribute": false
             },
             {
                 "label": "bPK2",
                 "description": "bPK2",
-                "keyInData": "bPK2"
+                "keyInData": "bPK2",
+                "displayAttribute": true
             },
             {
                 "label": "Postfach",
                 "description": "Postfach",
-                "keyInData": "legacy_postkorb_handle"
+                "keyInData": "legacy_postkorb_handle",
+                "displayAttribute": true
             },
             {
                 "label": "Vertrauensniveau",
                 "description": "Vertrauensniveau",
-                "keyInData": "trust_level_authentication"
+                "keyInData": "trust_level_authentication",
+                "displayAttribute": true
             },
             {
                 "label": "Dokumententyp",
                 "description": "Dokumententyp",
-                "keyInData": "document_type"
+                "keyInData": "document_type",
+                "displayAttribute": false
             },
             {
                 "label": "eIDAS-Issuing-Country",
                 "description": "eIDAS-Issuing-Country",
-                "keyInData": "e_idas_issuing_country"
+                "keyInData": "e_idas_issuing_country",
+                "displayAttribute": false
             },
             {
                 "label": "AssertionProvedBy",
                 "description": "AssertionProvedBy",
-                "keyInData": "assertion_proved_by"
+                "keyInData": "assertion_proved_by",
+                "displayAttribute": true
             },
             {
                 "label": "Version",
                 "description": "Version",
-                "keyInData": "api_version"
+                "keyInData": "api_version",
+                "displayAttribute": false
             }
         ]',
         '[

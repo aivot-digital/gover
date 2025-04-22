@@ -26,6 +26,7 @@ import java.util.Objects;
  *     mapping.setLabel("Email");
  *     mapping.setDescription("The user's email address");
  *     mapping.setKeyInData("email");
+ *     mapping.setDisplayAttribute(false);
  * </pre>
  *
  * @see Serializable
@@ -34,6 +35,7 @@ public class IdentityAttributeMapping implements Serializable {
     private String label;
     private String description;
     private String keyInData;
+    private Boolean displayAttribute;
 
     // Equals and HashCode
 
@@ -44,7 +46,8 @@ public class IdentityAttributeMapping implements Serializable {
         IdentityAttributeMapping that = (IdentityAttributeMapping) object;
         return Objects.equals(label, that.label) &&
                Objects.equals(description, that.description) &&
-               Objects.equals(keyInData, that.keyInData);
+               Objects.equals(keyInData, that.keyInData) &&
+               Objects.equals(displayAttribute, that.displayAttribute);
     }
 
     @Override
@@ -52,6 +55,7 @@ public class IdentityAttributeMapping implements Serializable {
         int result = Objects.hashCode(label);
         result = 31 * result + Objects.hashCode(description);
         result = 31 * result + Objects.hashCode(keyInData);
+        result = 31 * result + Objects.hashCode(displayAttribute);
         return result;
     }
 
@@ -83,6 +87,15 @@ public class IdentityAttributeMapping implements Serializable {
 
     public IdentityAttributeMapping setKeyInData(String keyInData) {
         this.keyInData = keyInData;
+        return this;
+    }
+
+    public Boolean getDisplayAttribute() {
+        return displayAttribute;
+    }
+
+    public IdentityAttributeMapping setDisplayAttribute(Boolean displayAttribute) {
+        this.displayAttribute = displayAttribute;
         return this;
     }
 
