@@ -22,12 +22,22 @@ public class NumberFormatDialect extends AbstractDialect implements IExpressionO
         super("numberformat");
     }
 
-    public String format(Object value, @Nullable Integer decimalPlaces) {
-        Locale locale = Locale.GERMAN;
-        NumberFormat formatter = NumberFormat.getNumberInstance(locale);
-        formatter.setMinimumFractionDigits(decimalPlaces == null ? 0 : decimalPlaces);
-        formatter.setMaximumFractionDigits(decimalPlaces == null ? 0 : decimalPlaces);
-        return formatter.format(value);
+    public String format(@Nullable Object value, @Nullable Integer decimalPlaces) {
+        if (value == null) {
+            return "";
+        }
+
+        if (value instanceof Number nValue) {
+            Locale locale = Locale.GERMAN;
+            NumberFormat formatter = NumberFormat.getNumberInstance(locale);
+            formatter.setMinimumFractionDigits(decimalPlaces == null ? 0 : decimalPlaces);
+            formatter.setMaximumFractionDigits(decimalPlaces == null ? 0 : decimalPlaces);
+            return formatter.format(nValue);
+        } else if (value instanceof String s) {
+            return s;
+        } else {
+            return "";
+        }
     }
 
     public String formatISOTimestamp(String timestamp, String format) {
