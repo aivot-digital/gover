@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.models.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.models.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.models.pdf.TablePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
+import de.aivot.GoverBackend.utils.StringUtils;
 
 import java.util.*;
 
@@ -75,6 +76,12 @@ public class TableField extends BaseInputElement<Collection<Map<String, Object>>
         for (Map<String, Object> row : value) {
             for (TableFieldColumnDefinition col : fields) {
                 Object val = row.get(col.getLabel());
+
+                if (val instanceof String sVal) {
+                    if (StringUtils.isNullOrEmpty(sVal)) {
+                        val = null;
+                    }
+                }
 
                 if (!Boolean.TRUE.equals(col.getOptional())) {
                     if (val == null) {

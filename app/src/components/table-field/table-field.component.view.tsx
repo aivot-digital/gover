@@ -7,6 +7,7 @@ import {BaseViewProps} from '../../views/base-view';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
 
 // TODO: Unify with table-field-component.tsx
 export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, { [key: string]: string | number | null }[]>) {
@@ -82,6 +83,10 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
                     if (field.decimalPlaces != null) {
                         cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces));
+                    }
+                } else if (field.datatype === 'string') {
+                    if (isStringNullOrEmpty(cellValue)) {
+                        cellValue = undefined;
                     }
                 }
 
