@@ -1266,14 +1266,14 @@
                                                             th:each="field: ${child.element.fields}"
                                                             th:class="'table-value-cell' + ${field.datatype.name() == 'Number' ? ' number' : ''}"
                                                     >
-                                                        <span th:if="${row.get(field.label) == null}">
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) == null}">
                                                             Keine Angaben
                                                         </span>
-                                                        <span th:if="${row.get(field.label) != null and field.datatype.name() == 'Number'}"
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) != null and field.datatype.name() == 'Number'}"
                                                               th:text="${#numberformat.format(row.get(field.label), field.decimalPlaces)}"
                                                         >
                                                         </span>
-                                                        <span th:if="${row.get(field.label) != null and field.datatype.name() != 'Number'}"
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) != null and field.datatype.name() != 'Number'}"
                                                               th:text="${row.get(field.label)}"
                                                         >
                                                         </span>
