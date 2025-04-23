@@ -9,7 +9,7 @@ import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
 
 // TODO: Unify with table-field-component.tsx
-export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, any[]>) {
+export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, { [key: string]: string | number | null }[]>) {
     const {
         element,
         setValue,
@@ -43,9 +43,9 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         }
 
         const newRow = (fields ?? []).reduce((acc, val) => {
-            acc[val.label] = '';
+            acc[val.label] = null;
             return acc;
-        }, {} as { [key: string]: string });
+        }, {} as { [key: string]: string | number | null });
 
         setValue([
             ...(value ?? []),
