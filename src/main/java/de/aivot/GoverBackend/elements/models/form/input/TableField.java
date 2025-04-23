@@ -87,7 +87,9 @@ public class TableField extends BaseInputElement<Collection<Map<String, Object>>
                 }
 
                 if (TableColumnDataType.Number == col.getDatatype()) {
-                    if (val instanceof Number nValue) {
+                    if (val == null) {
+                        // Do nothing, as null is allowed
+                    } else if (val instanceof Number nValue) {
                         var dValue = nValue.doubleValue();
 
                         if (dValue < NumberField.AbsoluteMinValue) {
@@ -115,7 +117,9 @@ public class TableField extends BaseInputElement<Collection<Map<String, Object>>
                 }
 
                 if (TableColumnDataType.String == col.getDatatype()) {
-                    if (!(val instanceof String)) {
+                    if (val == null) {
+                        // Do nothing, as null is allowed
+                    } else if (!(val instanceof String)) {
                         throw new ValidationException(this, "Der Wert in Spalte " + col.getLabel() + " der Zeile " + rowNumber + " konnte nicht als Text interpretiert werden.");
                     }
                 }
