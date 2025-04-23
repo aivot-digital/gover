@@ -67,15 +67,36 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
     }, [element.id, selectionModel, setValue, value]);
 
     const handleCellEdit = useCallback((params: GridCellEditCommitParams) => {
-        if (element.id) {
-            const updatedValues = [...(value ?? [])];
-            updatedValues[params.id as number] = {
-                ...updatedValues[params.id as number],
-                [params.field]: params.value,
-            };
-            setValue(updatedValues);
+        if (element.id && element.fields) {
+            const field = element.fields
+                .find(field => field.label === params.field);
+
+            if (field) {
+                let cellValue = params.value;
+
+                if (field.datatype === 'number') {
+                    if (typeof cellValue === 'string') {
+                        cellValue = parseFloat(cellValue);
+                    }
+
+                    if (field.decimalPlaces != null) {
+                        cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces));
+                    }
+                }
+
+                const updatedValues = [
+                    ...(value ?? [])
+                ];
+
+                updatedValues[params.id as number] = {
+                    ...updatedValues[params.id as number],
+                    [params.field]: cellValue,
+                };
+
+                setValue(updatedValues);
+            }
         }
-    }, [element.id, setValue, value]);
+    }, [element.id, element.fields, setValue, value]);
 
     const columns: GridColumns = useMemo(() => {
         if (fields == null) {
@@ -181,9 +202,9 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                     disableColumnFilter
 
                     sx={{
-                        backgroundColor: isBusy ? "#F8F8F8" : undefined,
-                        cursor: isBusy ? "not-allowed" : undefined,
-                        pointerEvents: isBusy ? "none" : "auto",
+                        backgroundColor: isBusy ? '#F8F8F8' : undefined,
+                        cursor: isBusy ? 'not-allowed' : undefined,
+                        pointerEvents: isBusy ? 'none' : 'auto',
                     }}
                 />
             </div>
