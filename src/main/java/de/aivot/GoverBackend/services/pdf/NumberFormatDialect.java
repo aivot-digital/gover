@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.services.pdf;
 
+import jakarta.annotation.Nullable;
 import org.thymeleaf.context.IExpressionContext;
 import org.thymeleaf.dialect.AbstractDialect;
 import org.thymeleaf.dialect.IExpressionObjectDialect;
@@ -21,11 +22,11 @@ public class NumberFormatDialect extends AbstractDialect implements IExpressionO
         super("numberformat");
     }
 
-    public String format(Object value, int decimalPlaces) {
+    public String format(Object value, @Nullable Integer decimalPlaces) {
         Locale locale = Locale.GERMAN;
         NumberFormat formatter = NumberFormat.getNumberInstance(locale);
-        formatter.setMinimumFractionDigits(decimalPlaces);
-        formatter.setMaximumFractionDigits(decimalPlaces);
+        formatter.setMinimumFractionDigits(decimalPlaces == null ? 0 : decimalPlaces);
+        formatter.setMaximumFractionDigits(decimalPlaces == null ? 0 : decimalPlaces);
         return formatter.format(value);
     }
 

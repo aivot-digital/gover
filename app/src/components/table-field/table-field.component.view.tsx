@@ -6,6 +6,7 @@ import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../../views/base-view';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import {parseGermanNumber} from '../../utils/parse-german-numbers';
 
 // TODO: Unify with table-field-component.tsx
 export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, any[]>) {
@@ -76,7 +77,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
                 if (field.datatype === 'number') {
                     if (typeof cellValue === 'string') {
-                        cellValue = parseFloat(cellValue);
+                        cellValue = parseGermanNumber(cellValue);
                     }
 
                     if (field.decimalPlaces != null) {
