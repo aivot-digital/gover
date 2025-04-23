@@ -87,7 +87,7 @@ public class TableField extends BaseInputElement<Collection<Map<String, Object>>
                 }
 
                 if (TableColumnDataType.Number == col.getDatatype()) {
-                    if (!(val instanceof Integer || val instanceof Double || val instanceof Float || val instanceof Long || val instanceof Short)) {
+                    if (!(val instanceof Number)) {
                         throw new ValidationException(this, "Der Wert in Spalte " + col.getLabel() + " der Zeile " + rowNumber + " konnte nicht als Zahl interpretiert werden.");
                     }
                 }
