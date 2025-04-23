@@ -93,10 +93,6 @@ public class PdfElementsGenerator {
             if (Boolean.TRUE.equals(baseInputElement.getTechnical())) {
                 return null;
             }
-
-            if (Boolean.TRUE.equals(baseInputElement.getDisabled())) {
-                return null;
-            }
         }
 
         // Check if the element is visible
