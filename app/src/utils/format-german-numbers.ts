@@ -9,7 +9,7 @@ export function formatNumStringToGermanNum(num?: string | number, decimal?: numb
     if (num == null) {
         return '';
     }
-    const val = typeof num === 'string' ? parseInt(num) : num;
+    const val = typeof num === 'string' ? parseFloat(num) : num;
     if (isNaN(val)) {
         return '';
     } else {
