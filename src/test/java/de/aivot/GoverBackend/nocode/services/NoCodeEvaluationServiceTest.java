@@ -30,7 +30,8 @@ class NoCodeEvaluationServiceTest {
                         new NoCodeStaticValue(true),
                         new NoCodeStaticValue(true)
                 ),
-                context
+                context,
+                null
         );
 
         assertEquals(NoCodeDataType.Boolean, res.getDataType());
@@ -46,7 +47,8 @@ class NoCodeEvaluationServiceTest {
                         new NoCodeReference("a"),
                         new NoCodeReference("a")
                 ),
-                context
+                context,
+                null
         );
 
         assertEquals(NoCodeDataType.Boolean, result.getDataType());
@@ -58,7 +60,8 @@ class NoCodeEvaluationServiceTest {
                         new NoCodeReference("a"),
                         new NoCodeReference("b")
                 ),
-                context
+                context,
+                null
         );
 
         assertEquals(NoCodeDataType.Boolean, result.getDataType());
@@ -70,7 +73,8 @@ class NoCodeEvaluationServiceTest {
                         new NoCodeReference("a"),
                         new NoCodeReference("c")
                 ),
-                context
+                context,
+                null
         );
 
         assertEquals(NoCodeDataType.Boolean, result.getDataType());
@@ -90,7 +94,8 @@ class NoCodeEvaluationServiceTest {
                                 )
                         )
                 ),
-                context
+                context,
+                null
         );
 
         assertEquals(NoCodeDataType.Boolean, result.getDataType());
