@@ -69,6 +69,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
     }, [element.id, selectionModel, setValue, value]);
 
     const handleCellEdit = useCallback((params: GridCellEditCommitParams) => {
+        console.log('handleCellEdit', params);
         if (element.id && element.fields) {
             const field = element.fields
                 .find(field => field.label === params.field);
@@ -76,7 +77,9 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             if (field) {
                 let cellValue = params.value;
 
-                if (field.datatype === 'number') {
+                if (cellValue == null) {
+                    cellValue = undefined;
+                } else if (field.datatype === 'number') {
                     if (typeof cellValue === 'string') {
                         cellValue = parseGermanNumber(cellValue);
                     }
