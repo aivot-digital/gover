@@ -6,9 +6,11 @@ import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../../views/base-view';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import {parseGermanNumber} from '../../utils/parse-german-numbers';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
 
 // TODO: Unify with table-field-component.tsx
-export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, any[]>) {
+export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, { [key: string]: string | number | null }[]>) {
     const {
         element,
         setValue,
@@ -42,9 +44,9 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         }
 
         const newRow = (fields ?? []).reduce((acc, val) => {
-            acc[val.label] = '';
+            acc[val.label] = null;
             return acc;
-        }, {} as { [key: string]: string });
+        }, {} as { [key: string]: string | number | null });
 
         setValue([
             ...(value ?? []),
@@ -67,15 +69,43 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
     }, [element.id, selectionModel, setValue, value]);
 
     const handleCellEdit = useCallback((params: GridCellEditCommitParams) => {
-        if (element.id) {
-            const updatedValues = [...(value ?? [])];
-            updatedValues[params.id as number] = {
-                ...updatedValues[params.id as number],
-                [params.field]: params.value,
-            };
-            setValue(updatedValues);
+        console.log('handleCellEdit', params);
+        if (element.id && element.fields) {
+            const field = element.fields
+                .find(field => field.label === params.field);
+
+            if (field) {
+                let cellValue = params.value;
+
+                if (cellValue == null) {
+                    cellValue = undefined;
+                } else if (field.datatype === 'number') {
+                    if (typeof cellValue === 'string') {
+                        cellValue = parseGermanNumber(cellValue);
+                    }
+
+                    if (field.decimalPlaces != null) {
+                        cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces));
+                    }
+                } else if (field.datatype === 'string') {
+                    if (isStringNullOrEmpty(cellValue)) {
+                        cellValue = undefined;
+                    }
+                }
+
+                const updatedValues = [
+                    ...(value ?? [])
+                ];
+
+                updatedValues[params.id as number] = {
+                    ...updatedValues[params.id as number],
+                    [params.field]: cellValue,
+                };
+
+                setValue(updatedValues);
+            }
         }
-    }, [element.id, setValue, value]);
+    }, [element.id, element.fields, setValue, value]);
 
     const columns: GridColumns = useMemo(() => {
         if (fields == null) {
@@ -181,9 +211,9 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                     disableColumnFilter
 
                     sx={{
-                        backgroundColor: isBusy ? "#F8F8F8" : undefined,
-                        cursor: isBusy ? "not-allowed" : undefined,
-                        pointerEvents: isBusy ? "none" : "auto",
+                        backgroundColor: isBusy ? '#F8F8F8' : undefined,
+                        cursor: isBusy ? 'not-allowed' : undefined,
+                        pointerEvents: isBusy ? 'none' : 'auto',
                     }}
                 />
             </div>

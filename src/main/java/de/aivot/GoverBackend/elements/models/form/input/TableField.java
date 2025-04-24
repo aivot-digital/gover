@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.models.pdf.BasePdfRowDto;
 import de.aivot.GoverBackend.models.pdf.HeadlinePdfRowDto;
 import de.aivot.GoverBackend.models.pdf.TablePdfRowDto;
 import de.aivot.GoverBackend.utils.MapUtils;
+import de.aivot.GoverBackend.utils.StringUtils;
 
 import java.util.*;
 
@@ -76,6 +77,12 @@ public class TableField extends BaseInputElement<Collection<Map<String, Object>>
             for (TableFieldColumnDefinition col : fields) {
                 Object val = row.get(col.getLabel());
 
+                if (val instanceof String sVal) {
+                    if (StringUtils.isNullOrEmpty(sVal)) {
+                        val = null;
+                    }
+                }
+
                 if (!Boolean.TRUE.equals(col.getOptional())) {
                     if (val == null) {
                         throw new ValidationException(this, "In Spalte " + col.getLabel() + " der Zeile " + rowNumber + " wurde kein Wert angegeben. Diese Spalte ist jedoch eine Pflichtangabe.");
@@ -87,13 +94,39 @@ public class TableField extends BaseInputElement<Collection<Map<String, Object>>
                 }
 
                 if (TableColumnDataType.Number == col.getDatatype()) {
-                    if (!(val instanceof Integer || val instanceof Double || val instanceof Float || val instanceof Long || val instanceof Short)) {
+                    if (val == null) {
+                        // Do nothing, as null is allowed
+                    } else if (val instanceof Number nValue) {
+                        var dValue = nValue.doubleValue();
+
+                        if (dValue < NumberField.AbsoluteMinValue) {
+                            var msg = String.format(
+                                    "Der Wert in Spalte %s in Zeile %d muss mindestens %s betragen.",
+                                    col.getLabel(),
+                                    rowNumber,
+                                    NumberField.formatGermanNumber(NumberField.AbsoluteMinValue, 0)
+                            );
+                            throw new ValidationException(this, msg);
+                        }
+
+                        if (dValue > NumberField.AbsoluteMaxValue) {
+                            var msg = String.format(
+                                    "Der Wert in Spalte %s in Zeile %d darf maximal %s betragen.",
+                                    col.getLabel(),
+                                    rowNumber,
+                                    NumberField.formatGermanNumber(NumberField.AbsoluteMaxValue, 0)
+                            );
+                            throw new ValidationException(this, msg);
+                        }
+                    } else {
                         throw new ValidationException(this, "Der Wert in Spalte " + col.getLabel() + " der Zeile " + rowNumber + " konnte nicht als Zahl interpretiert werden.");
                     }
                 }
 
                 if (TableColumnDataType.String == col.getDatatype()) {
-                    if (!(val instanceof String)) {
+                    if (val == null) {
+                        // Do nothing, as null is allowed
+                    } else if (!(val instanceof String)) {
                         throw new ValidationException(this, "Der Wert in Spalte " + col.getLabel() + " der Zeile " + rowNumber + " konnte nicht als Text interpretiert werden.");
                     }
                 }
@@ -117,29 +150,27 @@ public class TableField extends BaseInputElement<Collection<Map<String, Object>>
                 List<String> fields = new LinkedList<>();
                 for (TableFieldColumnDefinition col : this.fields) {
                     Object cellValue = row.get(col.getLabel());
+
                     TableColumnDataType colType = col.getDatatype();
                     if (colType == null) {
                         colType = TableColumnDataType.String;
                     }
+
                     switch (colType) {
                         case String -> {
                             if (cellValue instanceof String sCellValue) {
                                 fields.add(sCellValue);
+                            } else {
+                                fields.add("Keine Angaben");
                             }
                         }
                         case Number -> {
-                            if (cellValue instanceof Integer iCellValue) {
-                                fields.add(String.format("%d", iCellValue));
-                            } else if (cellValue instanceof Long lCellValue) {
-                                fields.add(String.format("%d", lCellValue));
-                            } else if (cellValue instanceof Double dCellValue) {
-                                int decimalPlaces = col.getDecimalPlaces() == null ? col.getDecimalPlaces() : 2;
-                                String decimalFormat = "%." + decimalPlaces + "f";
-                                fields.add(String.format(decimalFormat, dCellValue));
-                            } else if (cellValue instanceof Float fCellValue) {
-                                int decimalPlaces = col.getDecimalPlaces() == null ? col.getDecimalPlaces() : 2;
-                                String decimalFormat = "%." + decimalPlaces + "f";
-                                fields.add(String.format(decimalFormat, fCellValue));
+                            if (cellValue instanceof Number nCellValue) {
+                                var dCellValue = nCellValue.doubleValue();
+                                var formatted = NumberField.formatGermanNumber(dCellValue, col.getDecimalPlaces() != null ? col.getDecimalPlaces() : 0);
+                                fields.add(formatted);
+                            } else {
+                                fields.add("Keine Angaben");
                             }
                         }
                     }

@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.3.1](https://github.com/aivot-digital/gover/compare/v4.3.0...v4.3.1) (2025-04-23)
+
+### Bug Fixes
+
+* **App:** Fix issue with disabled fields not printing in PDF
+* **App:** Fix decimal places in tables not working correctly
+* **App:** Fix optional values in tables not working correctly
+* **App:** Fix display of empty optional values of tables in PDF
+
 ## [4.3.0](https://github.com/aivot-digital/gover/compare/v4.2.6...v4.3.0) (2025-04-09)
 
 ### Features

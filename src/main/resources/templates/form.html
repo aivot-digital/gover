@@ -1277,7 +1277,7 @@
                                             </thead>
                                             <tbody>
                                                 <tr
-                                                    th:if="${child.value == null || child.value.isEmpty()}"
+                                                        th:if="${child.value == null || child.value.isEmpty()}"
                                                 >
                                                     <td
                                                             th:colspan="${child.element.fields.size()}"
@@ -1293,8 +1293,19 @@
                                                     <td
                                                             th:each="field: ${child.element.fields}"
                                                             th:class="'table-value-cell' + ${field.datatype.name() == 'Number' ? ' number' : ''}"
-                                                            th:text="${row.get(field.label)}"
-                                                    ></td>
+                                                    >
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) == null}">
+                                                            Keine Angaben
+                                                        </span>
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) != null and field.datatype.name() == 'Number'}"
+                                                              th:text="${#numberformat.format(row.get(field.label), field.decimalPlaces)}"
+                                                        >
+                                                        </span>
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) != null and field.datatype.name() != 'Number'}"
+                                                              th:text="${row.get(field.label)}"
+                                                        >
+                                                        </span>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>

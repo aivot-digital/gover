@@ -25,8 +25,8 @@ public class NumberField extends BaseInputElement<Double> {
     private Integer decimalPlaces;
     private String suffix;
 
-    protected final static Double AbsoluteMaxValue = Math.pow(2, 31);
-    protected final static Double AbsoluteMinValue = -AbsoluteMaxValue;
+    public final static Double AbsoluteMaxValue = Math.pow(2, 31);
+    public final static Double AbsoluteMinValue = -AbsoluteMaxValue;
 
     public NumberField(Map<String, Object> data) {
         super(data);
