@@ -244,8 +244,12 @@ export function IdentityProviderDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen am Nutzerkontenanbieter erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    if (err.status === 409) {
+                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Nutzerkontenanbieter verwenden'));
+                    } else {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    }
                 })
                 .finally(() => {
                     setIsBusy(false);

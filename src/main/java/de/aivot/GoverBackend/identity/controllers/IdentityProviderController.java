@@ -200,6 +200,39 @@ public class IdentityProviderController {
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
+        var formFilter = new FormFilter()
+                .setIdentityProviderKey(key)
+                .setStatus(FormStatus.Published);
+
+        if (formService.exists(formFilter)) {
+            throw ResponseException.conflict(
+                    "Der Nutzerkontenanbieter %s kann nicht gelöscht werden, da veröffentlichte Formulare existieren, die diesen Anbieter verwenden.",
+                    key
+            );
+        }
+
+        var linkedFormFilter = new FormFilter()
+                .setIdentityProviderKey(key);
+
+        var linkedForms = formService
+                .list(linkedFormFilter);
+
+        for (var form : linkedForms) {
+            var formClone = form
+                    .clone();
+
+            var identityProvidersWithoutThisIdentityProvider = form.getIdentityProviders()
+                    .stream()
+                    .filter(link -> link.getIdentityProviderKey() != null && !link.getIdentityProviderKey().equals(key))
+                    .toList();
+
+            form.setIdentityProviders(identityProvidersWithoutThisIdentityProvider);
+            formService.update(form.getId(), form);
+
+            formRevisionService
+                    .create(user, form, formClone);
+        }
+
         var deletedEntity = identityProviderService
                 .delete(key);
 
