@@ -9,6 +9,7 @@ import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {IdentityProviderListDTO} from '../../models/identity-provider-list-dto';
+import Chip from "@mui/material/Chip";
 
 export function IdentityProvidersListPage() {
     useAdminGuard();
@@ -33,7 +34,7 @@ export function IdentityProvidersListPage() {
                             },
                         ],
                         helpDialog: {
-                            title: 'Hilfe zu Nutzerkontenanbieter',
+                            title: 'Hilfe zu Nutzerkontenanbietern',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
@@ -79,6 +80,7 @@ export function IdentityProvidersListPage() {
                                     title={`Konfiguration bearbeiten`}
                                 >
                                     {String(params.value)}
+                                    {params.row.isTestProvider && <Chip label="Test" color="warning" variant="outlined" size={"small"} sx={{ml:1}}/>}
                                 </CellLink>
                             ),
                         },
@@ -86,6 +88,19 @@ export function IdentityProvidersListPage() {
                             field: 'description',
                             headerName: 'Beschreibung',
                             flex: 2,
+                        },
+                        {
+                            field: 'status',
+                            headerName: 'Status',
+                            renderCell: (params) => (
+                                <>
+                                    {params.row.isEnabled ?
+                                        <Chip label="Aktiv" color="success" variant="outlined" size={"small"}/>
+                                        :
+                                        <Chip label="Inaktiv" color="default" variant="outlined" size={"small"}/>
+                                    }
+                                </>
+                            ),
                         },
                     ]}
                     getRowIdentifier={row => row.key}

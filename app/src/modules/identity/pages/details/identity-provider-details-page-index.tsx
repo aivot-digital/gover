@@ -34,6 +34,8 @@ import {TableFieldComponent2} from '../../../../components/table-field/table-fie
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
+import {AlertComponent} from "../../../../components/alert/alert-component";
+import {useConfirm} from "../../../../providers/confirm-provider";
 
 export const formSchema = yup.object({
     name: yup.string()
@@ -82,6 +84,7 @@ export function IdentityProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const api = useApi();
+    const showConfirm = useConfirm();
 
     const [assets, setAssets] = useState<Asset[]>();
     const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
@@ -321,27 +324,39 @@ export function IdentityProviderDetailsPageIndex() {
             {
                 isNewItem &&
                 <>
+                    <Typography
+                        variant="h5"
+                        sx={{mt: 1.5, mb: 1}}
+                    >
+                        Konfiguration von OpenID Endpoint laden (optional)
+                    </Typography>
+
+                    <Typography sx={{mb: 3, maxWidth: 900}}>
+                        Wenn Ihr Nutzerkontenanbieter dies anbietet, können Sie die Konfiguration automatisch laden. Bitte geben Sie hierfür den Link zur OpenID Endpoint Konfiguration ein und klicken Sie auf "Konfiguration laden".
+                    </Typography>
                     <Box
                         sx={{
                             display: 'flex',
                             gap: '1rem',
-                            alignItems: 'center',
+                            alignItems: 'start',
                         }}
                     >
                         <TextFieldComponent
-                            label="Aus Konfiguration laden"
+                            label="Link zu OpenID Endpoint Konfiguration"
                             placeholder="https://example.com/.well-known/openid-configuration"
                             value={endpointConfigUrl}
                             onChange={val => setEndpointConfigUrl(val ?? '')}
-                            hint="Über den Link zur OpenID Endpoint Konfiguration können Sie die Konfiguration des Nutzerkontenanbieters automatisch laden."
                             error={endpointConfigUrlError}
+                            size={"small"}
                         />
 
                         <Button
                             onClick={handlePrepareEntity}
                             sx={{
                                 flexShrink: 0,
+                                mt: 2,
                             }}
+                            variant={"contained"}
                         >
                             Konfiguration laden
                         </Button>
@@ -350,6 +365,17 @@ export function IdentityProviderDetailsPageIndex() {
                     <Divider sx={{my: 4}} />
                 </>
             }
+
+            <Typography
+                variant="h5"
+                sx={{mt: 1.5, mb: 1}}
+            >
+                Nutzerkontenanbieter konfigurieren
+            </Typography>
+
+            <Typography sx={{mb: 3, maxWidth: 900}}>
+                Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die Konfiguration bereits für Formulare verwendet wird.
+            </Typography>
 
             <Grid
                 container
@@ -377,7 +403,29 @@ export function IdentityProviderDetailsPageIndex() {
                     item
                     xs={12}
                     md={6}
-                />
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        transform: 'translateY(-10px)',
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: 'inline-block',
+                            py: 1,
+                            px: 2,
+                            border: '1px solid #ccc',
+                            borderRadius: '4px'
+                        }}
+                    >
+                    <IdentityProviderIcon
+                        name={identityProvider.name}
+                        type={identityProvider.type}
+                        iconAssetKey={identityProvider.iconAssetKey}
+                    />
+                        </Box>
+                </Grid>
 
                 <Grid
                     item
@@ -402,7 +450,14 @@ export function IdentityProviderDetailsPageIndex() {
                     item
                     xs={12}
                     md={6}
-                />
+                >
+                    {
+                        identityProvider.type != IdentityProviderType.Custom &&
+                        <AlertComponent color="info" sx={{mt: 2}}>
+                            <strong>Hinweis:</strong> Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
+                        </AlertComponent>
+                    }
+                </Grid>
 
                 <Grid
                     item
@@ -410,7 +465,7 @@ export function IdentityProviderDetailsPageIndex() {
                     md={6}
                 >
                     <SelectFieldComponent
-                        label="Logo"
+                        label="Logo-Grafik"
                         value={identityProvider.iconAssetKey ?? undefined}
                         onChange={(value) => {
                             if (isStringNullOrEmpty(value)) {
@@ -427,6 +482,7 @@ export function IdentityProviderDetailsPageIndex() {
                                     label: secret.filename,
                                 }))
                         }
+                        hint={"Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen."}
                     />
                 </Grid>
 
@@ -434,11 +490,88 @@ export function IdentityProviderDetailsPageIndex() {
                     item
                     xs={12}
                     md={6}
+                />
+
+                <Grid
+                    item
+                    xs={12}
+                    md={6}
                 >
-                    <IdentityProviderIcon
-                        name={identityProvider.name}
-                        type={identityProvider.type}
-                        iconAssetKey={identityProvider.iconAssetKey}
+                    <CheckboxFieldComponent
+                        label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
+                        value={identityProvider.isEnabled}
+                        onChange={async (newValue) => {
+                            if (
+                                newValue === true &&
+                                identityProvider.type !== IdentityProviderType.Custom
+                            ) {
+                                const confirmed = await showConfirm({
+                                    title: 'Hinweis zur Einrichtung',
+                                    confirmButtonText: 'Ja, Einrichtung wurde durchgeführt',
+                                    children: (
+                                        <>
+                                            <Typography gutterBottom>
+                                                Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos gelesen und umgesetzt haben.
+                                            </Typography>
+                                            <Typography gutterBottom>
+                                                Diese Hinweise finden Sie im Reiter <strong>Einrichtung</strong>.
+                                            </Typography>
+                                        </>
+                                    ),
+                                });
+
+                                if (!confirmed) {
+                                    return;
+                                }
+                            }
+                            handleInputChange('isEnabled')(newValue);
+                        }}
+                        variant="switch"
+                        error={errors.isEnabled}
+                        hint="Gibt an, ob dieser Nutzerkontenanbieter aktiviert ist. Bei temporären technischen Problemen o.Ä. kann der Anbieter deaktiviert werden, ohne die Konfiguration zu verlieren."
+                        disabled={inputsDisabled}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    md={6}
+                >
+                    <CheckboxFieldComponent
+                        label="Es handelt sich um eine vorproduktive Konfiguration"
+                        value={identityProvider.isTestProvider}
+                        onChange={handleInputChange('isTestProvider')}
+                        variant="switch"
+                        error={errors.isTestProvider}
+                        hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
+                        disabled={inputsDisabled || isSystemProvider}
+                    />
+                </Grid>
+
+                <Grid
+                    item
+                    xs={12}
+                >
+                    <Typography
+                        variant="h6"
+                        sx={{ mt: 4, mb: 0 }}
+                    >
+                        Technische Konfiguration
+                    </Typography>
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                >
+                    <TextFieldComponent
+                        label="Metadaten-Identifikator"
+                        required
+                        value={identityProvider.metadataIdentifier}
+                        onChange={handleInputChange('metadataIdentifier')}
+                        onBlur={handleInputBlur('metadataIdentifier')}
+                        disabled={inputsDisabled || isSystemProvider}
+                        error={errors.metadataIdentifier}
+                        hint="Technische ID zur Zuweisung der Metadaten. Wenn Sie eine Produktive und eine Testkonfiguration anlegen, verwenden Sie dieselbe ID, um zwischen beiden Umgebungen umschalten zu können."
                     />
                 </Grid>
 
@@ -448,7 +581,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt zur Authorisierung"
-                        placeholder="https://keycloak.example.com"
+                        placeholder="https://auth.example.com/xyz"
                         required
                         value={identityProvider.authorizationEndpoint}
                         onChange={handleInputChange('authorizationEndpoint')}
@@ -465,7 +598,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt zum Erstellen des Tokens"
-                        placeholder="z.B. master"
+                        placeholder="https://auth.example.com/xyz"
                         required
                         value={identityProvider.tokenEndpoint}
                         onChange={handleInputChange('tokenEndpoint')}
@@ -482,7 +615,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt für Informationen über die Nutzer:in"
-                        placeholder="z.B. master"
+                        placeholder="https://auth.example.com/xyz"
                         required
                         value={identityProvider.userinfoEndpoint ?? undefined}
                         onChange={val => {
@@ -503,7 +636,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt zum Beenden der Session"
-                        placeholder="z.B. master"
+                        placeholder="https://auth.example.com/xyz"
                         required
                         value={identityProvider.endSessionEndpoint ?? undefined}
                         onChange={val => {
@@ -558,6 +691,7 @@ export function IdentityProviderDetailsPageIndex() {
                                     label: secret.name,
                                 }))
                         }
+                        hint={"Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert."}
                     />
                 </Grid>
             </Grid>
@@ -573,6 +707,7 @@ export function IdentityProviderDetailsPageIndex() {
                 }}
                 allowEmpty={true}
                 disabled={inputsDisabled || isSystemProvider}
+                sx={{my: 4}}
             />
 
             <TableFieldComponent2<IdentityAdditionalParameter>
@@ -597,7 +732,20 @@ export function IdentityProviderDetailsPageIndex() {
                     handleInputChange('additionalParams')(value ?? []);
                 }}
                 disabled={inputsDisabled || isSystemProvider}
+                sx={{my: 4}}
             />
+
+            <Grid
+                item
+                xs={12}
+            >
+                <Typography
+                    variant="h6"
+                    sx={{ mt: 4, mb: 0 }}
+                >
+                    Attributszuweisungen
+                </Typography>
+            </Grid>
 
             <TableFieldComponent2<IdentityAttributeMapping>
                 label="Attributszuweisungen"
@@ -655,37 +803,7 @@ export function IdentityProviderDetailsPageIndex() {
                         </Box>
                     ),
                 }}
-            />
-
-            <CheckboxFieldComponent
-                label="Es handelt sich um eine vorproduktive Konfiguration"
-                value={identityProvider.isTestProvider}
-                onChange={handleInputChange('isTestProvider')}
-                variant="switch"
-                error={errors.isTestProvider}
-                hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
-                disabled={inputsDisabled || isSystemProvider}
-            />
-
-            <CheckboxFieldComponent
-                label="Aktiv"
-                value={identityProvider.isEnabled}
-                onChange={handleInputChange('isEnabled')}
-                variant="switch"
-                error={errors.isEnabled}
-                hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
-                disabled={inputsDisabled}
-            />
-
-            <TextFieldComponent
-                label="Metadaten-Identifikator"
-                required
-                value={identityProvider.metadataIdentifier}
-                onChange={handleInputChange('metadataIdentifier')}
-                onBlur={handleInputBlur('metadataIdentifier')}
-                disabled={inputsDisabled || isSystemProvider}
-                error={errors.metadataIdentifier}
-                hint="Technisch"
+                sx={{my: 4}}
             />
 
             <Box
@@ -707,7 +825,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                 {
                     !isSystemProvider &&
-                    <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
+                    <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Dateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                         <Button
                             onClick={handleRefreshRelatedEntities}
                             disabled={isBusy}
@@ -741,7 +859,7 @@ export function IdentityProviderDetailsPageIndex() {
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Zahlungsdienstleister löschen"
+                title="Nutzerkontenanbieter löschen"
                 onCancel={() => setShowConfirmDialog(false)}
                 onConfirm={showConfirmDialog ? handleDelete : undefined}
                 confirmationText={identityProvider.name}
@@ -749,15 +867,15 @@ export function IdentityProviderDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Zahlungsdienstleister wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diesen Nutzerkontenanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
 
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Dieser Zahlungsdienstleister kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
-                solutionText="Bitte ändern Sie die Einstellungen für Online-Zahlungen dieser Formulare und versuchen Sie es erneut:"
+                message="Dieser Nutzerkontenanbieter kann nicht gelöscht werden, da er noch in Formularen verwendet wird."
+                solutionText="Bitte ändern Sie die Einstellungen zur Einbindung von Nutzerkonten in diesen Formularen und versuchen Sie es erneut:"
                 links={relatedEntities ?? undefined}
             />
         </Box>

@@ -54,11 +54,11 @@ export function IdentityProviderDetailsPageForms() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Formulare mit diesem Zahlungsdienstleister
+                Formulare mit diesem Nutzerkontenanbieter
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Liste aller Formulare, die Online-Zahlungen mit dieser Konfiguration des Zahlungsdienstleisters entgegennehmen, bzw. mit ihr konfiguriert sind.
+                Eine Liste aller Formulare, die Nutzerkonten mit dieser Konfiguration akzeptieren.
             </Typography>
 
             <GenericList<Form>

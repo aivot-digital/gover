@@ -5,6 +5,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
+import {IdentityProviderType} from "../../enums/identity-provider-type";
 
 export function IdentityProviderDetailsPage() {
     useAdminGuard();
@@ -21,7 +22,7 @@ export function IdentityProviderDetailsPage() {
                         icon: <BadgeOutlinedIcon />,
                         title: 'Nutzerkontenanbieter bearbeiten',
                         helpDialog: {
-                            title: 'Hilfe zu Nutzerkontenanbieter',
+                            title: 'Hilfe zu Nutzerkontenanbietern',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
@@ -42,22 +43,37 @@ export function IdentityProviderDetailsPage() {
                             ),
                         },
                     }}
-                    tabs={[
-                        {
-                            path: '/identity-providers/:key',
-                            label: 'Konfiguration',
-                        },
-                        {
-                            path: '/identity-providers/:key/test',
-                            label: 'Testen',
-                            isDisabled: (item) => item?.key === '',
-                        },
-                        {
-                            path: '/identity-providers/:key/forms',
-                            label: 'Formulare',
-                            isDisabled: (item) => item?.key === '',
-                        },
-                    ]}
+                    tabs={(item: IdentityProviderDetailsDTO | undefined) => {
+                        const tabs = [
+                            {
+                                path: '/identity-providers/:key',
+                                label: 'Konfiguration',
+                            },
+                            {
+                                path: '/identity-providers/:key/test',
+                                label: 'Testen',
+                                isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
+                            },
+                            {
+                                path: '/identity-providers/:key/forms',
+                                label: 'Formulare',
+                                isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
+                            },
+                        ];
+
+                        if (!item || item.key === '') {
+                            return tabs;
+                        }
+
+                        if (item.type !== IdentityProviderType.Custom) {
+                            tabs.push({
+                                path: '/identity-providers/:key/setup',
+                                label: 'Einrichtung',
+                            });
+                        }
+
+                        return tabs;
+                    }}
                     initializeItem={(api) => new IdentityProvidersApiService(api).initialize()}
                     fetchData={(api, id: string) => new IdentityProvidersApiService(api).retrieve(id)}
                     getTabTitle={(item: IdentityProviderDetailsDTO) => {
