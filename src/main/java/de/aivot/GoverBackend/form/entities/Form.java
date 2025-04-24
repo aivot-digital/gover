@@ -30,7 +30,7 @@ import java.util.List;
 @Table(name = "forms", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"slug", "version"})
 })
-public class Form {
+public class Form implements Cloneable {
     @Id
     @Column(name = "id", columnDefinition = "serial")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "applications_id_seq")
@@ -404,6 +404,53 @@ public class Form {
     public Form setIdentityProviders(List<IdentityProviderLink> identityProviders) {
         this.identityProviders = identityProviders;
         return this;
+    }
+
+    // TODO: Improve to real clone
+
+    /**
+     * Shallow clone of the form.
+     *
+     * @return A shallow clone of the form.
+     */
+    @Override
+    public Form clone() {
+        try {
+            Form clone = (Form) super.clone();
+
+            clone.id = id;
+            clone.slug = slug;
+            clone.version = version;
+            clone.title = title;
+            clone.status = status;
+            clone.type = type;
+            clone.root = root;
+            clone.destinationId = destinationId;
+            clone.legalSupportDepartmentId = legalSupportDepartmentId;
+            clone.technicalSupportDepartmentId = technicalSupportDepartmentId;
+            clone.imprintDepartmentId = imprintDepartmentId;
+            clone.privacyDepartmentId = privacyDepartmentId;
+            clone.accessibilityDepartmentId = accessibilityDepartmentId;
+            clone.developingDepartmentId = developingDepartmentId;
+            clone.managingDepartmentId = managingDepartmentId;
+            clone.responsibleDepartmentId = responsibleDepartmentId;
+            clone.themeId = themeId;
+            clone.created = created;
+            clone.updated = updated;
+            clone.customerAccessHours = customerAccessHours;
+            clone.submissionDeletionWeeks = submissionDeletionWeeks;
+            clone.pdfBodyTemplateKey = pdfBodyTemplateKey;
+            clone.products = products;
+            clone.paymentPurpose = paymentPurpose;
+            clone.paymentDescription = paymentDescription;
+            clone.paymentProvider = paymentProvider;
+            clone.identityRequired = identityRequired;
+            clone.identityProviders = identityProviders;
+
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 
     // endregion

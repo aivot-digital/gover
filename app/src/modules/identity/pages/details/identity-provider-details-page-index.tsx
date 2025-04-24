@@ -200,7 +200,6 @@ export function IdentityProviderDetailsPageIndex() {
             return;
         }
 
-
         const validationResult = validate();
 
         if (!validationResult) {
@@ -225,8 +224,12 @@ export function IdentityProviderDetailsPageIndex() {
                     }, 0);
                 })
                 .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    if (err.status === 409) {
+                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Nutzerkontenanbieter verwenden'));
+                    } else {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    }
                 })
                 .finally(() => {
                     setIsBusy(false);
