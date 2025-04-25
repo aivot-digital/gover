@@ -1,6 +1,6 @@
 import React, {useCallback, useState} from 'react';
 import {type AppHeaderMenuProps} from './app-header-menu-props';
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, type SvgIconProps} from '@mui/material';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {AppMode} from '../../data/app-mode';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetStepper} from '../../slices/stepper-slice';
@@ -20,9 +20,8 @@ import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {isAdmin} from '../../utils/is-admin';
-import {clearAuthData} from '../../slices/auth-slice';
+import {clearAuthData, selectLogoutLink} from '../../slices/auth-slice';
 import {clearCustomerInput, clearDisabled, clearErrors, selectLoadedForm} from '../../slices/app-slice';
-import {getUrlWithoutQuery} from '../../utils/location-utils';
 import TaskOutlinedIcon from '@mui/icons-material/TaskOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {StorageService} from '../../services/storage-service';
@@ -30,21 +29,19 @@ import {StorageKey} from '../../data/storage-key';
 import {getPath} from '../../apps/staff-app-routes';
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined';
 import {CopyAllOutlined, SvgIconComponent} from '@mui/icons-material';
-import {useApi} from '../../hooks/use-api';
-import {AppConfig} from '../../app-config';
-import {ConfirmDialog} from "../../dialogs/confirm-dialog/confirm-dialog";
-import DriveFolderUploadOutlinedIcon from "@mui/icons-material/DriveFolderUploadOutlined";
+import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
+import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const api = useApi();
     const form = useAppSelector(selectLoadedForm);
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
     const isUserAdmin = isAdmin(user);
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
+    const logoutLink = useAppSelector(selectLogoutLink);
 
     const handleDelete = useCallback((closeMenuCallback: () => void) => {
         dispatch(clearCustomerInput());
@@ -239,10 +236,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                         icon={LogoutOutlinedIcon}
                         onClick={() => {
                             dispatch(clearAuthData());
-                            window.location.href = `${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/logout?` + new URLSearchParams({
-                                id_token_hint: api.getAuthData()?.refreshToken?.idToken ?? '',
-                                post_logout_redirect_uri: getUrlWithoutQuery(),
-                            }).toString();
+                            window.location.href = logoutLink;
                         }}
                     />
                 }

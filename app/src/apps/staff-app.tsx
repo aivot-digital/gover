@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {createBrowserRouter as createRouter, RouterProvider} from 'react-router-dom';
 import {selectMemberships, selectUser, setMemberships, setUser} from '../slices/user-slice';
 import {selectSystemConfigValue, setSystemConfigs} from '../slices/system-config-slice';
@@ -12,7 +12,7 @@ import {SystemConfigKeys} from '../data/system-config-keys';
 import {type Theme} from '../modules/themes/models/theme';
 import {isStringNotNullOrEmpty, stringOrUndefined} from '../utils/string-utils';
 import {useApi} from '../hooks/use-api';
-import {setAuthData} from '../slices/auth-slice';
+import {setAuthData, updateAuthDataFromLocalStorage} from '../slices/auth-slice';
 import {ApiService} from '../services/api-service';
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
 import {getUrlWithoutQuery} from '../utils/location-utils';
@@ -27,12 +27,14 @@ import {DepartmentMembershipsApiService} from '../modules/departments/department
 import {ThemesApiService} from '../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../modules/configs/system-configs-api-service';
 import {RouterLayout} from './router-layout';
-
 import {loader} from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import {AppProvider} from '../providers/app-provider';
 import {UsersApiService} from '../modules/users/users-api-service';
 import {ExpirationTimer} from '../components/auth-token-debugger/auth-token-debugger';
+import {useLocalStorageEffect} from '../hooks/use-local-storage-effect';
+import {AuthDataAccessToken} from '../models/dtos/auth-data';
+import {StorageKey} from '../data/storage-key';
 
 loader.config({monaco});
 
@@ -67,6 +69,13 @@ function StaffApp() {
     const themeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const [theme, setTheme] = useState<Theme>();
+
+    // Reload the auth data from the local storage if any change happens.
+    // This is needed for the case when the user refrshes the tokens in another tab.
+    const handleAuthDataChange = useCallback(() => {
+        dispatch(updateAuthDataFromLocalStorage());
+    }, []);
+    useLocalStorageEffect<AuthDataAccessToken>(handleAuthDataChange, StorageKey.AuthDataAccessToken);
 
     const authCode = useMemo(() => {
         const searchParams = new URLSearchParams(window.location.search);
@@ -153,11 +162,6 @@ function StaffApp() {
                 .then((memberships) => dispatch(setMemberships(memberships.content)));
         }
     }, [authCode, api, user]);
-
-    // Clear session expired flag
-    useEffect(() => {
-        localStorage.removeItem('gover-session-expired');
-    }, []);
 
     if (!api.isAuthenticated()) {
         return (

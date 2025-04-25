@@ -1,18 +1,13 @@
 import {useAppDispatch} from './use-app-dispatch';
-import {useCallback, useEffect, useMemo, useRef} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
 import {useAppSelector} from './use-app-selector';
-import {clearAuthData, setAuthData} from '../slices/auth-slice';
-import {ApiError} from "../models/api-error";
+import {clearAuthData, selectAuthData, setAuthData} from '../slices/auth-slice';
+import {ApiError} from '../models/api-error';
 import {ApiOptions, ApiService} from '../services/api-service';
-import {Api} from "@mui/icons-material";
-import {AuthData} from '../models/dtos/auth-data';
-
-
+import {Api} from '@mui/icons-material';
 
 export interface Api {
-    getAuthData(): AuthData | undefined;
-
     isAuthenticated(): boolean;
 
     get<T>(url: string, options?: ApiOptions): Promise<T>;
@@ -34,14 +29,14 @@ export interface Api {
 
 export function useApi(): Api {
     const dispatch = useAppDispatch();
-    const authState = useAppSelector(state => state.auth);
+    const authData = useAppSelector(selectAuthData);
 
     const serviceRef = useRef<ApiService>(new ApiService());
 
     useEffect(() => {
-        if (authState != null && authState.authData != null) {
+        if (authData != null) {
             serviceRef.current = new ApiService({
-                authData: authState.authData,
+                authData: authData,
                 onAuthDataChange: (authData: AuthDataDto) => {
                     dispatch(setAuthData(authData));
                 },
@@ -49,11 +44,7 @@ export function useApi(): Api {
         } else {
             serviceRef.current = new ApiService();
         }
-    }, [authState]);
-
-    const getAuthData = useCallback(() => {
-        return serviceRef.current.getAuthData();
-    }, []);
+    }, [authData]);
 
     const isAuthenticated = useCallback(() => {
         return serviceRef.current.isAuthenticated() ?? false;
@@ -155,8 +146,7 @@ export function useApi(): Api {
         }
     }, []);
 
-    return useMemo(() => ({
-        getAuthData,
+    return {
         isAuthenticated,
         get,
         getPublic,
@@ -166,16 +156,5 @@ export function useApi(): Api {
         postFormUrlEncoded,
         put,
         destroy,
-    }), [
-        getAuthData,
-        isAuthenticated,
-        get,
-        getPublic,
-        getBlob,
-        post,
-        postFormData,
-        postFormUrlEncoded,
-        put,
-        destroy,
-    ]);
+    };
 }
