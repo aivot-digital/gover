@@ -84,9 +84,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                         cellValue = parseGermanNumber(cellValue);
                     }
 
-                    if (field.decimalPlaces != null) {
-                        cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces));
-                    }
+                    cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces ?? 0));
                 } else if (field.datatype === 'string') {
                     if (isStringNullOrEmpty(cellValue)) {
                         cellValue = undefined;
