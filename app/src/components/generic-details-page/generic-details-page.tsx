@@ -55,11 +55,22 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const [item, setItem] = useState<ItemType>();
     const [additionalData, setAdditionalData] = useState<AdditionalData>();
 
+    const resolvedTabs = useMemo(() => {
+        if (typeof props.tabs === 'function') {
+            return props.tabs(item);
+        }
+        return props.tabs;
+    }, [props.tabs, item]);
+
     const currentTab: number = useMemo(() => {
-        return props.tabs
+        return resolvedTabs
             .map(tab => generatePath(tab.path, {[ID_PARAM]: id}))
             .findIndex(path => matchPath(location.pathname, path) != null);
-    }, [id, location, props.tabs]);
+    }, [id, location, resolvedTabs]);
+
+    useEffect(() => {
+        console.log(resolvedTabs);
+    }, [resolvedTabs]);
 
     useEffect(() => {
         if (id == null) {
@@ -100,7 +111,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                     }}
                 >
                     {
-                        props.tabs.length > 1 && !notFound &&
+                        resolvedTabs.length > 1 && !notFound &&
                             <Box
                                 sx={{
                                     borderBottom: 1,
@@ -114,13 +125,13 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                             }}
                                             value={currentTab}
                                             onChange={(_, index: number) => {
-                                                const tab = props.tabs[index];
+                                                const tab = resolvedTabs[index];
                                                 navigate(generatePath(tab.path, {[ID_PARAM]: id}));
                                             }}
                                         >
                                             {
-                                                props.tabs.length > 1 &&
-                                                props.tabs.map(({path, label, isDisabled}, index) => (
+                                                resolvedTabs.length > 1 &&
+                                                resolvedTabs.map(({path, label, isDisabled}, index) => (
                                                     <Tab
                                                         key={path}
                                                         value={index}

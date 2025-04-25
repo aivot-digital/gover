@@ -26,6 +26,7 @@ import {IdentityProviderLink} from '../../modules/identity/models/identity-provi
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import NotInterestedOutlinedIcon from '@mui/icons-material/NotInterestedOutlined';
 import Tooltip from '@mui/material/Tooltip';
+import Chip from "@mui/material/Chip";
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const api = useApi();
@@ -181,7 +182,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 <Typography
                     variant="h6"
                 >
-                    Nutzerkontenschnittstellen
+                    Scnittstellen für Nutzerkonten
                 </Typography>
 
                 {
@@ -345,43 +346,41 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                     alignItems: 'center',
                 }}
             >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                    }}
-                >
-                    <Typography>
-                        {provider.name}
+                <Box>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Typography>
+                            {provider.name}
+                        </Typography>
+
+                        {
+                            provider.isTestProvider &&
+                            <Tooltip
+                                title="Es handelt sich um einen Test-Nutzerkontenanbieter für z.B. ein Vorproduktionssystem."
+                                arrow={true}
+                            >
+                                <Chip sx={{ml: 1, mt: -0.25}} label="Testumgebung" color="info" variant="outlined" size={"small"} icon={<ScienceOutlinedIcon/>}/>
+                            </Tooltip>
+                        }
+
+                        {
+                            !provider.isEnabled &&
+                            <Tooltip
+                                title="Dieser Nutzerkontenanbieter wurde global deaktiviert. Sie können ihn im Formular konfigurieren, Nutzer:innen können sich damit aber nicht authentifizieren."
+                                arrow={true}
+                            >
+                                <Chip sx={{ml: 1, mt: -0.25}} label="Global Deaktiviert" color="warning" variant="outlined" size={"small"} icon={<NotInterestedOutlinedIcon/>}/>
+                            </Tooltip>
+                        }
+                    </Box>
+
+                    <Typography variant="caption">
+                        {provider.description}
                     </Typography>
-
-                    {
-                        provider.isTestProvider &&
-                        <Tooltip
-                            title="Es handelt sich um einen Test-Nutzerkontenanbieter für z.B. ein Vorproduktionssystem."
-                            arrow={true}
-                        >
-                            <ScienceOutlinedIcon
-                                sx={{
-                                    ml: 1,
-                                }}
-                            />
-                        </Tooltip>
-                    }
-
-                    {
-                        !provider.isEnabled &&
-                        <Tooltip
-                            title="Es handelt sich um einen deaktivierte Nutzerkontenanbieter."
-                            arrow={true}
-                        >
-                            <NotInterestedOutlinedIcon
-                                sx={{
-                                    ml: 1,
-                                }}
-                            />
-                        </Tooltip>
-                    }
                 </Box>
 
                 <Box
@@ -400,12 +399,6 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                         }}
                     />
                 </Box>
-            </Box>
-
-            <Box>
-                <Typography variant="caption">
-                    {provider.description}
-                </Typography>
             </Box>
 
             {
