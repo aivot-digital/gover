@@ -47,7 +47,9 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
             });
 
         new IdentityProvidersApiService(api)
-            .listAllOrdered('name', 'ASC')
+            .listAllOrdered('name', 'ASC', {
+                isEnabled: true,
+            })
             .then(providers => setIdentityProviders(providers.content))
             .catch((err) => {
                 console.error(err);
