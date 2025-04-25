@@ -74,10 +74,11 @@ const authSlice = createSlice({
             StorageService.storeObject(StorageKey.AuthDataRefreshToken, authData.refreshToken, StorageScope.Local);
         },
         updateAuthDataFromLocalStorage: (state, action: PayloadAction<void>) => {
-            state.authData = {
+            const authData: AuthData = {
                 accessToken: StorageService.loadObject<AuthDataAccessToken>(StorageKey.AuthDataAccessToken) ?? undefined,
                 refreshToken: StorageService.loadObject<AuthDataRefreshToken>(StorageKey.AuthDataRefreshToken) ?? undefined,
-            } as AuthData;
+            };
+            state.authData = authData;
         },
         clearAuthData: (state, _: PayloadAction) => {
             state.authData = undefined;
