@@ -71,7 +71,7 @@ function StaffApp() {
     const [theme, setTheme] = useState<Theme>();
 
     // Reload the auth data from the local storage if any change happens.
-    // This is needed for the case when the user refrshes the tokens in another tab.
+    // This is needed for the case when the user refreshes the tokens in another tab.
     const handleAuthDataChange = useCallback(() => {
         dispatch(updateAuthDataFromLocalStorage());
     }, []);
@@ -121,7 +121,7 @@ function StaffApp() {
     }, [themeId, authCode]);
 
     useEffect(() => {
-        if (authCode == null && api.isAuthenticated()) {
+        if (authCode == null && api.isAuthenticated) {
             if (user == null) {
                 new UsersApiService(api)
                     .retrieveSelf()
@@ -134,7 +134,7 @@ function StaffApp() {
     }, [api, authCode]);
 
     useEffect(() => {
-        if (api.isAuthenticated()) {
+        if (api.isAuthenticated) {
             new SystemConfigsApiService(api)
                 .listAll()
                 .then((systemConfigs) => {
@@ -154,7 +154,7 @@ function StaffApp() {
     }, [api]);
 
     useEffect(() => {
-        if (authCode == null && api.isAuthenticated() && user != null) {
+        if (authCode == null && api.isAuthenticated && user != null) {
             new DepartmentMembershipsApiService(api)
                 .listAll({
                     userId: user.id,
@@ -163,7 +163,7 @@ function StaffApp() {
         }
     }, [authCode, api, user]);
 
-    if (!api.isAuthenticated()) {
+    if (!api.isAuthenticated) {
         return (
             <ThemeProvider theme={createDefaultAppTheme}>
                 <Login />
@@ -171,7 +171,7 @@ function StaffApp() {
         );
     }
 
-    if (api.isAuthenticated() && (user == null || memberships == null)) {
+    if (api.isAuthenticated && (user == null || memberships == null)) {
         return (
             <Box
                 sx={{
