@@ -232,6 +232,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                                     identityRequired: checked,
                                 });
                             }}
+                            disabled={!props.editable}
                         />
 
                         {
@@ -256,6 +257,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                                         provider={idp}
                                         form={props.entity}
                                         onFormPatch={props.onPatchEntity}
+                                        disabled={!props.editable}
                                     />
                                 ))
                             }
@@ -271,6 +273,7 @@ interface IdentityProviderItemProps {
     provider: IdentityProviderListDTO;
     form: Form;
     onFormPatch: (form: Partial<Form>) => void;
+    disabled?: boolean;
 }
 
 function IdentityProviderItem(props: IdentityProviderItemProps) {
@@ -399,6 +402,7 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                             my: 0,
                             mx: 0,
                         }}
+                        disabled={props.disabled}
                     />
                 </Box>
             </Box>
@@ -412,6 +416,7 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
                     onChange={handleScopeChange}
                     options={BayernIdAccessLevelOptions}
                     required={true}
+                    disabled={props.disabled}
                 />
             }
 
