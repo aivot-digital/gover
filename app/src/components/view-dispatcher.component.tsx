@@ -112,7 +112,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
         mode: props.mode,
     }), [element, resolvedId, error, value, dispatch, props]);
 
-    if (!isVisible) {
+    if (!isVisible || (props.mode !== 'editor' && isAnyInputElement(element) && element.technical)) {
         return null;
     }
 
