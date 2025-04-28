@@ -75,36 +75,6 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
     return (
         <Box sx={{p: 4}}>
             {
-                false && /* Disabled for now */
-                userInfoIdentifiers != null &&
-                <Box
-                    sx={{
-                        mb: 4,
-                    }}
-                >
-                    <Typography
-                        variant="h6"
-                    >
-                        Nutzer:innen-Eigenschaften
-                    </Typography>
-
-                    <SelectFieldComponent
-                        value={element.metadata?.userInfoIdentifier}
-                        onChange={(val) => {
-                            handlePatchMetadata({
-                                userInfoIdentifier: val as UserInfoIdentifier | undefined,
-                            });
-                        }}
-                        options={userInfoIdentifiers ?? []}
-                        placeholder="Nicht gesetzt"
-                        label="Nutzer:innen-Eingenschaft"
-                        hint="Wählen Sie aus, welche Eigenschaft einer Nutzer:in dieses Feld darstellt. "
-                        disabled={!props.editable}
-                    />
-                </Box>
-            }
-
-            {
                 element.type === ElementType.Text &&
                 linkedIdentityProviders != null &&
                 linkedIdentityProviders.length > 0 &&
