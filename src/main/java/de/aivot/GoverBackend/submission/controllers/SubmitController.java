@@ -85,7 +85,6 @@ public class SubmitController {
     private final SubmissionStorageService submissionStorageService;
     private final GoverConfig goverConfig;
     private final DestinationRepository destinationRepository;
-    private final KeyCloakApiService keyCloakApiService;
     private final CustomerMailService customerMailService;
     private final SubmissionMailService submissionMailService;
     private final ExceptionMailService exceptionMailService;
@@ -107,7 +106,6 @@ public class SubmitController {
             SubmissionStorageService submissionStorageService,
             GoverConfig goverConfig,
             DestinationRepository destinationRepository,
-            KeyCloakApiService keyCloakApiService,
             CustomerMailService customerMailService,
             SubmissionMailService submissionMailService,
             ExceptionMailService exceptionMailService,
@@ -127,7 +125,6 @@ public class SubmitController {
         this.submissionStorageService = submissionStorageService;
         this.goverConfig = goverConfig;
         this.destinationRepository = destinationRepository;
-        this.keyCloakApiService = keyCloakApiService;
         this.customerMailService = customerMailService;
         this.submissionMailService = submissionMailService;
         this.exceptionMailService = exceptionMailService;
@@ -502,6 +499,9 @@ public class SubmitController {
     }
 
     private Optional<IdentityCacheEntity> extractIdp(String identityId) {
+        if (StringUtils.isNullOrEmpty(identityId)) {
+            return Optional.empty();
+        }
         return identityCacheRepository.findById(identityId);
     }
 }
