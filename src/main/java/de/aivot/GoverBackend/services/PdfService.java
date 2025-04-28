@@ -97,7 +97,12 @@ public class PdfService {
                 .derive(form.getRoot(), Map.of());
 
         var dto = new HashMap<String, Object>();
-        dto.put("elements", PdfElementsGenerator.generatePdfElements(form.getRoot(), Optional.empty(), derivationContext.getFormState()));
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                form.getRoot(),
+                Optional.empty(),
+                derivationContext.getFormState(),
+                true
+                ));
         dto.put("form", form);
         dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
 
@@ -111,7 +116,12 @@ public class PdfService {
                 .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
                 .derive(form.getRoot(), submission.getCustomerInput());
 
-        dto.put("elements", PdfElementsGenerator.generatePdfElements(form.getRoot(), Optional.of(submission.getCustomerInput()), derivationContext.getFormState()));
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                form.getRoot(),
+                Optional.of(submission.getCustomerInput()),
+                derivationContext.getFormState(),
+                scope != FormPdfScope.Staff
+        ));
         dto.put("form", form);
         dto.put("submission", submission);
 

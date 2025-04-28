@@ -790,7 +790,7 @@
                     <th:block
                             th:each="child : ${step.children}"
                     >
-                        <!--/* Erzeuge einen Container für das Kind-Element. Dieser Container ist ein Fragment, dass später für z.B. das Gruppen-Layout und die Replizierende Liste wiederverwendet wird. */-->
+                        <!--/* Erzeuge einen Container für das Kind-Element. Dieser Container ist ein Fragment, das später für z.B. das Gruppen-Layout und die Replizierende Liste wiederverwendet wird. */-->
                         <div
                                 th:fragment="dispatcher"
                                 th:class="'element-wrapper element-wrapper-' + ${ child.element.type.name().toLowerCase() }"
