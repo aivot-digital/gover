@@ -36,6 +36,7 @@ import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
 import {AlertComponent} from "../../../../components/alert/alert-component";
 import {useConfirm} from "../../../../providers/confirm-provider";
+import {hideLoadingOverlay, showLoadingOverlay} from "../../../../slices/loading-overlay-slice";
 
 export const formSchema = yup.object({
     name: yup.string()
@@ -155,6 +156,7 @@ export function IdentityProviderDetailsPageIndex() {
         }
 
         setIsBusy(true);
+        dispatch(showLoadingOverlay('OpenID Endpoint wird abgerufen…'));
         apiService
             .prepare(endpointConfigUrl)
             .then((preparedIDP) => {
@@ -176,6 +178,7 @@ export function IdentityProviderDetailsPageIndex() {
             })
             .finally(() => {
                 setIsBusy(false);
+                dispatch(hideLoadingOverlay());
             });
     };
 
