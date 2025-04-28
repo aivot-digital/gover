@@ -18,6 +18,7 @@ interface DispatcherComponentProps<M extends AnyElement, V> {
     scrollContainerRef?: React.RefObject<HTMLDivElement>;
     isBusy: boolean;
     isDeriving: boolean;
+    mode: 'editor' | 'viewer';
 
     valueOverride?: {
         values: Record<string, any>;
@@ -108,6 +109,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
         isDeriving: props.isDeriving,
         valueOverride: props.valueOverride,
         errorsOverride: props.errorsOverride,
+        mode: props.mode,
     }), [element, resolvedId, error, value, dispatch, props]);
 
     if (!isVisible) {

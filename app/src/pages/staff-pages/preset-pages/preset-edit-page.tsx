@@ -438,6 +438,7 @@ export function PresetEditPage(): JSX.Element {
                                 values: customerData,
                                 onChange: handleValueChange,
                             }}
+                            mode="editor"
                         />
                     </Container>
                 </Grid>

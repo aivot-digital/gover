@@ -54,6 +54,7 @@ export function RootComponentView({
                                       allElements,
                                       element,
                                       scrollContainerRef,
+                                      mode,
                                   }: BaseViewProps<RootElement, void>) {
     const log = useLogger('RootComponentView');
     const api = useApi();
@@ -433,6 +434,7 @@ export function RootComponentView({
                                                 element={step}
                                                 isBusy={isBusy}
                                                 isDeriving={isDeriving ?? false}
+                                                mode={mode}
                                             />
                                         </CustomStep>
                                     ))

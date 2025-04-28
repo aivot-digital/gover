@@ -537,6 +537,7 @@ export function FormEditPage() {
                             scrollContainerRef={scrollContainerRef}
                             isBusy={false}
                             isDeriving={false}
+                            mode="editor"
                         />
                     </Grid>
                 </Grid>

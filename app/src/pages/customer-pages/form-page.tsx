@@ -100,6 +100,7 @@ export function FormPage() {
                         element={form.root}
                         isBusy={false}
                         isDeriving={false}
+                        mode="viewer"
                     />
 
                     <LoadCustomerInputDialog
