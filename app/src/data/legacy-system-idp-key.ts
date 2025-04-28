@@ -4,3 +4,10 @@ export enum LegacySystemIdpKey {
     Muk = 'muk',
     ShId = 'sh_id',
 }
+
+export const LegacySystemIdpKeys = [
+    LegacySystemIdpKey.BayernId,
+    LegacySystemIdpKey.BundId,
+    LegacySystemIdpKey.Muk,
+    LegacySystemIdpKey.ShId,
+];
