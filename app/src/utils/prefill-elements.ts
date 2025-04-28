@@ -94,7 +94,9 @@ export function getMetadataMapping(element: AnyInputElement, idpMetadataIdentifi
         identityMappings,
     } = metadata;
 
-    const mappings = identityMappings ?? {};
+    const mappings = {
+        ...identityMappings
+    };
 
     if (bayernIdMapping != null) {
         mappings[LegacySystemIdpKey.BayernId] = bayernIdMapping;
