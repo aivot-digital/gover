@@ -134,7 +134,7 @@ export function ListPage(): JSX.Element {
                                     title="Unsere Formulare"
                                     search={search}
                                     onSearchChange={setSearch}
-                                    searchPlaceholder="Formular suchen..."
+                                    searchPlaceholder="Formular suchen…"
                                     actions={[]}
                                 />
 
@@ -168,7 +168,7 @@ export function ListPage(): JSX.Element {
                                             applications.length > 0 &&
                                             filteredApplications.length === 0 &&
                                             <EmptySearchDataListPlaceholder
-                                                helperText="Es gibt keine Formulare, die Ihrer Suche entsprechen..."
+                                                helperText="Es gibt keine Formulare, die Ihrer Suche entsprechen…"
                                             />
                                         }
                                     </List>
