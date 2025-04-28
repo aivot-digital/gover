@@ -42,19 +42,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     const initialDisplayCount = 4;
-    const [showAllEligiblePersons, setShowAllEligiblePersons] = useState(false); // Zustandsvariable, um zu kontrollieren, ob alle Personen angezeigt werden sollen
-    const [showAllDocumentsToAttach, setShowAllDocumentsToAttach] = useState(false); // Zustandsvariable, um zu kontrollieren, ob alle Personen angezeigt werden sollen
-    const [showAllSupportingDocuments, setShowAllSupportingDocuments] = useState(false); // Zustandsvariable, um zu kontrollieren, ob alle Personen angezeigt werden sollen
-
-    const handleToggleShowAllEligiblePersons = () => {
-        setShowAllEligiblePersons(!showAllEligiblePersons);
-    };
-    const handleToggleShowAllDocumentsToAttach = () => {
-        setShowAllDocumentsToAttach(!showAllDocumentsToAttach);
-    };
-    const handleToggleShowAllSupportingDocuments = () => {
-        setShowAllSupportingDocuments(!showAllSupportingDocuments);
-    };
 
     function cleanDocuments(documents: Array<string> | undefined) {
         if (documents) {
