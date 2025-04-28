@@ -96,7 +96,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
         }
     }, [searchParams]);
 
-    if (form == null || identityLinks == null) {
+    if (form == null || identityLinks == null || identityLinks.length === 0) {
         return null;
     }
 
