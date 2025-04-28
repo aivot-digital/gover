@@ -7,7 +7,6 @@ import {SelectFieldComponent} from '../select-field/select-field-component';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import type {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
 import {ElementType} from '../../data/element-type/element-type';
 import {UserInfoIdentifier, UserInfoIdentifierOptions} from '../../data/user-info-identifier';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
@@ -17,11 +16,7 @@ import {IdentityProvidersApiService} from '../../modules/identity/identity-provi
 import {useApi} from '../../hooks/use-api';
 import {getMetadataMapping} from '../../utils/prefill-elements';
 
-export type ElementAttributeMappingOption = SelectFieldComponentOption & {
-    limit: ElementType[];
-};
-
-export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>): JSX.Element {
+export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
     const api = useApi();
 
     const {
