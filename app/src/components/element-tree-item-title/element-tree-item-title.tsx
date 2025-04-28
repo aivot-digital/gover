@@ -189,7 +189,10 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                     marginLeft: 'auto',
                 }}
             >
-                <ElementStatusIcons element={props.element} />
+                <ElementStatusIcons
+                    element={props.element}
+                    enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
+                />
 
                 {
                     props.editable &&

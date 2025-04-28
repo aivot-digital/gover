@@ -8,6 +8,7 @@ import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/
 import {LegacySystemIdpKey} from '../data/legacy-system-idp-key';
 import {resolveId} from './id-utils';
 import {ElementType} from '../data/element-type/element-type';
+import {isStringNullOrEmpty} from './string-utils';
 
 type PrefilledCustomerInput = Partial<CustomerInput>;
 
@@ -112,6 +113,10 @@ export function getMetadataMapping(element: AnyInputElement, idpMetadataIdentifi
     }
 
     const mapping: string | null | undefined = mappings[idpMetadataIdentifier];
+
+    if (isStringNullOrEmpty(mapping)) {
+        return undefined;
+    }
 
     return mapping ?? undefined;
 }

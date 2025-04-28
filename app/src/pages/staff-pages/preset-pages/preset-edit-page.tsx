@@ -36,6 +36,8 @@ import {CustomerInput} from '../../../models/customer-input';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from "../../../utils/with-async-wrapper";
 import {FormState} from "../../../models/dtos/form-state";
+import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
+import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
 
 export function PresetEditPage(): JSX.Element {
     const api = useApi();
@@ -53,6 +55,7 @@ export function PresetEditPage(): JSX.Element {
 
     const [preset, setPreset] = useState<Preset>();
     const [presetVersion, setPresetVersion] = useState<PresetVersion>();
+    const [identityProviders, setIdentityProviders] = useState<IdentityProviderInfo[]>([]);
 
     const presetsApiService = useMemo(() => {
         return new PresetsApiService(api);
@@ -73,6 +76,19 @@ export function PresetEditPage(): JSX.Element {
     const updateToolbarHeight = (height: number) => {
         setToolbarHeight(height);
     };
+
+    // Fetch all available identity providers
+    useEffect(() => {
+        new IdentityProvidersApiService(api)
+            .listAll()
+            .then(res => setIdentityProviders(res.content.map(idp => ({
+                key: idp.key,
+                name: idp.name,
+                type: idp.type,
+                iconAssetKey: '',
+                metadataIdentifier: idp.metadataIdentifier,
+            }))))
+    }, [api]);
 
     // Fetch the preset on key or version change.
     // The version change is needed to update the current version field in the preset.
@@ -417,6 +433,7 @@ export function PresetEditPage(): JSX.Element {
                         onPatch={handlePatch}
                         editable={presetVersion.publishedAt == null && presetVersion.publishedStoreAt == null}
                         scope="preset"
+                        enabledIdentityProviderInfos={identityProviders}
                     />
                 </Grid>
 

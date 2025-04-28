@@ -6,6 +6,7 @@ import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {type ElementTreeScope} from '../element-tree/element-tree-scope';
 import {AnyFormElement} from '../../models/elements/form/any-form-element';
+import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
 
 
 export interface ElementTreeItemListProps<T extends AnyElementWithChildren, E extends ElementTreeEntity> {
@@ -17,4 +18,5 @@ export interface ElementTreeItemListProps<T extends AnyElementWithChildren, E ex
     onMove: (updatedElement: Partial<T>, droppedElement: StepElement | AnyFormElement) => void;
     editable: boolean;
     scope: ElementTreeScope;
+    enabledIdentityProviderInfos: IdentityProviderInfo[];
 }

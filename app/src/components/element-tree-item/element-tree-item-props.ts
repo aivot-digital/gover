@@ -6,6 +6,7 @@ import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {type ElementTreeScope} from '../element-tree/element-tree-scope';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {AnyFormElement} from '../../models/elements/form/any-form-element';
+import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
 
 
 export interface ElementTreeItemProps<T extends AnyElement, E extends ElementTreeEntity> {
@@ -19,4 +20,5 @@ export interface ElementTreeItemProps<T extends AnyElement, E extends ElementTre
     editable: boolean;
     scope: ElementTreeScope;
     disableDrag?: boolean;
+    enabledIdentityProviderInfos: IdentityProviderInfo[];
 }

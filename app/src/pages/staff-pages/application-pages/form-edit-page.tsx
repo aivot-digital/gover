@@ -67,6 +67,7 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-ov
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {FormState} from '../../../models/dtos/form-state';
 import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
+import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 
 export const DialogSearchParam = 'dialog';
 
@@ -107,6 +108,7 @@ export function FormEditPage() {
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
     const metaDialog = useAppSelector((state) => state.app.showDialog);
+    const [identityProviderInfos, setIdentityProviderInfos] = useState<IdentityProviderInfo[]>([]);
 
     const [theme, setTheme] = useState<Theme>();
 
@@ -150,8 +152,8 @@ export function FormEditPage() {
         dispatch(clearErrors());
         dispatch(setCurrentStep(0));
         setFailedToLoad(false);
-        if (params.id != null) {
-            const id = parseInt(params.id);
+        if (formIdStr != null) {
+            const id = parseInt(formIdStr);
             new FormsApiService(api)
                 .retrieve(id)
                 .then((app) => {
@@ -164,7 +166,7 @@ export function FormEditPage() {
                 });
             fetchLockState(id);
         }
-    }, [params.id, dispatch]);
+    }, [formIdStr, dispatch]);
 
     useEffect(() => {
         if (loadedForm?.themeId != null) {
@@ -176,6 +178,12 @@ export function FormEditPage() {
                 });
         } else {
             setTheme(undefined);
+        }
+
+        if (loadedForm != null) {
+            FormsApiService
+                .getIdentityProviders(loadedForm.id)
+                .then(res => setIdentityProviderInfos(res.content));
         }
     }, [loadedForm]);
 
@@ -518,6 +526,7 @@ export function FormEditPage() {
                                 onPatch={handlePatch}
                                 editable={isEditable}
                                 scope="application"
+                                enabledIdentityProviderInfos={identityProviderInfos}
                             />
                         </Grid>
                     }
