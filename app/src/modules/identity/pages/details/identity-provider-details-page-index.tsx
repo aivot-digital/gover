@@ -462,21 +462,24 @@ export function IdentityProviderDetailsPageIndex() {
                         transform: 'translateY(-10px)',
                     }}
                 >
-                    <Box
-                        sx={{
-                            display: 'inline-block',
-                            py: 1,
-                            px: 2,
-                            border: '1px solid #ccc',
-                            borderRadius: '4px'
-                        }}
-                    >
-                    <IdentityProviderIcon
-                        name={identityProvider.name}
-                        type={identityProvider.type}
-                        iconAssetKey={identityProvider.iconAssetKey}
-                    />
+                    {
+                        identityProvider.iconAssetKey &&
+                        <Box
+                            sx={{
+                                display: 'inline-block',
+                                py: 1,
+                                px: 2,
+                                border: '1px solid #ccc',
+                                borderRadius: '4px'
+                            }}
+                        >
+                            <IdentityProviderIcon
+                                name={identityProvider.name}
+                                type={identityProvider.type}
+                                iconAssetKey={identityProvider.iconAssetKey}
+                            />
                         </Box>
+                    }
                 </Grid>
 
                 <Grid
