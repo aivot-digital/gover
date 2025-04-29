@@ -1,15 +1,16 @@
-import {
-    Box,
-    Card, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-    Typography
-} from '@mui/material';
+import {Box, Button, Card, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography} from '@mui/material';
 import React, {useContext} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
-import { IdentityProviderType } from '../../enums/identity-provider-type';
+import {IdentityProviderType} from '../../enums/identity-provider-type';
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import {AppConfig} from '../../../../app-config';
 import CodeOutlinedIcon from "@mui/icons-material/CodeOutlined";
+import {SettingsSuggestOutlined} from "@mui/icons-material";
+import {SamlMetadataDialog} from "../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog";
 
 interface SetupInfoBlockProps {
     title: string;
@@ -22,16 +23,86 @@ interface SetupInfoBlockProps {
 }
 
 function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
+    const [open, setOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [fields, setFields] = React.useState<{ label: string; value: string }[]>([]);
+    const [error, setError] = React.useState<string | null>(null);
+    const { item: identityProvider } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
+
+    const handleFetchMetadata = async () => {
+        if (!identityProvider) return;
+
+        const metadataLink = links.find(l => l.label.includes('SAML Metadaten'))?.url;
+        if (!metadataLink) return;
+
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(metadataLink);
+            const text = await response.text();
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(text, "application/xml");
+
+            const entityID = xml.documentElement.getAttribute('entityID') ?? '';
+
+            const signingCertNode = xml.querySelector('KeyDescriptor[use="signing"] X509Certificate');
+            const signingCert = signingCertNode?.textContent?.trim() ?? '';
+
+            const encryptionCertNode = xml.querySelector('KeyDescriptor[use="encryption"] X509Certificate');
+            const encryptionCert = encryptionCertNode?.textContent?.trim() ?? '';
+
+            const assertionConsumerServiceNode = xml.querySelector('AssertionConsumerService');
+            const assertionConsumerServiceURL = assertionConsumerServiceNode?.getAttribute('Location') ?? '';
+
+            const singleLogoutServiceNode = xml.querySelector('SingleLogoutService');
+            const singleLogoutServiceURL = singleLogoutServiceNode?.getAttribute('Location') ?? '';
+
+            if (!entityID || !signingCert || !encryptionCert || !assertionConsumerServiceURL) {
+                throw new Error("Nicht alle erforderlichen Metadaten konnten ausgelesen werden.");
+            }
+
+            const fieldsToShow: { label: string; value: string }[] = [];
+
+            if (identityProvider.type === IdentityProviderType.BundID) {
+                fieldsToShow.push(
+                    { label: 'EntityID', value: entityID },
+                    { label: 'Primäres X509 Zertifikat (signing)', value: signingCert },
+                    { label: 'X509 Zertifikat (encryption)', value: encryptionCert },
+                    { label: 'Assertion Consumer Service URL', value: assertionConsumerServiceURL },
+                );
+            } else if (identityProvider.type === IdentityProviderType.MUK) {
+                fieldsToShow.push(
+                    { label: 'EntityID', value: entityID },
+                    { label: 'Primäres X509 Zertifikat (signing)', value: signingCert },
+                    { label: 'X509 Zertifikat (encryption)', value: encryptionCert },
+                    { label: 'Assertion Consumer Service URL', value: assertionConsumerServiceURL },
+                    { label: 'Single Logout Service URL', value: singleLogoutServiceURL || 'Nicht angegeben' },
+                );
+            }
+
+            setFields(fieldsToShow);
+        } catch (error) {
+            console.error('Fehler beim Laden oder Verarbeiten der Metadaten', error);
+            setError('Die Metadaten konnten nicht korrekt geladen oder verarbeitet werden.');
+        } finally {
+            setOpen(true);
+            setLoading(false);
+        }
+    };
+
+    const needsSelectiveMetadata = identityProvider?.type === IdentityProviderType.BundID || identityProvider?.type === IdentityProviderType.MUK;
+
     return (
         <>
-            <Typography variant="h5" sx={{mt: 1.5, mb: 1}}>
+            <Typography variant="h5" sx={{ mt: 1.5, mb: 1 }}>
                 {title}
             </Typography>
 
-            <Typography sx={{mb: 3, maxWidth: 900}}>
+            <Typography sx={{ mb: 3, maxWidth: 900 }}>
                 {description}
             </Typography>
-            <Card variant="outlined" sx={{mb: 4}}>
+
+            <Card variant="outlined" sx={{ mb: 4 }}>
                 <List>
                     {links.map(link => (
                         <ListItem key={link.label} disablePadding>
@@ -43,9 +114,38 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
                     ))}
                 </List>
             </Card>
+
+            {needsSelectiveMetadata && (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        marginTop: 2,
+                        gap: 2,
+                    }}
+                >
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleFetchMetadata}
+                        startIcon={<SettingsSuggestOutlined />}
+                    >
+                        Metadaten für Einrichtung auslesen
+                    </Button>
+                </Box>
+                )
+            }
+
+            <SamlMetadataDialog
+                open={open}
+                loading={loading}
+                fields={fields}
+                error={error}
+                onClose={() => setOpen(false)}
+            />
         </>
     );
 }
+
 
 export function IdentityProviderDetailsPageSetup() {
     const {
@@ -78,7 +178,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <CodeOutlinedIcon />,
                             label: 'SAML Metadaten',
-                            url: `${AppConfig.bundId.host}/realms/${AppConfig.bundId.realm}/bundid/${AppConfig.bundId.broker}/metadata`,
+                            url: `${AppConfig.bundId.host}/realms/${AppConfig.bundId.realm}/broker/${AppConfig.bundId.broker}/endpoint/descriptor`,
                         },
                     ]}
                 />
