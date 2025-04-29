@@ -173,7 +173,7 @@ values (gen_random_uuid(),
                 "value": "bundid"
             }
         ]',
-        exists(select 1 from system_configs where key = 'bundIDActive' and value = 'true'),
+        exists(select 1 from system_configs where key = 'BundIDActive' and value = 'true'),
         false);
 
 update forms as fms
