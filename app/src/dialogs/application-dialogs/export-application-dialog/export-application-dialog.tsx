@@ -24,7 +24,7 @@ export function ExportApplicationDialog({ open, onCancel, onExport }: ExportAppl
                 </DialogContentText>
                 <DialogContentText sx={{ mt: 2 }}>
                     <b>Wichtig:</b> Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind für die importierende Person nicht sichtbar.
-                    Dazu zählen u. a. Formular-ID, Schnittstellen, Status, Fachbereiche, rechtliche Hinweise, Support-Angaben, PDF-Vorlagen, Farbschema, Zahlungsdetails sowie Test-Protokolle.
+                    Dazu zählen u. a. Formular-ID, Schnittstellen, Status, Fachbereiche, rechtliche Hinweise, Support-Angaben, PDF-Vorlagen, Farbschema, Zahlungsdetails, Test-Protokolle und die Historie.
                 </DialogContentText>
                 <DialogContentText sx={{ mt: 2 }}>
                     Bei Bedarf müssen Sie diese Informationen nach einem Import im Zielsystem neu konfigurieren.
