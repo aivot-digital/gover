@@ -34,9 +34,9 @@ import {TableFieldComponent2} from '../../../../components/table-field/table-fie
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
-import {AlertComponent} from "../../../../components/alert/alert-component";
-import {useConfirm} from "../../../../providers/confirm-provider";
-import {hideLoadingOverlay, showLoadingOverlay} from "../../../../slices/loading-overlay-slice";
+import {AlertComponent} from '../../../../components/alert/alert-component';
+import {useConfirm} from '../../../../providers/confirm-provider';
+import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 
 export const formSchema = yup.object({
     name: yup.string()
@@ -402,7 +402,7 @@ export function IdentityProviderDetailsPageIndex() {
                             value={endpointConfigUrl}
                             onChange={val => setEndpointConfigUrl(val ?? '')}
                             error={endpointConfigUrlError}
-                            size={"small"}
+                            size={'small'}
                         />
 
                         <Button
@@ -411,7 +411,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 flexShrink: 0,
                                 mt: 2,
                             }}
-                            variant={"contained"}
+                            variant={'contained'}
                         >
                             Konfiguration laden
                         </Button>
@@ -429,7 +429,8 @@ export function IdentityProviderDetailsPageIndex() {
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die Konfiguration bereits für Formulare verwendet wird.
+                Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die Konfiguration bereits für
+                Formulare verwendet wird.
             </Typography>
 
             <Grid
@@ -473,7 +474,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 py: 1,
                                 px: 2,
                                 border: '1px solid #ccc',
-                                borderRadius: '4px'
+                                borderRadius: '4px',
                             }}
                         >
                             <IdentityProviderIcon
@@ -511,8 +512,12 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     {
                         identityProvider.type != IdentityProviderType.Custom &&
-                        <AlertComponent color="info" sx={{mt: 2}}>
-                            <strong>Hinweis:</strong> Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
+                        <AlertComponent
+                            color="info"
+                            sx={{mt: 2}}
+                        >
+                            <strong>Hinweis:</strong>
+                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
                 </Grid>
@@ -540,7 +545,7 @@ export function IdentityProviderDetailsPageIndex() {
                                     label: secret.filename,
                                 }))
                         }
-                        hint={"Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen."}
+                        hint={'Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen.'}
                     />
                 </Grid>
 
@@ -587,7 +592,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <Typography
                         variant="h6"
-                        sx={{ mt: 4, mb: 0 }}
+                        sx={{mt: 4, mb: 0}}
                     >
                         Technische Konfiguration
                     </Typography>
@@ -724,7 +729,7 @@ export function IdentityProviderDetailsPageIndex() {
                                     label: secret.name,
                                 }))
                         }
-                        hint={"Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert."}
+                        hint={'Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert.'}
                     />
                 </Grid>
             </Grid>
@@ -774,7 +779,7 @@ export function IdentityProviderDetailsPageIndex() {
             >
                 <Typography
                     variant="h6"
-                    sx={{ mt: 4, mb: 0 }}
+                    sx={{mt: 4, mb: 0}}
                 >
                     Attributszuweisungen
                 </Typography>
@@ -874,18 +879,42 @@ export function IdentityProviderDetailsPageIndex() {
                 {
                     isStringNotNullOrEmpty(identityProvider.key) &&
                     !isSystemProvider &&
-                    <Button
-                        variant="outlined"
-                        onClick={checkAndHandleDelete}
-                        disabled={isBusy}
-                        color="error"
+                    originalIdentityProvider != null &&
+                    <Box
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
                     >
-                        Löschen
-                    </Button>
+                        {
+                            !originalIdentityProvider.isEnabled &&
+                            <Button
+                                variant="outlined"
+                                onClick={checkAndHandleDelete}
+                                disabled={isBusy}
+                                color="error"
+
+                                startIcon={<DeleteOutlinedIcon />}
+                            >
+                                Löschen
+                            </Button>
+                        }
+
+                        {
+                            originalIdentityProvider.isEnabled &&
+                            <Tooltip title="Nur ein inaktiver Nutzerkontenanbieter kann gelöscht werden. Sie müssen den Anbieter zunächst deaktivieren und speichern, bevor Sie ihn löschen können.">
+                                <span>
+                                    <Button
+                                        variant="outlined"
+                                        disabled={true}
+                                        color="error"
+                                        startIcon={<DeleteOutlinedIcon />}
+                                    >
+                                        Löschen
+                                    </Button>
+                                </span>
+                            </Tooltip>
+                        }
+                    </Box>
                 }
             </Box>
 
