@@ -40,7 +40,7 @@ export function IdentityProvidersListPage() {
                                 <>
                                     <Typography variant="body1" paragraph>
                                         Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Gover-Instanz global verfügbar sein sollen.
-                                        Die angebundenen Nuterkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
+                                        Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
                                         Unterstützt werden alle Anbieter, die eine OpenID Connect (OIDC) kompatible Schnittstelle bereitstellen.
                                     </Typography>
                                     <Typography variant="body1" paragraph>
