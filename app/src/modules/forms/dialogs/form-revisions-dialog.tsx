@@ -139,7 +139,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
             return;
         }
 
-        dispatch(showLoadingOverlay('Änderung wird rückgängig gemacht...'));
+        dispatch(showLoadingOverlay('Änderung wird rückgängig gemacht…'));
         new FormsApiService(api)
             .rollbackRevision(form.id, id)
             .then(form => {
@@ -403,7 +403,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                     {
                         isLoadingRevisions &&
                         <LoadingPlaceholder
-                            message="Lade Historie..."
+                            message="Lade Historie…"
                         />
                     }
                 </DialogContent>

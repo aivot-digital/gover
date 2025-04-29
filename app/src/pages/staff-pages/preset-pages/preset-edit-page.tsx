@@ -231,7 +231,7 @@ export function PresetEditPage(): JSX.Element {
         };
 
 
-        dispatch(showLoadingOverlay('Speichern...'));
+        dispatch(showLoadingOverlay('Speichern…'));
 
         new PresetVersionApiService(api, preset.key)
             .update(presetVersion.version, updatedPreset)

@@ -93,7 +93,11 @@ export function IdentityButton(props: IdentityButtonProps) {
                     textAlign: {xs: 'center', md: 'left'},
                 }}
             >
-                {isSuccessful ? 'Angemeldet' : `Mit ${identityProviderInfo.name} anmelden`}
+                {isSuccessful ? (
+                    <>Sie haben sich erfolgreich mit dem Nutzerkonto <b>„{identityProviderInfo.name}“</b> angemeldet.</>
+                ) : (
+                    <>Mit Nutzerkonto <b>„{identityProviderInfo.name}“</b> anmelden</>
+                )}
             </Typography>
         </Button>
     );

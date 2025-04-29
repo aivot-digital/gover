@@ -192,7 +192,7 @@ export function FormEditPage() {
             return;
         }
 
-        dispatch(showLoadingOverlay('Sichtbarkeiten berechnen...'));
+        dispatch(showLoadingOverlay('Sichtbarkeiten berechnen…'));
 
         withAsyncWrapper<any, FormState>({
             desiredMinRuntime: 600,
@@ -254,7 +254,7 @@ export function FormEditPage() {
 
     const handleUndo = () => {
         dispatch(undoLoadedForm());
-        dispatch(showLoadingOverlay('Speichern...'));
+        dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
             .update(loadedForm!.id, pastLoadedForm[pastLoadedForm.length - 1])
             .then((loadedForm) => {
@@ -286,7 +286,7 @@ export function FormEditPage() {
 
     const handleRedo = () => {
         dispatch(redoLoadedForm());
-        dispatch(showLoadingOverlay('Speichern...'));
+        dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
             .update(loadedForm!.id, futureLoadedForm[futureLoadedForm.length - 1])
             .then((loadedForm) => {
@@ -369,7 +369,7 @@ export function FormEditPage() {
                 ...loadedForm,
             };
 
-            dispatch(showLoadingOverlay('Speichern...'));
+            dispatch(showLoadingOverlay('Speichern…'));
 
             const apiService = new FormsApiService(api);
 

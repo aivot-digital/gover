@@ -36,6 +36,7 @@ import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
 import {AlertComponent} from "../../../../components/alert/alert-component";
 import {useConfirm} from "../../../../providers/confirm-provider";
+import {hideLoadingOverlay, showLoadingOverlay} from "../../../../slices/loading-overlay-slice";
 
 export const formSchema = yup.object({
     name: yup.string()
@@ -155,6 +156,7 @@ export function IdentityProviderDetailsPageIndex() {
         }
 
         setIsBusy(true);
+        dispatch(showLoadingOverlay('OpenID Endpoint wird abgerufen…'));
         apiService
             .prepare(endpointConfigUrl)
             .then((preparedIDP) => {
@@ -176,6 +178,7 @@ export function IdentityProviderDetailsPageIndex() {
             })
             .finally(() => {
                 setIsBusy(false);
+                dispatch(hideLoadingOverlay());
             });
     };
 
@@ -323,6 +326,54 @@ export function IdentityProviderDetailsPageIndex() {
             });
     };
 
+    const handleStatusChange = async (newValue: boolean) => {
+        // Bei Aktivierung und wenn es sich um ein offizielles Nutzerkonto handelt
+        if (newValue === true && identityProvider.type !== IdentityProviderType.Custom) {
+            const confirmed = await showConfirm({
+                title: 'Hinweis zur Einrichtung',
+                confirmButtonText: 'Ja, Einrichtung wurde durchgeführt',
+                children: (
+                    <>
+                        <Typography gutterBottom>
+                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos gelesen und umgesetzt haben.
+                        </Typography>
+                        <Typography gutterBottom>
+                            Diese Hinweise finden Sie im Reiter <strong>Einrichtung</strong>.
+                        </Typography>
+                    </>
+                ),
+            });
+
+            if (!confirmed) {
+                return;
+            }
+        }
+
+        // Bei Deaktivierung
+        if (newValue === false) {
+            const confirmed = await showConfirm({
+                title: 'Deaktivierung bestätigen',
+                confirmButtonText: 'Ja, Nutzerkontenanbieter deaktivieren',
+                children: (
+                    <>
+                        <Typography gutterBottom>
+                            Wenn Sie den Nutzerkontenanbieter deaktivieren, wird das Nutzerkonto automatisch aus Formularen mit dem Status "In Bearbeitung" entfernt.
+                        </Typography>
+                        <Typography gutterBottom>
+                            Bitte beachten Sie, dass Sie den Nutzerkontenanbieter speichern müssen, um diese Änderung zu übernehmen.
+                        </Typography>
+                    </>
+                ),
+            });
+
+            if (!confirmed) {
+                return;
+            }
+        }
+
+        handleInputChange('isEnabled')(newValue);
+    };
+
     return (
         <Box>
             {
@@ -414,21 +465,24 @@ export function IdentityProviderDetailsPageIndex() {
                         transform: 'translateY(-10px)',
                     }}
                 >
-                    <Box
-                        sx={{
-                            display: 'inline-block',
-                            py: 1,
-                            px: 2,
-                            border: '1px solid #ccc',
-                            borderRadius: '4px'
-                        }}
-                    >
-                    <IdentityProviderIcon
-                        name={identityProvider.name}
-                        type={identityProvider.type}
-                        iconAssetKey={identityProvider.iconAssetKey}
-                    />
+                    {
+                        identityProvider.iconAssetKey &&
+                        <Box
+                            sx={{
+                                display: 'inline-block',
+                                py: 1,
+                                px: 2,
+                                border: '1px solid #ccc',
+                                borderRadius: '4px'
+                            }}
+                        >
+                            <IdentityProviderIcon
+                                name={identityProvider.name}
+                                type={identityProvider.type}
+                                iconAssetKey={identityProvider.iconAssetKey}
+                            />
                         </Box>
+                    }
                 </Grid>
 
                 <Grid
@@ -504,32 +558,7 @@ export function IdentityProviderDetailsPageIndex() {
                     <CheckboxFieldComponent
                         label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
                         value={identityProvider.isEnabled}
-                        onChange={async (newValue) => {
-                            if (
-                                newValue === true &&
-                                identityProvider.type !== IdentityProviderType.Custom
-                            ) {
-                                const confirmed = await showConfirm({
-                                    title: 'Hinweis zur Einrichtung',
-                                    confirmButtonText: 'Ja, Einrichtung wurde durchgeführt',
-                                    children: (
-                                        <>
-                                            <Typography gutterBottom>
-                                                Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos gelesen und umgesetzt haben.
-                                            </Typography>
-                                            <Typography gutterBottom>
-                                                Diese Hinweise finden Sie im Reiter <strong>Einrichtung</strong>.
-                                            </Typography>
-                                        </>
-                                    ),
-                                });
-
-                                if (!confirmed) {
-                                    return;
-                                }
-                            }
-                            handleInputChange('isEnabled')(newValue);
-                        }}
+                        onChange={handleStatusChange}
                         variant="switch"
                         error={errors.isEnabled}
                         hint="Gibt an, ob dieser Nutzerkontenanbieter aktiviert ist. Bei temporären technischen Problemen o.Ä. kann der Anbieter deaktiviert werden, ohne die Konfiguration zu verlieren."

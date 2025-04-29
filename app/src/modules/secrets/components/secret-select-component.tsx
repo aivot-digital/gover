@@ -33,7 +33,7 @@ export function SecretSelectComponent(props: SecretSelectComponentProps): ReactN
     return (
         <>
             <Box>
-                {selectedSecret != null ? selectedSecret.name : 'Loading...'}
+                {selectedSecret != null ? selectedSecret.name : 'Loading…'}
 
                 <Button onClick={() => setShowDialog(true)}>
                     Select
