@@ -40,6 +40,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
 
             // Propagate the patch to the parent element
             props.onPatch({
+                ...element,
                 children: updatedChildren,
             } as Partial<T>, {});
         }
@@ -55,6 +56,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
 
             // Propagate the patch to the parent element
             props.onMove({
+                ...element,
                 children: updatedChildren,
             } as Partial<T>, droppedElement);
         }
@@ -103,6 +105,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                     // Test if the original parent element has the dropped element as a child
                                     if (hasChildElement(props.element, droppedElement)) {
                                         const parentWithoutDroppedElement = removeChildElement(props.element, droppedElement);
+
                                         parentWithoutDroppedElement.children[index] = {
                                             ...parentWithoutDroppedElement.children[index],
                                             ...updatedElement,
@@ -114,6 +117,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                         updatedChildren[index] = updatedElement as any;
 
                                         props.onMove({
+                                            ...props.element,
                                             children: updatedChildren,
                                         } as Partial<T>, droppedElement);
                                     }

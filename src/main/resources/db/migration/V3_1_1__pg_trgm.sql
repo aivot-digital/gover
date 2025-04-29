@@ -1,2 +1,2 @@
 -- enable pg_trgm extension
-CREATE EXTENSION pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
