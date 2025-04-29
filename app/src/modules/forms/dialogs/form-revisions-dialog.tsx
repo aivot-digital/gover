@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Dialog, DialogContent, DialogContentText, Grid, Skeleton, Typography} from '@mui/material';
+import {Box, Button, Card, Dialog, DialogContent, DialogContentText, Grid, Skeleton, Typography} from '@mui/material';
 import { User } from '../../users/models/user';
 import {DiffItem} from '../../../models/entities/form-revision';
 import { Form, isForm } from '../../../models/entities/form';
@@ -23,6 +23,7 @@ import format from 'date-fns/format';
 import {ApplicationStatus} from '../../../data/application-status';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
+import {RestoreOutlined} from "@mui/icons-material";
 
 
 export interface FormRevisionsDialogProps {
@@ -97,7 +98,7 @@ async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | u
                 elementPath: elementPath,
                 element: element,
                 title: resolveElementLabel(element),
-                path: elementPath.map(e => resolveElementLabel(e)).join(' > '),
+                path: elementPath.slice(1).map(e => resolveElementLabel(e)).join(' → '),
                 ...diff,
                 field: diff.field.split('/').pop() ?? '',
             };
@@ -205,7 +206,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                 open={props.open}
                 onClose={props.onClose}
                 fullWidth
-                maxWidth="xl"
+                maxWidth={isLoadingRevisions ? "sm" : "xl"}
             >
 
                 <DialogTitleWithClose
@@ -218,7 +219,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                     }
                     {
                         form != null &&
-                        `Historie für ${form.title}`
+                        `Historie für das Formular „${form.title}“`
                     }
                 </DialogTitleWithClose>
 
@@ -239,21 +240,32 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                             <Typography
                                 variant="body2"
                                 sx={{
-                                    mb: 2,
+                                    mb: 3,
                                 }}
                             >
                                 Die Historie zeigt alle Änderungen am Formular.
                                 Sie können jede Änderung rückgängig machen, auch die von anderen Mitarbeiter:innen.
                             </Typography>
 
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    mb: 2,
+                                }}
+                            >
+                                Liste der Änderungen (neuste zuerst)
+                            </Typography>
+
                             {
                                 revisions &&
                                 revisions.map((rev, index) => (
-                                    <Box
+                                    <Card
                                         key={rev.id}
-                                        mb={2}
-                                        pb={2}
-                                        borderBottom={index < revisions.length - 1 ? 1 : 0}
+                                        sx={{
+                                            mb: 2,
+                                            p: 2,
+                                        }}
+                                        variant={'outlined'}
                                     >
                                         <Box
                                             sx={{
@@ -267,7 +279,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                     marginBottom: 0.5,
                                                 }}
                                             >
-                                                {getFullName(rev.user)} @ {format(rev.timestamp, 'dd.MM.yyyy HH:mm:ss')} Uhr
+                                                Änderung{rev.diffs != null && rev.diffs.length > 1 ? 'en' : ''} von {getFullName(rev.user)} <Typography component={'span'} sx={{color: 'text.secondary'}}>(am {format(rev.timestamp, 'dd.MM.yyyy')} um {format(rev.timestamp, 'HH:mm:ss')} Uhr)</Typography>
                                             </Typography>
                                         </Box>
 
@@ -276,20 +288,21 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                 <Box
                                                     key={diff.path + diff.field}
                                                     sx={{
-                                                        padding: 1,
-                                                        marginBottom: 1,
-                                                        marginLeft: 1,
+                                                        marginBottom: 3,
                                                     }}
                                                 >
 
-                                                    <Typography variant="caption">
-                                                        {diff.path} &gt; {diff.field}
-                                                    </Typography>
+                                                    {diff.field &&
+                                                        <Typography>
+                                                            Geändertes Attribut: {diff.path} → <b>{diff.field}</b>
+                                                        </Typography>
+                                                    }
 
                                                     <Grid
                                                         container
                                                         key={diff.field}
                                                         spacing={2}
+                                                        sx={{mt: -1}}
                                                     >
                                                         <Grid
                                                             item
@@ -313,8 +326,9 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                                     width: '100%',
                                                                     overflowX: 'auto',
                                                                     padding: 1,
-                                                                    border: '1px solid gray',
+                                                                    border: '1px solid #D6D6D7',
                                                                     backgroundColor: '#fafafa',
+                                                                    borderRadius: '4px',
                                                                 }}
                                                             >
                                                                 {JSON.stringify(diff.oldValue, null, '\t')}
@@ -343,8 +357,9 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                                     width: '100%',
                                                                     overflowX: 'auto',
                                                                     padding: 1,
-                                                                    border: '1px solid gray',
+                                                                    border: '1px solid #D6D6D7',
                                                                     backgroundColor: '#fafafa',
+                                                                    borderRadius: '4px',
                                                                 }}
                                                             >
                                                                 {JSON.stringify(diff.newValue, null, '\t')}
@@ -366,19 +381,19 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                 }}
                                             >
                                                 <Button
-                                                    variant="outlined"
+                                                    variant="contained"
                                                     sx={{
-                                                        mb: 2,
                                                         ml: 'auto',
                                                     }}
                                                     size="small"
                                                     onClick={() => setHandleRollback(() => () => performRollback(rev.id))}
+                                                    startIcon={<RestoreOutlined/>}
                                                 >
                                                     Diese Änderung{rev.diffs != null && rev.diffs.length > 1 ? 'en' : ''} rückgängig machen
                                                 </Button>
                                             </Box>
                                         }
-                                    </Box>
+                                    </Card>
                                 ))
                             }
                         </>
@@ -403,7 +418,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                     {
                         isLoadingRevisions &&
                         <LoadingPlaceholder
-                            message="Lade Historie…"
+                            message="Historie wird geladen…"
                         />
                     }
                 </DialogContent>
