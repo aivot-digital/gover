@@ -31,223 +31,223 @@ values (gen_random_uuid(),
         '[
             {
                 "label": "Identitätstyp",
-                "description": "Identitätstyp",
+                "description": "Gibt an, ob es sich um eine natürliche Person, eine Organisation oder ein Funktionskonto handelt.",
                 "keyInData": "dataport_identitaetstyp",
                 "displayAttribute": true
             },
             {
                 "label": "Anrede",
-                "description": "Anrede",
+                "description": "Formelle Anrede, z. B. Herr, Frau oder Divers.",
                 "keyInData": "salutation",
                 "displayAttribute": false
             },
             {
                 "label": "Akademischer Titel",
-                "description": "Akademischer Titel",
+                "description": "Akademischer Grad wie Dr. oder Prof.",
                 "keyInData": "title",
                 "displayAttribute": false
             },
             {
                 "label": "Vorname(n)",
-                "description": "Vorname(n)",
+                "description": "Ruf- und ggf. weitere Vornamen der Person.",
                 "keyInData": "given_name",
                 "displayAttribute": false
             },
             {
                 "label": "Nachname",
-                "description": "Nachname",
+                "description": "Familien- bzw. Nachname der Person.",
                 "keyInData": "family_name",
                 "displayAttribute": false
             },
             {
                 "label": "Vollständiger Name",
-                "description": "Vollständiger Name",
+                "description": "Zusammengesetzter kompletter Name aus Vor- und Nachnamen.",
                 "keyInData": "name",
                 "displayAttribute": false
             },
             {
                 "label": "Geburtsdatum",
-                "description": "Geburtsdatum",
+                "description": "Datum, an welchem die Person geboren wurde.",
                 "keyInData": "date_of_birth",
                 "displayAttribute": false
             },
             {
                 "label": "Geburtsort",
-                "description": "Geburtsort",
+                "description": "Ort, an dem die Person geboren wurde.",
                 "keyInData": "place_of_birth",
                 "displayAttribute": false
             },
             {
                 "label": "Geburtsname",
-                "description": "Geburtsname",
+                "description": "Familienname zum Zeitpunkt der Geburt (falls abweichend).",
                 "keyInData": "birth_name",
                 "displayAttribute": false
             },
             {
                 "label": "Geschlecht",
-                "description": "Geschlecht",
+                "description": "Im Ausweisdokument angegebenes Geschlecht.",
                 "keyInData": "gender",
                 "displayAttribute": false
             },
             {
                 "label": "Staatsangehörigkeit",
-                "description": "Staatsangehörigkeit",
+                "description": "Aktuelle Staatsbürgerschaft, i. d. R. als Ländercode (z. B. DE).",
                 "keyInData": "nationality",
                 "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Straße und Hausnummer",
-                "description": "Straße und Hausnummer",
+                "description": "Wohnanschrift: Straßenname und Hausnummer.",
                 "keyInData": "street_and_building",
                 "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Postleitzahl",
-                "description": "Postleitzahl",
+                "description": "Postleitzahl der Wohnanschrift.",
                 "keyInData": "zip_code",
                 "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Ort",
-                "description": "Ort",
+                "description": "Wohnort bzw. Stadt.",
                 "keyInData": "city",
                 "displayAttribute": false
             },
             {
                 "label": "Anschrift Privatperson: Land",
-                "description": "Land",
+                "description": "Ländercode oder -name der Wohnanschrift.",
                 "keyInData": "country",
                 "displayAttribute": false
             },
             {
                 "label": "E-Mail-Adresse",
-                "description": "E-Mail-Adresse",
+                "description": "Vom Nutzenden hinterlegte E-Mail-Adresse zur Kontaktaufnahme.",
                 "keyInData": "email",
                 "displayAttribute": false
             },
             {
                 "label": "Telefonnummer",
-                "description": "Telefonnummer",
+                "description": "Festnetznummer der Person.",
                 "keyInData": "telephone",
                 "displayAttribute": false
             },
             {
                 "label": "Mobiltelefonnummer",
-                "description": "Mobiltelefonnummer",
+                "description": "Handy-Nummer der Person.",
                 "keyInData": "mobilephone",
                 "displayAttribute": false
             },
             {
                 "label": "Favorisierte Sprache",
-                "description": "Favorisierte Sprache",
+                "description": "Bevorzugte Sprache für Kommunikation und Benachrichtigungen.",
                 "keyInData": "preferred_language",
                 "displayAttribute": false
             },
             {
                 "label": "Firmenname",
-                "description": "Firmenname",
+                "description": "Offizieller Name des Unternehmens.",
                 "keyInData": "org_company_name",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmenseinheit",
-                "description": "Unternehmenseinheit",
+                "description": "Abteilung oder Organisationseinheit innerhalb des Unternehmens.",
                 "keyInData": "org_company_unit",
                 "displayAttribute": false
             },
             {
                 "label": "Registernummer",
-                "description": "Registernummer",
+                "description": "Handels- oder Vereinsregisternummer des Unternehmens.",
                 "keyInData": "org_register_number",
                 "displayAttribute": false
             },
             {
                 "label": "Registergericht",
-                "description": "Registergericht",
+                "description": "Amtsgericht, bei dem das Unternehmen registriert ist.",
                 "keyInData": "org_register_court",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmen: E-Mail-Adresse",
-                "description": "Unternehmen: E-Mail-Adresse",
+                "description": "Zentrale E-Mail des Unternehmens.",
                 "keyInData": "org_contact_mail",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmen: Telefonnummer",
-                "description": "Unternehmen: Telefonnummer",
+                "description": "Zentrale Telefonnummer des Unternehmens.",
                 "keyInData": "org_contact_phone",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Straße und Hausnummer",
-                "description": "Unternehmensanschrift: Straße und Hausnummer",
+                "description": "Straße inkl. Hausnummer der Firmenanschrift.",
                 "keyInData": "org_street_and_building",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postleitzahl",
-                "description": "Unternehmensanschrift: Postleitzahl",
+                "description": "Postleitzahl der Firmenanschrift.",
                 "keyInData": "org_zip_code",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Ort",
-                "description": "Unternehmensanschrift: Ort",
+                "description": "Ort der Firmenanschrift.",
                 "keyInData": "org_city",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Land",
-                "description": "Unternehmensanschrift: Land",
+                "description": "Land der Firmenanschrift.",
                 "keyInData": "org_country",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postfach-Nummer",
-                "description": "Unternehmensanschrift: Postfach-Nummer",
+                "description": "Postfachnummer der Firmenanschrift.",
                 "keyInData": "org_postbox_number",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postfach-Postleitzahl",
-                "description": "Unternehmensanschrift: Postfach-Postleitzahl",
+                "description": "Postleitzahl des Firmenpostfachs.",
                 "keyInData": "org_postbox_zip_code",
                 "displayAttribute": false
             },
             {
                 "label": "Unternehmensanschrift: Postfach-Land",
-                "description": "Unternehmensanschrift: Postfach-Land",
+                "description": "Land des Firmenpostfachs.",
                 "keyInData": "org_postbox_country",
                 "displayAttribute": false
             },
             {
                 "label": "Datenübermittler Pseudonym ID",
-                "description": "Datenübermittler Pseudonym ID",
+                "description": "Pseudonyme technische Kennung des Datenübermittlers.",
                 "keyInData": "elster_datenuebermittler",
                 "displayAttribute": true
             },
             {
                 "label": "Vertrauensniveau",
-                "description": "Vertrauensniveau",
+                "description": "Authentifizierungsstufe nach eIDAS (Low, Substantial, High).",
                 "keyInData": "trust_level_authentication",
                 "displayAttribute": true
             },
             {
                 "label": "Servicekonto ID",
-                "description": "Servicekonto ID",
+                "description": "Eindeutige Kennung des Servicekontos (Login-Name).",
                 "keyInData": "preferred_username",
                 "displayAttribute": false
             },
             {
                 "label": "Postfach",
-                "description": "Postfach",
+                "description": "Interne Postfach-ID im Dataport-Postfachsystem.",
                 "keyInData": "dataport_inbox_id",
                 "displayAttribute": true
             },
             {
                 "label": "Servicekontotyp",
-                "description": "Servicekontotyp",
+                "description": "Kennzeichnet, ob es sich um ein Bürger- oder Organisationskonto handelt.",
                 "keyInData": "dataport_servicekonto_type",
                 "displayAttribute": false
             }

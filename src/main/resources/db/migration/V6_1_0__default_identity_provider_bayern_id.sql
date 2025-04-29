@@ -31,133 +31,133 @@ values (gen_random_uuid(),
         '[
             {
                 "label": "Anrede",
-                "description": "Anrede",
+                "description": "Formelle Anrede, z. B. Herr, Frau oder Divers.",
                 "keyInData": "salutation",
                 "displayAttribute": false
             },
             {
                 "label": "Akademischer Titel",
-                "description": "Akademischer Titel",
+                "description": "Akademischer Grad wie Dr. oder Prof.",
                 "keyInData": "title",
                 "displayAttribute": false
             },
             {
                 "label": "Vorname(n)",
-                "description": "Vorname(n)",
+                "description": "Ruf- und ggf. weitere Vornamen der Person.",
                 "keyInData": "given_name",
                 "displayAttribute": false
             },
             {
                 "label": "Nachname",
-                "description": "Nachname",
+                "description": "Familien- bzw. Nachname der Person.",
                 "keyInData": "family_name",
                 "displayAttribute": false
             },
             {
                 "label": "Vollständiger Name",
-                "description": "Vollständiger Name",
+                "description": "Zusammengesetzter kompletter Name aus Vor- und Nachnamen.",
                 "keyInData": "name",
                 "displayAttribute": false
             },
             {
                 "label": "Geburtsdatum",
-                "description": "Geburtsdatum",
+                "description": "Datum, an welchem die Person geboren wurde.",
                 "keyInData": "date_of_birth",
                 "displayAttribute": false
             },
             {
                 "label": "Geburtsort",
-                "description": "Geburtsort",
+                "description": "Ort, an dem die Person geboren wurde.",
                 "keyInData": "place_of_birth",
                 "displayAttribute": false
             },
             {
                 "label": "Geburtsname",
-                "description": "Geburtsname",
+                "description": "Familienname zum Zeitpunkt der Geburt (falls abweichend).",
                 "keyInData": "birth_name",
                 "displayAttribute": false
             },
             {
                 "label": "Staatsangehörigkeit",
-                "description": "Staatsangehörigkeit",
+                "description": "Aktuelle Staatsbürgerschaft, i. d. R. als Ländercode (z. B. DE).",
                 "keyInData": "nationality",
                 "displayAttribute": false
             },
             {
                 "label": "Straße und Hausnummer",
-                "description": "Straße und Hausnummer",
+                "description": "Wohnanschrift: Straßenname und Hausnummer.",
                 "keyInData": "street_and_building",
                 "displayAttribute": false
             },
             {
                 "label": "Postleitzahl",
-                "description": "Postleitzahl",
+                "description": "Postleitzahl der Wohnanschrift.",
                 "keyInData": "zip_code",
                 "displayAttribute": false
             },
             {
                 "label": "Ort",
-                "description": "Ort",
+                "description": "Wohnort bzw. Stadt.",
                 "keyInData": "city",
                 "displayAttribute": false
             },
             {
                 "label": "Land",
-                "description": "Land",
+                "description": "Land der Wohnanschrift (ISO 3166-1 alpha-2).",
                 "keyInData": "country",
                 "displayAttribute": false
             },
             {
                 "label": "E-Mail-Adresse",
-                "description": "E-Mail-Adresse",
+                "description": "Vom Nutzenden hinterlegte E-Mail-Adresse zur Kontaktaufnahme.",
                 "keyInData": "email",
                 "displayAttribute": false
             },
             {
                 "label": "Telefonnummer",
-                "description": "Telefonnummer",
+                "description": "Telefon- oder Mobilnummer im internationalen Format.",
                 "keyInData": "telephone",
                 "displayAttribute": false
             },
             {
                 "label": "bPK2",
-                "description": "bPK2",
+                "description": "Bereichsspezifisches Personenkennzeichen – pseudonymisierte, pro Service eindeutige ID der Person.",
                 "keyInData": "bPK2",
                 "displayAttribute": true
             },
             {
                 "label": "Postfach",
-                "description": "Postfach",
+                "description": "Technischer Postkorb-Handle (UUID) zum Zustellen von BayernID-Nachrichten.",
                 "keyInData": "legacy_postkorb_handle",
                 "displayAttribute": true
             },
             {
                 "label": "Vertrauensniveau",
-                "description": "Vertrauensniveau",
+                "description": "Qualitätsstufe der Authentifizierung (z. B. STORK-QAA-Level 1–4).",
                 "keyInData": "trust_level_authentication",
                 "displayAttribute": true
             },
             {
                 "label": "Dokumententyp",
-                "description": "Dokumententyp",
+                "description": "Art des verwendeten Ausweisdokuments, z. B. ID (Personalausweis) oder P (Reisepass).",
                 "keyInData": "document_type",
                 "displayAttribute": false
             },
             {
                 "label": "eIDAS-Issuing-Country",
-                "description": "eIDAS-Issuing-Country",
+                "description": "Land, das das eID-/eIDAS-Identitätsmittel ausgestellt hat (ISO 3166-1 alpha-2).",
                 "keyInData": "e_idas_issuing_country",
                 "displayAttribute": false
             },
             {
                 "label": "AssertionProvedBy",
-                "description": "AssertionProvedBy",
+                "description": "Quelle, die die Identität geprüft hat (z. B. eIDAS, eID, ELSTER).",
                 "keyInData": "assertion_proved_by",
                 "displayAttribute": true
             },
             {
                 "label": "Version",
-                "description": "Version",
+                "description": "Version der BayernID-Schnittstelle (Calendar Versioning, z. B. 2025.4.17).",
                 "keyInData": "api_version",
                 "displayAttribute": false
             }
