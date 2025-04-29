@@ -5,16 +5,19 @@ import {type AnyElement} from '../../models/elements/any-element';
 import {ElementMetadata} from '../../models/elements/element-metadata';
 import {SelectFieldComponent} from '../select-field/select-field-component';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {AnyInputElement, isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import type {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {ElementType} from '../../data/element-type/element-type';
-import {UserInfoIdentifier, UserInfoIdentifierOptions} from '../../data/user-info-identifier';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {isForm} from '../../models/entities/form';
 import {IdentityProviderListDTO} from '../../modules/identity/models/identity-provider-list-dto';
 import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
 import {useApi} from '../../hooks/use-api';
 import {getMetadataMapping} from '../../utils/prefill-elements';
+import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
+import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
+import {BayernIdAttributes, BundIdAttributes, MukAttributes, ShIdAttributes} from '../../modules/identity/constants/system-identity-provider-attribute-maps';
+import {BayernIdAttribute, BundIdAttribute, MukAttribute, ShIdAttribute} from '../../modules/identity/constants/system-identity-provider-attributes';
 
 export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
     const api = useApi();
@@ -49,6 +52,33 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
         }
     }, [entity]);
 
+    const identityProviders: Array<IdentityProviderListDTO & {
+        existingMetadataMapping: string | undefined;
+        options: SelectFieldComponentOption[];
+    }> = useMemo(() => {
+        if (element == null || linkedIdentityProviders == null) {
+            return [];
+        }
+
+        if (!isAnyInputElement(element)) {
+            return [];
+        }
+
+        return linkedIdentityProviders
+            .map((identityProvider) => {
+                const existingMetadataMapping = getMetadataMapping(element, identityProvider.metadataIdentifier);
+
+                const attributeOptions = filterOptions(element, identityProvider);
+
+                return {
+                    ...identityProvider,
+                    existingMetadataMapping: existingMetadataMapping,
+                    options: attributeOptions,
+                }
+            })
+            .filter((idp) => idp.options.length > 0);
+    }, [element, linkedIdentityProviders]);
+
     const handlePatchMetadata = (data: Partial<ElementMetadata>) => {
         props.onChange({
             ...element,
@@ -59,14 +89,6 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
         });
     };
 
-    const userInfoIdentifiers = useMemo(() => {
-        if (isAnyInputElement(element) && element.type !== ElementType.ReplicatingContainer) {
-            return UserInfoIdentifierOptions;
-        }
-
-        return undefined;
-    }, [element]);
-
     // non-input elements have no metadata
     if (!isAnyInputElement(element)) {
         return <></>;
@@ -75,9 +97,7 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
     return (
         <Box sx={{p: 4}}>
             {
-                element.type === ElementType.Text &&
-                linkedIdentityProviders != null &&
-                linkedIdentityProviders.length > 0 &&
+                identityProviders.length > 0 &&
                 <Box
                     sx={{
                         mb: 4,
@@ -90,14 +110,12 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                     </Typography>
 
                     {
-                        linkedIdentityProviders
+                        identityProviders
                             .map((identityProvider) => {
-                                const existingMetadataMapping = getMetadataMapping(element, identityProvider.metadataIdentifier);
-
                                 return (
                                     <SelectFieldComponent
                                         key={identityProvider.key}
-                                        value={existingMetadataMapping}
+                                        value={identityProvider.existingMetadataMapping}
                                         onChange={(val) => {
                                             const updatedIdentityMappings: Record<string, string> = {
                                                 ...element.metadata?.identityMappings,
@@ -113,11 +131,7 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                                                 identityMappings: updatedIdentityMappings,
                                             });
                                         }}
-                                        options={identityProvider.attributes.map((attribute) => ({
-                                            label: attribute.label,
-                                            subLabel: attribute.description,
-                                            value: attribute.keyInData,
-                                        }))}
+                                        options={identityProvider.options}
                                         placeholder="Nicht gesetzt"
                                         label={`Attribut im Nutzerkonto ${identityProvider.name}`}
                                         hint={`Verknüpfen Sie dieses Element mit einem Attribut aus dem Nutzerkonto ${identityProvider.name}. Das Element wird dann automatisch mit den Daten aus dem Nutzerkonto ${identityProvider.name} befüllt.`}
@@ -156,4 +170,34 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
             </Box>
         </Box>
     );
+}
+
+function filterOptions(element: AnyInputElement, identityProvider: IdentityProviderListDTO): SelectFieldComponentOption[] {
+    return identityProvider
+        .attributes
+        .filter((attribute) => {
+            let mappings: ElementType[] | null | undefined = null;
+
+            switch (identityProvider.type) {
+                case IdentityProviderType.BayernID:
+                    mappings = BayernIdAttributes[attribute.keyInData as BayernIdAttribute];
+                    break;
+                case IdentityProviderType.BundID:
+                    mappings = BundIdAttributes[attribute.keyInData as BundIdAttribute];
+                    break;
+                case IdentityProviderType.MUK:
+                    mappings = MukAttributes[attribute.keyInData as MukAttribute];
+                    break;
+                case IdentityProviderType.SHID:
+                    mappings = ShIdAttributes[attribute.keyInData as ShIdAttribute];
+                    break;
+            }
+
+            return mappings == null && element.type === ElementType.Text || mappings != null && mappings.includes(element.type);
+        })
+        .map((attribute) => ({
+            label: attribute.label,
+            subLabel: attribute.description,
+            value: attribute.keyInData,
+        }));
 }

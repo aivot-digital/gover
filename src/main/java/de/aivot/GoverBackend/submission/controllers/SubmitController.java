@@ -22,7 +22,9 @@ import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
+import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.utils.SystemIdentityProviderFormatter;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.CustomerMailService;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
@@ -351,6 +353,9 @@ public class SubmitController {
             if (mappedValue == null || StringUtils.isNotNullOrEmpty(mappedValue)) {
                 continue;
             }
+
+            // If the metadata identifier is an identifier of a system identity provider, format the value accordingly
+            mappedValue = SystemIdentityProviderFormatter.formatForSystemIdentityProvider(identityCacheEntity.getMetadataIdentifier(), mapping, mappedValue);
 
             customerInput.put(element.getId(), mappedValue);
         }

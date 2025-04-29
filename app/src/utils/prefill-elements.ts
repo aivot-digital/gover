@@ -9,6 +9,7 @@ import {LegacySystemIdpKey} from '../data/legacy-system-idp-key';
 import {resolveId} from './id-utils';
 import {ElementType} from '../data/element-type/element-type';
 import {isStringNullOrEmpty} from './string-utils';
+import {systemIdentityProviderFormatValues} from '../modules/identity/utils/system-identity-provider-format-values';
 
 type PrefilledCustomerInput = Partial<CustomerInput>;
 
@@ -17,9 +18,10 @@ export function prefillElements(
     identityValue: IdentityValue,
     customerInput: CustomerInput,
 ): PrefilledCustomerInput {
+    const formattedIdentityValue = systemIdentityProviderFormatValues(identityValue);
     return {
-        [IdentityCustomerInputKey]: identityValue,
-        ...prefillElement(form.root, identityValue, customerInput, undefined),
+        [IdentityCustomerInputKey]: formattedIdentityValue,
+        ...prefillElement(form.root, formattedIdentityValue, customerInput, undefined),
     };
 }
 
