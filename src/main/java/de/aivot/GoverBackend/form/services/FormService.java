@@ -360,7 +360,7 @@ public class FormService implements EntityService<Form, Integer> {
             );
         }
 
-        if (existingForm.getIdentityProviders() != null) {
+        if (existingForm.getIdentityProviders() != null && !existingForm.getIdentityProviders().isEmpty()) {
             var allLinkedIDPsProductive = existingForm
                     .getIdentityProviders()
                     .stream()
@@ -380,7 +380,9 @@ public class FormService implements EntityService<Form, Integer> {
                             .setLabel("Beinhaltet ausschließlich produktive Nutzerkontenanbieter")
                             .setDone(allLinkedIDPsProductive)
             );
-        } else if (existingForm.getIdentityRequired()) {
+        }
+
+        if (existingForm.getIdentityRequired() && (existingForm.getIdentityProviders() == null || existingForm.getIdentityProviders().isEmpty())) {
             checklist.add(
                     FormPublishChecklistItem
                             .create()
