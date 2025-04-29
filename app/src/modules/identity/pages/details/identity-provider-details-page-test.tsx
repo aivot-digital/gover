@@ -7,7 +7,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Typography
+    Typography,
 } from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -18,8 +18,8 @@ import {IdentityProvidersApiService} from '../../identity-providers-api-service'
 import {IdentityResultState} from '../../enums/identity-result-state';
 import {IdentityStateQueryParam} from '../../constants/identity-state-query-param';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import Tooltip from "@mui/material/Tooltip";
-import {IdentityData} from "../../models/identity-data";
+import Tooltip from '@mui/material/Tooltip';
+import {IdentityData} from '../../models/identity-data';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
@@ -80,26 +80,15 @@ export function IdentityProviderDetailsPageTest() {
                     mb: 2,
                 }}
             >
-                <Tooltip
-                    title={
-                        identityProvider?.isEnabled === false
-                            ? 'Der Anbieter muss aktiviert sein, um die Authentifizierung zu testen.'
-                            : ''
-                    }
-                    disableHoverListener={identityProvider?.isEnabled !== false}
+                <Button
+                    component="a"
+                    href={testLink}
+                    variant="contained"
+                    startIcon={<ScienceOutlinedIcon />}
+                    disabled={identityProvider == null}
                 >
-                    <span>
-                        <Button
-                            component="a"
-                            href={testLink}
-                            variant="contained"
-                            startIcon={<ScienceOutlinedIcon />}
-                            disabled={identityProvider == null || identityProvider?.isEnabled === false}
-                        >
-                            Authentifizierung testen
-                        </Button>
-                    </span>
-                </Tooltip>
+                    Authentifizierung testen
+                </Button>
             </Box>
 
             {
@@ -110,7 +99,10 @@ export function IdentityProviderDetailsPageTest() {
                         mt: 4,
                     }}
                 >
-                    <Typography variant="h6" sx={{mb: 1}}>
+                    <Typography
+                        variant="h6"
+                        sx={{mb: 1}}
+                    >
                         Testergebnisse
                     </Typography>
 

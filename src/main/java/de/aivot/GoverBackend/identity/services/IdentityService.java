@@ -269,11 +269,13 @@ public class IdentityService {
                 .retrieve(providerKey)
                 .orElseThrow(() -> ResponseException.notFound("Der Nutzerkontenanbieter existiert nicht."));
 
+        /*
         // Check if the provider is enabled
         if (!provider.getIsEnabled()) {
             throw ResponseException
                     .badRequest("Der Nutzerkontenanbieter ist nicht aktiviert.");
         }
+         */
 
         return provider;
     }
