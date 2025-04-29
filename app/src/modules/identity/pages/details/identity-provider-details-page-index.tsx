@@ -38,6 +38,9 @@ import {AlertComponent} from '../../../../components/alert/alert-component';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 
+// allows absolute and relative URLs
+const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
+
 export const formSchema = yup.object({
     name: yup.string()
         .trim()
@@ -49,35 +52,111 @@ export const formSchema = yup.object({
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(255, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
         .required('Die Beschreibung des Nutzerkontenanbieters ist ein Pflichtfeld.'),
+    iconAssetKey: yup.string()
+        .required('Die Logo-Grafik ist eine Pflichtkonfiguration.'),
+    metadataIdentifier: yup.string()
+        .trim()
+        .min(1, 'Der Metadaten-Identifikator ist ein Pflichtfeld.')
+        .max(64, 'Der Metadaten-Identifikator darf maximal 64 Zeichen lang sein.')
+        .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
     authorizationEndpoint: yup.string()
         .trim()
         .min(1, 'Der Autorisierungsendpunkt ist ein Pflichtfeld.')
         .max(255, 'Der Autorisierungsendpunkt darf maximal 255 Zeichen lang sein.')
+        .matches(urlRegex, 'Der Autorisierungsendpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .required('Der Autorisierungsendpunkt ist ein Pflichtfeld.'),
     tokenEndpoint: yup.string()
         .trim()
         .min(1, 'Der Tokenendpunkt ist ein Pflichtfeld.')
         .max(255, 'Der Tokenendpunkt darf maximal 255 Zeichen lang sein.')
+        .matches(urlRegex, 'Der Tokenendpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .required('Der Tokenendpunkt ist ein Pflichtfeld.'),
     userinfoEndpoint: yup.string()
         .trim()
-        .max(255, 'Der Userinfoendpunkt darf maximal 255 Zeichen lang sein.')
+        .max(255, 'Der Userinfo-Endpunkt darf maximal 255 Zeichen lang sein.')
+        .matches(urlRegex, 'Der Userinfo-Endpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .nullable(),
     endSessionEndpoint: yup.string()
         .trim()
         .max(255, 'Der End-Session-Endpunkt darf maximal 255 Zeichen lang sein.')
+        .matches(urlRegex, 'Der End-Session-Endpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .nullable(),
     clientId: yup.string()
         .trim()
         .min(1, 'Die Client-ID ist ein Pflichtfeld.')
         .max(128, 'Die Client-ID darf maximal 128 Zeichen lang sein.')
         .required('Die Client-ID ist ein Pflichtfeld.'),
-    metadataIdentifier: yup.string()
-        .trim()
-        .min(1, 'Der Metadaten-Identifikator ist ein Pflichtfeld.')
-        .max(64, 'Der Metadaten-Identifikator darf maximal 64 Zeichen lang sein.')
-        .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
+    attributes: yup.array()
+        .of(
+            yup.object({
+                label: yup.string().trim(),
+                description: yup.string().trim(),
+                keyInData: yup.string().trim(),
+                displayAttribute: yup.boolean().nullable(),
+            }).test('row-completeness', 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.', function (row) {
+                if (!row) return true;
+
+                const { label, description, keyInData } = row;
+
+                const isAnyFilled = !!label?.trim() || !!description?.trim() || !!keyInData?.trim();
+                const areAllFilled = !!label?.trim() && !!description?.trim() && !!keyInData?.trim();
+
+                if (!isAnyFilled) {
+                    return this.createError({ message: 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.' });
+                }
+
+                if (!areAllFilled) {
+                    return this.createError({ message: 'Bitte füllen Sie alle Felder vollständig aus.' });
+                }
+
+                return true;
+            })
+        ),
+    defaultScopes: yup.array()
+        .of(
+            yup.string()
+                .trim()
+                .test('not-empty-if-present', 'Ein Scope darf nicht leer sein.', val => {
+                    return val == null || val.trim().length > 0;
+                })
+        ),
+    additionalParams: yup.array()
+        .of(
+            yup.object({
+                key: yup.string().trim(),
+                value: yup.string().trim(),
+            }).test('row-completeness', 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.', function (row) {
+                if (!row) return true;
+
+                const { key, value } = row;
+
+                const isAnyFilled = !!key?.trim() || !!value?.trim();
+                const areAllFilled = !!key?.trim() && !!value?.trim();
+
+                if (!isAnyFilled) {
+                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.' });
+                }
+
+                if (!areAllFilled) {
+                    return this.createError({ message: 'Bitte füllen Sie Schlüssel und Wert vollständig aus.' });
+                }
+
+                return true;
+            })
+        )
 });
+
+function getIndexedFieldError(
+    errors: Record<string, any> | undefined,
+    fieldName: string,
+    message: string
+): string | undefined {
+    if (!errors) return undefined;
+
+    return Object.keys(errors).some(k => k.startsWith(`${fieldName}[`))
+        ? message
+        : undefined;
+}
 
 export function IdentityProviderDetailsPageIndex() {
     useAdminGuard();
@@ -374,6 +453,24 @@ export function IdentityProviderDetailsPageIndex() {
         handleInputChange('isEnabled')(newValue);
     };
 
+    const defaultScopesError = getIndexedFieldError(
+        errors,
+        'defaultScopes',
+        'Bitte entfernen Sie leere Scopes.'
+    );
+
+    const attributesError = getIndexedFieldError(
+        errors,
+        'attributes',
+        'Bitte füllen Sie alle Attributszuweisungen vollständig aus.'
+    );
+
+    const additionalParamsError = getIndexedFieldError(
+        errors,
+        'additionalParams',
+        'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.'
+    );
+
     return (
         <Box>
             {
@@ -538,6 +635,7 @@ export function IdentityProviderDetailsPageIndex() {
                             }
                         }}
                         disabled={inputsDisabled || isSystemProvider}
+                        required
                         options={
                             assets
                                 .map((secret) => ({
@@ -545,6 +643,7 @@ export function IdentityProviderDetailsPageIndex() {
                                     label: secret.filename,
                                 }))
                         }
+                        error={errors.iconAssetKey}
                         hint={'Das Logo dient im Formular als Erkennungsmerkmal. Nutzen Sie am besten eine Vektordatei (z.B. SVG) für eine optimale Darstellung. Die Datei muss den öffentlichen Zugriff zulassen.'}
                     />
                 </Grid>
@@ -619,7 +718,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt zur Authorisierung"
-                        placeholder="https://auth.example.com/xyz"
+                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         required
                         value={identityProvider.authorizationEndpoint}
                         onChange={handleInputChange('authorizationEndpoint')}
@@ -636,7 +735,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt zum Erstellen des Tokens"
-                        placeholder="https://auth.example.com/xyz"
+                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         required
                         value={identityProvider.tokenEndpoint}
                         onChange={handleInputChange('tokenEndpoint')}
@@ -653,8 +752,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt für Informationen über die Nutzer:in"
-                        placeholder="https://auth.example.com/xyz"
-                        required
+                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         value={identityProvider.userinfoEndpoint ?? undefined}
                         onChange={val => {
                             handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
@@ -674,8 +772,7 @@ export function IdentityProviderDetailsPageIndex() {
                 >
                     <TextFieldComponent
                         label="Endpunkt zum Beenden der Session"
-                        placeholder="https://auth.example.com/xyz"
-                        required
+                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
                         value={identityProvider.endSessionEndpoint ?? undefined}
                         onChange={val => {
                             handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);
@@ -745,6 +842,7 @@ export function IdentityProviderDetailsPageIndex() {
                 }}
                 allowEmpty={true}
                 disabled={inputsDisabled || isSystemProvider}
+                error={defaultScopesError}
                 sx={{my: 4}}
             />
 
@@ -770,6 +868,7 @@ export function IdentityProviderDetailsPageIndex() {
                     handleInputChange('additionalParams')(value ?? []);
                 }}
                 disabled={inputsDisabled || isSystemProvider}
+                error={additionalParamsError}
                 sx={{my: 4}}
             />
 
@@ -841,6 +940,7 @@ export function IdentityProviderDetailsPageIndex() {
                         </Box>
                     ),
                 }}
+                error={attributesError}
                 sx={{my: 4}}
             />
 
