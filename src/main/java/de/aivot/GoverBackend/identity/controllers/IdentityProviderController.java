@@ -5,8 +5,8 @@ import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.services.FormRevisionService;
-import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.identity.dtos.IdentityProviderDetailsDTO;
 import de.aivot.GoverBackend.identity.dtos.IdentityProviderListDTO;
 import de.aivot.GoverBackend.identity.dtos.IdentityProviderPrepareDTO;
@@ -36,21 +36,21 @@ public class IdentityProviderController {
 
     private final IdentityProviderService identityProviderService;
     private final FormRevisionService formRevisionService;
-    private final FormService formService;
+    private final FormRepository formRepository;
 
     @Autowired
     public IdentityProviderController(
             AuditService auditService,
             IdentityProviderService identityProviderService,
             FormRevisionService formRevisionService,
-            FormService formService
+            FormRepository formRepository
     ) {
         this.auditService = auditService
                 .createScopedAuditService(IdentityProviderController.class);
 
         this.identityProviderService = identityProviderService;
         this.formRevisionService = formRevisionService;
-        this.formService = formService;
+        this.formRepository = formRepository;
     }
 
     @GetMapping("")
@@ -146,7 +146,7 @@ public class IdentityProviderController {
                 .setIdentityProviderKey(key)
                 .setStatus(FormStatus.Published);
 
-        if (!requestDTO.isEnabled() && formService.exists(formFilter)) {
+        if (!requestDTO.isEnabled() && formRepository.exists(formFilter.build())) {
             throw ResponseException.conflict(
                     "Der Nutzerkontenanbieter %s kann nicht deaktiviert werden, da veröffentlichte Formulare existieren, die diesen Anbieter verwenden.",
                     key
@@ -160,8 +160,8 @@ public class IdentityProviderController {
             var linkedFormFilter = new FormFilter()
                     .setIdentityProviderKey(key);
 
-            var linkedForms = formService
-                    .list(linkedFormFilter);
+            var linkedForms = formRepository
+                    .findAll(linkedFormFilter.build());
 
             for (var form : linkedForms) {
                 var formClone = form
@@ -173,7 +173,7 @@ public class IdentityProviderController {
                         .toList();
 
                 form.setIdentityProviders(identityProvidersWithoutThisIdentityProvider);
-                formService.update(form.getId(), form);
+                formRepository.save(form);
 
                 formRevisionService
                         .create(user, form, formClone);
@@ -200,11 +200,22 @@ public class IdentityProviderController {
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
+        var entity = identityProviderService
+                .retrieve(key)
+                .orElseThrow(ResponseException::notFound);
+
+        if (entity.getIsEnabled()) {
+            throw ResponseException.conflict(
+                    "Der Nutzerkontenanbieter %s kann nicht gelöscht werden, da er aktiviert ist.",
+                    key
+            );
+        }
+
         var formFilter = new FormFilter()
                 .setIdentityProviderKey(key)
                 .setStatus(FormStatus.Published);
 
-        if (formService.exists(formFilter)) {
+        if (formRepository.exists(formFilter.build())) {
             throw ResponseException.conflict(
                     "Der Nutzerkontenanbieter %s kann nicht gelöscht werden, da veröffentlichte Formulare existieren, die diesen Anbieter verwenden.",
                     key
@@ -214,8 +225,8 @@ public class IdentityProviderController {
         var linkedFormFilter = new FormFilter()
                 .setIdentityProviderKey(key);
 
-        var linkedForms = formService
-                .list(linkedFormFilter);
+        var linkedForms = formRepository
+                .findAll(linkedFormFilter.build());
 
         for (var form : linkedForms) {
             var formClone = form
@@ -227,11 +238,12 @@ public class IdentityProviderController {
                     .toList();
 
             form.setIdentityProviders(identityProvidersWithoutThisIdentityProvider);
-            formService.update(form.getId(), form);
+            formRepository.save(form);
 
             formRevisionService
                     .create(user, form, formClone);
         }
+
 
         var deletedEntity = identityProviderService
                 .delete(key);
