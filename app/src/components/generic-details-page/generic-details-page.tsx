@@ -69,10 +69,6 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     }, [id, location, resolvedTabs]);
 
     useEffect(() => {
-        console.log(resolvedTabs);
-    }, [resolvedTabs]);
-
-    useEffect(() => {
         if (id == null) {
             setItem(undefined);
             setAdditionalData(undefined);
