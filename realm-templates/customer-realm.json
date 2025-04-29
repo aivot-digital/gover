@@ -2316,8 +2316,8 @@
   "adminEventsDetailsEnabled": false,
   "identityProviders": [
     {
-      "alias": "bayernid",
-      "displayName": "BayernID",
+      "alias": "bayernid-prod",
+      "displayName": "BayernID (Produktion)",
       "internalId": "404ac123-dbaf-4b53-b160-eb673ddd3368",
       "providerId": "saml",
       "enabled": true,
@@ -2368,8 +2368,60 @@
       }
     },
     {
-      "alias": "bundid",
-      "displayName": "BundID",
+      "alias": "bayernid-stage",
+      "displayName": "BayernID (Vorproduktion)",
+      "internalId": "404ac123-dbaf-4b53-b160-eb673ddd3367",
+      "providerId": "saml",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "hideOnLogin": false,
+      "firstBrokerLoginFlowAlias": "first broker login servicekonto",
+      "config": {
+        "postBindingLogout": "false",
+        "postBindingResponse": "true",
+        "backchannelSupported": "false",
+        "caseSensitiveOriginalUsername": "false",
+        "encryptionAlgorithm": "RSA-OAEP",
+        "xmlSigKeyInfoKeyNameTransformer": "KEY_ID",
+        "idpEntityId": "https://pre-id.bayernportal.de/idp",
+        "useMetadataDescriptorUrl": "true",
+        "loginHint": "false",
+        "allowCreate": "false",
+        "enabledFromMetadata": "true",
+        "authnContextComparisonType": "exact",
+        "syncMode": "IMPORT",
+        "singleSignOnServiceUrl": "https://pre-id.bayernportal.de/idp/profile/SAML2/POST/SSO",
+        "wantAuthnRequestsSigned": "true",
+        "allowedClockSkew": "0",
+        "artifactBindingResponse": "false",
+        "validateSignature": "true",
+        "doNotStoreUsers": "true",
+        "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:transient",
+        "principalAttribute": "urn:oid:1.3.6.1.4.1.25484.494450.3",
+        "entityId": "https://replaceme.gover.digital/idp/realms/customer",
+        "attributeConsumingServiceName": "Gover",
+        "signSpMetadata": "false",
+        "wantAssertionsEncrypted": "true",
+        "signatureAlgorithm": "RSA_SHA256_MGF1",
+        "sendClientIdOnLogout": "false",
+        "wantAssertionsSigned": "true",
+        "metadataDescriptorUrl": "https://pre-id.bayernportal.de/idp",
+        "sendIdTokenOnLogout": "true",
+        "postBindingAuthnRequest": "true",
+        "forceAuthn": "true",
+        "attributeConsumingServiceIndex": "0",
+        "addExtensionsElementWithKeyInfo": "false",
+        "principalType": "ATTRIBUTE"
+      }
+    },
+    {
+      "alias": "bundid-prod",
+      "displayName": "BundID (Produktion)",
       "internalId": "a7d19356-8d0e-4c9f-a956-7f734d0b6dad",
       "providerId": "saml",
       "enabled": true,
@@ -2421,8 +2473,61 @@
       }
     },
     {
-      "alias": "muk",
-      "displayName": "Mein Unternehmenskonto (MUK)",
+      "alias": "bundid-stage",
+      "displayName": "BundID (Vorproduktion)",
+      "internalId": "a7d19356-8d0e-4c9f-a956-7f734d0b6dac",
+      "providerId": "saml",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "hideOnLogin": false,
+      "firstBrokerLoginFlowAlias": "first broker login servicekonto",
+      "config": {
+        "authnContextClassRefs": "[\"\"]",
+        "postBindingLogout": "false",
+        "postBindingResponse": "true",
+        "backchannelSupported": "false",
+        "caseSensitiveOriginalUsername": "false",
+        "encryptionAlgorithm": "RSA-OAEP",
+        "xmlSigKeyInfoKeyNameTransformer": "KEY_ID",
+        "idpEntityId": "https://int.id.bund.de/idp",
+        "useMetadataDescriptorUrl": "true",
+        "loginHint": "false",
+        "allowCreate": "false",
+        "enabledFromMetadata": "true",
+        "authnContextComparisonType": "exact",
+        "syncMode": "IMPORT",
+        "singleSignOnServiceUrl": "https://int.id.bund.de/idp/profile/SAML2/POST/SSO",
+        "wantAuthnRequestsSigned": "true",
+        "allowedClockSkew": "0",
+        "artifactBindingResponse": "false",
+        "validateSignature": "true",
+        "doNotStoreUsers": "true",
+        "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:transient",
+        "principalAttribute": "urn:oid:1.3.6.1.4.1.25484.494450.3",
+        "entityId": "https://replaceme.gover.digital/idp/realms/customer",
+        "attributeConsumingServiceName": "Gover",
+        "signSpMetadata": "false",
+        "signatureAlgorithm": "RSA_SHA256_MGF1",
+        "wantAssertionsEncrypted": "true",
+        "sendClientIdOnLogout": "false",
+        "wantAssertionsSigned": "true",
+        "metadataDescriptorUrl": "https://int.id.bund.de/idp",
+        "sendIdTokenOnLogout": "true",
+        "postBindingAuthnRequest": "true",
+        "forceAuthn": "true",
+        "attributeConsumingServiceIndex": "0",
+        "addExtensionsElementWithKeyInfo": "false",
+        "principalType": "ATTRIBUTE"
+      }
+    },
+    {
+      "alias": "muk-prod",
+      "displayName": "Mein Unternehmenskonto (Produktion)",
       "internalId": "4a6807be-dc1a-471b-b218-14835836bfe1",
       "providerId": "saml",
       "enabled": true,
@@ -2470,8 +2575,57 @@
       }
     },
     {
-      "alias": "schleswigholstein",
-      "displayName": "Servicekonto Schleswig-Holstein",
+      "alias": "muk-stage",
+      "displayName": "Mein Unternehmenskonto (Vorproduktion)",
+      "internalId": "4a6807be-dc1a-471b-b218-14835836bfe0",
+      "providerId": "saml",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "hideOnLogin": false,
+      "firstBrokerLoginFlowAlias": "first broker login servicekonto",
+      "config": {
+        "postBindingLogout": "true",
+        "singleLogoutServiceUrl": "https://e4k-portal.een.elster.de/ekona/slo",
+        "postBindingResponse": "true",
+        "backchannelSupported": "false",
+        "caseSensitiveOriginalUsername": "false",
+        "encryptionAlgorithm": "RSA-OAEP",
+        "xmlSigKeyInfoKeyNameTransformer": "KEY_ID",
+        "idpEntityId": "https://e4k-portal.een.elster.de",
+        "useMetadataDescriptorUrl": "false",
+        "loginHint": "false",
+        "allowCreate": "true",
+        "authnContextComparisonType": "exact",
+        "syncMode": "IMPORT",
+        "singleSignOnServiceUrl": "https://e4k-portal.een.elster.de/ekona/sso",
+        "wantAuthnRequestsSigned": "true",
+        "allowedClockSkew": "0",
+        "artifactBindingResponse": "false",
+        "validateSignature": "true",
+        "signingCertificate": "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",
+        "doNotStoreUsers": "true",
+        "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+        "entityId": "https://replaceme.gover.digital/idp/realms/customer",
+        "signSpMetadata": "false",
+        "wantAssertionsEncrypted": "true",
+        "signatureAlgorithm": "RSA_SHA256_MGF1",
+        "sendClientIdOnLogout": "false",
+        "wantAssertionsSigned": "false",
+        "sendIdTokenOnLogout": "true",
+        "postBindingAuthnRequest": "true",
+        "forceAuthn": "true",
+        "attributeConsumingServiceIndex": "0",
+        "principalType": "Subject NameID"
+      }
+    },
+    {
+      "alias": "schleswigholstein-prod",
+      "displayName": "Servicekonto Schleswig-Holstein (Produktion)",
       "internalId": "a612b7b2-ff2a-4c24-91db-f2bd234bf495",
       "providerId": "saml",
       "enabled": true,
@@ -2520,13 +2674,77 @@
         "addExtensionsElementWithKeyInfo": "false",
         "principalType": "SUBJECT"
       }
+    },
+    {
+      "alias": "schleswigholstein-stage",
+      "displayName": "Servicekonto Schleswig-Holstein (Vorproduktion)",
+      "internalId": "a612b7b2-ff2a-4c24-91db-f2bd234bf494",
+      "providerId": "saml",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "hideOnLogin": false,
+      "firstBrokerLoginFlowAlias": "first broker login servicekonto",
+      "config": {
+        "postBindingLogout": "false",
+        "singleLogoutServiceUrl": "https://idp.serviceportal-stage.schleswig-holstein.de/webidp/SingleLogOut/SingleLogoutServiceViaPost",
+        "postBindingResponse": "true",
+        "backchannelSupported": "false",
+        "caseSensitiveOriginalUsername": "false",
+        "encryptionAlgorithm": "RSA-OAEP",
+        "xmlSigKeyInfoKeyNameTransformer": "KEY_ID",
+        "idpEntityId": "urn:dataport:osi:servicekonto:idp:rz2:stage:sh",
+        "useMetadataDescriptorUrl": "true",
+        "loginHint": "false",
+        "allowCreate": "false",
+        "enabledFromMetadata": "true",
+        "authnContextComparisonType": "exact",
+        "syncMode": "IMPORT",
+        "singleSignOnServiceUrl": "https://idp.serviceportal-stage.schleswig-holstein.de/webidp/SamlWebSso/AuthnRequestPostBinding",
+        "wantAuthnRequestsSigned": "true",
+        "allowedClockSkew": "0",
+        "encryptionPublicKey": "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",
+        "artifactBindingResponse": "false",
+        "validateSignature": "true",
+        "doNotStoreUsers": "true",
+        "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+        "entityId": "https://replaceme.gover.digital/idp/realms/customer",
+        "signSpMetadata": "false",
+        "wantAssertionsEncrypted": "false",
+        "signatureAlgorithm": "RSA_SHA256",
+        "sendClientIdOnLogout": "false",
+        "wantAssertionsSigned": "true",
+        "metadataDescriptorUrl": "https://idp.serviceportal-stage.schleswig-holstein.de/webidp/metadata/metadata",
+        "sendIdTokenOnLogout": "true",
+        "postBindingAuthnRequest": "true",
+        "forceAuthn": "true",
+        "attributeConsumingServiceIndex": "0",
+        "addExtensionsElementWithKeyInfo": "false",
+        "principalType": "SUBJECT"
+      }
     }
   ],
   "identityProviderMappers": [
     {
       "id": "32b6d672-43fe-4687-a621-80bf08aec65c",
       "name": "Identitätstyp",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "dataportIdentitaetstyp",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "PrincipalType"
+      }
+    },
+    {
+      "id": "32b6d672-43fe-4687-a621-80bf08aec65b",
+      "name": "Identitätstyp",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2538,7 +2756,20 @@
     {
       "id": "c60a7000-d637-4f9d-803f-d8e63a41ddfe",
       "name": "Geburtsdatum",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "dateOfBirth",
+        "attribute.friendly.name": "birthdate",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.55"
+      }
+    },
+    {
+      "id": "c60a7000-d637-4f9d-803f-d8e63a41ddfd",
+      "name": "Geburtsdatum",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2551,7 +2782,20 @@
     {
       "id": "3523bb7c-9f29-4c88-bf07-ef589e48706c",
       "name": "Dokumententyp",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "documentType",
+        "attribute.friendly.name": "documentType",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.552255"
+      }
+    },
+    {
+      "id": "3523bb7c-9f29-4c88-bf07-ef589e48706b",
+      "name": "Dokumententyp",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2564,7 +2808,20 @@
     {
       "id": "b7d6191a-4bdd-408a-b277-6de5dc6efa78",
       "name": "Telefonnummer",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "telephone",
+        "attribute.friendly.name": "telephoneNumber",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.20"
+      }
+    },
+    {
+      "id": "b7d6191a-4bdd-408a-b277-6de5dc6efa77",
+      "name": "Telefonnummer",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2577,7 +2834,19 @@
     {
       "id": "d63ff6c5-1904-42f0-8bf5-a7394f106376",
       "name": "Unternehmensanschrift: Ortsteil",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Ortsteil",
+        "user.attribute": "orgCityDistrict",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "d63ff6c5-1904-42f0-8bf5-a7394f106375",
+      "name": "Unternehmensanschrift: Ortsteil",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2589,7 +2858,19 @@
     {
       "id": "62be7e32-7ea1-4ef1-b102-15a76b862740",
       "name": "Vertrauensniveau Authentifizierung",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "trustLevelAuthentication",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "ElsterVertrauensniveauAuthentifizierung"
+      }
+    },
+    {
+      "id": "62be7e32-7ea1-4ef1-b102-15a76b862749",
+      "name": "Vertrauensniveau Authentifizierung",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2601,7 +2882,20 @@
     {
       "id": "1dbf9042-39d1-44ff-9810-1223a2a6f0c3",
       "name": "E-Mail-Adresse",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "email",
+        "attribute.friendly.name": "mail",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:0.9.2342.19200300.100.1.3"
+      }
+    },
+    {
+      "id": "1dbf9042-39d1-44ff-9810-1223a2a6f0c2",
+      "name": "E-Mail-Adresse",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2614,7 +2908,20 @@
     {
       "id": "84d801f0-3680-4208-8bae-6b84fa778407",
       "name": "bPK2",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "bPK2",
+        "attribute.friendly.name": "bPK2",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.3"
+      }
+    },
+    {
+      "id": "84d801f0-3680-4208-8bae-6b84fa778406",
+      "name": "bPK2",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2627,7 +2934,20 @@
     {
       "id": "382ac2ef-1e58-4ee2-8dd0-7bbc200d1b1a",
       "name": "eIDAS-Issuing-Country",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "eIDASIssuingCountry",
+        "attribute.friendly.name": "eIDASIssuingCountry",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.10.1"
+      }
+    },
+    {
+      "id": "382ac2ef-1e58-4ee2-8dd0-7bbc200d1b1z",
+      "name": "eIDAS-Issuing-Country",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2640,7 +2960,20 @@
     {
       "id": "ab6a9684-3a3d-497e-a16d-c05655356a82",
       "name": "Vorname(n)",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "firstName",
+        "attribute.friendly.name": "givenName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.42"
+      }
+    },
+    {
+      "id": "ab6a9684-3a3d-497e-a16d-c05655356a81",
+      "name": "Vorname(n)",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2653,7 +2986,19 @@
     {
       "id": "eb6fefb9-d085-4f1b-9b5c-181f27bbc59f",
       "name": "Handelnde Person: Geburtsdatum",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Geburtsdatum",
+        "user.attribute": "dateOfBirth",
+        "attribute.name": "HandelndePerson"
+      }
+    },
+    {
+      "id": "eb6fefb9-d085-4f1b-9b5c-181f27bbc59e",
+      "name": "Handelnde Person: Geburtsdatum",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2665,7 +3010,19 @@
     {
       "id": "f9714b97-1933-4c51-ae4e-d7c773174081",
       "name": "E-Mail-Adresse",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "email",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "EmailAddress"
+      }
+    },
+    {
+      "id": "f9714b97-1933-4c51-ae4e-d7c773174080",
+      "name": "E-Mail-Adresse",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2677,7 +3034,20 @@
     {
       "id": "9ca008da-6a1e-4182-bba4-422d45d56f88",
       "name": "Ort",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "city",
+        "attribute.friendly.name": "localityName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.7"
+      }
+    },
+    {
+      "id": "9ca008da-6a1e-4182-bba4-422d45d56f87",
+      "name": "Ort",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2690,7 +3060,19 @@
     {
       "id": "26fb8ef6-87ce-494c-957d-8fc844bca65f",
       "name": "Unternehmensanschrift: Postfach-Postleitzahl",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgPostboxZipCode",
+        "attribute.xpath": "//q1:PostofficeBox//q1:ZipCode",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "26fb8ef6-87ce-494c-957d-8fc844bca65e",
+      "name": "Unternehmensanschrift: Postfach-Postleitzahl",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2702,7 +3084,20 @@
     {
       "id": "93015f02-f82d-4aac-af78-2ab5c539fcd0",
       "name": "Straße und Hausnummer",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "streetAndBuilding",
+        "attribute.friendly.name": "postalAddress",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.16"
+      }
+    },
+    {
+      "id": "93015f02-f82d-4aac-af78-2ab5c539fcd9",
+      "name": "Straße und Hausnummer",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2715,7 +3110,19 @@
     {
       "id": "2e45bb79-7fce-4a2e-b81d-8df699d3811e",
       "name": "Registergericht",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgRegisterCourt",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Registergericht"
+      }
+    },
+    {
+      "id": "2e45bb79-7fce-4a2e-b81d-8df699d3811d",
+      "name": "Registergericht",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2727,7 +3134,20 @@
     {
       "id": "89b25470-dd58-451f-b872-9cb93edc8463",
       "name": "Vertrauensniveau",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "trustLevelAuthentication",
+        "attribute.friendly.name": "EID-CITIZEN-QAA-LEVEL",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.261.94"
+      }
+    },
+    {
+      "id": "89b25470-dd58-451f-b872-9cb93edc8462",
+      "name": "Vertrauensniveau",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2740,7 +3160,19 @@
     {
       "id": "e798fb1f-d673-4378-b6d7-938af6aaea50",
       "name": "Vorname(n)",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "firstName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "GivenNames"
+      }
+    },
+    {
+      "id": "e798fb1f-d673-4378-b6d7-938af6aaea59",
+      "name": "Vorname(n)",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2752,7 +3184,20 @@
     {
       "id": "b63c9a90-b973-41fd-b9be-e8202f8f1892",
       "name": "Postleitzahl",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "zipCode",
+        "attribute.friendly.name": "postalCode",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.17"
+      }
+    },
+    {
+      "id": "b63c9a90-b973-41fd-b9be-e8202f8f1891",
+      "name": "Postleitzahl",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2765,7 +3210,19 @@
     {
       "id": "4cf5481f-e139-497a-bf55-2c464350ed45",
       "name": "Firmenname",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgCompanyName",
+        "attribute.xpath": "//q1:OrganizationName",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "4cf5481f-e139-497a-bf55-2c464350ed44",
+      "name": "Firmenname",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2777,7 +3234,20 @@
     {
       "id": "99eb2a6d-5121-4c01-afe9-b1066b15c396",
       "name": "Version",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "apiVersion",
+        "attribute.friendly.name": "Version",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.1"
+      }
+    },
+    {
+      "id": "99eb2a6d-5121-4c01-afe9-b1066b15c395",
+      "name": "Version",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2790,7 +3260,20 @@
     {
       "id": "356eaaca-15a2-4f58-a030-d5c479517174",
       "name": "Geburtsort",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "placeOfBirth",
+        "attribute.friendly.name": "placeOfBirth",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.5.5.7.9.2"
+      }
+    },
+    {
+      "id": "356eaaca-15a2-4f58-a030-d5c479517173",
+      "name": "Geburtsort",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2803,7 +3286,20 @@
     {
       "id": "732a7871-8e40-41af-80ea-ceb5412ad988",
       "name": "Staatsangehörigkeit",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "nationality",
+        "attribute.friendly.name": "nationality",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.225577"
+      }
+    },
+    {
+      "id": "732a7871-8e40-41af-80ea-ceb5412ad987",
+      "name": "Staatsangehörigkeit",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2816,7 +3312,19 @@
     {
       "id": "92456eb1-b72f-4b32-a3e9-f0693e5e45b5",
       "name": "Unternehmensanschrift: Postfach-Nummer",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgPostboxNumber",
+        "attribute.xpath": "//q1:PostofficeBox//q1:PostboxNumber",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "92456eb1-b72f-4b32-a3e9-f0693e5e45b4",
+      "name": "Unternehmensanschrift: Postfach-Nummer",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2828,7 +3336,19 @@
     {
       "id": "13d4cd6a-237d-42f7-954c-fd924bc49fde",
       "name": "Registernummer",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgRegisterNumber",
+        "attribute.xpath": "//q1:CommercialRegistrationNumber",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "13d4cd6a-237d-42f7-954c-fd924bc49fdd",
+      "name": "Registernummer",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2840,7 +3360,19 @@
     {
       "id": "c3f36e5e-d4f8-4ae1-9853-be1dce75fac7",
       "name": "Unternehmensanschrift: Land",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgCountry",
+        "attribute.xpath": "//q1:Address//q1:Country",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "c3f36e5e-d4f8-4ae1-9853-be1dce75fac6",
+      "name": "Unternehmensanschrift: Land",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2852,7 +3384,19 @@
     {
       "id": "6d007702-a804-47aa-9d4c-b3e2b441c54f",
       "name": "Anschrift Privatperson: Ort",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "city",
+        "attribute.xpath": "//p3:City",
+        "attribute.name": "PlaceOfResidence"
+      }
+    },
+    {
+      "id": "6d007702-a804-47aa-9d4c-b3e2b441c54e",
+      "name": "Anschrift Privatperson: Ort",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2864,7 +3408,19 @@
     {
       "id": "d4aad901-65f6-44cd-803f-047acd49a64b",
       "name": "Unternehmensanschrift: Adressergänzung",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Adressergaenzung",
+        "user.attribute": "orgAddressAddition",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "d4aad901-65f6-44cd-803f-047acd49a64a",
+      "name": "Unternehmensanschrift: Adressergänzung",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2876,7 +3432,19 @@
     {
       "id": "32a57d9e-d369-4a30-a19a-310f674f5828",
       "name": "Unternehmen: Telefonnummer",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgContactPhone",
+        "attribute.xpath": "//q1:Telephone",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "32a57d9e-d369-4a30-a19a-310f674f5827",
+      "name": "Unternehmen: Telefonnummer",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2888,7 +3456,19 @@
     {
       "id": "a8896048-7002-4f64-89df-fb30e3db419d",
       "name": "Unternehmensanschrift: Postleitzahl",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgZipCode",
+        "attribute.xpath": "//q1:Address//q1:ZipCode",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "a8896048-7002-4f64-89df-fb30e3db419c",
+      "name": "Unternehmensanschrift: Postleitzahl",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2900,7 +3480,19 @@
     {
       "id": "c5e73a47-69c6-4957-80d0-8987c5b1ce39",
       "name": "Mobiltelefonnummer",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "mobilephone",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Cellphone"
+      }
+    },
+    {
+      "id": "c5e73a47-69c6-4957-80d0-8987c5b1ce38",
+      "name": "Mobiltelefonnummer",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2912,7 +3504,19 @@
     {
       "id": "1c2dbd1d-bb59-4975-84d4-ac6c0f5362a2",
       "name": "Unternehmensanschrift: Hausnummer",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Hausnummer",
+        "user.attribute": "orgBuilding",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "1c2dbd1d-bb59-4975-84d4-ac6c0f5362a1",
+      "name": "Unternehmensanschrift: Hausnummer",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2924,7 +3528,20 @@
     {
       "id": "42c4b77a-7481-4e80-a147-e08181278c55",
       "name": "bPK2",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "bPK2",
+        "attribute.friendly.name": "bPK2",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.3"
+      }
+    },
+    {
+      "id": "42c4b77a-7481-4e80-a147-e08181278c54",
+      "name": "bPK2",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2937,7 +3554,20 @@
     {
       "id": "518ba0d7-d031-4115-a8ca-c1ef45ea6b5e",
       "name": "Postfach",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "legacyPostkorbHandle",
+        "attribute.friendly.name": "legacyPostkorbHandle",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.18"
+      }
+    },
+    {
+      "id": "518ba0d7-d031-4115-a8ca-c1ef45ea6b5d",
+      "name": "Postfach",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2950,7 +3580,19 @@
     {
       "id": "9f93ab70-cc4e-47e1-a4e1-d2373a91cd66",
       "name": "Handelnde Person: Namensvorsatz",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Namensvorsatz",
+        "user.attribute": "salutation",
+        "attribute.name": "HandelndePerson"
+      }
+    },
+    {
+      "id": "9f93ab70-cc4e-47e1-a4e1-d2373a91cd65",
+      "name": "Handelnde Person: Namensvorsatz",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2962,7 +3604,20 @@
     {
       "id": "fe406547-f5b9-4bca-81ae-5bfb35d7984a",
       "name": "Geburtsort",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "placeOfBirth",
+        "attribute.friendly.name": "placeOfBirth",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.5.5.7.9.2"
+      }
+    },
+    {
+      "id": "fe406547-f5b9-4bca-81ae-5bfb35d7984z",
+      "name": "Geburtsort",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2975,7 +3630,19 @@
     {
       "id": "e03655bb-196d-4918-913d-1203dcb1ed20",
       "name": "Vertrauensniveau",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "trustLevelAuthentication",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "AssuranceLevel"
+      }
+    },
+    {
+      "id": "e03655bb-196d-4918-913d-1203dcb1ed29",
+      "name": "Vertrauensniveau",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2987,7 +3654,20 @@
     {
       "id": "1eac199a-5f80-412f-9afd-699ed4311228",
       "name": "Nachname",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "lastName",
+        "attribute.friendly.name": "surname",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.4"
+      }
+    },
+    {
+      "id": "1eac199a-5f80-412f-9afd-699ed4311227",
+      "name": "Nachname",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3000,7 +3680,19 @@
     {
       "id": "9c18aebd-3376-44fd-875e-8e8e28b56071",
       "name": "Registergericht",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgRegisterCourt",
+        "attribute.xpath": "//q1:CommercialRegistrationCourt",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "9c18aebd-3376-44fd-875e-8e8e28b56070",
+      "name": "Registergericht",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3012,7 +3704,19 @@
     {
       "id": "fb05c1c7-4389-4dca-812e-c0a036b0e5b7",
       "name": "Tätigkeit Code (Taetigkeit)",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgOccupationCode",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Taetigkeit"
+      }
+    },
+    {
+      "id": "fb05c1c7-4389-4dca-812e-c0a036b0e5b6",
+      "name": "Tätigkeit Code (Taetigkeit)",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3024,7 +3728,19 @@
     {
       "id": "e50df098-d17d-4404-8b2b-ce167281c0d7",
       "name": "Anschrift Privatperson: Straße und Hausnummer",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "streetAndBuilding",
+        "attribute.xpath": "//p3:StreetAddress",
+        "attribute.name": "PlaceOfResidence"
+      }
+    },
+    {
+      "id": "e50df098-d17d-4404-8b2b-ce167281c0d6",
+      "name": "Anschrift Privatperson: Straße und Hausnummer",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3036,7 +3752,19 @@
     {
       "id": "da46aa69-fcf3-4476-87dc-e670fb888a0f",
       "name": "Geburtsname",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "birthName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "BirthName"
+      }
+    },
+    {
+      "id": "da46aa69-fcf3-4476-87dc-e670fb888a0e",
+      "name": "Geburtsname",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3048,7 +3776,19 @@
     {
       "id": "68a466d8-facf-488d-a94f-10f0449aee76",
       "name": "DatenuebermittlerPseudonymId",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "elsterDatenuebermittlerPseudonymID",
+        "attribute.xpath": "//q1:ForeignId",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "68a466d8-facf-488d-a94f-10f0449aee75",
+      "name": "DatenuebermittlerPseudonymId",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3060,7 +3800,19 @@
     {
       "id": "5d46dfd7-7405-415b-ac55-55c25cbc667c",
       "name": "Registerart",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgRegisterType",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Registerart"
+      }
+    },
+    {
+      "id": "5d46dfd7-7405-415b-ac55-55c25cbc667b",
+      "name": "Registerart",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3072,7 +3824,20 @@
     {
       "id": "8adc2b7a-9297-4c37-a824-237af047e096",
       "name": "E-Mail-Adresse",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "email",
+        "attribute.friendly.name": "mail",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:0.9.2342.19200300.100.1.3"
+      }
+    },
+    {
+      "id": "8adc2b7a-9297-4c37-a824-237af047e095",
+      "name": "E-Mail-Adresse",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3085,7 +3850,19 @@
     {
       "id": "48292b7b-2b04-4bbe-8ac3-25a0d4f11170",
       "name": "Geburtsdatum",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "dateOfBirth",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "DateOfBirth"
+      }
+    },
+    {
+      "id": "48292b7b-2b04-4bbe-8ac3-25a0d4f11179",
+      "name": "Geburtsdatum",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3097,7 +3874,19 @@
     {
       "id": "9c0b92a9-3676-4672-a8e8-93b9b347584e",
       "name": "Tätigkeit (TaetigkeitText)",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgOccupationText",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "TaetigkeitText"
+      }
+    },
+    {
+      "id": "9c0b92a9-3676-4672-a8e8-93b9b347584d",
+      "name": "Tätigkeit (TaetigkeitText)",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3109,7 +3898,19 @@
     {
       "id": "a3c2d500-f535-4aea-b0fa-74944f77edda",
       "name": "Unternehmensanschrift: Postfach-Land",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgPostboxCountry",
+        "attribute.xpath": "//q1:PostofficeBox//q1:Country",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "a3c2d500-f535-4aea-b0fa-74944f77eddz",
+      "name": "Unternehmensanschrift: Postfach-Land",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3121,7 +3922,19 @@
     {
       "id": "67b90eb0-0fc6-4118-a0ec-9d01cd1106fa",
       "name": "Handelnde Person: Akademischer Grad",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "title",
+        "attribute.xpath": "//ekona:AkademischerGrad",
+        "attribute.name": "HandelndePerson"
+      }
+    },
+    {
+      "id": "67b90eb0-0fc6-4118-a0ec-9d01cd1106fz",
+      "name": "Handelnde Person: Akademischer Grad",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3133,7 +3946,20 @@
     {
       "id": "c8c4b71d-4afb-4dfd-b1aa-5d1fcdcdf23d",
       "name": "Land",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "country",
+        "attribute.friendly.name": "country",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.225599"
+      }
+    },
+    {
+      "id": "c8c4b71d-4afb-4dfd-b1aa-5d1fcdcdf23c",
+      "name": "Land",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3146,7 +3972,19 @@
     {
       "id": "a162e43c-d518-4f17-bf85-72bf05d3c72e",
       "name": "Registernummer",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgRegisterNumber",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Registernummer"
+      }
+    },
+    {
+      "id": "a162e43c-d518-4f17-bf85-72bf05d3c72d",
+      "name": "Registernummer",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3158,7 +3996,19 @@
     {
       "id": "2fa0c209-3200-4c73-a4b2-409b8d58b992",
       "name": "Anschrift Privatperson: Postleitzahl",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "zipCode",
+        "attribute.xpath": "//p3:ZipCode",
+        "attribute.name": "PlaceOfResidence"
+      }
+    },
+    {
+      "id": "2fa0c209-3200-4c73-a4b2-409b8d58b991",
+      "name": "Anschrift Privatperson: Postleitzahl",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3170,7 +4020,20 @@
     {
       "id": "06bd18b7-3198-450d-a58d-af9eeaac9562",
       "name": "Postfach",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "legacyPostkorbHandle",
+        "attribute.friendly.name": "legacyPostkorbHandle",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.18"
+      }
+    },
+    {
+      "id": "06bd18b7-3198-450d-a58d-af9eeaac9561",
+      "name": "Postfach",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3183,7 +4046,20 @@
     {
       "id": "22da4ba5-d8b3-4fe2-a2f3-4244a59c49a1",
       "name": "Anrede",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "salutation",
+        "attribute.friendly.name": "gender",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.33592.1.3.5"
+      }
+    },
+    {
+      "id": "22da4ba5-d8b3-4fe2-a2f3-4244a59c49a0",
+      "name": "Anrede",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3196,7 +4072,19 @@
     {
       "id": "a4a2e87d-8e6b-430c-89bd-5c82dc1a95ff",
       "name": "Handelnde Person: Namenszusatz",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Namenszusatz",
+        "user.attribute": "zusatzName",
+        "attribute.name": "HandelndePerson"
+      }
+    },
+    {
+      "id": "a4a2e87d-8e6b-430c-89bd-5c82dc1a95fe",
+      "name": "Handelnde Person: Namenszusatz",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3208,7 +4096,20 @@
     {
       "id": "8fa5d60a-17a2-4f6a-9425-551557405d3d",
       "name": "Vertrauensniveau",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "trustLevelAuthentication",
+        "attribute.friendly.name": "EID-CITIZEN-QAA-LEVEL",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.261.94"
+      }
+    },
+    {
+      "id": "8fa5d60a-17a2-4f6a-9425-551557405d3c",
+      "name": "Vertrauensniveau",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3221,7 +4122,20 @@
     {
       "id": "33c5ba86-c6b9-4d27-83bc-08e5e841e10c",
       "name": "Version",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "apiVersion",
+        "attribute.friendly.name": "Version",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.1"
+      }
+    },
+    {
+      "id": "33c5ba86-c6b9-4d27-83bc-08e5e841e10b",
+      "name": "Version",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3234,7 +4148,20 @@
     {
       "id": "cd7a6615-97ae-42e3-9924-63b795934467",
       "name": "Vorname(n)",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "firstName",
+        "attribute.friendly.name": "givenName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.42"
+      }
+    },
+    {
+      "id": "cd7a6615-97ae-42e3-9924-63b795934466",
+      "name": "Vorname(n)",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3247,7 +4174,19 @@
     {
       "id": "38a134bd-f3e5-48bc-a42a-9f838b9375ba",
       "name": "Handelnde Person: Nachname",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Nachname",
+        "user.attribute": "lastName",
+        "attribute.name": "HandelndePerson"
+      }
+    },
+    {
+      "id": "38a134bd-f3e5-48bc-a42a-9f838b9375bz",
+      "name": "Handelnde Person: Nachname",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3259,7 +4198,19 @@
     {
       "id": "948b3cba-a3ad-4702-8e87-8fc64c2c9da1",
       "name": "Akademischer Titel",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "title",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "AcademicTitle"
+      }
+    },
+    {
+      "id": "948b3cba-a3ad-4702-8e87-8fc64c2c9da0",
+      "name": "Akademischer Titel",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3271,7 +4222,19 @@
     {
       "id": "26b3ade4-ef8a-42a8-bd0d-4206ee14bb19",
       "name": "Firmenname",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgCompanyName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Firmenname"
+      }
+    },
+    {
+      "id": "26b3ade4-ef8a-42a8-bd0d-4206ee14bb18",
+      "name": "Firmenname",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3283,7 +4246,19 @@
     {
       "id": "fb0605ad-073e-48bd-b4f8-72c09f7e8361",
       "name": "Servicekontotyp",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "dataportServicekontoType",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "CitizenProfileType"
+      }
+    },
+    {
+      "id": "fb0605ad-073e-48bd-b4f8-72c09f7e8360",
+      "name": "Servicekontotyp",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3295,7 +4270,20 @@
     {
       "id": "ff1e2c99-1120-466c-93d6-84a72bac976d",
       "name": "Staatsangehörigkeit",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "nationality",
+        "attribute.friendly.name": "nationality",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.225577"
+      }
+    },
+    {
+      "id": "ff1e2c99-1120-466c-93d6-84a72bac976e",
+      "name": "Staatsangehörigkeit",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3308,7 +4296,20 @@
     {
       "id": "c9deae81-bb3a-4ff4-b32f-8814a9d5e65c",
       "name": "eIDAS-Issuing-Country",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "eIDASIssuingCountry",
+        "attribute.friendly.name": "eIDASIssuingCountry",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.10.1"
+      }
+    },
+    {
+      "id": "c9deae81-bb3a-4ff4-b32f-8814a9d5e65b",
+      "name": "eIDAS-Issuing-Country",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3321,7 +4322,20 @@
     {
       "id": "385dc25b-c2bf-4b94-837b-27759f840fdc",
       "name": "Anrede",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "salutation",
+        "attribute.friendly.name": "gender",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.33592.1.3.5"
+      }
+    },
+    {
+      "id": "385dc25b-c2bf-4b94-837b-27759f840fdb",
+      "name": "Anrede",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3334,7 +4348,19 @@
     {
       "id": "761e26ed-18bc-41b2-9416-4e8c8279f66a",
       "name": "Handelnde Person: Vorname",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "firstName",
+        "attribute.xpath": "//ekona:Vorname",
+        "attribute.name": "HandelndePerson"
+      }
+    },
+    {
+      "id": "761e26ed-18bc-41b2-9416-4e8c8279f66z",
+      "name": "Handelnde Person: Vorname",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3346,7 +4372,20 @@
     {
       "id": "22d44330-3ced-4c10-8c9a-9d7dc1622586",
       "name": "Postleitzahl",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "zipCode",
+        "attribute.friendly.name": "postalCode",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.17"
+      }
+    },
+    {
+      "id": "22d44330-3ced-4c10-8c9a-9d7dc1622585",
+      "name": "Postleitzahl",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3359,7 +4398,20 @@
     {
       "id": "1919db0e-a8ad-4d90-b834-9111c4faa274",
       "name": "Geburtsname",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "birthName",
+        "attribute.friendly.name": "birthName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.225566"
+      }
+    },
+    {
+      "id": "1919db0e-a8ad-4d90-b834-9111c4faa273",
+      "name": "Geburtsname",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3372,7 +4424,19 @@
     {
       "id": "971c9429-1955-4eb5-9a62-11be978762ff",
       "name": "Postfach",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "dataportInboxID",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "InboxReference"
+      }
+    },
+    {
+      "id": "971c9429-1955-4eb5-9a62-11be978762fe",
+      "name": "Postfach",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3384,7 +4448,19 @@
     {
       "id": "5d2066a0-aea3-464d-96d7-c51980f1497d",
       "name": "Unternehmensanschrift: Straße",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Strasse",
+        "user.attribute": "orgStreet",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "5d2066a0-aea3-464d-96d7-c51980f1497c",
+      "name": "Unternehmensanschrift: Straße",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3396,7 +4472,20 @@
     {
       "id": "b46a9d92-9972-4165-ab6d-ab478dcc9c90",
       "name": "Akademischer Titel",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "title",
+        "attribute.friendly.name": "personalTitle",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:0.9.2342.19200300.100.1.40"
+      }
+    },
+    {
+      "id": "b46a9d92-9972-4165-ab6d-ab478dcc9c99",
+      "name": "Akademischer Titel",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3409,7 +4498,20 @@
     {
       "id": "ad7fe75b-ab95-4b54-a6a8-c550688a7f3b",
       "name": "Akademischer Titel",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "title",
+        "attribute.friendly.name": "personalTitle",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:0.9.2342.19200300.100.1.40"
+      }
+    },
+    {
+      "id": "ad7fe75b-ab95-4b54-a6a8-c550688a7f3a",
+      "name": "Akademischer Titel",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3422,7 +4524,20 @@
     {
       "id": "ee827f3a-6cc9-46b7-864d-8ca709758c2f",
       "name": "Land",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "country",
+        "attribute.friendly.name": "country",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.225599"
+      }
+    },
+    {
+      "id": "ee827f3a-6cc9-46b7-864d-8ca709758c2e",
+      "name": "Land",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3435,7 +4550,19 @@
     {
       "id": "5544e9c1-a685-4a91-9d0c-b5d0cdc05bed",
       "name": "Datenkranz Typ",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "elsterDatenkranzTyp",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "DatenkranzTyp"
+      }
+    },
+    {
+      "id": "5544e9c1-a685-4a91-9d0c-b5d0cdc05bec",
+      "name": "Datenkranz Typ",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3447,7 +4574,20 @@
     {
       "id": "4450b264-1ba1-4e79-a292-210af87e16f0",
       "name": "Dokumententyp",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "documentType",
+        "attribute.friendly.name": "documentType",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.552255"
+      }
+    },
+    {
+      "id": "4450b264-1ba1-4e79-a292-210af87e16f9",
+      "name": "Dokumententyp",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3460,7 +4600,19 @@
     {
       "id": "e8db7548-00a5-4669-9887-d4311c219001",
       "name": "Geburtsort",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "placeOfBirth",
+        "attribute.xpath": "//p3:Freetext",
+        "attribute.name": "PlaceOfBirth"
+      }
+    },
+    {
+      "id": "e8db7548-00a5-4669-9887-d4311c219000",
+      "name": "Geburtsort",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3472,7 +4624,19 @@
     {
       "id": "90d43118-1482-45f7-9026-cd4abb4facb1",
       "name": "Unternehmensanschrift: Straße und Hausnummer",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgStreetAndBuilding",
+        "attribute.xpath": "//q1:Address//q1:StreetAddress",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "90d43118-1482-45f7-9026-cd4abb4facb0",
+      "name": "Unternehmensanschrift: Straße und Hausnummer",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3484,7 +4648,20 @@
     {
       "id": "9eb8199a-7c54-4cc1-b3a5-d7e85630543e",
       "name": "Nachname",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "lastName",
+        "attribute.friendly.name": "surname",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.4"
+      }
+    },
+    {
+      "id": "9eb8199a-7c54-4cc1-b3a5-d7e85630543d",
+      "name": "Nachname",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3497,7 +4674,20 @@
     {
       "id": "24e8852e-155d-49c9-aa85-66a985cfa582",
       "name": "Geburtsname",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "birthName",
+        "attribute.friendly.name": "birthName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.225566"
+      }
+    },
+    {
+      "id": "24e8852e-155d-49c9-aa85-66a985cfa581",
+      "name": "Geburtsname",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3510,7 +4700,19 @@
     {
       "id": "1d1e4834-4473-4e69-96e2-7c34c5a7e23b",
       "name": "Datenübermittler Pseudonym ID",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "elsterDatenuebermittlerPseudonymID",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "DatenuebermittlerPseudonymId"
+      }
+    },
+    {
+      "id": "1d1e4834-4473-4e69-96e2-7c34c5a7e23a",
+      "name": "Datenübermittler Pseudonym ID",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3522,7 +4724,19 @@
     {
       "id": "33313f37-aca3-4332-9179-4c9d3ad06ff9",
       "name": "Nachname",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "lastName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "FamilyNames"
+      }
+    },
+    {
+      "id": "33313f37-aca3-4332-9179-4c9d3ad06ff8",
+      "name": "Nachname",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3534,7 +4748,19 @@
     {
       "id": "696a2f93-021f-4e8e-8c5d-b4c4923b9b9f",
       "name": "Unternehmenseinheit",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgOrganizationUnit",
+        "attribute.xpath": "//q1:OrganizationUnit",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "696a2f93-021f-4e8e-8c5d-b4c4923b9b9e",
+      "name": "Unternehmenseinheit",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3546,7 +4772,19 @@
     {
       "id": "7faea553-e01e-41a3-807b-2989e1c67518",
       "name": "Favorisierte Sprache",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "preferredLanguage",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Language"
+      }
+    },
+    {
+      "id": "7faea553-e01e-41a3-807b-2989e1c67517",
+      "name": "Favorisierte Sprache",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3558,7 +4796,19 @@
     {
       "id": "6e1e6111-134d-4330-91b8-19d3224c95ce",
       "name": "Rechtsform (RechtsformText)",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgLegalFormText",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "RechtsformText"
+      }
+    },
+    {
+      "id": "6e1e6111-134d-4330-91b8-19d3224c95cd",
+      "name": "Rechtsform (RechtsformText)",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3570,7 +4820,19 @@
     {
       "id": "d010164e-5dd4-4b73-8d95-02ac3ce0d240",
       "name": "Unternehmensanschrift: Land",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Land",
+        "user.attribute": "orgCountry",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "d010164e-5dd4-4b73-8d95-02ac3ce0d249",
+      "name": "Unternehmensanschrift: Land",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3582,7 +4844,19 @@
     {
       "id": "e02b8c73-eb9c-4aa4-9869-891cb0eedd0d",
       "name": "Anrede",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "salutation",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Title"
+      }
+    },
+    {
+      "id": "e02b8c73-eb9c-4aa4-9869-891cb0eedd0c",
+      "name": "Anrede",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3594,7 +4868,20 @@
     {
       "id": "8266da40-6720-4c90-af8d-8331ae185926",
       "name": "Straße und Hausnummer",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "streetAndBuilding",
+        "attribute.friendly.name": "postalAddress",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.16"
+      }
+    },
+    {
+      "id": "8266da40-6720-4c90-af8d-8331ae185925",
+      "name": "Straße und Hausnummer",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3607,7 +4894,19 @@
     {
       "id": "18e98f59-3323-4562-8110-2ed8a210b84e",
       "name": "Identitätstyp (PersTyp)",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "elsterIdentitaetstyp",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "PersTyp"
+      }
+    },
+    {
+      "id": "18e98f59-3323-4562-8110-2ed8a210b84d",
+      "name": "Identitätstyp (PersTyp)",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3619,7 +4918,19 @@
     {
       "id": "5b855818-6d47-4353-b2fa-35e46e60212a",
       "name": "Unternehmensanschrift: Ort",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgCity",
+        "attribute.xpath": "//q1:Address//q1:City",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "5b855818-6d47-4353-b2fa-35e46e60212z",
+      "name": "Unternehmensanschrift: Ort",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3631,7 +4942,19 @@
     {
       "id": "06ee4353-4435-4b7a-a6fb-f4d16c979676",
       "name": "Telefonnummer",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "telephone",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Telephone"
+      }
+    },
+    {
+      "id": "06ee4353-4435-4b7a-a6fb-f4d16c979675",
+      "name": "Telefonnummer",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3643,7 +4966,20 @@
     {
       "id": "ad350d60-7a4b-4d99-8d55-750304ced4f3",
       "name": "AssertionProvedBy",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "assertionProvedBy",
+        "attribute.friendly.name": "AssertionProvedBy",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.2"
+      }
+    },
+    {
+      "id": "ad350d60-7a4b-4d99-8d55-750304ced4f2",
+      "name": "AssertionProvedBy",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3656,7 +4992,19 @@
     {
       "id": "e97eb1c6-fa72-492f-a454-4c21b9040223",
       "name": "Unternehmen: E-Mail-Adresse",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgContactMail",
+        "attribute.xpath": "//q1:EmailAddress",
+        "attribute.name": "LegalEntity"
+      }
+    },
+    {
+      "id": "e97eb1c6-fa72-492f-a454-4c21b9040222",
+      "name": "Unternehmen: E-Mail-Adresse",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3668,7 +5016,20 @@
     {
       "id": "26c322e1-6bc6-4b38-a0b6-92c3bf7d36cc",
       "name": "AssertionProvedBy",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "assertionProvedBy",
+        "attribute.friendly.name": "AssertionProvedBy",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.2"
+      }
+    },
+    {
+      "id": "26c322e1-6bc6-4b38-a0b6-92c3bf7d36cb",
+      "name": "AssertionProvedBy",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3681,7 +5042,19 @@
     {
       "id": "8d8a33f2-90d8-4f33-9371-ea7114cdf453",
       "name": "Unternehmensanschrift: Typ",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Typ",
+        "user.attribute": "orgAddressType",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "8d8a33f2-90d8-4f33-9371-ea7114cdf452",
+      "name": "Unternehmensanschrift: Typ",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3693,7 +5066,19 @@
     {
       "id": "da6cc971-d5b0-4aea-bfbe-b6bd548f024c",
       "name": "Geschlecht",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "gender",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Gender"
+      }
+    },
+    {
+      "id": "da6cc971-d5b0-4aea-bfbe-b6bd548f024b",
+      "name": "Geschlecht",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3705,7 +5090,20 @@
     {
       "id": "9833c705-eea7-4fbf-b0bd-0c9036b5e10a",
       "name": "Geburtsdatum",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "dateOfBirth",
+        "attribute.friendly.name": "birthdate",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.55"
+      }
+    },
+    {
+      "id": "9833c705-eea7-4fbf-b0bd-0c9036b5e10z",
+      "name": "Geburtsdatum",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3718,7 +5116,20 @@
     {
       "id": "ae44a8cd-11fd-4656-8a75-22fcb0e01196",
       "name": "Telefonnummer",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "telephone",
+        "attribute.friendly.name": "telephoneNumber",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.20"
+      }
+    },
+    {
+      "id": "ae44a8cd-11fd-4656-8a75-22fcb0e01195",
+      "name": "Telefonnummer",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3731,7 +5142,19 @@
     {
       "id": "dd2915c6-3460-412b-90be-812bcf72a253",
       "name": "Rechtsform Code (Rechtsform)",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "orgLegalFormCode",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "Rechtsform"
+      }
+    },
+    {
+      "id": "dd2915c6-3460-412b-90be-812bcf72a252",
+      "name": "Rechtsform Code (Rechtsform)",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3743,7 +5166,20 @@
     {
       "id": "a800cf6c-cb04-428b-bb76-f69bc0c0944f",
       "name": "Ort",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "city",
+        "attribute.friendly.name": "localityName",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:2.5.4.7"
+      }
+    },
+    {
+      "id": "a800cf6c-cb04-428b-bb76-f69bc0c0944e",
+      "name": "Ort",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3756,7 +5192,19 @@
     {
       "id": "a7b42c34-ecdf-4ded-966e-4e866ec2d5af",
       "name": "Unternehmensanschrift: Postleitzahl",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:PLZ",
+        "user.attribute": "orgZipCode",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "a7b42c34-ecdf-4ded-966e-4e866ec2d5ae",
+      "name": "Unternehmensanschrift: Postleitzahl",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3768,7 +5216,19 @@
     {
       "id": "866779fc-232a-4b45-8de3-d91e7a64aebe",
       "name": "Unternehmensanschrift: Ort",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "attribute.xpath": "//ekona:Ort",
+        "user.attribute": "orgCity",
+        "attribute.name": "Unternehmensanschrift"
+      }
+    },
+    {
+      "id": "866779fc-232a-4b45-8de3-d91e7a64aebd",
+      "name": "Unternehmensanschrift: Ort",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3780,7 +5240,19 @@
     {
       "id": "5ce5292c-c4ca-485f-950e-d4e8f3a6b736",
       "name": "Anschrift Privatperson: Land",
-      "identityProviderAlias": "schleswigholstein",
+      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "country",
+        "attribute.xpath": "//p3:Country",
+        "attribute.name": "PlaceOfResidence"
+      }
+    },
+    {
+      "id": "5ce5292c-c4ca-485f-950e-d4e8f3a6b735",
+      "name": "Anschrift Privatperson: Land",
+      "identityProviderAlias": "schleswigholstein-stage",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3792,7 +5264,19 @@
     {
       "id": "1c3ea480-2c9d-4015-8e29-98b6854782f9",
       "name": "Vertrauensniveau Identifizierung",
-      "identityProviderAlias": "muk",
+      "identityProviderAlias": "muk-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "trustLevelIdentification",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_BASIC",
+        "attribute.name": "ElsterVertrauensniveauIdentifizierung"
+      }
+    },
+    {
+      "id": "1c3ea480-2c9d-4015-8e29-98b6854782f8",
+      "name": "Vertrauensniveau Identifizierung",
+      "identityProviderAlias": "muk-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3804,7 +5288,20 @@
     {
       "id": "7c235e2d-7612-48a6-832b-985c23e9b8d4",
       "name": "Wohnort-ID",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "communityId",
+        "attribute.friendly.name": "communityId",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.5"
+      }
+    },
+    {
+      "id": "7c235e2d-7612-48a6-832b-985c23e9b8d3",
+      "name": "Wohnort-ID",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3817,7 +5314,20 @@
     {
       "id": "6ffb24d0-f21c-485e-afe1-f1b08edd78ca",
       "name": "Antrags-ID",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "applicationId",
+        "attribute.friendly.name": "applicationId",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.4"
+      }
+    },
+    {
+      "id": "6ffb24d0-f21c-485e-afe1-f1b08edd78cz",
+      "name": "Antrags-ID",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3830,7 +5340,20 @@
     {
       "id": "14de15ce-c958-4252-aaf8-24b7b708d093",
       "name": "Pseudonym",
-      "identityProviderAlias": "bayernid",
+      "identityProviderAlias": "bayernid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "pseudonym",
+        "attribute.friendly.name": "pseudonym",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.226699"
+      }
+    },
+    {
+      "id": "14de15ce-c958-4252-aaf8-24b7b708d092",
+      "name": "Pseudonym",
+      "identityProviderAlias": "bayernid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3843,7 +5366,20 @@
     {
       "id": "929a60f2-aed5-46e3-a36e-8e15acffd6f0",
       "name": "Wohnort-ID",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "communityId",
+        "attribute.friendly.name": "communityId",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.5"
+      }
+    },
+    {
+      "id": "929a60f2-aed5-46e3-a36e-8e15acffd6f9",
+      "name": "Wohnort-ID",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3856,7 +5392,20 @@
     {
       "id": "58cfd934-35c6-4a3b-8ecd-2bc022d67117",
       "name": "Antrags-ID",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "applicationId",
+        "attribute.friendly.name": "applicationId",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.3.6.1.4.1.25484.494450.4"
+      }
+    },
+    {
+      "id": "58cfd934-35c6-4a3b-8ecd-2bc022d67116",
+      "name": "Antrags-ID",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3869,7 +5418,20 @@
     {
       "id": "9498959f-b9ef-4540-b43e-c36d72f9de9d",
       "name": "Pseudonym",
-      "identityProviderAlias": "bundid",
+      "identityProviderAlias": "bundid-prod",
+      "identityProviderMapper": "saml-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "INHERIT",
+        "user.attribute": "pseudonym",
+        "attribute.friendly.name": "pseudonym",
+        "attribute.name.format": "ATTRIBUTE_FORMAT_URI",
+        "attribute.name": "urn:oid:1.2.40.0.10.2.1.1.226699"
+      }
+    },
+    {
+      "id": "9498959f-b9ef-4540-b43e-c36d72f9de9c",
+      "name": "Pseudonym",
+      "identityProviderAlias": "bundid-stage",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4648,9 +6210,9 @@
   "authenticatorConfig": [
     {
       "id": "246dbd47-ca67-4a5f-a55c-5af0a2d8f7f8",
-      "alias": "bundid",
+      "alias": "bundid-prod",
       "config": {
-        "defaultProvider": "bundid"
+        "defaultProvider": "bundid-prod"
       }
     },
     {
