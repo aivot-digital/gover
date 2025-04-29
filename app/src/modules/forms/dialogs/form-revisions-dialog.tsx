@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Dialog, DialogContent, Grid, Skeleton, Typography} from '@mui/material';
+import {Box, Button, Dialog, DialogContent, DialogContentText, Grid, Skeleton, Typography} from '@mui/material';
 import { User } from '../../users/models/user';
 import {DiffItem} from '../../../models/entities/form-revision';
 import { Form, isForm } from '../../../models/entities/form';
@@ -414,18 +414,23 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                 onCancel={() => setHandleRollback(undefined)}
                 onConfirm={handleRollback}
             >
-                <Typography>
-                    Wenn Sie diese Änderung rückgängig machen, werden auch alle Änderungen rückgängig gemacht, welche zeitlich nach der Änderung (welche rückgängig gemacht werden soll) erfolgt sind.
-                </Typography>
-                <Typography
+                <DialogContentText>
+                    Wenn Sie diese Änderung rückgängig machen, werden auch alle nachfolgenden Änderungen, die zeitlich nach der rückgängig zu machenden Änderung erfolgt sind, ebenfalls zurückgesetzt.
+                </DialogContentText>
+                <DialogContentText
                     sx={{
-                        mt: 1,
+                        mt: 2,
                     }}
                 >
-                    Das Rückgängig machen kann etwas Zeit in Anspruch nehmen.
-                    Bitte schließen Sie den Editor nicht, während der Vorgang läuft.
-                    Bitte bestätigen Sie das Rückgängig machen der Änderung um fortzufahren.
-                </Typography>
+                    Das Rückgängigmachen kann einige Zeit in Anspruch nehmen. Bitte schließen Sie den Editor während dieses Vorgangs nicht. Bestätigen Sie bitte das Rückgängigmachen der Änderung, um fortzufahren.
+                </DialogContentText>
+                <DialogContentText
+                    sx={{
+                        mt: 2,
+                    }}
+                >
+                    <b>Wichtig:</b> Beim Rückgängigmachen wird geprüft, ob bestimmte Attribute noch gültig oder verfügbar sind. Sollte dies nicht der Fall sein, werden diese entfernt und müssen anschließend neu gesetzt werden. Betroffen sein können insbesondere: Formular-IDs, Schnittstellen, Statusangaben, Fachbereiche, rechtliche Hinweise, Support-Informationen, PDF-Vorlagen, Farbschemata, Zahlungsdetails sowie Testprotokolle.
+                </DialogContentText>
             </ConfirmDialog>
         </>
     );
