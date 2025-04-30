@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Box, Typography} from '@mui/material';
-import {addError, prefillElementsFromIdentityProvider, selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, setFormState, updateCustomerInput} from '../../../../slices/app-slice';
+import {addError, hydrateCustomerInput, prefillElementsFromIdentityProvider, selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, setHasLoadedSavedCustomerInput} from '../../../../slices/app-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {IdentityCustomerInputKey} from '../../constants/identity-customer-input-key';
 import {IdentityProviderLink} from '../../models/identity-provider-link';
@@ -14,6 +14,7 @@ import {IdentityValue} from '../../models/identity-value';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {CustomerInputService} from '../../../../services/customer-input-service';
 
 interface IdentityButtonGroupProps {
     isBusy: boolean;
@@ -73,14 +74,33 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             return;
         }
 
+        if (form == null) {
+            return;
+        }
+
         if (state === IdentityResultState.Success) {
             IdentityProvidersApiService
                 .fetchIdentity()
                 .then(({providerKey, metadataIdentifier, attributes}) => {
+                    const lastSaveData = CustomerInputService
+                        .loadCustomerInputState(form);
+
+                    if (lastSaveData != null) {
+                        dispatch(hydrateCustomerInput(lastSaveData));
+                        dispatch(setHasLoadedSavedCustomerInput(true));
+                    }
+
                     dispatch(prefillElementsFromIdentityProvider({
                         identityProviderKey: providerKey,
                         metadataIdentifier: metadataIdentifier,
                         userInfo: attributes,
+                    }));
+                })
+                .catch((err) => {
+                    console.error(err);
+                    dispatch(addError({
+                        key: IdentityCustomerInputKey,
+                        error: 'Beim Abruf der Authentifizierungsdaten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
                     }));
                 })
                 .finally(() => {
@@ -94,7 +114,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             dispatch(showErrorSnackbar('Bei der Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.'));
             setSearchParams({});
         }
-    }, [searchParams]);
+    }, [searchParams, form]);
 
     if (form == null || identityLinks == null || identityLinks.length === 0) {
         return null;
