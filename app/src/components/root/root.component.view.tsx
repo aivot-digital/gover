@@ -232,6 +232,8 @@ export function RootComponentView({
                     status: SubmissionStatus.Pending,
                 });
                 dispatch(nextStep());
+                // Clear possible identity data from search params
+                setSearchParams({});
                 CustomerInputService.cleanCustomerInput(form);
             }
         }
