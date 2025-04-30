@@ -1,7 +1,7 @@
 import {useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
-import {Alert, Snackbar, type Theme as MuiTheme, ThemeProvider} from '@mui/material';
+import {type Theme as MuiTheme, ThemeProvider} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
 import {LoadCustomerInputDialog} from '../../dialogs/load-customer-input/load-customer-input.dialog';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
@@ -22,6 +22,7 @@ import {SystemConfigKeys} from '../../data/system-config-keys';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
+import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
 
 export const DialogSearchParam = 'dialog';
 
@@ -39,7 +40,6 @@ export function FormPage() {
     const dispatch = useAppDispatch();
     const form = useAppSelector(selectLoadedForm);
     const [failedToLoad, setFailedToLoad] = useState(false);
-    const snackbar = useAppSelector((state) => state.snackbar);
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
@@ -56,7 +56,7 @@ export function FormPage() {
 
         setFailedToLoad(false);
         new FormsApiService(api)
-            .retrieveBySlugAndVersion(slug, version)
+            .retrieveBySlugAndVersion(slug, version, searchParams.get(IdentityIdQueryParam) ?? undefined)
             .then((application) => {
                 dispatch(updateLoadedForm(application));
             })
@@ -64,7 +64,7 @@ export function FormPage() {
                 console.error(err);
                 setFailedToLoad(true);
             });
-    }, [slug, api]);
+    }, [slug, api, searchParams]);
 
     useEffect(() => {
         if (form?.themeId != null) {

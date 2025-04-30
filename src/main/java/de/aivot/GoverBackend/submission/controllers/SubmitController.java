@@ -1,9 +1,5 @@
 package de.aivot.GoverBackend.submission.controllers;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import de.aivot.GoverBackend.data.SpecialCustomerInputKeys;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
@@ -22,7 +18,6 @@ import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
-import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.models.IdentityValue;
 import de.aivot.GoverBackend.identity.utils.SystemIdentityProviderFormatter;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -48,13 +43,9 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
-import de.aivot.GoverBackend.user.services.KeyCloakApiService;
-import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.ElementUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.mail.MessagingException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -67,11 +58,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.security.interfaces.RSAPublicKey;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -144,7 +133,7 @@ public class SubmitController {
             @PathVariable Integer applicationId,
             @RequestParam(value = "inputs", required = true) String inputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
-            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         // Fetch form
         var form = formRepository

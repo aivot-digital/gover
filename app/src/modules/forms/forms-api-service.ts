@@ -19,6 +19,7 @@ import {FormPublishChecklistItem} from './dtos/form-publish-checklist-item';
 import {FormType} from './enums/form-type';
 import {ElementApprovalStatus} from '../elements/enums/ElementApprovalStatus';
 import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
+import {IdentityIdHeader} from '../identity/constants/identity-id-header';
 
 interface FormFilters {
     id: number;
@@ -123,7 +124,7 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return await this.api.get<Record<string, ElementApprovalStatus>>(`public/forms/${formId}/approvals/`);
     }
 
-    public async submit(id: number, userInput: CustomerInput): Promise<SubmissionListResponseDTO> {
+    public async submit(id: number, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
         const data = new FormData();
         data.set('inputs', JSON.stringify(userInput));
 
@@ -141,7 +142,13 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
             }
         }
 
-        return await this.api.postFormData<SubmissionListResponseDTO>(`public/submit/${id}/`, data);
+        return await this.api.postFormData<SubmissionListResponseDTO>(`public/submit/${id}/`, data, identityId != null ? {
+            requestOptions: {
+                headers: {
+                    [IdentityIdHeader]: identityId ?? undefined,
+                }
+            }
+        } : undefined);
     }
 
     public async sendApplicationCopy(submissionId: string, email: string): Promise<string> {
@@ -173,11 +180,19 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return await res.json();
     }
 
-    public retrieveBySlugAndVersion(slug: string, version: string | undefined) {
+    public retrieveBySlugAndVersion(slug: string, version: string | undefined, identityId: string | undefined) {
+        const apiOptions: ApiOptions | undefined = identityId != null ? {
+            requestOptions: {
+                headers: {
+                    [IdentityIdHeader]: identityId,
+                },
+            },
+        } : undefined;
+
         if (version == null) {
-            return this.api.getPublic<Form>(`forms/${slug}/`);
+            return this.api.getPublic<Form>(`forms/${slug}/`, apiOptions);
         }
-        return this.api.getPublic<Form>(`forms/${slug}/${version}/`);
+        return this.api.getPublic<Form>(`forms/${slug}/${version}/`, apiOptions);
     }
 
     public publish(id: number): Promise<Form> {

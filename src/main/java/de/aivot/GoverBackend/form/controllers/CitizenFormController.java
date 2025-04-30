@@ -82,7 +82,7 @@ public class CitizenFormController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String slug,
             @Nonnull @PathVariable String version,
-            @Nullable @CookieValue(IdentityController.IDENTITY_COOKIE_NAME) String identityId
+            @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -118,7 +118,7 @@ public class CitizenFormController {
     public FormCitizenDetailsResponseDTO retrievePublic(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @PathVariable String slug,
-            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)

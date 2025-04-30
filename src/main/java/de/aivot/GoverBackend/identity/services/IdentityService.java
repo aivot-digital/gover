@@ -134,12 +134,11 @@ public class IdentityService {
      *                           the token cannot be retrieved, user information cannot be fetched, or logout fails.
      */
     @Nonnull
-    public IdentityCacheEntity handleCallback(
+    public String handleCallback(
             @Nullable String providerKey,
             @Nullable String authorizationCode,
             @Nonnull URI callbackBaseUrl,
-            @Nonnull String origin,
-            @Nullable String existingIdentityId
+            @Nonnull String origin
     ) throws ResponseException {
         if (authorizationCode == null) {
             throw ResponseException
@@ -171,13 +170,9 @@ public class IdentityService {
                 authToken
         );
 
-        var identityId = existingIdentityId;
-        if (identityId == null) {
-            identityId = UUID.randomUUID().toString();
-        }
 
         var identityEntity = new IdentityCacheEntity()
-                .setId(identityId)
+                .setId(UUID.randomUUID().toString())
                 .setIdentityData(userInfo)
                 .setMetadataIdentifier(provider.getMetadataIdentifier())
                 .setProviderKey(provider.getKey());
@@ -185,7 +180,12 @@ public class IdentityService {
         identityCacheRepository
                 .save(identityEntity);
 
-        return identityEntity;
+        return UriComponentsBuilder
+                .fromUriString(origin)
+                .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.Success.getKey())
+                .queryParam(IdentityQueryParameterConstants.RESULT_IDENTITY_ID, identityEntity.getId())
+                .build()
+                .toString();
     }
 
     /**

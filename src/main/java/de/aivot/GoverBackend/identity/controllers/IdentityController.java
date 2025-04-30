@@ -24,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/public/identity/")
 public class IdentityController {
-    public static final String IDENTITY_COOKIE_NAME = "GOVER_IDENTITY_ID";
+    public static final String IDENTITY_HEADER_NAME = "gover-identity-id";
 
     private final GoverConfig goverConfig;
     private final IdentityCacheRepository identityCacheRepository;
@@ -67,7 +67,6 @@ public class IdentityController {
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_AUTHORIZATION_CODE, required = false) String authorizationCode,
-            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String identityId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         if (error != null) {
@@ -81,32 +80,20 @@ public class IdentityController {
             return;
         }
 
-        var identityData = identityService
+        var redirectUrl = identityService
                 .handleCallback(
                         key,
                         authorizationCode,
                         createCallbackURI(key),
-                        origin,
-                        identityId
+                        origin
                 );
-
-        var identityCookie = new Cookie(IDENTITY_COOKIE_NAME, identityData.getId());
-        identityCookie.setPath("/");
-        identityCookie.setHttpOnly(true);
-        response.addCookie(identityCookie);
-
-        var redirectUrl = UriComponentsBuilder
-                .fromUriString(origin)
-                .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.Success.getKey())
-                .build()
-                .toString();
 
         response.sendRedirect(redirectUrl);
     }
 
     @GetMapping("get/")
     public IdentityData get(
-            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) String identityId
+            @Nullable @RequestHeader(name = IDENTITY_HEADER_NAME, required = true) String identityId
     ) throws ResponseException {
         if (identityId == null) {
             throw ResponseException

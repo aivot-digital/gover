@@ -45,6 +45,7 @@ import {SubmissionStatus} from '../../modules/submissions/enums/submission-statu
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
+import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -172,8 +173,6 @@ export function RootComponentView({
 
         // Check if introduction step
         if (currentStep === 0) {
-            // Reset Query Params to strip off possible IDP query
-            setSearchParams({});
             dispatch(nextStep());
         }
 
@@ -202,7 +201,7 @@ export function RootComponentView({
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
                 submitResponse = await formsApiService
-                    .submit(form.id, customerInput);
+                    .submit(form.id, customerInput, searchParams.get(IdentityIdQueryParam) ?? undefined);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
                     switch (error.status) {

@@ -20,6 +20,7 @@ import {IdentityStateQueryParam} from '../../constants/identity-state-query-para
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import Tooltip from '@mui/material/Tooltip';
 import {IdentityData} from '../../models/identity-data';
+import {IdentityIdQueryParam} from '../../constants/identity-id-query-param';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
@@ -42,12 +43,18 @@ export function IdentityProviderDetailsPageTest() {
     useEffect(() => {
         const stateStr = urlSearchParams.get(IdentityStateQueryParam);
         const state = stateStr != null ? parseInt(stateStr) : IdentityResultState.UnknownError;
+        const id = urlSearchParams.get(IdentityIdQueryParam);
 
         switch (state) {
             case IdentityResultState.Success:
+                if (id == null) {
+                    setIdentityError('Es wurde kein Nutzerkonto übergeben.');
+                    break;
+                }
+
                 setIdentityError(undefined);
                 IdentityProvidersApiService
-                    .fetchIdentity()
+                    .fetchIdentity(id)
                     .then(setIdentityData)
                     .catch(err => {
                         console.error(err);

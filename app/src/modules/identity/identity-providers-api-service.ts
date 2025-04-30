@@ -6,6 +6,7 @@ import {IdentityProviderRequestDTO} from './models/identity-provider-request-dto
 import {IdentityProviderType} from './enums/identity-provider-type';
 import {IdentityProviderInfo} from './models/identity-provider-info';
 import {IdentityData} from './models/identity-data';
+import {IdentityIdHeader} from './constants/identity-id-header';
 
 export interface IdentityProvidersFilter {
     keys: string[];
@@ -40,7 +41,7 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
             isEnabled: false,
             iconAssetKey: undefined,
             defaultScopes: [],
-            isTestProvider: false
+            isTestProvider: false,
         };
     }
 
@@ -54,8 +55,12 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
         return '/api/public/identity/' + key + '/start/' + (additionalScopes != null ? '?additionalScopes=' + additionalScopes.join('%20') : '');
     }
 
-    public static async fetchIdentity(): Promise<IdentityData> {
-        const res = await fetch('/api/public/identity/get/');
+    public static async fetchIdentity(identityId: string): Promise<IdentityData> {
+        const res = await fetch('/api/public/identity/get/', {
+            headers: {
+                [IdentityIdHeader]: identityId,
+            },
+        });
         return await res.json();
     }
 }
