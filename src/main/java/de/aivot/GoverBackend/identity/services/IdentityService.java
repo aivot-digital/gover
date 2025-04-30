@@ -96,13 +96,6 @@ public class IdentityService {
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_SCOPE, combinedScopes)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_STATE, resolvedReferer.toString());
 
-        // Add the client secret if available
-        getClientSecret(provider)
-                .ifPresent(secret -> builder.queryParam(
-                        IdentityQueryParameterConstants.AUTH_ENDPOINT_CLIENT_SECRET,
-                        secret
-                ));
-
         // Add any additional parameters specified in the provider entity
         provider
                 .getAdditionalParams()
