@@ -63,7 +63,7 @@ public class IdentityController {
     @GetMapping("{key}/callback/")
     public void callback(
             @Nonnull @PathVariable String key,
-            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN) String origin,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_STATE) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_AUTHORIZATION_CODE, required = false) String authorizationCode,

@@ -83,13 +83,6 @@ public class IdentityService {
         var resolvedReferer = resolveReferer(referer, goverConfig.getGoverHostname());
         var combinedScopes = getCombinedScopes(provider, additionalScopes);
 
-        // Construct the redirect URL
-        var redirectUrl = UriComponentsBuilder
-                .fromUri(callbackBaseUrl)
-                .queryParam(IdentityQueryParameterConstants.ORIGIN, resolvedReferer.toString()) // The origin is the origin of the first request resolved from the referer header
-                .build()
-                .toString();
-
         var resolvedAuthorizationUri = resolveRelativeOrAbsoluteURL(provider.getAuthorizationEndpoint());
 
         // Create the redirect URL
@@ -99,8 +92,9 @@ public class IdentityService {
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_CLIENT_ID, provider.getClientId())
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_RESPONSE_TYPE, DEFAULT_RESPONSE_TYPE)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_LOGIN, DEFAULT_LOGIN_VALUE)
-                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_REDIRECT_URI, redirectUrl)
-                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_SCOPE, combinedScopes);
+                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_REDIRECT_URI, callbackBaseUrl)
+                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_SCOPE, combinedScopes)
+                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_STATE, resolvedReferer.toString());
 
         // Add the client secret if available
         getClientSecret(provider)
@@ -147,17 +141,10 @@ public class IdentityService {
 
         var provider = getIdentityProviderEntity(providerKey);
 
-        // Construct the redirect URL
-        var redirectUrl = UriComponentsBuilder
-                .fromUri(callbackBaseUrl)
-                .queryParam(IdentityQueryParameterConstants.ORIGIN, origin) // The origin is the origin of the first request resolved from the referer header
-                .build()
-                .toUri();
-
         var authToken = fetchAuthToken(
                 provider,
                 authorizationCode,
-                redirectUrl
+                callbackBaseUrl
         );
 
         var userInfo = fetchUserInfo(
