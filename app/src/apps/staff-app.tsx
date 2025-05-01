@@ -63,6 +63,7 @@ function StaffApp() {
     const api = useApi();
 
     const loadingOverlay = useAppSelector((state) => state.loadingOverlay);
+    const [authChecked, setAuthChecked] = useState(false);
 
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
@@ -93,11 +94,16 @@ function StaffApp() {
                     if (authData != null) {
                         dispatch(setAuthData(authData));
                         window.location.search = '';
+                    } else {
+                        setAuthChecked(true);
                     }
                 })
                 .catch((err) => {
                     console.error(err);
+                    setAuthChecked(true);
                 });
+        } else {
+            setAuthChecked(true);
         }
     }, [authCode]);
 
@@ -160,6 +166,23 @@ function StaffApp() {
     useEffect(() => {
         localStorage.removeItem('gover-session-expired');
     }, []);
+
+    if (!authChecked) {
+        return (
+            <Box
+                sx={{
+                    width: '100%',
+                    height: '100vh',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <CircularProgress />
+                <Typography sx={{ml: 2}}>Authentifizierung wird geprüft…</Typography>
+            </Box>
+        );
+    }
 
     if (!api.isAuthenticated()) {
         return (
