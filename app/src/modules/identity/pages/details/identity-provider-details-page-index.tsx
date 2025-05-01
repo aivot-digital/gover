@@ -732,7 +732,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('authorizationEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.authorizationEndpoint}
-                        hint="Host unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
+                        hint="Pfad oder vollständige URL zum Authorization-Endpoint des Identity-Providers."
                     />
                 </Grid>
 
@@ -749,7 +749,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('tokenEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.tokenEndpoint}
-                        hint="Realm unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
+                        hint="Pfad oder vollständige URL zum Token-Endpoint, über den Access- bzw. ID-Tokens ausgegeben werden."
                     />
                 </Grid>
 
@@ -769,7 +769,7 @@ export function IdentityProviderDetailsPageIndex() {
                         }}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.userinfoEndpoint}
-                        hint="Realm unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
+                        hint="Pfad oder vollständige URL zum Userinfo-Endpoint, um Benutzerinformationen abzufragen."
                     />
                 </Grid>
 
@@ -789,7 +789,7 @@ export function IdentityProviderDetailsPageIndex() {
                         }}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.endSessionEndpoint}
-                        hint="Sollte dieser Endpunkt nicht spezifiziert werden, kann sich die Nutzer:in mehrfach hintereinander authorisieren, ohne Anmeldedaten eingeben zu müssen. Dies ist besonders in Single-Sign-On Szenarien nützlich."
+                        hint="Pfad oder vollständige URL zum End-Session-Endpoint, über den Benutzer abgemeldet werden. Ohne diesen Endpoint bleibt die Single-Sign-On-Session bestehen und die Nutzer:inn kann sich mehrfach hintereinander authorisieren, ohne erneut Anmeldedaten eingeben zu müssen."
                     />
                 </Grid>
 
@@ -806,7 +806,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onBlur={handleInputBlur('clientId')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.clientId}
-                        hint="ID des Clients unter dem der Nutzerkontenanbieter erreichbar ist. Sichtbar auch für Antragsteller:innen im Formular."
+                        hint="ID des Clients unter dem der Nutzerkontenanbieter erreichbar ist."
                     />
                 </Grid>
 
@@ -939,11 +939,29 @@ export function IdentityProviderDetailsPageIndex() {
                     content: (
                         <Box>
                             <Typography>
-                                Hier können Sie die Attributszuweisungen für den Nutzerkontenanbieter anpassen.
+                                Hier können Sie die Attributszuweisungen (Claim-Zuordnung) für den Nutzerkontenanbieter hinterlegen. Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten Anbieter gelten.
                             </Typography>
-                            <Typography>
-                                Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten Anbieter gelten.
-                            </Typography>
+                            <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
+                                <li>
+                                    <strong>Titel</strong> – Anzeigename, der später in der Oberfläche
+                                    erscheint (z.&nbsp;B. „E-Mail“ oder „Nachname“).
+                                </li>
+
+                                <li>
+                                    <strong>Beschreibung</strong> – Kurze Erklärung, wofür das Attribut
+                                    verwendet wird bzw. welche Daten er enthält.
+                                </li>
+
+                                <li>
+                                    <strong>Feldname</strong> – Schlüssel in den Daten / Claim-Name
+                                    (<code>email</code>, <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token vorkommt.
+                                </li>
+
+                                <li>
+                                    <strong>Anzeigeattribut</strong> – Steuert, ob der Wert später
+                                    zur Identifikation in Übersichten von z. B. Anträgen angezeigt wird.
+                                </li>
+                            </ul>
                         </Box>
                     ),
                 }}
