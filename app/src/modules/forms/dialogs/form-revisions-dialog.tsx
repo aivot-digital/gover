@@ -24,6 +24,7 @@ import {ApplicationStatus} from '../../../data/application-status';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import {RestoreOutlined} from "@mui/icons-material";
+import {ExpandableCodeBlock} from "../../../components/expandable-code-block/expandable-code-block";
 
 
 export interface FormRevisionsDialogProps {
@@ -318,21 +319,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                                 Alter Wert
                                                             </Typography>
 
-                                                            <Typography
-                                                                component="code"
-                                                                sx={{
-                                                                    display: 'block',
-                                                                    whiteSpace: 'break-spaces',
-                                                                    width: '100%',
-                                                                    overflowX: 'auto',
-                                                                    padding: 1,
-                                                                    border: '1px solid #D6D6D7',
-                                                                    backgroundColor: '#fafafa',
-                                                                    borderRadius: '4px',
-                                                                }}
-                                                            >
-                                                                {JSON.stringify(diff.oldValue, null, '\t')}
-                                                            </Typography>
+                                                            <ExpandableCodeBlock value={JSON.stringify(diff.oldValue, null, '\t')} />
                                                         </Grid>
 
                                                         <Grid
@@ -349,21 +336,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                                 Neuer Wert
                                                             </Typography>
 
-                                                            <Typography
-                                                                component="code"
-                                                                sx={{
-                                                                    display: 'block',
-                                                                    whiteSpace: 'break-spaces',
-                                                                    width: '100%',
-                                                                    overflowX: 'auto',
-                                                                    padding: 1,
-                                                                    border: '1px solid #D6D6D7',
-                                                                    backgroundColor: '#fafafa',
-                                                                    borderRadius: '4px',
-                                                                }}
-                                                            >
-                                                                {JSON.stringify(diff.newValue, null, '\t')}
-                                                            </Typography>
+                                                            <ExpandableCodeBlock value={JSON.stringify(diff.newValue, null, '\t')} />
                                                         </Grid>
                                                     </Grid>
                                                 </Box>
