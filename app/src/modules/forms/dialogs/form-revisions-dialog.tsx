@@ -206,7 +206,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                 open={props.open}
                 onClose={props.onClose}
                 fullWidth
-                maxWidth={isLoadingRevisions ? "sm" : "xl"}
+                maxWidth={"xl"}
             >
 
                 <DialogTitleWithClose
@@ -417,9 +417,11 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
 
                     {
                         isLoadingRevisions &&
-                        <LoadingPlaceholder
-                            message="Historie wird geladen"
-                        />
+                        <Box sx={{p: 4, pb: 6}}>
+                            <LoadingPlaceholder
+                                message="Historie wird geladen"
+                            />
+                        </Box>
                     }
                 </DialogContent>
             </Dialog>
