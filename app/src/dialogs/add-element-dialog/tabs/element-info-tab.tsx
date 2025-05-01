@@ -224,9 +224,13 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Number]: (
         <Box>
             <Typography>
-                Das Zahl-Element ermöglicht Ihnen, numerische Eingaben von Nutzer:innen entgegenzunehmen.
-                Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
+                Das Zahl-Element eignet sich für numerische Eingaben, die rechnerisch weiterverarbeitet werden sollen – etwa Mengen, Beträge oder Längenangaben.
+                Es unterstützt zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
+
+            <AlertComponent color={"info"}>
+                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern – verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet keine automatische Formatierung statt.
+            </AlertComponent>
 
             <Divider sx={{my: 4}}>
                 Beispiele
