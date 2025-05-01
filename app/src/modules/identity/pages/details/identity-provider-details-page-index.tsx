@@ -52,8 +52,7 @@ export const formSchema = yup.object({
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(255, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
         .required('Die Beschreibung des Nutzerkontenanbieters ist ein Pflichtfeld.'),
-    iconAssetKey: yup.string()
-        .required('Die Logo-Grafik ist eine Pflichtkonfiguration.'),
+    iconAssetKey: yup.string(),
     metadataIdentifier: yup.string()
         .trim()
         .min(1, 'Der Metadaten-Identifikator ist ein Pflichtfeld.')
@@ -184,6 +183,19 @@ export function IdentityProviderDetailsPageIndex() {
         setIsBusy,
     } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
 
+    const isSystemProvider = useMemo(() => (
+        originalIdentityProvider != null && originalIdentityProvider.type !== IdentityProviderType.Custom
+    ), [originalIdentityProvider]);
+
+    const dynamicFormSchema = useMemo(() => {
+        return formSchema.shape({
+            iconAssetKey: isSystemProvider
+                ? yup.string().nullable()
+                : yup.string()
+                    .required('Die Logo-Grafik ist eine Pflichtkonfiguration.'),
+        });
+    }, [isSystemProvider]);
+
     const {
         currentItem: identityProvider,
         errors,
@@ -193,7 +205,7 @@ export function IdentityProviderDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, formSchema as any);
+    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any);
 
     const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider);
 
@@ -215,10 +227,6 @@ export function IdentityProviderDetailsPageIndex() {
     const inputsDisabled = useMemo(() => (
         isBusy || identityProvider == null
     ), [isBusy, identityProvider]);
-
-    const isSystemProvider = useMemo(() => (
-        identityProvider != null && identityProvider.type !== IdentityProviderType.Custom
-    ), [identityProvider]);
 
     if (identityProvider == null || assets == null || secrets == null) {
         return (
@@ -613,8 +621,7 @@ export function IdentityProviderDetailsPageIndex() {
                             color="info"
                             sx={{mt: 2}}
                         >
-                            <strong>Hinweis:</strong>
-                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
+                            <strong>Hinweis:</strong> Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
                 </Grid>
