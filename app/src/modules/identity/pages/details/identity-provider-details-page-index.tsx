@@ -235,7 +235,7 @@ export function IdentityProviderDetailsPageIndex() {
         }
 
         setIsBusy(true);
-        dispatch(showLoadingOverlay('OpenID Endpoint wird abgerufen…'));
+        dispatch(showLoadingOverlay('OpenID Endpoint wird abgerufen'));
         apiService
             .prepare(endpointConfigUrl)
             .then((preparedIDP) => {

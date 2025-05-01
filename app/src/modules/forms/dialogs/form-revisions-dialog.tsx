@@ -418,7 +418,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                     {
                         isLoadingRevisions &&
                         <LoadingPlaceholder
-                            message="Historie wird geladen…"
+                            message="Historie wird geladen"
                         />
                     }
                 </DialogContent>

@@ -192,7 +192,7 @@ export function FormEditPage() {
             return;
         }
 
-        dispatch(showLoadingOverlay('Sichtbarkeiten berechnen…'));
+        dispatch(showLoadingOverlay('Sichtbarkeiten berechnen'));
 
         withAsyncWrapper<any, FormState>({
             desiredMinRuntime: 600,
