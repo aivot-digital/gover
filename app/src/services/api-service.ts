@@ -103,6 +103,12 @@ export class ApiService {
     }
 
     public async get<T>(url: string, headers?: any, options?: ApiOptions): Promise<T> {
+        let additionalHeaders = undefined;
+        if (options != null && options.requestOptions != null && options.requestOptions.headers != null) {
+            additionalHeaders = options.requestOptions.headers;
+            delete options.requestOptions.headers;
+        }
+
         const accessToken = await this.getAccessToken();
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'GET',
@@ -112,6 +118,7 @@ export class ApiService {
                     Authorization: `Bearer ${accessToken}`,
                 } : undefined),
                 ...headers,
+                ...additionalHeaders,
             },
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
