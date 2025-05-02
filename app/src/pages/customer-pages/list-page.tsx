@@ -29,6 +29,7 @@ import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessib
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
+import {setIdentityId} from '../../slices/identity-slice';
 
 export function ListPage(): JSX.Element {
     const api = useApi();
@@ -57,6 +58,7 @@ export function ListPage(): JSX.Element {
         dispatch(clearErrors());
         dispatch(resetStepper());
         dispatch(clearLoadedForm());
+        dispatch(setIdentityId(undefined));
     }, []);
 
     useEffect(() => {

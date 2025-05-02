@@ -8,10 +8,12 @@ import {snackbarReducer} from './slices/snackbar-slice';
 import {authReducer} from './slices/auth-slice';
 import {loadingOverlayReducer} from './slices/loading-overlay-slice';
 import {loggingReducer} from './slices/logging-slice';
+import {identityReducer} from './slices/identity-slice';
 
 export const store = configureStore({
     reducer: {
         auth: authReducer,
+        identity: identityReducer,
         adminSettings: adminSettingsReducer,
         app: appReducer,
         user: userReducer,

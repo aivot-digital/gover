@@ -16,6 +16,7 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {CustomerInputService} from '../../../../services/customer-input-service';
 import {IdentityIdQueryParam} from '../../constants/identity-id-query-param';
+import {selectIdentityId, setIdentityId} from '../../../../slices/identity-slice';
 
 interface IdentityButtonGroupProps {
     isBusy: boolean;
@@ -31,6 +32,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
 
     const [searchParams, setSearchParams] = useSearchParams();
     const form = useAppSelector(selectLoadedForm);
+    const identityId = useAppSelector(selectIdentityId);
 
     const value: IdentityValue | undefined | null = useAppSelector(selectCustomerInputValue(IdentityCustomerInputKey));
     const error = useAppSelector(selectCustomerInputError(IdentityCustomerInputKey));
@@ -85,30 +87,8 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
         }
 
         if (state === IdentityResultState.Success) {
-            IdentityProvidersApiService
-                .fetchIdentity(id)
-                .then(({providerKey, metadataIdentifier, attributes}) => {
-                    const lastSaveData = CustomerInputService
-                        .loadCustomerInputState(form);
-
-                    if (lastSaveData != null) {
-                        dispatch(hydrateCustomerInput(lastSaveData));
-                        dispatch(setHasLoadedSavedCustomerInput(true));
-                    }
-
-                    dispatch(prefillElementsFromIdentityProvider({
-                        identityProviderKey: providerKey,
-                        metadataIdentifier: metadataIdentifier,
-                        userInfo: attributes,
-                    }));
-                })
-                .catch((err) => {
-                    console.error(err);
-                    dispatch(addError({
-                        key: IdentityCustomerInputKey,
-                        error: 'Beim Abruf der Authentifizierungsdaten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
-                    }));
-                });
+            dispatch(setIdentityId(id));
+            setSearchParams({});
         } else {
             dispatch(addError({
                 key: IdentityCustomerInputKey,
@@ -118,6 +98,41 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             setSearchParams({});
         }
     }, [searchParams, form]);
+
+    useEffect(() => {
+        if (identityId == null) {
+            return;
+        }
+
+        if (form == null) {
+            return;
+        }
+
+        IdentityProvidersApiService
+            .fetchIdentity(identityId)
+            .then(({providerKey, metadataIdentifier, attributes}) => {
+                const lastSaveData = CustomerInputService
+                    .loadCustomerInputState(form);
+
+                if (lastSaveData != null) {
+                    dispatch(hydrateCustomerInput(lastSaveData));
+                    dispatch(setHasLoadedSavedCustomerInput(true));
+                }
+
+                dispatch(prefillElementsFromIdentityProvider({
+                    identityProviderKey: providerKey,
+                    metadataIdentifier: metadataIdentifier,
+                    userInfo: attributes,
+                }));
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(addError({
+                    key: IdentityCustomerInputKey,
+                    error: 'Beim Abruf der Authentifizierungsdaten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+                }));
+            });
+    }, [identityId, form]);
 
     if (form == null || identityLinks == null || identityLinks.length === 0) {
         return null;

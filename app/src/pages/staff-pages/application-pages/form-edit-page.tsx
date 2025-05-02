@@ -68,6 +68,7 @@ import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {FormState} from '../../../models/dtos/form-state';
 import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
+import {setIdentityId} from '../../../slices/identity-slice';
 
 export const DialogSearchParam = 'dialog';
 
@@ -151,6 +152,7 @@ export function FormEditPage() {
         dispatch(clearCustomerInput());
         dispatch(clearErrors());
         dispatch(setCurrentStep(0));
+        dispatch(setIdentityId(undefined));
         setFailedToLoad(false);
         if (formIdStr != null) {
             const id = parseInt(formIdStr);

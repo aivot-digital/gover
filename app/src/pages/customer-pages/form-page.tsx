@@ -22,7 +22,7 @@ import {SystemConfigKeys} from '../../data/system-config-keys';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
-import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
+import {selectIdentityId} from '../../slices/identity-slice';
 
 export const DialogSearchParam = 'dialog';
 
@@ -42,6 +42,7 @@ export function FormPage() {
     const [failedToLoad, setFailedToLoad] = useState(false);
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
+    const identityId = useAppSelector(selectIdentityId);
 
     const [theme, setTheme] = useState<Theme>();
 
@@ -56,7 +57,7 @@ export function FormPage() {
 
         setFailedToLoad(false);
         new FormsApiService(api)
-            .retrieveBySlugAndVersion(slug, version, searchParams.get(IdentityIdQueryParam) ?? undefined)
+            .retrieveBySlugAndVersion(slug, version, identityId)
             .then((application) => {
                 dispatch(updateLoadedForm(application));
             })
@@ -64,7 +65,7 @@ export function FormPage() {
                 console.error(err);
                 setFailedToLoad(true);
             });
-    }, [slug, api, searchParams]);
+    }, [slug, api, identityId]);
 
     useEffect(() => {
         if (form?.themeId != null) {
@@ -79,7 +80,7 @@ export function FormPage() {
 
     if (failedToLoad) {
         return <><MetaElement
-            title={'Seite nicht gefunden'}
+            title="Seite nicht gefunden"
             titlePrefix={provider}
         /><NotFoundPage /></>;
     } else if (form == null) {

@@ -45,7 +45,7 @@ import {SubmissionStatus} from '../../modules/submissions/enums/submission-statu
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
-import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
+import {selectIdentityId} from '../../slices/identity-slice';
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -70,6 +70,7 @@ export function RootComponentView({
     const upcomingStepDirection = useAppSelector(selectUpcomingStepDirection);
     const visibilities = useAppSelector(selectVisibilies);
     const derivationTriggerIdQueue = useAppSelector(selectDerivationTriggerIdQueue);
+    const identityId = useAppSelector(selectIdentityId);
 
     const [isBusy, setIsBusy] = useState(false);
     const [isDeriving, setIsDeriving] = useState<boolean | null>(null);
@@ -201,7 +202,7 @@ export function RootComponentView({
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
                 submitResponse = await formsApiService
-                    .submit(form.id, customerInput, searchParams.get(IdentityIdQueryParam) ?? undefined);
+                    .submit(form.id, customerInput, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
                     switch (error.status) {
