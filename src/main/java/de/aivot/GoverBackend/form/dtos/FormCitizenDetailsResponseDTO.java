@@ -61,6 +61,7 @@ public record FormCitizenDetailsResponseDTO(
     public static FormCitizenDetailsResponseDTO fromEntity(Form form) {
         ElementStreamUtils
                 .applyAction(form.getRoot(), element -> {
+                        element.setName("");
                         element.setTestProtocolSet(null);
                 });
 
