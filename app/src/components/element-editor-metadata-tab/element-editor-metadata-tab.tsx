@@ -18,6 +18,7 @@ import {SelectFieldComponentOption} from '../select-field/select-field-component
 import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
 import {BayernIdAttributes, BundIdAttributes, MukAttributes, ShIdAttributes} from '../../modules/identity/constants/system-identity-provider-attribute-maps';
 import {BayernIdAttribute, BundIdAttribute, MukAttribute, ShIdAttribute} from '../../modules/identity/constants/system-identity-provider-attributes';
+import {Page} from '../../models/dtos/page';
 
 export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
     const api = useApi();
@@ -39,6 +40,22 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                 .then((linkedIdentityProviders) => {
                     const linkedIdentityProvidersKeys = linkedIdentityProviders
                         .map((provider) => provider.key);
+
+                    if (linkedIdentityProvidersKeys.length === 0) {
+                        return new Promise<Page<IdentityProviderListDTO>>(resolve => {
+                            resolve({
+                                empty: true,
+                                first: true,
+                                last: true,
+                                number: 0,
+                                numberOfElements: 0,
+                                size: 0,
+                                totalElements: 0,
+                                totalPages: 0,
+                                content: [],
+                            });
+                        });
+                    }
 
                     return new IdentityProvidersApiService(api)
                         .listAllOrdered('name', 'ASC', {
@@ -74,7 +91,7 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                     ...identityProvider,
                     existingMetadataMapping: existingMetadataMapping,
                     options: attributeOptions,
-                }
+                };
             })
             .filter((idp) => idp.options.length > 0);
     }, [element, linkedIdentityProviders]);

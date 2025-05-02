@@ -236,6 +236,10 @@ public class CitizenFormController {
                 .map(IdentityProviderLink::getIdentityProviderKey)
                 .toList();
 
+        if (identityProviderKeys.isEmpty()) {
+            return Page.empty();
+        }
+
         var filter = new IdentityProviderFilter()
                 .setKeys(identityProviderKeys)
                 .setIsEnabled(true);
