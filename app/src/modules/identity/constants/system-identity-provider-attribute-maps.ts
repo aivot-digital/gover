@@ -319,7 +319,7 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
         ElementType.Text,
     ],
     [ShIdAttribute.DateOfBirth]: [
-        ElementType.Text,
+        ElementType.Date,
     ],
     [ShIdAttribute.PlaceOfBirth]: [
         ElementType.Text,
