@@ -1,11 +1,10 @@
-import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
-import React, {useMemo, useState} from 'react';
+import {Box, Button, Typography, useTheme} from '@mui/material';
+import React, {useMemo} from 'react';
 import {IdentityProviderLink} from '../../models/identity-provider-link';
 import {IdentityProviderInfo} from '../../models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
 import {IdentityValue} from '../../models/identity-value';
-import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
 
 export interface IdentityButtonProps {
     identityProviderLink: IdentityProviderLink;
@@ -46,92 +45,63 @@ export function IdentityButton(props: IdentityButtonProps) {
         return `rgba(${parseInt(successColor.slice(1, 3), 16)}, ${parseInt(successColor.slice(3, 5), 16)}, ${parseInt(successColor.slice(5, 7), 16)}, 0.04)`;
     }, [theme]);
 
-    const [hideSuccessDialog, setHideSuccessDialog] = useState(false);
-
     return (
-        <>
-            <Button
-                variant="outlined"
-                color={
-                    isSuccessful
-                        ? 'success'
-                        : 'primary'
-                }
-                fullWidth
-                component={isSuccessful ? 'div' : 'a'}
-                href={startUri}
+        <Button
+            variant="outlined"
+            color={
+                isSuccessful
+                    ? 'success'
+                    : 'primary'
+            }
+            fullWidth
+            component={isSuccessful ? 'div' : 'a'}
+            href={startUri}
+            sx={{
+                textTransform: 'none',
+                p: 1.5,
+                mt: 2,
+                backgroundColor: isSuccessful ? successColorWithOpacity : 'inherit',
+                justifyContent: 'start',
+                flexDirection: {
+                    xs: 'column',
+                    md: 'row',
+                },
+            }}
+            disabled={(!isSuccessful && value != null) || isBusy}
+        >
+            <Box
                 sx={{
-                    textTransform: 'none',
-                    p: 1.5,
-                    mt: 2,
-                    backgroundColor: isSuccessful ? successColorWithOpacity : 'inherit',
-                    justifyContent: 'start',
-                    flexDirection: {
-                        xs: 'column',
-                        md: 'row',
-                    },
+                    opacity: ((!isSuccessful && value != null) || isBusy) ? 0.6 : 1,
+                    width: {md: 210},
+                    flexShrink: {md: 0},
+                    pr: {md: 4},
+                    mr: {md: 4},
+                    textAlign: {md: 'center'},
+                    borderRight: {md: '1px solid #bdbdbd'},
+                    display: 'flex',
+                    justifyContent: 'center',
                 }}
-                disabled={(!isSuccessful && value != null) || isBusy}
             >
-                <Box
-                    sx={{
-                        opacity: ((!isSuccessful && value != null) || isBusy) ? 0.6 : 1,
-                        width: {md: 210},
-                        flexShrink: {md: 0},
-                        pr: {md: 4},
-                        mr: {md: 4},
-                        textAlign: {md: 'center'},
-                        borderRight: {md: '1px solid #bdbdbd'},
-                        display: 'flex',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <IdentityProviderIcon
-                        name={identityProviderInfo.name}
-                        type={identityProviderInfo.type}
-                        iconAssetKey={identityProviderInfo.iconAssetKey}
-                    />
-                </Box>
-                <Typography
-                    color="inherit"
-                    sx={{
-                        mt: {xs: 1, md: 0},
-                        maxWidth: {xs: 420, md: '100%'},
-                        textAlign: {xs: 'center', md: 'left'},
-                    }}
-                >
-                    {isSuccessful ? (
-                        <>Sie haben sich erfolgreich mit dem Nutzerkonto <b>„{identityProviderInfo.name}“</b> angemeldet.</>
-                    ) : (
-                        <>Mit Nutzerkonto <b>„{identityProviderInfo.name}“</b> anmelden</>
-                    )}
-                </Typography>
-            </Button>
-
-            <Dialog
-                onClose={() => setHideSuccessDialog(true)}
-                open={isSuccessful && !hideSuccessDialog}
-                maxWidth="xs"
+                <IdentityProviderIcon
+                    name={identityProviderInfo.name}
+                    type={identityProviderInfo.type}
+                    iconAssetKey={identityProviderInfo.iconAssetKey}
+                />
+            </Box>
+            <Typography
+                color="inherit"
+                sx={{
+                    mt: {xs: 1, md: 0},
+                    maxWidth: {xs: 420, md: '100%'},
+                    textAlign: {xs: 'center', md: 'left'},
+                }}
             >
-                <DialogTitleWithClose
-                    onClose={() => setHideSuccessDialog(true)}
-                    closeTooltip="Schließen"
-                >
-                    Authentifizierung erfolgreich
-                </DialogTitleWithClose>
-                <DialogContent className="content-without-margin-on-childs">
-                    Sie haben sich erfolgreich mit dem Nutzerkonto <strong>„{identityProviderInfo.name}“</strong> angemeldet.
-                    Die Daten aus Ihrem Konto wurden automatisch in den Antrag übernommen.
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={() => setHideSuccessDialog(true)}
-                        variant="contained"
-                    >
-                        Mit Antrag fortfahren
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </>
+                {isSuccessful ? (
+                    <>Sie haben sich erfolgreich mit dem Nutzerkonto <b>„{identityProviderInfo.name}“</b> angemeldet.</>
+                ) : (
+                    <>Mit Nutzerkonto <b>„{identityProviderInfo.name}“</b> anmelden</>
+                )}
+            </Typography>
+        </Button>
     );
 }

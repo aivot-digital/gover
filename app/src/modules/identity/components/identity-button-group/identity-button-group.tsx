@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Typography} from '@mui/material';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {addError, hydrateCustomerInput, prefillElementsFromIdentityProvider, selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, setHasLoadedSavedCustomerInput} from '../../../../slices/app-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {IdentityCustomerInputKey} from '../../constants/identity-customer-input-key';
@@ -17,6 +17,7 @@ import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {CustomerInputService} from '../../../../services/customer-input-service';
 import {IdentityIdQueryParam} from '../../constants/identity-id-query-param';
 import {selectIdentityId, setIdentityId} from '../../../../slices/identity-slice';
+import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
 
 interface IdentityButtonGroupProps {
     isBusy: boolean;
@@ -38,6 +39,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     const error = useAppSelector(selectCustomerInputError(IdentityCustomerInputKey));
 
     const [identityLinks, setIdentityLinks] = useState<CombinedIdentityProviderLink[]>();
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
     useEffect(() => {
         if (form == null) {
@@ -89,6 +91,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
         if (state === IdentityResultState.Success) {
             dispatch(setIdentityId(id));
             setSearchParams({});
+            setShowSuccessDialog(true);
         } else {
             dispatch(addError({
                 key: IdentityCustomerInputKey,
@@ -134,99 +137,130 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             });
     }, [identityId, form]);
 
+    const successIdp = useMemo(() => {
+        return (identityLinks ?? []).find(idp => idp.link.identityProviderKey === value?.identityProviderKey);
+    }, [identityLinks, value]);
+
     if (form == null || identityLinks == null || identityLinks.length === 0) {
         return null;
     }
 
     return (
-        <Box
-            id={IdentityCustomerInputKey}
-            sx={{
-                my: 6,
-            }}
-        >
-            {
-                form.identityRequired ?
-                    <>
-                        <Typography
-                            component="h4"
-                            variant="h6"
-                            color="primary"
-                            sx={{
-                                mt: 4,
-                            }}
-                        >
-                            Verpflichtende Authentifizierung mit einem Nutzerkonto
-                        </Typography>
-                        <Typography
-                            sx={{
-                                mt: 1,
-                                mb: 2,
-                                maxWidth: '620px',
-                            }}
-                        >
-                            Eine Authentifizierung mittels einem der nachfolgenden Konten ist verpflichtend. Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
-                        </Typography>
-                    </> :
-                    <>
-                        <Typography
-                            component="h4"
-                            variant="h6"
-                            color="primary"
-                            sx={{
-                                mt: 4,
-                            }}
-                        >
-                            Optionale Authentifizierung mit einem Nutzerkonto
-                        </Typography>
-                        <Typography
-                            sx={{
-                                mt: 1,
-                                mb: 2,
-                                maxWidth: '600px',
-                            }}
-                        >
-                            Eine Authentifizierung mittels der nachfolgenden Konten ist optional möglich. Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
-                        </Typography>
-                    </>
-            }
-
+        <>
             <Box
+                id={IdentityCustomerInputKey}
                 sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    width: '100%',
+                    my: 6,
                 }}
             >
+                {
+                    form.identityRequired ?
+                        <>
+                            <Typography
+                                component="h4"
+                                variant="h6"
+                                color="primary"
+                                sx={{
+                                    mt: 4,
+                                }}
+                            >
+                                Verpflichtende Authentifizierung mit einem Nutzerkonto
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    mt: 1,
+                                    mb: 2,
+                                    maxWidth: '620px',
+                                }}
+                            >
+                                Eine Authentifizierung mittels einem der nachfolgenden Konten ist verpflichtend. Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
+                            </Typography>
+                        </> :
+                        <>
+                            <Typography
+                                component="h4"
+                                variant="h6"
+                                color="primary"
+                                sx={{
+                                    mt: 4,
+                                }}
+                            >
+                                Optionale Authentifizierung mit einem Nutzerkonto
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    mt: 1,
+                                    mb: 2,
+                                    maxWidth: '600px',
+                                }}
+                            >
+                                Eine Authentifizierung mittels der nachfolgenden Konten ist optional möglich. Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
+                            </Typography>
+                        </>
+                }
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: '100%',
+                    }}
+                >
+
+                    {
+                        identityLinks.map(({link, provider}) => (
+                            <IdentityButton
+                                key={link.identityProviderKey}
+                                identityProviderLink={link}
+                                identityProviderInfo={provider}
+                                isBusy={props.isBusy}
+                                value={value}
+                            />
+                        ))
+                    }
+                </Box>
 
                 {
-                    identityLinks.map(({link, provider}) => (
-                        <IdentityButton
-                            key={link.identityProviderKey}
-                            identityProviderLink={link}
-                            identityProviderInfo={provider}
-                            isBusy={props.isBusy}
-                            value={value}
-                        />
-                    ))
+                    error != null &&
+                    <Typography
+                        variant="caption"
+                        color="error"
+                        sx={{
+                            display: 'block',
+                            mt: 2,
+                        }}
+                    >
+                        {error}
+                    </Typography>
                 }
             </Box>
 
-            {
-                error != null &&
-                <Typography
-                    variant="caption"
-                    color="error"
-                    sx={{
-                        display: 'block',
-                        mt: 2,
-                    }}
+            <Dialog
+                onClose={() => setShowSuccessDialog(false)}
+                open={showSuccessDialog}
+                maxWidth="xs"
+            >
+                <DialogTitleWithClose
+                    onClose={() => setShowSuccessDialog(false)}
+                    closeTooltip="Schließen"
                 >
-                    {error}
-                </Typography>
-            }
-        </Box>
+                    Authentifizierung erfolgreich
+                </DialogTitleWithClose>
+                <DialogContent className="content-without-margin-on-childs">
+                    Sie haben sich erfolgreich mit dem Nutzerkonto <strong>„{successIdp?.provider.name}“</strong> angemeldet.
+                    Die Daten aus Ihrem Konto wurden automatisch in den Antrag übernommen.
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setShowSuccessDialog(false)}
+                        variant="contained"
+                    >
+                        Mit Antrag fortfahren
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 }
