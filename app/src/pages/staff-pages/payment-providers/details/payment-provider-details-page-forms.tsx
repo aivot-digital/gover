@@ -8,6 +8,7 @@ import {EditOutlined} from "@mui/icons-material";
 import {Box, Typography} from "@mui/material";
 import {PaymentProviderResponseDTO} from '../../../../modules/payment/dtos/payment-provider-response-dto';
 import {CellLink} from "../../../../components/cell-link/cell-link";
+import {ApplicationStatus, ApplicationStatusNames} from '../../../../data/application-status';
 
 const columns: GridColDef<Form>[] = [
     {
@@ -27,6 +28,14 @@ const columns: GridColDef<Form>[] = [
         field: 'version',
         headerName: 'Version',
         flex: 1,
+    },
+    {
+        field: 'status',
+        headerName: 'Status',
+        flex: 1,
+        renderCell: (params) => {
+            return ApplicationStatusNames[params.value as ApplicationStatus] ?? 'Unbekannt';
+        }
     },
 ];
 
