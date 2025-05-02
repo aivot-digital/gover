@@ -236,7 +236,7 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
         ElementType.Text,
     ],
     [MukAttribute.DateOfBirth]: [
-        ElementType.Text,
+        ElementType.Date,
     ],
     [MukAttribute.OrgAddressType]: [
         ElementType.Text,
