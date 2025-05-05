@@ -103,7 +103,7 @@ values (gen_random_uuid(),
             {
                 "label": "Wohnort-ID",
                 "description": "Amtlicher Schlüssel zur eindeutigen Identifikation des Wohnortes (ARS).",
-                "keyInData": "communityId",
+                "keyInData": "community_id",
                 "displayAttribute": false
             },
             {
@@ -175,7 +175,7 @@ values (gen_random_uuid(),
             {
                 "label": "Antrags-ID",
                 "description": "Technische Vorgangs‑ID (UUID), die alle Nachrichten, Dokumente und Statusmeldungen zu einem Antrag bündelt.",
-                "keyInData": "applicationId",
+                "keyInData": "application_id",
                 "displayAttribute": false
             }
         ]',
