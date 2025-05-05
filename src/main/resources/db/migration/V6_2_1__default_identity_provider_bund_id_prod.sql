@@ -1,4 +1,3 @@
--- create default identity providers
 insert into identity_providers (key,
                                 metadata_identifier,
                                 type,
@@ -170,14 +169,8 @@ values (gen_random_uuid(),
         '[
             {
                 "key": "kc_idp_hint",
-                "value": "bundid"
+                "value": "bundid-prod"
             }
         ]',
         exists(select 1 from system_configs where key = 'BundIDActive' and value = 'true'),
         false);
-
-update forms as fms
-set identity_providers = fms.identity_providers || json_build_array(json_build_object(
-        'identityProviderKey', (select idps.key from identity_providers as idps where idps.type = 2 limit 1),
-        'additionalScopes', json_build_array('level' || fms.bund_id_level)))::jsonb
-where fms.bund_id_enabled;
