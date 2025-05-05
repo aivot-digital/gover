@@ -293,7 +293,10 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                             </Typography>
 
                             <Typography
+                                component={"div"}
                                 variant="body2"
+                                className={"content-without-margin-on-childs"}
+                                sx={{mt: 0.5}}
                                 dangerouslySetInnerHTML={{__html: props.element.expectedCosts ?? ''}}
                             />
                         </Box>
