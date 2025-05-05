@@ -101,6 +101,12 @@ values (gen_random_uuid(),
                 "displayAttribute": false
             },
             {
+                "label": "Wohnort-ID",
+                "description": "Amtlicher Schlüssel zur eindeutigen Identifikation des Wohnortes (ARS).",
+                "keyInData": "communityId",
+                "displayAttribute": false
+            },
+            {
                 "label": "Land",
                 "description": "Land der Wohnanschrift (ISO 3166-1 alpha-2).",
                 "keyInData": "country",
@@ -149,6 +155,12 @@ values (gen_random_uuid(),
                 "displayAttribute": false
             },
             {
+                "label": "Pseudonym",
+                "description": "Dienste‑ bzw. kartenspezifisches Kennzeichen (DKK) aus eID oder anderen Quellen, um eine Person systemübergreifend pseudonym zuzuordnen; zur eindeutigen Zuordnung mit AssertionProvedBy kombinieren.",
+                "keyInData": "pseudonym",
+                "displayAttribute": true
+            },
+            {
                 "label": "AssertionProvedBy",
                 "description": "Quelle, die die Identität geprüft hat (z. B. eIDAS, eID, ELSTER).",
                 "keyInData": "assertion_proved_by",
@@ -158,6 +170,12 @@ values (gen_random_uuid(),
                 "label": "Version",
                 "description": "Version der BundID-Schnittstelle (Calendar Versioning, z. B. 2025.4.17).",
                 "keyInData": "api_version",
+                "displayAttribute": false
+            },
+            {
+                "label": "Antrags-ID",
+                "description": "Technische Vorgangs‑ID (UUID), die alle Nachrichten, Dokumente und Statusmeldungen zu einem Antrag bündelt.",
+                "keyInData": "applicationId",
                 "displayAttribute": false
             }
         ]',

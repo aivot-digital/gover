@@ -46,6 +46,11 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
         ElementType.Select,
         ElementType.Radio,
     ],
+    [BayernIdAttribute.CommunityId]: [
+        ElementType.Text,
+        ElementType.Select,
+        ElementType.Radio,
+    ],
     [BayernIdAttribute.Country]: [
         ElementType.Text,
         ElementType.Select,
@@ -78,6 +83,9 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
         ElementType.Select,
         ElementType.Radio,
     ],
+    [BayernIdAttribute.Pseudonym]: [
+        ElementType.Text,
+    ],
     [BayernIdAttribute.AssertionProvedBy]: [
         ElementType.Text,
         ElementType.Select,
@@ -87,6 +95,9 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
         ElementType.Text,
         ElementType.Select,
         ElementType.Radio,
+    ],
+    [BayernIdAttribute.ApplicationId]: [
+        ElementType.Text,
     ],
 };
 
@@ -135,6 +146,11 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
         ElementType.Select,
         ElementType.Radio,
     ],
+    [BundIdAttribute.CommunityId]: [
+        ElementType.Text,
+        ElementType.Select,
+        ElementType.Radio,
+    ],
     [BundIdAttribute.Country]: [
         ElementType.Text,
         ElementType.Select,
@@ -167,6 +183,9 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
         ElementType.Select,
         ElementType.Radio,
     ],
+    [BundIdAttribute.Pseudonym]: [
+        ElementType.Text,
+    ],
     [BundIdAttribute.AssertionProvedBy]: [
         ElementType.Text,
         ElementType.Select,
@@ -176,6 +195,9 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
         ElementType.Text,
         ElementType.Select,
         ElementType.Radio,
+    ],
+    [BundIdAttribute.ApplicationId]: [
+        ElementType.Text,
     ],
 };
 

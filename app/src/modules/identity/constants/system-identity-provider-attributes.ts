@@ -11,6 +11,7 @@ export enum BayernIdAttribute {
     StreetAndBuilding = 'street_and_building',
     ZipCode = 'zip_code',
     City = 'city',
+    CommunityId = 'community_id',
     Country = 'country',
     Email = 'email',
     Telephone = 'telephone',
@@ -19,8 +20,10 @@ export enum BayernIdAttribute {
     TrustLevelAuthentication = 'trust_level_authentication',
     DocumentType = 'document_type',
     EIdasIssuingCountry = 'e_idas_issuing_country',
+    Pseudonym = 'pseudonym',
     AssertionProvedBy = 'assertion_proved_by',
     ApiVersion = 'api_version',
+    ApplicationId = 'application_id',
 }
 
 export enum BundIdAttribute {
@@ -36,6 +39,7 @@ export enum BundIdAttribute {
     StreetAndBuilding = 'street_and_building',
     ZipCode = 'zip_code',
     City = 'city',
+    CommunityId = 'community_id',
     Country = 'country',
     Email = 'email',
     Telephone = 'telephone',
@@ -44,8 +48,10 @@ export enum BundIdAttribute {
     TrustLevelAuthentication = 'trust_level_authentication',
     DocumentType = 'document_type',
     EIdasIssuingCountry = 'e_idas_issuing_country',
+    Pseudonym = 'pseudonym',
     AssertionProvedBy = 'assertion_proved_by',
     ApiVersion = 'api_version',
+    ApplicationId = 'application_id',
 }
 
 export enum MukAttribute {
