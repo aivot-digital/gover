@@ -1,7 +1,7 @@
 import {RichtextElement} from '../../models/elements/form/content/richtext-element';
 import {Typography} from '@mui/material';
 import {BaseViewProps} from "../../views/base-view";
-import {useMemo} from 'react';
+import React, {useMemo} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
 
 export function RichtextComponentView({element}: BaseViewProps<RichtextElement, void>) {
@@ -27,7 +27,10 @@ export function RichtextComponentView({element}: BaseViewProps<RichtextElement, 
 
     return (
         <Typography
+            component={"div"}
             variant="body2"
+            className={"richtext-component-content content-without-margin-on-childs"}
+            sx={{my: '1rem'}}
             dangerouslySetInnerHTML={{__html: element.content ?? ''}}
         />
     );
