@@ -764,9 +764,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onChange={val => {
                             handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
                         }}
-                        onBlur={val => {
-                            handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
-                        }}
+                        onBlur={handleInputBlur('userinfoEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.userinfoEndpoint}
                         hint="Pfad oder vollständige URL zum Userinfo-Endpoint, um Benutzerinformationen abzufragen."
@@ -784,9 +782,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onChange={val => {
                             handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);
                         }}
-                        onBlur={val => {
-                            handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);
-                        }}
+                        onBlur={handleInputBlur('endSessionEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.endSessionEndpoint}
                         hint="Pfad oder vollständige URL zum End-Session-Endpoint, über den Benutzer abgemeldet werden. Ohne diesen Endpoint bleibt die Single-Sign-On-Session bestehen und die Nutzer:inn kann sich mehrfach hintereinander authorisieren, ohne erneut Anmeldedaten eingeben zu müssen."
