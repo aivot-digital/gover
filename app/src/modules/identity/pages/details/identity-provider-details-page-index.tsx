@@ -939,13 +939,13 @@ export function IdentityProviderDetailsPageIndex() {
                             </Typography>
                             <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                 <li>
-                                    <strong>Titel</strong> – Anzeigename, der später in der Oberfläche
+                                    <strong>Titel</strong> – Anzeigename, der später in der Gover-Oberfläche
                                     erscheint (z.&nbsp;B. „E-Mail“ oder „Nachname“).
                                 </li>
 
                                 <li>
                                     <strong>Beschreibung</strong> – Kurze Erklärung, wofür das Attribut
-                                    verwendet wird bzw. welche Daten er enthält.
+                                    verwendet wird bzw. welche Daten es enthält.
                                 </li>
 
                                 <li>
@@ -955,7 +955,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                                 <li>
                                     <strong>Anzeigeattribut</strong> – Steuert, ob der Wert später
-                                    zur Identifikation in Übersichten von z. B. Anträgen angezeigt wird.
+                                    zur Identifikation in Übersichten von Gover (z. B. in Anträgen) angezeigt wird.
                                 </li>
                             </ul>
                         </Box>
