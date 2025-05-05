@@ -54,7 +54,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
     return (
         <>
             <BaseCodeTab
-                label="Sichtbarkeit"
+                label="Dynamischer Wert"
                 requirements={props.element.computeValue?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({

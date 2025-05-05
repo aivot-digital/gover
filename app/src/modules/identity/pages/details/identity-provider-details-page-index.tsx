@@ -764,9 +764,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onChange={val => {
                             handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
                         }}
-                        onBlur={val => {
-                            handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
-                        }}
+                        onBlur={handleInputBlur('userinfoEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.userinfoEndpoint}
                         hint="Pfad oder vollständige URL zum Userinfo-Endpoint, um Benutzerinformationen abzufragen."
@@ -784,9 +782,7 @@ export function IdentityProviderDetailsPageIndex() {
                         onChange={val => {
                             handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);
                         }}
-                        onBlur={val => {
-                            handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);
-                        }}
+                        onBlur={handleInputBlur('endSessionEndpoint')}
                         disabled={inputsDisabled || isSystemProvider}
                         error={errors.endSessionEndpoint}
                         hint="Pfad oder vollständige URL zum End-Session-Endpoint, über den Benutzer abgemeldet werden. Ohne diesen Endpoint bleibt die Single-Sign-On-Session bestehen und die Nutzer:inn kann sich mehrfach hintereinander authorisieren, ohne erneut Anmeldedaten eingeben zu müssen."
@@ -943,13 +939,13 @@ export function IdentityProviderDetailsPageIndex() {
                             </Typography>
                             <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                 <li>
-                                    <strong>Titel</strong> – Anzeigename, der später in der Oberfläche
+                                    <strong>Titel</strong> – Anzeigename, der später in der Gover-Oberfläche
                                     erscheint (z.&nbsp;B. „E-Mail“ oder „Nachname“).
                                 </li>
 
                                 <li>
                                     <strong>Beschreibung</strong> – Kurze Erklärung, wofür das Attribut
-                                    verwendet wird bzw. welche Daten er enthält.
+                                    verwendet wird bzw. welche Daten es enthält.
                                 </li>
 
                                 <li>
@@ -959,7 +955,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                                 <li>
                                     <strong>Anzeigeattribut</strong> – Steuert, ob der Wert später
-                                    zur Identifikation in Übersichten von z. B. Anträgen angezeigt wird.
+                                    zur Identifikation in Übersichten von Gover (z. B. in Anträgen) angezeigt wird.
                                 </li>
                             </ul>
                         </Box>
