@@ -156,6 +156,16 @@
             <artifactId>minio</artifactId>
             <version>8.5.17</version>
         </dependency>
+        <dependency>
+            <groupId>org.altcha</groupId>
+            <artifactId>altcha</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.vladimir-bukhtoyarov</groupId>
+            <artifactId>bucket4j-core</artifactId>
+            <version>7.6.0</version>
+        </dependency>
     </dependencies>
 
     <build>

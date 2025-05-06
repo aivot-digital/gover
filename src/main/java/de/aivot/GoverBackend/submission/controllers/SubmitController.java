@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.submission.controllers;
 
+import de.aivot.GoverBackend.captcha.services.AltchaService;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
+import de.aivot.GoverBackend.elements.models.steps.SubmitStepElement;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
@@ -85,6 +87,7 @@ public class SubmitController {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderRepository paymentProviderRepository;
     private final IdentityCacheRepository identityCacheRepository;
+    private final AltchaService altchaService;
 
     @Autowired
     public SubmitController(
@@ -105,8 +108,8 @@ public class SubmitController {
             PaymentProviderService paymentProviderService,
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentProviderRepository paymentProviderRepository,
-            IdentityCacheRepository identityCacheRepository
-    ) {
+            IdentityCacheRepository identityCacheRepository,
+            AltchaService altchaService) {
         this.formRepository = formRepository;
         this.submissionRepository = submissionRepository;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
@@ -125,6 +128,7 @@ public class SubmitController {
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.identityCacheRepository = identityCacheRepository;
+        this.altchaService = altchaService;
     }
 
     @PostMapping("/api/public/submit/{applicationId}/")
@@ -154,6 +158,33 @@ public class SubmitController {
 
         // Get customer input
         var customerInput = new JSONObject(inputs).toMap();
+
+        try {
+            var rawValue = (String) customerInput.get(SubmitStepElement.CAPTCHA_FIELD_ID);
+
+            if (rawValue == null || rawValue.isBlank()) {
+                throw new Exception("Missing Captcha payload");
+            }
+
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var json = mapper.readTree(rawValue);
+
+            var payloadNode = json.get("payload");
+            if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
+                throw new Exception("Missing 'payload' field in Captcha JSON");
+            }
+
+            var payload = payloadNode.asText();
+            var captchaVerificationStatus = altchaService.verify(payload);
+
+            if (!captchaVerificationStatus) {
+                throw new Exception("Verification failed");
+            }
+
+        } catch (Exception e) {
+            throw ResponseException.badRequest("Verifizierung des Captcha fehlgeschlagen.");
+        }
+
         var optionalIdp = extractIdp(identityId);
 
         // Hydrate the customer input with the data from an idp
