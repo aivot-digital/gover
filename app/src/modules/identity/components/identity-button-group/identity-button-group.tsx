@@ -90,7 +90,6 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
 
         if (state === IdentityResultState.Success) {
             dispatch(setIdentityId(id));
-            setSearchParams({});
             setShowSuccessDialog(true);
         } else {
             dispatch(addError({
@@ -98,7 +97,6 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
                 error: 'Bei der Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
             }));
             dispatch(showErrorSnackbar('Bei der Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.'));
-            setSearchParams({});
         }
     }, [searchParams, form]);
 
@@ -127,6 +125,8 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
                     metadataIdentifier: metadataIdentifier,
                     userInfo: attributes,
                 }));
+
+                setSearchParams({});
             })
             .catch((err) => {
                 console.error(err);
