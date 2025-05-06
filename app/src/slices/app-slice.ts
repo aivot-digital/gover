@@ -10,7 +10,6 @@ import {AnyElement} from '../models/elements/any-element';
 import {collectReferences, Reference} from '../utils/build-references';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../utils/flatten-elements';
 import {IdentityValue} from '../modules/identity/models/identity-value';
-import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {prefillElements} from '../utils/prefill-elements';
 
 
@@ -290,14 +289,20 @@ const appSlice = createSlice({
                 return {
                     ...acc,
                     [key]: true,
-                }
+                };
             }, {});
 
-            state.inputs = {
+            const filledInputs = {
                 ...state.inputs,
                 ...prefilled,
             };
+
+            state.inputs = filledInputs;
             state.disabled = disabled;
+
+            if (state.loadedForm != null) {
+                CustomerInputService.storeCustomerInput(state.loadedForm, filledInputs);
+            }
         },
     },
 });
