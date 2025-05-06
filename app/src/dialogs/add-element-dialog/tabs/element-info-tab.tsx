@@ -438,10 +438,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Der Einsatz des Elements wird dabei je nach Umfang für maximal bis zu drei Spalten empfohlen.
             </Typography>
 
-            <Typography sx={{mt: 2}}>
+            <AlertComponent color={"info"}>
                 Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die Strukturierte Listeneingabe.
                 Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt für eine deutlich bessere Nutzerfreundlichkeit.
-            </Typography>
+            </AlertComponent>
         </Box>
     ),
     [ElementType.Text]: (
