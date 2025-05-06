@@ -1,16 +1,12 @@
 import {Box, Button, Card, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography} from '@mui/material';
-import React, {useContext} from 'react';
-import {
-    GenericDetailsPageContext,
-    GenericDetailsPageContextType
-} from '../../../../components/generic-details-page/generic-details-page-context';
+import React, {useContext, useMemo} from 'react';
+import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
-import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
-import {AppConfig} from '../../../../app-config';
-import CodeOutlinedIcon from "@mui/icons-material/CodeOutlined";
-import {SettingsSuggestOutlined} from "@mui/icons-material";
-import {SamlMetadataDialog} from "../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog";
+import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
+import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
+import {SettingsSuggestOutlined} from '@mui/icons-material';
+import {SamlMetadataDialog} from '../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog';
 
 interface SetupInfoBlockProps {
     title: string;
@@ -152,6 +148,17 @@ export function IdentityProviderDetailsPageSetup() {
         item: identityProvider,
     } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
 
+    const idpHint = useMemo(() => {
+        if (identityProvider == null) {
+            return undefined;
+        }
+
+        return identityProvider
+            .additionalParams
+            .find((param) => param.key === 'kc_idp_hint')
+    }, [identityProvider]);
+
+
     return (
         <Box>
             {identityProvider?.type === IdentityProviderType.BundID && (
@@ -178,7 +185,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <CodeOutlinedIcon />,
                             label: 'SAML Metadaten',
-                            url: `${AppConfig.bundId.host}/realms/${AppConfig.bundId.realm}/broker/${AppConfig.bundId.broker}/endpoint/descriptor`,
+                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
                         },
                     ]}
                 />
@@ -203,7 +210,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <CodeOutlinedIcon />,
                             label: 'SAML Metadaten',
-                            url: `${AppConfig.bayernId.host}/realms/${AppConfig.bayernId.realm}/bayernid/${AppConfig.bayernId.broker}/metadata`,
+                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
                         },
                     ]}
                 />
@@ -228,7 +235,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <CodeOutlinedIcon />,
                             label: 'SAML Metadaten',
-                            url: `${AppConfig.schleswigHolsteinId.host}/realms/${AppConfig.schleswigHolsteinId.realm}/broker/${AppConfig.schleswigHolsteinId.broker}/endpoint/descriptor`,
+                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
                         },
                     ]}
                 />
@@ -258,7 +265,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <CodeOutlinedIcon />,
                             label: 'SAML Metadaten',
-                            url: `${AppConfig.muk.host}/realms/${AppConfig.muk.realm}/broker/${AppConfig.muk.broker}/endpoint/descriptor`,
+                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
                         },
                     ]}
                 />
