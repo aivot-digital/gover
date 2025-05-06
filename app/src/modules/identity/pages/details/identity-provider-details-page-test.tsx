@@ -1,14 +1,4 @@
-import {
-    Box,
-    Button,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
-} from '@mui/material';
+import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
@@ -18,9 +8,9 @@ import {IdentityProvidersApiService} from '../../identity-providers-api-service'
 import {IdentityResultState} from '../../enums/identity-result-state';
 import {IdentityStateQueryParam} from '../../constants/identity-state-query-param';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import Tooltip from '@mui/material/Tooltip';
 import {IdentityData} from '../../models/identity-data';
 import {IdentityIdQueryParam} from '../../constants/identity-id-query-param';
+import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
@@ -108,13 +98,21 @@ export function IdentityProviderDetailsPageTest() {
                 >
                     <Typography
                         variant="h6"
-                        sx={{mb: 1}}
+                        sx={{
+                            mb: 1,
+                        }}
                     >
                         Testergebnisse
                     </Typography>
 
-                    <Typography sx={{mb: 3, maxWidth: 900}}>
-                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Gover übermittelt wurden. Bitte beachten Sie, dass nur die Attribute angezeigt werden, die auch in der Konfiguration des Anbieter zugewiesen worden sind.
+                    <Typography
+                        sx={{
+                            mb: 3,
+                            maxWidth: 900,
+                        }}
+                    >
+                        Hier sehen Sie die Daten, die von dem Nutzerkontenanbieter an Gover übermittelt wurden.
+                        Bitte beachten Sie, dass nur die Attribute angezeigt werden, die auch in der Konfiguration des Anbieters zugewiesen worden sind.
                     </Typography>
 
                     {
@@ -149,9 +147,47 @@ export function IdentityProviderDetailsPageTest() {
                                             </TableRow>
                                         ))
                                 }
+                                {
+                                    identityProvider
+                                        .attributes
+                                        .length === 0 &&
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={2}
+                                            sx={{
+                                                color: 'text.secondary',
+                                            }}
+                                        >
+                                            <i>Keine Attribute konfiguriert</i>
+                                        </TableCell>
+                                    </TableRow>
+                                }
                             </TableBody>
                         </Table>
                     </TableContainer>
+
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            mt: 3,
+                            mb: 1,
+                        }}
+                    >
+                        Original-Datensatz
+                    </Typography>
+
+                    <Typography
+                        sx={{
+                            mb: 3,
+                            maxWidth: 900,
+                        }}
+                    >
+                        Hier sehen Sie, im Gegensatz zu den obigen Testergebnissen, den vollständigen Datensatz, welcher vom Nutzerkontenanbieter an Gover übermittelt wurde.
+                        Dieser kann auch Attribute enthalten, welche Sie in der Konfiguration des Nutzerkontenanbieters nicht zugewiesen haben.
+                        Bitte beachten Sie, dass ausschließlich im Nutzerkontenanbieter zugewiesene Attribute auch innerhalb von Gover verwendbar sind.
+                    </Typography>
+
+                    <ExpandableCodeBlock value={JSON.stringify(identityData.attributes, null, '\t')} />
                 </Box>
             }
         </Box>
