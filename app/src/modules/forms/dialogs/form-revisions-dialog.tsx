@@ -295,7 +295,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
 
                                                     {diff.field &&
                                                         <Typography>
-                                                            Geändertes Attribut: {diff.path} → <b>{diff.field}</b>
+                                                            Geändertes Attribut: {diff.path}{diff.path && " → "}<b>{diff.field}</b>
                                                         </Typography>
                                                     }
 
