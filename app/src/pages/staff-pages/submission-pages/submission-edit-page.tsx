@@ -342,7 +342,7 @@ export function SubmissionEditPage() {
 
     return (
         <PageWrapper
-            title={isLoading ? 'Lade...' : (isNotFound ? 'Nicht gefunden' : title)}
+            title={isLoading ? 'Wird geladen…' : (isNotFound ? 'Nicht gefunden' : title)}
             isLoading={isLoading}
             is404={isNotFound}
             toolbarActions={actions}

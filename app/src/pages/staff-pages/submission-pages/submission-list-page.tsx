@@ -335,7 +335,7 @@ export function SubmissionListPage(): JSX.Element {
 
                                 search={search}
                                 onSearchChange={setSearch}
-                                searchPlaceholder="Aktenzeichen suchen..."
+                                searchPlaceholder="Aktenzeichen suchen…"
 
                                 actions={[
                                     {

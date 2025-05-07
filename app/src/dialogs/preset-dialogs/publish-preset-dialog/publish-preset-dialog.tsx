@@ -152,7 +152,7 @@ export function PublishPresetDialog(props: DialogProps & PublishPresetDialogProp
                             required
                             maxCharacters={128}
                             minCharacters={1}
-                            placeholder="Dieser Baustein wird genutzt für..."
+                            placeholder="Dieser Baustein wird genutzt für…"
                         />
 
                         <TextFieldComponent
@@ -163,7 +163,7 @@ export function PublishPresetDialog(props: DialogProps & PublishPresetDialogProp
                             required
                             maxCharacters={2048}
                             minCharacters={1}
-                            placeholder="Dieser Baustein wird genutzt für..."
+                            placeholder="Dieser Baustein wird genutzt für…"
                         />
 
                         <CheckboxFieldComponent

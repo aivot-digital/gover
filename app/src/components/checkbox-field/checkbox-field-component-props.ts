@@ -1,3 +1,5 @@
+import {SxProps} from '@mui/material';
+
 export interface CheckboxFieldComponentProps {
     label: string;
     error?: string;
@@ -8,4 +10,5 @@ export interface CheckboxFieldComponentProps {
     value?: boolean;
     onChange: (val: boolean) => void;
     variant?: 'standard' | 'switch';
+    sx?: SxProps;
 }

@@ -104,15 +104,18 @@ export class ApiService {
 
     public async get<T>(url: string, headers?: any, options?: ApiOptions): Promise<T> {
         const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/json'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            headers,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(accessToken != null ? {
-                    Authorization: `Bearer ${accessToken}`,
-                } : undefined),
-                ...headers,
-            },
+            headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
         });
@@ -126,14 +129,17 @@ export class ApiService {
 
     public async getBlob(url: string, options?: ApiOptions): Promise<Blob> {
         const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/octet-stream'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/octet-stream',
-                ...(accessToken != null ? {
-                    Authorization: `Bearer ${accessToken}`,
-                } : undefined),
-            },
+            headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
         });
@@ -145,15 +151,18 @@ export class ApiService {
 
     public async post<T>(url: string, data: any, options?: ApiOptions): Promise<T> {
         const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/json'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'POST',
             body: JSON.stringify(data),
-            headers: {
-                'Content-Type': 'application/json',
-                ...(accessToken != null ? {
-                    Authorization: `Bearer ${accessToken}`,
-                } : undefined),
-            },
+            headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
         });
@@ -165,12 +174,17 @@ export class ApiService {
 
     public async postFormData<T>(url: string, data: FormData, options?: ApiOptions): Promise<T> {
         const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'POST',
             body: data,
-            headers: accessToken != null ? {
-                Authorization: `Bearer ${accessToken}`,
-            } : undefined,
+            headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
         });
@@ -182,15 +196,18 @@ export class ApiService {
 
     public async postFormUrlEncoded<T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T> {
         const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'POST',
             body: new URLSearchParams(data),
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                ...(accessToken != null ? {
-                    Authorization: `Bearer ${accessToken}`,
-                } : undefined),
-            },
+            headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
         });
@@ -202,15 +219,18 @@ export class ApiService {
 
     public async put<T>(url: string, data: any, options?: ApiOptions): Promise<T> {
         const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/json'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'PUT',
             body: JSON.stringify(data),
-            headers: {
-                'Content-Type': 'application/json',
-                ...(accessToken != null ? {
-                    Authorization: `Bearer ${accessToken}`,
-                } : undefined),
-            },
+            headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
         });
@@ -222,11 +242,17 @@ export class ApiService {
 
     public async delete(url: string, options?: ApiOptions): Promise<void> {
         const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/json'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'DELETE',
-            headers: accessToken != null ? {
-                'Authorization': `Bearer ${accessToken}`,
-            } : undefined,
+            headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
         });
@@ -238,10 +264,23 @@ export class ApiService {
     private async creatApiError(response: Response): Promise<ApiError> {
         let details = await response.text();
         try {
-            details = JSON.parse(details)
+            details = JSON.parse(details);
         } catch (err) {
             // Ignore parse error
         }
         return new ApiError(response.status, details);
     }
+}
+
+function combineHeaders(...header: Array<HeadersInit | Record<string, string> | undefined | null>): Record<string, string> {
+    let combined = {};
+    for (const h of header) {
+        if (h != null) {
+            combined = {
+                ...combined,
+                ...h,
+            };
+        }
+    }
+    return combined;
 }

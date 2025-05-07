@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.enums.*;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.lib.ReqeustDTO;
 import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
@@ -19,6 +20,7 @@ import org.hibernate.validator.constraints.Length;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.List;
 
 public record FormRequestDTO(
         @NotNull(message = "slug cannot be null")
@@ -63,18 +65,6 @@ public record FormRequestDTO(
         Integer customerAccessHours,
         Integer submissionDeletionWeeks,
 
-        Boolean bundIdEnabled,
-        BundIdAccessLevel bundIdLevel,
-
-        Boolean bayernIdEnabled,
-        BayernIdAccessLevel bayernIdLevel,
-
-        Boolean shIdEnabled,
-        SchleswigHolsteinIdAccessLevel shIdLevel,
-
-        Boolean mukEnabled,
-        MukAccessLevel mukLevel,
-
         @Length(max = 36, message = "uuid must be 36 characters long")
         String pdfBodyTemplateKey,
 
@@ -87,7 +77,13 @@ public record FormRequestDTO(
         String paymentDescription,
 
         @Length(max = 36, message = "uuid must be 36 characters long")
-        String paymentProvider
+        String paymentProvider,
+
+        @NotNull(message = "identityRequired cannot be null")
+        Boolean identityRequired,
+
+        @NotNull(message = "identityProviders cannot be null")
+        List<IdentityProviderLink> identityProviders
 ) implements ReqeustDTO<Form> {
     @Nonnull
     @Override
@@ -112,19 +108,13 @@ public record FormRequestDTO(
         form.setThemeId(themeId);
         form.setCustomerAccessHours(customerAccessHours);
         form.setSubmissionDeletionWeeks(submissionDeletionWeeks);
-        form.setBundIdEnabled(bundIdEnabled);
-        form.setBundIdLevel(bundIdLevel);
-        form.setBayernIdEnabled(bayernIdEnabled);
-        form.setBayernIdLevel(bayernIdLevel);
-        form.setShIdEnabled(shIdEnabled);
-        form.setShIdLevel(shIdLevel);
-        form.setMukEnabled(mukEnabled);
-        form.setMukLevel(mukLevel);
         form.setPdfBodyTemplateKey(pdfBodyTemplateKey);
         form.setProducts(products);
         form.setPaymentPurpose(paymentPurpose);
         form.setPaymentDescription(paymentDescription);
         form.setPaymentProvider(paymentProvider);
+        form.setIdentityRequired(identityRequired);
+        form.setIdentityProviders(identityProviders);
 
         return form;
     }

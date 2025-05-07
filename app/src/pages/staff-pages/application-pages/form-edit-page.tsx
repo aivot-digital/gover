@@ -67,6 +67,8 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-ov
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {FormState} from '../../../models/dtos/form-state';
 import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
+import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
+import {setIdentityId} from '../../../slices/identity-slice';
 
 export const DialogSearchParam = 'dialog';
 
@@ -107,6 +109,7 @@ export function FormEditPage() {
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
     const metaDialog = useAppSelector((state) => state.app.showDialog);
+    const [identityProviderInfos, setIdentityProviderInfos] = useState<IdentityProviderInfo[]>([]);
 
     const [theme, setTheme] = useState<Theme>();
 
@@ -149,9 +152,10 @@ export function FormEditPage() {
         dispatch(clearCustomerInput());
         dispatch(clearErrors());
         dispatch(setCurrentStep(0));
+        dispatch(setIdentityId(undefined));
         setFailedToLoad(false);
-        if (params.id != null) {
-            const id = parseInt(params.id);
+        if (formIdStr != null) {
+            const id = parseInt(formIdStr);
             new FormsApiService(api)
                 .retrieve(id)
                 .then((app) => {
@@ -164,7 +168,7 @@ export function FormEditPage() {
                 });
             fetchLockState(id);
         }
-    }, [params.id, dispatch]);
+    }, [formIdStr, dispatch]);
 
     useEffect(() => {
         if (loadedForm?.themeId != null) {
@@ -177,6 +181,12 @@ export function FormEditPage() {
         } else {
             setTheme(undefined);
         }
+
+        if (loadedForm != null) {
+            FormsApiService
+                .getIdentityProviders(loadedForm.id)
+                .then(res => setIdentityProviderInfos(res.content));
+        }
     }, [loadedForm]);
 
     useDidUpdateEffect(() => {
@@ -184,7 +194,7 @@ export function FormEditPage() {
             return;
         }
 
-        dispatch(showLoadingOverlay('Sichtbarkeiten berechnen...'));
+        dispatch(showLoadingOverlay('Sichtbarkeiten berechnen'));
 
         withAsyncWrapper<any, FormState>({
             desiredMinRuntime: 600,
@@ -246,7 +256,7 @@ export function FormEditPage() {
 
     const handleUndo = () => {
         dispatch(undoLoadedForm());
-        dispatch(showLoadingOverlay('Speichern...'));
+        dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
             .update(loadedForm!.id, pastLoadedForm[pastLoadedForm.length - 1])
             .then((loadedForm) => {
@@ -278,7 +288,7 @@ export function FormEditPage() {
 
     const handleRedo = () => {
         dispatch(redoLoadedForm());
-        dispatch(showLoadingOverlay('Speichern...'));
+        dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
             .update(loadedForm!.id, futureLoadedForm[futureLoadedForm.length - 1])
             .then((loadedForm) => {
@@ -361,7 +371,7 @@ export function FormEditPage() {
                 ...loadedForm,
             };
 
-            dispatch(showLoadingOverlay('Speichern...'));
+            dispatch(showLoadingOverlay('Speichern…'));
 
             const apiService = new FormsApiService(api);
 
@@ -518,6 +528,7 @@ export function FormEditPage() {
                                 onPatch={handlePatch}
                                 editable={isEditable}
                                 scope="application"
+                                enabledIdentityProviderInfos={identityProviderInfos}
                             />
                         </Grid>
                     }
@@ -537,6 +548,7 @@ export function FormEditPage() {
                             scrollContainerRef={scrollContainerRef}
                             isBusy={false}
                             isDeriving={false}
+                            mode="editor"
                         />
                     </Grid>
                 </Grid>

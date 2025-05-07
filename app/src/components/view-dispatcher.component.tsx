@@ -10,6 +10,7 @@ import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {resolveId} from '../utils/id-utils';
 import {enqueueDerivationTriggerId, selectDisabled, selectError, selectFunctionReferences, selectOverride, selectValue, selectVisibility, updateCustomerInput} from '../slices/app-slice';
 import {FunctionType} from '../utils/function-status-utils';
+import {selectDisableVisibility} from '../slices/admin-settings-slice';
 
 interface DispatcherComponentProps<M extends AnyElement, V> {
     allElements: AnyElement[];
@@ -18,6 +19,7 @@ interface DispatcherComponentProps<M extends AnyElement, V> {
     scrollContainerRef?: React.RefObject<HTMLDivElement>;
     isBusy: boolean;
     isDeriving: boolean;
+    mode: 'editor' | 'viewer';
 
     valueOverride?: {
         values: Record<string, any>;
@@ -40,6 +42,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
     const override = useAppSelector(selectOverride(resolvedId));
     const error = useAppSelector(selectError(resolvedId));
     const references = useAppSelector(selectFunctionReferences);
+    const disableVisibility = useAppSelector(selectDisableVisibility);
 
     const hasReferences = useMemo(() => {
         if (references == null) {
@@ -108,9 +111,14 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
         isDeriving: props.isDeriving,
         valueOverride: props.valueOverride,
         errorsOverride: props.errorsOverride,
+        mode: props.mode,
     }), [element, resolvedId, error, value, dispatch, props]);
 
     if (!isVisible) {
+        return null;
+    }
+
+    if (isAnyInputElement(element) && element.technical && (props.mode !== 'editor' || !disableVisibility)) {
         return null;
     }
 

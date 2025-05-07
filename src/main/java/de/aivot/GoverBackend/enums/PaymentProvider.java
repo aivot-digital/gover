@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.enums;
 import com.fasterxml.jackson.annotation.JsonValue;
 import de.aivot.GoverBackend.lib.models.Identifiable;
 
+// TODO: Remove
 public enum PaymentProvider implements Identifiable<String> {
     ePayBL("epaybl", "ePayBL"),
     pmPayment("pmpayment", "pmPayment"),

@@ -1,0 +1,1 @@
+drop function jsonb_array_element_has_value;

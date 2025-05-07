@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.services.storages;
 
 import de.aivot.GoverBackend.exceptions.NotFoundException;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.StorageConfig;
 import io.minio.*;
 import io.minio.errors.*;
@@ -79,7 +80,7 @@ class StorageServiceTest {
     }
 
     @Test
-    void testGetRemoteFileUrl() throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    void testGetRemoteFileUrl() throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException, ResponseException {
         when(storageConfig.getRemoteBucket()).thenReturn("test-bucket");
 
         storageService.storageClient = storageClient;
@@ -95,7 +96,7 @@ class StorageServiceTest {
     }
 
     @Test
-    void testWriteFile() throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    void testWriteFile() throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException, ResponseException {
         final String testFileName = "test-file";
         final byte[] testFileBytes = "test-content".getBytes();
         final String testFileContentType = "text/plain";
@@ -115,7 +116,7 @@ class StorageServiceTest {
     }
 
     @Test
-    void testDeleteFile() throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    void testDeleteFile() throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException, ResponseException {
         final String testFileName = "test-file";
         final byte[] testFileBytes = "test-content".getBytes();
 
@@ -135,7 +136,7 @@ class StorageServiceTest {
     }
 
     @Test
-    void testGetFile() throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    void testGetFile() throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException, ResponseException {
         final String testFileName = "test-file";
         final byte[] testFileBytes = "test-content".getBytes();
 
@@ -153,7 +154,7 @@ class StorageServiceTest {
     }
 
     @Test
-    void testTestLocalFileExists() throws IOException {
+    void testTestLocalFileExists() throws IOException, ResponseException {
         final String testFileName = "test-file";
         final byte[] testFileBytes = "test-content".getBytes();
 

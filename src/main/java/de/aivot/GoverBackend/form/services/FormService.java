@@ -2,18 +2,17 @@ package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
-import de.aivot.GoverBackend.core.configs.NutzerkontoBayernIdSystemConfigDefinition;
-import de.aivot.GoverBackend.core.configs.NutzerkontoBundIdSystemConfigDefinition;
-import de.aivot.GoverBackend.core.configs.NutzerkontoMUKSystemConfigDefinition;
-import de.aivot.GoverBackend.core.configs.NutzerkontoSHIdSystemConfigDefinition;
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.elements.services.ElementApprovalService;
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
+import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -22,8 +21,8 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.submission.services.SubmissionService;
 import de.aivot.GoverBackend.theme.services.ThemeService;
-import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +48,7 @@ public class FormService implements EntityService<Form, Integer> {
     private final AssetService assetService;
     private final SubmissionService submissionService;
     private final SubmissionRepository submissionRepository;
+    private final IdentityProviderService identityProviderService;
 
     @Autowired
     public FormService(
@@ -60,7 +60,7 @@ public class FormService implements EntityService<Form, Integer> {
             SystemConfigService systemConfigService,
             AssetService assetService,
             SubmissionService submissionService,
-            SubmissionRepository submissionRepository) {
+            SubmissionRepository submissionRepository, IdentityProviderService identityProviderService) {
         this.repository = repository;
         this.destinationService = destinationService;
         this.departmentService = departmentService;
@@ -70,6 +70,7 @@ public class FormService implements EntityService<Form, Integer> {
         this.assetService = assetService;
         this.submissionService = submissionService;
         this.submissionRepository = submissionRepository;
+        this.identityProviderService = identityProviderService;
     }
 
     @Nonnull
@@ -135,17 +136,8 @@ public class FormService implements EntityService<Form, Integer> {
 
         existingForm.setPaymentProvider(updatedForm.getPaymentProvider());
 
-        existingForm.setBundIdEnabled(updatedForm.getBundIdEnabled());
-        existingForm.setBundIdLevel(updatedForm.getBundIdLevel());
-
-        existingForm.setBayernIdEnabled(updatedForm.getBayernIdEnabled());
-        existingForm.setBayernIdLevel(updatedForm.getBayernIdLevel());
-
-        existingForm.setShIdEnabled(updatedForm.getShIdEnabled());
-        existingForm.setShIdLevel(updatedForm.getShIdLevel());
-
-        existingForm.setMukEnabled(updatedForm.getMukEnabled());
-        existingForm.setMukLevel(updatedForm.getMukLevel());
+        existingForm.setIdentityRequired(updatedForm.getIdentityRequired());
+        existingForm.setIdentityProviders(updatedForm.getIdentityProviders());
 
         cleanRelatedData(existingForm);
 
@@ -239,28 +231,18 @@ public class FormService implements EntityService<Form, Integer> {
             form.setPaymentProvider(null);
         }
 
-        // Disable the BundId if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getBundIdEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBundIdSystemConfigDefinition.KEY).getValue())) {
-            form.setBundIdEnabled(false);
-            form.setBundIdLevel(null);
+        // Remove all non-existing identity providers from the list of linked identity providers
+        var cleanedIdentityProvider = new LinkedList<IdentityProviderLink>();
+        for (var link : form.getIdentityProviders()) {
+            if (link.getIdentityProviderKey() != null && identityProviderService.exists(link.getIdentityProviderKey())) {
+                cleanedIdentityProvider.add(link);
+            }
         }
+        form.setIdentityProviders(cleanedIdentityProvider);
 
-        // Disable the BayernId if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getBayernIdEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBayernIdSystemConfigDefinition.KEY).getValue())) {
-            form.setBayernIdEnabled(false);
-            form.setBayernIdLevel(null);
-        }
-
-        // Disable the SHId if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getShIdEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoSHIdSystemConfigDefinition.KEY).getValue())) {
-            form.setShIdEnabled(false);
-            form.setShIdLevel(null);
-        }
-
-        // Disable the MUK if the config is not enabled
-        if (!Boolean.TRUE.equals(form.getMukEnabled()) || !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoMUKSystemConfigDefinition.KEY).getValue())) {
-            form.setMukEnabled(false);
-            form.setMukLevel(null);
+        // Check if an identity is required but the list ist empty. Reset the requirement if this is the case
+        if (form.getIdentityRequired() && form.getIdentityProviders().isEmpty()) {
+            form.setIdentityRequired(false);
         }
 
         return form;
@@ -366,18 +348,48 @@ public class FormService implements EntityService<Form, Integer> {
                         .setDone(existingForm.getCustomerAccessHours() != null && existingForm.getCustomerAccessHours() >= 0)
         );
 
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Beinhaltet ausschließlich produktive Zahlungsdienstleister")
-                        .setDone(
-                                existingForm.getPaymentProvider() == null ||
-                                        (
-                                                paymentProviderService.exists(existingForm.getPaymentProvider()) &&
-                                                        !paymentProviderService.isTestProvider(existingForm.getPaymentProvider()) // TODO: Mit einem Filter + Exists lösen statt zwei DB calls
-                                        )
-                        )
-        );
+        if (StringUtils.isNotNullOrEmpty(existingForm.getPaymentProvider())) {
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet ausschließlich produktive Zahlungsdienstleister")
+                            .setDone(
+                                    paymentProviderService.exists(existingForm.getPaymentProvider()) &&
+                                    !paymentProviderService.isTestProvider(existingForm.getPaymentProvider()) // TODO: Mit einem Filter + Exists lösen statt zwei DB calls
+                            )
+            );
+        }
+
+        if (existingForm.getIdentityProviders() != null && !existingForm.getIdentityProviders().isEmpty()) {
+            var allLinkedIDPsProductive = existingForm
+                    .getIdentityProviders()
+                    .stream()
+                    .allMatch(idp -> (
+                            idp.getIdentityProviderKey() != null &&
+                            identityProviderService.exists(
+                                    new IdentityProviderFilter()
+                                            .setKey(idp.getIdentityProviderKey())
+                                            .setIsTestProvider(false)
+                                            .setIsEnabled(true)
+                            )
+                    ));
+
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet ausschließlich produktive Nutzerkontenanbieter")
+                            .setDone(allLinkedIDPsProductive)
+            );
+        }
+
+        if (existingForm.getIdentityRequired() && (existingForm.getIdentityProviders() == null || existingForm.getIdentityProviders().isEmpty())) {
+            checklist.add(
+                    FormPublishChecklistItem
+                            .create()
+                            .setLabel("Beinhaltet benötigte Nutzerkontenanbieter")
+                            .setDone(false)
+            );
+        }
 
         checklist.add(
                 FormPublishChecklistItem
@@ -391,27 +403,11 @@ public class FormService implements EntityService<Form, Integer> {
 
     @Nonnull
     public Form publish(@Nonnull Form existingForm) throws ResponseException {
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getBundIdEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBundIdSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das Nutzerkonto BundId nicht aktiviert ist");
-        }
+        var allChecklistItemsDone = getFormPublishChecklist(existingForm)
+                .stream()
+                .allMatch(FormPublishChecklistItem::getDone);
 
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getBayernIdEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoBayernIdSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das Nutzerkonto BayernId nicht aktiviert ist");
-        }
-
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getShIdEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoSHIdSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das Servicekonto Schleswig-Holstein nicht aktiviert ist");
-        }
-
-        // TODO: Use value parser from respective system, config definition
-        if (Boolean.TRUE.equals(existingForm.getMukEnabled()) && !"true".equalsIgnoreCase(systemConfigService.retrieve(NutzerkontoMUKSystemConfigDefinition.KEY).getValue())) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da die Systemkonfiguration für das MUK nicht aktiviert ist");
-        }
-
-        if (!getFormPublishChecklist(existingForm).stream().allMatch(FormPublishChecklistItem::getDone)) {
+        if (!allChecklistItemsDone) {
             throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da nicht alle Voraussetzungen erfüllt sind");
         }
 

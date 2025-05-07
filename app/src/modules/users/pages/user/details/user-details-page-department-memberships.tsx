@@ -84,7 +84,7 @@ export function UserDetailsPageDepartmentMemberships() {
                 defaultSortField="departmentName"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Fachbereiche vorhanden"
-                loadingPlaceholder="Lade Fachbereiche..."
+                loadingPlaceholder="Lade Fachbereiche…"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
                 rowActions={(item: DepartmentMembershipResponseDTO) => [{
                     icon: <EditOutlined />,

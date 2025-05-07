@@ -26,16 +26,14 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
     private Integer themeId;
-    private Integer bundIdEnabled;
-    private Integer bayernIdEnabled;
-    private Integer mukEnabled;
-    private Integer shIdEnabled;
     private String pdfBodyTemplateKey;
     private String paymentProvider;
     private String userId;
     private Boolean isDeveloper;
     private Boolean isManager;
     private Boolean isResponsible;
+    private Boolean identityRequired;
+    private String identityProviderKey;
 
     public static FormWithMembershipFilter create() {
         return new FormWithMembershipFilter();
@@ -62,16 +60,14 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
                 .withEquals("managingDepartmentId", managingDepartmentId)
                 .withEquals("responsibleDepartmentId", responsibleDepartmentId)
                 .withEquals("themeId", themeId)
-                .withEquals("bundIdEnabled", bundIdEnabled)
-                .withEquals("bayernIdEnabled", bayernIdEnabled)
-                .withEquals("mukEnabled", mukEnabled)
-                .withEquals("shIdEnabled", shIdEnabled)
                 .withEquals("pdfBodyTemplateKey", pdfBodyTemplateKey)
                 .withEquals("paymentProvider", paymentProvider)
                 .withEquals("userId", userId)
                 .withEquals("userIsDeveloper", isDeveloper)
                 .withEquals("userIsManager", isManager)
                 .withEquals("userIsResponsible", isResponsible)
+                .withEquals("identityRequired", identityRequired)
+                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey)
                 .build();
     }
 
@@ -94,12 +90,10 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
                 .setManagingDepartmentId(managingDepartmentId)
                 .setResponsibleDepartmentId(responsibleDepartmentId)
                 .setThemeId(themeId)
-                .setBundIdEnabled(bundIdEnabled)
-                .setBayernIdEnabled(bayernIdEnabled)
-                .setMukEnabled(mukEnabled)
-                .setShIdEnabled(shIdEnabled)
                 .setPdfBodyTemplateKey(pdfBodyTemplateKey)
-                .setPaymentProvider(paymentProvider);
+                .setPaymentProvider(paymentProvider)
+                .setIdentityRequired(identityRequired)
+                .setIdentityProviderKey(identityProviderKey);
     }
 
     public Integer getId() {
@@ -246,42 +240,6 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
         return this;
     }
 
-    public Integer getBundIdEnabled() {
-        return bundIdEnabled;
-    }
-
-    public FormWithMembershipFilter setBundIdEnabled(Integer bundIdEnabled) {
-        this.bundIdEnabled = bundIdEnabled;
-        return this;
-    }
-
-    public Integer getBayernIdEnabled() {
-        return bayernIdEnabled;
-    }
-
-    public FormWithMembershipFilter setBayernIdEnabled(Integer bayernIdEnabled) {
-        this.bayernIdEnabled = bayernIdEnabled;
-        return this;
-    }
-
-    public Integer getMukEnabled() {
-        return mukEnabled;
-    }
-
-    public FormWithMembershipFilter setMukEnabled(Integer mukEnabled) {
-        this.mukEnabled = mukEnabled;
-        return this;
-    }
-
-    public Integer getShIdEnabled() {
-        return shIdEnabled;
-    }
-
-    public FormWithMembershipFilter setShIdEnabled(Integer shIdEnabled) {
-        this.shIdEnabled = shIdEnabled;
-        return this;
-    }
-
     public String getPdfBodyTemplateKey() {
         return pdfBodyTemplateKey;
     }
@@ -309,30 +267,48 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
         return this;
     }
 
-    public Boolean getIsDeveloper() {
+    public Boolean getDeveloper() {
         return isDeveloper;
     }
 
-    public FormWithMembershipFilter setIsDeveloper(Boolean developer) {
+    public FormWithMembershipFilter setDeveloper(Boolean developer) {
         isDeveloper = developer;
         return this;
     }
 
-    public Boolean getIsManager() {
+    public Boolean getManager() {
         return isManager;
     }
 
-    public FormWithMembershipFilter setIsManager(Boolean manager) {
+    public FormWithMembershipFilter setManager(Boolean manager) {
         isManager = manager;
         return this;
     }
 
-    public Boolean getIsResponsible() {
+    public Boolean getResponsible() {
         return isResponsible;
     }
 
-    public FormWithMembershipFilter setIsResponsible(Boolean responsible) {
+    public FormWithMembershipFilter setResponsible(Boolean responsible) {
         isResponsible = responsible;
+        return this;
+    }
+
+    public Boolean getIdentityRequired() {
+        return identityRequired;
+    }
+
+    public FormWithMembershipFilter setIdentityRequired(Boolean identityRequired) {
+        this.identityRequired = identityRequired;
+        return this;
+    }
+
+    public String getIdentityProviderKey() {
+        return identityProviderKey;
+    }
+
+    public FormWithMembershipFilter setIdentityProviderKey(String identityProviderKey) {
+        this.identityProviderKey = identityProviderKey;
         return this;
     }
 }

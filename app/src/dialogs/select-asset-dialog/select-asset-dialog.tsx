@@ -62,7 +62,7 @@ export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProp
                 <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder="Suchen..."
+                    placeholder="Suchen…"
                 />
 
                 {

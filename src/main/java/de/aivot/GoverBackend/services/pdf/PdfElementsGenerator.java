@@ -20,13 +20,16 @@ public class PdfElementsGenerator {
     public static List<PdfElement> generatePdfElements(
             RootElement rootElement,
             Optional<Map<String, Object>> customerInput,
-            FormState formState
+            FormState formState,
+            @Nonnull
+            Boolean skipTechnical
     ) {
         var rootPdfElement = generatePdfElement(
                 null,
                 rootElement,
                 customerInput.orElse(null),
-                formState
+                formState,
+                skipTechnical
         );
 
         if (rootPdfElement == null) {
@@ -71,7 +74,9 @@ public class PdfElementsGenerator {
             @Nullable
             Map<String, Object> customerInput,
             @Nonnull
-            FormState formState
+            FormState formState,
+            @Nonnull
+            Boolean skipTechnical
     ) {
         // Check if the current element is null
         if (currentElement == null) {
@@ -90,7 +95,7 @@ public class PdfElementsGenerator {
 
         // Check if the element is technical or disabled
         if (currentElement instanceof BaseInputElement<?> baseInputElement) {
-            if (Boolean.TRUE.equals(baseInputElement.getTechnical())) {
+            if (skipTechnical && Boolean.TRUE.equals(baseInputElement.getTechnical())) {
                 return null;
             }
         }
@@ -113,7 +118,7 @@ public class PdfElementsGenerator {
             var children = rootElement
                     .getChildren()
                     .stream()
-                    .map(child -> generatePdfElement(null, child, customerInput, formState))
+                    .map(child -> generatePdfElement(null, child, customerInput, formState, skipTechnical))
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
@@ -121,7 +126,7 @@ public class PdfElementsGenerator {
             var children = stepElement
                     .getChildren()
                     .stream()
-                    .map(child -> generatePdfElement(null, child, customerInput, formState))
+                    .map(child -> generatePdfElement(null, child, customerInput, formState, skipTechnical))
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
@@ -129,7 +134,7 @@ public class PdfElementsGenerator {
             var children = groupLayout
                     .getChildren()
                     .stream()
-                    .map(child -> generatePdfElement(idPrefix, child, customerInput, formState))
+                    .map(child -> generatePdfElement(idPrefix, child, customerInput, formState, skipTechnical))
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
@@ -154,7 +159,7 @@ public class PdfElementsGenerator {
                         var children = replicatingContainerLayout
                                 .getChildren()
                                 .stream()
-                                .map(child -> generatePdfElement(newIdPrefix, child, customerInput, formState))
+                                .map(child -> generatePdfElement(newIdPrefix, child, customerInput, formState, skipTechnical))
                                 .filter(Objects::nonNull)
                                 .toList();
 

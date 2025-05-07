@@ -6,7 +6,8 @@
 <!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.DepartmentEntity"*/-->
 <!--/*@thymesVar id="elements" type="java.util.Collection<de.aivot.GoverBackend.services.pdf.PdfElement>"*/-->
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
-<!--/*@thymesVar id="authData" type="de.aivot.GoverBackend.pdf.models.FormPdfAuthData"*/-->
+<!--/*@thymesVar id="identityProvider" type="de.aivot.GoverBackend.identity.entities.IdentityProviderEntity"*/-->
+<!--/*@thymesVar id="identityData" type="de.aivot.GoverBackend.identity.models.IdentityValue"*/-->
 <!--/*@thymesVar id="attachments" type="java.util.List<de.aivot.GoverBackend.elements.models.form.input.FileUploadField>"*/-->
 <!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
@@ -743,6 +744,33 @@
         </section>
 
         <!--/* ***********************************************************************
+        Bereich für die "Nutzerkonteninformationen".
+
+        Wird nur angezeigt, wenn eine Authentifizierung erfolgt ist
+        *********************************************************************** */-->
+        <section th:if="${ (base.isStaffPrint() || base.isDestinationPrint()) && identityProvider != null && identityData != null }">
+            <h2>Authentifizierungsinformationen</h2>
+            <p>
+                Angemeldet mit dem Nutzerkonto <strong th:text="${ identityProvider.getName() }">Name des Nutzerkontenanbieters</strong>.
+            </p>
+            <ul>
+                <li
+                        th:each="attribute : ${ identityProvider.getAttributes() }"
+                        th:if="${ attribute.getDisplayAttribute() }"
+                >
+                    <span th:text="${ attribute.getLabel() }"></span>:
+                    <span
+                            th:text="${ identityData.userInfo().get(attribute.getKeyInData()) }"
+                            th:if="${ identityData.userInfo().get(attribute.getKeyInData()) != null }"
+                    ></span>
+                    <span
+                            th:if="${ identityData.userInfo().get(attribute.getKeyInData()) == null }"
+                    >Keine Angaben</span>
+                </li>
+            </ul>
+        </section>
+
+        <!--/* ***********************************************************************
         Bereich für Elemente des Formulars.
         *********************************************************************** */-->
         <!--/* Iteriere über jeden Abschnitt des Formulars, dass gerendert werden soll */-->
@@ -762,7 +790,7 @@
                     <th:block
                             th:each="child : ${step.children}"
                     >
-                        <!--/* Erzeuge einen Container für das Kind-Element. Dieser Container ist ein Fragment, dass später für z.B. das Gruppen-Layout und die Replizierende Liste wiederverwendet wird. */-->
+                        <!--/* Erzeuge einen Container für das Kind-Element. Dieser Container ist ein Fragment, das später für z.B. das Gruppen-Layout und die Replizierende Liste wiederverwendet wird. */-->
                         <div
                                 th:fragment="dispatcher"
                                 th:class="'element-wrapper element-wrapper-' + ${ child.element.type.name().toLowerCase() }"
