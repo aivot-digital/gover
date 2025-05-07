@@ -210,7 +210,7 @@ export function IdentityProviderDetailsPageSetup() {
                         {
                             icon: <CodeOutlinedIcon />,
                             label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
+                            url: `/idp/realms/customer/bayernid/${idpHint?.value}/metadata`,
                         },
                     ]}
                 />
