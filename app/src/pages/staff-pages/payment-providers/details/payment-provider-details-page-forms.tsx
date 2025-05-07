@@ -88,7 +88,7 @@ export function PaymentProviderDetailsPageForms() {
                 defaultSortField="slug"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Formulare vorhanden"
-                loadingPlaceholder="Lade Formulare..."
+                loadingPlaceholder="Lade Formulare…"
                 noSearchResultsPlaceholder="Keine Formulare gefunden"
                 rowActions={(item: Form) => [{
                     icon: <EditOutlined />,

@@ -103,18 +103,21 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                 Mehr Informationen hierzu finden Sie in der <a
                 href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
                 target="_blank"
+                style={{color: "inherit"}}
                 rel="noreferrer noopener"
             >Dokumentation</a>.
             </AlertComponent>
 
-            <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<LinkOffOutlinedIcon/>}
-                onClick={handleRemoveStoreInformation}
-            >
-                Verknüpfung auflösen
-            </Button>
+            {props.editable &&
+                <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<LinkOffOutlinedIcon/>}
+                    onClick={handleRemoveStoreInformation}
+                >
+                    Verknüpfung auflösen
+                </Button>
+            }
 
             <Paper
                 sx={{

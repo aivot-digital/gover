@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.services.storages;
 
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.StorageConfig;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
@@ -38,7 +39,7 @@ class SubmissionStorageServiceTest {
     }
 
     @Test
-    void testGetAttachmentData() throws IOException {
+    void testGetAttachmentData() throws IOException, ResponseException {
         if (new File(TEST_FILE_DIRECTORY).exists()) {
             FileUtils.deleteDirectory(new File(TEST_FILE_DIRECTORY));
         }
@@ -70,7 +71,7 @@ class SubmissionStorageServiceTest {
     }
 
     @Test
-    void testSaveAttachment() throws IOException {
+    void testSaveAttachment() throws IOException, ResponseException {
         Submission submission = new Submission();
         submission.setId("1");
 
@@ -90,7 +91,7 @@ class SubmissionStorageServiceTest {
     }
 
     @Test
-    void testDeleteSubmission() throws IOException {
+    void testDeleteSubmission() throws IOException, ResponseException {
         Submission submission = new Submission();
         submission.setId("1");
 

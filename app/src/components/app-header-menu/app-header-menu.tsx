@@ -1,6 +1,6 @@
 import React, {useCallback, useState} from 'react';
 import {type AppHeaderMenuProps} from './app-header-menu-props';
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, type SvgIconProps} from '@mui/material';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {AppMode} from '../../data/app-mode';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetStepper} from '../../slices/stepper-slice';
@@ -32,8 +32,10 @@ import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined
 import {CopyAllOutlined, SvgIconComponent} from '@mui/icons-material';
 import {useApi} from '../../hooks/use-api';
 import {AppConfig} from '../../app-config';
-import {ConfirmDialog} from "../../dialogs/confirm-dialog/confirm-dialog";
-import DriveFolderUploadOutlinedIcon from "@mui/icons-material/DriveFolderUploadOutlined";
+import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
+import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import {setIdentityId} from '../../slices/identity-slice';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
@@ -51,6 +53,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
         dispatch(resetStepper());
         dispatch(clearErrors());
         dispatch(clearDisabled());
+        dispatch(setIdentityId(undefined));
         closeMenuCallback();
         setConfirmDelete(undefined);
     }, []);
@@ -224,6 +227,16 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                         label="Zahlungsdienstleister"
                         icon={PaymentOutlinedIcon}
                         to="/payment-providers"
+                    />
+                }
+
+                {
+                    props.mode === AppMode.Staff &&
+                    isUserAdmin &&
+                    <LinkMenuItem
+                        label="Nutzerkontenanbieter"
+                        icon={BadgeOutlinedIcon}
+                        to="/identity-providers"
                     />
                 }
 

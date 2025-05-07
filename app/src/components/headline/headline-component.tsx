@@ -10,6 +10,7 @@ export function HeadlineComponent({
             variant={small ? 'subtitle2' : 'subtitle1'}
             /*component={small ? 'h4' : 'h3'}*/
             component={'h3'} // we set h3 explicitly to avoid a user creating a wrong headline hierarchy (A11y)
+            className={"headline-component-content"}
             sx={{
                 color: small ? "#16191F" : theme.palette.primary.dark,
                 fontSize: small ? "1rem" : "1.25rem",

@@ -123,6 +123,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 onShowAddDialog={isLayoutElement && isNotStoreModule ? toggleShowAddDialog : undefined}
                 onSelect={toggleShowEditor}
                 editable={props.editable}
+                enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
             />
 
             {
@@ -137,6 +138,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                     onMove={props.onMove}
                     editable={props.editable}
                     scope={props.scope}
+                    enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                 />
             }
 

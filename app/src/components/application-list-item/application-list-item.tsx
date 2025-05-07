@@ -22,6 +22,8 @@ import {useApi} from '../../hooks/use-api';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
+import ExportApplicationDialog
+    from "../../dialogs/application-dialogs/export-application-dialog/export-application-dialog";
 
 
 export function ApplicationListItem(props: ApplicationListItemProps): JSX.Element {
@@ -37,6 +39,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
     const api = useApi();
     const dispatch = useAppDispatch();
     const [optionAnchorEl, setOptionAnchorEl] = useState<null | HTMLElement>(null);
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
     const showOptions = Boolean(optionAnchorEl);
 
     const department = useMemo(() => {
@@ -66,11 +69,20 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
         handleCloseOptions();
     };
 
-    const handleDownloadConfig = (): void => {
+    const openExportDialog = () => {
+        setExportDialogOpen(true);
+        handleCloseOptions();
+    };
+
+    const startDownloadConfig = () => {
         new FormsApiService(api)
             .retrieve(props.application.id)
-            .then(downloadConfigFile);
-        handleCloseOptions();
+            .then((data) => {
+                downloadConfigFile(data);
+                dispatch(showSuccessSnackbar('Formular wurde erfolgreich exportiert.'));
+            })
+            .catch(() => dispatch(showErrorSnackbar('Fehler beim Export des Formulars!')));
+        setExportDialogOpen(false);
     };
 
     const isDeveloper =
@@ -264,7 +276,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         {
                             isDeveloper &&
-                            <MenuItem onClick={handleDownloadConfig}>
+                            <MenuItem onClick={openExportDialog}>
                                 <ListItemIcon>
                                     <ImportExportOutlinedIcon />
                                 </ListItemIcon>
@@ -288,6 +300,12 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                     </Menu>
                 </Box>
             </Box>
+
+            <ExportApplicationDialog
+                open={exportDialogOpen}
+                onCancel={() => setExportDialogOpen(false)}
+                onExport={startDownloadConfig}
+            />
         </Box>
     );
 }

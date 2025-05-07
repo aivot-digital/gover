@@ -1,5 +1,6 @@
 import ProjectPackage from '../package.json';
 
+// TODO: Remove unused properties
 interface AppConfig {
     version: string;
     date: string;
@@ -18,34 +19,6 @@ interface AppConfig {
         client: string;
         realm: string;
         host: string;
-    };
-
-    bundId: {
-        client: string;
-        realm: string;
-        host: string;
-        broker: string;
-    };
-
-    bayernId: {
-        client: string;
-        realm: string;
-        host: string;
-        broker: string;
-    };
-
-    schleswigHolsteinId: {
-        client: string;
-        realm: string;
-        host: string;
-        broker: string;
-    };
-
-    muk: {
-        client: string;
-        realm: string;
-        host: string;
-        broker: string;
     };
 }
 
@@ -67,34 +40,6 @@ const DevelopmentAppConfig: AppConfig = {
         client: 'app',
         realm: 'staff',
         host: '/idp',
-    },
-
-    bundId: {
-        client: 'app',
-        realm: 'customer',
-        host: '/idp',
-        broker: 'bundid',
-    },
-
-    bayernId: {
-        client: 'app',
-        realm: 'customer',
-        host: '/idp',
-        broker: 'bayernid',
-    },
-
-    schleswigHolsteinId: {
-        client: 'app',
-        realm: 'customer',
-        host: '/idp',
-        broker: 'schleswigholstein',
-    },
-
-    muk: {
-        client: 'app',
-        realm: 'customer',
-        host: '/idp',
-        broker: 'muk',
     },
 };
 

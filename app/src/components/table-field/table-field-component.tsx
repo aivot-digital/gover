@@ -5,7 +5,11 @@ import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {TableFieldComponentProps} from './table-field-component-props';
 
-// TODO: Unify with table-field.component.view.tsx
+/**
+ * @deprecated use TableFieldComponent2 instead
+ * @param props
+ * @constructor
+ */
 export function TableFieldComponent(props: TableFieldComponentProps) {
     // Store the currently selected rows in this state to be able to delete them later
     const [selectionModel, setSelectionModel] = useState<GridSelectionModel>();

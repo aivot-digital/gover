@@ -1,16 +1,14 @@
 package de.aivot.GoverBackend.utils.specification;
 
 import de.aivot.GoverBackend.utils.StringUtils;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.validation.constraints.Null;
-import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 public class SpecificationBuilder<T> {
     private final List<SpecificationBuilderItem<T>> items = new LinkedList<>();
@@ -83,7 +81,13 @@ public class SpecificationBuilder<T> {
         return with(new SpecificationBuilderIsNotNull<>(field));
     }
 
+    public SpecificationBuilder<T> withJsonArrayElementFieldEquals(@Nonnull String field, @Nonnull String elementField, @Nonnull String value) {
+        if (StringUtils.isNullOrEmpty(value)) {
+            return this;
+        }
 
+        return with(new SpecificationBuilderJsonArrayElementFieldEquals<>(field, elementField, value));
+    }
 
     @Nonnull
     private SpecificationBuilder<T> with(@Nonnull SpecificationBuilderItem<T> item) {

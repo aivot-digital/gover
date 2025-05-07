@@ -1,15 +1,15 @@
-import {DialogTitle, IconButton, Tooltip, useTheme} from '@mui/material';
+import {DialogTitle, DialogTitleProps, IconButton, Tooltip, useTheme} from '@mui/material';
 import React from 'react';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 
-interface DialogTitleProps {
+interface DialogTitleWithCloseProps extends DialogTitleProps {
     children?: React.ReactNode;
     onClose: () => void;
     closeTooltip?: string;
     bordered?: boolean;
 }
 
-export const DialogTitleWithClose = (props: DialogTitleProps) => {
+export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
     const theme = useTheme();
     const {
         children,

@@ -59,6 +59,7 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                             element={option.$}
                             isBusy={false}
                             isDeriving={false}
+                            mode="editor"
                         />
                     );
                 },

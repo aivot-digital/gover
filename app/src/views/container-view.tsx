@@ -24,6 +24,7 @@ export const ContainerView: BaseView<GroupLayout, any> = (props) => {
             isDeriving={props.isDeriving || pass}
             valueOverride={props.valueOverride}
             errorsOverride={props.errorsOverride}
+            mode={props.mode}
         />
     );
 };

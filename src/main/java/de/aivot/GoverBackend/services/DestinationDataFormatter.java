@@ -10,6 +10,8 @@ import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.steps.StepElement;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
+import de.aivot.GoverBackend.identity.models.IdentityValue;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.submission.entities.Submission;
@@ -142,25 +144,23 @@ public class DestinationDataFormatter {
     }
 
     private void createAuthenticationData() {
-        var rawIdpData = submission.getCustomerInput().get(SpecialCustomerInputKeys.IdCustomerInputKey);
-        if (rawIdpData instanceof Map<?, ?> idpData) {
-            var idpRaw = idpData.get("idp");
-            if (idpRaw instanceof String sIdp) {
-                insertValue("authentication.is_authenticated", true);
-                insertValue("authentication.identity_provider", sIdp);
+        var rawIdpData = submission
+                .getCustomerInput()
+                .get(IdentityValueKey.IdCustomerInputKey);
 
-                var authData = new HashMap<String, Object>();
-                var rawUserInfo = idpData.get(SpecialCustomerInputKeys.UserInfoKey);
-                if (rawUserInfo instanceof Map<?, ?> userInfo) {
-                    var typedUserInfo = (Map<String, Object>) userInfo;
-                    authData.putAll(typedUserInfo);
-                }
-                insertValue("authentication.data", authData);
-            } else {
+        if (rawIdpData instanceof Map<?,?> mRawIdpData) {
+            IdentityValue identityValue;
+            try {
+                identityValue = IdentityValue
+                        .fromMap(mRawIdpData);
+            } catch (IllegalArgumentException e) {
                 insertValue("authentication.is_authenticated", false);
+                return;
             }
-        } else {
-            insertValue("authentication.is_authenticated", false);
+
+            insertValue("authentication.is_authenticated", true);
+            insertValue("authentication.identity_provider", identityValue.identityProviderKey());
+            insertValue("authentication.data", identityValue.userInfo());
         }
     }
 

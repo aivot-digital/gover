@@ -17,7 +17,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 export const SummaryUserInputKey = '__summary__';
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
 
-export function SummaryComponentView({allElements, isBusy, isDeriving}: BaseViewProps<SummaryStepElement, any>) {
+export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: BaseViewProps<SummaryStepElement, any>) {
     const form = useSelector(selectLoadedForm);
     const customerInput = useAppSelector(state => state.app.inputs);
     const visibilities = useAppSelector(state => state.app.visibilities);
@@ -87,6 +87,7 @@ export function SummaryComponentView({allElements, isBusy, isDeriving}: BaseView
                     }}
                     isBusy={isBusy}
                     isDeriving={isDeriving}
+                    mode={mode}
                 />
             </Box>
         </>

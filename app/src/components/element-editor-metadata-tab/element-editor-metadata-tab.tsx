@@ -1,96 +1,120 @@
 import {Box, Typography} from '@mui/material';
-import React from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {type ElementEditorMetadataTabProps} from './element-editor-metadata-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {ElementMetadata} from '../../models/elements/element-metadata';
 import {SelectFieldComponent} from '../select-field/select-field-component';
-import {BundIdAttribute, BundIdAttributes} from '../../data/bund-id-attributes';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectBooleanSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
-import {BayernIdAttribute, BayernIdAttributes} from '../../data/bayern-id-attributes';
-import {ShIdAttribute, ShIdAttributes} from '../../data/sh-id-attributes';
-import {MukAttribute, MukAttributes} from '../../data/muk-attributes';
+import {AnyInputElement, isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import type {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {isForm} from '../../models/entities/form';
-import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
 import {ElementType} from '../../data/element-type/element-type';
-import {UserInfoIdentifier, UserInfoIdentifierOptions} from '../../data/user-info-identifier';
+import {FormsApiService} from '../../modules/forms/forms-api-service';
+import {isForm} from '../../models/entities/form';
+import {IdentityProviderListDTO} from '../../modules/identity/models/identity-provider-list-dto';
+import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
+import {useApi} from '../../hooks/use-api';
+import {getMetadataMapping} from '../../utils/prefill-elements';
+import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
+import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
+import {BayernIdAttributes, BundIdAttributes, MukAttributes, ShIdAttributes} from '../../modules/identity/constants/system-identity-provider-attribute-maps';
+import {BayernIdAttribute, BundIdAttribute, MukAttribute, ShIdAttribute} from '../../modules/identity/constants/system-identity-provider-attributes';
+import {Page} from '../../models/dtos/page';
 
-export type ElementAttributeMappingOption = SelectFieldComponentOption & {
-    limit: ElementType[];
-};
+export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
+    const api = useApi();
 
-export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>): JSX.Element {
-    const bundIdActive = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.nutzerkonten.bundid)) && isForm(props.entity) && props.entity.bundIdEnabled;
-    const bayernIdActive = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.nutzerkonten.bayernId)) && isForm(props.entity) && props.entity.bayernIdEnabled;
-    const shIdActive = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.nutzerkonten.schleswigHolsteinId)) && isForm(props.entity) && props.entity.shIdEnabled;
-    const mukActive = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.nutzerkonten.muk)) && isForm(props.entity) && props.entity.mukEnabled;
+    const {
+        entity: entity,
+        elementModel: element,
+    } = props;
+
+    const [linkedIdentityProviders, setLinkedIdentityProviders] = useState<IdentityProviderListDTO[]>();
+
+    useEffect(() => {
+        if (isForm(entity)) {
+            FormsApiService
+                .getIdentityProviders(entity.id)
+                .then((linkedIdentityProvidersPage) => {
+                    return linkedIdentityProvidersPage.content;
+                })
+                .then((linkedIdentityProviders) => {
+                    const linkedIdentityProvidersKeys = linkedIdentityProviders
+                        .map((provider) => provider.key);
+
+                    if (linkedIdentityProvidersKeys.length === 0) {
+                        return new Promise<Page<IdentityProviderListDTO>>(resolve => {
+                            resolve({
+                                empty: true,
+                                first: true,
+                                last: true,
+                                number: 0,
+                                numberOfElements: 0,
+                                size: 0,
+                                totalElements: 0,
+                                totalPages: 0,
+                                content: [],
+                            });
+                        });
+                    }
+
+                    return new IdentityProvidersApiService(api)
+                        .listAllOrdered('name', 'ASC', {
+                            keys: linkedIdentityProvidersKeys,
+                        });
+                })
+                .then((identityProvidersPage) => {
+                    setLinkedIdentityProviders(identityProvidersPage.content);
+                })
+                .catch(console.error); // TODO: Handle error
+        }
+    }, [entity]);
+
+    const identityProviders: Array<IdentityProviderListDTO & {
+        existingMetadataMapping: string | undefined;
+        options: SelectFieldComponentOption[];
+    }> = useMemo(() => {
+        if (element == null || linkedIdentityProviders == null) {
+            return [];
+        }
+
+        if (!isAnyInputElement(element)) {
+            return [];
+        }
+
+        return linkedIdentityProviders
+            .map((identityProvider) => {
+                const existingMetadataMapping = getMetadataMapping(element, identityProvider.metadataIdentifier);
+
+                const attributeOptions = filterOptions(element, identityProvider);
+
+                return {
+                    ...identityProvider,
+                    existingMetadataMapping: existingMetadataMapping,
+                    options: attributeOptions,
+                };
+            })
+            .filter((idp) => idp.options.length > 0);
+    }, [element, linkedIdentityProviders]);
 
     const handlePatchMetadata = (data: Partial<ElementMetadata>) => {
         props.onChange({
-            ...props.elementModel,
+            ...element,
             metadata: {
-                ...props.elementModel.metadata,
+                ...element,
                 ...data,
             },
         });
     };
 
-    const filterOptions = (options: ElementAttributeMappingOption[]) => {
-        return options.filter(opt => opt.limit.includes(props.elementModel.type));
-    };
-
-    const showBundId = bundIdActive && isAnyInputElement(props.elementModel) && filterOptions(BundIdAttributes).length > 0;
-    const showBayernId = bayernIdActive && isAnyInputElement(props.elementModel) && filterOptions(BayernIdAttributes).length > 0;
-    const showShId = shIdActive && isAnyInputElement(props.elementModel) && filterOptions(ShIdAttributes).length > 0;
-    const showMuk = mukActive && isAnyInputElement(props.elementModel) && filterOptions(MukAttributes).length > 0;
-
-    const showAccountMapping = (
-        showBundId ||
-        showBayernId ||
-        showShId ||
-        showMuk
-    );
-
-    const userInfoIdentifiers = isAnyInputElement(props.elementModel) && props.elementModel.type !== ElementType.ReplicatingContainer ? UserInfoIdentifierOptions : [];
+    // non-input elements have no metadata
+    if (!isAnyInputElement(element)) {
+        return <></>;
+    }
 
     return (
         <Box sx={{p: 4}}>
             {
-                false && /* Disabled for now */
-                userInfoIdentifiers.length > 0 &&
-                <Box
-                    sx={{
-                        mb: 4,
-                    }}
-                >
-                    <Typography
-                        variant="h6"
-                    >
-                        Nutzer:innen-Eigenschaften
-                    </Typography>
-
-                    <SelectFieldComponent
-                        value={props.elementModel.metadata?.userInfoIdentifier}
-                        onChange={(val) => {
-                            handlePatchMetadata({
-                                userInfoIdentifier: val as UserInfoIdentifier | undefined,
-                            });
-                        }}
-                        options={userInfoIdentifiers}
-                        placeholder="Nicht gesetzt"
-                        label="Nutzer:innen-Eingenschaft"
-                        hint="Wählen Sie aus, welche Eigenschaft einer Nutzer:in dieses Feld darstellt. "
-                        disabled={!props.editable}
-                    />
-                </Box>
-            }
-
-            {
-                showAccountMapping &&
+                identityProviders.length > 0 &&
                 <Box
                     sx={{
                         mb: 4,
@@ -103,106 +127,94 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                     </Typography>
 
                     {
-                        showBundId &&
-                        <SelectFieldComponent
-                            value={props.elementModel.metadata?.bundIdMapping}
-                            onChange={(val) => {
-                                handlePatchMetadata({
-                                    bundIdMapping: val as BundIdAttribute | undefined,
-                                });
-                            }}
-                            options={filterOptions(BundIdAttributes)}
-                            placeholder="Nicht gesetzt"
-                            label="Attribut in der BundID"
-                            hint="Verknüpfen Sie dieses Element mit einem Attribut aus der BundID. Das Element wird dann automatisch mit den Daten aus der BundID befüllt."
-                            emptyStatePlaceholder="Keine Attribute für diesen Element-Typ in der BundID vorhanden"
-                            disabled={!props.editable}
-                        />
-                    }
+                        identityProviders
+                            .map((identityProvider) => {
+                                return (
+                                    <SelectFieldComponent
+                                        key={identityProvider.key}
+                                        value={identityProvider.existingMetadataMapping}
+                                        onChange={(val) => {
+                                            const updatedIdentityMappings: Record<string, string> = {
+                                                ...element.metadata?.identityMappings,
+                                            };
 
-                    {
-                        showBayernId &&
-                        <SelectFieldComponent
-                            value={props.elementModel.metadata?.bayernIdMapping}
-                            onChange={(val) => {
-                                handlePatchMetadata({
-                                    bayernIdMapping: val as BayernIdAttribute | undefined,
-                                });
-                            }}
-                            options={filterOptions(BayernIdAttributes)}
-                            placeholder="Nicht gesetzt"
-                            label="Attribut in der BayernID"
-                            hint="Verknüpfen Sie dieses Element mit einem Attribut aus der BayernID. Das Element wird dann automatisch mit den Daten aus der BayernID befüllt."
-                            emptyStatePlaceholder="Keine Attribute für diesen Element-Typ in der BayernID vorhanden"
-                            disabled={!props.editable}
-                        />
-                    }
+                                            if (val == null) {
+                                                delete updatedIdentityMappings[identityProvider.metadataIdentifier];
+                                            } else {
+                                                updatedIdentityMappings[identityProvider.metadataIdentifier] = val;
+                                            }
 
-                    {
-                        showShId &&
-                        <SelectFieldComponent
-                            value={props.elementModel.metadata?.shIdMapping}
-                            onChange={(val) => {
-                                handlePatchMetadata({
-                                    shIdMapping: val as ShIdAttribute | undefined,
-                                });
-                            }}
-                            options={filterOptions(ShIdAttributes)}
-                            placeholder="Nicht gesetzt"
-                            label="Attribut im Servicekonto Schleswig-Holstein"
-                            hint="Verknüpfen Sie dieses Element mit einem Attribut aus dem Servicekonto Schleswig-Holstein. Das Element wird dann automatisch mit den Daten aus dem Servicekonto Schleswig-Holstein befüllt."
-                            emptyStatePlaceholder="Keine Attribute für diesen Element-Typ im Servicekonto Schleswig-Holstein vorhanden"
-                            disabled={!props.editable}
-                        />
-                    }
-
-                    {
-                        showMuk &&
-                        <SelectFieldComponent
-                            value={props.elementModel.metadata?.mukMapping}
-                            onChange={(val) => {
-                                handlePatchMetadata({
-                                    mukMapping: val as MukAttribute | undefined,
-                                });
-                            }}
-                            options={filterOptions(MukAttributes)}
-                            placeholder="Nicht gesetzt"
-                            label="Attribut im Mein Unternehmenskonto (MUK)"
-                            hint="Verknüpfen Sie dieses Element mit einem Attribut aus dem Mein Unternehmenskonto. Das Element wird dann automatisch mit den Daten aus dem Mein Unternehmenskonto befüllt."
-                            emptyStatePlaceholder="Keine Attribute für diesen Element-Typ im Mein Unternehmenskonto (MUK) vorhanden"
-                            disabled={!props.editable}
-                        />
+                                            handlePatchMetadata({
+                                                identityMappings: updatedIdentityMappings,
+                                            });
+                                        }}
+                                        options={identityProvider.options}
+                                        placeholder="Nicht gesetzt"
+                                        label={`Attribut im Nutzerkonto ${identityProvider.name}`}
+                                        hint={`Verknüpfen Sie dieses Element mit einem Attribut aus dem Nutzerkonto ${identityProvider.name}. Das Element wird dann automatisch mit den Daten aus dem Nutzerkonto ${identityProvider.name} befüllt.`}
+                                        emptyStatePlaceholder={`Es sind keine Attribute im Nutzerkonto ${identityProvider.name} vorhanden`}
+                                        disabled={!props.editable}
+                                    />
+                                );
+                            })
                     }
                 </Box>
             }
 
-            {
-                isAnyInputElement(props.elementModel) &&
-                <Box
-                    sx={{
-                        mb: 4,
-                    }}
+            <Box
+                sx={{
+                    mb: 4,
+                }}
+            >
+                <Typography
+                    variant="h6"
                 >
-                    <Typography
-                        variant="h6"
-                    >
-                        Schnittstellendaten
-                    </Typography>
+                    Schnittstellendaten
+                </Typography>
 
-                    <TextFieldComponent
-                        value={props.elementModel.destinationKey ?? undefined}
-                        label="HTTP-Schnittstellen-Schlüssel"
-                        onChange={(val) => {
-                            props.onChange({
-                                ...props.elementModel,
-                                destinationKey: val,
-                            });
-                        }}
-                        hint="Dieser Schlüssel wird statt der Feld-ID verwendet, wenn die Daten an eine HTTP-Schnittstelle gesendet werden."
-                        disabled={!props.editable}
-                    />
-                </Box>
-            }
+                <TextFieldComponent
+                    value={element.destinationKey ?? undefined}
+                    label="HTTP-Schnittstellen-Schlüssel"
+                    onChange={(val) => {
+                        props.onChange({
+                            ...element,
+                            destinationKey: val,
+                        });
+                    }}
+                    hint="Dieser Schlüssel wird statt der Feld-ID verwendet, wenn die Daten an eine HTTP-Schnittstelle gesendet werden."
+                    disabled={!props.editable}
+                />
+            </Box>
         </Box>
     );
+}
+
+function filterOptions(element: AnyInputElement, identityProvider: IdentityProviderListDTO): SelectFieldComponentOption[] {
+    return identityProvider
+        .attributes
+        .filter((attribute) => {
+            let mappings: ElementType[] | null | undefined = null;
+
+            switch (identityProvider.type) {
+                case IdentityProviderType.BayernID:
+                    mappings = BayernIdAttributes[attribute.keyInData as BayernIdAttribute];
+                    break;
+                case IdentityProviderType.BundID:
+                    mappings = BundIdAttributes[attribute.keyInData as BundIdAttribute];
+                    break;
+                case IdentityProviderType.MUK:
+                    mappings = MukAttributes[attribute.keyInData as MukAttribute];
+                    break;
+                case IdentityProviderType.SHID:
+                    mappings = ShIdAttributes[attribute.keyInData as ShIdAttribute];
+                    break;
+            }
+
+            return mappings == null && element.type === ElementType.Text || mappings != null && mappings.includes(element.type);
+        })
+        .map((attribute) => ({
+            label: attribute.label,
+            subLabel: attribute.description,
+            value: attribute.keyInData,
+        }));
 }

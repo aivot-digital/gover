@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.enums.*;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -16,6 +17,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "forms_with_memberships")
@@ -47,20 +49,15 @@ public class FormWithMembership {
     private LocalDateTime updated;
     private Integer customerAccessHours;
     private Integer submissionDeletionWeeks;
-    private Boolean bundIdEnabled = false;
-    private BundIdAccessLevel bundIdLevel;
-    private Boolean bayernIdEnabled = false;
-    private BayernIdAccessLevel bayernIdLevel;
-    private Boolean shIdEnabled = false;
-    private SchleswigHolsteinIdAccessLevel shIdLevel;
-    private Boolean mukEnabled = false;
-    private MukAccessLevel mukLevel;
     private String pdfBodyTemplateKey;
     @JdbcTypeCode(SqlTypes.JSON)
     private Collection<PaymentProduct> products;
     private String paymentPurpose;
     private String paymentDescription;
     private String paymentProvider;
+    private Boolean identityRequired;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<IdentityProviderLink> identityProviders;
     @Id
     private String userId;
     private String userEmail;
@@ -264,78 +261,6 @@ public class FormWithMembership {
         return this;
     }
 
-    public Boolean getBundIdEnabled() {
-        return bundIdEnabled;
-    }
-
-    public FormWithMembership setBundIdEnabled(Boolean bundIdEnabled) {
-        this.bundIdEnabled = bundIdEnabled;
-        return this;
-    }
-
-    public BundIdAccessLevel getBundIdLevel() {
-        return bundIdLevel;
-    }
-
-    public FormWithMembership setBundIdLevel(BundIdAccessLevel bundIdLevel) {
-        this.bundIdLevel = bundIdLevel;
-        return this;
-    }
-
-    public Boolean getBayernIdEnabled() {
-        return bayernIdEnabled;
-    }
-
-    public FormWithMembership setBayernIdEnabled(Boolean bayernIdEnabled) {
-        this.bayernIdEnabled = bayernIdEnabled;
-        return this;
-    }
-
-    public BayernIdAccessLevel getBayernIdLevel() {
-        return bayernIdLevel;
-    }
-
-    public FormWithMembership setBayernIdLevel(BayernIdAccessLevel bayernIdLevel) {
-        this.bayernIdLevel = bayernIdLevel;
-        return this;
-    }
-
-    public Boolean getShIdEnabled() {
-        return shIdEnabled;
-    }
-
-    public FormWithMembership setShIdEnabled(Boolean shIdEnabled) {
-        this.shIdEnabled = shIdEnabled;
-        return this;
-    }
-
-    public SchleswigHolsteinIdAccessLevel getShIdLevel() {
-        return shIdLevel;
-    }
-
-    public FormWithMembership setShIdLevel(SchleswigHolsteinIdAccessLevel shIdLevel) {
-        this.shIdLevel = shIdLevel;
-        return this;
-    }
-
-    public Boolean getMukEnabled() {
-        return mukEnabled;
-    }
-
-    public FormWithMembership setMukEnabled(Boolean mukEnabled) {
-        this.mukEnabled = mukEnabled;
-        return this;
-    }
-
-    public MukAccessLevel getMukLevel() {
-        return mukLevel;
-    }
-
-    public FormWithMembership setMukLevel(MukAccessLevel mukLevel) {
-        this.mukLevel = mukLevel;
-        return this;
-    }
-
     public String getPdfBodyTemplateKey() {
         return pdfBodyTemplateKey;
     }
@@ -378,6 +303,24 @@ public class FormWithMembership {
 
     public FormWithMembership setPaymentProvider(String paymentProvider) {
         this.paymentProvider = paymentProvider;
+        return this;
+    }
+
+    public Boolean getIdentityRequired() {
+        return identityRequired;
+    }
+
+    public FormWithMembership setIdentityRequired(Boolean identityRequired) {
+        this.identityRequired = identityRequired;
+        return this;
+    }
+
+    public List<IdentityProviderLink> getIdentityProviders() {
+        return identityProviders;
+    }
+
+    public FormWithMembership setIdentityProviders(List<IdentityProviderLink> identityProviders) {
+        this.identityProviders = identityProviders;
         return this;
     }
 

@@ -17,8 +17,9 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import {Form} from '../../models/entities/form';
 import {useApi} from '../../hooks/use-api';
 import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../slices/loading-overlay-slice';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import ExportApplicationDialog from "../application-dialogs/export-application-dialog/export-application-dialog";
 
 const switches: Array<{
     label: string;
@@ -55,6 +56,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
     const experimentalFeatureComplexity = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.experimentalFeatures.complexity));
 
     const [showMetrics, setShowMetrics] = useState(false);
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
     const downloadPdfFile = (form: Form) => {
         dispatch(showLoadingOverlay('Vordruck wird generiert'));
@@ -71,16 +73,31 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
             });
     };
 
+    const openExportDialog = () => {
+        setExportDialogOpen(true);
+    };
+
+    const startExportForm = () => {
+        try {
+            downloadConfigFile(form);
+            dispatch(showSuccessSnackbar('Formular wurde erfolgreich exportiert.'));
+        } catch (error) {
+            console.error(error);
+            dispatch(showErrorSnackbar('Fehler beim Export des Formulars.'));
+        }
+        setExportDialogOpen(false);
+    };
+
     const actions = [
         {
-            label: 'Formular als .gov-Datei exportieren',
+            label: 'Formular exportieren (.gov)',
             icon: <ImportExportOutlinedIcon />,
             onClick: () => {
-                downloadConfigFile(form);
+                openExportDialog();
             },
         },
         {
-            label: 'Formular als Vordruck exportieren',
+            label: 'Vordruck exportieren (.pdf)',
             icon: <PictureAsPdfOutlinedIcon />,
             onClick: () => {
                 if (form != null) {
@@ -207,6 +224,12 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
                     }
                 </DialogContent>
             </Dialog>
+
+            <ExportApplicationDialog
+                open={exportDialogOpen}
+                onCancel={() => setExportDialogOpen(false)}
+                onExport={startExportForm}
+            />
         </>
     );
 }

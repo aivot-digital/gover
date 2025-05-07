@@ -18,9 +18,14 @@ import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectAllElements, selectFunctionReferences, selectLoadedForm} from '../../slices/app-slice';
 import {selectUseTestMode, selectWarnDuplicateIds} from '../../slices/admin-settings-slice';
+import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
+import {ElementMetadata} from '../../models/elements/element-metadata';
+import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {getMetadataMapping} from '../../utils/prefill-elements';
 
 interface ElementStatusIconsProps {
     element: AnyElement;
+    enabledIdentityProviderInfos: IdentityProviderInfo[];
 }
 
 interface StatusIcon {
@@ -35,17 +40,24 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
     const useTestMode = useAppSelector(selectUseTestMode);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
 
+    const {
+        element,
+        enabledIdentityProviderInfos,
+    } = props;
+
     const icons = useMemo(() => {
         if (references == null || allElements == null) {
             return [];
         }
 
         const icons: StatusIcon[] = [];
-        const functionStatus = getFunctionStatus(props.element);
+        const functionStatus = getFunctionStatus(element);
 
         if (useTestMode) {
-            const professionalTestMissing = props.element.testProtocolSet?.professionalTest == null;
-            const technicalTestMissing = functionStatus.length > 0 && props.element.testProtocolSet?.technicalTest == null;
+            const testProtocolSet = element.testProtocolSet ?? {};
+
+            const professionalTestMissing = testProtocolSet.professionalTest == null;
+            const technicalTestMissing = functionStatus.length > 0 && testProtocolSet.technicalTest == null;
 
             if (professionalTestMissing) {
                 icons.push({
@@ -61,8 +73,8 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
                 });
             }
 
-            if (!professionalTestMissing && !technicalTestMissing && isAnyElementWithChildren(props.element)) {
-                if (hasUntestedChild(props.element)) {
+            if (!professionalTestMissing && !technicalTestMissing && isAnyElementWithChildren(element)) {
+                if (hasUntestedChild(element)) {
                     icons.push({
                         icon: <ChecklistOutlinedIcon color="warning" />,
                         tooltip: 'Prüfung für Kind-Element ausstehend',
@@ -71,7 +83,7 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
             }
         }
 
-        if ('technical' in props.element && props.element.technical) {
+        if ('technical' in element && element.technical) {
             icons.push({
                 icon: <VisibilityOffOutlinedIcon />,
                 tooltip: 'Technisches Feld (im Formular nicht sichtbar)',
@@ -79,7 +91,7 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
         }
 
         if (warnDuplicateIds && form != null) {
-            const msg = checkId(form.root, props.element.id);
+            const msg = checkId(form.root, element.id);
             if (msg != null) {
                 icons.push({
                     icon: <ReportOutlinedIcon color="error" />,
@@ -88,7 +100,7 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
             }
         }
 
-        const referencesToThisElement = references.filter(ref => ref.target.id === props.element.id);
+        const referencesToThisElement = references.filter(ref => ref.target.id === element.id);
         if (referencesToThisElement.length > 0) {
             icons.push({
                 icon: <OfflineBoltOutlinedIcon />,
@@ -115,17 +127,24 @@ export function ElementStatusIcons(props: ElementStatusIconsProps) {
             }
         }
 
-        if (props.element.metadata && Object.values(props.element.metadata).length !== 0) {
-            if ((props.element.metadata?.bundIdMapping || props.element.metadata?.bayernIdMapping || props.element.metadata?.shIdMapping || props.element.metadata?.mukMapping)) {
+        if (isAnyInputElement(element)) {
+            const mappedIdentityProviders: string[] = [];
+            for (const identityProviderInfo of enabledIdentityProviderInfos) {
+                const isMapped = getMetadataMapping(element, identityProviderInfo.metadataIdentifier) != null;
+                if (isMapped) {
+                    mappedIdentityProviders.push(identityProviderInfo.name);
+                }
+            }
+            if (mappedIdentityProviders.length > 0) {
                 icons.push({
                     icon: <AccountCircleOutlinedIcon />,
-                    tooltip: 'Verknüpfung mit Nutzerkonto vorhanden',
+                    tooltip: 'Verknüpfung mit Nutzerkontenanbieter vorhanden: ' + mappedIdentityProviders.join(', '),
                 });
             }
         }
 
         return icons;
-    }, [props.element, allElements, references, useTestMode, warnDuplicateIds, form]);
+    }, [element, allElements, references, useTestMode, warnDuplicateIds, form, enabledIdentityProviderInfos]);
 
     return (
         <>

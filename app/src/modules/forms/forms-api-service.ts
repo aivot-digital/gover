@@ -18,6 +18,8 @@ import {FormCitizenListResponseDTO} from './dtos/form-citizen-list-response-dto'
 import {FormPublishChecklistItem} from './dtos/form-publish-checklist-item';
 import {FormType} from './enums/form-type';
 import {ElementApprovalStatus} from '../elements/enums/ElementApprovalStatus';
+import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
+import {IdentityIdHeader} from '../identity/constants/identity-id-header';
 
 interface FormFilters {
     id: number;
@@ -36,16 +38,14 @@ interface FormFilters {
     managingDepartmentId: number;
     responsibleDepartmentId: number;
     themeId: number;
-    bundIdEnabled: boolean;
-    bayernIdEnabled: boolean;
-    mukEnabled: boolean;
-    shIdEnabled: boolean;
     pdfBodyTemplateKey: string;
     paymentProvider: string;
     userId: string;
     isDeveloper: boolean;
     isManager: boolean;
     isResponsible: boolean;
+    identityRequired: boolean;
+    identityProviderKey: string;
 }
 
 export type DerivationStepIdentifiers = string[] | ['NONE'] | ['ALL'];
@@ -86,24 +86,15 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
             customerAccessHours: 4,
             submissionDeletionWeeks: 4,
 
-            bundIdEnabled: false,
-            bundIdLevel: undefined,
-
-            bayernIdEnabled: false,
-            bayernIdLevel: undefined,
-
-            shIdEnabled: false,
-            shIdLevel: undefined,
-
-            mukEnabled: false,
-            mukLevel: undefined,
-
             pdfBodyTemplateKey: null,
 
             products: undefined,
             paymentPurpose: undefined,
             paymentDescription: undefined,
             paymentProvider: undefined,
+
+            identityRequired: false,
+            identityProviders: [],
         };
     }
 
@@ -133,7 +124,7 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return await this.api.get<Record<string, ElementApprovalStatus>>(`public/forms/${formId}/approvals/`);
     }
 
-    public async submit(id: number, userInput: CustomerInput): Promise<SubmissionListResponseDTO> {
+    public async submit(id: number, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
         const data = new FormData();
         data.set('inputs', JSON.stringify(userInput));
 
@@ -151,7 +142,13 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
             }
         }
 
-        return await this.api.postFormData<SubmissionListResponseDTO>(`public/submit/${id}/`, data);
+        return await this.api.postFormData<SubmissionListResponseDTO>(`public/submit/${id}/`, data, identityId != null ? {
+            requestOptions: {
+                headers: {
+                    [IdentityIdHeader]: identityId ?? undefined,
+                }
+            }
+        } : undefined);
     }
 
     public async sendApplicationCopy(submissionId: string, email: string): Promise<string> {
@@ -174,15 +171,28 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return await this.api.destroy<void>(`forms/${id}/lock/`);
     }
 
-    async getMaxFileSize(id: number) {
+    public async getMaxFileSize(id: number) {
         return await this.api.getPublic<{ maxFileSize: number }>(`forms/${id}/max-file-size/`);
     }
 
-    public retrieveBySlugAndVersion(slug: string, version: string | undefined) {
+    public static async getIdentityProviders(id: number): Promise<Page<IdentityProviderInfo>> {
+        const res = await fetch(`/api/public/forms/${id}/identity-providers/`);
+        return await res.json();
+    }
+
+    public retrieveBySlugAndVersion(slug: string, version: string | undefined, identityId: string | undefined) {
+        const apiOptions: ApiOptions | undefined = identityId != null ? {
+            requestOptions: {
+                headers: {
+                    [IdentityIdHeader]: identityId,
+                },
+            },
+        } : undefined;
+
         if (version == null) {
-            return this.api.getPublic<Form>(`forms/${slug}/`);
+            return this.api.getPublic<Form>(`forms/${slug}/`, apiOptions);
         }
-        return this.api.getPublic<Form>(`forms/${slug}/${version}/`);
+        return this.api.getPublic<Form>(`forms/${slug}/${version}/`, apiOptions);
     }
 
     public publish(id: number): Promise<Form> {

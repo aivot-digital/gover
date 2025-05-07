@@ -215,7 +215,7 @@ export function FormListPage(): JSX.Element {
                                     title="Ihre Online-Formulare"
                                     search={search}
                                     onSearchChange={setSearch}
-                                    searchPlaceholder="Formular suchen..."
+                                    searchPlaceholder="Formular suchen…"
                                     actions={[
                                         {
                                             label: 'Neues Formular',
@@ -258,7 +258,7 @@ export function FormListPage(): JSX.Element {
                                     forms.length > 0 &&
                                     filteredApplications.length === 0 &&
                                     <EmptySearchDataListPlaceholder
-                                        helperText="Es gibt keine Formulare, die Ihrer Suche entsprechen..."
+                                        helperText="Es gibt keine Formulare, die Ihrer Suche entsprechen…"
                                     />
                                 }
                                 {

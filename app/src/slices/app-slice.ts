@@ -9,6 +9,8 @@ import {FormState} from '../models/dtos/form-state';
 import {AnyElement} from '../models/elements/any-element';
 import {collectReferences, Reference} from '../utils/build-references';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../utils/flatten-elements';
+import {IdentityValue} from '../modules/identity/models/identity-value';
+import {prefillElements} from '../utils/prefill-elements';
 
 
 const initialState: {
@@ -40,7 +42,7 @@ const initialState: {
     // Errors for the customer input
     errors: CustomerInputErrors;
     // Record of disabled elements
-    disabled: Record<string, boolean>;
+    disabled: Record<string, boolean>; // TODO: Rename disabled to prefilled to make it clearer
     // Record of invisible elements
     visibilities: Record<string, boolean>;
     // Record of element overrides
@@ -276,6 +278,32 @@ const appSlice = createSlice({
             tmp.shift();
             state.derivationTriggerIdQueue = tmp;
         },
+
+        prefillElementsFromIdentityProvider: (state, action: PayloadAction<IdentityValue>) => {
+            if (state.loadedForm == null) {
+                return;
+            }
+
+            const prefilled = prefillElements(state.loadedForm, action.payload, state.inputs);
+            const disabled = Object.keys(prefilled).reduce((acc, key) => {
+                return {
+                    ...acc,
+                    [key]: true,
+                };
+            }, {});
+
+            const filledInputs = {
+                ...state.inputs,
+                ...prefilled,
+            };
+
+            state.inputs = filledInputs;
+            state.disabled = disabled;
+
+            if (state.loadedForm != null) {
+                CustomerInputService.storeCustomerInput(state.loadedForm, filledInputs);
+            }
+        },
     },
 });
 
@@ -293,13 +321,13 @@ export const {
     addError,
     clearErrors,
     clearVisibilities,
-    hydrateDisabled,
     clearDisabled,
     hydrateFromDerivation,
     hydrateFromDerivationWithoutErrors,
     setFormState,
     enqueueDerivationTriggerId,
     dequeueDerivationTriggerId,
+    prefillElementsFromIdentityProvider,
 } = appSlice.actions;
 
 export const selectLoadedForm = (state: RootState) => state.app.loadedForm;

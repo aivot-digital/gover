@@ -97,7 +97,7 @@ export function StoreModuleList(props: StoreModuleListProps): JSX.Element {
                         onChange={(val) => {
                             setSearch(val ?? '');
                         }}
-                        placeholder="Suchen..."
+                        placeholder="Suchen…"
                     />
                 </Box>
 
