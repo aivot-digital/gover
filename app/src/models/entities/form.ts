@@ -1,12 +1,8 @@
 import {type RootElement} from '../elements/root-element';
 import {ApplicationStatus} from '../../data/application-status';
-import {BundIdAccessLevel} from '../../data/bund-id-access-level';
-import {BayernIdAccessLevel} from '../../data/bayern-id-access-level';
-import {ShIdAccessLevel} from '../../data/sh-id-access-level';
-import {MukAccessLevel} from '../../data/muk-access-level';
 import {PaymentProduct} from '../payment/payment-product';
-import {PaymentProvider} from '../../data/payment-provider';
 import {FormType} from '../../modules/forms/enums/form-type';
+import {IdentityProviderLink} from '../../modules/identity/models/identity-provider-link';
 
 
 export interface Form {
@@ -35,24 +31,15 @@ export interface Form {
     customerAccessHours: number;
     submissionDeletionWeeks: number;
 
-    bundIdEnabled: boolean;
-    bundIdLevel?: BundIdAccessLevel;
-
-    bayernIdEnabled: boolean;
-    bayernIdLevel?: BayernIdAccessLevel;
-
-    shIdEnabled: boolean;
-    shIdLevel?: ShIdAccessLevel;
-
-    mukEnabled: boolean;
-    mukLevel?: MukAccessLevel;
-
     pdfBodyTemplateKey?: string | null;
 
     products?: PaymentProduct[];
     paymentPurpose?: string;
     paymentDescription?: string;
     paymentProvider?: string;
+
+    identityRequired: boolean;
+    identityProviders: IdentityProviderLink[];
 }
 
 export type FormListProjection = Omit<Form, 'root'>;

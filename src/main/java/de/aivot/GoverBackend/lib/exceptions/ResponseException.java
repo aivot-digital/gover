@@ -78,8 +78,16 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.BAD_REQUEST, message);
     }
 
+    public static ResponseException badRequest(String message, String details) {
+        return new ResponseException(HttpStatus.BAD_REQUEST, message, details);
+    }
+
     public static ResponseException unauthorized() {
-        return new ResponseException(HttpStatus.UNAUTHORIZED, "Sie sind nicht angemeldet. Bitte melden Sie sich an.");
+        return ResponseException.unauthorized("Sie sind nicht angemeldet. Bitte melden Sie sich an.");
+    }
+
+    public static ResponseException unauthorized(String message) {
+        return new ResponseException(HttpStatus.UNAUTHORIZED, message);
     }
 
     public static ResponseException forbidden() {
@@ -100,6 +108,10 @@ public class ResponseException extends Exception {
 
     public static ResponseException notFound(String message) {
         return new ResponseException(HttpStatus.NOT_FOUND, message);
+    }
+
+    public static ResponseException conflict(String message, Object ... args) {
+        return ResponseException.conflict(String.format(message, args));
     }
 
     public static ResponseException conflict(String message) {
@@ -124,6 +136,14 @@ public class ResponseException extends Exception {
 
     public static ResponseException internalServerError(String message, String details) {
         return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, details);
+    }
+
+    public static ResponseException internalServerError(String message, Object ... args) {
+        return ResponseException.internalServerError(String.format(message, args));
+    }
+
+    public static ResponseException internalServerError(Throwable cause, String message, Object ... args) {
+        return ResponseException.internalServerError(String.format(message, args), cause);
     }
 
     public static ResponseException internalServerError(String message, Throwable cause) {

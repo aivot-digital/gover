@@ -51,7 +51,7 @@ export function SubmissionEditPageSummaryTab(props: SubmissionEditPageSummaryTab
     if (isBusy) {
         return (
             <LoadingPlaceholder
-                message="Formulardaten werden geladen..."
+                message="Formulardaten werden geladen"
             />
         )
     }

@@ -105,7 +105,6 @@ public class BaseElementErrorDerivationService<Ctx extends BaseElementDerivation
         }
     }
 
-
     /**
      * Derives the errors for all child elements of the group layout.
      * Invisible group layouts and their children don't need error derivation.
@@ -169,16 +168,16 @@ public class BaseElementErrorDerivationService<Ctx extends BaseElementDerivation
     /**
      * Derive the value of the current input element.
      *
-     * @param context        The context in which the form is being derived.
-     * @param idPrefix       The prefix that should be used for the id of the element.
-     * @param currentElement The current element that is being derived.
+     * @param context         The context in which the form is being derived.
+     * @param idPrefix        The prefix that should be used for the id of the element.
+     * @param originalElement The current element that is being derived.
      */
     protected void deriveErrorForBaseInputElement(
             @Nonnull Ctx context,
             @Nullable String idPrefix,
-            @Nonnull BaseInputElement<?> currentElement
+            @Nonnull BaseInputElement<?> originalElement
     ) {
-        var resolvedId = currentElement.getResolvedId(idPrefix);
+        var resolvedId = originalElement.getResolvedId(idPrefix);
 
         try {
             // Invisible elements are always valid and need no error derivation
@@ -187,9 +186,20 @@ public class BaseElementErrorDerivationService<Ctx extends BaseElementDerivation
             }
 
             // If no value is present, the element is valid if it is not required
-            if (!context.hasValue(resolvedId) && !Boolean.TRUE.equals(currentElement.getRequired())) {
+            if (!context.hasValue(resolvedId) && !Boolean.TRUE.equals(originalElement.getRequired())) {
                 return;
             }
+
+            var elemRaw = context
+                    .getElementDerivationData()
+                    .getOverride(resolvedId, originalElement);
+
+            if (!(elemRaw instanceof BaseInputElement<?>)) {
+                context.setError(resolvedId, "Element is not a BaseInputElement");
+                return;
+            }
+
+            var currentElement = (BaseInputElement<?>) elemRaw;
 
             // Apply the standard validations for the specific input element type
             try {

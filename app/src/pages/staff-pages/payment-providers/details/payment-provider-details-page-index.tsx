@@ -311,6 +311,7 @@ export function PaymentProviderDetailsPageIndex() {
                         },
                     }}
                     errorsOverride={configErrors}
+                    mode="viewer"
                 />
             }
 

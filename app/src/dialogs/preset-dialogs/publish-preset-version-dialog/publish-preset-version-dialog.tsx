@@ -132,7 +132,7 @@ export function PublishPresetVersionDialog(props: DialogProps & PublishPresetVer
                             required
                             maxCharacters={2048}
                             minCharacters={1}
-                            placeholder="Der Baustein hat folgende neue Funktionen..."
+                            placeholder="Der Baustein hat folgende neue Funktionen…"
                         />
                     </DialogContent>
 

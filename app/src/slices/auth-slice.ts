@@ -84,6 +84,7 @@ const authSlice = createSlice({
             state.authData = undefined;
             StorageService.clearItem(StorageKey.AuthDataAccessToken);
             StorageService.clearItem(StorageKey.AuthDataAccessToken);
+            StorageService.clearItem(StorageKey.AuthDataRefreshToken);
         },
     },
 });

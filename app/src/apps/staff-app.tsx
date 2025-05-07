@@ -32,6 +32,7 @@ import * as monaco from 'monaco-editor';
 import {AppProvider} from '../providers/app-provider';
 import {UsersApiService} from '../modules/users/users-api-service';
 import {ExpirationTimer} from '../components/auth-token-debugger/auth-token-debugger';
+import {identityRoutes} from '../modules/identity/identity-routes';
 import {useLocalStorageEffect} from '../hooks/use-local-storage-effect';
 import {AuthDataAccessToken} from '../models/dtos/auth-data';
 import {StorageKey} from '../data/storage-key';
@@ -48,6 +49,7 @@ const router = createRouter(
                     .keys(staffAppRoutes)
                     .map((key) => staffAppRoutes[key]),
                 ...departmentsRoutes,
+                ...identityRoutes,
                 ...providerLinksRoutes,
                 ...secretsRoutes,
             ],
@@ -63,6 +65,7 @@ function StaffApp() {
     const api = useApi();
 
     const loadingOverlay = useAppSelector((state) => state.loadingOverlay);
+    const [authChecked, setAuthChecked] = useState(false);
 
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
@@ -100,11 +103,16 @@ function StaffApp() {
                     if (authData != null) {
                         dispatch(setAuthData(authData));
                         window.location.search = '';
+                    } else {
+                        setAuthChecked(true);
                     }
                 })
                 .catch((err) => {
                     console.error(err);
+                    setAuthChecked(true);
                 });
+        } else {
+            setAuthChecked(true);
         }
     }, [authCode]);
 
@@ -162,6 +170,23 @@ function StaffApp() {
                 .then((memberships) => dispatch(setMemberships(memberships.content)));
         }
     }, [authCode, api, user]);
+
+    if (!authChecked) {
+        return (
+            <Box
+                sx={{
+                    width: '100%',
+                    height: '100vh',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <CircularProgress />
+                <Typography sx={{ml: 2}}>Authentifizierung wird geprüft…</Typography>
+            </Box>
+        );
+    }
 
     if (!api.isAuthenticated) {
         return (

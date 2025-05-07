@@ -7,6 +7,7 @@ export function CheckboxFieldComponent(props: CheckboxFieldComponentProps): JSX.
         <FormControl
             error={props.error != null}
             disabled={props.disabled}
+            sx={props.sx}
         >
             <FormControlLabel
                 control={

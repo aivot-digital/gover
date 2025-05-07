@@ -29,8 +29,12 @@ import {StorageKey} from '../../data/storage-key';
 import {getPath} from '../../apps/staff-app-routes';
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined';
 import {CopyAllOutlined, SvgIconComponent} from '@mui/icons-material';
+import {useApi} from '../../hooks/use-api';
+import {AppConfig} from '../../app-config';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import {setIdentityId} from '../../slices/identity-slice';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
@@ -48,6 +52,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
         dispatch(resetStepper());
         dispatch(clearErrors());
         dispatch(clearDisabled());
+        dispatch(setIdentityId(undefined));
         closeMenuCallback();
         setConfirmDelete(undefined);
     }, []);
@@ -221,6 +226,16 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                         label="Zahlungsdienstleister"
                         icon={PaymentOutlinedIcon}
                         to="/payment-providers"
+                    />
+                }
+
+                {
+                    props.mode === AppMode.Staff &&
+                    isUserAdmin &&
+                    <LinkMenuItem
+                        label="Nutzerkontenanbieter"
+                        icon={BadgeOutlinedIcon}
+                        to="/identity-providers"
                     />
                 }
 

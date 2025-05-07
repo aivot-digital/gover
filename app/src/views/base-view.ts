@@ -17,6 +17,7 @@ export interface BaseViewProps<M extends AnyElement, V> {
         onBlur?: (key: string, value: any) => void;
     };
     errorsOverride?: Record<string, string>;
+    mode: 'editor' | 'viewer';
 }
 
 export type BaseView<M extends AnyElement, V> = FunctionComponent<BaseViewProps<M, V>>;

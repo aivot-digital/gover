@@ -68,7 +68,7 @@ export function AccountDetailsPageDepartmentMemberships() {
                 defaultSortField="departmentName"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Fachbereiche vorhanden"
-                loadingPlaceholder="Lade Fachbereiche..."
+                loadingPlaceholder="Lade Fachbereiche…"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
                 rowActions={(item: DepartmentMembershipResponseDTO) => {
                     const isMembershipAdmin = isAdmin(user) || item.role === UserRole.Admin;

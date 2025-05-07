@@ -7,6 +7,7 @@ interface FormManager<T> {
     errors: Partial<Record<keyof T, string>>;
     hasNotChanged: boolean;
 
+    handleInputPatch: (patch: Partial<T>) => void;
     handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
     handleInputBlur: (field: keyof T) => () => void;
 
@@ -27,6 +28,24 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
     const hasNotChanged = useMemo(() => {
         return editedItem == null || shallowEquals(originalItem, editedItem);
     }, [originalItem, editedItem]);
+
+    const handleInputPatch = (patch: Partial<T>) => {
+        if (currentItem == null) {
+            return;
+        }
+
+        const newItem = {
+            ...currentItem,
+            ...patch,
+        };
+
+        setEditedItem(newItem);
+
+        // Validate the patched fields
+        Object.keys(patch).forEach((field) => {
+            validateField(field as keyof T, patch[field]);
+        });
+    }
 
     const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
         if (currentItem == null) {
@@ -110,6 +129,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         errors,
         hasNotChanged,
 
+        handleInputPatch,
         handleInputChange,
         handleInputBlur,
 

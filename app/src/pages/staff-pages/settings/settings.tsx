@@ -6,9 +6,8 @@ import {SmtpTest} from './components/smtp-test/smtp-test';
 import {ApplicationSettings} from './components/application-settings/application-settings';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {useAdminGuard} from '../../../hooks/use-admin-guard';
-import {NutzerkontenSettings} from './components/nutzerkonten-settings/nutzerkonten-settings';
 
-export function Settings(): JSX.Element {
+export function Settings() {
     useAdminGuard();
 
     const [currentTab, setCurrentTab] = useState(0);
@@ -56,10 +55,6 @@ export function Settings(): JSX.Element {
                         label="Systeminformationen"
                         value={3}
                     />
-                    <Tab
-                        label="Zentrale Konten"
-                        value={4}
-                    />
                 </Tabs>
             </Box>
 
@@ -83,10 +78,6 @@ export function Settings(): JSX.Element {
                 {
                     currentTab === 3 &&
                     <SystemInformation/>
-                }
-                {
-                    currentTab === 4 &&
-                    <NutzerkontenSettings/>
                 }
             </Box>
         </PageWrapper>

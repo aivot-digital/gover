@@ -116,6 +116,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                                 }}
                                 editable={props.editable}
                                 scope={props.scope}
+                                enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                             />
                         }
 
@@ -140,6 +141,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             editable={props.editable}
                             isRootList={true}
                             scope={props.scope}
+                            enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                         />
 
                         {
@@ -177,6 +179,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                                 }}
                                 editable={props.editable}
                                 scope={props.scope}
+                                enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                             />
                         }
 
@@ -215,6 +218,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                                 }}
                                 editable={props.editable}
                                 scope={props.scope}
+                                enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                             />
                         }
                     </DndProvider>

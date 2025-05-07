@@ -23,13 +23,14 @@ public interface FormRepository extends JpaRepository<Form, Integer>, JpaSpecifi
 
     boolean existsByThemeId(Integer theme);
 
-    boolean existsByStatusAndBundIdEnabledIsTrue(FormStatus status);
-
-    boolean existsByStatusAndBayernIdEnabledIsTrue(FormStatus status);
-
-    boolean existsByStatusAndShIdEnabledIsTrue(FormStatus status);
-
-    boolean existsByStatusAndMukEnabledIsTrue(FormStatus status);
-
-    Collection<Form> findAllByStatusNotIn(Collection<FormStatus> status);
+    @Query(value = """
+            SELECT exists(
+                SELECT 1 FROM (
+                    SELECT jsonb_array_elements(fms.identity_providers) ->> 'identityProviderKey' AS identity_provider_key
+                    FROM forms AS fms
+                ) AS links
+                WHERE links.identity_provider_key = ?1
+            );
+            """, nativeQuery = true)
+    boolean existsWithLinkedIdentityProvider(String identityProviderKey);
 }

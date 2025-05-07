@@ -1,25 +1,12 @@
-import {
-    Alert,
-    Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText} from '@mui/material';
 import React, {useState} from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type ImportApplicationDialogProps} from './import-application-dialog-props';
 import {FileUpload} from '../../../components/file-upload/file-upload';
-import {type Form as Application} from '../../../models/entities/form';
-import {ApplicationStatus} from '../../../data/application-status';
+import {type Form} from '../../../models/entities/form';
 import {stripDataFromForm} from '../../../utils/strip-data-from-form';
-import {
-    hideLoadingOverlay,
-    hideLoadingOverlayWithTimeout,
-    showLoadingOverlay
-} from "../../../slices/loading-overlay-slice";
-import {useDispatch} from "react-redux";
+import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
+import {useDispatch} from 'react-redux';
 
 export function ImportApplicationDialog(props: ImportApplicationDialogProps): JSX.Element {
     const {
@@ -55,7 +42,7 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps): JS
                                 }
                                 return res.json();
                             })
-                            .then((parsedModel: Application) => {
+                            .then((parsedModel: Form) => {
                                 onImport(stripDataFromForm(parsedModel));
                                 dispatch(hideLoadingOverlayWithTimeout(2000));
                             })
@@ -66,27 +53,8 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps): JS
                             });
                     } else {
                         try {
-                            const parsedModel: Application = JSON.parse(value.toString());
-
-                            parsedModel.id = 0;
-
-                            // Clear application
-                            parsedModel.destinationId = null;
-                            parsedModel.status = ApplicationStatus.Drafted;
-
-                            parsedModel.developingDepartmentId = 0;
-
-                            parsedModel.managingDepartmentId = null;
-                            parsedModel.responsibleDepartmentId = null;
-                            parsedModel.imprintDepartmentId = null;
-                            parsedModel.privacyDepartmentId = null;
-                            parsedModel.accessibilityDepartmentId = null;
-                            parsedModel.legalSupportDepartmentId = null;
-                            parsedModel.technicalSupportDepartmentId = null;
-                            parsedModel.paymentProvider = undefined;
-                            parsedModel.themeId = null;
-
-                            onImport(parsedModel);
+                            const parsedModel: Form = JSON.parse(value.toString());
+                            onImport(stripDataFromForm(parsedModel));
                             handleClose();
                             dispatch(hideLoadingOverlayWithTimeout(1000));
                         } catch (err) {

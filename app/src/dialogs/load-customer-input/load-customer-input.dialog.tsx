@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography} from '@mui/material';
+import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography} from '@mui/material';
 import {CustomerInputService} from '../../services/customer-input-service';
 import {useDispatch} from 'react-redux';
 import {format} from 'date-fns';
@@ -9,10 +9,10 @@ import SettingsBackupRestoreOutlinedIcon from '@mui/icons-material/SettingsBacku
 import {hydrateCustomerInput, selectHasLoadedSavedCustomerInput, setHasLoadedSavedCustomerInput} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useSearchParams} from 'react-router-dom';
-import {CodeQueryKey} from '../../components/id-input/id-input';
 import {selectCurrentStep} from '../../slices/stepper-slice';
 import RestorePageIcon from '@mui/icons-material/RestorePage';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
+import {IdentityStateQueryParam} from '../../modules/identity/constants/identity-state-query-param';
 
 interface LoadUserInputDialogProps {
     form: Application;
@@ -25,7 +25,7 @@ export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
     const [lastSaveData, setLastSaveData] = useState<CustomerInput | null>(null);
     const hasLoadedSavedCustomerInput = useAppSelector(selectHasLoadedSavedCustomerInput());
     const currentStep = useAppSelector(selectCurrentStep);
-    const isIdpCodePresent = useMemo(() => searchParams.get(CodeQueryKey) != null, [searchParams]);
+    const isIdpCodePresent = useMemo(() => searchParams.get(IdentityStateQueryParam) != null, [searchParams]);
 
     useEffect(() => {
         if (currentStep === 0) {
@@ -72,7 +72,7 @@ export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
                     <Box
                         display="flex"
                         justifyContent="center"
-                        alignItems={"center"}
+                        alignItems={'center'}
                         sx={{
                             border: '1px solid #DFDFDF',
                             px: 4,
@@ -82,8 +82,10 @@ export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
                         }}
                     >
                         <Box>
-                            <RestorePageIcon color={'primary'}
-                                             sx={{fontSize: 54}}/>
+                            <RestorePageIcon
+                                color={'primary'}
+                                sx={{fontSize: 54}}
+                            />
                         </Box>
 
                         <Box sx={{ml: 2}}>
@@ -112,7 +114,10 @@ export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
                         </Box>
                     </Box>
 
-                    <Typography variant="body2" gutterBottom>
+                    <Typography
+                        variant="body2"
+                        gutterBottom
+                    >
                         Bitte beachten Sie, dass Sie aus Datenschutzgründen ggf. folgende Aktionen <b>erneut
                         ausführen</b> müssen, da diese nicht gespeichert wurden:
                     </Typography>
@@ -127,7 +132,7 @@ export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
                     onClick={handleLoad}
                     variant="contained"
                     startIcon={
-                        <ArrowForwardOutlinedIcon/>
+                        <ArrowForwardOutlinedIcon />
                     }
                 >
                     Entwurf fortführen
@@ -135,7 +140,7 @@ export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
                 <Button
                     onClick={handleRestart}
                     startIcon={
-                        <SettingsBackupRestoreOutlinedIcon/>
+                        <SettingsBackupRestoreOutlinedIcon />
                     }
                 >
                     Neu beginnen

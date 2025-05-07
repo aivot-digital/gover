@@ -35,12 +35,16 @@ export function CellLink({ to, title, children }: CellLinkProps) {
                 sx={{
                     position: "relative",
                     display: "inline-block",
+                    whiteSpace: 'nowrap',
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    py: '1px',
 
                     "&::after": {
                         content: '""',
                         position: "absolute",
                         left: 0,
-                        bottom: "-1px",
+                        bottom: 0,
                         width: "100%",
                         height: "1px",
                         backgroundColor: "transparent",

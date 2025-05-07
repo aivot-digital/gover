@@ -91,7 +91,7 @@ export function PresetTab(props: BaseTabProps): JSX.Element {
                         onChange={(val) => {
                             setSearch(val ?? '');
                         }}
-                        placeholder="Suchen..."
+                        placeholder="Suchen…"
                     />
                 </Box>
 

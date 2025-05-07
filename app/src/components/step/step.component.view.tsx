@@ -13,6 +13,7 @@ export function StepComponentView({
     errorsOverride,
     scrollContainerRef,
     idPrefix,
+    mode,
 }: BaseViewProps<StepElement, void>): JSX.Element {
     return (
         <ViewDispatcherComponent
@@ -28,6 +29,7 @@ export function StepComponentView({
             errorsOverride={errorsOverride}
             idPrefix={idPrefix}
             scrollContainerRef={scrollContainerRef}
+            mode={mode}
         />
     );
 }
