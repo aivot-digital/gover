@@ -3,48 +3,57 @@ import {getUrlWithoutQuery} from '../../utils/location-utils';
 import {AppConfig} from '../../app-config';
 import React, {useEffect, useRef, useState} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import LoginOutlinedIcon from "@mui/icons-material/LoginOutlined";
+import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
+import {selectAuthData} from '../../slices/auth-slice';
 
 export function SessionExpiredDialog() {
-    const intervalRef = useRef<NodeJS.Timeout>();
-    const [open, setOpen] = useState(false);
-    const authData = useAppSelector(state => state.auth);
+    const intervalRef = useRef<NodeJS.Timer>();
+    const authData = useAppSelector(selectAuthData);
+    const [isRefreshTokenExpired, setIsRefreshTokenExpired] = useState(false);
 
     useEffect(() => {
+        setIsRefreshTokenExpired(false);
+
         if (intervalRef.current != null) {
-            clearTimeout(intervalRef.current);
+            clearInterval(intervalRef.current);
         }
 
-        const refreshToken = authData?.authData?.refreshToken;
-        if (refreshToken != null) {
-            const expiresInMilliseconds = refreshToken.expires - new Date().getTime();
-            intervalRef.current = setTimeout(() => {
-                setOpen(true);
-                localStorage.setItem("gover-session-expired", "true");
-            }, expiresInMilliseconds);
+        const refreshTokenExpiration = authData?.refreshToken?.expires;
+        if (refreshTokenExpiration == null) {
+            setIsRefreshTokenExpired(true);
+            return;
         }
+
+        const now = new Date().getTime();
+        const timeLeftRefreshToken = refreshTokenExpiration - now;
+
+        if (timeLeftRefreshToken < 0) {
+            setIsRefreshTokenExpired(true);
+        } else {
+            setIsRefreshTokenExpired(false);
+        }
+
+        intervalRef.current = setInterval(() => {
+            const now = new Date().getTime();
+            const timeLeftRefreshToken = refreshTokenExpiration - now;
+
+            if (timeLeftRefreshToken < 0) {
+                setIsRefreshTokenExpired(true);
+            } else {
+                setIsRefreshTokenExpired(false);
+            }
+        }, 1000);
 
         return () => {
-            clearTimeout(intervalRef.current);
+            clearInterval(intervalRef.current);
         };
     }, [authData]);
 
-    // Listen for session expiration events from other tabs
-    useEffect(() => {
-        const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === "gover-session-expired" && event.newValue === "true") {
-                setOpen(true);
-            }
-        };
-
-        window.addEventListener("storage", handleStorageChange);
-        return () => {
-            window.removeEventListener("storage", handleStorageChange);
-        };
-    }, []);
-
     return (
-        <Dialog open={open} maxWidth={'xs'}>
+        <Dialog
+            open={isRefreshTokenExpired}
+            maxWidth="xs"
+        >
             <DialogTitle>
                 Sitzung abgelaufen
             </DialogTitle>
@@ -58,7 +67,7 @@ export function SessionExpiredDialog() {
                 <Button
                     variant="contained"
                     startIcon={
-                        <LoginOutlinedIcon/>
+                        <LoginOutlinedIcon />
                     }
                     component="a"
                     href={`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/auth?${new URLSearchParams({
