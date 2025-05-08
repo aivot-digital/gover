@@ -21,7 +21,7 @@ const localization = JSON.stringify({
     'label': 'Ich bin ein Mensch – kein Roboter *',
     'verified': 'Verifizierung erfolgreich.',
     'verifying': 'Wird überprüft…',
-    'waitAlert': 'Wird überprüft… Bitte warten.'
+    'waitAlert': 'Wird überprüft… Bitte warten.',
 });
 
 export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
@@ -79,7 +79,7 @@ export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
                 '--altcha-color-border-focus': '#E0E0E0',
                 '--altcha-border-radius': '4px',
             }}
-            {...(debuggingEnabled ? { debug: true } : {})}
+            {...(debuggingEnabled ? {debug: true} : {})}
             strings={localization}
             challengeurl="/api/public/captcha/challenge/"
         />
