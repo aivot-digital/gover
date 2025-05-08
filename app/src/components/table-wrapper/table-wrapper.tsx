@@ -1,4 +1,4 @@
-import React, {type PropsWithChildren} from 'react';
+import React, {type PropsWithChildren, useState} from 'react';
 import {type TableWrapperProps} from './table-wrapper-props';
 import {DataGrid, type GridValidRowModel} from '@mui/x-data-grid';
 import {ListHeader} from '../list-header/list-header';
@@ -27,6 +27,8 @@ export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildr
         ...pageWrapperProps
     } = props;
 
+    const [pageSize, setPageSize] = useState(48);
+
     return (
         <>
             <ListHeader
@@ -48,7 +50,6 @@ export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildr
 
             <Box
                 sx={{
-                    height: 'calc(100vh - 256px)',
                     width: '100%',
                     mt: 4,
                 }}
@@ -56,14 +57,16 @@ export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildr
                 <DataGrid
                     rows={rows}
                     columns={columns}
-                    pageSize={20}
-                    rowsPerPageOptions={[20]}
+                    pageSize={pageSize}
+                    onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                    rowsPerPageOptions={[12, 24, 48, 96]}
                     onRowClick={(event) => {
                         onRowClick(event.row);
                     }}
                     disableSelectionOnClick={true}
                     disableColumnFilter={false}
                     disableColumnMenu={false}
+                    autoHeight={true}
                     components={{
                         NoRowsOverlay: () => (
                             <Box
