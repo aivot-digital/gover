@@ -13,7 +13,7 @@ interface AltchaWidgetProps {
     onChallengeSuccess: (solution: CaptchaSolution) => void;
 }
 
-const localization = {
+const localization = JSON.stringify({
     'ariaLinkLabel': 'Webseite von Altcha (altcha.org) aufrufen',
     'error': 'Verifizierung fehlgeschlagen. Versuchen Sie es später erneut.',
     'expired': 'Verifizierung abgelaufen. Versuchen Sie es erneut.',
@@ -22,9 +22,7 @@ const localization = {
     'verified': 'Verifizierung erfolgreich.',
     'verifying': 'Wird überprüft…',
     'waitAlert': 'Wird überprüft… Bitte warten.'
-};
-
-const localizationAsJson = JSON.stringify(localization);
+});
 
 export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
     const widgetRef = useRef<AltchaWidget & AltchaWidgetMethods & HTMLElement>(null);
@@ -82,7 +80,7 @@ export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
                 '--altcha-border-radius': '4px',
             }}
             {...(debuggingEnabled ? { debug: true } : {})}
-            strings={localizationAsJson}
+            strings={localization}
             challengeurl="/api/public/captcha/challenge/"
         />
     );
