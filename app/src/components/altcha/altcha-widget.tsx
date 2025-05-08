@@ -1,39 +1,38 @@
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
+import {useEffect, useRef, useState} from 'react';
 
 // Importing the altcha package introduces the <altcha-widget> element
-import 'altcha'
+import 'altcha';
+import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
 interface CaptchaSolution {
-    payload: string
-    expiresAt?: number
+    payload: string;
+    expiresAt?: number;
 }
 
 interface AltchaWidgetProps {
-    onChallengeSuccess: (solution: CaptchaSolution) => void
+    onChallengeSuccess: (solution: CaptchaSolution) => void;
 }
 
 const localization = {
-    "ariaLinkLabel": "Webseite von Altcha (altcha.org) aufrufen",
-    "error": "Verifizierung fehlgeschlagen. Versuchen Sie es später erneut.",
-    "expired": "Verifizierung abgelaufen. Versuchen Sie es erneut.",
-    "footer": "Geschützt mit einer quelloffenen <a href=\"https://altcha.org/captcha/\" target=\"_blank\" aria-label=\"Webseite von Altcha (altcha.org) aufrufen\" title=\"Webseite von Altcha (altcha.org) aufrufen\">Captcha-Lösung</a>",
-    "label": "Ich bin ein Mensch – kein Roboter *",
-    "verified": "Verifizierung erfolgreich.",
-    "verifying": "Wird überprüft…",
-    "waitAlert": "Wird überprüft… Bitte warten."
+    'ariaLinkLabel': 'Webseite von Altcha (altcha.org) aufrufen',
+    'error': 'Verifizierung fehlgeschlagen. Versuchen Sie es später erneut.',
+    'expired': 'Verifizierung abgelaufen. Versuchen Sie es erneut.',
+    'footer': 'Geschützt mit einer quelloffenen <a href="https://altcha.org/captcha/" target="_blank" aria-label="Webseite von Altcha (altcha.org) aufrufen" title="Webseite von Altcha (altcha.org) aufrufen">Captcha-Lösung</a>',
+    'label': 'Ich bin ein Mensch – kein Roboter *',
+    'verified': 'Verifizierung erfolgreich.',
+    'verifying': 'Wird überprüft…',
+    'waitAlert': 'Wird überprüft… Bitte warten.'
 };
 
-const AltchaWidget = forwardRef<{ value: string | null }, AltchaWidgetProps>(({ onChallengeSuccess }, ref) => {
-    const widgetRef = useRef<AltchaWidget & AltchaWidgetMethods & HTMLElement>(null)
-    const [value, setValue] = useState<string | null>(null)
+const localizationAsJson = JSON.stringify(localization);
 
-    useImperativeHandle(ref, () => {
-        return {
-            get value() {
-                return value
-            }
-        }
-    }, [value])
+export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
+    const widgetRef = useRef<AltchaWidget & AltchaWidgetMethods & HTMLElement>(null);
+    const [debuggingEnabled, setDebuggingEnabled] = useState(false);
+
+    useEffect(() => {
+        setDebuggingEnabled(isStringNotNullOrEmpty(localStorage.getItem('debug-captcha')));
+    }, []);
 
     useEffect(() => {
         const handleStateChange = (ev: Event | CustomEvent) => {
@@ -42,7 +41,6 @@ const AltchaWidget = forwardRef<{ value: string | null }, AltchaWidgetProps>(({ 
             const detail = ev.detail;
             const state = detail.state;
             const payload = detail.payload || null;
-            setValue(ev.detail.payload || null);
 
             if (state === 'verified' && payload) {
                 try {
@@ -63,15 +61,15 @@ const AltchaWidget = forwardRef<{ value: string | null }, AltchaWidgetProps>(({ 
                     });
                 }
             }
-        }
+        };
 
-        const { current } = widgetRef
+        const {current} = widgetRef;
 
         if (current) {
-            current.addEventListener('statechange', handleStateChange)
-            return () => current.removeEventListener('statechange', handleStateChange)
+            current.addEventListener('statechange', handleStateChange);
+            return () => current.removeEventListener('statechange', handleStateChange);
         }
-    }, [onChallengeSuccess])
+    }, [onChallengeSuccess]);
 
     /* docs: https://altcha.org/docs/website-integration/#using-altcha-widget */
     return (
@@ -83,11 +81,9 @@ const AltchaWidget = forwardRef<{ value: string | null }, AltchaWidgetProps>(({ 
                 '--altcha-color-border-focus': '#E0E0E0',
                 '--altcha-border-radius': '4px',
             }}
-            debug
-            strings={JSON.stringify(localization)}
-            challengeurl={"/api/public/captcha/challenge/"}
+            {...(debuggingEnabled ? { debug: true } : {})}
+            strings={localizationAsJson}
+            challengeurl="/api/public/captcha/challenge/"
         />
-    )
-})
-
-export default AltchaWidget
+    );
+};
