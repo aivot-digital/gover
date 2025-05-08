@@ -1,14 +1,14 @@
-import {useApi} from '../../hooks/use-api';
 import React, {useEffect, useRef, useState} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectAuthData} from '../../slices/auth-slice';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
+import {refreshAuthData, selectAuthData} from '../../slices/auth-slice';
 import {Paper, Table, TableBody, TableCell, TableRow} from '@mui/material';
-import {UsersApiService} from '../../modules/users/users-api-service';
+import {StorageKey} from '../../data/storage-key';
+import {useLocalStorageEffect} from '../../hooks/use-local-storage-effect';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
 
 export function ExpirationTimer() {
-    const api = useApi();
-    const [enabled, setEnabled] = useState(false);
+    const dispatch = useAppDispatch();
+    const [enabled, setEnabled] = useState<boolean | null>(false);
 
     const authData = useAppSelector(selectAuthData);
     const [accessTokenTimeLeft, setAccessTokenTimeLeft] = useState(0);
@@ -16,9 +16,7 @@ export function ExpirationTimer() {
 
     const intervalRef = useRef<NodeJS.Timer>();
 
-    useEffect(() => {
-        setEnabled(isStringNotNullOrEmpty(localStorage.getItem('debug-tokens')));
-    }, []);
+    useLocalStorageEffect<boolean>(setEnabled, StorageKey.TokenDebuggerActive);
 
     useEffect(() => {
         if (intervalRef.current) {
@@ -53,6 +51,10 @@ export function ExpirationTimer() {
         return null;
     }
 
+    const handleRefresh = () => {
+        dispatch(refreshAuthData());
+    };
+
     return (
         <Paper
             sx={{
@@ -67,14 +69,15 @@ export function ExpirationTimer() {
                         <TableCell>
                             Access Token
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "monospace" }}>
+                        <TableCell
+                            sx={{
+                                fontFamily: 'monospace',
+                            }}
+                        >
                             {
                                 accessTokenTimeLeft <= 0 &&
                                 <a
-                                    onClick={() => {
-                                        new UsersApiService(api)
-                                            .retrieveSelf();
-                                    }}
+                                    onClick={handleRefresh}
                                     style={{
                                         cursor: 'pointer',
                                         color: 'blue',
@@ -95,7 +98,7 @@ export function ExpirationTimer() {
                         <TableCell>
                             Refresh Token
                         </TableCell>
-                        <TableCell sx={{ fontFamily: "monospace" }}>
+                        <TableCell sx={{fontFamily: 'monospace'}}>
                             {formatSeconds(refreshTokenTimeLeft)}
                         </TableCell>
                     </TableRow>
