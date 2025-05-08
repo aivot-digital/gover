@@ -20,6 +20,7 @@
     "@tiptap/pm": "^2.0.3",
     "@tiptap/react": "^2.0.3",
     "@tiptap/starter-kit": "^2.0.3",
+    "altcha": "^1.4.3",
     "date-fns": "^2.28.0",
     "fuse.js": "^7.0.0",
     "notistack": "^3.0.2",

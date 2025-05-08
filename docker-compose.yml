@@ -167,6 +167,7 @@ services:
 
       GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
       GOVER_SECRETS_KEY: "{{ GOVER_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.
+      GOVER_CAPTCHA_KEY: "{{ GOVER_CAPTCHA_KEY }}" # Setzen Sie den geheimen Schlüssel zur Erzeugung und Verifizierung von Captcha-Challenges. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein (z. B. 32‑Byte‑Hex).
 
       GOVER_FILE_EXTENSIONS: pdf, png, jpg, jpeg, doc, docx, xls, xlsx, ppt, pptx, odt, fodt, ods, fods, odp, fodp, odg, fodg, odf
       GOVER_CONTENT_TYPES: application/pdf, image/png, image/jpeg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/msexcel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/mspowerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.oasis.opendocument.text, application/vnd.oasis.opendocument.spreadsheet, application/vnd.oasis.opendocument.presentation, application/vnd.oasis.opendocument.graphics, application/vnd.oasis.opendocument.formula

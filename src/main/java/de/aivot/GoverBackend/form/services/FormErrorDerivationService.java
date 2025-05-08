@@ -107,8 +107,52 @@ public class FormErrorDerivationService extends BaseElementErrorDerivationServic
     }
 
     private void deriveErrorsForSubmitStep(FormDerivationContext context, SubmitStepElement submitStep) {
-        if (!context.getValue(SubmitStepElement.CAPTCHA_FILED_ID, Boolean.class).orElse(false)) {
-            context.setError(SubmitStepElement.CAPTCHA_FILED_ID, "Bitte bestätigen Sie, dass Sie ein Mensch sind.");
+        var derivationData = context.getElementDerivationData();
+
+        var captchaRawValue = derivationData.getValue(SubmitStepElement.CAPTCHA_FIELD_ID, String.class);
+        if (captchaRawValue.isEmpty()) {
+            derivationData.setError(
+                    SubmitStepElement.CAPTCHA_FIELD_ID,
+                    "Bitte bestätigen Sie, dass Sie ein Mensch sind."
+            );
+            return;
+        }
+
+        try {
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var node = mapper.readTree(captchaRawValue.get());
+
+            var payloadNode = node.get("payload");
+            var expiresNode = node.get("expiresAt");
+
+            if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
+                derivationData.setError(
+                        SubmitStepElement.CAPTCHA_FIELD_ID,
+                        "Bitte bestätigen Sie, dass Sie ein Mensch sind."
+                );
+                return;
+            }
+
+            // check expiration
+            if (expiresNode != null && expiresNode.isNumber()) {
+                long now = java.time.Instant.now().getEpochSecond();
+                long expiresAt = expiresNode.asLong();
+
+                if (expiresAt < now) {
+                    derivationData.setError(
+                            SubmitStepElement.CAPTCHA_FIELD_ID,
+                            "Die Captcha-Bestätigung ist abgelaufen. Bitte erneut bestätigen."
+                    );
+                    return;
+                }
+            }
+
+        } catch (Exception e) {
+            // Payload not parseable → invalid
+            derivationData.setError(
+                    SubmitStepElement.CAPTCHA_FIELD_ID,
+                    "Die Captcha-Daten konnten nicht gelesen werden. Bitte erneut versuchen."
+            );
         }
     }
 }
