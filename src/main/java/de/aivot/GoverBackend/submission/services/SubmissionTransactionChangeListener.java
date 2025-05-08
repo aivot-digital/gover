@@ -122,6 +122,8 @@ public class SubmissionTransactionChangeListener implements PaymentTransactionCh
             }
             case CANCELED, FAILED -> {
                 submission.setStatus(SubmissionStatus.HasPaymentError);
+                submission.setCopySent(false);
+                submission.setCopyTries(0);
                 submissionRepository.save(submission);
 
                 var paymentProvider = paymentProviderRepository
