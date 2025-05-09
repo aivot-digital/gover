@@ -19,7 +19,9 @@ import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormPublishChecklistItem} from '../../modules/forms/dtos/form-publish-checklist-item';
 import {Loader} from '../loader/loader';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../slices/loading-overlay-slice';
-import {useConfirm} from "../../providers/confirm-provider";
+import {useConfirm} from '../../providers/confirm-provider';
+import {FormType} from '../../modules/forms/enums/form-type';
+import {SxProps} from '@mui/material/styles';
 
 export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>): JSX.Element {
     const api = useApi();
@@ -31,6 +33,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
     const [isPublished, setIsPublished] = useState(props.entity.status === ApplicationStatus.Published);
     const [isRevoked, setIsRevoked] = useState(props.entity.status === ApplicationStatus.Revoked);
+    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.identityRequired);
+    const [isInternal, setIsInternal] = useState(props.entity.type === FormType.Internal);
 
     useEffect(() => {
         new FormsApiService(api)
@@ -45,6 +49,34 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
     const allChecksDone = useMemo(() => {
         return checklist != null && checklist.every((item) => item.done);
     }, [checklist]);
+
+    const renderInternalAlert = (sxProps?: SxProps<Object>) => {
+        if (isInternal && isIdentityRequired) {
+            return (
+                <AlertComponent color="info" sx={sxProps}>
+                    <AlertTitle>Internes Formular mit erzwungener Authentifizierung</AlertTitle>
+                    <Box sx={{maxWidth: 940}}>
+                        Dieses Formular erscheint nicht auf der öffentlichen Formularübersicht (Index-Liste), ist aber über den direkten Link zugänglich.
+                        Ohne Authentifizierung sind die allgemeinen Informationen und Titel der Abschnitte öffentlich einsehbar.
+                    </Box>
+                </AlertComponent>
+            );
+        }
+
+        if (isInternal) {
+            return (
+                <AlertComponent color="info" sx={sxProps}>
+                    <AlertTitle>Internes Formular</AlertTitle>
+                    <Box sx={{maxWidth: 940}}>
+                        Dieses Formular erscheint nicht auf der öffentlichen Formularliste (Index-Liste), ist aber über den direkten Link zugänglich.
+                        Alle Inhalte sind öffentlich einsehbar.
+                    </Box>
+                </AlertComponent>
+            );
+        }
+
+        return null;
+    };
 
     const canPublish = useMemo(() => {
         if (memberships == null) {
@@ -71,6 +103,9 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                     <Box sx={{mt: 2}}>
                         Wenn Sie das Formular veröffentlichen, können Sie die Inhalte dieser Version nicht mehr bearbeiten und müssen für Änderungen am Formular eine neue Version erstellen.
                     </Box>
+                    {
+                        isInternal && renderInternalAlert({ mt: 4, mb: 0 })
+                    }
                 </>
             ),
         });
@@ -182,6 +217,10 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                         Formular veröffentlicht
                     </Alert>
                 </>
+            }
+
+            {
+                isPublished && renderInternalAlert()
             }
 
             {
