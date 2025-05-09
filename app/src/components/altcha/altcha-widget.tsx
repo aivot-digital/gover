@@ -2,7 +2,8 @@ import {useEffect, useRef, useState} from 'react';
 
 // Importing the altcha package introduces the <altcha-widget> element
 import 'altcha';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
+import {useLocalStorageEffect} from '../../hooks/use-local-storage-effect';
+import {StorageKey} from '../../data/storage-key';
 
 interface CaptchaSolution {
     payload: string;
@@ -26,11 +27,9 @@ const localization = JSON.stringify({
 
 export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
     const widgetRef = useRef<AltchaWidget & AltchaWidgetMethods & HTMLElement>(null);
-    const [debuggingEnabled, setDebuggingEnabled] = useState(false);
+    const [debuggingEnabled, setDebuggingEnabled] = useState<boolean | null>(false);
 
-    useEffect(() => {
-        setDebuggingEnabled(isStringNotNullOrEmpty(localStorage.getItem('debug-captcha')));
-    }, []);
+    useLocalStorageEffect<boolean>(setDebuggingEnabled, StorageKey.CaptchaDebuggerActive);
 
     useEffect(() => {
         const handleStateChange = (ev: Event | CustomEvent) => {
