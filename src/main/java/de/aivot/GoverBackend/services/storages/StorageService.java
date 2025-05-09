@@ -5,6 +5,8 @@ import de.aivot.GoverBackend.models.config.StorageConfig;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class StorageService {
+    private final Logger logger = LoggerFactory.getLogger(StorageService.class);
+
     private final StorageConfig storageConfig;
     // This is protected for testing purposes
     protected MinioClient storageClient;
@@ -49,6 +53,7 @@ public class StorageService {
 
     public void testRemoteStorageBucketExists() throws ResponseException {
         if (this.storageClient == null) {
+            logger.error("Remote storage is not initialized");
             throw ResponseException.internalServerError("Remote storage is not initialized");
         }
 
@@ -62,10 +67,12 @@ public class StorageService {
             bucketExists = this.storageClient
                     .bucketExists(bucketTestRequest);
         } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException | NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException | InternalException e) {
+            logger.error("Error while checking if bucket exists", e);
             throw ResponseException.internalServerError(e);
         }
 
         if (!bucketExists) {
+            logger.error("Bucket {} does not exist", storageConfig.getRemoteBucket());
             throw ResponseException.internalServerError("Bucket " + storageConfig.getRemoteBucket() + " does not exist");
         }
     }
@@ -88,8 +95,10 @@ public class StorageService {
         try {
             url = this.storageClient.getPresignedObjectUrl(presignedObjectUrlQuery);
         } catch (InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | XmlParserException | ServerException e) {
+            logger.error("Error while generating presigned URL", e);
             throw ResponseException.internalServerError(e);
         } catch (ErrorResponseException e) {
+            logger.error("Error while generating presigned URL. Not found", e);
             throw ResponseException.notFound("Die Datei mit dem Pfad %s existiert nicht.", path);
         }
         return url;
@@ -113,8 +122,10 @@ public class StorageService {
         try {
             url = this.storageClient.getPresignedObjectUrl(presignedObjectUrlQuery);
         } catch (InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | XmlParserException | ServerException e) {
+            logger.error("Error while generating presigned URL", e);
             throw ResponseException.internalServerError(e);
         } catch (ErrorResponseException e) {
+            logger.error("Error while generating presigned URL. Not found", e);
             throw ResponseException.notFound("Die Datei mit dem Pfad %s existiert nicht.", path);
         }
         return url;
@@ -135,6 +146,7 @@ public class StorageService {
             try {
                 Files.createDirectories(parent);
             } catch (IOException e) {
+                logger.error("Error while creating directories", e);
                 throw ResponseException.internalServerError(e);
             }
         }
@@ -142,6 +154,7 @@ public class StorageService {
         try {
             Files.write(pathToFile, data);
         } catch (IOException e) {
+            logger.error("Error while writing file", e);
             throw ResponseException.internalServerError(e);
         }
     }
@@ -158,6 +171,7 @@ public class StorageService {
         try {
             storageClient.putObject(putObjectQuery);
         } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException | XmlParserException e) {
+            logger.error("Error while writing file", e);
             throw ResponseException.internalServerError(e);
         }
     }
@@ -176,6 +190,7 @@ public class StorageService {
         } catch (NoSuchFileException e) {
             // Ignore, file does not exist
         } catch (IOException e) {
+            logger.error("Error while deleting file", e);
             throw ResponseException.internalServerError(e);
         }
     }
@@ -194,6 +209,7 @@ public class StorageService {
         try {
             storageClient.removeObject(removeObjectArgs);
         } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException | XmlParserException e) {
+            logger.error("Error while deleting file", e);
             throw ResponseException.internalServerError(e);
         }
     }
@@ -210,6 +226,7 @@ public class StorageService {
         try {
             return Files.readAllBytes(resolvePath(path));
         } catch (IOException e) {
+            logger.error("Error while reading file", e);
             throw ResponseException.notFound("Die Datei mit dem Pfad %s existiert nicht.", path);
         }
     }
@@ -223,8 +240,10 @@ public class StorageService {
             var object = storageClient.getObject(getObjectArgs);
             return object.readAllBytes();
         } catch (InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException | XmlParserException e) {
+            logger.error("Error while reading file", e);
             throw ResponseException.internalServerError(e);
         } catch (ErrorResponseException e) {
+            logger.error("Error while reading file. Not found", e);
             throw ResponseException.notFound("Die Datei mit dem Pfad %s existiert nicht.", path);
         }
     }
@@ -251,6 +270,7 @@ public class StorageService {
         try {
             storageClient.statObject(testObjectArgs);
         } catch (ServerException | InsufficientDataException | ErrorResponseException | InternalException | XmlParserException | InvalidResponseException | InvalidKeyException | NoSuchAlgorithmException | IOException e) {
+            logger.error("Error while checking if file exists", e);
             throw ResponseException.internalServerError(e);
         }
 
