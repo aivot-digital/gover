@@ -142,6 +142,11 @@ export function SystemInformation() {
             children: getStatusLabel('s3'),
         },
         {
+            label: 'Temporärer Speicher',
+            icon: getStatusIcon('redis'),
+            children: getStatusLabel('redis'),
+        },
+        {
             label: 'PDF Service',
             icon: getStatusIcon('puppet'),
             children: getStatusLabel('puppet'),
