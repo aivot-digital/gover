@@ -11,6 +11,7 @@ public class PaymentProviderFilter implements Filter<PaymentProviderEntity> {
     private String name;
     private String providerKey;
     private Boolean isTestProvider;
+    private Boolean isEnabled;
 
     public static PaymentProviderFilter create() {
         return new PaymentProviderFilter();
@@ -24,6 +25,7 @@ public class PaymentProviderFilter implements Filter<PaymentProviderEntity> {
                 .withContains("name", name)
                 .withEquals("providerKey", providerKey)
                 .withEquals("isTestProvider", isTestProvider)
+                .withEquals("isEnabled", isEnabled)
                 .build();
     }
 
@@ -51,6 +53,15 @@ public class PaymentProviderFilter implements Filter<PaymentProviderEntity> {
 
     public PaymentProviderFilter setTestProvider(Boolean testProvider) {
         isTestProvider = testProvider;
+        return this;
+    }
+
+    public Boolean getIsEnabled() {
+        return isEnabled;
+    }
+
+    public PaymentProviderFilter setIsEnabled(Boolean isEnabled) {
+        this.isEnabled = isEnabled;
         return this;
     }
 }

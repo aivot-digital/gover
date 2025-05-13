@@ -419,7 +419,9 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
     useEffect(() => {
         new PaymentProvidersApiService(api)
-            .list(0, 100, 'name', 'ASC', {})
+            .listAllOrdered('name', 'ASC', {
+                isEnabled: true,
+            })
             .then(setAvailablePaymentProviders)
             .catch(error => {
                 console.error('Failed to load payment providers', error);

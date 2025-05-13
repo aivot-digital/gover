@@ -3,6 +3,11 @@ package de.aivot.GoverBackend.payment.controllers.staff;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.form.enums.FormStatus;
+import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.services.FormRevisionService;
+import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.dtos.PaymentProviderRequestDTO;
 import de.aivot.GoverBackend.payment.dtos.PaymentProviderResponseDTO;
@@ -33,16 +38,21 @@ public class PaymentProviderController {
 
     private final PaymentProviderService paymentProviderService;
     private final PaymentProviderTestService paymentProviderTestService;
+    private final FormRepository formRepository;
+    private final FormRevisionService formRevisionService;
 
     @Autowired
     public PaymentProviderController(
             AuditService auditService,
             PaymentProviderService paymentProviderService,
-            PaymentProviderTestService paymentProviderTestService
-    ) {
+            PaymentProviderTestService paymentProviderTestService,
+            FormRepository formRepository,
+            FormRevisionService formRevisionService) {
         this.auditService = auditService.createScopedAuditService(PaymentProviderController.class);
         this.paymentProviderService = paymentProviderService;
         this.paymentProviderTestService = paymentProviderTestService;
+        this.formRepository = formRepository;
+        this.formRevisionService = formRevisionService;
     }
 
     @GetMapping("")
@@ -111,6 +121,34 @@ public class PaymentProviderController {
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
+        var existing = paymentProviderService
+                .retrieve(key)
+                .orElseThrow(ResponseException::notFound);
+
+        if (existing.getIsEnabled() && !requestDTO.isEnabled()) {
+            var filter = FormFilter
+                    .create()
+                    .setPaymentProvider(key)
+                    .setStatus(FormStatus.Published)
+                    .build();
+
+            if (formRepository.exists(filter)) {
+                throw ResponseException.conflict(
+                        "Der Zahlungsanbieter kann nicht deaktiviert werden, da er noch in einem oder mehreren Formularen verwendet wird."
+                );
+            } else {
+                for (var form : formRepository.findAll(filter)) {
+                    var formClone = form.clone();
+
+                    form.setPaymentProvider(null);
+                    formRepository.save(form);
+
+                    formRevisionService
+                            .create(user, form, formClone);
+                }
+            }
+        }
+
         var result = paymentProviderService
                 .update(key, requestDTO.toEntity());
 
@@ -135,7 +173,8 @@ public class PaymentProviderController {
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        var deleted = paymentProviderService.delete(key);
+        var deleted = paymentProviderService
+                .delete(key);
 
         auditService
                 .logAction(user, AuditAction.Delete, PaymentProviderEntity.class, Map.of(

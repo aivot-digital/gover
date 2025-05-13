@@ -330,6 +330,14 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
             );
         }
 
+        if (entity.getIsEnabled()) {
+            throw ResponseException.conflict(
+                    "Der Nutzerkontenanbieter %s (%s) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.",
+                    entity.getName(),
+                    entity.getKey()
+            );
+        }
+
         var linkedFormExists = formRepository
                 .existsWithLinkedIdentityProvider(entity.getKey());
 

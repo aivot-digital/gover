@@ -1,4 +1,4 @@
-import {Box, Button, Typography} from '@mui/material';
+import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -18,34 +18,36 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {PaymentProviderResponseDTO} from '../../../../modules/payment/dtos/payment-provider-response-dto';
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import {useFormManager} from "../../../../hooks/use-form-manager";
-import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
-import { ConstraintDialog } from '../../../../dialogs/constraint-dialog/constraint-dialog';
-import {ConfirmDialog} from "../../../../dialogs/confirm-dialog/confirm-dialog";
-import {FormsApiService} from "../../../../modules/forms/forms-api-service";
-import {ConstraintLinkProps} from "../../../../dialogs/constraint-dialog/constraint-link-props";
-import HelpIconOutlined from "@mui/icons-material/HelpOutline";
-import Tooltip from "@mui/material/Tooltip";
-import * as yup from "yup";
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import {useFormManager} from '../../../../hooks/use-form-manager';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {FormsApiService} from '../../../../modules/forms/forms-api-service';
+import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
+import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import Tooltip from '@mui/material/Tooltip';
+import * as yup from 'yup';
 import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../../../modules/payment/dtos/payment-provider-definition-response-dto';
-import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
         .trim()
-        .min(3, "Der Name des Zahlungsdienstleisters muss mindestens 3 Zeichen lang sein.")
-        .max(96, "Der Name des Zahlungsdienstleisters darf maximal 96 Zeichen lang sein.")
-        .required("Der Name des Zahlungsdienstleisters ist ein Pflichtfeld."),
+        .min(3, 'Der Name des Zahlungsdienstleisters muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name des Zahlungsdienstleisters darf maximal 96 Zeichen lang sein.')
+        .required('Der Name des Zahlungsdienstleisters ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
-        .min(10, "Die Beschreibung muss mindestens 10 Zeichen lang sein.")
-        .max(500, "Die Beschreibung darf maximal 500 Zeichen lang sein.")
-        .required("Die Beschreibung des Zahlungsdienstleisters ist ein Pflichtfeld."),
+        .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
+        .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
+        .required('Die Beschreibung des Zahlungsdienstleisters ist ein Pflichtfeld.'),
     providerKey: yup.string()
         .trim()
-        .required("Der Anbieter des Zahlungsdienstleisters ist ein Pflichtfeld."),
+        .required('Der Anbieter des Zahlungsdienstleisters ist ein Pflichtfeld.'),
+    isEnabled: yup.boolean()
+        .default(false),
     isTestProvider: yup.boolean()
         .default(false),
 };
@@ -94,13 +96,13 @@ export function PaymentProviderDetailsPageIndex() {
             setPaymentProviderSchema({
                 ..._PaymentProviderSchema,
                 config: yup.object().shape(
-                    goverSchemaToYup(definition.configLayout)
-                )
+                    goverSchemaToYup(definition.configLayout),
+                ),
             });
         } else {
             setPaymentProviderSchema(_PaymentProviderSchema);
         }
-     }, [definition]);
+    }, [definition]);
 
     const changeBlocker = useChangeBlocker(item, paymentProvider);
 
@@ -122,10 +124,10 @@ export function PaymentProviderDetailsPageIndex() {
                 ...additionalData,
                 definitions: updatedDefinitions,
             });
-            dispatch(showSuccessSnackbar("Auswahllisten wurden erfolgreich neu geladen."));
+            dispatch(showSuccessSnackbar('Auswahllisten wurden erfolgreich neu geladen.'));
         } catch (error) {
-            console.error("Fehler beim Aktualisieren der Auswahllisten", error);
-            dispatch(showErrorSnackbar("Fehler beim Aktualisieren der Auswahllisten."));
+            console.error('Fehler beim Aktualisieren der Auswahllisten', error);
+            dispatch(showErrorSnackbar('Fehler beim Aktualisieren der Auswahllisten.'));
         } finally {
             setIsBusy(false);
         }
@@ -137,7 +139,7 @@ export function PaymentProviderDetailsPageIndex() {
             const validationResult = validate();
 
             if (!validationResult) {
-                dispatch(showErrorSnackbar("Bitte überprüfen Sie Ihre Eingaben."));
+                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
                 return;
             }
 
@@ -174,8 +176,13 @@ export function PaymentProviderDetailsPageIndex() {
                         dispatch(showSuccessSnackbar('Änderungen am Zahlungsdienstleister erfolgreich gespeichert.'));
                     })
                     .catch(err => {
-                        console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        if (err.status === 409) {
+                            handleInputChange('isEnabled')(true);
+                            dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Zahlungsdienstleister verwenden'));
+                        } else {
+                            console.error(err);
+                            dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        }
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -190,19 +197,19 @@ export function PaymentProviderDetailsPageIndex() {
         setIsBusy(true);
         try {
             const formsApi = new FormsApiService(api);
-            const relatedForms = await formsApi.list(0, 999, undefined, undefined, { paymentProvider: paymentProvider.key });
+            const relatedForms = await formsApi.list(0, 999, undefined, undefined, {paymentProvider: paymentProvider.key});
 
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = relatedForms.content.slice(0, maxVisibleLinks).map(f => ({
                     label: f.title,
-                    to: `/forms/${f.id}`
+                    to: `/forms/${f.id}`,
                 }));
 
                 if (relatedForms.content.length > maxVisibleLinks) {
                     processedLinks.push({
-                        label: "Weitere Formulare anzeigen…",
-                        to: `/payment-provider/${paymentProvider.key}/forms`
+                        label: 'Weitere Formulare anzeigen…',
+                        to: `/payment-provider/${paymentProvider.key}/forms`,
                     });
                 }
 
@@ -240,8 +247,8 @@ export function PaymentProviderDetailsPageIndex() {
     };
 
     const configErrors = Object.keys(errors).reduce((acc, key) => {
-        if (key.startsWith("config.")) {
-            acc[key.replace("config.", "")] = (errors as Record<string, string>)[key];
+        if (key.startsWith('config.')) {
+            acc[key.replace('config.', '')] = (errors as Record<string, string>)[key];
         }
         return acc;
     }, {} as Record<string, string>);
@@ -250,32 +257,32 @@ export function PaymentProviderDetailsPageIndex() {
         <Box>
             {
                 isNewItem ?
-                <SelectFieldComponent
-                    label="Zahlungsdienstleister"
-                    required
-                    value={paymentProvider.providerKey}
-                    onChange={handleInputChange("providerKey")}
-                    options={definitions.map(def => ({
-                        value: def.key,
-                        label: def.name,
-                    }))}
-                    error={errors.providerKey}
-                    hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
-                /> :
-                <TextFieldComponent
-                    label="Zahlungsdienstleister"
-                    value={paymentProvider.providerKey}
-                    onChange={handleInputChange("providerKey")}
-                    disabled={true}
-                />
+                    <SelectFieldComponent
+                        label="Zahlungsdienstleister"
+                        required
+                        value={paymentProvider.providerKey}
+                        onChange={handleInputChange('providerKey')}
+                        options={definitions.map(def => ({
+                            value: def.key,
+                            label: def.name,
+                        }))}
+                        error={errors.providerKey}
+                        hint="Bestimmt, welche Konfigurationsoberfläche nach der Auswahl des Zahlungsdienstleisters eingeblendet wird. Der Name des Anbieters ist gegenüber antragstellenden Personen sichtbar."
+                    /> :
+                    <TextFieldComponent
+                        label="Zahlungsdienstleister"
+                        value={paymentProvider.providerKey}
+                        onChange={handleInputChange('providerKey')}
+                        disabled={true}
+                    />
             }
 
             <TextFieldComponent
                 label="Name"
                 required
                 value={paymentProvider.name}
-                onChange={handleInputChange("name")}
-                onBlur={handleInputBlur("name")}
+                onChange={handleInputChange('name')}
+                onBlur={handleInputBlur('name')}
                 disabled={isBusy || !userIsAdmin}
                 error={errors.name}
                 hint="Dient der internen Identifizierung des Zahlungsdienstleisters."
@@ -285,8 +292,8 @@ export function PaymentProviderDetailsPageIndex() {
                 label="Interne Beschreibung"
                 required
                 value={paymentProvider.description}
-                onChange={handleInputChange("description")}
-                onBlur={handleInputBlur("description")}
+                onChange={handleInputChange('description')}
+                onBlur={handleInputBlur('description')}
                 multiline={true}
                 disabled={isBusy || !userIsAdmin}
                 error={errors.description}
@@ -304,7 +311,7 @@ export function PaymentProviderDetailsPageIndex() {
                     valueOverride={{
                         values: paymentProvider.config,
                         onChange: (key, value) => {
-                            handleInputChange("config")({
+                            handleInputChange('config')({
                                 ...paymentProvider.config,
                                 [key]: value,
                             });
@@ -315,10 +322,21 @@ export function PaymentProviderDetailsPageIndex() {
                 />
             }
 
+
+            <CheckboxFieldComponent
+                label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
+                value={paymentProvider.isEnabled}
+                onChange={handleInputChange('isEnabled')}
+                variant="switch"
+                error={errors.isEnabled}
+                hint="Gibt an, ob diese Konfiguration aktiviert ist. Bei temporären technischen Problemen o.Ä. kann der Dienstleister deaktiviert werden, ohne die Konfiguration zu verlieren."
+                disabled={isBusy}
+            />
+
             <CheckboxFieldComponent
                 label="Es handelt sich um eine vorproduktive Konfiguration"
                 value={paymentProvider.isTestProvider}
-                onChange={handleInputChange("isTestProvider")}
+                onChange={handleInputChange('isTestProvider')}
                 variant="switch"
                 error={errors.isTestProvider}
                 hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
@@ -356,12 +374,15 @@ export function PaymentProviderDetailsPageIndex() {
                         </Button>
                     */}
 
-                    <Tooltip title={"Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben."}>
+                    <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                         <Button
                             onClick={handleRefreshDefinitions}
                             disabled={isBusy}
                         >
-                            Auswahllisten neu laden <HelpIconOutlined fontSize="small" sx={{ml:1}}/>
+                            Auswahllisten neu laden <HelpIconOutlined
+                            fontSize="small"
+                            sx={{ml: 1}}
+                        />
                         </Button>
                     </Tooltip>
 

@@ -125,6 +125,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
         // Do not update the provider key because changing the provider key can break existing transactions
         // existingEntity.setProviderKey(entity.getProviderKey());
         existingEntity.setConfig(entity.getConfig());
+        existingEntity.setIsEnabled(entity.getIsEnabled());
         existingEntity.setTestProvider(entity.getTestProvider());
 
         return paymentProviderRepository
@@ -140,7 +141,19 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
                 .build();
 
         if (formRepository.exists(formSpec)) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Der Zahlungsanbieter wird noch in Formularen verwendet");
+            throw ResponseException.conflict(
+                    "Der Zahlungsanbieter %s (%s) wird noch in Formularen verwendet",
+                    entity.getName(),
+                    entity.getKey()
+            );
+        }
+
+        if (entity.getIsEnabled()) {
+            throw ResponseException.conflict(
+                    "Der Zahlungsanbieter %s (%s) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.",
+                    entity.getName(),
+                    entity.getKey()
+            );
         }
 
         paymentProviderRepository.delete(entity);
