@@ -389,6 +389,8 @@ export function PaymentProviderDetailsPageIndex() {
 
                     {
                         isStringNotNullOrEmpty(paymentProvider.key) &&
+                        item != null &&
+                        !item.isEnabled &&
                         <Button
                             variant={'outlined'}
                             onClick={checkAndHandleDelete}
