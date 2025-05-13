@@ -135,6 +135,7 @@ export function SecretsDetailsPageIndex() {
             apiService
                 .destroy(secret.key)
                 .then(() => {
+                    reset(); // prevent change blocker by resetting unsaved changes
                     navigate('/secrets', {
                         replace: true,
                     });

@@ -233,6 +233,7 @@ export function PaymentProviderDetailsPageIndex() {
             apiService
                 .destroy(paymentProvider.key)
                 .then(() => {
+                    reset(); // prevent change blocker by resetting unsaved changes
                     navigate('/payment-providers', {
                         replace: true,
                     });

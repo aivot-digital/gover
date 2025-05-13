@@ -401,6 +401,7 @@ export function IdentityProviderDetailsPageIndex() {
         apiService
             .destroy(identityProvider.key)
             .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
                 dispatch(showSuccessSnackbar('Der Nutzerkontenanbieter wurde erfolgreich gelöscht.'));
                 navigate('/identity-providers', {
                     replace: true,

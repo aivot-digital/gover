@@ -128,6 +128,7 @@ export function ProviderLinksDetailsPageIndex() {
             apiService
                 .destroy(link.id)
                 .then(() => {
+                    reset(); // prevent change blocker by resetting unsaved changes
                     navigate('/provider-links', {
                         replace: true,
                     });
