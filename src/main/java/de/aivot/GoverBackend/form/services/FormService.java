@@ -227,8 +227,11 @@ public class FormService implements EntityService<Form, Integer> {
 
         // Remove the payment provider if it does not exist ior is not enabled
         if (form.getPaymentProvider() == null || StringUtils.isNullOrEmpty(form.getPaymentProvider())) {
+            form.setPaymentProvider(null);
+        } else {
             var paymentProvider = paymentProviderService
                     .retrieve(form.getPaymentProvider());
+
             if (paymentProvider.isEmpty() || !paymentProvider.get().getIsEnabled()) {
                 form.setPaymentProvider(null);
             }
