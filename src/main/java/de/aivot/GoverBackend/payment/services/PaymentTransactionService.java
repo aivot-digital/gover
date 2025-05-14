@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.payment.models.PaymentItem;
 import de.aivot.GoverBackend.payment.models.PaymentTransactionChangeListener;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
+import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,22 +41,24 @@ public class PaymentTransactionService implements
     private final List<PaymentTransactionChangeListener> paymentTransactionChangeListeners;
 
     private final GoverConfig config;
-    private final PaymentProviderService paymentProviderService;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final PaymentProviderRepository paymentProviderRepository;
 
     @Autowired
     public PaymentTransactionService(
             List<PaymentTransactionChangeListener> paymentTransactionChangeListeners,
             GoverConfig config,
-            PaymentProviderService paymentProviderService,
             PaymentTransactionRepository paymentTransactionRepository,
-            AuditService auditService
-    ) {
+            AuditService auditService,
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+            PaymentProviderRepository paymentProviderRepository) {
         this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class);
         this.paymentTransactionChangeListeners = paymentTransactionChangeListeners;
         this.config = config;
-        this.paymentProviderService = paymentProviderService;
         this.paymentTransactionRepository = paymentTransactionRepository;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.paymentProviderRepository = paymentProviderRepository;
     }
 
     /**
@@ -80,7 +83,7 @@ public class PaymentTransactionService implements
             @Nonnull List<PaymentItem> paymentItems
     ) throws PaymentException {
         // Fetch corresponding payment provider definition
-        var paymentProviderDefinition = paymentProviderService
+        var paymentProviderDefinition = paymentProviderDefinitionsService
                 .getProviderDefinition(paymentProviderEntity.getProviderKey())
                 .orElseThrow(() -> new PaymentException("Für den Zahlungsdienstleister " + paymentProviderEntity.getProviderKey() + " wurde keine Definition gefunden."));
 
@@ -178,6 +181,14 @@ public class PaymentTransactionService implements
 
     @Override
     public void performDelete(@Nonnull PaymentTransactionEntity entity) throws ResponseException {
+        for (var listener : paymentTransactionChangeListeners) {
+            try {
+                listener.onDelete(entity);
+            } catch (ResponseException e) {
+                throw ResponseException.internalServerError(e, "Error notifying change listener for transaction %s", entity.getKey());
+            }
+        }
+
         paymentTransactionRepository.delete(entity);
     }
 
@@ -186,8 +197,8 @@ public class PaymentTransactionService implements
             @Nullable Map<String, Object> callbackData
     ) throws PaymentException {
         // Fetch corresponding payment provider entity. If not found, set error and throw exception
-        var provider = paymentProviderService
-                .retrieve(transaction.getPaymentProviderKey())
+        var provider = paymentProviderRepository
+                .findById(transaction.getPaymentProviderKey())
                 .orElse(null);
         if (provider == null) {
             var error = new PaymentException("Der referenzierte Zahlungsdienstleister \"%s\" konnte nicht gefunden werden.", transaction.getPaymentProviderKey());
@@ -197,7 +208,7 @@ public class PaymentTransactionService implements
         }
 
         // Fetch corresponding payment provider definition. If not found, set error and throw exception
-        var providerDefinition = paymentProviderService
+        var providerDefinition = paymentProviderDefinitionsService
                 .getProviderDefinition(provider.getProviderKey())
                 .orElse(null);
         if (providerDefinition == null) {

@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.payment.services;
 
-import de.aivot.GoverBackend.enums.XBezahldienstStatus;
-import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -25,33 +24,29 @@ import java.util.*;
 
 @Service
 public class PaymentProviderService implements EntityService<PaymentProviderEntity, String> {
-    private final Map<String, PaymentProviderDefinition> paymentProviderDefinitionMap;
     private final PaymentProviderRepository paymentProviderRepository;
     private final FormRepository formRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final PaymentTransactionService paymentTransactionService;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
 
     @Autowired
     public PaymentProviderService(
-            List<PaymentProviderDefinition> paymentProviderDefinitions,
             PaymentProviderRepository paymentProviderRepository,
             FormRepository formRepository,
-            PaymentTransactionRepository paymentTransactionRepository) {
+            PaymentTransactionRepository paymentTransactionRepository,
+            PaymentTransactionService paymentTransactionService,
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
         this.formRepository = formRepository;
-        this.paymentProviderDefinitionMap = new HashMap<>();
-        for (var definition : paymentProviderDefinitions) {
-            paymentProviderDefinitionMap.put(definition.getKey(), definition);
-        }
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
+        this.paymentTransactionService = paymentTransactionService;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
     }
 
     @Nonnull
     public Optional<PaymentProviderDefinition> getProviderDefinition(@Nonnull String providerKey) {
-        if (paymentProviderDefinitionMap.containsKey(providerKey)) {
-            return Optional.of(paymentProviderDefinitionMap.get(providerKey));
-        } else {
-            return Optional.empty();
-        }
+        return paymentProviderDefinitionsService.getProviderDefinition(providerKey);
     }
 
     @Nonnull
@@ -164,15 +159,14 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
         var transactionFilter = PaymentTransactionFilter
                 .create()
                 .setPaymentProviderKey(entity.getKey())
-                .setStatus(XBezahldienstStatus.INITIAL)
                 .build();
 
-        if (paymentTransactionRepository.exists(transactionFilter)) {
-            throw ResponseException.conflict(
-                    "Der Zahlungsanbieter %s (%s) hat noch aktive Transaktionen. Bitte löschen Sie diese, bevor Sie den Anbieter löschen.",
-                    entity.getName(),
-                    entity.getKey()
-            );
+        var transactions = paymentTransactionRepository
+                .findAll(transactionFilter);
+
+        for (var transaction : transactions) {
+            paymentTransactionService
+                    .performDelete(transaction);
         }
 
         paymentProviderRepository.delete(entity);
@@ -183,5 +177,4 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
                 .map(PaymentProviderEntity::getTestProvider)
                 .orElse(false);
     }
-
 }
