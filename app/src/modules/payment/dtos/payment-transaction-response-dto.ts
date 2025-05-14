@@ -7,4 +7,5 @@ export interface PaymentTransactionResponseDTO {
     paymentRequest?: XBezahldienstePaymentRequest | null;
     paymentInformation: XBezahldienstePaymentInformation | null;
     paymentError?: string | null;
+    created: string;
 }

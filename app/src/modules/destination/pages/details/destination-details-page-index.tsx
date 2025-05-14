@@ -239,6 +239,7 @@ export function DestinationDetailsPageIndex() {
         setIsBusy(true);
         apiService.destroy(destination.id)
             .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
                 navigate('/destinations', {
                     replace: true,
                 });

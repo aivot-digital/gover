@@ -1,16 +1,19 @@
 package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.services.storages.StorageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.actuate.health.Status;
 import org.springframework.stereotype.Component;
 
 @Component("s3")
 @ConditionalOnEnabledHealthIndicator("s3")
 public class S3HealthIndicator implements HealthIndicator {
+    private final Logger logger = LoggerFactory.getLogger(S3HealthIndicator.class);
+
     private final StorageService storageService;
 
     @Autowired
@@ -30,6 +33,8 @@ public class S3HealthIndicator implements HealthIndicator {
         try {
             storageService.testRemoteStorageBucketExists();
         } catch (Exception e) {
+            logger
+                    .warn("failed to test remote data store", e);
             return Health
                     .down()
                     .withDetail("error", "Externer Datenspeicher ist fehlerhaft. Fehlermeldung: " + e.getMessage())

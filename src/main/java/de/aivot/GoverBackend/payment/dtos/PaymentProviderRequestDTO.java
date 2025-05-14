@@ -31,6 +31,10 @@ public record PaymentProviderRequestDTO(
         Boolean isTestProvider,
 
         @Nonnull
+        @NotNull(message = "Is enabled is required")
+        Boolean isEnabled,
+
+        @Nonnull
         @NotNull(message = "Config is required")
         Map<String, Object> config
 ) {
@@ -40,6 +44,7 @@ public record PaymentProviderRequestDTO(
         entity.setDescription(description);
         entity.setProviderKey(providerKey);
         entity.setTestProvider(isTestProvider);
+        entity.setIsEnabled(isEnabled);
         entity.setConfig(config);
         return entity;
     }

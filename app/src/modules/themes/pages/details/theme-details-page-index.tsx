@@ -177,6 +177,7 @@ export function ThemeDetailsPageIndex() {
         setIsBusy(true);
         apiService.destroy(theme.id)
             .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
                 navigate('/themes', {
                     replace: true,
                 });

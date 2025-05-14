@@ -1,13 +1,15 @@
 package de.aivot.GoverBackend.payment.services;
 
-import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
+import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
+import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,31 +24,29 @@ import java.util.*;
 
 @Service
 public class PaymentProviderService implements EntityService<PaymentProviderEntity, String> {
-    private final Map<String, PaymentProviderDefinition> paymentProviderDefinitionMap;
     private final PaymentProviderRepository paymentProviderRepository;
     private final FormRepository formRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final PaymentTransactionService paymentTransactionService;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
 
     @Autowired
     public PaymentProviderService(
-            List<PaymentProviderDefinition> paymentProviderDefinitions,
             PaymentProviderRepository paymentProviderRepository,
-            FormRepository formRepository
-    ) {
+            FormRepository formRepository,
+            PaymentTransactionRepository paymentTransactionRepository,
+            PaymentTransactionService paymentTransactionService,
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
         this.formRepository = formRepository;
-        this.paymentProviderDefinitionMap = new HashMap<>();
-        for (var definition : paymentProviderDefinitions) {
-            paymentProviderDefinitionMap.put(definition.getKey(), definition);
-        }
         this.paymentProviderRepository = paymentProviderRepository;
+        this.paymentTransactionRepository = paymentTransactionRepository;
+        this.paymentTransactionService = paymentTransactionService;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
     }
 
     @Nonnull
     public Optional<PaymentProviderDefinition> getProviderDefinition(@Nonnull String providerKey) {
-        if (paymentProviderDefinitionMap.containsKey(providerKey)) {
-            return Optional.of(paymentProviderDefinitionMap.get(providerKey));
-        } else {
-            return Optional.empty();
-        }
+        return paymentProviderDefinitionsService.getProviderDefinition(providerKey);
     }
 
     @Nonnull
@@ -125,6 +125,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
         // Do not update the provider key because changing the provider key can break existing transactions
         // existingEntity.setProviderKey(entity.getProviderKey());
         existingEntity.setConfig(entity.getConfig());
+        existingEntity.setIsEnabled(entity.getIsEnabled());
         existingEntity.setTestProvider(entity.getTestProvider());
 
         return paymentProviderRepository
@@ -140,7 +141,32 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
                 .build();
 
         if (formRepository.exists(formSpec)) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Der Zahlungsanbieter wird noch in Formularen verwendet");
+            throw ResponseException.conflict(
+                    "Der Zahlungsanbieter %s (%s) wird noch in Formularen verwendet",
+                    entity.getName(),
+                    entity.getKey()
+            );
+        }
+
+        if (entity.getIsEnabled()) {
+            throw ResponseException.conflict(
+                    "Der Zahlungsanbieter %s (%s) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.",
+                    entity.getName(),
+                    entity.getKey()
+            );
+        }
+
+        var transactionFilter = PaymentTransactionFilter
+                .create()
+                .setPaymentProviderKey(entity.getKey())
+                .build();
+
+        var transactions = paymentTransactionRepository
+                .findAll(transactionFilter);
+
+        for (var transaction : transactions) {
+            paymentTransactionService
+                    .performDelete(transaction);
         }
 
         paymentProviderRepository.delete(entity);
@@ -151,5 +177,4 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
                 .map(PaymentProviderEntity::getTestProvider)
                 .orElse(false);
     }
-
 }

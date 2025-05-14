@@ -58,6 +58,11 @@ export function PaymentProviderDetailsPage() {
                             label: 'Formulare',
                             isDisabled: (item) => item?.key === '',
                         },
+                        {
+                            path: '/payment-providers/:id/tx',
+                            label: 'Transaktionen',
+                            isDisabled: (item) => item?.key === '',
+                        },
                     ]}
                     initializeItem={(api) => new PaymentProvidersApiService(api).initialize()}
                     fetchData={(api, id: string) => new PaymentProvidersApiService(api).retrieve(id)}

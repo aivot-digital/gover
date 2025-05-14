@@ -16,8 +16,9 @@ import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.config.PuppetPdfConfig;
+import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import de.aivot.GoverBackend.payment.services.PaymentProviderService;
+import de.aivot.GoverBackend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
@@ -48,8 +49,9 @@ public class PdfService {
     private final ThemeRepository themeRepository;
     private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final PaymentTransactionRepository paymentTransactionRepository;
-    private final PaymentProviderService paymentProviderService;
     private final IdentityProviderRepository identityProviderRepository;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
 
     @Autowired
     public PdfService(
@@ -61,8 +63,10 @@ public class PdfService {
             ThemeRepository themeRepository,
             FormDerivationServiceFactory formDerivationServiceFactory,
             PaymentTransactionRepository paymentTransactionRepository,
-            PaymentProviderService paymentProviderService,
-            IdentityProviderRepository identityProviderRepository) {
+            IdentityProviderRepository identityProviderRepository,
+            PaymentProviderRepository paymentProviderRepository,
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService
+    ) {
         this.puppetPdfConfig = puppetPdfConfig;
         this.systemConfigService = systemConfigService;
         this.departmentRepository = departmentRepository;
@@ -71,8 +75,9 @@ public class PdfService {
         this.themeRepository = themeRepository;
         this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.paymentTransactionRepository = paymentTransactionRepository;
-        this.paymentProviderService = paymentProviderService;
         this.identityProviderRepository = identityProviderRepository;
+        this.paymentProviderRepository = paymentProviderRepository;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
     }
 
     public void testPuppetPdfConnection() throws IOException, InterruptedException {
@@ -102,7 +107,7 @@ public class PdfService {
                 Optional.empty(),
                 derivationContext.getFormState(),
                 true
-                ));
+        ));
         dto.put("form", form);
         dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
 
@@ -149,13 +154,13 @@ public class PdfService {
 
             dto.put("paymentTransaction", paymentTransaction);
 
-            var paymentProvider = paymentProviderService
-                    .retrieve(paymentTransaction.getPaymentProviderKey())
+            var paymentProvider = paymentProviderRepository
+                    .findById(paymentTransaction.getPaymentProviderKey())
                     .orElseThrow(() -> new RuntimeException("Payment provider not found"));
 
             dto.put("paymentProvider", paymentProvider);
 
-            var paymentProviderDefinition = paymentProviderService
+            var paymentProviderDefinition = paymentProviderDefinitionsService
                     .getProviderDefinition(paymentProvider.getProviderKey())
                     .orElseThrow(() -> new RuntimeException("Payment provider definition not found"));
 

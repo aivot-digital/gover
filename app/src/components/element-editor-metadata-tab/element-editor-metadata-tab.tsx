@@ -128,6 +128,11 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
 
                     {
                         identityProviders
+                            .filter((identityProvider) => (
+                                identityProvider.type === IdentityProviderType.Custom ||
+                                !identityProvider.isTestProvider ||
+                                identityProvider.isTestProvider && !identityProviders.some(idp => !idp.isTestProvider && idp.type === identityProvider.type)
+                            ))
                             .map((identityProvider) => {
                                 return (
                                     <SelectFieldComponent

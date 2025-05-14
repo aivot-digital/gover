@@ -112,7 +112,7 @@ export function IdentityProvidersListPage() {
                             flex: 2,
                         },
                         {
-                            field: 'status',
+                            field: 'isEnabled',
                             headerName: 'Status',
                             renderCell: (params) => (
                                 <>

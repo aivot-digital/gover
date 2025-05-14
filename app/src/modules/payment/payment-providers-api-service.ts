@@ -7,7 +7,8 @@ import {PaymentProviderResponseDTO} from './dtos/payment-provider-response-dto';
 import {CrudApiService} from '../../services/crud-api-service';
 
 export interface PaymentProvidersFilter {
-    name?: string;
+    name: string;
+    isEnabled: boolean;
 }
 
 export class PaymentProvidersApiService extends CrudApiService<PaymentProviderRequestDTO, PaymentProviderResponseDTO, PaymentProviderResponseDTO, PaymentProviderResponseDTO, PaymentProviderResponseDTO, string, PaymentProvidersFilter> {
@@ -26,6 +27,7 @@ export class PaymentProvidersApiService extends CrudApiService<PaymentProviderRe
             name: '',
             description: '',
             isTestProvider: false,
+            isEnabled: false,
             config: {},
         };
     }

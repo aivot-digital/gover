@@ -44,7 +44,6 @@ public class FormService implements EntityService<Form, Integer> {
     private final DepartmentService departmentService;
     private final ThemeService themeService;
     private final PaymentProviderService paymentProviderService;
-    private final SystemConfigService systemConfigService;
     private final AssetService assetService;
     private final SubmissionService submissionService;
     private final SubmissionRepository submissionRepository;
@@ -57,16 +56,16 @@ public class FormService implements EntityService<Form, Integer> {
             DepartmentService departmentService,
             ThemeService themeService,
             PaymentProviderService paymentProviderService,
-            SystemConfigService systemConfigService,
             AssetService assetService,
             SubmissionService submissionService,
-            SubmissionRepository submissionRepository, IdentityProviderService identityProviderService) {
+            SubmissionRepository submissionRepository,
+            IdentityProviderService identityProviderService
+    ) {
         this.repository = repository;
         this.destinationService = destinationService;
         this.departmentService = departmentService;
         this.themeService = themeService;
         this.paymentProviderService = paymentProviderService;
-        this.systemConfigService = systemConfigService;
         this.assetService = assetService;
         this.submissionService = submissionService;
         this.submissionRepository = submissionRepository;
@@ -226,9 +225,16 @@ public class FormService implements EntityService<Form, Integer> {
             form.setPdfBodyTemplateKey(null);
         }
 
-        // Remove the payment provider if it does not exist
-        if (form.getPaymentProvider() == null || StringUtils.isNullOrEmpty(form.getPaymentProvider()) || !paymentProviderService.exists(form.getPaymentProvider())) {
+        // Remove the payment provider if it does not exist ior is not enabled
+        if (form.getPaymentProvider() == null || StringUtils.isNullOrEmpty(form.getPaymentProvider())) {
             form.setPaymentProvider(null);
+        } else {
+            var paymentProvider = paymentProviderService
+                    .retrieve(form.getPaymentProvider());
+
+            if (paymentProvider.isEmpty() || !paymentProvider.get().getIsEnabled()) {
+                form.setPaymentProvider(null);
+            }
         }
 
         // Remove all non-existing identity providers from the list of linked identity providers

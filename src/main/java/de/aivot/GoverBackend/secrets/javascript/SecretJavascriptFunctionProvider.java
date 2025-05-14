@@ -21,7 +21,7 @@ public class SecretJavascriptFunctionProvider implements JavascriptFunctionProvi
 
     @Override
     public String getPackageName() {
-        return "aivot.secrets";
+        return "secrets";
     }
 
     @Override

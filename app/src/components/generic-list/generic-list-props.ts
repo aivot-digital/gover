@@ -16,8 +16,8 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
         icon: ReactNode;
         onClick: () => void;
     }>;
-    searchLabel: string;
-    searchPlaceholder: string;
+    searchLabel?: string;
+    searchPlaceholder?: string;
     columnDefinitions: Array<GridColDef<ItemType, ItemType, ItemType> & { onlyFullScreen?: boolean; }>;
     getRowIdentifier: (item: ItemType) => string;
     noDataPlaceholder?: ReactNode;

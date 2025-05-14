@@ -12,4 +12,5 @@ export enum StorageKey {
     SavedModule = 'saved_module',
 
     TokenDebuggerActive = 'debug_tokens',
+    CaptchaDebuggerActive = 'debug_captcha',
 }

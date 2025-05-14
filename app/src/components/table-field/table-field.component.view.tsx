@@ -1,7 +1,7 @@
 import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
 import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {DataGrid, GridCellEditCommitParams, GridColumns, GridRenderCellParams, GridSelectionModel} from '@mui/x-data-grid';
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../../views/base-view';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
@@ -38,7 +38,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const handleAddRow = useCallback(() => {
+    const handleAddRow = () => {
         if (id == null) {
             return;
         }
@@ -52,58 +52,59 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             ...(value ?? []),
             newRow,
         ]);
-    }, [fields, id, setValue, value]);
+    };
 
 
-    const handleSelectionModelChange = useCallback((model: GridSelectionModel) => {
-        setSelectionModel(model);
-    }, []);
-
-    const handleDelete = useCallback(() => {
+    const handleDelete = () => {
         if (element.id != null && selectionModel != null) {
             const updatedRows = (value ?? []).filter((_: any, index: number) => !selectionModel.includes(index));
             setValue(updatedRows.length > 0 ? updatedRows : undefined);
             setSelectionModel([]);
             setConfirmDelete(undefined);
         }
-    }, [element.id, selectionModel, setValue, value]);
+    };
 
-    const handleCellEdit = useCallback((params: GridCellEditCommitParams) => {
-        console.log('handleCellEdit', params);
-        if (element.id && element.fields) {
-            const field = element.fields
-                .find(field => field.label === params.field);
-
-            if (field) {
-                let cellValue = params.value;
-
-                if (cellValue == null) {
-                    cellValue = undefined;
-                } else if (field.datatype === 'number') {
-                    if (typeof cellValue === 'string') {
-                        cellValue = parseGermanNumber(cellValue);
-                    }
-
-                    cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces ?? 0));
-                } else if (field.datatype === 'string') {
-                    if (isStringNullOrEmpty(cellValue)) {
-                        cellValue = undefined;
-                    }
-                }
-
-                const updatedValues = [
-                    ...(value ?? [])
-                ];
-
-                updatedValues[params.id as number] = {
-                    ...updatedValues[params.id as number],
-                    [params.field]: cellValue,
-                };
-
-                setValue(updatedValues);
-            }
+    const handleCellEdit = (params: GridCellEditCommitParams) => {
+        if (fields == null) {
+            return;
         }
-    }, [element.id, element.fields, setValue, value]);
+
+        const field = fields
+            .find(field => field.label === params.field);
+
+        if (field == null) {
+            return;
+        }
+
+        let cellValue = params.value;
+
+        if (cellValue == null) {
+            cellValue = undefined;
+        } else if (field.datatype === 'number') {
+            if (typeof cellValue === 'string' && isNaN(Number(cellValue))) {
+                cellValue = parseGermanNumber(cellValue);
+            }
+
+            cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces ?? 0));
+        } else if (field.datatype === 'string') {
+            if (isStringNullOrEmpty(cellValue)) {
+                cellValue = undefined;
+            }
+
+            cellValue = cellValue.toString();
+        }
+
+        const updatedValues = [
+            ...(value ?? []),
+        ];
+
+        updatedValues[params.id as number] = {
+            ...updatedValues[params.id as number],
+            [params.field]: cellValue,
+        };
+
+        setValue(updatedValues);
+    };
 
     const columns: GridColumns = useMemo(() => {
         if (fields == null) {
@@ -126,7 +127,9 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                                 {field.placeholder}
                             </i>
                         ) : (
-                            field.datatype === 'number' ? formatNumStringToGermanNum(params.value, field.decimalPlaces) : params.value
+                            field.datatype === 'number' ?
+                                formatNumStringToGermanNum(params.value, field.decimalPlaces) :
+                                params.value
                         )
                 ),
             }));
@@ -200,7 +203,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                     checkboxSelection={!element.disabled}
 
                     disableSelectionOnClick={true}
-                    onSelectionModelChange={!isBusy ? handleSelectionModelChange : undefined}
+                    onSelectionModelChange={!isBusy ? setSelectionModel : undefined}
                     selectionModel={selectionModel}
 
                     onCellEditCommit={!isBusy ? handleCellEdit : undefined}

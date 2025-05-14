@@ -47,7 +47,8 @@ public record FormCitizenDetailsResponseDTO(
     public static FormCitizenDetailsResponseDTO fromEntity(Form form, boolean obfuscateSteps) {
         ElementStreamUtils
                 .applyAction(form.getRoot(), element -> {
-                    element.setTestProtocolSet(null);
+                    element.setName("");
+                        element.setTestProtocolSet(null);
                 });
 
         if (obfuscateSteps) {
