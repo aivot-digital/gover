@@ -126,18 +126,23 @@ public class PaymentProviderController {
                 .orElseThrow(ResponseException::notFound);
 
         if (existing.getIsEnabled() && !requestDTO.isEnabled()) {
-            var filter = FormFilter
+            var filterAllPublishedForms = FormFilter
                     .create()
                     .setPaymentProvider(key)
                     .setStatus(FormStatus.Published)
                     .build();
 
-            if (formRepository.exists(filter)) {
+            if (formRepository.exists(filterAllPublishedForms)) {
                 throw ResponseException.conflict(
                         "Der Zahlungsanbieter kann nicht deaktiviert werden, da er noch in einem oder mehreren Formularen verwendet wird."
                 );
             } else {
-                for (var form : formRepository.findAll(filter)) {
+                var filterAllRelatedForms = FormFilter
+                        .create()
+                        .setPaymentProvider(key)
+                        .build();
+
+                for (var form : formRepository.findAll(filterAllRelatedForms)) {
                     var formClone = form.clone();
 
                     form.setPaymentProvider(null);
