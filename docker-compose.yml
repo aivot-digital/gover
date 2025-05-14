@@ -87,18 +87,10 @@ services:
       KC_DB_PASSWORD: "{{ KEYCLOAK_DB_PASSWORD }}" # Setzen Sie das Passwort für die Keycloak-Datenbank. Passen Sie dieses Passwort unbedingt an.
       KC_FEATURES: transient-users,update-email
 
-      KC_SPI_EGOV_BUNDID_ENABLED: true # Aktivieren Sie die Keycloak-Erweiterung für den BundID-Service. Geben Sie hier false ein, wenn Sie den BundID-Service nicht nutzen möchten.
-      KC_SPI_EGOV_BUNDID_SP_NAME: Online-Antrags-Management
-      KC_SPI_EGOV_BUNDID_SP_DESCRIPTION: Online-Antrags-Management
-      KC_SPI_EGOV_BUNDID_ORG_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BundID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten.
-      KC_SPI_EGOV_BUNDID_ORG_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BundID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten.
-      KC_SPI_EGOV_BUNDID_ORG_URL: "{{ ORG_WEBSITE }}" # Setzen Sie die Website Ihrer Organisation. Diese Website wird an den BundID-Service übermittelt.
-      KC_SPI_EGOV_BUNDID_TECHNICAL_CONTACT_NAME: "{{ TECHNICAL_CONTACT_NAME }}" # Setzen Sie den Namen des Ansprechpartners für technische Fragen in Ihrer Organisation. Der Name sollte nicht mehr als 50 Zeichen enthalten.
-      KC_SPI_EGOV_BUNDID_TECHNICAL_CONTACT_EMAIL: "{{ TECHNICAL_CONTACT_EMAIL }}" # Setzen Sie die E-Mail-Adresse des Ansprechpartners für technische Fragen in Ihrer Organisation.
-      KC_SPI_EGOV_BUNDID_SUPPORT_CONTACT_NAME: "{{ SUPPORT_CONTACT_NAME }}" # Setzen Sie den Namen des Ansprechpartners für allgemeine Fragen in Ihrer Organisation. Der Name sollte nicht mehr als 50 Zeichen enthalten.
-      KC_SPI_EGOV_BUNDID_SUPPORT_CONTACT_EMAIL: "{{ SUPPORT_CONTACT_EMAIL }}" # Setzen Sie die E-Mail-Adresse des Ansprechpartners für allgemeine Fragen in Ihrer Organisation.
+      KC_SPI_EGOV_BUNDID_BMI_ID: "{{ BMI_ID }}" # Setzen Sie die ID, die Sie von der BMI erhalten haben. Diese ID wird an den BundID-Service übermittelt.
+      KC_SPI_EGOV_BUNDID_DISPLAY_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BundID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten.
 
-      KC_SPI_EGOV_BAYERNID_ENABLED: true # Aktivieren Sie die Keycloak-Erweiterung für den BayernID-Service. Geben Sie hier false ein, wenn Sie den BayernID-Service nicht nutzen möchten.
+      KC_SPI_EGOV_BAYERNID_ONLINE_SERVICE_ID: "{{ ONLINE_SERVICE_ID }}" # Setzen Sie die ID, die Sie von der BayernID erhalten haben. Diese ID wird an den BayernID-Service übermittelt.
       KC_SPI_EGOV_BAYERNID_SP_NAME: Online-Antrags-Management
       KC_SPI_EGOV_BAYERNID_SP_DESCRIPTION: Online-Antrags-Management
       KC_SPI_EGOV_BAYERNID_ORG_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BayernID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten.
@@ -110,8 +102,6 @@ services:
       KC_SPI_EGOV_BAYERNID_SUPPORT_CONTACT_EMAIL: "{{ SUPPORT_CONTACT_EMAIL }}" # Setzen Sie die E-Mail-Adresse des Ansprechpartners für allgemeine Fragen in Ihrer Organisation.
       KC_SPI_EGOV_BAYERNID_DISPLAY_NAME: "{{ ORG_NAME }}" # Setzen Sie den Namen Ihrer Organisation. Dieser Name wird an den BayernID-Service übermittelt. Der Name sollte nicht mehr als 50 Zeichen enthalten. Der Name wird auf der Login-Seite des BayernID-Service angezeigt.
       KC_SPI_EGOV_BAYERNID_DISPLAY_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BayernID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten. Die Beschreibung wird auf der Login-Seite des BayernID-Service angezeigt.
-
-      KC_SPI_EGOV_DATAPORT_ENABLED: true # Aktivieren Sie die Keycloak-Erweiterung für den Servicekonto-Schleswig-Holstein-Service. Geben Sie hier false ein, wenn Sie den Servicekonto-Schleswig-Holstein-Service nicht nutzen möchten.
 
       QUARKUS_HTTP_LIMITS_MAX_FORM_ATTRIBUTE_SIZE: "10M"
     networks:
