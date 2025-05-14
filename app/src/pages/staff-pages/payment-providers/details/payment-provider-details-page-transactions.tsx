@@ -99,9 +99,9 @@ export function PaymentProviderDetailsPageTransactions() {
                 }}
                 getRowIdentifier={(paymentProvider) => paymentProvider.key}
                 defaultSortField="created"
-                noDataPlaceholder="Keine Formulare vorhanden"
-                loadingPlaceholder="Lade Formulare…"
-                noSearchResultsPlaceholder="Keine Formulare gefunden"
+                noDataPlaceholder="Keine Transaktionen vorhanden"
+                loadingPlaceholder="Lade Transaktionen…"
+                noSearchResultsPlaceholder="Keine Transaktionen gefunden"
             />
         </Box>
     );
