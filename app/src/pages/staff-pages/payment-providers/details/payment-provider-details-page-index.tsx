@@ -31,6 +31,8 @@ import * as yup from 'yup';
 import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../../../modules/payment/dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import {IdentityProviderType} from '../../../../modules/identity/enums/identity-provider-type';
+import {useConfirm} from '../../../../providers/confirm-provider';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -57,6 +59,7 @@ export function PaymentProviderDetailsPageIndex() {
     const navigate = useNavigate();
     const user = useSelector(selectUser);
     const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+    const showConfirm = useConfirm();
 
     const api = useApi();
     const apiService = useMemo(() => new PaymentProvidersApiService(api), [api]);
@@ -254,6 +257,33 @@ export function PaymentProviderDetailsPageIndex() {
         return acc;
     }, {} as Record<string, string>);
 
+
+    const handleStatusChange = async (newValue: boolean) => {
+        // Bei Deaktivierung
+        if (newValue === false) {
+            const confirmed = await showConfirm({
+                title: 'Deaktivierung bestätigen',
+                confirmButtonText: 'Ja, Zahlungsdienstleister deaktivieren',
+                children: (
+                    <>
+                        <Typography gutterBottom>
+                            Wenn Sie den Zahlungsdienstleister deaktivieren, wird der Zahlungsdienstleister automatisch aus Formularen mit dem Status "In Bearbeitung" entfernt.
+                        </Typography>
+                        <Typography gutterBottom>
+                            Bitte beachten Sie, dass Sie den Zahlungsdienstleister speichern müssen, um diese Änderung zu übernehmen.
+                        </Typography>
+                    </>
+                ),
+            });
+
+            if (!confirmed) {
+                return;
+            }
+        }
+
+        handleInputChange('isEnabled')(newValue);
+    };
+
     return (
         <Box>
             {
@@ -327,7 +357,7 @@ export function PaymentProviderDetailsPageIndex() {
             <CheckboxFieldComponent
                 label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
                 value={paymentProvider.isEnabled}
-                onChange={handleInputChange('isEnabled')}
+                onChange={handleStatusChange}
                 variant="switch"
                 error={errors.isEnabled}
                 hint="Gibt an, ob diese Konfiguration aktiviert ist. Bei temporären technischen Problemen o.Ä. kann der Dienstleister deaktiviert werden, ohne die Konfiguration zu verlieren."
