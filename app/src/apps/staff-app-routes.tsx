@@ -37,6 +37,7 @@ import {DestinationDetailsPage} from "../modules/destination/pages/details/desti
 import {DestinationDetailsPageIndex} from "../modules/destination/pages/details/destination-details-page-index";
 import {DestinationDetailsPageForms} from "../modules/destination/pages/details/destination-details-page-forms";
 import {PresetListPage} from "../pages/staff-pages/preset-pages/preset-list-page";
+import {PaymentProviderDetailsPageTransactions} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page-transactions';
 
 export const staffAppRoutes: Record<string, Route> = {
     moduleSelect: {
@@ -186,6 +187,10 @@ export const staffAppRoutes: Record<string, Route> = {
             {
                 path: '/payment-providers/:id/forms',
                 element: <PaymentProviderDetailsPageForms />,
+            },
+            {
+                path: '/payment-providers/:id/tx',
+                element: <PaymentProviderDetailsPageTransactions />,
             },
         ],
     },
