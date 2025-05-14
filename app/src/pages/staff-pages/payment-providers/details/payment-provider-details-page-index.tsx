@@ -1,4 +1,4 @@
-import {Box, Button, Grid, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -31,8 +31,8 @@ import * as yup from 'yup';
 import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../../../modules/payment/dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {IdentityProviderType} from '../../../../modules/identity/enums/identity-provider-type';
 import {useConfirm} from '../../../../providers/confirm-provider';
+import {AlertComponent} from '../../../../components/alert/alert-component';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -449,6 +449,15 @@ export function PaymentProviderDetailsPageIndex() {
             >
                 <Typography>
                     Möchten Sie diesen Zahlungsdienstleister wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                </Typography>
+
+                <Typography
+                    sx={{
+                        mt: 2,
+                    }}
+                >
+                    <strong>Hinweis:</strong> Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
+                    Eine Liste mit ausstehenden Transaktionen können Sie im Reiter <strong>Transaktionen</strong> einsehen.
                 </Typography>
             </ConfirmDialog>
 
