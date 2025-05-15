@@ -45,6 +45,7 @@ import {SubmissionStatus} from '../../modules/submissions/enums/submission-statu
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
+import {selectIdentityId} from '../../slices/identity-slice';
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -54,6 +55,7 @@ export function RootComponentView({
                                       allElements,
                                       element,
                                       scrollContainerRef,
+                                      mode,
                                   }: BaseViewProps<RootElement, void>) {
     const log = useLogger('RootComponentView');
     const api = useApi();
@@ -68,6 +70,7 @@ export function RootComponentView({
     const upcomingStepDirection = useAppSelector(selectUpcomingStepDirection);
     const visibilities = useAppSelector(selectVisibilies);
     const derivationTriggerIdQueue = useAppSelector(selectDerivationTriggerIdQueue);
+    const identityId = useAppSelector(selectIdentityId);
 
     const [isBusy, setIsBusy] = useState(false);
     const [isDeriving, setIsDeriving] = useState<boolean | null>(null);
@@ -171,8 +174,6 @@ export function RootComponentView({
 
         // Check if introduction step
         if (currentStep === 0) {
-            // Reset Query Params to strip off possible IDP query
-            setSearchParams({});
             dispatch(nextStep());
         }
 
@@ -201,7 +202,7 @@ export function RootComponentView({
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
                 submitResponse = await formsApiService
-                    .submit(form.id, customerInput);
+                    .submit(form.id, customerInput, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
                     switch (error.status) {
@@ -232,6 +233,8 @@ export function RootComponentView({
                     status: SubmissionStatus.Pending,
                 });
                 dispatch(nextStep());
+                // Clear possible identity data from search params
+                setSearchParams({});
                 CustomerInputService.cleanCustomerInput(form);
             }
         }
@@ -389,6 +392,13 @@ export function RootComponentView({
                     sx={{
                         mt: 5,
                         mb: 5,
+                        /* Remove spacing for richtext components that are immediately preceded by a headline component  */
+                        '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content)': {
+                            paddingTop: 0,
+                        },
+                        '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content) .richtext-component-content': {
+                            marginTop: 0,
+                        },
                     }}
                 >
                     {
@@ -433,6 +443,7 @@ export function RootComponentView({
                                                 element={step}
                                                 isBusy={isBusy}
                                                 isDeriving={isDeriving ?? false}
+                                                mode={mode}
                                             />
                                         </CustomStep>
                                     ))

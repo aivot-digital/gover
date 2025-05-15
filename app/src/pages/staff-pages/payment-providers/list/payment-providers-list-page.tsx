@@ -117,6 +117,19 @@ export function PaymentProvidersListPage() {
                             headerName: 'Beschreibung',
                             flex: 2,
                         },
+                        {
+                            field: 'isEnabled',
+                            headerName: 'Status',
+                            renderCell: (params) => (
+                                <>
+                                    {params.row.isEnabled ?
+                                        <Chip label="Aktiv" color="success" variant="outlined" size={"small"}/>
+                                        :
+                                        <Chip label="Inaktiv" color="default" variant="outlined" size={"small"}/>
+                                    }
+                                </>
+                            ),
+                        },
                     ]}
                     getRowIdentifier={row => row.key}
                     noDataPlaceholder="Keine Zahlungsdienstleister angelegt"

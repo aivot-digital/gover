@@ -2,7 +2,7 @@ import {type CustomerInput} from '../models/customer-input';
 import {type Form as Application} from '../models/entities/form';
 import ProjectPackage from '../../package.json';
 import {StorageScope, StorageService} from './storage-service';
-import {IdCustomerDataKey} from '../components/id-input/id-input';
+import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 
 const MAJOR_VERSION = ProjectPackage.version.split('.')[0];
 const DATA_KEY = 'state';
@@ -28,7 +28,7 @@ export class CustomerInputService {
 
     public static storeCustomerInput(application: Application, state: CustomerInput): void {
         const stateCopy = {...state};
-        delete stateCopy[IdCustomerDataKey];
+        delete stateCopy[IdentityCustomerInputKey];
         StorageService.storeObject_unsafe(this.getKey(application, DATA_KEY), stateCopy, StorageScope.Local);
         StorageService.storeString_unsafe(this.getKey(application, DATE_KEY), new Date().toISOString(), StorageScope.Local);
     }

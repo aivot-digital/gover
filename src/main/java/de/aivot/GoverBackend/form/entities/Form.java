@@ -10,6 +10,8 @@ import de.aivot.GoverBackend.enums.*;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -21,12 +23,14 @@ import org.json.JSONPropertyIgnore;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 @Entity
 @Table(name = "forms", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"slug", "version"})
 })
-public class Form {
+public class Form implements Cloneable {
     @Id
     @Column(name = "id", columnDefinition = "serial")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "applications_id_seq")
@@ -94,30 +98,6 @@ public class Form {
 
     private Integer submissionDeletionWeeks;
 
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean bundIdEnabled = false;
-
-    private BundIdAccessLevel bundIdLevel;
-
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean bayernIdEnabled = false;
-
-    private BayernIdAccessLevel bayernIdLevel;
-
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean shIdEnabled = false;
-
-    private SchleswigHolsteinIdAccessLevel shIdLevel;
-
-    @NotNull
-    @ColumnDefault("false")
-    private Boolean mukEnabled = false;
-
-    private MukAccessLevel mukLevel;
-
     @Column(length = 36)
     private String pdfBodyTemplateKey;
 
@@ -132,6 +112,13 @@ public class Form {
 
     @Column(length = 36)
     private String paymentProvider;
+
+    @Column(columnDefinition = "boolean")
+    private Boolean identityRequired = false;
+
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = IdentityProviderLinksConverter.class)
+    private List<IdentityProviderLink> identityProviders = new LinkedList<>();
 
     // region Signales
 
@@ -361,70 +348,6 @@ public class Form {
         this.submissionDeletionWeeks = submissionDeletionWeeks;
     }
 
-    public Boolean getBundIdEnabled() {
-        return bundIdEnabled;
-    }
-
-    public void setBundIdEnabled(Boolean bundIdEnabled) {
-        this.bundIdEnabled = bundIdEnabled;
-    }
-
-    public Boolean getBayernIdEnabled() {
-        return bayernIdEnabled;
-    }
-
-    public void setBayernIdEnabled(Boolean bayernIdEnabled) {
-        this.bayernIdEnabled = bayernIdEnabled;
-    }
-
-    public Boolean getMukEnabled() {
-        return mukEnabled;
-    }
-
-    public void setMukEnabled(Boolean mukEnabled) {
-        this.mukEnabled = mukEnabled;
-    }
-
-    public BayernIdAccessLevel getBayernIdLevel() {
-        return bayernIdLevel;
-    }
-
-    public void setBayernIdLevel(BayernIdAccessLevel bayernIdLevel) {
-        this.bayernIdLevel = bayernIdLevel;
-    }
-
-    public BundIdAccessLevel getBundIdLevel() {
-        return bundIdLevel;
-    }
-
-    public void setBundIdLevel(BundIdAccessLevel bundIdLevel) {
-        this.bundIdLevel = bundIdLevel;
-    }
-
-    public Boolean getShIdEnabled() {
-        return shIdEnabled;
-    }
-
-    public void setShIdEnabled(Boolean shIdEnabled) {
-        this.shIdEnabled = shIdEnabled;
-    }
-
-    public SchleswigHolsteinIdAccessLevel getShIdLevel() {
-        return shIdLevel;
-    }
-
-    public void setShIdLevel(SchleswigHolsteinIdAccessLevel shIdLevel) {
-        this.shIdLevel = shIdLevel;
-    }
-
-    public MukAccessLevel getMukLevel() {
-        return mukLevel;
-    }
-
-    public void setMukLevel(MukAccessLevel mukLevel) {
-        this.mukLevel = mukLevel;
-    }
-
     public String getPdfBodyTemplateKey() {
         return pdfBodyTemplateKey;
     }
@@ -465,6 +388,70 @@ public class Form {
         this.paymentDescription = paymentDescription;
     }
 
+    public Boolean getIdentityRequired() {
+        return identityRequired;
+    }
+
+    public Form setIdentityRequired(Boolean identityRequired) {
+        this.identityRequired = identityRequired;
+        return this;
+    }
+
+    public List<IdentityProviderLink> getIdentityProviders() {
+        return identityProviders;
+    }
+
+    public Form setIdentityProviders(List<IdentityProviderLink> identityProviders) {
+        this.identityProviders = identityProviders;
+        return this;
+    }
+
+    // TODO: Improve to real clone
+
+    /**
+     * Shallow clone of the form.
+     *
+     * @return A shallow clone of the form.
+     */
+    @Override
+    public Form clone() {
+        try {
+            Form clone = (Form) super.clone();
+
+            clone.id = id;
+            clone.slug = slug;
+            clone.version = version;
+            clone.title = title;
+            clone.status = status;
+            clone.type = type;
+            clone.root = root;
+            clone.destinationId = destinationId;
+            clone.legalSupportDepartmentId = legalSupportDepartmentId;
+            clone.technicalSupportDepartmentId = technicalSupportDepartmentId;
+            clone.imprintDepartmentId = imprintDepartmentId;
+            clone.privacyDepartmentId = privacyDepartmentId;
+            clone.accessibilityDepartmentId = accessibilityDepartmentId;
+            clone.developingDepartmentId = developingDepartmentId;
+            clone.managingDepartmentId = managingDepartmentId;
+            clone.responsibleDepartmentId = responsibleDepartmentId;
+            clone.themeId = themeId;
+            clone.created = created;
+            clone.updated = updated;
+            clone.customerAccessHours = customerAccessHours;
+            clone.submissionDeletionWeeks = submissionDeletionWeeks;
+            clone.pdfBodyTemplateKey = pdfBodyTemplateKey;
+            clone.products = products;
+            clone.paymentPurpose = paymentPurpose;
+            clone.paymentDescription = paymentDescription;
+            clone.paymentProvider = paymentProvider;
+            clone.identityRequired = identityRequired;
+            clone.identityProviders = identityProviders;
+
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
 
     // endregion
 }

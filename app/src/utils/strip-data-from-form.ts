@@ -3,6 +3,8 @@ import {ApplicationStatus} from '../data/application-status';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {isRootElement} from '../models/elements/root-element';
+import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
+import {LegacySystemIdpKeys} from '../data/legacy-system-idp-key';
 
 export function stripDataFromForm(form: Form): Form {
     const strippedForm = {...form};
@@ -28,46 +30,76 @@ export function stripDataFromForm(form: Form): Form {
     strippedForm.paymentProvider = undefined;
 
     strippedForm.products = [
-        ...strippedForm.products ?? []
+        ...strippedForm.products ?? [],
     ].map(prd => ({
         ...prd,
         bookingData: [],
-    }))
+    }));
 
     strippedForm.themeId = null;
 
-    strippedForm.root = recursivelyStripTestProtocol(strippedForm.root);
+    strippedForm.identityRequired = false;
+    strippedForm.identityProviders = [];
+
+    strippedForm.root = recursivelyApply(strippedForm.root, (element) => {
+        stripTestProtocol(element);
+
+        if (isAnyInputElement(element)) {
+            stripMappings(element);
+        }
+
+        return element;
+    });
 
     return strippedForm;
 }
 
-function recursivelyStripTestProtocol<T extends AnyElement>(element: T): T {
-    const strippedElement = {
+function recursivelyApply<T extends AnyElement>(element: T, callback: <C extends AnyElement>(e: C) => C): T {
+    const appliedElement = callback({
         ...element,
-        testProtocolSet: undefined,
+    });
+
+    if (isRootElement(appliedElement)) {
+        appliedElement.introductionStep = callback({
+            ...appliedElement.introductionStep,
+        });
+
+        appliedElement.summaryStep = callback({
+            ...appliedElement.summaryStep,
+        });
+
+        appliedElement.submitStep = callback({
+            ...appliedElement.submitStep,
+        });
+    }
+
+    if (isAnyElementWithChildren(appliedElement)) {
+        appliedElement.children = appliedElement
+            .children
+            .map((e) => recursivelyApply(e as any, callback));
+    }
+
+    return appliedElement;
+}
+
+function stripTestProtocol<T extends AnyElement>(element: T) {
+    element.testProtocolSet = undefined;
+}
+
+function stripMappings<T extends AnyInputElement>(element: T) {
+    const metadata = {
+        ...element.metadata,
     };
 
-    if (isRootElement(strippedElement)) {
-        strippedElement.introductionStep = {
-            ...strippedElement.introductionStep,
-            testProtocolSet: undefined,
-        };
-        strippedElement.summaryStep = {
-            ...strippedElement.summaryStep,
-            testProtocolSet: undefined,
-        };
-        strippedElement.submitStep = {
-            ...strippedElement.submitStep,
-            testProtocolSet: undefined,
-        };
-    }
+    const originalMetadata = {
+        ...metadata.identityMappings,
+    };
 
-    if (isAnyElementWithChildren(strippedElement)) {
-        // @ts-ignore
-        strippedElement.children = strippedElement
-            .children
-            .map(recursivelyStripTestProtocol);
+    const cleanedMappings: Record<string, string> = {};
+    for (const key of LegacySystemIdpKeys) {
+        if (key in metadata) {
+            cleanedMappings[key] = originalMetadata[key];
+        }
     }
-
-    return strippedElement;
+    metadata.identityMappings = cleanedMappings;
 }

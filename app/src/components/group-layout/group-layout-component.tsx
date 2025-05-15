@@ -20,6 +20,7 @@ export function GroupLayoutComponent(props: GroupLayoutComponentProps): JSX.Elem
                         isDeriving={props.isDeriving}
                         valueOverride={props.valueOverride}
                         errorsOverride={props.errorsOverride}
+                        mode={props.mode}
                     />
                 ))
             }

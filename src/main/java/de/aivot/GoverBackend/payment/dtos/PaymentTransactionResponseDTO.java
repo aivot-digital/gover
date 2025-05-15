@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.time.LocalDateTime;
 
 public record PaymentTransactionResponseDTO(
         @Nonnull String key,
@@ -15,7 +16,8 @@ public record PaymentTransactionResponseDTO(
         @Nonnull XBezahldienstePaymentInformation paymentInformation,
         @Nullable String paymentError,
         @Nonnull Boolean hasError,
-        @Nonnull XBezahldienstStatus status
+        @Nonnull XBezahldienstStatus status,
+        @Nonnull LocalDateTime created
         ) {
     public static PaymentTransactionResponseDTO fromEntity(
             @Nonnull PaymentTransactionEntity entity
@@ -27,7 +29,8 @@ public record PaymentTransactionResponseDTO(
                 entity.getPaymentInformation(),
                 entity.getPaymentError(),
                 entity.hasError(),
-                entity.getStatus()
+                entity.getStatus(),
+                entity.getCreated()
         );
     }
 }

@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.services.storages.StorageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 @Component("puppet")
 @ConditionalOnEnabledHealthIndicator("puppet")
 public class PuppetHealthIndicator implements HealthIndicator {
+    private final Logger logger = LoggerFactory.getLogger(PuppetHealthIndicator.class);
     private final PdfService pdfService;
 
     @Autowired
@@ -22,6 +24,7 @@ public class PuppetHealthIndicator implements HealthIndicator {
         try {
             pdfService.testPuppetPdfConnection();
         } catch (Exception e) {
+            logger.error("failed to test PDF service", e);
             return Health
                     .down()
                     .withDetail("error", "PDF Service ist fehlerhaft. Fehlermeldung: " + e.getMessage())

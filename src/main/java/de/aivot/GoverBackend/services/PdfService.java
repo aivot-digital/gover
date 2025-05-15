@@ -5,21 +5,21 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.LogoSystemConfigDefinition;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
-import de.aivot.GoverBackend.data.SpecialCustomerInputKeys;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.enums.Idp;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.services.FormDerivationService;
 import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
+import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
+import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.config.PuppetPdfConfig;
-import de.aivot.GoverBackend.elements.models.steps.IntroductionStepElement;
+import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import de.aivot.GoverBackend.payment.services.PaymentProviderService;
+import de.aivot.GoverBackend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
-import de.aivot.GoverBackend.pdf.models.FormPdfAuthData;
 import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.submission.entities.Submission;
@@ -49,7 +49,9 @@ public class PdfService {
     private final ThemeRepository themeRepository;
     private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final PaymentTransactionRepository paymentTransactionRepository;
-    private final PaymentProviderService paymentProviderService;
+    private final IdentityProviderRepository identityProviderRepository;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
 
     @Autowired
     public PdfService(
@@ -61,7 +63,9 @@ public class PdfService {
             ThemeRepository themeRepository,
             FormDerivationServiceFactory formDerivationServiceFactory,
             PaymentTransactionRepository paymentTransactionRepository,
-            PaymentProviderService paymentProviderService
+            IdentityProviderRepository identityProviderRepository,
+            PaymentProviderRepository paymentProviderRepository,
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService
     ) {
         this.puppetPdfConfig = puppetPdfConfig;
         this.systemConfigService = systemConfigService;
@@ -71,7 +75,9 @@ public class PdfService {
         this.themeRepository = themeRepository;
         this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.paymentTransactionRepository = paymentTransactionRepository;
-        this.paymentProviderService = paymentProviderService;
+        this.identityProviderRepository = identityProviderRepository;
+        this.paymentProviderRepository = paymentProviderRepository;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
     }
 
     public void testPuppetPdfConnection() throws IOException, InterruptedException {
@@ -96,7 +102,12 @@ public class PdfService {
                 .derive(form.getRoot(), Map.of());
 
         var dto = new HashMap<String, Object>();
-        dto.put("elements", PdfElementsGenerator.generatePdfElements(form.getRoot(), Optional.empty(), derivationContext.getFormState()));
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                form.getRoot(),
+                Optional.empty(),
+                derivationContext.getFormState(),
+                true
+        ));
         dto.put("form", form);
         dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
 
@@ -110,30 +121,31 @@ public class PdfService {
                 .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
                 .derive(form.getRoot(), submission.getCustomerInput());
 
-        dto.put("elements", PdfElementsGenerator.generatePdfElements(form.getRoot(), Optional.of(submission.getCustomerInput()), derivationContext.getFormState()));
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                form.getRoot(),
+                Optional.of(submission.getCustomerInput()),
+                derivationContext.getFormState(),
+                scope != FormPdfScope.Staff
+        ));
         dto.put("form", form);
         dto.put("submission", submission);
 
         var authData = submission
                 .getCustomerInput()
-                .get(IntroductionStepElement.CUSTOMER_IDENTITY_DATA_ID);
+                .get(IdentityValueKey.IdCustomerInputKey);
 
         if (authData instanceof Map<?, ?> mAuthData) {
-            var idpRaw = mAuthData
-                    .get(SpecialCustomerInputKeys.IdpCustomerInputKey);
-            var idp = Idp
-                    .fromString((String) idpRaw)
-                    .orElseThrow(() -> new RuntimeException("IDP with id " + idpRaw + " not found"));
+            var identityData = IdentityValue
+                    .fromMap(mAuthData);
 
-            var userInfo = (Map<?, ?>) mAuthData
-                    .get(SpecialCustomerInputKeys.UserInfoKey);
+            var identityProvider = identityProviderRepository
+                    .findById(identityData.identityProviderKey());
 
-            dto.put("auth", new FormPdfAuthData(
-                    idp.getLabel(),
-                    (String) userInfo.get("trust_level_authentication")
-            ));
+            if (identityProvider.isPresent()) {
+                dto.put("identityProvider", identityProvider.get());
+                dto.put("identityData", identityData);
+            }
         }
-
 
         if (submission.getPaymentTransactionKey() != null) {
             var paymentTransaction = paymentTransactionRepository
@@ -142,13 +154,13 @@ public class PdfService {
 
             dto.put("paymentTransaction", paymentTransaction);
 
-            var paymentProvider = paymentProviderService
-                    .retrieve(paymentTransaction.getPaymentProviderKey())
+            var paymentProvider = paymentProviderRepository
+                    .findById(paymentTransaction.getPaymentProviderKey())
                     .orElseThrow(() -> new RuntimeException("Payment provider not found"));
 
             dto.put("paymentProvider", paymentProvider);
 
-            var paymentProviderDefinition = paymentProviderService
+            var paymentProviderDefinition = paymentProviderDefinitionsService
                     .getProviderDefinition(paymentProvider.getProviderKey())
                     .orElseThrow(() -> new RuntimeException("Payment provider definition not found"));
 

@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.3.2](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
+
+### Features
+* **App:** Revamped user account integration with UI management, supporting OpenID Connect and parallel pre-production/production setups for existing providers (Bund ID, Bayern ID, Mein Unternehmenskonto, Servicekonto SH). Enables integration of custom IDPs via Keycloak User Federation.
+* **App:** Implemented Altcha Captcha, an open-source, accessible Proof-of-Work solution for bot protection, integrated centrally without external dependencies.
+* **Forms:** Expanded section icon library and introduced a searchable selection component for easier icon discovery.
+
+### Improvements
+* **Forms:** Visually redesigned form history with "read more" for long entries and syntax highlighting for JSON changes.
+* **Forms:** Enhanced internal form functionality by allowing combination of internal marking with mandatory user account authentication, keeping form step content private while showing general info and section titles publicly.
+* **App:** Updated Bund ID and Bayern ID integration to Release 9.
+* **App:** Users can now customize the number of entries displayed per page in application processing.
+* **App:** Redis in-memory cache status is now displayed in the system status.
+* **App:** Authenticated user account in forms is now included in the PDF export.
+* **Export:** Gover form exports now indicate which information is excluded for technical or data privacy reasons.
+
+### Important Notes
+#### User Account Migration Required
+Existing user account configurations for BundID, Bayern ID, Mein Unternehmenskonto, and Servicekonto Schleswig-Holstein are incompatible with this release due to significant technical changes. 
+Reconfiguration is necessary, potentially causing approximately 2 days of downtime. Please contact support for assistance with this migration process.
+
 ## [4.3.2](https://github.com/aivot-digital/gover/compare/v4.3.1...v4.3.2) (2025-04-24)
 
 ### Improvements

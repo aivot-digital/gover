@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class SubmitStepElement extends BaseElement {
-    public static final String CAPTCHA_FILED_ID = "__human__";
+    public static final String CAPTCHA_FIELD_ID = "__human__";
 
     private String textPreSubmit;
     private String textPostSubmit;

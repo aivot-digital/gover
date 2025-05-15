@@ -322,7 +322,7 @@ export function DepartmentsDetailsPageMembers() {
                 defaultSortField="userId"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
-                loadingPlaceholder="Lade Mitarbeiter:innen..."
+                loadingPlaceholder="Lade Mitarbeiter:innen…"
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 preSearchElements={[
                     <Button

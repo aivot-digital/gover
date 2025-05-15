@@ -1,23 +1,33 @@
 package de.aivot.GoverBackend.submission.controllers;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.services.FormDerivationService;
-import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
-import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.data.SpecialCustomerInputKeys;
-import de.aivot.GoverBackend.enums.*;
-import de.aivot.GoverBackend.exceptions.*;
+import de.aivot.GoverBackend.captcha.services.AltchaService;
+import de.aivot.GoverBackend.destination.entities.Destination;
+import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
+import de.aivot.GoverBackend.elements.models.steps.SubmitStepElement;
+import de.aivot.GoverBackend.enums.SubmissionStatus;
+import de.aivot.GoverBackend.enums.XBezahldienstStatus;
+import de.aivot.GoverBackend.exceptions.BadRequestException;
+import de.aivot.GoverBackend.exceptions.ConflictException;
+import de.aivot.GoverBackend.exceptions.NotAcceptableException;
+import de.aivot.GoverBackend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.services.FormDerivationService;
 import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
+import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
+import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
+import de.aivot.GoverBackend.identity.controllers.IdentityController;
+import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.utils.SystemIdentityProviderFormatter;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.mail.services.CustomerMailService;
+import de.aivot.GoverBackend.mail.services.ExceptionMailService;
+import de.aivot.GoverBackend.mail.services.SubmissionMailService;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.dtos.CustomerSubmissionCopyRequestDto;
-import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
@@ -25,14 +35,10 @@ import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.GoverBackend.payment.services.PaymentProviderService;
-import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
+import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.services.AVService;
 import de.aivot.GoverBackend.services.DestinationSubmitService;
-import de.aivot.GoverBackend.user.services.KeyCloakApiService;
 import de.aivot.GoverBackend.services.PdfService;
-import de.aivot.GoverBackend.mail.services.CustomerMailService;
-import de.aivot.GoverBackend.mail.services.ExceptionMailService;
-import de.aivot.GoverBackend.mail.services.SubmissionMailService;
 import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
 import de.aivot.GoverBackend.submission.dtos.SubmissionStatusResponseDTO;
 import de.aivot.GoverBackend.submission.entities.Submission;
@@ -54,11 +60,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.security.interfaces.RSAPublicKey;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public class SubmitController {
@@ -71,7 +78,6 @@ public class SubmitController {
     private final SubmissionStorageService submissionStorageService;
     private final GoverConfig goverConfig;
     private final DestinationRepository destinationRepository;
-    private final KeyCloakApiService keyCloakApiService;
     private final CustomerMailService customerMailService;
     private final SubmissionMailService submissionMailService;
     private final ExceptionMailService exceptionMailService;
@@ -80,6 +86,8 @@ public class SubmitController {
     private final PaymentProviderService paymentProviderService;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderRepository paymentProviderRepository;
+    private final IdentityCacheRepository identityCacheRepository;
+    private final AltchaService altchaService;
 
     @Autowired
     public SubmitController(
@@ -92,7 +100,6 @@ public class SubmitController {
             SubmissionStorageService submissionStorageService,
             GoverConfig goverConfig,
             DestinationRepository destinationRepository,
-            KeyCloakApiService keyCloakApiService,
             CustomerMailService customerMailService,
             SubmissionMailService submissionMailService,
             ExceptionMailService exceptionMailService,
@@ -100,8 +107,9 @@ public class SubmitController {
             FormPaymentService paymentService,
             PaymentProviderService paymentProviderService,
             PaymentTransactionRepository paymentTransactionRepository,
-            PaymentProviderRepository paymentProviderRepository
-    ) {
+            PaymentProviderRepository paymentProviderRepository,
+            IdentityCacheRepository identityCacheRepository,
+            AltchaService altchaService) {
         this.formRepository = formRepository;
         this.submissionRepository = submissionRepository;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
@@ -111,7 +119,6 @@ public class SubmitController {
         this.submissionStorageService = submissionStorageService;
         this.goverConfig = goverConfig;
         this.destinationRepository = destinationRepository;
-        this.keyCloakApiService = keyCloakApiService;
         this.customerMailService = customerMailService;
         this.submissionMailService = submissionMailService;
         this.exceptionMailService = exceptionMailService;
@@ -120,6 +127,8 @@ public class SubmitController {
         this.paymentProviderService = paymentProviderService;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderRepository = paymentProviderRepository;
+        this.identityCacheRepository = identityCacheRepository;
+        this.altchaService = altchaService;
     }
 
     @PostMapping("/api/public/submit/{applicationId}/")
@@ -127,11 +136,9 @@ public class SubmitController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer applicationId,
             @RequestParam(value = "inputs", required = true) String inputs,
-            @RequestParam(value = "files", required = false) MultipartFile[] files
+            @RequestParam(value = "files", required = false) MultipartFile[] files,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
-        var user = UserService
-                .fromJWT(jwt);
-
         // Fetch form
         var form = formRepository
                 .findById(applicationId)
@@ -151,14 +158,37 @@ public class SubmitController {
 
         // Get customer input
         var customerInput = new JSONObject(inputs).toMap();
-        var optionalAccessToken = extractAccessToken(customerInput);
-        var optionalIdp = extractIdp(customerInput);
 
-        // Check if any authorization with an idp is required
-        checkIfAnyAuthorizationIsRequiredButNotMet(form, optionalAccessToken, optionalIdp);
+        try {
+            var rawValue = (String) customerInput.get(SubmitStepElement.CAPTCHA_FIELD_ID);
+
+            if (rawValue == null || rawValue.isBlank()) {
+                throw new Exception("Missing Captcha payload");
+            }
+
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var json = mapper.readTree(rawValue);
+
+            var payloadNode = json.get("payload");
+            if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
+                throw new Exception("Missing 'payload' field in Captcha JSON");
+            }
+
+            var payload = payloadNode.asText();
+            var captchaVerificationStatus = altchaService.verify(payload);
+
+            if (!captchaVerificationStatus) {
+                throw new Exception("Verification failed");
+            }
+
+        } catch (Exception e) {
+            throw ResponseException.badRequest("Verifizierung des Captcha fehlgeschlagen.");
+        }
+
+        var optionalIdp = extractIdp(identityId);
 
         // Hydrate the customer input with the data from an idp
-        hydrateCustomerInputWithIdpData(form, optionalAccessToken, optionalIdp, customerInput);
+        hydrateCustomerInputWithIdpData(form, optionalIdp, customerInput);
 
         // Test files for viruses
         avService.testMultipartFiles(files);
@@ -170,8 +200,16 @@ public class SubmitController {
         var derivationResult = formDerivationServiceFactory
                 .create(form, List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
                 .derive(form.getRoot(), customerInput);
-        if (derivationResult.hasErrors()) {
-            throw new BadRequestException("Validation failed"); // TODO: Extend error message
+
+        if (derivationResult.getElementDerivationData().hasErrors()) {
+            var details = derivationResult
+                    .getElementDerivationData()
+                    .getErrors()
+                    .entrySet()
+                    .stream()
+                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining("\n"));
+            throw ResponseException.badRequest("Validierung fehlgeschlagen", details); // TODO: Extend error message
         }
 
         // Transfer derived values to customer input
@@ -288,76 +326,69 @@ public class SubmitController {
         var submissionCopy = new Submission();
         submissionCopy.setId(submission.getId());
 
+        // Delete the identity cache entry
+        if (identityId != null) {
+            identityCacheRepository
+                    .deleteById(identityId);
+        }
+
         return submissionCopy;
     }
 
-    private void hydrateCustomerInputWithIdpData(Form form, Optional<String> optionalAccessToken, Optional<Idp> optionalIdp, Map<String, Object> customerInput) {
-        if (optionalAccessToken.isEmpty() || optionalIdp.isEmpty()) {
+    private void hydrateCustomerInputWithIdpData(Form form, Optional<IdentityCacheEntity> optionalIdp, Map<String, Object> customerInput) throws ResponseException {
+        if (form.getIdentityRequired() && optionalIdp.isEmpty()) {
+            throw ResponseException.badRequest("Ein Identitätsnachweis ist erforderlich, um den Antrag einzureichen.");
+        }
+
+        if (optionalIdp.isEmpty()) {
             return;
         }
 
-        RSAPublicKey publicKey;
-        try {
-            publicKey = keyCloakApiService.getCustomerRealmPublicKey();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        var identityCacheEntity = optionalIdp.get();
 
-        var algo = Algorithm.RSA256(publicKey);
-        var verifier = JWT
-                .require(algo)
-                .acceptLeeway(60 * 60 * 4) // 4h valid
-                .build();
-        DecodedJWT decodedJWT;
-        try {
-            decodedJWT = verifier.verify(optionalAccessToken.get());
-        } catch (Exception e) {
-            throw new BadRequestException("Access token is not valid");
-        }
+        var flatElements = ElementUtils
+                .flattenElements(form.getRoot());
 
-        var claims = decodedJWT.getClaims();
-        var flatElements = ElementUtils.flattenElements(form.getRoot());
         for (var element : flatElements) {
             var metadata = element.getMetadata();
-            if (metadata != null) {
-                Object idMappingRaw = optionalIdp
-                        .get()
-                        .extractFromMetadata(metadata);
-
-                if (idMappingRaw instanceof String idMapping) {
-                    var idClaim = claims.get(idMapping);
-                    if (idClaim != null && !idClaim.isNull()) {
-                        var idValue = idClaim.asString();
-                        if (StringUtils.isNotNullOrEmpty(idValue)) {
-                            // TODO: Check idp type and format date for birthdays
-                            customerInput.put(element.getId(), idValue);
-                        }
-                    }
-                }
+            // Skip elements without metadata
+            if (metadata == null) {
+                continue;
             }
-        }
 
-        var rawIdData = customerInput.get(SpecialCustomerInputKeys.IdCustomerInputKey);
-        if (rawIdData instanceof HashMap<?, ?> idData) {
-            var rawUserInfo = idData.get(SpecialCustomerInputKeys.UserInfoKey);
-            if (rawUserInfo instanceof HashMap<?, ?> userInfo) {
-                var typedUserInfo = (HashMap<String, Object>) userInfo;
-                for (var claim : claims.entrySet()) {
-                    typedUserInfo.put(claim.getKey(), claim.getValue().asString());
-                }
+            var mappings = metadata.getIdentityMappings();
+            // Skip elements without identity mappings
+            if (mappings == null) {
+                continue;
             }
-        }
-    }
 
-    private static void checkIfAnyAuthorizationIsRequiredButNotMet(Form form, Optional<String> optionalAccessToken, Optional<Idp> optionalIdp) {
-        var isBayernIdRequired = form.getBayernIdEnabled() && BayernIdAccessLevel.OPTIONAL.isLowerThan(form.getBayernIdLevel());
-        var isBundIdRequired = form.getBundIdEnabled() && BundIdAccessLevel.OPTIONAL.isLowerThan(form.getBundIdLevel());
-        var isMukRequired = form.getMukEnabled() && MukAccessLevel.OPTIONAL.isLowerThan(form.getMukLevel());
-        var isShIdRequired = form.getShIdEnabled() && SchleswigHolsteinIdAccessLevel.OPTIONAL.isLowerThan(form.getShIdLevel());
+            var mapping = mappings.get(identityCacheEntity.getMetadataIdentifier());
+            // Skip elements without identity mapping for the current idp
+            if (mapping == null) {
+                continue;
+            }
 
-        if ((isBayernIdRequired || isBundIdRequired || isMukRequired || isShIdRequired) && (optionalAccessToken.isEmpty() || optionalIdp.isEmpty())) {
-            throw new BadRequestException("A service account is required");
+            var mappedValue = identityCacheEntity.getIdentityData().get(mapping);
+            // Skip elements without mapped value
+            if (mappedValue == null || StringUtils.isNotNullOrEmpty(mappedValue)) {
+                continue;
+            }
+
+            // If the metadata identifier is an identifier of a system identity provider, format the value accordingly
+            mappedValue = SystemIdentityProviderFormatter.formatForSystemIdentityProvider(identityCacheEntity.getMetadataIdentifier(), mapping, mappedValue);
+
+            customerInput.put(element.getId(), mappedValue);
         }
+
+        // Create the identity value
+        var identityValue = new IdentityValue(
+                identityCacheEntity.getProviderKey(),
+                identityCacheEntity.getMetadataIdentifier(),
+                identityCacheEntity.getIdentityData()
+        );
+
+        // Add the idp data to the customer input
+        customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValue.toMap());
     }
 
     @PostMapping("/api/public/send-copy/{submissionId}/")
@@ -492,43 +523,10 @@ public class SubmitController {
         return form.map(submission::hasExternalAccessExpired).orElse(true);
     }
 
-    private Optional<String> extractAccessToken(Map<String, Object> customerInput) {
-        var authData = getAuthData(customerInput);
-        if (authData.isEmpty()) {
+    private Optional<IdentityCacheEntity> extractIdp(String identityId) {
+        if (StringUtils.isNullOrEmpty(identityId)) {
             return Optional.empty();
         }
-
-        var accessTokenRaw = authData.get().get("access_token");
-        if (accessTokenRaw instanceof String accessToken) {
-            if (StringUtils.isNotNullOrEmpty(accessToken)) {
-                return Optional.of(accessToken);
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private Optional<Map<?, ?>> getAuthData(Map<String, Object> customerInput) {
-        var idRaw = customerInput.get(SpecialCustomerInputKeys.IdCustomerInputKey);
-        if (idRaw instanceof Map<?, ?> id) {
-            var authDataRaw = id.get("authData");
-            if (authDataRaw instanceof Map<?, ?> authData) {
-                return Optional.of(authData);
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private Optional<Idp> extractIdp(Map<String, Object> customerInput) {
-        var idRaw = customerInput.get(SpecialCustomerInputKeys.IdCustomerInputKey);
-        if (idRaw instanceof Map<?, ?> id) {
-            var idpRaw = id.get("idp");
-            if (idpRaw instanceof String sIdp) {
-                return Idp.fromString(sIdp);
-            }
-        }
-
-        return Optional.empty();
+        return identityCacheRepository.findById(identityId);
     }
 }

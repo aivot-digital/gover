@@ -21,8 +21,6 @@ import {selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, up
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import GppGoodTwoToneIcon from '@mui/icons-material/GppGoodTwoTone';
-import SmartToyTwoToneIcon from '@mui/icons-material/SmartToyTwoTone';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
@@ -33,6 +31,7 @@ import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import ExpandableList from "../expandable-list/expandable-list";
+import {AltchaWidget} from "../altcha/altcha-widget";
 
 export const SubmitHumanKey = '__human__';
 export const SubmitPaymentDataKey = '__payment_data__';
@@ -311,86 +310,29 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     Schutz vor automatisierten Einreichungen
                 </Typography>
 
-                <Typography
-                    variant="body2"
-                    sx={{
-                        maxWidth: '660px',
-                        mt: 1,
-                    }}
-                >
-                    Bitte bestätigen Sie mit einem Klick auf das nachfolgende Element, dass Sie ein Mensch sind.
-                    Die Verifizierung kann einen kleinen Moment dauern. Vielen Dank!
-                </Typography>
-
                 <Box
                     sx={{
                         mt: 3,
-                        minHeight: '61px',
                     }}
                 >
+                    <AltchaWidget
+                        onChallengeSuccess={(solution) => {
+                            dispatch(updateCustomerInput({
+                                key: SubmitHumanKey,
+                                value: JSON.stringify(solution),
+                            }));
+                        }}
+                    />
                     {
-                        !isCalculating && !isHuman &&
-                        <>
-                            <Box>
-                                <Button
-                                    startIcon={<SmartToyTwoToneIcon />}
-                                    onClick={() => {
-                                        setIsCalculating(true);
-                                        setTimeout(() => {
-                                            dispatch(updateCustomerInput({
-                                                key: SubmitHumanKey,
-                                                value: true,
-                                            }));
-                                            setIsCalculating(false);
-                                        }, 1000);
-                                    }}
-                                    sx={{
-                                        border: props.isBusy ? '1px solid rgba(0, 0, 0, 0.26)' : '1px solid #E0E0E0',
-                                        px: 4,
-                                        py: 2,
-                                    }}
-                                    size="large"
-                                    disabled={props.isBusy}
-                                >
-                                    Verifizierung starten *
-                                </Button>
-                            </Box>
-                            {
-                                error &&
-                                <Box sx={{mt: 2}}>
-                                    <FormHelperText error={true}>
-                                        {error}
-                                    </FormHelperText>
-                                </Box>
-                            }
-                        </>
-                    }
-                    {
-                        isCalculating &&
-                        <CircularProgress />
-                    }
-                    {
-                        isHuman &&
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <GppGoodTwoToneIcon
-                                fontSize={'large'}
-                                sx={{color: theme.palette.primary.main}}
-                            />
-                            <Typography
-                                sx={{
-                                    ml: 2,
-                                }}
-                            >
-                                Verifizierung erfolgreich. Sie sind ein Mensch.
-                            </Typography>
+                        error &&
+                        <Box sx={{mt: 2}}>
+                            <FormHelperText error={true}>
+                                {error}
+                            </FormHelperText>
                         </Box>
                     }
                 </Box>
+
             </Box>
         </>
     );

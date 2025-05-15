@@ -224,9 +224,13 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Number]: (
         <Box>
             <Typography>
-                Das Zahl-Element ermöglicht Ihnen, numerische Eingaben von Nutzer:innen entgegenzunehmen.
-                Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
+                Das Zahl-Element eignet sich für numerische Eingaben, die rechnerisch weiterverarbeitet werden sollen – etwa Mengen, Beträge oder Längenangaben.
+                Es unterstützt zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
+
+            <AlertComponent color={"info"}>
+                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern – verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet keine automatische Formatierung statt.
+            </AlertComponent>
 
             <Divider sx={{my: 4}}>
                 Beispiele
@@ -334,7 +338,6 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Typography>
                 Das Einzelauswahl (Auswahlmenü)-Element dient zur Abfrage exakt einer Möglichkeit aus
                 mehreren Möglichkeiten, welche in einem per Klick erreichbaren Auswahlmenü dargestellt werden.
-
             </Typography>
 
             <Typography sx={{mt: 2}}>
@@ -431,10 +434,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Table]: (
         <Box>
             <Typography>
-                Das Tabellen-Element ermöglicht Ihnen das Entgegennehmen von Eingaben in tabellarischer Form.
-                Die Spalten und deren abgefragte Datenformate sind durch Sie einstellbar.
-                Ebenso können Sie Einstellungen zur Anzahl der Zeilen treffen.
+                Das Tabellen-Element ermöglicht Ihnen das Entgegennehmen von einfachen Text- und Zahleneingaben in tabellarischer Form.
+                Der Einsatz des Elements wird dabei je nach Umfang für maximal bis zu drei Spalten empfohlen.
             </Typography>
+
+            <AlertComponent color={"info"}>
+                Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die Strukturierte Listeneingabe.
+                Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt für eine deutlich bessere Nutzerfreundlichkeit.
+            </AlertComponent>
         </Box>
     ),
     [ElementType.Text]: (

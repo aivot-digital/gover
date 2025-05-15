@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.form.entities.Form;
 
 import javax.annotation.Nonnull;
@@ -17,11 +16,6 @@ public record FormCitizenListResponseDTO(
         LocalDateTime updated
 ) {
     public static FormCitizenListResponseDTO fromEntity(Form form) {
-        ElementStreamUtils
-                .applyAction(form.getRoot(), element -> {
-                    element.setTestProtocolSet(null);
-                });
-
         return new FormCitizenListResponseDTO(
                 form.getSlug(),
                 form.getVersion(),

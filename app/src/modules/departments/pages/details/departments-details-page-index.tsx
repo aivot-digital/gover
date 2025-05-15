@@ -204,6 +204,7 @@ export function DepartmentsDetailsPageIndex() {
         setIsBusy(true);
         apiService.destroy(department.id)
             .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
                 navigate('/departments', {
                     replace: true,
                 });

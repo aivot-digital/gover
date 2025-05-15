@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.elements.models.steps;
 
 import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.utils.MapUtils;
 
 import java.util.Collection;
@@ -9,7 +10,10 @@ import java.util.Objects;
 
 public class IntroductionStepElement extends BaseElement {
     public static final String PRIVACY_CHECKBOX_ID = "__privacy__";
-    public static final String CUSTOMER_IDENTITY_DATA_ID = "__id_data__";
+    /**
+     * @deprecated use {@link IdentityValueKey#IdCustomerInputKey} instead
+     */
+    public static final String CUSTOMER_IDENTITY_DATA_ID = IdentityValueKey.IdCustomerInputKey;
 
     private String initiativeName;
     private String initiativeLogoLink;

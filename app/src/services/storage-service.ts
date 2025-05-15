@@ -100,7 +100,7 @@ class _StorageService {
         return sessionStorage.getItem(_key) != null || localStorage.getItem(_key) != null;
     }
 
-    private generateKey(key: string): string {
+    public generateKey(key: string): string {
         return `gover-${key}`;
     }
 }

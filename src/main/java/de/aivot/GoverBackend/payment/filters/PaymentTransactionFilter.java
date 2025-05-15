@@ -42,7 +42,7 @@ public class PaymentTransactionFilter implements Filter<PaymentTransactionEntity
         var spec = SpecificationBuilder
                 .create(PaymentTransactionEntity.class)
                 .withEquals("paymentProviderKey", paymentProviderKey)
-                .withJsonEquals("paymentInformation", List.of("status"), status.getKey());
+                .withJsonEquals("paymentInformation", List.of("status"), status != null ? status.getKey() : null);
 
         if (hasError != null) {
             if (Boolean.TRUE.equals(hasError)) {

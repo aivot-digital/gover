@@ -1,17 +1,60 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
 import {AuthData, AuthDataAccessToken, AuthDataRefreshToken} from '../models/dtos/auth-data';
-import {User} from '../models/entities/user';
-import type {DepartmentMembership} from '../modules/departments/models/department-membership';
 import {StorageScope, StorageService} from '../services/storage-service';
 import {StorageKey} from '../data/storage-key';
+import {AppDispatch, RootState} from '../store';
+import {AppConfig} from '../app-config';
+import {getUrlWithoutQuery} from '../utils/location-utils';
 
 
 export interface AuthState {
     authData?: AuthData;
-    authenticatedUser?: User;
-    authenticatedUserMemberships?: DepartmentMembership[];
 }
+
+export const refreshAuthData = () => async (dispatch: AppDispatch, getState: () => RootState) => {
+    const {auth} = getState();
+    const {authData} = auth;
+
+    if (authData == null) {
+        return;
+    }
+
+    const {
+        accessToken,
+        refreshToken,
+    } = authData;
+
+    if (accessToken == null || refreshToken == null) {
+        return;
+    }
+
+    if (accessToken.expires > Date.now()) {
+        return;
+    }
+
+    const response = await window.fetch(`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/token`, {
+        method: 'POST',
+        body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            client_id: AppConfig.staff.client,
+            refresh_token: refreshToken.token,
+        }),
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+    });
+
+    if (response.status !== 200) {
+        return;
+    }
+
+    const refreshedAuthData = await response.json() as AuthDataDto;
+
+    dispatch(setAuthData(refreshedAuthData));
+
+    return authDataFromDTO(refreshedAuthData);
+};
 
 const authSlice = createSlice({
     name: 'auth',
@@ -23,48 +66,65 @@ const authSlice = createSlice({
     } as AuthState,
     reducers: {
         setAuthData: (state, action: PayloadAction<AuthDataDto>) => {
-            const accessToken: AuthDataAccessToken = {
-                token: action.payload.access_token,
-                expires: new Date().getTime() + action.payload.expires_in * 1000,
-            };
+            const authData = authDataFromDTO(action.payload);
 
-            const refreshToken: AuthDataRefreshToken = {
-                token: action.payload.refresh_token,
-                expires: new Date().getTime() + action.payload.refresh_expires_in * 1000,
-                idToken: action.payload.id_token,
-            };
+            state.authData = authData;
 
-            state.authData = {
-                accessToken: accessToken,
-                refreshToken: refreshToken,
-            };
-
-            StorageService.storeObject(StorageKey.AuthDataAccessToken, accessToken, StorageScope.Local);
-            StorageService.storeObject(StorageKey.AuthDataRefreshToken, refreshToken, StorageScope.Local);
+            StorageService.storeObject(StorageKey.AuthDataAccessToken, authData.accessToken, StorageScope.Local);
+            StorageService.storeObject(StorageKey.AuthDataRefreshToken, authData.refreshToken, StorageScope.Local);
         },
-        setUser: (state, action: PayloadAction<User>) => {
-            state.authenticatedUser = action.payload;
-        },
-        setUserMemberships: (state, action: PayloadAction<DepartmentMembership[]>) => {
-            state.authenticatedUserMemberships = action.payload;
+        updateAuthDataFromLocalStorage: (state, action: PayloadAction<void>) => {
+            const authData: AuthData = {
+                accessToken: StorageService.loadObject<AuthDataAccessToken>(StorageKey.AuthDataAccessToken) ?? undefined,
+                refreshToken: StorageService.loadObject<AuthDataRefreshToken>(StorageKey.AuthDataRefreshToken) ?? undefined,
+            };
+            state.authData = authData;
         },
         clearAuthData: (state, _: PayloadAction) => {
             state.authData = undefined;
-            state.authenticatedUser = undefined;
-            state.authenticatedUserMemberships = undefined;
-
             StorageService.clearItem(StorageKey.AuthDataAccessToken);
+            StorageService.clearItem(StorageKey.AuthDataAccessToken);
+            StorageService.clearItem(StorageKey.AuthDataRefreshToken);
         },
     },
 });
 
 export const {
     setAuthData,
+    updateAuthDataFromLocalStorage,
     clearAuthData,
-    setUser,
-    setUserMemberships,
 } = authSlice.actions;
 
-export const selectAuthData = (state: {auth: AuthState}) => state.auth.authData;
+export const selectAuthData = (state: { auth: AuthState }) => state.auth.authData;
+export const selectLogoutLink = (state: { auth: AuthState }) => {
+    const idToken = state.auth.authData?.refreshToken?.idToken;
+
+    if (idToken == null) {
+        return '#';
+    }
+
+    return `${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/logout?` + new URLSearchParams({
+        id_token_hint: idToken,
+        post_logout_redirect_uri: getUrlWithoutQuery(),
+    }).toString();
+};
 
 export const authReducer = authSlice.reducer;
+
+function authDataFromDTO(dto: AuthDataDto): AuthData {
+    const accessToken: AuthDataAccessToken = {
+        token: dto.access_token,
+        expires: new Date().getTime() + dto.expires_in * 1000,
+    };
+
+    const refreshToken: AuthDataRefreshToken = {
+        token: dto.refresh_token,
+        expires: new Date().getTime() + dto.refresh_expires_in * 1000,
+        idToken: dto.id_token,
+    };
+
+    return {
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+    };
+}

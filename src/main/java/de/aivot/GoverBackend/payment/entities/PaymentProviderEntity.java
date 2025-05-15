@@ -31,6 +31,10 @@ public class PaymentProviderEntity {
     private Boolean isTestProvider;
 
     @NotNull
+    @ColumnDefault("FALSE")
+    private Boolean isEnabled;
+
+    @NotNull
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
     private Map<String, Object> config;
@@ -81,5 +85,13 @@ public class PaymentProviderEntity {
 
     public void setTestProvider(Boolean testProvider) {
         isTestProvider = testProvider;
+    }
+
+    public Boolean getIsEnabled() {
+        return isEnabled;
+    }
+
+    public void setIsEnabled(Boolean isEnabled) {
+        this.isEnabled = isEnabled;
     }
 }

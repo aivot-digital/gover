@@ -45,6 +45,11 @@ export interface HealthData {
     components?: HealthDataComponents;
 }
 
+export interface RedisComponent {
+    status: Status;
+}
+
+
 export interface HealthDataComponents {
     av: AvComponent;
     db: DbComponent;
@@ -52,4 +57,5 @@ export interface HealthDataComponents {
     mail: MailComponent;
     s3: S3Component;
     puppet: PuppetComponent;
+    redis: RedisComponent;
 }

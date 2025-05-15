@@ -10,4 +10,7 @@ export enum StorageKey {
     SubmissionsIncludeTest = 'submissions_include_test',
 
     SavedModule = 'saved_module',
+
+    TokenDebuggerActive = 'debug_tokens',
+    CaptchaDebuggerActive = 'debug_captcha',
 }

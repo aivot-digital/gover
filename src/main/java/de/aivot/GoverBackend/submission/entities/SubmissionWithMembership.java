@@ -70,14 +70,6 @@ public class SubmissionWithMembership {
     private LocalDateTime formUpdated;
     private Integer formCustomerAccessHours;
     private Integer formSubmissionDeletionWeeks;
-    private Boolean formBundIdEnabled = false;
-    private BundIdAccessLevel formBundIdLevel;
-    private Boolean formBayernIdEnabled = false;
-    private BayernIdAccessLevel formBayernIdLevel;
-    private Boolean formShIdEnabled = false;
-    private SchleswigHolsteinIdAccessLevel formShIdLevel;
-    private Boolean formMukEnabled = false;
-    private MukAccessLevel formMukLevel;
     private String formPdfBodyTemplateKey;
     @JdbcTypeCode(SqlTypes.JSON)
     private Collection<PaymentProduct> formProducts;
@@ -459,78 +451,6 @@ public class SubmissionWithMembership {
 
     public SubmissionWithMembership setFormSubmissionDeletionWeeks(Integer formSubmissionDeletionWeeks) {
         this.formSubmissionDeletionWeeks = formSubmissionDeletionWeeks;
-        return this;
-    }
-
-    public Boolean getFormBundIdEnabled() {
-        return formBundIdEnabled;
-    }
-
-    public SubmissionWithMembership setFormBundIdEnabled(Boolean formBundIdEnabled) {
-        this.formBundIdEnabled = formBundIdEnabled;
-        return this;
-    }
-
-    public BundIdAccessLevel getFormBundIdLevel() {
-        return formBundIdLevel;
-    }
-
-    public SubmissionWithMembership setFormBundIdLevel(BundIdAccessLevel formBundIdLevel) {
-        this.formBundIdLevel = formBundIdLevel;
-        return this;
-    }
-
-    public Boolean getFormBayernIdEnabled() {
-        return formBayernIdEnabled;
-    }
-
-    public SubmissionWithMembership setFormBayernIdEnabled(Boolean formBayernIdEnabled) {
-        this.formBayernIdEnabled = formBayernIdEnabled;
-        return this;
-    }
-
-    public BayernIdAccessLevel getFormBayernIdLevel() {
-        return formBayernIdLevel;
-    }
-
-    public SubmissionWithMembership setFormBayernIdLevel(BayernIdAccessLevel formBayernIdLevel) {
-        this.formBayernIdLevel = formBayernIdLevel;
-        return this;
-    }
-
-    public Boolean getFormShIdEnabled() {
-        return formShIdEnabled;
-    }
-
-    public SubmissionWithMembership setFormShIdEnabled(Boolean formShIdEnabled) {
-        this.formShIdEnabled = formShIdEnabled;
-        return this;
-    }
-
-    public SchleswigHolsteinIdAccessLevel getFormShIdLevel() {
-        return formShIdLevel;
-    }
-
-    public SubmissionWithMembership setFormShIdLevel(SchleswigHolsteinIdAccessLevel formShIdLevel) {
-        this.formShIdLevel = formShIdLevel;
-        return this;
-    }
-
-    public Boolean getFormMukEnabled() {
-        return formMukEnabled;
-    }
-
-    public SubmissionWithMembership setFormMukEnabled(Boolean formMukEnabled) {
-        this.formMukEnabled = formMukEnabled;
-        return this;
-    }
-
-    public MukAccessLevel getFormMukLevel() {
-        return formMukLevel;
-    }
-
-    public SubmissionWithMembership setFormMukLevel(MukAccessLevel formMukLevel) {
-        this.formMukLevel = formMukLevel;
         return this;
     }
 

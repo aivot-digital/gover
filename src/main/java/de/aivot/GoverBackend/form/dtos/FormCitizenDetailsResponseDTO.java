@@ -1,15 +1,13 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
-import de.aivot.GoverBackend.enums.BayernIdAccessLevel;
-import de.aivot.GoverBackend.enums.BundIdAccessLevel;
-import de.aivot.GoverBackend.enums.MukAccessLevel;
-import de.aivot.GoverBackend.enums.SchleswigHolsteinIdAccessLevel;
-import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
+import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.List;
 
 public record FormCitizenDetailsResponseDTO(
         @Nonnull
@@ -41,28 +39,23 @@ public record FormCitizenDetailsResponseDTO(
         @Nonnull
         Integer themeId,
         @Nonnull
-        Boolean bundIdEnabled,
-        @Nullable
-        BundIdAccessLevel bundIdLevel,
+        Boolean identityRequired,
         @Nonnull
-        Boolean bayernIdEnabled,
-        @Nullable
-        BayernIdAccessLevel bayernIdLevel,
-        @Nonnull
-        Boolean mukEnabled,
-        @Nullable
-        MukAccessLevel mukLevel,
-        @Nonnull
-        Boolean shIdEnabled,
-        @Nullable
-        SchleswigHolsteinIdAccessLevel shIdLevel
+        List<IdentityProviderLink> identityProviders
 
 ) {
-    public static FormCitizenDetailsResponseDTO fromEntity(Form form) {
+    public static FormCitizenDetailsResponseDTO fromEntity(Form form, boolean obfuscateSteps) {
         ElementStreamUtils
                 .applyAction(form.getRoot(), element -> {
+                    element.setName("");
                         element.setTestProtocolSet(null);
                 });
+
+        if (obfuscateSteps) {
+            for (var step : form.getRoot().getChildren()) {
+                step.setChildren(List.of());
+            }
+        }
 
         return new FormCitizenDetailsResponseDTO(
                 form.getId(),
@@ -79,14 +72,8 @@ public record FormCitizenDetailsResponseDTO(
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
                 form.getThemeId(),
-                form.getBundIdEnabled(),
-                form.getBundIdLevel(),
-                form.getBayernIdEnabled(),
-                form.getBayernIdLevel(),
-                form.getMukEnabled(),
-                form.getMukLevel(),
-                form.getShIdEnabled(),
-                form.getShIdLevel()
+                form.getIdentityRequired(),
+                form.getIdentityProviders()
         );
     }
 }

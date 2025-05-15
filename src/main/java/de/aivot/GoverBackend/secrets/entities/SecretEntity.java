@@ -20,7 +20,7 @@ import java.util.Objects;
 @Table(name = "secrets")
 public class SecretEntity {
     @Id
-    @Column(length = 36)
+    @Column(length = 36, columnDefinition = "uuid")
     private String key;
 
     @Column(length = 64)

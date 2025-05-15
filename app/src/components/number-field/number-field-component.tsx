@@ -3,24 +3,29 @@ import {ChangeEvent, useMemo, useRef, useState} from 'react';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {type NumberFieldComponentProps} from './number-field-component-props';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
 
 const AbsoluteMaxValue = Math.pow(2, 31);
 const AbsoluteMinValue = -AbsoluteMaxValue;
 
 function validateValue(inputValue: string | undefined, value: number | undefined, minValue: number | undefined, maxValue: number | undefined, decimalPlaces: number | undefined) {
-    const parsedValue = inputValue == null ? (value ?? 0) : parseGermanNumber(inputValue);
+    const isEmpty = isStringNullOrEmpty(inputValue);
+    const hasNoValue = value == null;
+
+    if (isEmpty && hasNoValue) {
+        return undefined;
+    }
+
+    const parsedValue = inputValue == null ? (value ?? NaN) : parseGermanNumber(inputValue);
     const tooLow = !isNaN(parsedValue) && parsedValue < (minValue ?? AbsoluteMinValue);
     const tooHigh = !isNaN(parsedValue) && parsedValue > (maxValue ?? AbsoluteMaxValue);
-    const isEmpty = isStringNullOrEmpty(inputValue);
-    const internalError = !isEmpty && isNaN(parsedValue)
+    return !isEmpty && isNaN(parsedValue)
         ? 'Bitte geben Sie eine gültige Zahl ein.'
         : tooLow
             ? `Der Wert muss mindestens ${formatNumToGermanNum(minValue ?? AbsoluteMinValue, decimalPlaces)} betragen.`
             : tooHigh
                 ? `Der Wert darf maximal ${formatNumToGermanNum(maxValue ?? AbsoluteMaxValue, decimalPlaces)} betragen.`
                 : undefined;
-    return internalError;
 }
 
 export function NumberFieldComponent({

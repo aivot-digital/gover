@@ -178,6 +178,7 @@ export function AssetDetailsPageIndex() {
         setIsBusy(true);
         apiService.destroy(asset.key)
             .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
                 navigate('/assets', {
                     replace: true,
                 });

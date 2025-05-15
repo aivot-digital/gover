@@ -1,21 +1,18 @@
 package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.elements.services.BaseElementErrorDerivationService;
-import de.aivot.GoverBackend.enums.BayernIdAccessLevel;
-import de.aivot.GoverBackend.enums.BundIdAccessLevel;
-import de.aivot.GoverBackend.enums.MukAccessLevel;
-import de.aivot.GoverBackend.enums.SchleswigHolsteinIdAccessLevel;
 import de.aivot.GoverBackend.form.models.FormDerivationContext;
 import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.elements.models.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.elements.models.steps.StepElement;
 import de.aivot.GoverBackend.elements.models.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.steps.SummaryStepElement;
+import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
+import de.aivot.GoverBackend.identity.models.IdentityValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
-import java.util.Objects;
 
 public class FormErrorDerivationService extends BaseElementErrorDerivationService<FormDerivationContext> {
     @Override
@@ -66,27 +63,37 @@ public class FormErrorDerivationService extends BaseElementErrorDerivationServic
     }
 
     private void deriveErrorsForIntroductionStep(FormDerivationContext context, IntroductionStepElement introductionStep) {
+        var derivationData = context
+                .getElementDerivationData();
+
         // Check if privacy flag is set to true in the customer input and if not, set error message
-        if (!context.getValue(IntroductionStepElement.PRIVACY_CHECKBOX_ID, Boolean.class).orElse(false)) {
-            context.setError(IntroductionStepElement.PRIVACY_CHECKBOX_ID, "Bitte akzeptieren Sie die Hinweise zum Datenschutz.");
+        if (!derivationData.getValue(IntroductionStepElement.PRIVACY_CHECKBOX_ID, Boolean.class).orElse(false)) {
+            derivationData.setError(IntroductionStepElement.PRIVACY_CHECKBOX_ID, "Bitte akzeptieren Sie die Hinweise zum Datenschutz.");
         }
 
         // Check if the form requires a customer id and if it is, check if the customer id is set in the customer input and if not, set error message
         var form = context.getForm();
 
-        var formNeedsAuth = false;
-        if (form.getBayernIdEnabled() && form.getBayernIdLevel() != null && form.getBayernIdLevel().isHigherThan(BayernIdAccessLevel.OPTIONAL)) {
-            formNeedsAuth = true;
-        } else if (form.getBundIdEnabled() && form.getBundIdLevel() != null && form.getBundIdLevel().isHigherThan(BundIdAccessLevel.OPTIONAL)) {
-            formNeedsAuth = true;
-        } else if (form.getShIdEnabled() && form.getShIdLevel() != null && form.getShIdLevel().isHigherThan(SchleswigHolsteinIdAccessLevel.OPTIONAL)) {
-            formNeedsAuth = true;
-        } else if (form.getMukEnabled() && form.getMukLevel() != null && form.getMukLevel().isHigherThan(MukAccessLevel.OPTIONAL)) {
-            formNeedsAuth = true;
-        }
+        if (form.getIdentityRequired()) {
+            var identityData = derivationData
+                    .getValue(IdentityValueKey.IdCustomerInputKey, Map.class);
 
-        if (formNeedsAuth && context.getValue(IntroductionStepElement.CUSTOMER_IDENTITY_DATA_ID, Map.class).isEmpty()) {
-            context.setError(IntroductionStepElement.CUSTOMER_IDENTITY_DATA_ID, "Bitte melden Sie sich mit einem der bereitgestellten Konten an.");
+            if (identityData.isEmpty()) {
+                derivationData
+                        .setError(
+                                IdentityValueKey.IdCustomerInputKey,
+                                "Bitte melden Sie sich mit einem der bereitgestellten Konten an."
+                        );
+            } else {
+                var identityValue = IdentityValue.fromMap(identityData.get());
+                if (identityValue.isEmpty()) {
+                    derivationData
+                            .setError(
+                                    IdentityValueKey.IdCustomerInputKey,
+                                    "Bitte melden Sie sich mit einem der bereitgestellten Konten an."
+                            );
+                }
+            }
         }
     }
 
@@ -100,8 +107,52 @@ public class FormErrorDerivationService extends BaseElementErrorDerivationServic
     }
 
     private void deriveErrorsForSubmitStep(FormDerivationContext context, SubmitStepElement submitStep) {
-        if (!context.getValue(SubmitStepElement.CAPTCHA_FILED_ID, Boolean.class).orElse(false)) {
-            context.setError(SubmitStepElement.CAPTCHA_FILED_ID, "Bitte bestätigen Sie, dass Sie ein Mensch sind.");
+        var derivationData = context.getElementDerivationData();
+
+        var captchaRawValue = derivationData.getValue(SubmitStepElement.CAPTCHA_FIELD_ID, String.class);
+        if (captchaRawValue.isEmpty()) {
+            derivationData.setError(
+                    SubmitStepElement.CAPTCHA_FIELD_ID,
+                    "Bitte bestätigen Sie, dass Sie ein Mensch sind."
+            );
+            return;
+        }
+
+        try {
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var node = mapper.readTree(captchaRawValue.get());
+
+            var payloadNode = node.get("payload");
+            var expiresNode = node.get("expiresAt");
+
+            if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
+                derivationData.setError(
+                        SubmitStepElement.CAPTCHA_FIELD_ID,
+                        "Bitte bestätigen Sie, dass Sie ein Mensch sind."
+                );
+                return;
+            }
+
+            // check expiration
+            if (expiresNode != null && expiresNode.isNumber()) {
+                long now = java.time.Instant.now().getEpochSecond();
+                long expiresAt = expiresNode.asLong();
+
+                if (expiresAt < now) {
+                    derivationData.setError(
+                            SubmitStepElement.CAPTCHA_FIELD_ID,
+                            "Die Captcha-Bestätigung ist abgelaufen. Bitte erneut bestätigen."
+                    );
+                    return;
+                }
+            }
+
+        } catch (Exception e) {
+            // Payload not parseable → invalid
+            derivationData.setError(
+                    SubmitStepElement.CAPTCHA_FIELD_ID,
+                    "Die Captcha-Daten konnten nicht gelesen werden. Bitte erneut versuchen."
+            );
         }
     }
 }

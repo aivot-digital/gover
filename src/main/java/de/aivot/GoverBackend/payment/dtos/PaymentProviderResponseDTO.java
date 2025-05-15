@@ -17,6 +17,8 @@ public record PaymentProviderResponseDTO(
         @Nonnull
         Boolean isTestProvider,
         @Nonnull
+        Boolean isEnabled,
+        @Nonnull
         Map<String, Object> config
 ) {
     @Nonnull
@@ -30,6 +32,7 @@ public record PaymentProviderResponseDTO(
                 entity.getDescription(),
                 entity.getProviderKey(),
                 entity.getTestProvider(),
+                entity.getIsEnabled(),
                 entity.getConfig()
         );
     }
