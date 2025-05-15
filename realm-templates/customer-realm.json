@@ -2316,7 +2316,7 @@
   "adminEventsDetailsEnabled": false,
   "identityProviders": [
     {
-      "alias": "bayernid-prod",
+      "alias": "bayernid",
       "displayName": "BayernID (Produktion)",
       "internalId": "404ac123-dbaf-4b53-b160-eb673ddd3368",
       "providerId": "saml",
@@ -2420,7 +2420,7 @@
       }
     },
     {
-      "alias": "bundid-prod",
+      "alias": "bundid",
       "displayName": "BundID (Produktion)",
       "internalId": "a7d19356-8d0e-4c9f-a956-7f734d0b6dad",
       "providerId": "saml",
@@ -2526,7 +2526,7 @@
       }
     },
     {
-      "alias": "muk-prod",
+      "alias": "muk",
       "displayName": "Mein Unternehmenskonto (Produktion)",
       "internalId": "4a6807be-dc1a-471b-b218-14835836bfe1",
       "providerId": "saml",
@@ -2624,7 +2624,7 @@
       }
     },
     {
-      "alias": "schleswigholstein-prod",
+      "alias": "schleswigholstein",
       "displayName": "Servicekonto Schleswig-Holstein (Produktion)",
       "internalId": "a612b7b2-ff2a-4c24-91db-f2bd234bf495",
       "providerId": "saml",
@@ -2732,7 +2732,7 @@
     {
       "id": "32b6d672-43fe-4687-a621-80bf08aec65c",
       "name": "Identitätstyp",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2756,7 +2756,7 @@
     {
       "id": "c60a7000-d637-4f9d-803f-d8e63a41ddfe",
       "name": "Geburtsdatum",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2782,7 +2782,7 @@
     {
       "id": "3523bb7c-9f29-4c88-bf07-ef589e48706c",
       "name": "Dokumententyp",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2808,7 +2808,7 @@
     {
       "id": "b7d6191a-4bdd-408a-b277-6de5dc6efa78",
       "name": "Telefonnummer",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2834,7 +2834,7 @@
     {
       "id": "d63ff6c5-1904-42f0-8bf5-a7394f106376",
       "name": "Unternehmensanschrift: Ortsteil",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2858,7 +2858,7 @@
     {
       "id": "62be7e32-7ea1-4ef1-b102-15a76b862740",
       "name": "Vertrauensniveau Authentifizierung",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2882,7 +2882,7 @@
     {
       "id": "1dbf9042-39d1-44ff-9810-1223a2a6f0c3",
       "name": "E-Mail-Adresse",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2908,7 +2908,7 @@
     {
       "id": "84d801f0-3680-4208-8bae-6b84fa778407",
       "name": "bPK2",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2934,7 +2934,7 @@
     {
       "id": "382ac2ef-1e58-4ee2-8dd0-7bbc200d1b1a",
       "name": "eIDAS-Issuing-Country",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2960,7 +2960,7 @@
     {
       "id": "ab6a9684-3a3d-497e-a16d-c05655356a82",
       "name": "Vorname(n)",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -2986,7 +2986,7 @@
     {
       "id": "eb6fefb9-d085-4f1b-9b5c-181f27bbc59f",
       "name": "Handelnde Person: Geburtsdatum",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3010,7 +3010,7 @@
     {
       "id": "f9714b97-1933-4c51-ae4e-d7c773174081",
       "name": "E-Mail-Adresse",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3034,7 +3034,7 @@
     {
       "id": "9ca008da-6a1e-4182-bba4-422d45d56f88",
       "name": "Ort",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3060,7 +3060,7 @@
     {
       "id": "26fb8ef6-87ce-494c-957d-8fc844bca65f",
       "name": "Unternehmensanschrift: Postfach-Postleitzahl",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3084,7 +3084,7 @@
     {
       "id": "93015f02-f82d-4aac-af78-2ab5c539fcd0",
       "name": "Straße und Hausnummer",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3110,7 +3110,7 @@
     {
       "id": "2e45bb79-7fce-4a2e-b81d-8df699d3811e",
       "name": "Registergericht",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3134,7 +3134,7 @@
     {
       "id": "89b25470-dd58-451f-b872-9cb93edc8463",
       "name": "Vertrauensniveau",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3160,7 +3160,7 @@
     {
       "id": "e798fb1f-d673-4378-b6d7-938af6aaea50",
       "name": "Vorname(n)",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3184,7 +3184,7 @@
     {
       "id": "b63c9a90-b973-41fd-b9be-e8202f8f1892",
       "name": "Postleitzahl",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3210,7 +3210,7 @@
     {
       "id": "4cf5481f-e139-497a-bf55-2c464350ed45",
       "name": "Firmenname",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3234,7 +3234,7 @@
     {
       "id": "99eb2a6d-5121-4c01-afe9-b1066b15c396",
       "name": "Version",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3260,7 +3260,7 @@
     {
       "id": "356eaaca-15a2-4f58-a030-d5c479517174",
       "name": "Geburtsort",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3286,7 +3286,7 @@
     {
       "id": "732a7871-8e40-41af-80ea-ceb5412ad988",
       "name": "Staatsangehörigkeit",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3312,7 +3312,7 @@
     {
       "id": "92456eb1-b72f-4b32-a3e9-f0693e5e45b5",
       "name": "Unternehmensanschrift: Postfach-Nummer",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3336,7 +3336,7 @@
     {
       "id": "13d4cd6a-237d-42f7-954c-fd924bc49fde",
       "name": "Registernummer",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3360,7 +3360,7 @@
     {
       "id": "c3f36e5e-d4f8-4ae1-9853-be1dce75fac7",
       "name": "Unternehmensanschrift: Land",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3384,7 +3384,7 @@
     {
       "id": "6d007702-a804-47aa-9d4c-b3e2b441c54f",
       "name": "Anschrift Privatperson: Ort",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3408,7 +3408,7 @@
     {
       "id": "d4aad901-65f6-44cd-803f-047acd49a64b",
       "name": "Unternehmensanschrift: Adressergänzung",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3432,7 +3432,7 @@
     {
       "id": "32a57d9e-d369-4a30-a19a-310f674f5828",
       "name": "Unternehmen: Telefonnummer",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3456,7 +3456,7 @@
     {
       "id": "a8896048-7002-4f64-89df-fb30e3db419d",
       "name": "Unternehmensanschrift: Postleitzahl",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3480,7 +3480,7 @@
     {
       "id": "c5e73a47-69c6-4957-80d0-8987c5b1ce39",
       "name": "Mobiltelefonnummer",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3504,7 +3504,7 @@
     {
       "id": "1c2dbd1d-bb59-4975-84d4-ac6c0f5362a2",
       "name": "Unternehmensanschrift: Hausnummer",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3528,7 +3528,7 @@
     {
       "id": "42c4b77a-7481-4e80-a147-e08181278c55",
       "name": "bPK2",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3554,7 +3554,7 @@
     {
       "id": "518ba0d7-d031-4115-a8ca-c1ef45ea6b5e",
       "name": "Postfach",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3580,7 +3580,7 @@
     {
       "id": "9f93ab70-cc4e-47e1-a4e1-d2373a91cd66",
       "name": "Handelnde Person: Namensvorsatz",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3604,7 +3604,7 @@
     {
       "id": "fe406547-f5b9-4bca-81ae-5bfb35d7984a",
       "name": "Geburtsort",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3630,7 +3630,7 @@
     {
       "id": "e03655bb-196d-4918-913d-1203dcb1ed20",
       "name": "Vertrauensniveau",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3654,7 +3654,7 @@
     {
       "id": "1eac199a-5f80-412f-9afd-699ed4311228",
       "name": "Nachname",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3680,7 +3680,7 @@
     {
       "id": "9c18aebd-3376-44fd-875e-8e8e28b56071",
       "name": "Registergericht",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3704,7 +3704,7 @@
     {
       "id": "fb05c1c7-4389-4dca-812e-c0a036b0e5b7",
       "name": "Tätigkeit Code (Taetigkeit)",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3728,7 +3728,7 @@
     {
       "id": "e50df098-d17d-4404-8b2b-ce167281c0d7",
       "name": "Anschrift Privatperson: Straße und Hausnummer",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3752,7 +3752,7 @@
     {
       "id": "da46aa69-fcf3-4476-87dc-e670fb888a0f",
       "name": "Geburtsname",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3776,7 +3776,7 @@
     {
       "id": "68a466d8-facf-488d-a94f-10f0449aee76",
       "name": "DatenuebermittlerPseudonymId",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3800,7 +3800,7 @@
     {
       "id": "5d46dfd7-7405-415b-ac55-55c25cbc667c",
       "name": "Registerart",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3824,7 +3824,7 @@
     {
       "id": "8adc2b7a-9297-4c37-a824-237af047e096",
       "name": "E-Mail-Adresse",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3850,7 +3850,7 @@
     {
       "id": "48292b7b-2b04-4bbe-8ac3-25a0d4f11170",
       "name": "Geburtsdatum",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3874,7 +3874,7 @@
     {
       "id": "9c0b92a9-3676-4672-a8e8-93b9b347584e",
       "name": "Tätigkeit (TaetigkeitText)",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3898,7 +3898,7 @@
     {
       "id": "a3c2d500-f535-4aea-b0fa-74944f77edda",
       "name": "Unternehmensanschrift: Postfach-Land",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3922,7 +3922,7 @@
     {
       "id": "67b90eb0-0fc6-4118-a0ec-9d01cd1106fa",
       "name": "Handelnde Person: Akademischer Grad",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3946,7 +3946,7 @@
     {
       "id": "c8c4b71d-4afb-4dfd-b1aa-5d1fcdcdf23d",
       "name": "Land",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3972,7 +3972,7 @@
     {
       "id": "a162e43c-d518-4f17-bf85-72bf05d3c72e",
       "name": "Registernummer",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -3996,7 +3996,7 @@
     {
       "id": "2fa0c209-3200-4c73-a4b2-409b8d58b992",
       "name": "Anschrift Privatperson: Postleitzahl",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4020,7 +4020,7 @@
     {
       "id": "06bd18b7-3198-450d-a58d-af9eeaac9562",
       "name": "Postfach",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4046,7 +4046,7 @@
     {
       "id": "22da4ba5-d8b3-4fe2-a2f3-4244a59c49a1",
       "name": "Anrede",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4072,7 +4072,7 @@
     {
       "id": "a4a2e87d-8e6b-430c-89bd-5c82dc1a95ff",
       "name": "Handelnde Person: Namenszusatz",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4096,7 +4096,7 @@
     {
       "id": "8fa5d60a-17a2-4f6a-9425-551557405d3d",
       "name": "Vertrauensniveau",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4122,7 +4122,7 @@
     {
       "id": "33c5ba86-c6b9-4d27-83bc-08e5e841e10c",
       "name": "Version",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4148,7 +4148,7 @@
     {
       "id": "cd7a6615-97ae-42e3-9924-63b795934467",
       "name": "Vorname(n)",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4174,7 +4174,7 @@
     {
       "id": "38a134bd-f3e5-48bc-a42a-9f838b9375ba",
       "name": "Handelnde Person: Nachname",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4198,7 +4198,7 @@
     {
       "id": "948b3cba-a3ad-4702-8e87-8fc64c2c9da1",
       "name": "Akademischer Titel",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4222,7 +4222,7 @@
     {
       "id": "26b3ade4-ef8a-42a8-bd0d-4206ee14bb19",
       "name": "Firmenname",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4246,7 +4246,7 @@
     {
       "id": "fb0605ad-073e-48bd-b4f8-72c09f7e8361",
       "name": "Servicekontotyp",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4270,7 +4270,7 @@
     {
       "id": "ff1e2c99-1120-466c-93d6-84a72bac976d",
       "name": "Staatsangehörigkeit",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4296,7 +4296,7 @@
     {
       "id": "c9deae81-bb3a-4ff4-b32f-8814a9d5e65c",
       "name": "eIDAS-Issuing-Country",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4322,7 +4322,7 @@
     {
       "id": "385dc25b-c2bf-4b94-837b-27759f840fdc",
       "name": "Anrede",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4348,7 +4348,7 @@
     {
       "id": "761e26ed-18bc-41b2-9416-4e8c8279f66a",
       "name": "Handelnde Person: Vorname",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4372,7 +4372,7 @@
     {
       "id": "22d44330-3ced-4c10-8c9a-9d7dc1622586",
       "name": "Postleitzahl",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4398,7 +4398,7 @@
     {
       "id": "1919db0e-a8ad-4d90-b834-9111c4faa274",
       "name": "Geburtsname",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4424,7 +4424,7 @@
     {
       "id": "971c9429-1955-4eb5-9a62-11be978762ff",
       "name": "Postfach",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4448,7 +4448,7 @@
     {
       "id": "5d2066a0-aea3-464d-96d7-c51980f1497d",
       "name": "Unternehmensanschrift: Straße",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4472,7 +4472,7 @@
     {
       "id": "b46a9d92-9972-4165-ab6d-ab478dcc9c90",
       "name": "Akademischer Titel",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4498,7 +4498,7 @@
     {
       "id": "ad7fe75b-ab95-4b54-a6a8-c550688a7f3b",
       "name": "Akademischer Titel",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4524,7 +4524,7 @@
     {
       "id": "ee827f3a-6cc9-46b7-864d-8ca709758c2f",
       "name": "Land",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4550,7 +4550,7 @@
     {
       "id": "5544e9c1-a685-4a91-9d0c-b5d0cdc05bed",
       "name": "Datenkranz Typ",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4574,7 +4574,7 @@
     {
       "id": "4450b264-1ba1-4e79-a292-210af87e16f0",
       "name": "Dokumententyp",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4600,7 +4600,7 @@
     {
       "id": "e8db7548-00a5-4669-9887-d4311c219001",
       "name": "Geburtsort",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4624,7 +4624,7 @@
     {
       "id": "90d43118-1482-45f7-9026-cd4abb4facb1",
       "name": "Unternehmensanschrift: Straße und Hausnummer",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4648,7 +4648,7 @@
     {
       "id": "9eb8199a-7c54-4cc1-b3a5-d7e85630543e",
       "name": "Nachname",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4674,7 +4674,7 @@
     {
       "id": "24e8852e-155d-49c9-aa85-66a985cfa582",
       "name": "Geburtsname",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4700,7 +4700,7 @@
     {
       "id": "1d1e4834-4473-4e69-96e2-7c34c5a7e23b",
       "name": "Datenübermittler Pseudonym ID",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4724,7 +4724,7 @@
     {
       "id": "33313f37-aca3-4332-9179-4c9d3ad06ff9",
       "name": "Nachname",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4748,7 +4748,7 @@
     {
       "id": "696a2f93-021f-4e8e-8c5d-b4c4923b9b9f",
       "name": "Unternehmenseinheit",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4772,7 +4772,7 @@
     {
       "id": "7faea553-e01e-41a3-807b-2989e1c67518",
       "name": "Favorisierte Sprache",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4796,7 +4796,7 @@
     {
       "id": "6e1e6111-134d-4330-91b8-19d3224c95ce",
       "name": "Rechtsform (RechtsformText)",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4820,7 +4820,7 @@
     {
       "id": "d010164e-5dd4-4b73-8d95-02ac3ce0d240",
       "name": "Unternehmensanschrift: Land",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4844,7 +4844,7 @@
     {
       "id": "e02b8c73-eb9c-4aa4-9869-891cb0eedd0d",
       "name": "Anrede",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4868,7 +4868,7 @@
     {
       "id": "8266da40-6720-4c90-af8d-8331ae185926",
       "name": "Straße und Hausnummer",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4894,7 +4894,7 @@
     {
       "id": "18e98f59-3323-4562-8110-2ed8a210b84e",
       "name": "Identitätstyp (PersTyp)",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4918,7 +4918,7 @@
     {
       "id": "5b855818-6d47-4353-b2fa-35e46e60212a",
       "name": "Unternehmensanschrift: Ort",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4942,7 +4942,7 @@
     {
       "id": "06ee4353-4435-4b7a-a6fb-f4d16c979676",
       "name": "Telefonnummer",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4966,7 +4966,7 @@
     {
       "id": "ad350d60-7a4b-4d99-8d55-750304ced4f3",
       "name": "AssertionProvedBy",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -4992,7 +4992,7 @@
     {
       "id": "e97eb1c6-fa72-492f-a454-4c21b9040223",
       "name": "Unternehmen: E-Mail-Adresse",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5016,7 +5016,7 @@
     {
       "id": "26c322e1-6bc6-4b38-a0b6-92c3bf7d36cc",
       "name": "AssertionProvedBy",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5042,7 +5042,7 @@
     {
       "id": "8d8a33f2-90d8-4f33-9371-ea7114cdf453",
       "name": "Unternehmensanschrift: Typ",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5066,7 +5066,7 @@
     {
       "id": "da6cc971-d5b0-4aea-bfbe-b6bd548f024c",
       "name": "Geschlecht",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5090,7 +5090,7 @@
     {
       "id": "9833c705-eea7-4fbf-b0bd-0c9036b5e10a",
       "name": "Geburtsdatum",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5116,7 +5116,7 @@
     {
       "id": "ae44a8cd-11fd-4656-8a75-22fcb0e01196",
       "name": "Telefonnummer",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5142,7 +5142,7 @@
     {
       "id": "dd2915c6-3460-412b-90be-812bcf72a253",
       "name": "Rechtsform Code (Rechtsform)",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5166,7 +5166,7 @@
     {
       "id": "a800cf6c-cb04-428b-bb76-f69bc0c0944f",
       "name": "Ort",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5192,7 +5192,7 @@
     {
       "id": "a7b42c34-ecdf-4ded-966e-4e866ec2d5af",
       "name": "Unternehmensanschrift: Postleitzahl",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5216,7 +5216,7 @@
     {
       "id": "866779fc-232a-4b45-8de3-d91e7a64aebe",
       "name": "Unternehmensanschrift: Ort",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5240,7 +5240,7 @@
     {
       "id": "5ce5292c-c4ca-485f-950e-d4e8f3a6b736",
       "name": "Anschrift Privatperson: Land",
-      "identityProviderAlias": "schleswigholstein-prod",
+      "identityProviderAlias": "schleswigholstein",
       "identityProviderMapper": "saml-xpath-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5264,7 +5264,7 @@
     {
       "id": "1c3ea480-2c9d-4015-8e29-98b6854782f9",
       "name": "Vertrauensniveau Identifizierung",
-      "identityProviderAlias": "muk-prod",
+      "identityProviderAlias": "muk",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5288,7 +5288,7 @@
     {
       "id": "7c235e2d-7612-48a6-832b-985c23e9b8d4",
       "name": "Wohnort-ID",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5314,7 +5314,7 @@
     {
       "id": "6ffb24d0-f21c-485e-afe1-f1b08edd78ca",
       "name": "Antrags-ID",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5340,7 +5340,7 @@
     {
       "id": "14de15ce-c958-4252-aaf8-24b7b708d093",
       "name": "Pseudonym",
-      "identityProviderAlias": "bayernid-prod",
+      "identityProviderAlias": "bayernid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5366,7 +5366,7 @@
     {
       "id": "929a60f2-aed5-46e3-a36e-8e15acffd6f0",
       "name": "Wohnort-ID",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5392,7 +5392,7 @@
     {
       "id": "58cfd934-35c6-4a3b-8ecd-2bc022d67117",
       "name": "Antrags-ID",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -5418,7 +5418,7 @@
     {
       "id": "9498959f-b9ef-4540-b43e-c36d72f9de9d",
       "name": "Pseudonym",
-      "identityProviderAlias": "bundid-prod",
+      "identityProviderAlias": "bundid",
       "identityProviderMapper": "saml-user-attribute-idp-mapper",
       "config": {
         "syncMode": "INHERIT",
@@ -6210,9 +6210,9 @@
   "authenticatorConfig": [
     {
       "id": "246dbd47-ca67-4a5f-a55c-5af0a2d8f7f8",
-      "alias": "bundid-prod",
+      "alias": "bundid",
       "config": {
-        "defaultProvider": "bundid-prod"
+        "defaultProvider": "bundid"
       }
     },
     {
