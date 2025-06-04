@@ -1,19 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../preamble/preamble';
-import {
-    Box,
-    Button,
-    CircularProgress,
-    Divider,
-    FormHelperText,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-    useTheme
-} from '@mui/material';
+import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {type Department} from '../../modules/departments/models/department';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -30,8 +18,8 @@ import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
-import ExpandableList from "../expandable-list/expandable-list";
-import {AltchaWidget} from "../altcha/altcha-widget";
+import ExpandableList from '../expandable-list/expandable-list';
+import {AltchaWidget} from '../altcha/altcha-widget';
 
 export const SubmitHumanKey = '__human__';
 export const SubmitPaymentDataKey = '__payment_data__';
@@ -42,13 +30,10 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
     const dispatch = useAppDispatch();
     const initialDisplayCount = 4;
 
-    const [isCalculating, setIsCalculating] = useState(false);
     const customerInputs = useAppSelector(state => state.app.inputs);
     const isHuman = useAppSelector(selectCustomerInputValue(SubmitHumanKey));
     const error = useAppSelector(selectCustomerInputError(SubmitHumanKey));
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const [showAllDocumentsToReceive, setShowAllDocumentsToReceive] = useState(false);
-
 
     const form = useAppSelector(selectLoadedForm);
 
@@ -56,10 +41,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
-
-    const handleToggleShowAllDocumentsToReceive = () => {
-        setShowAllDocumentsToReceive(!showAllDocumentsToReceive);
-    };
 
     useEffect(() => {
         if (form == null) {
@@ -222,13 +203,18 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     <Box
                         sx={{
                             columnCount: { xs: 1, md: 2 },
-                            columnGap: 4,
+                            columnGap: 7,
                         }}
                     >
                         {sections.map((section, index) => (
                             <Box
                                 key={index}
-                                sx={{ breakInside: 'avoid', mb: 3, pr: 6 }}
+                                sx={{
+                                    breakInside: 'avoid',
+                                    mb: 3,
+                                    display: 'inline-block',
+                                    width: '100%',
+                                }}
                             >
                                 {section}
                             </Box>
