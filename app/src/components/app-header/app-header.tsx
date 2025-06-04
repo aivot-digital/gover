@@ -167,7 +167,7 @@ export function AppHeader({mode}: AppHeaderProps): JSX.Element {
                             {
                                 mode !== AppMode.CustomerDisplay &&
                                 <Tooltip
-                                    title="Navigationsmenü anzeigen"
+                                    title={mode === AppMode.Staff ? "Navigationsmenü" : "Einstellungen"}
                                 >
                                     <IconButton
                                         color="primary"
