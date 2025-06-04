@@ -395,7 +395,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     >
                         <Typography
                             component="h3"
-                            variant="h6"
+                            variant="h5"
                             color="primary"
                         >
                             Antrag als PDF herunterladen
@@ -431,7 +431,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     >
                         <Typography
                             component="h3"
-                            variant="h6"
+                            variant="h5"
                             color="primary"
                         >
                             Antrag per E-Mail erhalten
@@ -514,7 +514,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
 
             <Typography
                 component="h3"
-                variant="h6"
+                variant="h5"
                 sx={{textAlign: 'center'}}
                 color="primary"
             >

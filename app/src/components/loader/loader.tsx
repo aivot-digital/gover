@@ -14,7 +14,7 @@ export function Loader({message}: { message?: string | ReactNode }) {
                 }}
             >
                 <Typography
-                    variant="h6"
+                    variant="h5"
                     sx={{
                         mr: 'auto',
                         pr: 1,

@@ -22,8 +22,10 @@ import {PaymentProvidersApiService} from '../../modules/payment/payment-provider
 import {Page} from '../../models/dtos/page';
 import {PaymentProviderResponseDTO} from '../../modules/payment/dtos/payment-provider-response-dto';
 import {Link} from 'react-router-dom';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 interface PaymentPositionItemProps {
+    index: number;
     product: PaymentProduct;
     onDelete: () => void;
     onPatch: (patch: Partial<PaymentProduct>) => void;
@@ -36,7 +38,8 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
     return (
         <Box
             sx={{
-                border: '1px solid black',
+                border: '1px solid rgba(0, 0, 0, 0.23)',
+                borderRadius: 1,
                 px: 4,
                 py: 2,
                 mb: 3,
@@ -57,10 +60,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                 </IconButton>
 
                 <Typography
-                    variant="subtitle2"
+                    variant="h5"
                     sx={{ml: 2}}
                 >
-                    {isStringNotNullOrEmpty(props.product.reference) ? props.product.reference : props.product.id}
+                   Position Nr. {props.index !== undefined && (props.index + 1)}: {isStringNotNullOrEmpty(props.product.reference) ? props.product.reference : props.product.id}
                 </Typography>
 
                 {
@@ -83,34 +86,11 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     <Grid
                         container
                         columnSpacing={4}
+                        sx={{mt: 2}}
                     >
                         <Grid
                             item
-                            xs={12}
-                        >
-                            <TextFieldComponent
-                                label="Id"
-                                value={props.product.id}
-                                onChange={val => {
-                                    props.onPatch({
-                                        id: val ?? '',
-                                    });
-                                }}
-                                maxCharacters={36}
-                                minCharacters={36}
-                                required
-                                disabled
-                                hint="Die ID der Position zur technischen Identifikation."
-                                pattern={{
-                                    regex: '^[\\w\\d-]+$',
-                                    message: 'Die Id darf nur aus Buchstaben (keine Umlaute), Zahlen und Bindestrichen (-) bestehen.',
-                                }}
-                            />
-                        </Grid>
-
-                        <Grid
-                            item
-                            xs={12}
+                            xs={6}
                         >
                             <TextFieldComponent
                                 label="Referenz"
@@ -134,6 +114,32 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         <Grid
                             item
                             xs={12}
+                            lg={6}
+                        >
+                            <TextFieldComponent
+                                label="ID"
+                                value={props.product.id}
+                                onChange={val => {
+                                    props.onPatch({
+                                        id: val ?? '',
+                                    });
+                                }}
+                                maxCharacters={36}
+                                minCharacters={36}
+                                required
+                                disabled
+                                hint="Die automatisch erzeugte ID der Position zur technischen Identifikation."
+                                pattern={{
+                                    regex: '^[\\w\\d-]+$',
+                                    message: 'Die Id darf nur aus Buchstaben (keine Umlaute), Zahlen und Bindestrichen (-) bestehen.',
+                                }}
+                            />
+                        </Grid>
+
+                        <Grid
+                            item
+                            xs={12}
+                            lg={6}
                         >
                             <TextFieldComponent
                                 label="Beschreibung"
@@ -160,6 +166,12 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             item
                             xs={12}
                             lg={6}
+                        />
+
+                        <Grid
+                            item
+                            xs={12}
+                            lg={3}
                         >
                             <NumberFieldComponent
                                 label="Einzelpreis (Netto)"
@@ -182,7 +194,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         <Grid
                             item
                             xs={12}
-                            lg={6}
+                            lg={3}
                         >
                             <NumberFieldComponent
                                 label="Steuersatz"
@@ -198,13 +210,14 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                                 decimalPlaces={2}
                                 minValue={0}
                                 maxValue={100}
-                                hint="Der auf diese Zahlungsposition anzuwendende Steuersatz. Anzugeben als Prozentbetrag."
+                                hint="Der auf diese Zahlungsposition anzuwendende Steuersatz in Prozent."
                             />
                         </Grid>
 
                         <Grid
                             item
                             xs={12}
+                            lg={3}
                         >
                             <NumberFieldComponent
                                 label="Einzelpreis (Brutto)"
@@ -219,28 +232,34 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                                 disabled={true}
                             />
                         </Grid>
-                    </Grid>
 
                     {
                         props.product.taxRate === 0 &&
-                        <TextFieldComponent
-                            label="Begründung des Steuersatzes"
-                            value={props.product.taxInformation}
-                            onChange={val => {
-                                props.onPatch({
-                                    taxInformation: val ?? '',
-                                });
-                            }}
-                            multiline
-                            disabled={props.disabled}
-                            maxCharacters={250}
-                            hint="Bitte begründen Sie den verwendeten Steuersatz. Beispiele: Umsatzsteuerbefreit, Kleinunternehmerregelung, Nicht steuerbar etc."
-                            pattern={{
-                                regex: '^[\\w\\d\\s-,\\.\\u00C0-\\u017F]+$',
-                                message: 'Die Beschreibung darf nur aus Buchstaben, Zahlen, Kommata, Punkten und Bindestrichen (-) bestehen.',
-                            }}
-                        />
+                        <Grid
+                            item
+                            xs={12}
+                            lg={6}
+                        >
+                            <TextFieldComponent
+                                label="Begründung des Steuersatzes"
+                                value={props.product.taxInformation}
+                                onChange={val => {
+                                    props.onPatch({
+                                        taxInformation: val ?? '',
+                                    });
+                                }}
+                                multiline
+                                disabled={props.disabled}
+                                maxCharacters={250}
+                                hint="Bitte begründen Sie den verwendeten Steuersatz. Beispiele: Umsatzsteuerbefreit, Kleinunternehmerregelung, Nicht steuerbar etc."
+                                pattern={{
+                                    regex: '^[\\w\\d\\s-,\\.\\u00C0-\\u017F]+$',
+                                    message: 'Die Beschreibung darf nur aus Buchstaben, Zahlen, Kommata, Punkten und Bindestrichen (-) bestehen.',
+                                }}
+                            />
+                        </Grid>
                     }
+                    </Grid>
 
                     <Box>
                         <OptionListInput
@@ -300,80 +319,90 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
 
                     {
                         props.product.type === PaymentType.UPFRONT_FIXED &&
-                        <>
-                            <NumberFieldComponent
-                                label="Menge"
-                                value={props.product.upfrontFixedQuantity}
-                                onChange={val => {
-                                    props.onPatch({
-                                        upfrontFixedQuantity: val,
-                                    });
-                                }}
-                                required
-                                disabled={props.disabled}
-                                suffix="Stück"
-                                decimalPlaces={0}
-                                minValue={1}
-                                maxValue={999999}
-                                hint="Angabe der festen Menge. Diese Angabe wird mit dem Einzelpreis multipliziert und bestimmt die für die antragstellende Person zu zahlende Endsumme für diese Zahlungsposition."
-                            />
-
+                        <Grid
+                            container
+                            columnSpacing={4}
+                            sx={{mt: 1}}
+                        >
                             <Grid
-                                container
-                                spacing={2}
+                                item
+                                xs={12}
+                                lg={3}
                             >
-                                <Grid
-                                    item
-                                    xs={12}
-                                    lg={6}
-                                >
-                                    <NumberFieldComponent
-                                        label="Gesamtpreis (Netto)"
-                                        value={props.product.netPrice * (props.product.upfrontFixedQuantity ?? 0)}
-                                        onChange={() => {
-                                        }}
-                                        suffix="Euro"
-                                        decimalPlaces={2}
-                                        minValue={0}
-                                        maxValue={999999}
-                                        hint="Der Netto Gesamtpreis für die Zahlungsposition."
-                                        disabled={true}
-                                    />
-                                </Grid>
-
-                                <Grid
-                                    item
-                                    xs={12}
-                                    lg={6}
-                                >
-                                    <NumberFieldComponent
-                                        label="Enthaltener Steuerbetrag"
-                                        value={props.product.netPrice * (props.product.taxRate / 100) * (props.product.upfrontFixedQuantity ?? 0)}
-                                        onChange={() => {
-                                        }}
-                                        suffix="Euro"
-                                        decimalPlaces={2}
-                                        minValue={0}
-                                        maxValue={999999}
-                                        hint="Der in der Zahlungsposition enthaltene Gesamtsteuerbetrag."
-                                        disabled={true}
-                                    />
-                                </Grid>
+                                <NumberFieldComponent
+                                    label="Menge"
+                                    value={props.product.upfrontFixedQuantity}
+                                    onChange={val => {
+                                        props.onPatch({
+                                            upfrontFixedQuantity: val,
+                                        });
+                                    }}
+                                    required
+                                    disabled={props.disabled}
+                                    suffix="Stück"
+                                    decimalPlaces={0}
+                                    minValue={1}
+                                    maxValue={999999}
+                                    hint="Feste Menge, die mit dem Einzelpreis multipliziert wird und die Endsumme bestimmt."
+                                />
                             </Grid>
 
-                            <NumberFieldComponent
-                                label="Gesamtpreis (Brutto)"
-                                value={props.product.netPrice * (1 + props.product.taxRate / 100) * (props.product.upfrontFixedQuantity ?? 0)}
-                                onChange={() => {
-                                }}
-                                suffix="Euro"
-                                decimalPlaces={2}
-                                minValue={0}
-                                maxValue={999999}
-                                hint="Der Brutto Gesamtpreis für die Zahlungsposition."
-                                disabled={true}
-                            />
-                        </>
+                            <Grid
+                                item
+                                xs={12}
+                                lg={3}
+                            >
+                                <NumberFieldComponent
+                                    label="Gesamtpreis (Netto)"
+                                    value={props.product.netPrice * (props.product.upfrontFixedQuantity ?? 0)}
+                                    onChange={() => {
+                                    }}
+                                    suffix="Euro"
+                                    decimalPlaces={2}
+                                    minValue={0}
+                                    maxValue={999999}
+                                    hint="Netto-Endbetrag der Zahlungsposition."
+                                    disabled={true}
+                                />
+                            </Grid>
+
+                            <Grid
+                                item
+                                xs={12}
+                                lg={3}
+                            >
+                                <NumberFieldComponent
+                                    label="Enthaltener Steuerbetrag"
+                                    value={props.product.netPrice * (props.product.taxRate / 100) * (props.product.upfrontFixedQuantity ?? 0)}
+                                    onChange={() => {
+                                    }}
+                                    suffix="Euro"
+                                    decimalPlaces={2}
+                                    minValue={0}
+                                    maxValue={999999}
+                                    hint="Gesamtsteuerbetrag innerhalb der Zahlungsposition."
+                                    disabled={true}
+                                />
+                            </Grid>
+                            <Grid
+                                item
+                                xs={12}
+                                lg={3}
+                            >
+                                <NumberFieldComponent
+                                    label="Gesamtpreis (Brutto)"
+                                    value={props.product.netPrice * (1 + props.product.taxRate / 100) * (props.product.upfrontFixedQuantity ?? 0)}
+                                    onChange={() => {
+                                    }}
+                                    suffix="Euro"
+                                    decimalPlaces={2}
+                                    minValue={0}
+                                    maxValue={999999}
+                                    hint="Brutto-Endbetrag der Zahlungsposition."
+                                    disabled={true}
+                                />
+                            </Grid>
+                        </Grid>
                     }
 
                     {
@@ -444,103 +473,138 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
     if (availablePaymentProviders == null || availablePaymentProviders.size === 0) {
         return (
-            <AlertComponent
-                color="info"
-                sx={{
-                    m: 0,
-                }}
-                title="Kein Zahlungsdienstleister hinterlegt"
-            >
-                Sie haben noch keinen Zahlungsdienstleister hinterlegt. Wenn Sie eine Administrator:in sind, können Sie einen <Link
-                to={'/payment-providers/new'}
-                target="_blank"
-                style={{color: 'inherit'}}
-            >
-                neuen Zahlungsdienstleister
-            </Link> zur Verwendung in Formularen anlegen.
-            </AlertComponent>
+            <>
+                <ElementEditorSectionHeader
+                    title="E-Payment konfigurieren"
+                    disableMarginTop
+                >
+                    Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um Online-Zahlungen über dieses Formular zu ermöglichen.
+                </ElementEditorSectionHeader>
+
+                <AlertComponent
+                    color="info"
+                    sx={{
+                        m: 0,
+                    }}
+                    title="Kein Zahlungsdienstleister hinterlegt"
+                >
+                    Sie haben noch keinen Zahlungsdienstleister hinterlegt. Wenn Sie eine Administrator:in sind, können Sie einen <Link
+                    to={'/payment-providers/new'}
+                    target="_blank"
+                    style={{color: 'inherit'}}
+                >
+                    neuen Zahlungsdienstleister
+                </Link> zur Verwendung in Formularen anlegen.
+                </AlertComponent>
+            </>
+
         );
     }
 
     return (
         <>
-            <Typography
-                variant="h6"
+            <ElementEditorSectionHeader
+                title="E-Payment konfigurieren"
+                disableMarginTop
             >
-                Basiskonfiguration
-            </Typography>
+                Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um Online-Zahlungen über dieses Formular zu ermöglichen.
+            </ElementEditorSectionHeader>
 
-            <SelectFieldComponent
-                label="Zahlungsdienstleister"
-                value={props.entity.paymentProvider}
-                onChange={val => {
-                    props.onPatchEntity({
-                        ...props.entity,
-                        paymentProvider: val,
-                    });
-                }}
-                disabled={!props.editable}
-                options={availablePaymentProviders?.content.map(pm => ({
-                    value: pm.key,
-                    label: pm.name,
-                })) ?? []}
-                hint="Bitte wählen Sie einen Zahlungsdienstleister für dieses Formular aus. Beachten Sie die möglichen spezifischen Hinweise des gewählten Dienstleisters zur Konfiguration der erforderlichen Zahlungsparameter."
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
 
-            {
-                isTestPaymentProvider && (
-                    <AlertComponent
-                        color="warning"
-                        sx={{mt: 2}}
-                        title="Es handelt sich um eine vorproduktive Konfiguration für den Zahlungsdienstleister"
-                    >
-                        Zahlungen über diese vorproduktive Konfiguration werden nicht tatsächlich durchgeführt.
-                        Hinterlegen Sie eine Produktivkonfiguration für den Zahlungsdienstleister, um das Formular zu veröffentlichen.
-                    </AlertComponent>
-                )
-            }
+                    <SelectFieldComponent
+                        label="Zahlungsdienstleister"
+                        value={props.entity.paymentProvider}
+                        onChange={val => {
+                            props.onPatchEntity({
+                                ...props.entity,
+                                paymentProvider: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                        options={availablePaymentProviders?.content.map(pm => ({
+                            value: pm.key,
+                            label: pm.name,
+                        })) ?? []}
+                        hint="Wählen Sie einen Zahlungsdienstleister aus. Beachten Sie ggf. dienspezifische Hinweise zur Konfiguration."
+                    />
+
+                    {
+                        isTestPaymentProvider && (
+                            <AlertComponent
+                                color="warning"
+                                sx={{mt: 2}}
+                                title="Es handelt sich um eine vorproduktive Konfiguration"
+                            >
+                                Über diese vorproduktive Konfiguration werden keine echten Zahlungen durchgeführt.
+                                Hinterlegen Sie eine Produktivkonfiguration, um das Formular veröffentlichen zu können.
+                            </AlertComponent>
+                        )
+                    }
+
+                </Grid>
+            </Grid>
 
             {
                 isStringNotNullOrEmpty(props.entity.paymentProvider) &&
                 <>
-                    <TextFieldComponent
-                        label="Buchungstext"
-                        value={props.entity.paymentPurpose}
-                        onChange={val => {
-                            props.onPatchEntity({
-                                ...props.entity,
-                                paymentPurpose: val,
-                            });
-                        }}
-                        disabled={!props.editable}
-                        required
-                        minCharacters={1}
-                        maxCharacters={27}
-                        pattern={{
-                            regex: '^[\\w\\d\\ \\-]+$',
-                            message: 'Der Buchungstext darf nur aus Buchstaben (keine Umlaute), Zahlen, Leerzeichen und Bindestrichen (-) bestehen.',
-                        }}
-                        hint="Der Buchungstext (oder auch Verwendungszweck) wird bei der antragstellenden Person auf der Abrechnung (z.B. Bank, Kreditkarte etc.) erscheinen."
-                    />
+                    <Grid
+                        container
+                        columnSpacing={4}
+                    >
+                        <Grid
+                            item
+                            xs={12}
+                            lg={6}
+                        >
+                            <TextFieldComponent
+                                label="Buchungstext"
+                                value={props.entity.paymentPurpose}
+                                onChange={val => {
+                                    props.onPatchEntity({
+                                        ...props.entity,
+                                        paymentPurpose: val,
+                                    });
+                                }}
+                                disabled={!props.editable}
+                                required
+                                minCharacters={1}
+                                maxCharacters={27}
+                                pattern={{
+                                    regex: '^[\\w\\d\\ \\-]+$',
+                                    message: 'Der Buchungstext darf nur aus Buchstaben (keine Umlaute), Zahlen, Leerzeichen und Bindestrichen (-) bestehen.',
+                                }}
+                                hint="Der Buchungstext erscheint auf der Abrechnung der antragstellenden Person (z. B. Bank oder Kreditkarte)."
+                            />
 
-                    <TextFieldComponent
-                        label="Beschreibung"
-                        value={props.entity.paymentDescription}
-                        onChange={val => {
-                            props.onPatchEntity({
-                                ...props.entity,
-                                paymentDescription: val,
-                            });
-                        }}
-                        disabled={!props.editable}
-                        multiline
-                        maxCharacters={250}
-                        pattern={{
-                            regex: '^[\\w\\d\\s-,\\.\u00C0-\u017F]+$',
-                            message: 'Die Beschreibung darf nur aus Buchstaben, Zahlen, Kommata, Punkten und Bindestrichen (-) bestehen.',
-                        }}
-                        hint="Die Beschreibung wird bei der antragstellenden Person während des Bezahlvorgangs angezeigt. Sie dient der Erläuterung der (gesamten) Gebühren."
-                    />
+                            <TextFieldComponent
+                                label="Beschreibung"
+                                value={props.entity.paymentDescription}
+                                onChange={val => {
+                                    props.onPatchEntity({
+                                        ...props.entity,
+                                        paymentDescription: val,
+                                    });
+                                }}
+                                disabled={!props.editable}
+                                multiline
+                                maxCharacters={250}
+                                pattern={{
+                                    regex: '^[\\w\\d\\s-,\\.\u00C0-\u017F]+$',
+                                    message: 'Die Beschreibung darf nur aus Buchstaben, Zahlen, Kommata, Punkten und Bindestrichen (-) bestehen.',
+                                }}
+                                hint="Diese Beschreibung wird im Bezahlvorgang angezeigt und erläutert die anfallenden Gebühren."
+                            />
+                        </Grid>
+                    </Grid>
 
                     <Box
                         display="flex"
@@ -550,11 +614,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                             mt: 4,
                         }}
                     >
-                        <Typography
-                            variant="h6"
-                        >
-                            Zahlungspositionen
-                        </Typography>
+                        <ElementEditorSectionHeader title={"Zahlungspositionen"} variant={"h4"}/>
 
                         {
                             props.editable &&
@@ -584,7 +644,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                     });
                                 }}
                             >
-                                Zahlungsposition hinzufügen
+                                Position hinzufügen
                             </Button>
                         }
                     </Box>
@@ -603,6 +663,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                             props.entity.products.map((product, index) => (
                                 <PaymentPositionItem
                                     key={index}
+                                    index={index}
                                     product={product}
                                     onDelete={() => {
                                         const products = [...props.entity.products ?? []];

@@ -15,6 +15,7 @@ import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessib
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import Balancer from 'react-wrap-balancer';
 
 export function AppHeader({mode}: AppHeaderProps): JSX.Element {
     const dispatch = useAppDispatch();
@@ -36,6 +37,8 @@ export function AppHeader({mode}: AppHeaderProps): JSX.Element {
     const handleCloseMenu = () => {
         setMenuAnchorEl(undefined);
     };
+
+    const hasManualLineBreaks = formTitle.includes('\n');
 
     return (
         <header role="banner">
@@ -81,37 +84,34 @@ export function AppHeader({mode}: AppHeaderProps): JSX.Element {
                                 }}
                             >
                                 {mode === AppMode.Customer ?
-                                    <>
-                                        <h1 style={{margin: '0'}}>
-                                            <Typography
-                                                variant="h1"
-                                                component={"span"}
-                                                color="primary"
-                                                sx={{display: 'block', maxWidth: '540px'}}
-                                            >
-                                                {formTitle}
-                                            </Typography>
-                                        </h1>
-                                    </> :
-                                    <>
-                                        <h1 style={{margin: '0'}}>
-                                            <Typography
-                                                variant="h1"
-                                                component={"span"}
-                                                color="primary"
-                                                sx={{display: 'block'}}
-                                            >
-                                                {appTitleLine1}
-                                            </Typography>
-                                            <Typography
-                                                variant="h1"
-                                                component={"span"}
-                                                sx={{display: 'block'}}
-                                            >
-                                                {appTitleLine2}
-                                            </Typography>
-                                        </h1>
-                                    </>
+                                    <Typography
+                                        variant="h1"
+                                        color="primary"
+                                        sx={{
+                                            display: 'block',
+                                            maxWidth: '640px',
+                                            margin: 0
+                                        }}
+                                    >
+                                        {hasManualLineBreaks ? formTitle : <Balancer>{formTitle}</Balancer>}
+                                    </Typography> :
+                                    <h1 style={{margin: '0'}}>
+                                        <Typography
+                                            variant="h1"
+                                            component={"span"}
+                                            color="primary"
+                                            sx={{display: 'block'}}
+                                        >
+                                            {appTitleLine1}
+                                        </Typography>
+                                        <Typography
+                                            variant="h1"
+                                            component={"span"}
+                                            sx={{display: 'block'}}
+                                        >
+                                            {appTitleLine2}
+                                        </Typography>
+                                    </h1>
                                 }
 
                             </Box>

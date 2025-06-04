@@ -223,12 +223,16 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                 <DialogContentText component="div">
                     <Box sx={{mb: 4}}>
                         <Typography
-                            variant={'h6'}
+                            variant={'h5'}
                             color={'text.primary'}
-                        >Häufig gestellte Fragen (FAQ)</Typography>
-                        Für eine schnelle Hilfe haben wir Ihnen nachfolgend die häufigsten Fragen zu diesem Formular
-                        zusammengestellt. Sollten Sie auf Ihre Frage keine Antwort finden, so nutzen Sie
-                        gerne die oben gezeigten Möglichkeiten, um Kontakt mit uns aufzunehmen. Vielen Dank!
+                        >
+                            Häufig gestellte Fragen (FAQ)
+                        </Typography>
+                        <Typography sx={{mt: 1}}>
+                            Für eine schnelle Hilfe haben wir Ihnen nachfolgend die häufigsten Fragen zu diesem Formular
+                            zusammengestellt. Sollten Sie auf Ihre Frage keine Antwort finden, so nutzen Sie
+                            gerne die oben gezeigten Möglichkeiten, um Kontakt mit uns aufzunehmen. Vielen Dank!
+                        </Typography>
                     </Box>
                     {FAQs.map((faq, index) => (
                         <Accordion key={index}>

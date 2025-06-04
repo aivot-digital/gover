@@ -11,6 +11,7 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {Form as Application} from '../../models/entities/form';
 import {useApi} from "../../hooks/use-api";
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const api = useApi();
@@ -36,11 +37,12 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
 
     return (
         <>
-            <Typography
-                variant="h6"
+            <ElementEditorSectionHeader
+                title="Rechtliche Angaben"
+                disableMarginTop
             >
-                Rechtliche Angaben
-            </Typography>
+                Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Texte Sie verwenden und anzeigen möchten.
+            </ElementEditorSectionHeader>
 
             <Grid
                 container
@@ -99,89 +101,92 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                 </Grid>
             </Grid>
 
-            <Typography
-                variant="caption"
-                color={"text.secondary"}
-            >
-                Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Texte Sie verwenden und anzeigen möchten.
-            </Typography>
-
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Informationen zum Datenschutz
-            </Typography>
-
-            <TextFieldComponent
-                value={props.element.privacyText ?? ''}
-                label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
-                multiline
-                onChange={(val) => {
-                    props.onPatch({
-                        privacyText: val,
-                    });
-                }}
-                disabled={!props.editable}
+            <ElementEditorSectionHeader
+                title="Informationen zum Datenschutz"
+                variant={"h5"}
             />
 
-            <Typography>
-                Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten,
-                umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}.
-            </Typography>
-
-            <Typography
-                sx={{
-                    mt: 2,
-
-                }}
+            <Grid
+                container
+                columnSpacing={4}
             >
-                Z.B.: <strong>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</strong>
-            </Typography>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={props.element.privacyText ?? ''}
+                        label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
+                        multiline
+                        onChange={(val) => {
+                            props.onPatch({
+                                privacyText: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
 
+                    <Typography variant={'caption'} color={'text.secondary'}>
+                        Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten,
+                        umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}. Zum
+                        Beispiel wie im Standard-Text: <i>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</i>
+                    </Typography>
+                </Grid>
+            </Grid>
 
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Lösch- und Zugriffsfristen
-            </Typography>
-
-            <NumberFieldComponent
-                label="Löschfrist in Wochen"
-                hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie 0 ein um Anträge nicht zu löschen."
-                placeholder="2"
-                value={props.entity.submissionDeletionWeeks ?? undefined}
-                onChange={(val) => {
-                    props.onPatchEntity({
-                        submissionDeletionWeeks: val,
-                    });
-                }}
-                decimalPlaces={0}
-                suffix="Wochen"
-                error={props.entity.submissionDeletionWeeks != null && props.entity.submissionDeletionWeeks < 0 ? 'Bitte geben Sie eine Löschfrist ein, die größer oder gleich 0 ist.' : undefined}
-                disabled={!props.editable}
+            <ElementEditorSectionHeader
+                title="Lösch- und Zugriffsfristen"
+                variant={"h5"}
             />
 
-            <NumberFieldComponent
-                label="Zugriffsfrist in Stunden"
-                hint="Die Zeit in Stunden, in der Nutzer:innen noch auf die von Ihnen gestellten Anträge zugreifen und diese herunterladen können."
-                placeholder="4"
-                value={props.entity.customerAccessHours ?? undefined}
-                onChange={(val) => {
-                    props.onPatchEntity({
-                        customerAccessHours: val,
-                    });
-                }}
-                decimalPlaces={0}
-                suffix="Stunden"
-                error={props.entity.customerAccessHours != null && props.entity.customerAccessHours <= 0 ? 'Bitte geben Sie eine Zugriffsfrist ein, die größer als 0 ist.' : undefined}
-                disabled={!props.editable}
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <NumberFieldComponent
+                        label="Löschfrist in Wochen"
+                        hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie 0 ein um Anträge nicht zu löschen."
+                        placeholder="2"
+                        value={props.entity.submissionDeletionWeeks ?? undefined}
+                        onChange={(val) => {
+                            props.onPatchEntity({
+                                submissionDeletionWeeks: val,
+                            });
+                        }}
+                        decimalPlaces={0}
+                        suffix="Wochen"
+                        error={props.entity.submissionDeletionWeeks != null && props.entity.submissionDeletionWeeks < 0 ? 'Bitte geben Sie eine Löschfrist ein, die größer oder gleich 0 ist.' : undefined}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <NumberFieldComponent
+                        label="Zugriffsfrist in Stunden"
+                        hint="Die Zeit in Stunden, in der Nutzer:innen noch auf die von Ihnen gestellten Anträge zugreifen und diese herunterladen können."
+                        placeholder="4"
+                        value={props.entity.customerAccessHours ?? undefined}
+                        onChange={(val) => {
+                            props.onPatchEntity({
+                                customerAccessHours: val,
+                            });
+                        }}
+                        decimalPlaces={0}
+                        suffix="Stunden"
+                        error={props.entity.customerAccessHours != null && props.entity.customerAccessHours <= 0 ? 'Bitte geben Sie eine Zugriffsfrist ein, die größer als 0 ist.' : undefined}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
         </>
     );
 }

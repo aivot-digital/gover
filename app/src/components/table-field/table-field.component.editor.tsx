@@ -17,34 +17,51 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
 
     return (
         <>
-            {
-                props.element.required &&
-                <NumberFieldComponent
-                    value={props.element.minimumRequiredRows}
-                    label="Mindestanzahl der hinzuzufügenden Zeilen"
-                    hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
-                    error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
-                    onChange={(val) => {
-                        props.onPatch({
-                            minimumRequiredRows: val,
-                        });
-                    }}
-                    disabled={!props.editable}
-                />
-            }
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                {
+                    props.element.required &&
+                    <Grid
+                        item
+                        xs={12}
+                        lg={6}
+                    >
+                        <NumberFieldComponent
+                            value={props.element.minimumRequiredRows}
+                            label="Mindestanzahl der hinzuzufügenden Zeilen"
+                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
+                            error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                            onChange={(val) => {
+                                props.onPatch({
+                                    minimumRequiredRows: val,
+                                });
+                            }}
+                            disabled={!props.editable}
+                        />
+                    </Grid>
+                }
 
-            <NumberFieldComponent
-                value={props.element.maximumRows}
-                label="Maximalanzahl der hinzuzufügenden Zeilen"
-                hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
-                onChange={(val) => {
-                    props.onPatch({
-                        maximumRows: val,
-                    });
-                }}
-                disabled={!props.editable}
-            />
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <NumberFieldComponent
+                        value={props.element.maximumRows}
+                        label="Maximalanzahl der hinzuzufügenden Zeilen"
+                        hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                        error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                        onChange={(val) => {
+                            props.onPatch({
+                                maximumRows: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
 
             <Typography
                 variant="subtitle1"
@@ -107,7 +124,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             placeholder: (column.placeholder ?? '').trim(),
                                         })}
-                                        helperText={"Ein Platzhalter ist eine Musterangabe, die zeigt, welche Information eingegeben werden sollen und erwartet werden (z.B. hallo@bad-musterstadt.de bei einer E-Mail-Adresse)."}
+                                        helperText={"Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse."}
                                         disabled={!props.editable}
                                     />
                                 </Grid>

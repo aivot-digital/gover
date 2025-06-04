@@ -1,4 +1,4 @@
-import {DialogTitle, DialogTitleProps, IconButton, Tooltip, useTheme} from '@mui/material';
+import {DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import React from 'react';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 
@@ -29,7 +29,9 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
             }}
             {...other}
         >
-            {children}
+            <Typography variant={"h4"}>
+                {children}
+            </Typography>
 
             {
                 onClose &&

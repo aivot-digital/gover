@@ -36,7 +36,7 @@ export function StepComponentSummary({model, allowStepNavigation, isBusy}: BaseS
         >
             <Typography
                 component={'h3'}
-                variant="h6"
+                variant="h5"
                 color="primary"
             >
                 <Icon sx={{marginRight: '8px', fontSize: '1rem', transform: 'scale(1.6) translateY(1px)'}} />

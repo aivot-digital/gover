@@ -47,7 +47,8 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
     return (
         <>
             <BaseCodeTab
-                label="Elementstruktur überschreiben"
+                label="Dynamische Struktur"
+                description="Hier können Sie die Struktur des Elements dynamisch anpassen bzw. überschreiben. Dies ist besonders nützlich, wenn die Struktur des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."
                 requirements={props.element.patchElement?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({
