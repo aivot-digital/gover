@@ -14,6 +14,7 @@ class HeadlineTest extends AbstractElementTest<Headline> {
         return new HashMap<>() {{
             put("content", "content");
             put("small", true);
+            put("uppercase", true);
         }};
     }
 
@@ -26,12 +27,14 @@ class HeadlineTest extends AbstractElementTest<Headline> {
     protected void testAllFieldsFilled(Headline item) {
         assertEquals("content", item.getContent());
         assertEquals(true, item.getSmall());
+        assertEquals(true, item.getUppercase());
     }
 
     @Override
     protected void testAllFieldsNull(Headline item) {
         assertEquals("", item.getContent());
         assertEquals(false, item.getSmall());
+        assertEquals(false, item.getUppercase());
     }
 
     @Test
