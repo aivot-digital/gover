@@ -161,15 +161,27 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
             FormHelperTextProps={{component: 'div'}}
             helperText={
                 <>
-                    <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                        <Box>{patternError ?? props.error ?? props.hint}</Box>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            flexWrap: {
+                                xs: 'wrap',
+                                sm: 'nowrap'
+                            },
+                            columnGap: 3,
+                            rowGap: .5,
+                    }}>
+                        <Box>
+                            {patternError ?? props.error ?? props.hint}
+                        </Box>
+
                         {props.maxCharacters && (
                             !props.minCharacters ||
                             inputValue.length >= props.minCharacters
                         ) && (
                             <Box
                                 role="text"
-                                sx={{ml: 3}}
                                 aria-label={`${inputValue.length} von ${props.maxCharacters} Zeichen verwendet`}
                             >
                                 <span aria-hidden="true">
@@ -178,8 +190,10 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
                             </Box>
                         )}
                         {props.minCharacters && inputValue.length < props.minCharacters && (
-                            <Box sx={{ml: 3}}>
-                                Noch mindestens {getCharacterCount(props.minCharacters - inputValue.length)} Zeichen
+                            <Box>
+                                {inputValue.length === 0
+                                    ? `Mindestens ${getCharacterCount(props.minCharacters)} Zeichen`
+                                    : `Noch mindestens ${getCharacterCount(props.minCharacters - inputValue.length)} Zeichen`}
                             </Box>
                         )}
                     </Box>
@@ -190,7 +204,7 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
                                 color="warning.main"
                             >
                                 {props.softLimitCharactersWarning ??
-                                    `Wir empfehlen Ihnen eine Länge von ${props.softLimitCharacters} Zeichen nicht zu überschreiten.`}
+                                    `Wir empfehlen, eine Länge von ${props.softLimitCharacters} Zeichen nicht zu überschreiten.`}
                             </Typography>
                         </Box>
                     )}
