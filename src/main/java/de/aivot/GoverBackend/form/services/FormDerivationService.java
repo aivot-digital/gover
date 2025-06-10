@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.form.services;
 
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.services.BaseElementDerivationService;
+import de.aivot.GoverBackend.elements.models.steps.StepElement;
+import de.aivot.GoverBackend.elements.services.*;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.models.FormDerivationContext;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
@@ -54,43 +54,76 @@ public class FormDerivationService extends BaseElementDerivationService<FormDeri
     }
 
     @Override
-    protected void deriveVisibilities(FormDerivationContext context, BaseElement currentElement) {
-        if (stepsToCalculateVisibilities.isEmpty() || stepsToCalculateVisibilities.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER)) {
-            return;
-        }
+    protected void deriveStepElement(
+            @Nonnull FormDerivationContext context,
+            @Nonnull StepElement stepElement,
+            @Nonnull Boolean deriveVisibilities,
+            @Nonnull Boolean deriveOverrides,
+            @Nonnull Boolean deriveValues,
+            @Nonnull Boolean deriveErrors
+    ) {
+        var _deriveVisibilities =
+                deriveVisibilities &&
+                !stepsToCalculateVisibilities.isEmpty() &&
+                !stepsToCalculateVisibilities.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER) && (
+                        stepsToCalculateVisibilities.contains(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER) ||
+                        stepsToCalculateVisibilities.contains(stepElement.getId()) ||
+                        !stepElement.getVisibilityReferencedIds().isEmpty()
+                );
 
-        new FormVisibilityDerivationService()
-                .derive(context, null, currentElement);
+        var _deriveOverrides =
+                deriveVisibilities &&
+                !stepsToCalculateOverrides.isEmpty() &&
+                !stepsToCalculateOverrides.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER) && (
+                        stepsToCalculateOverrides.contains(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER) ||
+                        stepsToCalculateOverrides.contains(stepElement.getId()) ||
+                        !stepElement.getOverrideReferencedIds().isEmpty()
+                );
+
+        var _deriveValues =
+                deriveValues &&
+                !stepsToCalculateValues.isEmpty() &&
+                !stepsToCalculateValues.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER) && (
+                        stepsToCalculateValues.contains(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER) ||
+                        stepsToCalculateValues.contains(stepElement.getId())
+                );
+
+        var _deriveErrors =
+                deriveErrors &&
+                !stepsToValidate.isEmpty() &&
+                !stepsToValidate.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER) && (
+                        stepsToValidate.contains(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER) ||
+                        stepsToValidate.contains(stepElement.getId())
+                );
+
+        super.deriveStepElement(
+                context,
+                stepElement,
+                _deriveVisibilities,
+                _deriveOverrides,
+                _deriveValues,
+                _deriveErrors
+        );
     }
 
     @Override
-    protected void deriveErrors(FormDerivationContext context, BaseElement currentElement) {
-        if (stepsToValidate.isEmpty() || stepsToValidate.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER)) {
-            return;
-        }
-
-        new FormErrorDerivationService()
-                .derive(context, null, currentElement);
+    protected BaseElementVisibilityDerivationService<FormDerivationContext> getVisibilityDerivationService() {
+        return new FormVisibilityDerivationService();
     }
 
     @Override
-    protected void deriveOverrides(FormDerivationContext context, BaseElement currentElement) {
-        if (stepsToCalculateOverrides.isEmpty() || stepsToCalculateOverrides.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER)) {
-            return;
-        }
-
-        new FormOverrideDerivationService()
-                .derive(context, null, currentElement);
+    protected BaseElementOverrideDerivationService<FormDerivationContext> getOverrideDerivationService() {
+        return new FormOverrideDerivationService();
     }
 
     @Override
-    protected void deriveValues(FormDerivationContext context, BaseElement currentElement) {
-        if (stepsToCalculateValues.isEmpty() || stepsToCalculateValues.contains(FORM_STEP_LIMIT_NONE_IDENTIFIER)) {
-            return;
-        }
+    protected BaseElementValueDerivationService<FormDerivationContext> getValueDerivationService() {
+        return new FormValueDerivationService();
+    }
 
-        new FormValueDerivationService()
-                .derive(context, null, currentElement);
+    @Override
+    protected BaseElementErrorDerivationService<FormDerivationContext> getErrorDerivationService() {
+        return new FormErrorDerivationService();
     }
 
     @Override
