@@ -5,6 +5,7 @@ import {FunctionTypeIcon} from '../../function-type-icon';
 import {useAppSelector} from "../../../../hooks/use-app-selector";
 import {selectSystemConfigValue} from "../../../../slices/system-config-slice";
 import {SystemConfigKeys} from "../../../../data/system-config-keys";
+import {ElementEditorSectionHeader} from '../../../element-editor-section-header/element-editor-section-header';
 
 export function FunctionSelector(props: FunctionSelectorProps) {
     const enableNewCodeEditors = useAppSelector(selectSystemConfigValue(SystemConfigKeys.experimentalFeatures.newCodeEditors));
@@ -53,11 +54,12 @@ export function FunctionSelector(props: FunctionSelectorProps) {
 
     return (
         <Box>
-            <Typography
-                variant="subtitle1"
+            <ElementEditorSectionHeader
+                title="No-/Low-Code Funktion"
+                variant={"h5"}
             >
-                Wählen Sie einen geeigneten Typ für die Funktion aus
-            </Typography>
+                Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.
+            </ElementEditorSectionHeader>
 
             <Grid
                 container

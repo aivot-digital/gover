@@ -27,6 +27,7 @@ import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import NotInterestedOutlinedIcon from '@mui/icons-material/NotInterestedOutlined';
 import Tooltip from '@mui/material/Tooltip';
 import Chip from "@mui/material/Chip";
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const api = useApi();
@@ -64,11 +65,12 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                     mb: 4,
                 }}
             >
-                <Typography
-                    variant="h6"
+                <ElementEditorSectionHeader
+                    title="Antragsschnittstelle"
+                    disableMarginTop
                 >
-                    Antragsschnittstelle
-                </Typography>
+                    Wählen Sie eine Schnittstelle aus, an welche die Anträge von Gover übermittelt werden sollen.
+                </ElementEditorSectionHeader>
 
                 {
                     destinations == null &&
@@ -117,7 +119,6 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                     destinations.length > 0 &&
                     <SelectFieldComponent
                         label="Auswahl der Schnittstelle"
-                        hint="Wählen Sie hier die Schnittstelle aus, an die die Anträge von Gover übermittelt werden sollen."
                         value={props.entity.destinationId?.toString() ?? undefined}
                         onChange={(val) => {
                             props.onPatchEntity({
@@ -143,8 +144,8 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                             mt: 1,
                         }}
                     >
-                        Sie haben aktuell keine Schnittstelle ausgewählt. Bitte beachten Sie, dass in diesem Fall die
-                        Anträge ausschließlich in Gover eingehen. Die Mitarbeiter:innen des bewirtschaftenden oder
+                        Wenn Sie keine externe Schnittstelle auswählen, werden Anträge ausschließlich in Gover eingehen.
+                        Die Mitarbeiter:innen des bewirtschaftenden oder
                         zuständigen Fachbereichs werden per E-Mail über eingegangene Anträge informiert.
                     </AlertComponent>
                 }
@@ -181,11 +182,12 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
             </Box>
 
             <Box>
-                <Typography
-                    variant="h6"
+                <ElementEditorSectionHeader
+                    title="Schnittstellen für Nutzerkonten"
+                    disableMarginTop
                 >
-                    Scnittstellen für Nutzerkonten
-                </Typography>
+                    Konfigurieren Sie die optionale oder erzwungene Authentifizierung mit Nutzerkonten.
+                </ElementEditorSectionHeader>
 
                 {
                     identityProviders == null &&

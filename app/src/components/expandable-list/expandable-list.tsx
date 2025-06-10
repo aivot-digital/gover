@@ -79,13 +79,12 @@ const ExpandableList = <T,>({
     if (total === 0) return null;
 
     return (
-        <Box sx={{ mb: 3, position: "relative", zIndex: 1 }}>
+        <Box sx={{ position: "relative", zIndex: 1 }}>
             {title && (
                 <Typography
                     component="h3"
-                    variant="subtitle1"
+                    variant="h5"
                     color="primary"
-                    sx={{ textTransform: "uppercase" }}
                 >
                     {title}
                 </Typography>

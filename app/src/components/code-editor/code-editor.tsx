@@ -53,8 +53,9 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
             <Box
                 sx={{
                     mt: hasTopContent ? 2 : 0,
-                    py: 1,
-                    border: '1px solid black',
+                    py: 2,
+                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    borderRadius: 1,
                 }}
             >
                 <Editor

@@ -1,5 +1,5 @@
 import React from 'react';
-import {type AlertColor} from '@mui/material';
+import {type AlertColor, Grid} from '@mui/material';
 import {type AlertElement} from '../models/elements/form/content/alert-element';
 import {type BaseEditor} from './base-editor';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
@@ -21,39 +21,60 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                                                                          }) => {
     return (
         <>
-            <TextFieldComponent
-                value={element.title}
-                label="Titel"
-                onChange={(val) => {
-                    onPatch({
-                        title: val,
-                    });
-                }}
-                disabled={!editable}
-            />
-
-            <RichTextEditorComponentView
-                value={element.text ?? ''}
-                onChange={(value) => {
-                    onPatch({text: value});
-                }}
-                disabled={!editable}
-            />
-
-            <SelectFieldComponent
-                label="Hinweistyp"
-                value={element.alertType ?? 'info'}
-                onChange={(val) => {
-                    onPatch({
-                        alertType: val as AlertColor,
-                    });
-                }}
-                options={colors.map(([type, label]) => ({
-                    label,
-                    value: type,
-                }))}
-                disabled={!editable}
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={element.title}
+                        label="Titel"
+                        onChange={(val) => {
+                            onPatch({
+                                title: val,
+                            });
+                        }}
+                        disabled={!editable}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <SelectFieldComponent
+                        label="Hinweistyp"
+                        value={element.alertType ?? 'info'}
+                        onChange={(val) => {
+                            onPatch({
+                                alertType: val as AlertColor,
+                            });
+                        }}
+                        options={colors.map(([type, label]) => ({
+                            label,
+                            value: type,
+                        }))}
+                        disabled={!editable}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <RichTextEditorComponentView
+                        value={element.text ?? ''}
+                        onChange={(value) => {
+                            onPatch({text: value});
+                        }}
+                        disabled={!editable}
+                    />
+                </Grid>
+            </Grid>
         </>
     );
 };

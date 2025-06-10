@@ -55,6 +55,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
         <>
             <BaseCodeTab
                 label="Sichtbarkeit"
+                description={"Hier können Sie die Sichtbarkeit des Elements dynamisch bestimmen. Dies ist besonders nützlich, wenn die Sichtbarkeit des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."}
                 requirements={props.element.isVisible?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({

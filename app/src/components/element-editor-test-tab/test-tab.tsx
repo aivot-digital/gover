@@ -16,6 +16,7 @@ import {hasUntestedChild} from '../../utils/has-untested-child';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {isRootElement} from '../../models/elements/root-element';
 import {UsersApiService} from '../../modules/users/users-api-service';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Element {
     const dispatch = useDispatch();
@@ -24,21 +25,13 @@ export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Eleme
     return (
         <Box sx={{p: 4}}>
             <Box>
-                <Typography
-                    variant="h6"
-                >
-                    Fachliche Prüfung
-                </Typography>
-
-                <Typography
-                    variant="body1"
-                    sx={{
-                        mt: 1,
-                        mb: 1,
-                    }}
+                <ElementEditorSectionHeader
+                    title="Fachliche Prüfung"
+                    disableMarginTop
+                    sx={{mb: 0}}
                 >
                     Eine Überprüfung der Umsetzung von vorab definierten fachlichen Anforderungen.
-                </Typography>
+                </ElementEditorSectionHeader>
 
                 <CheckboxFieldComponent
                     value={props.elementModel.testProtocolSet?.professionalTest != null}

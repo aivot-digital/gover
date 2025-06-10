@@ -57,7 +57,7 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
 
             <Typography
                 component={'h3'}
-                variant="h6"
+                variant="h5"
                 color="primary"
                 sx={{mt: 6}}
             >
@@ -67,13 +67,13 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
             <Typography
                 sx={{
                     mt: 1,
-                    maxWidth: '700px',
+                    maxWidth: '660px',
                 }}
                 variant={'body2'}
             >
                 Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben Ihres Antrages geprüft haben.
                 Fehlerhafte Eingaben können zu einer Verzögerung bei der Bearbeitung Ihres Antrages durch
-                die zuständige und/oder bewirtschaftende Stelle führen. Vielen Dank!
+                die zuständige und/oder bewirtschaftende Stelle führen.
             </Typography>
 
             <Box>

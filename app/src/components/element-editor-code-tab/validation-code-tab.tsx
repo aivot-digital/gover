@@ -56,6 +56,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
         <>
             <BaseCodeTab
                 label="Validierung"
+                description={"Hier können Sie die Validierung des Elements konfigurieren. Hierzu definieren Sie die Regeln, die das Element erfüllen muss, um als valide/gültig zu gelten."}
                 requirements={props.element.validate?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({

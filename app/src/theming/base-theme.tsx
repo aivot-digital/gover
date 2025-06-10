@@ -57,23 +57,22 @@ export const BaseTheme = createTheme({
         h1: {
             fontFamily: fontStackHeadlines,
             fontWeight: 700,
-            fontSize: '1.802rem',
-            lineHeight: '2rem',
+            fontSize: '1.75rem',
         },
         h2: {
             fontFamily: fontStackHeadlines,
             fontWeight: 700,
-            fontSize: '1.602rem',
+            fontSize: '1.5rem',
         },
         h3: {
             fontFamily: fontStackHeadlines,
             fontWeight: 600,
-            fontSize: '1.424rem',
+            fontSize: '1.375rem',
         },
         h4: {
             fontFamily: fontStackHeadlines,
             fontWeight: 600,
-            fontSize: '1.266rem',
+            fontSize: '1.25rem',
         },
         h5: {
             fontFamily: fontStackHeadlines,
