@@ -49,6 +49,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
                         }}
                         allowEmpty={false}
                         disabled={!props.editable}
+                        variant="outlined"
                     />
             }
 

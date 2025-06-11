@@ -286,6 +286,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             allowEmpty={true}
                             labelLabel="Schlüssel"
                             keyLabel="Wert"
+                            variant="outlined"
                         />
                     </Box>
 
