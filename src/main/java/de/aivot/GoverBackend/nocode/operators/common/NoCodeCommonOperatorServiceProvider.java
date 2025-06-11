@@ -23,6 +23,7 @@ public class NoCodeCommonOperatorServiceProvider implements NoCodeOperatorServic
                 new NoCodeLessThanOperator(),
                 new NoCodeLessThanOrEqualOperator(),
                 new NoCodeNotEqualsOperator(),
+                new NoCodeValueOperator(),
         };
     }
 
