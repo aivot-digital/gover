@@ -1,5 +1,5 @@
 import {InputAdornment, TextField} from '@mui/material';
-import {ChangeEvent, useMemo, useRef, useState} from 'react';
+import {ChangeEvent, useEffect, useMemo, useRef, useState} from 'react';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {type NumberFieldComponentProps} from './number-field-component-props';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
@@ -106,6 +106,15 @@ export function NumberFieldComponent({
             }
         }
     };
+
+    // Update local state if external value changes
+    useEffect(() => {
+        if (value == null || isNaN(value)) {
+            return;
+        }
+        console.log('NumberFieldComponent: Updating inputValue from props.value', value);
+        setInputValue(formatNumToGermanNum(value, decimalPlaces));
+    }, [value]);
 
     // Handle blur event (format value and trigger onChange)
     const handleBlur = () => {

@@ -40,17 +40,21 @@ const exampleValidationCode = `(function(){
 })();`;
 
 export function ValidationCodeTab(props: ValidationCodeTabProps) {
+    const {
+        element,
+    } = props;
+
     const dispatch = useAppDispatch();
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
     const hasValidationFunction = useMemo(() => {
         return (
-            isStringNotNullOrEmpty(props.element.validate?.code) ||
-            props.element.validate?.conditionSet != null ||
-            isStringNotNullOrEmpty(props.element.validationCode?.code) ||
-            props.element.validationExpressions != null
+            isStringNotNullOrEmpty(element.validate?.code) ||
+            element.validate?.conditionSet != null ||
+            element.validationCode?.code != null ||
+            element.validationExpressions != null
         );
-    }, [props.element]);
+    }, [element]);
 
     return (
         <>

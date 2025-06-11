@@ -48,88 +48,31 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
             );
         case DefaultTabs.visibility:
             return (
-                <>
-                    <VisibilityCodeTab
-                        editable={props.editable}
-                        parents={props.parents}
-                        element={props.element}
-                        onChange={(updatedElement) => {
-                            if (props.element.testProtocolSet?.technicalTest != null) {
-                                if (props.element.testProtocolSet.professionalTest == null) {
-                                    updatedElement.testProtocolSet = undefined;
-                                } else {
-                                    updatedElement.testProtocolSet = {
-                                        professionalTest: props.element.testProtocolSet.professionalTest,
-                                    };
-                                }
+                <VisibilityCodeTab
+                    editable={props.editable}
+                    parents={props.parents}
+                    element={props.element}
+                    onChange={(updatedElement) => {
+                        if (props.element.testProtocolSet?.technicalTest != null) {
+                            if (props.element.testProtocolSet.professionalTest == null) {
+                                updatedElement.testProtocolSet = undefined;
+                            } else {
+                                updatedElement.testProtocolSet = {
+                                    professionalTest: props.element.testProtocolSet.professionalTest,
+                                };
                             }
-                            props.onChange(updatedElement as Partial<T>);
-                        }}
-                    />
-                    {/*
-                    <CodeTab
-                        parents={props.parents}
-                        key="visibility"
-                        resultTitle="Sichtbarkeit festlegen"
-                        resultHint="Dieses Element ist sichtbar, wenn die die main-Funktion des folgenden Codes den Wert true zurückgibt:"
-                        element={props.element}
-                        func={props.element.isVisible}
-                        allowNoCode={true}
-                        shouldReturnString={false}
-                        onChange={(updatedFunc) => {
-                            const updatedElement: Partial<AnyInputElement> = {
-                                isVisible: updatedFunc,
-                            };
-                            if (props.element.testProtocolSet?.technicalTest != null) {
-                                if (props.element.testProtocolSet.professionalTest == null) {
-                                    updatedElement.testProtocolSet = undefined;
-                                } else {
-                                    updatedElement.testProtocolSet = {
-                                        professionalTest: props.element.testProtocolSet.professionalTest,
-                                    };
-                                }
-                            }
-                            props.onChange(updatedElement as Partial<T>);
-                        }}
-                        editable={props.editable}
-                    />
-                    */}
-                </>
+                        }
+                        props.onChange(updatedElement as Partial<T>);
+                    }}
+                />
             );
         case DefaultTabs.validation:
             return (
-                <>
-                    <ValidationCodeTab
-                        editable={props.editable}
-                        parents={props.parents}
-                        element={props.element as BaseInputElement<any, any>}
-                        onChange={(updatedElement) => {
-                            if (props.element.testProtocolSet?.technicalTest != null) {
-                                if (props.element.testProtocolSet.professionalTest == null) {
-                                    updatedElement.testProtocolSet = undefined;
-                                } else {
-                                    updatedElement.testProtocolSet = {
-                                        professionalTest: props.element.testProtocolSet.professionalTest,
-                                    };
-                                }
-                            }
-                            props.onChange(updatedElement as Partial<T>);
-                        }}
-                    />
-                    {/*
-                <CodeTab
+                <ValidationCodeTab
+                    editable={props.editable}
                     parents={props.parents}
-                    key="validate"
-                    resultTitle="Validierung durchführen"
-                    resultHint="Dieses Element ist valide, wenn die main-Funktion des folgenden Codes keinen String mit einem Validierungsproblem erzeugt, sondern null zurück gibt:"
-                    element={props.element}
-                    func={(props.element as BaseInputElement<any, any>).validate}
-                    allowNoCode={true}
-                    shouldReturnString={true}
-                    onChange={(updatedFunc) => {
-                        const updatedElement: Partial<AnyInputElement> = {
-                            validate: updatedFunc,
-                        };
+                    element={props.element as BaseInputElement<any, any>}
+                    onChange={(updatedElement) => {
                         if (props.element.testProtocolSet?.technicalTest != null) {
                             if (props.element.testProtocolSet.professionalTest == null) {
                                 updatedElement.testProtocolSet = undefined;
@@ -141,45 +84,15 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                         }
                         props.onChange(updatedElement as Partial<T>);
                     }}
-                    editable={props.editable}
                 />
-                */}
-                </>
             );
         case DefaultTabs.value:
             return (
-                <>
-                    <ValueCodeTab
-                        editable={props.editable}
-                        parents={props.parents}
-                        element={props.element as BaseInputElement<any, any>}
-                        onChange={(updatedElement) => {
-                            if (props.element.testProtocolSet?.technicalTest != null) {
-                                if (props.element.testProtocolSet.professionalTest == null) {
-                                    updatedElement.testProtocolSet = undefined;
-                                } else {
-                                    updatedElement.testProtocolSet = {
-                                        professionalTest: props.element.testProtocolSet.professionalTest,
-                                    };
-                                }
-                            }
-                            props.onChange(updatedElement as Partial<T>);
-                        }}
-                    />
-                    {/*
-                <CodeTab
+                <ValueCodeTab
+                    editable={props.editable}
                     parents={props.parents}
-                    key="value"
-                    resultTitle="Dynamischen Wert bestimmen"
-                    resultHint="Dieses Element bekommt den Rückgabewert der folgenden Funktion:"
-                    element={props.element}
-                    func={(props.element as BaseInputElement<any, any>).computeValue}
-                    allowNoCode={false}
-                    shouldReturnString={false}
-                    onChange={(updatedFunc) => {
-                        const updatedElement: Partial<AnyInputElement> = {
-                            computeValue: updatedFunc,
-                        };
+                    element={props.element as BaseInputElement<any, any>}
+                    onChange={(updatedElement) => {
                         if (props.element.testProtocolSet?.technicalTest != null) {
                             if (props.element.testProtocolSet.professionalTest == null) {
                                 updatedElement.testProtocolSet = undefined;
@@ -191,45 +104,15 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                         }
                         props.onChange(updatedElement as Partial<T>);
                     }}
-                    editable={props.editable}
                 />
-                */}
-                </>
             );
         case DefaultTabs.patch:
             return (
-                <>
-                    <OverrideCodeTab
-                        editable={props.editable}
-                        parents={props.parents}
-                        element={props.element}
-                        onChange={(updatedElement) => {
-                            if (props.element.testProtocolSet?.technicalTest != null) {
-                                if (props.element.testProtocolSet.professionalTest == null) {
-                                    updatedElement.testProtocolSet = undefined;
-                                } else {
-                                    updatedElement.testProtocolSet = {
-                                        professionalTest: props.element.testProtocolSet.professionalTest,
-                                    };
-                                }
-                            }
-                            props.onChange(updatedElement as Partial<T>);
-                        }}
-                    />
-                    {/*}
-                <CodeTab
+                <OverrideCodeTab
+                    editable={props.editable}
                     parents={props.parents}
-                    key="patch"
-                    resultTitle="Element aktualisieren"
-                    resultHint="Dieses Element wird mit dem Rückgabewert der folgenden Funktion aktualisiert:"
                     element={props.element}
-                    func={props.element.patchElement}
-                    allowNoCode={false}
-                    shouldReturnString={false}
-                    onChange={(updatedFunc) => {
-                        const updatedElement: Partial<AnyInputElement> = {
-                            patchElement: updatedFunc,
-                        };
+                    onChange={(updatedElement) => {
                         if (props.element.testProtocolSet?.technicalTest != null) {
                             if (props.element.testProtocolSet.professionalTest == null) {
                                 updatedElement.testProtocolSet = undefined;
@@ -241,10 +124,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                         }
                         props.onChange(updatedElement as Partial<T>);
                     }}
-                    editable={props.editable}
                 />
-                */}
-                </>
             );
         case DefaultTabs.structure:
             return (

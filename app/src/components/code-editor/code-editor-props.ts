@@ -8,4 +8,8 @@ export interface CodeEditorProps {
     height?: string;
     sx?: SxProps;
     language?: string;
+    typeHints?: {
+        name: string;
+        content: string;
+    }[];
 }

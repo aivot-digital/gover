@@ -9,6 +9,7 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const {
         onChange,
         value,
+        typeHints,
     } = props;
 
     const monacoRef = useRef<Monaco>();
@@ -20,7 +21,13 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
         monacoRef.current = monaco;
         editorRef.current = editor;
         editorRef.current.setValue(value ?? '');
+
+        monacoApplyTypeHints(monaco, typeHints);
     }, []);
+
+    useEffect(() => {
+        monacoApplyTypeHints(monacoRef.current, typeHints);
+    }, [typeHints]);
 
     const handleEditorChange = useCallback((value: string | undefined) => {
         onChange(value ?? '');
@@ -73,4 +80,23 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
             </Box>
         </Box>
     );
+}
+
+function monacoApplyTypeHints(monaco: any, typeHints: CodeEditorProps['typeHints']) {
+    if (monaco == null || typeHints == null || typeHints.length === 0) {
+        return;
+    }
+
+    for (const typeHint of typeHints) {
+        monaco.languages.typescript.javascriptDefaults.addExtraLib(
+            typeHint.content,
+            `@types/${typeHint.name}.d.ts`,
+        );
+        console.log('Applying Type Hint', typeHint);
+    }
+
+    console.log(monaco);
+    console.log(monaco.languages);
+    console.log(monaco.languages.typescript);
+    console.log(monaco.languages.typescript.javascriptDefaults);
 }

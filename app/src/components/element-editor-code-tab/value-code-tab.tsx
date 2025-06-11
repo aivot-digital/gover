@@ -12,6 +12,7 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 
 const exampleLegacyValueCode = `/**
  * Diese Funktion wird aufgerufen, um einen Wert für das Element zu berechnen.
@@ -47,7 +48,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                     )
                 )
             ) ||
-            isStringNotNullOrEmpty(props.element.valueCode?.code) ||
+            props.element.valueCode?.code != null ||
             props.element.valueExpression != null;
     }, [props.element]);
 
@@ -55,7 +56,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
         <>
             <BaseCodeTab
                 label="Dynamischer Wert"
-                description={"Hier können Sie einen dynamischen Wert für das Element definieren. Dieser Wert wird in der Anzeige des Elements verwendet und kann von den Nutzereingaben abhängen."}
+                description={'Hier können Sie einen dynamischen Wert für das Element definieren. Dieser Wert wird in der Anzeige des Elements verwendet und kann von den Nutzereingaben abhängen.'}
                 requirements={props.element.computeValue?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({

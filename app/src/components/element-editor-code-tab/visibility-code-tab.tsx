@@ -12,6 +12,7 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 
 const exampleLegacyVisibilityCode = `/**
  * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element sichtbar ist.
@@ -47,7 +48,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     )
                 )
             ) ||
-            isStringNotNullOrEmpty(props.element.visibilityCode?.code) ||
+            props.element.visibilityCode?.code != null ||
             props.element.visibilityExpression != null;
     }, [props.element]);
 
@@ -55,7 +56,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
         <>
             <BaseCodeTab
                 label="Sichtbarkeit"
-                description={"Hier können Sie die Sichtbarkeit des Elements dynamisch bestimmen. Dies ist besonders nützlich, wenn die Sichtbarkeit des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."}
+                description={'Hier können Sie die Sichtbarkeit des Elements dynamisch bestimmen. Dies ist besonders nützlich, wenn die Sichtbarkeit des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten.'}
                 requirements={props.element.isVisible?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({

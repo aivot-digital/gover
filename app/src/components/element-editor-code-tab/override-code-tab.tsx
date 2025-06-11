@@ -33,16 +33,20 @@ const exampleOverrideCode = `(function(){
 })();`;
 
 export function OverrideCodeTab(props: OverrideCodeTabProps) {
+    const {
+        element,
+    } = props;
+
     const log = useLogger('OverrideCodeTab');
     const dispatch = useAppDispatch();
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
     const hasOverrideFunction = useMemo(() => {
         return (
-            isStringNotNullOrEmpty(props.element.patchElement?.code) ||
-            isStringNotNullOrEmpty(props.element.overrideCode?.code)
+            isStringNotNullOrEmpty(element.patchElement?.code) ||
+            element.overrideCode?.code != null
         );
-    }, [props.element]);
+    }, [element]);
 
     return (
         <>
