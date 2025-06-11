@@ -85,7 +85,7 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
         BigDecimal result = BigDecimal.ONE;
 
         for (Object rawArg : args) {
-            var arg = new BigDecimal(rawArg.toString());
+            var arg = castToNumber(rawArg);
             result = result.multiply(arg);
         }
 
