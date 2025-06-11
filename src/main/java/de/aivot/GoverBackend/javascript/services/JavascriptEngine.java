@@ -161,6 +161,8 @@ public class JavascriptEngine implements AutoCloseable {
                 mutableList.add(mapToProxyObject(childMap));
             } else if (value instanceof Collection<?> childCollection) {
                 mutableList.add(collectionToProxyArray(childCollection));
+            } else if (value instanceof Number number) {
+                mutableList.add(number.doubleValue());
             } else {
                 mutableList.add(value);
             }
