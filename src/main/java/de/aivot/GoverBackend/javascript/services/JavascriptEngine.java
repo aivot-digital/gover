@@ -136,6 +136,8 @@ public class JavascriptEngine implements AutoCloseable {
                     mutableMap.put(sKey, mapToProxyObject(childMap));
                 } else if (value instanceof Collection<?> childCollection) {
                     mutableMap.put(sKey, collectionToProxyArray(childCollection));
+                } else if (value instanceof Number number) {
+                    mutableMap.put(sKey, number.doubleValue());
                 } else {
                     mutableMap.put(sKey, value);
                 }
