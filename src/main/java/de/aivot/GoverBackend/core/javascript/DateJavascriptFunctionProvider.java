@@ -17,7 +17,7 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
 
     @Override
     public String getPackageName() {
-        return "date";
+        return "$date";
     }
 
     @Override
