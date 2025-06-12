@@ -42,17 +42,17 @@ export function MetaElement({title, titlePrefix}: MetaElementProps): JSX.Element
                 <link key="apple-touch-icon"
                       rel="apple-touch-icon"
                       sizes="180x180"
-                      href={`${process.env.PUBLIC_URL}/apple-touch-icon.png`}/>,
+                      href={`${import.meta.env.BASE_URL}/apple-touch-icon.png`}/>,
                 <link key="icon-32x32"
                       rel="icon"
                       type="image/png"
                       sizes="32x32"
-                      href={`${process.env.PUBLIC_URL}/favicon-32x32.png`}/>,
+                      href={`${import.meta.env.BASE_URL}/favicon-32x32.png`}/>,
                 <link key="icon-16x16"
                       rel="icon"
                       type="image/png"
                       sizes="16x16"
-                      href={`${process.env.PUBLIC_URL}/favicon-16x16.png`}/>
+                      href={`${import.meta.env.BASE_URL}/favicon-16x16.png`}/>
             ]}
             <meta charSet="utf-8"/>
             {

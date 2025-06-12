@@ -6,7 +6,7 @@ import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, useParams} from 'react-router-dom';
 import {GenericDetailsPageContext} from './generic-details-page-context';
 import {ApiError} from '../../models/api-error';
-import {ReactComponent as NotFoundIllustration} from './resource-not-found-illustration.svg';
+import NotFoundIllustration from './resource-not-found-illustration.svg?react';
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 

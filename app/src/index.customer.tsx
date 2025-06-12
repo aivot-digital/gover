@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import reportWebVitals from './reportWebVitals';
 import {Provider as StoreProvide} from 'react-redux';
 import {store} from './store';
@@ -9,19 +8,21 @@ import './index.scss';
 import {CssBaseline, ThemeProvider} from '@mui/material';
 import {BaseTheme} from './theming/base-theme';
 import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} from 'react-router-dom';
-import {getSentryDsn} from "./hooks/use-system-api";
+import {getSentryDsn} from './hooks/use-system-api';
+import {createRoot} from 'react-dom/client';
+import CustomerApp from './apps/customer-app';
 
-async function importAppTarget() {
-    if (process.env.REACT_APP_BUILD_TARGET === 'customer') {
-        return await import('./apps/customer-app');
-    } else if (process.env.REACT_APP_BUILD_TARGET === 'staff') {
-        return await import('./apps/staff-app');
-    } else {
-        return await Promise.reject(
-            new Error(`No such build target: ${process.env.REACT_APP_BUILD_TARGET ?? 'undefined'}`),
-        );
-    }
-}
+
+const rootElement = document.getElementById('root')!;
+const root = createRoot(rootElement);
+root.render(
+    <ThemeProvider theme={BaseTheme}>
+        <CssBaseline />
+        <StoreProvide store={store}>
+            <CustomerApp />
+        </StoreProvide>
+    </ThemeProvider>,
+);
 
 getSentryDsn()
     .then((sentryDsn) => {
@@ -59,21 +60,6 @@ getSentryDsn()
     })
     .catch((err) => {
         console.warn('Failed to initialize Sentry', err);
-    });
-
-importAppTarget()
-    .then(({default: Environment}) => {
-        ReactDOM.render(
-            <React.StrictMode>
-                <ThemeProvider theme={BaseTheme}>
-                    <CssBaseline/>
-                    <StoreProvide store={store}>
-                        <Environment/>
-                    </StoreProvide>
-                </ThemeProvider>
-            </React.StrictMode>,
-            document.getElementById('root'),
-        );
     });
 
 // If you want to start measuring performance in your root, pass a function

@@ -26,10 +26,10 @@ const DevelopmentAppConfig: AppConfig = {
     version: ProjectPackage.version,
     date: '2000-01-01T00:00:00.000Z',
 
-    mode: process.env.REACT_APP_BUILD_TARGET === 'customer' ? 'customer' : 'staff',
+    mode: import.meta.env.VITE_APP_MODE === 'customer' ? 'customer' : 'staff',
 
     host: 'http://localhost:8888', // TODO: Adjust in production
-    path: process.env.REACT_APP_BUILD_TARGET === 'customer' ? '/' : '/staff',
+    path: import.meta.env.VITE_APP_MODE === 'customer' ? '/' : '/staff',
     environment: 'development',
 
     sentry: '',
