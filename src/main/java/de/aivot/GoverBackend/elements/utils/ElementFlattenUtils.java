@@ -1,17 +1,17 @@
 package de.aivot.GoverBackend.elements.utils;
 
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.elements.models.BaseElement;
 import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.content.Headline;
 import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.steps.StepElement;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class ElementFlattenUtils {
     public static Collection<BaseElement> flattenElements(BaseElement current) {
@@ -39,55 +39,78 @@ public class ElementFlattenUtils {
         return result;
     }
 
-    public record ElementWithIndent(int indent, BaseElement element) {
+    public static List<ResolvedElement> resolveElements(
+            @Nonnull BaseElement root,
+            @Nonnull Map<String, Object> customerInput
+    ) {
+        return resolveElements(
+                root,
+                null,
+                new LinkedList<>(),
+                customerInput
+        );
     }
 
-    public static Collection<ElementWithIndent> flattenElementsWithContext(BaseElement current, int indent) {
-        if (current == null) {
-            return List.of();
+    private static List<ResolvedElement> resolveElements(
+            @Nonnull BaseElement currentElement,
+            @Nullable String idPrefix,
+            @Nonnull List<BaseElement> parents,
+            @Nonnull Map<String, Object> customerInput
+    ) {
+        var result = new LinkedList<ResolvedElement>();
+
+        result.add(new ResolvedElement(
+                currentElement.getResolvedId(idPrefix),
+                currentElement,
+                List.copyOf(parents)
+        ));
+
+        var currentParents = new LinkedList<>(parents);
+        currentParents.add(currentElement);
+
+        switch (currentElement) {
+            case RootElement rootElement:
+                result.addAll(resolveElements(rootElement.getIntroductionStep(), idPrefix, currentParents, customerInput));
+                result.addAll(resolveElements(rootElement.getSummaryStep(), idPrefix, currentParents, customerInput));
+                result.addAll(resolveElements(rootElement.getSubmitStep(), idPrefix, currentParents, customerInput));
+                for (var step : rootElement.getChildren()) {
+                    result.addAll(resolveElements(step, idPrefix, currentParents, customerInput));
+                }
+                break;
+            case StepElement stepElement:
+                for (var step : stepElement.getChildren()) {
+                    result.addAll(resolveElements(step, idPrefix, currentParents, customerInput));
+                }
+                break;
+            case GroupLayout groupLayout:
+                for (var child : groupLayout.getChildren()) {
+                    result.addAll(resolveElements(child, idPrefix, currentParents, customerInput));
+                }
+                break;
+            case ReplicatingContainerLayout replicatingContainerLayout:
+                var values = customerInput.get(replicatingContainerLayout.getResolvedId(idPrefix));
+                if (values instanceof Collection<?> collection) {
+                    for (var value : collection) {
+                        if (value instanceof String sValue) {
+                            String childIdPrefix = replicatingContainerLayout.getResolvedId(idPrefix) + "_" + sValue;
+
+                            for (var child : replicatingContainerLayout.getChildren()) {
+                                result.addAll(resolveElements(child, childIdPrefix, currentParents, customerInput));
+                            }
+                        }
+                    }
+                }
+            default:
+                break;
         }
 
-        Collection<? extends BaseElement> children = switch (current) {
-            case RootElement rootElement -> rootElement.getChildren();
-            case StepElement stepElement -> stepElement.getChildren();
-            case GroupLayout groupLayout -> groupLayout.getChildren();
-            case ReplicatingContainerLayout replicatingContainerLayout -> replicatingContainerLayout.getChildren();
-            default -> List.of();
-        };
-
-        int indentModifier = current instanceof ReplicatingContainerLayout ? 1 : 0;
-
-        var result = new LinkedList<ElementWithIndent>();
-        result.add(new ElementWithIndent(indent, current));
-        if (children != null) {
-            if (current instanceof ReplicatingContainerLayout replicatingContainerLayout) {
-                var min = replicatingContainerLayout.getMinimumRequiredSets();
-                if (min == null) {
-                    min = 5;
-                }
-                var max = replicatingContainerLayout.getMaximumSets();
-                if (max == null) {
-                    max = Math.min(min, 5);
-                }
-                for (int i = 0; i < Math.max(min, max); i++) {
-                    var headline = new Headline(new HashMap<>());
-                    headline.setContent(replicatingContainerLayout.getHeadlineTemplate().replaceAll("#", "" + (i + 1))); // TODO
-                    headline.setSmall(true);
-                    headline.setType(ElementType.Headline);
-                    result.add(new ElementWithIndent(indent + indentModifier, headline));
-
-                    children
-                            .stream()
-                            .map(child -> flattenElementsWithContext(child, indent + indentModifier))
-                            .forEach(result::addAll);
-                }
-            } else {
-                children
-                        .stream()
-                        .map(child -> flattenElementsWithContext(child, indent + indentModifier))
-                        .forEach(result::addAll);
-            }
-        }
         return result;
+    }
+
+    public record ResolvedElement(
+            String resolvedId,
+            BaseElement element,
+            List<BaseElement> parents
+    ) {
     }
 }
