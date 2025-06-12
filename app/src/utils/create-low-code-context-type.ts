@@ -3,15 +3,17 @@ import {ElementType} from '../data/element-type/element-type';
 import {flattenElements} from './flatten-elements';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
-
+import {generateComponentTitle} from './generate-component-title';
 
 export function createLowCodeContextType(element: AnyElement, rootElement: AnyElement) {
     const formType = createLowCodeType('Form', {
         id: 'string',
-    });
+    }, {});
 
     const allElements = flattenElements(rootElement, true)
         .filter(elem => isAnyInputElement(elem));
+
+    const fieldNames: Record<string, string> = {};
 
     const inputValuesFields: Record<string, string> = {};
     const computedValuesFields: Record<string, string> = {};
@@ -20,6 +22,8 @@ export function createLowCodeContextType(element: AnyElement, rootElement: AnyEl
     const overridesFields: Record<string, string> = {};
 
     for (const element of allElements) {
+        fieldNames[element.id] = generateComponentTitle(element);
+
         inputValuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
         computedValuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
         visibilitiesFields[element.id] = 'boolean';
@@ -27,13 +31,13 @@ export function createLowCodeContextType(element: AnyElement, rootElement: AnyEl
         overridesFields[element.id] = 'undefined | null | ' + elementToTypeDefinition(element);
     }
 
-    const inputValuesType = createLowCodeType('InputValues', inputValuesFields);
-    const computedValuesType = createLowCodeType('ComputedValues', computedValuesFields);
-    const visibilitiesType = createLowCodeType('Visibilities', visibilitiesFields);
-    const errorsType = createLowCodeType('Errors', errorsFields);
-    const overridesType = createLowCodeType('Overrides', overridesFields);
+    const inputValuesType = createLowCodeType('InputValues', inputValuesFields, fieldNames);
+    const computedValuesType = createLowCodeType('ComputedValues', computedValuesFields, fieldNames);
+    const visibilitiesType = createLowCodeType('Visibilities', visibilitiesFields, fieldNames);
+    const errorsType = createLowCodeType('Errors', errorsFields, fieldNames);
+    const overridesType = createLowCodeType('Overrides', overridesFields, fieldNames);
 
-    const contextType = createLowCodeType('ctx', {
+    const contextType = createLowCodeType('Context', {
         id: 'string',
         inputValues: 'InputValues',
         computedValues: 'ComputedValues',
@@ -41,6 +45,14 @@ export function createLowCodeContextType(element: AnyElement, rootElement: AnyEl
         errors: 'Errors',
         overrides: 'Overrides',
         element: elementToTypeDefinition(element),
+    }, {
+        id: 'ID of the current element',
+        inputValues: 'All input values of the form',
+        computedValues: 'All computed values of the form until this element',
+        visibilities: 'Visibility states of all elements in the form until this element',
+        errors: 'Errors of all elements in the form until this element',
+        overrides: 'Overrides of all elements in the form until this element',
+        element: 'The current element',
     });
 
     return `// TYPES
@@ -53,6 +65,9 @@ export function createLowCodeContextType(element: AnyElement, rootElement: AnyEl
     
     // CONTEXT
     declare ${contextType}
+    
+    // Global
+    declare var ctx: Context;
     `;
 }
 

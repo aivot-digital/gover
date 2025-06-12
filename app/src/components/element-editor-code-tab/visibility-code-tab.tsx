@@ -187,6 +187,10 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.element, props.parents[0]),
+                            }]}
                         />
                     )
                 }

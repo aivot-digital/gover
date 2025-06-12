@@ -8,6 +8,7 @@ import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 
 const exampleLegacyOverrideCode = `/**
  * Diese Funktion wird aufgerufen, die Struktur des Elements zu überschreiben.
@@ -152,6 +153,10 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.element, props.parents[0]),
+                            }]}
                         />
                     )
                 }

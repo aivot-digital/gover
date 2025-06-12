@@ -187,6 +187,10 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.element, props.parents[0]),
+                            }]}
                         />
                     )
                 }

@@ -17,6 +17,7 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 
 const exampleLegacyValidationCode = `/**
  * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element valide ist.
@@ -196,6 +197,10 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.element, props.parents[0]),
+                            }]}
                         />
                     )
                 }
