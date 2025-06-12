@@ -45,7 +45,7 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
-import de.aivot.GoverBackend.utils.ElementUtils;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.mail.MessagingException;
 import org.json.JSONObject;
@@ -346,7 +346,7 @@ public class SubmitController {
 
         var identityCacheEntity = optionalIdp.get();
 
-        var flatElements = ElementUtils
+        var flatElements = ElementFlattenUtils
                 .flattenElements(form.getRoot());
 
         for (var element : flatElements) {

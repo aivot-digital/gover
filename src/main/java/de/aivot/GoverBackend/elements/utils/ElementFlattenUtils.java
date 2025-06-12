@@ -1,4 +1,4 @@
-package de.aivot.GoverBackend.utils;
+package de.aivot.GoverBackend.elements.utils;
 
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.elements.models.BaseElement;
@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ElementUtils {
+public class ElementFlattenUtils {
     public static Collection<BaseElement> flattenElements(BaseElement current) {
         Collection<? extends BaseElement> children;
         if (current instanceof RootElement rootElement) {
@@ -33,7 +33,7 @@ public class ElementUtils {
         if (children != null) {
             children
                     .stream()
-                    .map(ElementUtils::flattenElements)
+                    .map(ElementFlattenUtils::flattenElements)
                     .forEach(result::addAll);
         }
         return result;
