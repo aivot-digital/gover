@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {createBrowserRouter as createRouter, RouterProvider} from 'react-router-dom';
 import {selectMemberships, selectUser, setMemberships, setUser} from '../slices/user-slice';
 import {selectSystemConfigValue, setSystemConfigs} from '../slices/system-config-slice';
-import {Box, CircularProgress, type Theme as MuiTheme, ThemeProvider, Typography} from '@mui/material';
+import {Box, CircularProgress, type Theme as MuiTheme, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
@@ -61,6 +61,7 @@ const router = createRouter(
 );
 
 function StaffApp() {
+    const baseTheme = useTheme();
     const dispatch = useAppDispatch();
     const api = useApi();
 
@@ -171,6 +172,14 @@ function StaffApp() {
         }
     }, [authCode, api, user]);
 
+    const _defaultTheme = useMemo(() => {
+        return createDefaultAppTheme(baseTheme);
+    }, [baseTheme]);
+
+    const _theme = useMemo(() => {
+        return createAppTheme(theme, baseTheme);
+    }, [theme, baseTheme]);
+
     if (!authChecked) {
         return (
             <Box
@@ -190,7 +199,7 @@ function StaffApp() {
 
     if (!api.isAuthenticated) {
         return (
-            <ThemeProvider theme={createDefaultAppTheme}>
+            <ThemeProvider theme={_defaultTheme}>
                 <Login />
             </ThemeProvider>
         );
@@ -214,7 +223,7 @@ function StaffApp() {
     }
 
     return (
-        <AppProvider theme={(baseTheme: MuiTheme) => createAppTheme(theme, baseTheme)}>
+        <AppProvider theme={_theme}>
             <RouterProvider router={router} />
 
             <LoadingOverlay

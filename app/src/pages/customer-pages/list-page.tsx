@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
-import {Box, Container, List, ThemeProvider} from '@mui/material';
+import {Box, Container, List, ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
 import {NotFoundPage} from '../../components/not-found-page/not-found-page';
 import {MetaElement} from '../../components/meta-element/meta-element';
@@ -18,9 +18,7 @@ import {resetStepper} from '../../slices/stepper-slice';
 import {clearCustomerInput, clearErrors, clearLoadedForm, showDialog} from '../../slices/app-slice';
 import {AlertComponent} from '../../components/alert/alert-component';
 import {useApi} from '../../hooks/use-api';
-import {FormListProjectionPublic} from '../../models/entities/form';
 import {Theme} from '../../modules/themes/models/theme';
-import type {Theme as MuiTheme} from '@mui/material/styles/createTheme';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {EmptySearchDataListPlaceholder} from '../../components/empty-search-data-list-placeholder/empty-search-data-list-placeholder';
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
@@ -32,6 +30,7 @@ import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-
 import {setIdentityId} from '../../slices/identity-slice';
 
 export function ListPage(): JSX.Element {
+    const baseTheme = useTheme();
     const api = useApi();
     const dispatch = useAppDispatch();
     const [failedToLoad, setFailedToLoad] = useState(false);
@@ -75,6 +74,10 @@ export function ListPage(): JSX.Element {
         }
     }, [themeId]);
 
+    const _theme = useMemo(() => {
+        return createAppTheme(theme, baseTheme);
+    }, [theme, baseTheme]);
+
     if (failedToLoad) {
         return <><MetaElement
             title={'Seite nicht gefunden'}
@@ -98,7 +101,7 @@ export function ListPage(): JSX.Element {
         );
 
         return (
-            <ThemeProvider theme={(baseTheme: MuiTheme) => createAppTheme(theme, baseTheme)}>
+            <ThemeProvider theme={_theme}>
                 <MetaElement
                     title={'Online-Antrags-Management'}
                     titlePrefix={provider}

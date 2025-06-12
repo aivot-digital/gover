@@ -3,7 +3,7 @@ import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import deLocale from 'date-fns/locale/de';
 import {DateFieldComponentProps} from "./date-field-component-props";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from 'react';
 
 const formatMap = {
     [DateFieldComponentModelMode.Day]: 'dd.MM.yyyy',
@@ -55,22 +55,25 @@ export function DateFieldComponent({
         lastPickerValueRef.current = parsed;
     }, [value]);
 
-    let computedLabel = label;
-    if (computedLabel) {
-        computedLabel += ` (${formatReadableMap[mode ?? DateFieldComponentModelMode.Day]})`;
-    }
-    if (required) {
+    const computedLabel = useMemo(() => {
+        let computedLabel = label;
         if (computedLabel) {
-            computedLabel += ' *';
-        } else {
-            computedLabel = '*';
+            computedLabel += ` (${formatReadableMap[mode ?? DateFieldComponentModelMode.Day]})`;
         }
-    }
+        if (required) {
+            if (computedLabel) {
+                computedLabel += ' *';
+            } else {
+                computedLabel = '*';
+            }
+        }
+        return computedLabel;
+    }, [label, mode, required]);
 
-    const format = formatMap[mode ?? DateFieldComponentModelMode.Day];
-    const views = viewsMap[mode ?? DateFieldComponentModelMode.Day];
-    const opensTo = mode ?? 'day';
-    const helper = error != null ? error : hint;
+    const format = useMemo(() => formatMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
+    const views = useMemo(() => viewsMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
+    const opensTo = useMemo(() => mode ?? 'day', [mode]);
+    const helper = useMemo(() => error != null ? error : hint, [error, hint]);
 
     const triggerChange = (date: Date | null) => {
         if (date === null) {
@@ -135,6 +138,23 @@ export function DateFieldComponent({
         setLastInputWasTyping(false);
     };
 
+    const slotProps = useMemo(() => ({
+        textField: {
+            variant: 'outlined',
+            error: error != null,
+            helperText: helper,
+            autoComplete: autocomplete,
+            InputLabelProps: {
+                title: computedLabel
+            },
+            onInput: () => setLastInputWasTyping(true),
+            onBlur: handleBlur,
+        },
+        actionBar: {
+            actions: ['accept', 'cancel', 'clear'],
+        },
+    }), [error, autocomplete, computedLabel, helper]);
+
     return (
         <LocalizationProvider
             dateAdapter={AdapterDateFns}
@@ -160,22 +180,7 @@ export function DateFieldComponent({
                 disabled={disabled}
 
                 // @ts-ignore
-                slotProps={{
-                    textField: {
-                        variant: 'outlined',
-                        error: error != null,
-                        helperText: helper,
-                        autoComplete: autocomplete,
-                        InputLabelProps: {
-                            title: computedLabel
-                        },
-                        onInput: () => setLastInputWasTyping(true),
-                        onBlur: handleBlur,
-                    },
-                    actionBar: {
-                        actions: ['accept', 'cancel', 'clear'],
-                    },
-                }}
+                slotProps={slotProps}
                 sx={{
                     ...sx,
                     "& .MuiInputBase-root": {

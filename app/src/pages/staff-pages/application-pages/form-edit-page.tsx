@@ -1,4 +1,4 @@
-import {Grid, type Theme as MuiTheme, ThemeProvider} from '@mui/material';
+import {Grid, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {type RootState} from '../../../store';
 import {
@@ -73,10 +73,10 @@ import {setIdentityId} from '../../../slices/identity-slice';
 export const DialogSearchParam = 'dialog';
 
 export function FormEditPage() {
+    const baseTheme = useTheme();
+
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
-
-    const params = useParams();
 
     const {
         id: formIdStr,
@@ -225,6 +225,10 @@ export function FormEditPage() {
                 dispatch(hideLoadingOverlay());
             });
     }, [disableVisibility]);
+
+    const _theme = useMemo(() => {
+        return createAppTheme(theme, baseTheme);
+    }, [theme, baseTheme]);
 
     function fetchLockState(id: number) {
         new FormsApiService(api)
@@ -430,7 +434,7 @@ export function FormEditPage() {
         };
 
         return (
-            <ThemeProvider theme={(baseTheme: MuiTheme) => createAppTheme(theme, baseTheme)}>
+            <ThemeProvider theme={_theme}>
                 <MetaElement
                     title={`Editor - ${loadedForm.title} - ${loadedForm.version}`}
                 />
