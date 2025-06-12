@@ -22,7 +22,7 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
 
     @Override
     public String getLabel() {
-        return "Date";
+        return "Datumsangaben";
     }
 
     @Override

@@ -24,7 +24,7 @@ public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvide
 
     @Override
     public String getLabel() {
-        return "HTTP";
+        return "HTTP-Anfragen";
     }
 
     @Override
