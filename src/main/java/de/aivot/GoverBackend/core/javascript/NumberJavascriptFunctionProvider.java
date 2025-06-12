@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class NumberJavascriptFunctionProvider implements JavascriptFunctionProvider {
     @Override
     public String getPackageName() {
-        return "$number";
+        return "_number";
     }
 
     @Override

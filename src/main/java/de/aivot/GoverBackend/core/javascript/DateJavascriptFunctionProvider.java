@@ -2,8 +2,6 @@ package de.aivot.GoverBackend.core.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import org.graalvm.polyglot.HostAccess;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -13,11 +11,9 @@ import java.time.format.DateTimeFormatter;
 
 @Service
 public class DateJavascriptFunctionProvider implements JavascriptFunctionProvider {
-    private final Logger logger = LoggerFactory.getLogger(DateJavascriptFunctionProvider.class);
-
     @Override
     public String getPackageName() {
-        return "$date";
+        return "_date";
     }
 
     @Override
@@ -32,7 +28,9 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
 
     @HostAccess.Export
     public ZonedDateTime createDate() {
-        return ZonedDateTime.now();
+        return LocalDate
+                .now()
+                .atStartOfDay(ZoneId.systemDefault());
     }
 
     private static final DateTimeFormatter isoDateFormatter = DateTimeFormatter
@@ -59,7 +57,6 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
                         .atStartOfDay(ZoneId.systemDefault());
             } catch (Exception e) {
                 // Ignore and try the next formatter
-                logger.error(e.getMessage(), e);
             }
         }
 

@@ -19,7 +19,7 @@ import java.util.Map;
 public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvider {
     @Override
     public String getPackageName() {
-        return "$http";
+        return "_http";
     }
 
     @Override

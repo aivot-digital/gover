@@ -28,7 +28,7 @@ public class AssetJavascriptFunctionProvider implements JavascriptFunctionProvid
 
     @Override
     public String getPackageName() {
-        return "$assets";
+        return "_assets";
     }
 
     @Override
