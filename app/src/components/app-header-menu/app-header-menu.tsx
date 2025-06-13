@@ -26,11 +26,8 @@ import TaskOutlinedIcon from '@mui/icons-material/TaskOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {StorageService} from '../../services/storage-service';
 import {StorageKey} from '../../data/storage-key';
-import {getPath} from '../../apps/staff-app-routes';
 import CompareArrowsOutlinedIcon from '@mui/icons-material/CompareArrowsOutlined';
 import {CopyAllOutlined, SvgIconComponent} from '@mui/icons-material';
-import {useApi} from '../../hooks/use-api';
-import {AppConfig} from '../../app-config';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
@@ -103,7 +100,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
                         icon={CompareArrowsOutlinedIcon}
                         onClick={() => {
                             StorageService.clearItem(StorageKey.SavedModule);
-                            navigate(getPath('moduleSelect'));
+                            navigate('/');
                         }}
                         active={location.pathname === '/'}
                     />
