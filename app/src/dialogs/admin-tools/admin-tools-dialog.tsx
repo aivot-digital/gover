@@ -19,7 +19,7 @@ import {useApi} from '../../hooks/use-api';
 import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import BugReportIcon from '@mui/icons-material/BugReport';
-import ExportApplicationDialog from "../application-dialogs/export-application-dialog/export-application-dialog";
+import {ExportApplicationDialog} from "../application-dialogs/export-application-dialog/export-application-dialog";
 
 const switches: Array<{
     label: string;

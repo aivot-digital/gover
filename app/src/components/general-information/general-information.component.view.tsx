@@ -22,7 +22,7 @@ import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessib
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import ExpandableList from '../expandable-list/expandable-list';
+import {ExpandableList} from '../expandable-list/expandable-list';
 import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
 
 export const PrivacyUserInputKey = '__privacy__';

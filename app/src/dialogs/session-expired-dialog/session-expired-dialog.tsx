@@ -7,7 +7,7 @@ import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {selectAuthData} from '../../slices/auth-slice';
 
 export function SessionExpiredDialog() {
-    const intervalRef = useRef<NodeJS.Timer>();
+    const intervalRef = useRef<any>();
     const authData = useAppSelector(selectAuthData);
     const [isRefreshTokenExpired, setIsRefreshTokenExpired] = useState(false);
 

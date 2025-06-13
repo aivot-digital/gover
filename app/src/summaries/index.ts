@@ -14,7 +14,7 @@ import {TimeFieldComponentSummary} from "../components/time-field/time-field.com
 import {FileUploadSummary} from "../components/file-upload-field/file-upload.summary";
 import {StepComponentSummary} from "../components/step/step.component.summary";
 
-const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
+export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.Root]: null,
     [ElementType.Step]: StepComponentSummary,
     [ElementType.Alert]: null,
@@ -40,4 +40,3 @@ const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FileUpload]: FileUploadSummary,
 };
 
-export default summaries;

@@ -11,7 +11,7 @@ import {isAnyElementWithChildren} from '../../models/elements/any-element-with-c
 import {CustomerInput} from '../../models/customer-input';
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from '../../views/base-view';
-import SummaryMap from '../../summaries';
+import {summaries as SummaryMap} from '../../summaries';
 import {useAppSelector} from '../../hooks/use-app-selector';
 
 export const SummaryUserInputKey = '__summary__';

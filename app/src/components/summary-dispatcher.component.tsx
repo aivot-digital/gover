@@ -2,12 +2,11 @@ import React, {ComponentType} from 'react';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {CustomerInput} from '../models/customer-input';
-import Summaries from '../summaries';
+import {summaries as Summaries} from '../summaries';
 import {BaseSummaryProps} from '../summaries/base-summary';
 import {resolveId} from '../utils/id-utils';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {selectOverride, selectValue, selectVisibility} from '../slices/app-slice';
-import {FunctionType, hasElementFunctionType} from '../utils/function-status-utils';
 
 interface DispatcherComponentProps<M extends AnyElement> {
     allElements: AnyElement[];

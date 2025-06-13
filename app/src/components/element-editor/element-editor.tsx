@@ -12,7 +12,7 @@ import {type ElementEditorProps} from './element-editor-props';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {type AnyElement} from '../../models/elements/any-element';
 import ProjectPackage from '../../../package.json';
-import Editors from '../../editors';
+import {editors as Editors} from '../../editors';
 import {AddPresetDialog} from '../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {type GroupLayout, isGroupLayout, isPresetGroupLayout} from '../../models/elements/form/layout/group-layout';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';

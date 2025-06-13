@@ -34,7 +34,7 @@ interface ExpandableListProps<T> {
     listId?: string;
 }
 
-const ExpandableList = <T,>({
+export const ExpandableList = <T,>({
                                 title,
                                 items = [],
                                 initialVisible = 3,
@@ -153,5 +153,3 @@ const ExpandableList = <T,>({
         </Box>
     );
 };
-
-export default ExpandableList;

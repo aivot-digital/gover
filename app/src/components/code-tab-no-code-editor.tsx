@@ -3,7 +3,7 @@ import {flattenElementsWithParents} from '../utils/flatten-elements';
 import {CodeTabConditionSetEditor} from './code-tab-condition-set-editor';
 import React from 'react';
 import {ConditionSetOperator} from '../data/condition-set-operator';
-import Evaluators from '../evaluators';
+import {evaluators as Evaluators} from '../evaluators';
 import {type Function} from '../models/functions/function';
 import {type RootElement} from '../models/elements/root-element';
 import {type StepElement} from '../models/elements/steps/step-element';

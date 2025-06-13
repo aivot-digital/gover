@@ -22,8 +22,7 @@ import {useApi} from '../../hooks/use-api';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
-import ExportApplicationDialog
-    from "../../dialogs/application-dialogs/export-application-dialog/export-application-dialog";
+import {ExportApplicationDialog} from '../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
 
 
 export function ApplicationListItem(props: ApplicationListItemProps): JSX.Element {
@@ -33,7 +32,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
     } = props;
 
     const {
-        developingDepartmentId
+        developingDepartmentId,
     } = application;
 
     const api = useApi();
@@ -260,9 +259,9 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                         </MenuItem>
 
                         <MenuItem
-                            onClick={async() => {
+                            onClick={async () => {
                                 const link = `${window.location.protocol}//${window.location.host}/${props.application.slug}/${props.application.version}`;
-                                await handleDownloadQrCode(link, `qr-code-${props.application.slug}-${(props.application.version).replace(/\./g, "-")}.png`);
+                                await handleDownloadQrCode(link, `qr-code-${props.application.slug}-${(props.application.version).replace(/\./g, '-')}.png`);
                                 handleCloseOptions();
                             }}
                         >

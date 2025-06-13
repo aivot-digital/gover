@@ -10,7 +10,7 @@ import {BaseTheme} from './theming/base-theme';
 import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} from 'react-router-dom';
 import {getSentryDsn} from './hooks/use-system-api';
 import {createRoot} from 'react-dom/client';
-import StaffApp from './apps/staff-app';
+import {StaffApp} from './apps/staff-app';
 
 
 const rootElement = document.getElementById('root')!;

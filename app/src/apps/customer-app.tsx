@@ -19,7 +19,7 @@ const router = createRouter(
     ],
 );
 
-function CustomerApp() {
+export function CustomerApp() {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
@@ -35,5 +35,3 @@ function CustomerApp() {
 
     return <RouterProvider router={router} />;
 }
-
-export default CustomerApp;

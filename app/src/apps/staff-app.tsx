@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {createBrowserRouter as createRouter, RouterProvider} from 'react-router-dom';
 import {selectMemberships, selectUser, setMemberships, setUser} from '../slices/user-slice';
 import {selectSystemConfigValue, setSystemConfigs} from '../slices/system-config-slice';
-import {Box, CircularProgress, type Theme as MuiTheme, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Box, CircularProgress, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
@@ -27,8 +27,6 @@ import {DepartmentMembershipsApiService} from '../modules/departments/department
 import {ThemesApiService} from '../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../modules/configs/system-configs-api-service';
 import {RouterLayout} from './router-layout';
-import {loader} from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
 import {AppProvider} from '../providers/app-provider';
 import {UsersApiService} from '../modules/users/users-api-service';
 import {ExpirationTimer} from '../components/auth-token-debugger/auth-token-debugger';
@@ -36,8 +34,6 @@ import {identityRoutes} from '../modules/identity/identity-routes';
 import {useLocalStorageEffect} from '../hooks/use-local-storage-effect';
 import {AuthDataAccessToken} from '../models/dtos/auth-data';
 import {StorageKey} from '../data/storage-key';
-
-loader.config({monaco});
 
 const router = createRouter(
     [
@@ -60,7 +56,7 @@ const router = createRouter(
     },
 );
 
-function StaffApp() {
+export function StaffApp() {
     const baseTheme = useTheme();
     const dispatch = useAppDispatch();
     const api = useApi();
@@ -73,6 +69,8 @@ function StaffApp() {
     const themeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const [theme, setTheme] = useState<Theme>();
+
+    console.log('test');
 
     // Reload the auth data from the local storage if any change happens.
     // This is needed for the case when the user refreshes the tokens in another tab.
@@ -237,5 +235,3 @@ function StaffApp() {
         </AppProvider>
     );
 }
-
-export default StaffApp;
