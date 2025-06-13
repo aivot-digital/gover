@@ -1023,7 +1023,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                         {
                             originalIdentityProvider.isEnabled &&
-                            <Tooltip title="Nur ein inaktiver Nutzerkontenanbieter kann gelöscht werden. Sie müssen den Anbieter zunächst deaktivieren und speichern, bevor Sie ihn löschen können.">
+                            <Tooltip title="Zum Löschen muss der Nutzerkontenanbieter zuerst deaktiviert und gespeichert werden.">
                                 <span>
                                     <Button
                                         variant="outlined"
