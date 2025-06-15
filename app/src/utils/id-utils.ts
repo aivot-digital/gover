@@ -1,6 +1,9 @@
 import {type RootElement} from '../models/elements/root-element';
 import {type AnyElement} from '../models/elements/any-element';
 import {ElementType} from '../data/element-type/element-type';
+import ShortUniqueId from 'short-unique-id';
+
+const uid = new ShortUniqueId();
 
 const idRegex = /^[a-z][a-zA-Z0-9_]*$/;
 
@@ -36,29 +39,29 @@ function countIdOccurrences(comp: AnyElement, id: string): number {
 }
 
 const prefixMap: Record<ElementType, string> = {
-    [ElementType.Root]: 'root',
-    [ElementType.Step]: 'step',
-    [ElementType.Alert]: 'alrt',
-    [ElementType.Container]: 'grup',
-    [ElementType.Checkbox]: 'ckbx',
-    [ElementType.Date]: 'date',
-    [ElementType.Headline]: 'hdln',
-    [ElementType.MultiCheckbox]: 'mucx',
-    [ElementType.Number]: 'numb',
-    [ElementType.ReplicatingContainer]: 'repc',
-    [ElementType.Richtext]: 'ritx',
-    [ElementType.Radio]: 'radi',
-    [ElementType.Select]: 'selc',
-    [ElementType.Spacer]: 'spac',
-    [ElementType.Table]: 'tabl',
-    [ElementType.Text]: 'text',
-    [ElementType.Time]: 'time',
-    [ElementType.IntroductionStep]: 'intr',
-    [ElementType.SubmitStep]: 'subm',
-    [ElementType.SummaryStep]: 'summ',
-    [ElementType.Image]: 'imag',
-    [ElementType.SubmittedStep]: 'subx',
-    [ElementType.FileUpload]: 'fupl',
+    [ElementType.Root]: 'rt',
+    [ElementType.Step]: 'st',
+    [ElementType.Alert]: 'al',
+    [ElementType.Container]: 'gp',
+    [ElementType.Checkbox]: 'cx',
+    [ElementType.Date]: 'dt',
+    [ElementType.Headline]: 'hd',
+    [ElementType.MultiCheckbox]: 'mx',
+    [ElementType.Number]: 'nm',
+    [ElementType.ReplicatingContainer]: 'rp',
+    [ElementType.Richtext]: 'rx',
+    [ElementType.Radio]: 'rd',
+    [ElementType.Select]: 'sl',
+    [ElementType.Spacer]: 'sp',
+    [ElementType.Table]: 'tb',
+    [ElementType.Text]: 'tx',
+    [ElementType.Time]: 'ti',
+    [ElementType.IntroductionStep]: 'in',
+    [ElementType.SubmitStep]: 'sb',
+    [ElementType.SummaryStep]: 'sm',
+    [ElementType.Image]: 'im',
+    [ElementType.SubmittedStep]: 'sx',
+    [ElementType.FileUpload]: 'fu',
 };
 
 export function generateElementIdForType(type: ElementType): string {
@@ -70,7 +73,9 @@ export function generateElementIdForReplicatingContainerChild(): string {
 }
 
 function generateElementId(prefix: string): string {
-    return prefix + '_' + new Date().getTime().toFixed() + Math.floor((Math.random() + 0.1) * 1000).toFixed(0);
+    //@ts-expect-error Something is wrong with the types of the ShortUniqueId library
+    const _uid = uid.rnd(10);
+    return prefix + '_' + _uid;
 }
 
 /**
