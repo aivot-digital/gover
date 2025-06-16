@@ -17,6 +17,8 @@ import {Hint} from '../../components/hint/hint';
 import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
 import {Collapse} from '../../components/collapse/collapse';
 import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
+import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {getElementNameForType} from '../../data/element-type/element-names';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -70,7 +72,12 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         return form.root.children
             .map((s) => {
                 const stepElements = flattenElements(s, true)
-                    .filter(e => relevantElementTypes.includes(e.type));
+                    .filter(e => (
+                        isAnyInputElement(e) &&
+                        relevantElementTypes.includes(e.type) &&
+                        e.technical != true &&
+                        e.disabled != true
+                    ));
                 return {
                     step: s,
                     elements: stepElements,
@@ -151,7 +158,12 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 <Typography variant="body2">
                     Hier können Sie einen Link erzeugen, der ein Formular mit den hier angegebenen Werten vorbefüllt.
                     Dies ist besonders nützlich, wenn Sie ein Formular z.B. an einen Personenkreis mit vorher bekannten Angaben weitergeben möchten.
-                    Bitte beachten Sie, dass nicht alle Elemente unterstützt werden.
+                    Bitte beachten Sie, dass ausschließlich die folgenden Felder vorbefüllt werden können: {
+                        relevantElementTypes
+                            .map(getElementNameForType)
+                            .join(', ')
+                    }.
+                    Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
                 </Typography>
 
                 <Typography
@@ -193,7 +205,6 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                     allElements={[]}
                                                     element={{
                                                         ...element,
-                                                        disabled: false,
                                                         width: 12,
                                                     }}
                                                     isBusy={false}
