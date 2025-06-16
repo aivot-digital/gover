@@ -2,7 +2,9 @@ package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.enums.PaymentType;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.models.FormDerivationContext;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.models.PaymentItem;
@@ -70,6 +72,10 @@ public class FormPaymentService {
             @Nonnull Form form,
             @Nonnull Map<String, Object> customerInput
     ) throws PaymentException {
+        var formDerivationContext = formDerivationServiceFactory
+                .create(form, NO_STEPS, ALL_STEPS, ALL_STEPS, ALL_STEPS)
+                .derive(form.getRoot(), customerInput);
+
         List<PaymentItem> items = new LinkedList<>();
 
         for (var product : form.getProducts()) {
@@ -96,29 +102,7 @@ public class FormPaymentService {
                     }
                     yield product.getUpfrontFixedQuantity();
                 }
-                case PaymentType.UpfrontCalculated -> {
-                    if (product.getUpfrontQuantityFunction() == null) {
-                        throw new PaymentException("Product %s of form %s has no upfront quantity function", product.getId(), form.getTitle());
-                    }
-
-                    var formDerivationContext = formDerivationServiceFactory
-                            .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                            .derive(form.getRoot(), customerInput);
-
-                    var result = product
-                            .getUpfrontQuantityFunction()
-                            .evaluate(null, form.getRoot(), formDerivationContext);
-
-                    if (result == null) {
-                        yield 0;
-                    }
-
-                    var value = result.getIntegerValue();
-                    if (value == null) {
-                        throw new PaymentException("Upfront quantity calculation function for product %s of form %s produced no value", product.getId(), form.getTitle());
-                    }
-                    yield value;
-                }
+                case PaymentType.UpfrontCalculated -> calculateProductQuantity(form, customerInput, formDerivationContext, product);
                 default -> 0;
             };
 
@@ -138,6 +122,53 @@ public class FormPaymentService {
             }
         }
 
+        try {
+            formDerivationContext.close();
+        } catch (Exception e) {
+            throw new PaymentException(e, "Error closing form derivation context for form %s", form.getTitle());
+        }
+
         return items;
+    }
+
+    private static final List<String> NO_STEPS = List.of(FormDerivationService.FORM_STEP_LIMIT_NONE_IDENTIFIER);
+    private static final List<String> ALL_STEPS = List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER);
+
+    @Nonnull
+    private Long calculateProductQuantity(
+            @Nonnull Form form,
+            @Nonnull Map<String, Object> customerInput,
+            @Nonnull FormDerivationContext context,
+            @Nonnull PaymentProduct product
+    ) throws PaymentException {
+        if (product.getUpfrontQuantityFunction() != null && product.getUpfrontQuantityFunction().isNotEmpty()) {
+            var res = product
+                    .getUpfrontQuantityFunction()
+                    .evaluate(null, form.getRoot(), context);
+            if (res == null) {
+                return 0L;
+            }
+            var value = res.getIntegerValue();
+            if (value == null) {
+                throw new PaymentException("Upfront quantity calculation function for product %s of form %s produced no value", product.getId(), form.getTitle());
+            }
+            return Long.valueOf(value);
+        }
+
+        if (product.getUpfrontQuantityJavascript() != null && product.getUpfrontQuantityJavascript().isNotEmpty()) {
+            var res = context
+                    .getJavascriptEngine()
+                    .evaluateCode(product.getUpfrontQuantityJavascript());
+            if (res == null) {
+                return 0L;
+            }
+            var value = res.asNumber();
+            if (value == null) {
+                throw new PaymentException("Upfront quantity calculation JavaScript for product %s of form %s produced no value", product.getId(), form.getTitle());
+            }
+            return value.longValue();
+        }
+
+        throw new PaymentException("Product %s of form %s has no upfront quantity function or JavaScript", product.getId(), form.getTitle());
     }
 }

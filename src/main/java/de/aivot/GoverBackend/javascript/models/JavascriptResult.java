@@ -25,6 +25,32 @@ public class JavascriptResult {
     }
 
     @Nullable
+    public Number asNumber() {
+        if (value == null || isNull()) {
+            return null;
+        }
+        try {
+            return value.asInt();
+        } catch (Exception ignored) {}
+        try {
+            return value.asLong();
+        } catch (Exception ignored) {}
+        try {
+            return value.asDouble();
+        } catch (Exception ignored) {}
+        try {
+            return value.asFloat();
+        } catch (Exception ignored) {}
+        try {
+            return value.asShort();
+        } catch (Exception ignored) {}
+        try {
+            return value.asByte();
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    @Nullable
     public String asString() {
         if (value == null || isNull()) {
             return null;

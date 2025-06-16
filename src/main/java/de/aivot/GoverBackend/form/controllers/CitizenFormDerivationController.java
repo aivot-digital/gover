@@ -50,7 +50,7 @@ public class CitizenFormDerivationController {
                 .findById(formId)
                 .orElseThrow(ResponseException::notFound);
 
-        return formDerivationServiceFactory
+        var ctx = formDerivationServiceFactory
                 .create(
                         form,
                         stepsToValidate,
@@ -58,7 +58,13 @@ public class CitizenFormDerivationController {
                         stepsToCalculateValues,
                         stepsToCalculateOverrides
                 )
-                .derive(form.getRoot(), customerInput)
-                .getFormState();
+                .derive(form.getRoot(), customerInput);
+        try {
+            ctx.close();
+        } catch (Exception e) {
+            throw ResponseException.internalServerError(e);
+        }
+
+        return ctx.getFormState();
     }
 }

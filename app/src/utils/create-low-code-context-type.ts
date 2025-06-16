@@ -5,7 +5,7 @@ import {AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 
 
-export function createLowCodeContextType(element: AnyElement, rootElement: AnyElement) {
+export function createLowCodeContextType(element: AnyElement | undefined, rootElement: AnyElement) {
     const formType = createLowCodeType('Form', {
         id: 'string',
     });
@@ -33,15 +33,20 @@ export function createLowCodeContextType(element: AnyElement, rootElement: AnyEl
     const errorsType = createLowCodeType('Errors', errorsFields);
     const overridesType = createLowCodeType('Overrides', overridesFields);
 
-    const contextType = createLowCodeType('ctx', {
+    const lowCodePrepared: Record<string, any> = {
         id: 'string',
         inputValues: 'InputValues',
         computedValues: 'ComputedValues',
         visibilities: 'Visibilities',
         errors: 'Errors',
         overrides: 'Overrides',
-        element: elementToTypeDefinition(element),
-    });
+    }
+
+    if (element != null) {
+        lowCodePrepared['element'] = elementToTypeDefinition(element);
+    }
+
+    const contextType = createLowCodeType('ctx', lowCodePrepared);
 
     return `// TYPES
     declare ${formType}

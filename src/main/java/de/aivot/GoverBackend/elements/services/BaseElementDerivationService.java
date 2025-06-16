@@ -32,7 +32,7 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
         );
     }
 
-    public Ctx derive(
+    private Ctx derive(
             @Nonnull BaseElement currentElement,
             @Nonnull Map<String, Object> inputValues,
             @Nonnull Boolean deriveVisibilities,
@@ -40,12 +40,9 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
             @Nonnull Boolean deriveValues,
             @Nonnull Boolean deriveErrors
     ) {
-        try (Ctx context = prepareContext(inputValues)) {
-            startElementDerivation(context, currentElement, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
-            return context;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        var context = prepareContext(inputValues);
+        startElementDerivation(context, currentElement, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
+        return context;
     }
 
     protected void startElementDerivation(
