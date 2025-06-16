@@ -1,69 +1,49 @@
-FROM node:22.11-alpine as build_app
+FROM node:24.2.0-alpine3.21 AS build_mails
 
-ARG buildDate=unknown
-ARG version=0.0.0
-
-# Build Mails
-
+# Set working directory
 WORKDIR /mails
 
-COPY mails/package.json package.json
-COPY mails/package-lock.json package-lock.json
+# Copy mail project files
+COPY mails .
 
 # Install mail dependencies
 RUN npm install
 
-COPY mails/partials partials
-COPY mails/templates templates
-
 # Build mails
 RUN npm run build:prod
 
-# Build Staff and Customer
+FROM node:24.2.0-alpine3.21 AS build_app
 
+# Set build version and date
+ARG version=0.0.0
+ARG buildDate=unknown
+
+# Set work dir
 WORKDIR /app
 
-# Copy frontend project files
-COPY app/package.json package.json
-COPY app/package-lock.json package-lock.json
-
-# Set version in package.json
-RUN sed -i 's/"version": "X.X.X"/"version": "'"$version"'"/g' package.json
+# Copy frontend source files
+COPY app .
 
 # Install frontend dependencies
 RUN npm install
 
-# Copy frontend source files
-COPY app/public public
-COPY app/src src
-COPY app/tsconfig.json tsconfig.json
+# Set version in package.json
+RUN sed -i 's/"version": "X.X.X"/"version": "'"$version"'"/g' package.json
 
 # Set build date in app-config.ts
 RUN sed -i "s|2000-01-01T00:00:00.000Z|$buildDate|g" src/app-config.ts
 
 # Build staff app
-ENV NODE_ENV production
-ENV REACT_APP_BUILD_TARGET staff
-ENV PUBLIC_URL /staff
-ENV DISABLE_ESLINT_PLUGIN true
-
-RUN npm run build
-RUN mv build staff
+RUN npm run build:staff
 
 # Build customer app
-ENV NODE_ENV production
-ENV REACT_APP_BUILD_TARGET customer
-ENV PUBLIC_URL /
-ENV DISABLE_ESLINT_PLUGIN true
+RUN npm run build:customer
 
-RUN npm run build
-RUN mv build customer
+FROM  maven:3.9.9-eclipse-temurin-21-alpine AS build_server
 
-
-# Build server
-FROM  maven:3.9.9-eclipse-temurin-21 as build_server
-
+# Set build version and date
 ARG version=0.0.0
+ARG buildDate=unknown
 
 # Prepare backend working directoy
 WORKDIR /app
@@ -78,16 +58,16 @@ RUN sed -i 's%<version>X.X.X</version>%<version>'"$version"'</version>%g' pom.xm
 COPY src/main src/main
 
 # Copy mails files
-COPY --from=build_app /mails/dist src/main/resources/templates/mail
+COPY --from=build_mails /mails/dist src/main/resources/templates/mail
 
 # Build app
 RUN mvn install -DskipTests
 
 # App
-FROM eclipse-temurin:21.0.5_11-jre
+FROM eclipse-temurin:21.0.7_6-jre-alpine-3.21
 
-ARG buildDate=unknown
 ARG version=0.0.0
+ARG buildDate=unknown
 ARG TARGETARCH
 
 # Set app metadata
@@ -101,10 +81,10 @@ LABEL org.opencontainers.image.title="Gover Backend"
 LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
 
 # Set locale env config
-ENV TZ "Europe/Berlin"
-ENV LANG de_DE.UTF-8
-ENV LANGUAGE de_DE:de
-ENV LC_ALL de_DE.UTF-8
+ENV TZ="Europe/Berlin"
+ENV LANG=de_DE.UTF-8
+ENV LANGUAGE=de_DE:de
+ENV LC_ALL=de_DE.UTF-8
 
 # Copy nginx configs
 COPY docker/nginx.staff.conf /etc/nginx/sites-available/staff.conf
@@ -118,20 +98,19 @@ RUN chmod +x /app/entrypoint.sh
 WORKDIR /app
 
 # Install locale dependencies
-RUN apt-get update && \
-    apt-get install -y tzdata locales nginx && \
-    ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata
+RUN apk upgrade --no-cache && \
+    apk add tzdata musl musl-utils musl-locales nginx
 
 # Remove default nginx config
-RUN rm /etc/nginx/sites-enabled/default
+RUN rm /etc/nginx/http.d/default.conf
 
 # Disable nginx daemon mode
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 
 # Copy app files
 COPY --from=build_server /app/target/Gover-$version.jar /app/gover.jar
-COPY --from=build_app /app/staff /var/www/staff/html
-COPY --from=build_app /app/customer /var/www/customer/html
+COPY --from=build_app /app/build/staff /var/www/staff/html
+COPY --from=build_app /app/build/customer /var/www/customer/html
 
 ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["customer"]
