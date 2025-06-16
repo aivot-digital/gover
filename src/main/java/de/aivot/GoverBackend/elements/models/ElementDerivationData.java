@@ -55,6 +55,15 @@ public class ElementDerivationData {
     }
 
     /**
+     * Clean the input value of a field based on the id of the element.
+     *
+     * @param elementId The id of the element.
+     */
+    public void cleanInputValue(@Nonnull String elementId) {
+        this.inputValues.remove(elementId);
+    }
+
+    /**
      * Set the value of a field based on the id of the element.
      *
      * @param elementId The id of the element.

@@ -13,6 +13,7 @@ import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-el
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 
 const exampleLegacyValueCode = `/**
  * Diese Funktion wird aufgerufen, um einen Wert für das Element zu berechnen.
@@ -225,6 +226,14 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                         />
                     )
                 }
+
+                <ReferenceCheck
+                    element={props.element}
+                    lowCodeOld={[props.element.computeValue?.code]}
+                    lowCode={[props.element.valueCode?.code]}
+                    noCodeOld={[props.element.computeValue?.conditionSet]}
+                    noCode={[props.element.valueExpression]}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

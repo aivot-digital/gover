@@ -18,6 +18,7 @@ import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-el
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 
 const exampleLegacyValidationCode = `/**
  * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element valide ist.
@@ -341,6 +342,14 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                         </>
                     )
                 }
+
+                <ReferenceCheck
+                    element={props.element}
+                    lowCodeOld={[props.element.validate?.code]}
+                    lowCode={[props.element.validationCode?.code]}
+                    noCodeOld={[props.element.validate?.conditionSet]}
+                    noCode={props.element.validationExpressions?.map(value => value.expression) ?? []}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

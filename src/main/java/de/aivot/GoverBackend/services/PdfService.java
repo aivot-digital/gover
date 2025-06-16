@@ -24,7 +24,7 @@ import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
-import de.aivot.GoverBackend.utils.ElementUtils;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +95,7 @@ public class PdfService {
     }
 
     public byte[] generatePrintableForm(Form form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        var allElements = ElementUtils.flattenElements(form.getRoot());
+        var allElements = ElementFlattenUtils.flattenElements(form.getRoot());
 
         var derivationContext = formDerivationServiceFactory
                 .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))

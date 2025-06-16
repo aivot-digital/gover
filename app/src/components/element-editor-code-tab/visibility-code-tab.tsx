@@ -13,6 +13,7 @@ import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 
 const exampleLegacyVisibilityCode = `/**
  * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element sichtbar ist.
@@ -225,6 +226,14 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                         />
                     )
                 }
+
+                <ReferenceCheck
+                    element={props.element}
+                    lowCodeOld={[props.element.isVisible?.code]}
+                    lowCode={[props.element.visibilityCode?.code]}
+                    noCodeOld={[props.element.isVisible?.conditionSet]}
+                    noCode={[props.element.visibilityExpression]}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

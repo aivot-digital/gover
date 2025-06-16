@@ -8,6 +8,7 @@ import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 
 const exampleLegacyOverrideCode = `/**
@@ -160,6 +161,14 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                         />
                     )
                 }
+
+                <ReferenceCheck
+                    element={element}
+                    lowCodeOld={[element.patchElement?.code]}
+                    lowCode={[element.overrideCode?.code]}
+                    noCodeOld={[element.patchElement?.conditionSet]}
+                    noCode={[element.overrideExpression]}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

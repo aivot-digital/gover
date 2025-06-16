@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.3.2](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
+## [4.4.0](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
 
 ### Features
 * **App:** Revamped user account integration with UI management, supporting OpenID Connect and parallel pre-production/production setups for existing providers (Bund ID, Bayern ID, Mein Unternehmenskonto, Servicekonto SH). Enables integration of custom IDPs via Keycloak User Federation.
