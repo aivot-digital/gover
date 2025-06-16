@@ -15,6 +15,8 @@ import {StepElement} from '../../models/elements/steps/step-element';
 import {AnyElement} from '../../models/elements/any-element';
 import {Hint} from '../../components/hint/hint';
 import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
+import {Collapse} from '../../components/collapse/collapse';
+import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -103,14 +105,45 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         }
     };
 
+    const handleExport = () => {
+        if (form == null) {
+            return;
+        }
+
+        downloadObjectFile(`prefill-${form.slug}-${form.version}.json`, inputs);
+    };
+
+    const handleImport = () => {
+        if (form == null) {
+            return;
+        }
+
+        uploadObjectFile<CustomerInput>('*.json')
+            .then((vals) => {
+                if (vals == null) {
+                    return;
+                }
+                setInputs(vals);
+                dispatch(showSuccessSnackbar(`Daten erfolgreich importiert!`));
+            })
+            .catch((error) => {
+                console.error(error);
+                dispatch(showErrorSnackbar(`Fehler beim Importieren der Daten`));
+            });
+    };
+
+    const handleClose = () => {
+        setInputs({});
+        props.onClose();
+    };
 
     return (
         <Dialog
             open={props.open}
-            onClose={props.onClose}
+            onClose={handleClose}
             maxWidth="lg"
         >
-            <DialogTitleWithClose onClose={props.onClose}>
+            <DialogTitleWithClose onClose={handleClose}>
                 Vorbefülltes Formular
             </DialogTitleWithClose>
 
@@ -137,18 +170,12 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 {
                     allElementsPerStep
                         .map(({step, elements}) => (
-                            <Box
+                            <Collapse
                                 key={step.id}
-                                sx={{
-                                    mb: 4,
-                                }}
+                                label={generateComponentTitle(step)}
+                                closeTooltip="Schließen"
+                                openTooltip="Öffnen"
                             >
-                                <Typography
-                                    variant="h6"
-                                    component="div"
-                                >
-                                    {generateComponentTitle(step)}
-                                </Typography>
                                 <Grid
                                     container
                                     spacing={2}
@@ -167,6 +194,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                     element={{
                                                         ...element,
                                                         disabled: false,
+                                                        width: 12,
                                                     }}
                                                     isBusy={false}
                                                     isDeriving={false}
@@ -185,7 +213,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                         ))
                                     }
                                 </Grid>
-                            </Box>
+                            </Collapse>
                         ))
                 }
             </DialogContent>
@@ -221,6 +249,9 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     <Button
                         onClick={handleDownloadQrCode}
                         disabled={linkTooLong}
+                        sx={{
+                            ml: 2,
+                        }}
                     >
                         QR-Code herunterladen
                     </Button>
@@ -240,8 +271,26 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     }
 
                     <Button
+                        onClick={handleExport}
+                        sx={{
+                            ml: 2,
+                        }}
+                    >
+                        Vorbefüllung Exportieren
+                    </Button>
+
+                    <Button
+                        onClick={handleImport}
+                        sx={{
+                            ml: 2,
+                        }}
+                    >
+                        Vorbefüllung Importieren
+                    </Button>
+
+                    <Button
                         variant="contained"
-                        onClick={props.onClose}
+                        onClick={handleClose}
                         sx={{
                             ml: 'auto',
                         }}
