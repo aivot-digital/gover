@@ -213,12 +213,20 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
             @Nullable String idPrefix,
             @Nonnull Boolean isParentVisible
     ) {
+        var resolvedId = baseElement
+                .getResolvedId(idPrefix);
+
+        // Check if the element is disabled or technical, and clean the input value if necessary.
+        // This is important to prevent overwriting values which are not supposed to be set by users.
+        if (baseElement instanceof BaseInputElement<?> inputElement) {
+            if (inputElement.getDisabled() || inputElement.getTechnical()) {
+                context.getElementDerivationData().cleanInputValue(resolvedId);
+            }
+        }
+
         if (deriveVisibilities) {
             deriveVisibility(context, idPrefix, baseElement, isParentVisible);
         }
-
-        var resolvedId = baseElement
-                .getResolvedId(idPrefix);
 
         var isVisible = context
                 .getElementDerivationData()
