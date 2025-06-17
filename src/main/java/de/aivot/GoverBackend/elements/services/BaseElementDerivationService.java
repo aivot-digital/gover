@@ -222,7 +222,7 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
         // Check if the element is disabled or technical, and clean the input value if necessary.
         // This is important to prevent overwriting values which are not supposed to be set by users.
         if (baseElement instanceof BaseInputElement<?> inputElement) {
-            if (inputElement.getDisabled() || inputElement.getTechnical()) {
+            if (Boolean.TRUE.equals(inputElement.getDisabled()) || Boolean.TRUE.equals(inputElement.getTechnical())) {
                 context.getElementDerivationData().cleanInputValue(resolvedId);
             }
         }
