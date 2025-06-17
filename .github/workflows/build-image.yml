@@ -42,7 +42,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}-arm64
+          tags: ${{ github.ref_name }}-arm64
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false # Disable provenance to avoid unknown/unknown
           sbom: false       # Disable sbom to avoid unknown/unknown
@@ -111,6 +111,6 @@ jobs:
       - name: Create and publish manifest on GitHub Container Registry
         run: |
           docker buildx imagetools create \
-          --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}-arm64 \
-          --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }} \
+          --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64 \
+          --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
           --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
