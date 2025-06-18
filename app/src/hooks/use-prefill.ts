@@ -3,12 +3,14 @@ import {useEffect} from 'react';
 import {prefillQueryParamKey} from '../data/prefill-query-param-key';
 import {isStringNullOrEmpty} from '../utils/string-utils';
 import {useAppDispatch} from './use-app-dispatch';
-import {updateCustomerInput} from '../slices/app-slice';
+import {selectAllElements, updateCustomerInput} from '../slices/app-slice';
+import {useAppSelector} from './use-app-selector';
+import {canPrefillElement} from '../dialogs/prefill-form-dialog/prefill-form-dialog';
 
 export function usePrefill() {
     const dispatch = useAppDispatch();
-
     const [searchParams, setSearchParams] = useSearchParams();
+    const allElements = useAppSelector(selectAllElements);
 
     useEffect(() => {
         const prefill = searchParams.get(prefillQueryParamKey);
@@ -26,10 +28,15 @@ export function usePrefill() {
         for (const key of Object.keys(prefillData)) {
             const value = prefillData[key];
 
-            dispatch(updateCustomerInput({
-                key,
-                value,
-            }));
+            const elem = (allElements ?? [])
+                .find(e => e.id === key);
+
+            if (elem != null && canPrefillElement(elem)) {
+                dispatch(updateCustomerInput({
+                    key,
+                    value,
+                }));
+            }
         }
 
         searchParams.delete(prefillQueryParamKey);

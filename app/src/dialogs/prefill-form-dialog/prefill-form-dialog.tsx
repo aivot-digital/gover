@@ -38,6 +38,15 @@ const relevantElementTypes = [
 
 const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but some browsers may have lower limits, so playing safe here.
 
+export function canPrefillElement(e: AnyElement): boolean {
+    return (
+        isAnyInputElement(e) &&
+        relevantElementTypes.includes(e.type) &&
+        e.technical != true &&
+        e.disabled != true
+    );
+}
+
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
     const [inputs, setInputs] = useState<CustomerInput>({});
@@ -72,12 +81,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         return form.root.children
             .map((s) => {
                 const stepElements = flattenElements(s, true)
-                    .filter(e => (
-                        isAnyInputElement(e) &&
-                        relevantElementTypes.includes(e.type) &&
-                        e.technical != true &&
-                        e.disabled != true
-                    ));
+                    .filter(canPrefillElement);
                 return {
                     step: s,
                     elements: stepElements,
