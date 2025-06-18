@@ -1,0 +1,47 @@
+name: Check a pull request
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+env:
+  JDK_VERSION: 21
+
+jobs:
+  testBackend:
+    name: Test backend
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+          distribution: temurin
+          architecture: x64
+
+      - name: Build with Maven
+        run: mvn --batch-mode --update-snapshots test
+
+  testChangelogChanged:
+    name: Check if changelog is updated
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for accurate diff
+
+      - name: Check if changelog is updated
+        run: |
+          if git diff --name-only ${{ github.base_ref }} ${{ github.sha }} | grep -q 'CHANGELOG.md'; then
+              echo "Changelog has been updated.";
+          else
+              echo "Changelog has not been updated. Please update CHANGELOG.md before merging.";
+              exit 1;
+          fi
