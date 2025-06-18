@@ -6,8 +6,7 @@ import Summaries from '../summaries';
 import {BaseSummaryProps} from '../summaries/base-summary';
 import {resolveId} from '../utils/id-utils';
 import {useAppSelector} from '../hooks/use-app-selector';
-import {selectOverride, selectValue, selectVisibility} from '../slices/app-slice';
-import {FunctionType, hasElementFunctionType} from '../utils/function-status-utils';
+import {selectComputedValue, selectCustomerInputValue, selectOverride, selectVisibility} from '../slices/app-slice';
 
 interface DispatcherComponentProps<M extends AnyElement> {
     allElements: AnyElement[];
@@ -27,7 +26,8 @@ export function SummaryDispatcherComponent<M extends AnyElement>(props: Dispatch
     const id = resolveId(props.element.id, props.idPrefix);
 
     const isVisible = useAppSelector(selectVisibility(id));
-    const value = useAppSelector(selectValue(id));
+    const customerInputValue = useAppSelector(selectCustomerInputValue(id));
+    const computedValue = useAppSelector(selectComputedValue(id));
     const override = useAppSelector(selectOverride(id));
 
     const patchedModel = {
@@ -47,7 +47,7 @@ export function SummaryDispatcherComponent<M extends AnyElement>(props: Dispatch
     const viewProps: BaseSummaryProps<M, any> = {
         allElements: props.allElements,
         model: patchedModel,
-        value: value,
+        value: isAnyInputElement(patchedModel) && (patchedModel.disabled || patchedModel.technical) ? computedValue : customerInputValue,
         idPrefix: props.idPrefix,
         allowStepNavigation: props.allowStepNavigation,
         showTechnical: props.showTechnical,

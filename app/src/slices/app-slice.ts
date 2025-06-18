@@ -345,7 +345,7 @@ export const selectVisibilies = (state: RootState) => state.app.visibilities;
 export const selectVisibility = (key: string) => (state: RootState) => state.app.visibilities[key] ?? true;
 export const selectError = (key: string) => (state: RootState) => state.app.errors[key];
 export const selectOverride = (key: string) => (state: RootState) => state.app.overrides[key];
-export const selectValue = (key: string) => (state: RootState) => state.app.inputs[key] ?? state.app.values[key];
+export const selectComputedValue = (key: string) => (state: RootState) => state.app.values[key];
 
 export const selectDerivationTriggerIdQueue = (state: RootState) => state.app.derivationTriggerIdQueue;
 
