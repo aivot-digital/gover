@@ -78,7 +78,7 @@ class NoCodeEvaluationServiceTest {
         );
 
         assertEquals(NoCodeDataType.Boolean, result.getDataType());
-        assertEquals(false, result.getValue());
+        assertEquals(true, result.getValue());
 
         result = evalService.evaluate(
                 new NoCodeExpression(

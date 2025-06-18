@@ -40,7 +40,7 @@ class NoCodeAndOperatorTest {
         assertEquals(Boolean.FALSE, operator.performEvaluation(data, null, null).getValue());
 
         // Test wrong argument count
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.performEvaluation(data, true));
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.performEvaluation(data, true, false, true));
+        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true));
+        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true, false, true));
     }
 }

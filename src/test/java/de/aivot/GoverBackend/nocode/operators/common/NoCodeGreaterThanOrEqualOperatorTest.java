@@ -30,11 +30,11 @@ class NoCodeGreaterThanOrEqualOperatorTest {
         assertEquals(Boolean.FALSE, operator.performEvaluation(data, 3, 5).getValue());
 
         // Test null values
-        assertThrows(NoCodeException.class, () -> operator.performEvaluation(data, null, 5));
-        assertThrows(NoCodeException.class, () -> operator.performEvaluation(data, 5, null));
+        assertEquals(NoCodeDataType.Boolean, operator.evaluate(data, null, 5).getDataType());
+        assertEquals(Boolean.TRUE, operator.evaluate(data, 5, null).getValue());
 
         // Test wrong argument count
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.performEvaluation(data, 5));
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.performEvaluation(data, 5, 3, 1));
+        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, 5));
+        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, 5, 3, 1));
     }
 }

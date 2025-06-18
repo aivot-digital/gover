@@ -28,7 +28,7 @@ class IdentityProviderLinksConverterTest {
         assertTrue(json.contains("provider2"));
         assertTrue(json.contains("scope3"));
 
-        assertNull(converter.convertToDatabaseColumn(null));
+        assertEquals("[]", converter.convertToDatabaseColumn(null));
     }
 
     @Test
@@ -46,7 +46,7 @@ class IdentityProviderLinksConverterTest {
         assertEquals("provider2", links.get(1).getIdentityProviderKey());
         assertEquals(List.of("scope3"), links.get(1).getAdditionalScopes());
 
-        assertNull(converter.convertToEntityAttribute(null));
+        assertEquals(List.of(), converter.convertToEntityAttribute(null));
 
         String invalidJson = "invalid-json";
         assertThrows(RuntimeException.class, () -> converter.convertToEntityAttribute(invalidJson));

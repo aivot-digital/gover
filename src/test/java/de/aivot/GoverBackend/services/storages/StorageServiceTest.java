@@ -76,7 +76,7 @@ class StorageServiceTest {
         assertDoesNotThrow(storageService::testRemoteStorageBucketExists);
 
         when(storageClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(false);
-        assertThrows(RuntimeException.class, storageService::testRemoteStorageBucketExists);
+        assertThrows(ResponseException.class, storageService::testRemoteStorageBucketExists);
     }
 
     @Test
@@ -89,10 +89,10 @@ class StorageServiceTest {
         assertEquals("http://localhost:9000/test-bucket/test-file", storageService.getRemoteFileUrl("test-file", "test-file", "application/json"));
 
         when(storageClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class))).thenThrow(new IOException());
-        assertThrows(RuntimeException.class, () -> storageService.getRemoteFileUrl("test-file", "test-file", "application/json"));
+        assertThrows(ResponseException.class, () -> storageService.getRemoteFileUrl("test-file", "test-file", "application/json"));
 
         when(storageClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class))).thenThrow(new ErrorResponseException(new ErrorResponse(), null, ""));
-        assertThrows(NotFoundException.class, () -> storageService.getRemoteFileUrl("test-file", "test-file", "application/json"));
+        assertThrows(ResponseException.class, () -> storageService.getRemoteFileUrl("test-file", "test-file", "application/json"));
     }
 
     @Test

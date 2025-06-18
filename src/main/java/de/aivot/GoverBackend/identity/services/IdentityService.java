@@ -157,7 +157,7 @@ public class IdentityService {
                 .setMetadataIdentifier(provider.getMetadataIdentifier())
                 .setProviderKey(provider.getKey());
 
-        identityCacheRepository
+        identityEntity = identityCacheRepository
                 .save(identityEntity);
 
         return UriComponentsBuilder
