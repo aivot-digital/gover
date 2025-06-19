@@ -68,7 +68,8 @@ public class ReplicatingContainerLayout extends BaseInputElement<Collection<Stri
                 throw new ValidationException(this, "Nicht genug Datensätze.");
             }
 
-            if (maximumSets != null && value.size() > maximumSets) {
+            var hasMaximum = maximumSets != null && maximumSets > 0;
+            if (hasMaximum && value.size() > maximumSets) {
                 throw new ValidationException(this, "Zu viele Datensätze.");
             }
         }
