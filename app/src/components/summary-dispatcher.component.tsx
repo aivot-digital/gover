@@ -47,7 +47,7 @@ export function SummaryDispatcherComponent<M extends AnyElement>(props: Dispatch
     const viewProps: BaseSummaryProps<M, any> = {
         allElements: props.allElements,
         model: patchedModel,
-        value: isAnyInputElement(patchedModel) && (patchedModel.disabled || patchedModel.technical) ? computedValue : customerInputValue,
+        value: isAnyInputElement(patchedModel) && (patchedModel.disabled || patchedModel.technical) ? computedValue : (customerInputValue ?? computedValue),
         idPrefix: props.idPrefix,
         allowStepNavigation: props.allowStepNavigation,
         showTechnical: props.showTechnical,

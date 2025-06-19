@@ -95,7 +95,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
             return computedValue;
         }
 
-        return customerInputValue;
+        return customerInputValue ?? computedValue;
     }, [element, customerInputValue, valueOverride, resolvedId, computedValue]);
 
     const error: string | undefined | null = useMemo(() => {
