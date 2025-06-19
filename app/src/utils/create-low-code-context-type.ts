@@ -15,6 +15,7 @@ export function createLowCodeContextType(element: AnyElement | undefined, rootEl
 
     const inputValuesFields: Record<string, string> = {};
     const computedValuesFields: Record<string, string> = {};
+    const valuesFields: Record<string, string> = {};
     const visibilitiesFields: Record<string, string> = {};
     const errorsFields: Record<string, string> = {};
     const overridesFields: Record<string, string> = {};
@@ -22,6 +23,7 @@ export function createLowCodeContextType(element: AnyElement | undefined, rootEl
     for (const element of allElements) {
         inputValuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
         computedValuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
+        valuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
         visibilitiesFields[element.id] = 'boolean';
         errorsFields[element.id] = 'undefined | null | string';
         overridesFields[element.id] = 'undefined | null | ' + elementToTypeDefinition(element);
@@ -29,6 +31,7 @@ export function createLowCodeContextType(element: AnyElement | undefined, rootEl
 
     const inputValuesType = createLowCodeType('InputValues', inputValuesFields);
     const computedValuesType = createLowCodeType('ComputedValues', computedValuesFields);
+    const valuesType = createLowCodeType('Values', valuesFields);
     const visibilitiesType = createLowCodeType('Visibilities', visibilitiesFields);
     const errorsType = createLowCodeType('Errors', errorsFields);
     const overridesType = createLowCodeType('Overrides', overridesFields);
@@ -37,6 +40,7 @@ export function createLowCodeContextType(element: AnyElement | undefined, rootEl
         id: 'string',
         inputValues: 'InputValues',
         computedValues: 'ComputedValues',
+        values: 'Values',
         visibilities: 'Visibilities',
         errors: 'Errors',
         overrides: 'Overrides',
@@ -52,6 +56,7 @@ export function createLowCodeContextType(element: AnyElement | undefined, rootEl
     declare ${formType}
     declare ${inputValuesType}
     declare ${computedValuesType}
+    declare ${valuesType}
     declare ${visibilitiesType}
     declare ${errorsType}
     declare ${overridesType}

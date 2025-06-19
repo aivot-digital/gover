@@ -17,6 +17,7 @@ const JavascriptEngine = {
 const BaseElementDerivationContext = {
     INPUT_VALUES_JS_CONTEXT_OBJECT_NAME: 'inputValues',
     COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME: 'computedValues',
+    VALUES_JS_CONTEXT_OBJECT_NAME: 'values',
     VISIBILITIES_JS_CONTEXT_OBJECT_NAME: 'visibilities',
     ERRORS_JS_CONTEXT_OBJECT_NAME: 'errors',
     OVERRIDES_JS_CONTEXT_OBJECT_NAME: 'overrides',
@@ -262,6 +263,7 @@ function getLowCodeReferencedIds(code: string): string[] {
     const implicitRegex = `(${JavascriptEngine.JS_CONTEXT_OBJECT_NAME}\\.)?` +
         `(${BaseElementDerivationContext.INPUT_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
+        `${BaseElementDerivationContext.VALUES_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.VISIBILITIES_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.ERRORS_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.OVERRIDES_JS_CONTEXT_OBJECT_NAME})\\.([a-zA-Z0-9_-]+)`;

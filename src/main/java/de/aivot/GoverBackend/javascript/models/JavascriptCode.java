@@ -74,10 +74,11 @@ public class JavascriptCode {
         var expliciteReferencePattern = Pattern.compile(">>>([a-zA-Z0-9_-]+)");
 
         var implicitRegex = String.format(
-                "(%s\\.)?(%s|%s|%s|%s|%s)\\.([a-zA-Z0-9_-]+)",
+                "(%s\\.)?(%s|%s|%s|%s|%s|%s)\\.([a-zA-Z0-9_-]+)",
                 JavascriptEngine.JS_CONTEXT_OBJECT_NAME,
                 BaseElementDerivationContext.INPUT_VALUES_JS_CONTEXT_OBJECT_NAME,
                 BaseElementDerivationContext.COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME,
+                BaseElementDerivationContext.VALUES_JS_CONTEXT_OBJECT_NAME,
                 BaseElementDerivationContext.VISIBILITIES_JS_CONTEXT_OBJECT_NAME,
                 BaseElementDerivationContext.ERRORS_JS_CONTEXT_OBJECT_NAME,
                 BaseElementDerivationContext.OVERRIDES_JS_CONTEXT_OBJECT_NAME
