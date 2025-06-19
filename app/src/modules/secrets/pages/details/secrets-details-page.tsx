@@ -59,7 +59,7 @@ export function SecretsDetailsPage() {
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
                     if (notFound) return "Geheimnis nicht gefunden";
-                    if (isNewItem) return "Neues Gehemeinis anlegen";
+                    if (isNewItem) return "Neues Geheimnis anlegen";
                     return `Geheimnis: ${item?.name ?? "Unbenannt"}`;
                 }}
                 parentLink={{
