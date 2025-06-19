@@ -15,20 +15,20 @@ export function Actions(props: ActionsProps) {
             {
                 props.actions != null &&
                 props.actions
-                    .map((action, index) => dispatchToolbarAction(action, index, props.isBusy ?? false))
+                    .map((action, index) => dispatchToolbarAction(action, index, props.isBusy ?? false, props.dense ??  false))
             }
         </Box>
     );
 }
 
-function dispatchToolbarAction(action: Action, index: number, isBusy: boolean) {
+function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, dense: boolean) {
     // Check if this action is a separator and render a simple separator div
     if (action === 'separator') {
         return (
             <Box
                 key={action + index}
                 sx={{
-                    ml: 2,
+                    ml: dense ? 1 : 2,
                     width: '1px',
                     height: '2em',
                     backgroundColor: 'black',
@@ -62,7 +62,7 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean) {
                 color="primary"
                 variant={action.variant}
                 sx={{
-                    ml: 1,
+                    ml: dense ? 0.5 : 1,
                 }}
                 onClick={onClick}
                 component={component}
@@ -81,7 +81,7 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean) {
                 size="small"
                 color="primary"
                 sx={{
-                    ml: 1,
+                    ml: dense ? 0.5 : 1,
                 }}
                 onClick={onClick}
                 component={component}
