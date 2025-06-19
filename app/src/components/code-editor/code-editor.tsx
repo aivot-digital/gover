@@ -97,11 +97,5 @@ function monacoApplyTypeHints(monaco: any, typeHints: CodeEditorProps['typeHints
             typeHint.content,
             `@types/${typeHint.name}.d.ts`,
         );
-        console.log('Applying Type Hint', typeHint);
     }
-
-    console.log(monaco);
-    console.log(monaco.languages);
-    console.log(monaco.languages.typescript);
-    console.log(monaco.languages.typescript.javascriptDefaults);
 }
