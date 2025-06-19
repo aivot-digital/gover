@@ -84,7 +84,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             }
         }
 
-        const maxFiles = element.isMultifile ? (element.maxFiles != null ? element.maxFiles : null) : 1;
+        const maxFiles = element.isMultifile ? (element.maxFiles != null && element.maxFiles > 0 ? element.maxFiles : null) : 1;
 
         const fileUploadItems: FileUploadElementItem[] = [
             ...value ?? [],
@@ -108,8 +108,13 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
     };
 
     const fileMaximumReached = (
-        (element.isMultifile && element.maxFiles != null && (value ?? []).length >= element.maxFiles) ||
-        (!element.isMultifile && (value ?? []).length >= 1)
+        element.isMultifile &&
+        element.maxFiles != null &&
+        element.maxFiles > 0 &&
+        (value ?? []).length >= element.maxFiles
+    ) || (
+        !element.isMultifile &&
+        (value ?? []).length >= 1
     );
 
     return (
