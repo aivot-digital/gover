@@ -15,7 +15,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
         options.push(
             {
                 title: 'No-Code (Regelbasierte Konfiguration)',
-                description: 'Diese Funktion erlaubt eine einfache, regelbasierte Konfiguration ohne Programmierung. Sie eignet sich besonders für grundlegende Entscheidungen, Berechnungen oder Validierungen, die auf den eingegebenen Formulardaten basieren. Diese Variante ist intuitiv und erfordert keine technischen Kenntnisse.',
+                description: 'Diese Funktion erlaubt eine einfache, regelbasierte Konfiguration ohne Programmierung. Sie eignet sich besonders für grundlegende Entscheidungen, Berechnungen oder Validierungen, die auf den eingegebenen Formulardaten basieren.',
                 onSelect: props.onSelectNoCode,
                 icon: FunctionTypeIcon['legacy-condition'],
             },
@@ -24,8 +24,8 @@ export function FunctionSelector(props: FunctionSelectorProps) {
     if (props.allowExpression && enableNewCodeEditors) {
         options.push(
             {
-                title: 'Erweiterter No-Code (Fortgeschrittene Regelgestaltung)',
-                description: 'Diese Variante ermöglicht eine leistungsfähigere Regelverarbeitung mit erweiterten Bedingungen und komplexeren Berechnungen. Der Editor bietet mehr Flexibilität, setzt jedoch ein grundlegendes Verständnis von logischen Verknüpfungen und strukturierten Regeln voraus. Daher sind Vorkenntnisse im Umgang mit regelbasierten Systemen empfehlenswert.',
+                title: '[ALPHA] Erweiterter No-Code (Fortgeschrittene Regelgestaltung)',
+                description: 'Diese neue No-Code-Variante ermöglicht eine leistungsfähigere Regelverarbeitung mit erweiterten Bedingungen und komplexeren Berechnungen. Der Editor bietet mehr Flexibilität, setzt jedoch ein grundlegendes Verständnis von logischen Verknüpfungen und strukturierten Regeln voraus. Daher sind Vorkenntnisse im Umgang mit regelbasierten Systemen empfehlenswert.',
                 onSelect: props.onSelectNoCodeExpression,
                 icon: FunctionTypeIcon['expression'],
             },
@@ -34,8 +34,8 @@ export function FunctionSelector(props: FunctionSelectorProps) {
 
     options.push(
         {
-            title: 'Low-Code (Individuelle Logik mit Zugriff auf externe Datenquellen)',
-            description: 'Bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Ideal für anspruchsvolle Prozesse, die eine Verbindung zu anderen Systemen erfordern. Diese Variante eignet sich für komplexe Automatisierungen und datengetriebene Entscheidungen.',
+            title: 'Low-Code (Individuelle Logik und Zugriff auf externe Datenquellen)',
+            description: 'Diese Funktion bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Sie eignet sich besonders für spezifische Anforderungen, die mit reinen No-Code-Regeln nicht abgedeckt werden können. Für die Nutzung ist technisches Verständnis und Erfahrung im Umgang mit Skriptsprachen hilfreich.',
             onSelect: props.onSelectCloudCode,
             icon: FunctionTypeIcon['code'],
         },
