@@ -1,4 +1,4 @@
-import {Avatar, Box, Card, CardContent, CardHeader, Chip, Paper, Typography} from '@mui/material';
+import {Box, Paper, Typography} from '@mui/material';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {ConditionSet} from '../../../../models/functions/conditions/condition-set';
 import {isNoCodeExpression, isNoCodeReference, NoCodeExpression} from '../../../../models/functions/no-code-expression';
@@ -8,11 +8,10 @@ import {useMemo} from 'react';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {getElementIcon} from '../../../../data/element-type/element-icons';
-import {is} from 'date-fns/locale';
 import {Hint} from '../../../hint/hint';
 
 const JavascriptEngine = {
-    JS_CONTEXT_OBJECT_NAME: 'jsContext',
+    JS_CONTEXT_OBJECT_NAME: 'ctx',
 };
 
 const BaseElementDerivationContext = {
@@ -177,7 +176,7 @@ function determineReferencedElements(
         referencedIds = getLowCodeOldReferencedIds(lowCodeOld.filter(isStringNotNullOrEmpty).join('\n'));
     }
 
-    if (lowCodeOld.some(c => isStringNotNullOrEmpty(c))) {
+    if (lowCode.some(c => isStringNotNullOrEmpty(c))) {
         referencedIds = getLowCodeReferencedIds(lowCode.join('\n'));
     }
 
