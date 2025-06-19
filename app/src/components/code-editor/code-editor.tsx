@@ -4,6 +4,7 @@ import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
+import {AlertComponent} from '../alert/alert-component';
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const {
@@ -35,6 +36,10 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
 
     return (
         <Box sx={props.sx}>
+            {
+                props.alert &&
+                <AlertComponent {...props.alert} />
+            }
             {
                 hasTopContent && (
                     <Box

@@ -2,9 +2,9 @@ import React from 'react';
 import {Box, Button, Grid, Typography} from '@mui/material';
 import {FunctionSelectorProps} from './function-selector-props';
 import {FunctionTypeIcon} from '../../function-type-icon';
-import {useAppSelector} from "../../../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../../../data/system-config-keys";
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {ElementEditorSectionHeader} from '../../../element-editor-section-header/element-editor-section-header';
 
 export function FunctionSelector(props: FunctionSelectorProps) {
@@ -34,29 +34,18 @@ export function FunctionSelector(props: FunctionSelectorProps) {
 
     options.push(
         {
-            title: 'Low-Code (Individuelle Logik durch eigene Skripte)',
-            description: 'Diese Variante erlaubt es, eigene Skripte für Berechnungen, Validierungen und dynamische Anpassungen zu verwenden. Sie eignet sich besonders für spezifische Anforderungen, die mit reinen No-Code-Regeln nicht abgedeckt werden können. Basiskenntnisse in der Skriptgestaltung sind hilfreich.',
-            onSelect: props.onSelectFunctionCode,
-            icon: FunctionTypeIcon['legacy-code'],
+            title: 'Low-Code (Individuelle Logik mit Zugriff auf externe Datenquellen)',
+            description: 'Bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Ideal für anspruchsvolle Prozesse, die eine Verbindung zu anderen Systemen erfordern. Diese Variante eignet sich für komplexe Automatisierungen und datengetriebene Entscheidungen.',
+            onSelect: props.onSelectCloudCode,
+            icon: FunctionTypeIcon['code'],
         },
     );
-
-    if(enableNewCodeEditors) {
-        options.push(
-            {
-                title: 'Erweiterter Low-Code (Individuelle Logik mit Zugriff auf externe Datenquellen)',
-                description: 'Bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Ideal für anspruchsvolle Prozesse, die eine Verbindung zu anderen Systemen erfordern. Diese Variante eignet sich für komplexe Automatisierungen und datengetriebene Entscheidungen.',
-                onSelect: props.onSelectCloudCode,
-                icon: FunctionTypeIcon['code'],
-            },
-        );
-    }
 
     return (
         <Box>
             <ElementEditorSectionHeader
                 title="No-/Low-Code Funktion"
-                variant={"h5"}
+                variant="h5"
             >
                 Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.
             </ElementEditorSectionHeader>

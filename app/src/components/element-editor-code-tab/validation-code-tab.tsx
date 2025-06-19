@@ -61,7 +61,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
         <>
             <BaseCodeTab
                 label="Validierung"
-                description={"Hier können Sie die Validierung des Elements konfigurieren. Hierzu definieren Sie die Regeln, die das Element erfüllen muss, um als valide/gültig zu gelten."}
+                description={'Hier können Sie die Validierung des Elements konfigurieren. Hierzu definieren Sie die Regeln, die das Element erfüllen muss, um als valide/gültig zu gelten.'}
                 requirements={props.element.validate?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({
@@ -175,6 +175,20 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            alert={{
+                                color: 'warning',
+                                title: 'Veralteten Low-Code erkannt',
+                                richtext: true,
+                                text: `
+                                    Diese Art des Low-Codes ist veraltet und wird in Zukunft nicht mehr unterstützt.
+                                    Bitte verwenden Sie stattdessen den neuen Low-Code.
+                                    Klicken Sie dazu auf das Drei-Punkte-Menü oben rechts im Code-Editor und wählen Sie "Anderen Funktionstyp auswählen".
+                                    Bitte beachten Sie, dass der alte Low-Code <strong>nicht automatisch übernommen wird</strong>.
+                                `,
+                                sx: {
+                                    mb: 1,
+                                },
+                            }}
                         />
                     )
                 }
