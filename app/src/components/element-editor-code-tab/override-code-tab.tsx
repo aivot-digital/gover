@@ -132,6 +132,20 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            alert={{
+                                color: 'warning',
+                                title: 'Veralteten Low-Code erkannt',
+                                richtext: true,
+                                text: `
+                                    Diese Art des Low-Codes ist veraltet und wird in Zukunft nicht mehr unterstützt.
+                                    Bitte verwenden Sie stattdessen den neuen Low-Code.
+                                    Klicken Sie dazu auf das Drei-Punkte-Menü oben rechts im Code-Editor und wählen Sie "Anderen Funktionstyp auswählen".
+                                    Bitte beachten Sie, dass der alte Low-Code <strong>nicht automatisch übernommen wird</strong>.
+                                `,
+                                sx: {
+                                    mb: 1,
+                                }
+                            }}
                         />
                     )
                 }

@@ -197,12 +197,17 @@ public class SubmitController {
         destinationSubmitService.testDestinationAttachmentSize(destination, files);
 
         // Validate customer input
-        var derivationResult = formDerivationServiceFactory
+        var derivationContext = formDerivationServiceFactory
                 .create(form, List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
                 .derive(form.getRoot(), customerInput);
+        try {
+            derivationContext.close();
+        } catch (Exception e) {
+            throw ResponseException.internalServerError(e);
+        }
 
-        if (derivationResult.getElementDerivationData().hasErrors()) {
-            var details = derivationResult
+        if (derivationContext.getElementDerivationData().hasErrors()) {
+            var details = derivationContext
                     .getElementDerivationData()
                     .getErrors()
                     .entrySet()
@@ -213,7 +218,9 @@ public class SubmitController {
         }
 
         // Transfer derived values to customer input
-        customerInput = derivationResult.getCombinedValues();
+        customerInput = derivationContext
+                .getElementDerivationData()
+                .getCombinedValues();
 
         // Prepare submission id
         var submissionId = UUID

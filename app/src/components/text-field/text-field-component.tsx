@@ -94,7 +94,6 @@ export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element 
 
     // Update local state if external value changes
     useEffect(() => {
-        console.log('TextFieldComponent: Updating inputValue from props.value', props.value);
         setInputValue(props.value ?? '');
     }, [props.value]);
 

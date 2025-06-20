@@ -1,4 +1,4 @@
-import {Avatar, Box, Card, CardContent, CardHeader, Chip, Paper, Typography} from '@mui/material';
+import {Box, Paper, Typography} from '@mui/material';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {ConditionSet} from '../../../../models/functions/conditions/condition-set';
 import {isNoCodeExpression, isNoCodeReference, NoCodeExpression} from '../../../../models/functions/no-code-expression';
@@ -8,16 +8,16 @@ import {useMemo} from 'react';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {getElementIcon} from '../../../../data/element-type/element-icons';
-import {is} from 'date-fns/locale';
 import {Hint} from '../../../hint/hint';
 
 const JavascriptEngine = {
-    JS_CONTEXT_OBJECT_NAME: 'jsContext',
+    JS_CONTEXT_OBJECT_NAME: 'ctx',
 };
 
 const BaseElementDerivationContext = {
     INPUT_VALUES_JS_CONTEXT_OBJECT_NAME: 'inputValues',
     COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME: 'computedValues',
+    VALUES_JS_CONTEXT_OBJECT_NAME: 'values',
     VISIBILITIES_JS_CONTEXT_OBJECT_NAME: 'visibilities',
     ERRORS_JS_CONTEXT_OBJECT_NAME: 'errors',
     OVERRIDES_JS_CONTEXT_OBJECT_NAME: 'overrides',
@@ -177,7 +177,7 @@ function determineReferencedElements(
         referencedIds = getLowCodeOldReferencedIds(lowCodeOld.filter(isStringNotNullOrEmpty).join('\n'));
     }
 
-    if (lowCodeOld.some(c => isStringNotNullOrEmpty(c))) {
+    if (lowCode.some(c => isStringNotNullOrEmpty(c))) {
         referencedIds = getLowCodeReferencedIds(lowCode.join('\n'));
     }
 
@@ -263,6 +263,7 @@ function getLowCodeReferencedIds(code: string): string[] {
     const implicitRegex = `(${JavascriptEngine.JS_CONTEXT_OBJECT_NAME}\\.)?` +
         `(${BaseElementDerivationContext.INPUT_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
+        `${BaseElementDerivationContext.VALUES_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.VISIBILITIES_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.ERRORS_JS_CONTEXT_OBJECT_NAME}|` +
         `${BaseElementDerivationContext.OVERRIDES_JS_CONTEXT_OBJECT_NAME})\\.([a-zA-Z0-9_-]+)`;

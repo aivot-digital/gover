@@ -58,11 +58,11 @@ public class FileUploadField extends BaseInputElement<Collection<FileUploadField
             }
 
             if (Boolean.TRUE.equals(isMultifile)) {
-                if (minFiles != null && value.size() < minFiles) {
+                if (minFiles != null && minFiles > 0 && value.size() < minFiles) {
                     throw new ValidationException(this, "Zu wenige Dateien. Es müssen mindestens " + minFiles + " Dateien hochgeladen werden.");
                 }
 
-                if (maxFiles != null && value.size() > maxFiles) {
+                if (maxFiles != null && maxFiles > 0 && value.size() > maxFiles) {
                     throw new ValidationException(this, "Zu viele Dateien. Es dürfen maximal " + maxFiles + " Dateien hochgeladen werden.");
                 }
             }

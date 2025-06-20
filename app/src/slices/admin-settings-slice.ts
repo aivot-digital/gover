@@ -12,7 +12,10 @@ export interface AdminSettingsState {
     expandElementTree: undefined | 'expanded' | 'collapsed';
     warnDuplicateIds: boolean;
     disableAutoScrollForSteps: boolean;
-    treeElementSearch?: string;
+    treeElementSearch?: {
+        foundIds: string[];
+        currentLookupIndex: number;
+    };
     devToolsTab?: number;
 }
 
@@ -58,8 +61,16 @@ const adminSettingsSlice = createSlice({
         toggleAutoScrollForSteps: (state) => {
             state.disableAutoScrollForSteps = !state.disableAutoScrollForSteps;
         },
-        setTreeElementSearch: (state, action: PayloadAction<string | undefined>) => {
-            state.treeElementSearch = action.payload;
+        setTreeElementSearch: (state, action: PayloadAction<string[] | undefined>) => {
+            state.treeElementSearch = action.payload != null ? {
+                foundIds: action.payload,
+                currentLookupIndex: 0,
+            } : undefined;
+        },
+        setElementTreeSearchLookupIndex: (state, action: PayloadAction<number>) => {
+            if (state.treeElementSearch != null) {
+                state.treeElementSearch.currentLookupIndex = action.payload;
+            }
         },
         resetAdminSettings: (state) => {
             for (const key of Object.keys(initialState)) {
@@ -86,6 +97,7 @@ export const {
     toggleAutoScrollForSteps,
     resetAdminSettings,
     setTreeElementSearch,
+    setElementTreeSearchLookupIndex,
     setExpandElementTree,
     setDevToolsTab,
 } = adminSettingsSlice.actions;

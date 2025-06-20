@@ -4,6 +4,7 @@ import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
+import {AlertComponent} from '../alert/alert-component';
 
 import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
@@ -53,6 +54,10 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
 
     return (
         <Box sx={props.sx}>
+            {
+                props.alert &&
+                <AlertComponent {...props.alert} />
+            }
             {
                 hasTopContent && (
                     <Box
@@ -110,11 +115,5 @@ function monacoApplyTypeHints(monaco: any, typeHints: CodeEditorProps['typeHints
             typeHint.content,
             `@types/${typeHint.name}.d.ts`,
         );
-        console.log('Applying Type Hint', typeHint);
     }
-
-    console.log(monaco);
-    console.log(monaco.languages);
-    console.log(monaco.languages.typescript);
-    console.log(monaco.languages.typescript.javascriptDefaults);
 }

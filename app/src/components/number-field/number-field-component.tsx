@@ -112,7 +112,6 @@ export function NumberFieldComponent({
         if (value == null || isNaN(value)) {
             return;
         }
-        console.log('NumberFieldComponent: Updating inputValue from props.value', value);
         setInputValue(formatNumToGermanNum(value, decimalPlaces));
     }, [value]);
 

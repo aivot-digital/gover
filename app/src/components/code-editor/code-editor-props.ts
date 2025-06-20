@@ -1,4 +1,5 @@
 import {SxProps} from '@mui/material';
+import {AlertComponentProps} from '../alert/alert-component-props';
 
 export interface CodeEditorProps {
     label?: string;
@@ -12,4 +13,5 @@ export interface CodeEditorProps {
         name: string;
         content: string;
     }[];
+    alert?: AlertComponentProps;
 }

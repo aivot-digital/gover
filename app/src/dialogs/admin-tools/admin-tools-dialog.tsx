@@ -19,7 +19,9 @@ import {useApi} from '../../hooks/use-api';
 import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import BugReportIcon from '@mui/icons-material/BugReport';
-import {ExportApplicationDialog} from "../application-dialogs/export-application-dialog/export-application-dialog";
+import DrawIcon from '@mui/icons-material/Draw';
+import {ExportApplicationDialog} from '../application-dialogs/export-application-dialog/export-application-dialog';
+import {PrefillFormDialog} from '../prefill-form-dialog/prefill-form-dialog';
 
 const switches: Array<{
     label: string;
@@ -56,6 +58,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
     const experimentalFeatureComplexity = useAppSelector(selectBooleanSystemConfigValue(SystemConfigKeys.experimentalFeatures.complexity));
 
     const [showMetrics, setShowMetrics] = useState(false);
+    const [showPrefill, setShowPrefill] = useState(false);
     const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
     const downloadPdfFile = (form: Form) => {
@@ -111,6 +114,13 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
             onClick: () => {
                 dispatch(setDevToolsTab(0));
                 props.onClose();
+            },
+        },
+        {
+            label: 'Formular vorbefüllen',
+            icon: <DrawIcon />,
+            onClick: () => {
+                setShowPrefill(true);
             },
         },
     ];
@@ -229,6 +239,11 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
                 open={exportDialogOpen}
                 onCancel={() => setExportDialogOpen(false)}
                 onExport={startExportForm}
+            />
+
+            <PrefillFormDialog
+                open={showPrefill}
+                onClose={() => setShowPrefill(false)}
             />
         </>
     );

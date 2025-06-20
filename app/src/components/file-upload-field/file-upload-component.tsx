@@ -59,7 +59,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const handleAdd = (files: FileList) => {
-        const maxFiles = props.isMultifile ? (props.maxFiles != null ? props.maxFiles : null) : 1;
+        const maxFiles = props.isMultifile ? (props.maxFiles != null && props.maxFiles > 0 ? props.maxFiles : null) : 1;
 
         const fileUploadItems: File[] = [
             ...props.value ?? [],
@@ -79,8 +79,13 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
     };
 
     const fileMaximumReached = (
-        (props.isMultifile && props.maxFiles != null && (props.value ?? []).length >= props.maxFiles) ||
-        (!props.isMultifile && (props.value ?? []).length >= 1)
+        props.isMultifile &&
+        props.maxFiles != null &&
+        props.maxFiles > 0 &&
+        (props.value ?? []).length >= props.maxFiles
+    ) || (
+        !props.isMultifile &&
+        (props.value ?? []).length >= 1
     );
 
     return (

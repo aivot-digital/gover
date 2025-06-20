@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useReducer, useState} from 'react';
 import {Box, Button, Grid, IconButton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
-import {Form as Application} from '../../models/entities/form';
+import {Form, Form as Application} from '../../models/entities/form';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {PaymentProduct, PaymentType} from '../../models/payment/payment-product';
 import {NumberFieldComponent} from '../number-field/number-field-component';
@@ -23,17 +23,26 @@ import {Page} from '../../models/dtos/page';
 import {PaymentProviderResponseDTO} from '../../modules/payment/dtos/payment-provider-response-dto';
 import {Link} from 'react-router-dom';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {CodeEditor} from '../code-editor/code-editor';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
+import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 
 interface PaymentPositionItemProps {
     index: number;
     product: PaymentProduct;
+    form: Form;
     onDelete: () => void;
     onPatch: (patch: Partial<PaymentProduct>) => void;
     disabled?: boolean;
 }
 
 function PaymentPositionItem(props: PaymentPositionItemProps) {
+    const dispatch = useAppDispatch();
     const [expanded, setExpanded] = useState(true);
+    const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
     return (
         <Box
@@ -63,7 +72,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     variant="h5"
                     sx={{ml: 2}}
                 >
-                   Position Nr. {props.index !== undefined && (props.index + 1)}: {isStringNotNullOrEmpty(props.product.reference) ? props.product.reference : props.product.id}
+                    Position Nr. {props.index !== undefined && (props.index + 1)}: {isStringNotNullOrEmpty(props.product.reference) ? props.product.reference : props.product.id}
                 </Typography>
 
                 {
@@ -233,32 +242,32 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             />
                         </Grid>
 
-                    {
-                        props.product.taxRate === 0 &&
-                        <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
-                            <TextFieldComponent
-                                label="Begründung des Steuersatzes"
-                                value={props.product.taxInformation}
-                                onChange={val => {
-                                    props.onPatch({
-                                        taxInformation: val ?? '',
-                                    });
-                                }}
-                                multiline
-                                disabled={props.disabled}
-                                maxCharacters={250}
-                                hint="Bitte begründen Sie den verwendeten Steuersatz. Beispiele: Umsatzsteuerbefreit, Kleinunternehmerregelung, Nicht steuerbar etc."
-                                pattern={{
-                                    regex: '^[\\w\\d\\s-,\\.\\u00C0-\\u017F]+$',
-                                    message: 'Die Beschreibung darf nur aus Buchstaben, Zahlen, Kommata, Punkten und Bindestrichen (-) bestehen.',
-                                }}
-                            />
-                        </Grid>
-                    }
+                        {
+                            props.product.taxRate === 0 &&
+                            <Grid
+                                item
+                                xs={12}
+                                lg={6}
+                            >
+                                <TextFieldComponent
+                                    label="Begründung des Steuersatzes"
+                                    value={props.product.taxInformation}
+                                    onChange={val => {
+                                        props.onPatch({
+                                            taxInformation: val ?? '',
+                                        });
+                                    }}
+                                    multiline
+                                    disabled={props.disabled}
+                                    maxCharacters={250}
+                                    hint="Bitte begründen Sie den verwendeten Steuersatz. Beispiele: Umsatzsteuerbefreit, Kleinunternehmerregelung, Nicht steuerbar etc."
+                                    pattern={{
+                                        regex: '^[\\w\\d\\s-,\\.\\u00C0-\\u017F]+$',
+                                        message: 'Die Beschreibung darf nur aus Buchstaben, Zahlen, Kommata, Punkten und Bindestrichen (-) bestehen.',
+                                    }}
+                                />
+                            </Grid>
+                        }
                     </Grid>
 
                     <Box>
@@ -296,7 +305,9 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         onChange={type => {
                             props.onPatch({
                                 type: (type ?? PaymentType.UPFRONT_FIXED) as PaymentType,
-                                upfrontQuantityFunction: type === PaymentType.UPFRONT_CALCULATED ? {requirements: '', code: 'function main(data, element, id) {\n    console.log(data, element, id);\n    return 1;\n}'} : undefined,
+                                upfrontQuantityJavascript: type === PaymentType.UPFRONT_CALCULATED ? {
+                                    code: '(function() {\n    return 1;\n})();',
+                                } : undefined,
                                 upfrontFixedQuantity: type === PaymentType.UPFRONT_FIXED ? 1 : undefined,
                             });
                         }}
@@ -408,6 +419,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
 
                     {
                         props.product.type === PaymentType.UPFRONT_CALCULATED &&
+                        props.product.upfrontQuantityFunction != null &&
                         <CodeTabCodeEditor
                             editable={!props.disabled}
                             func={props.product.upfrontQuantityFunction ?? {requirements: ''}}
@@ -416,6 +428,35 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                                     upfrontQuantityFunction: {
                                         requirements: val.requirements,
                                         code: val.code ?? '',
+                                    },
+                                });
+                            }}
+                        />
+                    }
+
+                    {
+                        props.product.type === PaymentType.UPFRONT_CALCULATED &&
+                        props.product.upfrontQuantityFunction == null &&
+                        <CodeEditor
+                            disabled={props.disabled}
+                            value={props.product.upfrontQuantityJavascript?.code ?? ''}
+                            label="Funktion zur Berechnung der Menge"
+                            language="javascript"
+                            actions={props.disabled ? [] : [
+                                {
+                                    tooltip: 'Element-ID nachschlagen',
+                                    icon: <LocationSearchingIcon />,
+                                    onClick: toggleShowElementSelectDialog,
+                                },
+                            ]}
+                            typeHints={[{
+                                name: 'ctx',
+                                content: createLowCodeContextType(undefined, props.form.root),
+                            }]}
+                            onChange={val => {
+                                props.onPatch({
+                                    upfrontQuantityJavascript: {
+                                        code: val ?? '',
                                     },
                                 });
                             }}
@@ -434,6 +475,16 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     }
                 </>
             }
+
+            <SelectElementDialog
+                open={showElementSelectDialog}
+                onSelect={(element) => {
+                    navigator.clipboard.writeText(element.id);
+                    toggleShowElementSelectDialog();
+                    dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                }}
+                onClose={toggleShowElementSelectDialog}
+            />
         </Box>
     );
 }
@@ -615,7 +666,10 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                             mt: 4,
                         }}
                     >
-                        <ElementEditorSectionHeader title={"Zahlungspositionen"} variant={"h4"}/>
+                        <ElementEditorSectionHeader
+                            title={'Zahlungspositionen'}
+                            variant={'h4'}
+                        />
 
                         {
                             props.editable &&
@@ -666,6 +720,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                     key={index}
                                     index={index}
                                     product={product}
+                                    form={props.entity}
                                     onDelete={() => {
                                         const products = [...props.entity.products ?? []];
                                         products.splice(index, 1);

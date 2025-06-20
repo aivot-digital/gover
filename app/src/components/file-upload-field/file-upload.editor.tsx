@@ -25,7 +25,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             });
     }, []);
 
-    const invalidMinMax = props.element.minFiles != null && props.element.maxFiles != null && props.element.minFiles > props.element.maxFiles;
+    const invalidMinMax =
+        props.element.minFiles != null && props.element.minFiles > 0 &&
+        props.element.maxFiles != null && props.element.maxFiles > 0 &&
+        props.element.minFiles > props.element.maxFiles;
 
     return (
         <Grid

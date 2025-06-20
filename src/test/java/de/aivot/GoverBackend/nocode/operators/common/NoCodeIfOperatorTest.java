@@ -26,10 +26,10 @@ class NoCodeIfOperatorTest {
         assertEquals("no", operator.performEvaluation(data, false, "yes", "no").getValue());
 
         // Test null condition
-        assertThrows(NoCodeException.class, () -> operator.performEvaluation(data, null, "yes", "no"));
+        assertEquals("no", operator.evaluate(data, null, "yes", "no").getValue());
 
         // Test wrong argument count
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.performEvaluation(data, true, "yes"));
-        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.performEvaluation(data, true, "yes", "no", "maybe"));
+        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true, "yes"));
+        assertThrows(NoCodeWrongArgumentCountException.class, () -> operator.evaluate(data, true, "yes", "no", "maybe"));
     }
 }

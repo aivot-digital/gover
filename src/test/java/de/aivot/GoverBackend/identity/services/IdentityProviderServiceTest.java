@@ -387,6 +387,7 @@ class IdentityProviderServiceTest {
         IdentityProviderEntity entity = new IdentityProviderEntity();
         entity.setKey("custom-key");
         entity.setType(IdentityProviderType.Custom);
+        entity.setIsEnabled(false);
 
         when(formRepository.existsWithLinkedIdentityProvider(entity.getKey())).thenReturn(false);
 
@@ -410,11 +411,12 @@ class IdentityProviderServiceTest {
         IdentityProviderEntity entity = new IdentityProviderEntity();
         entity.setKey("custom-key");
         entity.setType(IdentityProviderType.Custom);
+        entity.setIsEnabled(true);
 
         when(formRepository.existsWithLinkedIdentityProvider(entity.getKey())).thenReturn(true);
 
         ResponseException exception = assertThrows(ResponseException.class, () -> identityProviderService.performDelete(entity));
-        assertEquals("Für den Nutzerkontenanbieter null (custom-key) existieren noch Formulare, die diesen Anbieter verwenden. Bitte entfernen Sie diese Verknüpfung, bevor Sie den Anbieter löschen.", exception.getMessage());
+        assertEquals("Der Nutzerkontenanbieter null (custom-key) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.", exception.getMessage());
         verify(identityProviderRepository, never()).delete(entity);
     }
 }

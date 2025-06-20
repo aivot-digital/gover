@@ -1,10 +1,6 @@
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography} from '@mui/material';
 import {BoxLink} from '../../components/box-link/box-link';
 import React, {useEffect, useState} from 'react';
-import {styled} from '@mui/material/styles';
-import MuiAccordionDetails from '@mui/material/AccordionDetails';
-import MuiAccordion, {type AccordionProps} from '@mui/material/Accordion';
-import MuiAccordionSummary, {type AccordionSummaryProps} from '@mui/material/AccordionSummary';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
@@ -13,6 +9,7 @@ import {selectLoadedForm} from '../../slices/app-slice';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import {useApi} from "../../hooks/use-api";
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
+import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 
 export const HelpDialogId = 'help';
 
@@ -234,14 +231,16 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                             gerne die oben gezeigten Möglichkeiten, um Kontakt mit uns aufzunehmen. Vielen Dank!
                         </Typography>
                     </Box>
-                    {FAQs.map((faq, index) => (
-                        <Accordion key={index}>
-                            <AccordionSummary expandIcon={<ExpandMoreOutlinedIcon />}>
-                                <Typography>{faq.question}</Typography>
-                            </AccordionSummary>
-                            <AccordionDetails>{faq.answer}</AccordionDetails>
-                        </Accordion>
-                    ))}
+                    <AccordionGroup>
+                        {FAQs.map((faq, index) => (
+                            <Accordion key={index}>
+                                <AccordionSummary expandIcon={<ExpandMoreOutlinedIcon />}>
+                                    <Typography>{faq.question}</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>{faq.answer}</AccordionDetails>
+                            </Accordion>
+                        ))}
+                    </AccordionGroup>
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
@@ -255,48 +254,3 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
         </Dialog>
     );
 }
-
-const Accordion = styled((props: AccordionProps) => (
-    <MuiAccordion
-        disableGutters
-        elevation={0}
-        square
-        {...props}
-    />
-))(({theme}) => ({
-    'border': `1px solid ${theme.palette.primary.dark}`,
-    '&:not(:last-child)': {
-        borderBottom: 0,
-    },
-    '&:before': {
-        display: 'none',
-    },
-}));
-
-const AccordionSummary = styled((props: AccordionSummaryProps) => (
-    <MuiAccordionSummary
-        {...props}
-    />
-))(({theme}) => ({
-    'flexDirection': 'row-reverse',
-    'transition': '200ms all ease-in-out',
-    '&.Mui-expanded': {
-        backgroundColor: theme.palette.primary.main,
-    },
-    '&.Mui-expanded .MuiTypography-body1': {
-        color: '#fff',
-    },
-    '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
-        transform: 'rotate(90deg)',
-        color: theme.palette.secondary.main,
-    },
-    '& .MuiAccordionSummary-content': {
-        marginLeft: theme.spacing(1),
-    },
-}));
-
-const AccordionDetails = styled(MuiAccordionDetails)(({theme}) => ({
-    padding: theme.spacing(2),
-    paddingBottom: theme.spacing(4),
-    borderTop: '1px solid rgba(0, 0, 0, .125)',
-}));

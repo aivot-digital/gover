@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.steps.StepElement;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
         );
     }
 
-    public Ctx derive(
+    private Ctx derive(
             @Nonnull BaseElement currentElement,
             @Nonnull Map<String, Object> inputValues,
             @Nonnull Boolean deriveVisibilities,
@@ -40,12 +41,9 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
             @Nonnull Boolean deriveValues,
             @Nonnull Boolean deriveErrors
     ) {
-        try (Ctx context = prepareContext(inputValues)) {
-            startElementDerivation(context, currentElement, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
-            return context;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        var context = prepareContext(inputValues);
+        startElementDerivation(context, currentElement, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
+        return context;
     }
 
     protected void startElementDerivation(
@@ -208,7 +206,7 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
 
     protected void deriveElement(
             @Nonnull Ctx context,
-            @Nonnull BaseElement baseElement,
+            @Nonnull BaseElement _baseElement,
             @Nonnull Boolean deriveVisibilities,
             @Nonnull Boolean deriveOverrides,
             @Nonnull Boolean deriveValues,
@@ -216,16 +214,22 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
             @Nullable String idPrefix,
             @Nonnull Boolean isParentVisible
     ) {
-        var resolvedId = baseElement
+        var resolvedId = _baseElement
                 .getResolvedId(idPrefix);
 
-        // Check if the element is disabled or technical, and clean the input value if necessary.
-        // This is important to prevent overwriting values which are not supposed to be set by users.
-        if (baseElement instanceof BaseInputElement<?> inputElement) {
-            if (inputElement.getDisabled() || inputElement.getTechnical()) {
-                context.getElementDerivationData().cleanInputValue(resolvedId);
-            }
+        // Check if cleaning can be done before deriving overrides and values.
+        cleanInputValue(context, _baseElement, resolvedId);
+
+        if (deriveOverrides) {
+            deriveOverride(context, idPrefix, _baseElement);
         }
+
+        var baseElement = context
+                .getElementDerivationData()
+                .getOverride(resolvedId, _baseElement);
+
+        // Clean after overrides to ensure that the input value is not overwritten by an override.
+        cleanInputValue(context, baseElement, resolvedId);
 
         if (deriveVisibilities) {
             deriveVisibility(context, idPrefix, baseElement, isParentVisible);
@@ -235,23 +239,23 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
                 .getElementDerivationData()
                 .isVisible(resolvedId);
 
-        if (isVisible) {
-            if (deriveOverrides) {
-                deriveOverride(context, idPrefix, baseElement);
-            }
-
-            var overriddenElement = context
-                    .getElementDerivationData()
-                    .getOverride(resolvedId, baseElement);
-
-            if (overriddenElement instanceof BaseInputElement<?> baseInputElement) {
-                if (deriveValues) {
-                    deriveValue(context, idPrefix, baseInputElement);
-                }
+        if (isVisible && baseElement instanceof BaseInputElement<?> baseInputElement) {
+            if (deriveValues) {
+                deriveValue(context, idPrefix, baseInputElement);
             }
 
             if (deriveErrors) {
-                deriveError(context, idPrefix, overriddenElement);
+                deriveError(context, idPrefix, baseElement);
+            }
+        }
+    }
+
+    private static <Ctx extends BaseElementDerivationContext> void cleanInputValue(@NotNull Ctx context, BaseElement baseElement, String resolvedId) {
+        // Check if the element is disabled or technical, and clean the input value if necessary.
+        // This is important to prevent overwriting values which are not supposed to be set by users.
+        if (baseElement instanceof BaseInputElement<?> inputElement) {
+            if (Boolean.TRUE.equals(inputElement.getDisabled()) || Boolean.TRUE.equals(inputElement.getTechnical())) {
+                context.getElementDerivationData().cleanInputValue(resolvedId);
             }
         }
     }

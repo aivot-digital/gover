@@ -147,6 +147,12 @@ public abstract class NoCodeOperator {
             case Map<?, ?> mReferenceObject -> {
                 return castToMap(objectToCast);
             }
+            case ZonedDateTime zReferenceObject -> {
+                return castToDateTime(objectToCast);
+            }
+            case LocalDateTime lReferenceObject -> {
+                return castToDateTime(lReferenceObject);
+            }
             default -> {
                 return null;
             }
