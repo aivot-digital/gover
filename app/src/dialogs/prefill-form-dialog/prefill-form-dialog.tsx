@@ -129,7 +129,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             return;
         }
 
-        uploadObjectFile<CustomerInput>('*.json')
+        uploadObjectFile<CustomerInput>('.json,application/json')
             .then((vals) => {
                 if (vals == null) {
                     return;
