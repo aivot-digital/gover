@@ -26,6 +26,7 @@ import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {ExpandMoreOutlined} from '@mui/icons-material';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 import {getStepIcon} from '../../data/step-icons';
+import {AlertComponent} from '../../components/alert/alert-component';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -174,9 +175,12 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 <Box sx={{maxWidth: 920}}>
                     <Typography variant="body2">
                         Mit diesem Werkzeug können Sie einen Link erzeugen, über den ein Formular mit vorab definierten Werten vorbefüllt wird.
-                        Das ist besonders nützlich, wenn Sie ein Formular z. B. an einen Personenkreis mit teilweise bereits bekannten Angaben weitergeben möchten.
+                        Das ist besonders nützlich, wenn Sie ein Formular z. B. an einen Personenkreis mit teilweise bereits bekannten Angaben weitergeben möchten.
                     </Typography>
-                    <Typography variant="h5" sx={{mt: 2}}>
+                    <Typography
+                        variant="h5"
+                        sx={{mt: 2}}
+                    >
                         Wichtige Hinweise zur Verwendung
                     </Typography>
 
@@ -196,8 +200,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                             relevantElementTypes
                                 .map(getElementNameForType)
                                 .join(', ')
-                        }. Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.</li>
-                        <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden. Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen begrenzt – längere Links können in manchen Browsern zu Problemen führen.
+                        }. Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                        </li>
+                        <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden. Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen begrenzt – längere Links können in manchen
+                            Browsern zu Problemen führen.
                         </li>
                         <li>Die eingegebenen Werte werden nicht gespeichert, sondern nur im Link kodiert. Wenn Sie den Link später bearbeiten möchten, können Sie die vorbefüllten Werte exportieren und ggf. wieder importieren.</li>
                     </Box>
@@ -205,61 +211,81 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                 <Divider sx={{my: 4}} />
 
-                <AccordionGroup sx={{mb: 2}}>
-                    {
-                        allElementsPerStep
-                            .map(({step, elements}) => (
-                                <Accordion
-                                    key={step.id}
-                                    slots={{ transition: MuiCollapse }}
-                                    slotProps={{
-                                        transition: {
-                                            unmountOnExit: true,
-                                        },
-                                    }}
-                                >
-                                    <AccordionSummary
-                                        expandIcon={<ExpandMoreOutlined />}
-                                        aria-controls={`panel-${step.id}-content`}
-                                        id={`panel-${step.id}-header`}
-                                    >
-                                        {(() => {
-                                            const StepIcon = getStepIcon(step);
-                                            return <StepIcon sx={{ mr: 1 }} />;
-                                        })()}
-                                        <Typography>{generateComponentTitle(step)}</Typography>
-                                    </AccordionSummary>
+                {
+                    allElementsPerStep.length === 0 ? (
+                        <AlertComponent
+                            color="info"
+                            title={'Dieses Formular enthält keine vorbefüllbaren Felder'}
+                        >
+                            Um dieses Werkzeug nutzen zu können, muss das Formular Eingabefelder enthalten, die vorbefüllt werden können.
+                            Es können ausschließlich die folgenden Felder vorbefüllt werden: {
+                            relevantElementTypes
+                                .map(getElementNameForType)
+                                .join(', ')
+                        }.
+                            Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                        </AlertComponent>
+                    ) : (
+                        <AccordionGroup sx={{mb: 2}}>
+                            {
+                                allElementsPerStep
+                                    .map(({step, elements}) => (
+                                        <Accordion
+                                            key={step.id}
+                                            slots={{transition: MuiCollapse}}
+                                            slotProps={{
+                                                transition: {
+                                                    unmountOnExit: true,
+                                                },
+                                            }}
+                                        >
+                                            <AccordionSummary
+                                                expandIcon={<ExpandMoreOutlined />}
+                                                aria-controls={`panel-${step.id}-content`}
+                                                id={`panel-${step.id}-header`}
+                                            >
+                                                {(() => {
+                                                    const StepIcon = getStepIcon(step);
+                                                    return <StepIcon sx={{mr: 1}} />;
+                                                })()}
+                                                <Typography>{generateComponentTitle(step)}</Typography>
+                                            </AccordionSummary>
 
-                                    <AccordionDetails>
-                                        <Grid container spacing={2}>
-                                            {elements.map((element) => (
-                                                <ViewDispatcherComponent
-                                                    key={element.id}
-                                                    allElements={[]}
-                                                    element={{
-                                                        ...element,
-                                                        width: 12,
-                                                    }}
-                                                    isBusy={false}
-                                                    isDeriving={false}
-                                                    mode="viewer"
-                                                    valueOverride={{
-                                                        values: inputs,
-                                                        onChange: (key, value) => {
-                                                            setInputs({
-                                                                ...inputs,
-                                                                [key]: value,
-                                                            });
-                                                        },
-                                                    }}
-                                                />
-                                            ))}
-                                        </Grid>
-                                    </AccordionDetails>
-                                </Accordion>
-                            ))
-                    }
-                </AccordionGroup>
+                                            <AccordionDetails>
+                                                <Grid
+                                                    container
+                                                    spacing={2}
+                                                >
+                                                    {elements.map((element) => (
+                                                        <ViewDispatcherComponent
+                                                            key={element.id}
+                                                            allElements={[]}
+                                                            element={{
+                                                                ...element,
+                                                                width: 12,
+                                                            }}
+                                                            isBusy={false}
+                                                            isDeriving={false}
+                                                            mode="viewer"
+                                                            valueOverride={{
+                                                                values: inputs,
+                                                                onChange: (key, value) => {
+                                                                    setInputs({
+                                                                        ...inputs,
+                                                                        [key]: value,
+                                                                    });
+                                                                },
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </Grid>
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    ))
+                            }
+                        </AccordionGroup>
+                    )
+                }
             </DialogContent>
 
             <DialogActions>
@@ -271,7 +297,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     }}
                 >
                     <Button
-                        variant={"contained"}
+                        variant={'contained'}
                         onClick={handleCopyLink}
                         disabled={linkTooLong}
                         startIcon={<ContentPasteOutlinedIcon />}
