@@ -37,4 +37,5 @@ export interface ActionsProps {
     actions: Action[];
     sx?: SxProps;
     isBusy?: boolean;
+    dense?: boolean;
 }

@@ -1,3 +1,4 @@
+import {type RefObject} from 'react';
 import {type RootElement} from '../../models/elements/root-element';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
@@ -9,4 +10,5 @@ export interface ElementTreeHeaderProps<T extends RootElement | GroupLayout, E e
     onPatch: (updatedElement: Partial<T>, updatedEntity: Partial<E>) => void;
     editable: boolean;
     scope: ElementTreeScope;
+    scrollContainerRef?: RefObject<HTMLDivElement | undefined>;
 }
