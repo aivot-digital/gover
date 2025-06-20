@@ -2,7 +2,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, Divider, Grid, Typogr
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
-import {useMemo, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -15,10 +15,17 @@ import {StepElement} from '../../models/elements/steps/step-element';
 import {AnyElement} from '../../models/elements/any-element';
 import {Hint} from '../../components/hint/hint';
 import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
-import {Collapse} from '../../components/collapse/collapse';
+import MuiCollapse from '@mui/material/Collapse';
 import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {getElementNameForType} from '../../data/element-type/element-names';
+import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
+import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
+import {ExpandMoreOutlined} from '@mui/icons-material';
+import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
+import {getStepIcon} from '../../data/step-icons';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -68,6 +75,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
     const linkTooLong = useMemo(() => {
         return link.length > MAX_LINK_LENGTH;
+    }, [link.length]);
+
+    const linkOverflow = useMemo(() => {
+        return link.length - MAX_LINK_LENGTH;
     }, [link.length]);
 
     const allElementsPerStep: {
@@ -129,7 +140,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             return;
         }
 
-        uploadObjectFile<CustomerInput>('*.json')
+        uploadObjectFile<CustomerInput>('.json,application/json')
             .then((vals) => {
                 if (vals == null) {
                     return;
@@ -153,59 +164,77 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             open={props.open}
             onClose={handleClose}
             maxWidth="lg"
+            fullWidth
         >
             <DialogTitleWithClose onClose={handleClose}>
-                Vorbefülltes Formular
+                Formular vorbefüllen
             </DialogTitleWithClose>
 
             <DialogContent>
-                <Typography variant="body2">
-                    Hier können Sie einen Link erzeugen, der ein Formular mit den hier angegebenen Werten vorbefüllt.
-                    Dies ist besonders nützlich, wenn Sie ein Formular z.B. an einen Personenkreis mit vorher bekannten Angaben weitergeben möchten.
-                    Bitte beachten Sie, dass ausschließlich die folgenden Felder vorbefüllt werden können: {
-                        relevantElementTypes
-                            .map(getElementNameForType)
-                            .join(', ')
-                    }.
-                    Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
-                </Typography>
+                <Box sx={{maxWidth: 920}}>
+                    <Typography variant="body2">
+                        Mit diesem Werkzeug können Sie einen Link erzeugen, über den ein Formular mit vorab definierten Werten vorbefüllt wird.
+                        Das ist besonders nützlich, wenn Sie ein Formular z. B. an einen Personenkreis mit teilweise bereits bekannten Angaben weitergeben möchten.
+                    </Typography>
+                    <Typography variant="h5" sx={{mt: 2}}>
+                        Wichtige Hinweise zur Verwendung
+                    </Typography>
 
-                <Typography
-                    variant="body2"
-                    sx={{
-                        mt: 1,
-                    }}
-                >
-                    <strong>Wichtig:&nbsp;</strong>
-                    Der Link kann sehr lang werden und in einigen Browsern Probleme verursachen.
-                    Die maximale Länge für Links beträgt deshalb {MAX_LINK_LENGTH} Zeichen.
-                </Typography>
+                    <Box
+                        component="ul"
+                        sx={{
+                            pl: 3,
+                            mt: 1,
+                            mb: 2,
+                            typography: 'body2',
+                            '& li': {
+                                mb: 1,
+                            },
+                        }}
+                    >
+                        <li>Es können ausschließlich die folgenden Felder vorbefüllt werden: {
+                            relevantElementTypes
+                                .map(getElementNameForType)
+                                .join(', ')
+                        }. Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.</li>
+                        <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden. Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen begrenzt – längere Links können in manchen Browsern zu Problemen führen.
+                        </li>
+                        <li>Die eingegebenen Werte werden nicht gespeichert, sondern nur im Link kodiert. Wenn Sie den Link später bearbeiten möchten, können Sie die vorbefüllten Werte exportieren und ggf. wieder importieren.</li>
+                    </Box>
+                </Box>
 
-                <Divider sx={{my: 2}} />
+                <Divider sx={{my: 4}} />
 
-                {
-                    allElementsPerStep
-                        .map(({step, elements}) => (
-                            <Collapse
-                                key={step.id}
-                                label={generateComponentTitle(step)}
-                                closeTooltip="Schließen"
-                                openTooltip="Öffnen"
-                            >
-                                <Grid
-                                    container
-                                    spacing={2}
+                <AccordionGroup sx={{mb: 2}}>
+                    {
+                        allElementsPerStep
+                            .map(({step, elements}) => (
+                                <Accordion
+                                    key={step.id}
+                                    slots={{ transition: MuiCollapse }}
+                                    slotProps={{
+                                        transition: {
+                                            unmountOnExit: true,
+                                        },
+                                    }}
                                 >
-                                    {
-                                        elements.map((element) => (
-                                            <Grid
-                                                key={element.id}
-                                                item
-                                                xs={12}
-                                                md={6}
-                                                xl={4}
-                                            >
+                                    <AccordionSummary
+                                        expandIcon={<ExpandMoreOutlined />}
+                                        aria-controls={`panel-${step.id}-content`}
+                                        id={`panel-${step.id}-header`}
+                                    >
+                                        {(() => {
+                                            const StepIcon = getStepIcon(step);
+                                            return <StepIcon sx={{ mr: 1 }} />;
+                                        })()}
+                                        <Typography>{generateComponentTitle(step)}</Typography>
+                                    </AccordionSummary>
+
+                                    <AccordionDetails>
+                                        <Grid container spacing={2}>
+                                            {elements.map((element) => (
                                                 <ViewDispatcherComponent
+                                                    key={element.id}
                                                     allElements={[]}
                                                     element={{
                                                         ...element,
@@ -224,13 +253,13 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                         },
                                                     }}
                                                 />
-                                            </Grid>
-                                        ))
-                                    }
-                                </Grid>
-                            </Collapse>
-                        ))
-                }
+                                            ))}
+                                        </Grid>
+                                    </AccordionDetails>
+                                </Accordion>
+                            ))
+                    }
+                </AccordionGroup>
             </DialogContent>
 
             <DialogActions>
@@ -242,17 +271,19 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     }}
                 >
                     <Button
+                        variant={"contained"}
                         onClick={handleCopyLink}
                         disabled={linkTooLong}
+                        startIcon={<ContentPasteOutlinedIcon />}
                     >
-                        Link kopieren
+                        Link in Zwischenablage kopieren
                     </Button>
                     {
                         linkTooLong &&
                         <Hint
-                            summary="Link zu lang"
+                            summary={`Der erzeugte Link ist um ${linkOverflow} Zeichen zu lang und überschreitet damit das technische Limit.`}
                             detailsTitle="Link zu lang"
-                            details="Der generierte Link ist zu lang, um ihn zu kopieren oder als QR-Code herunterzuladen. Bitte reduzieren Sie die Anzahl der vorbefüllten Felder oder die Länge der Werte."
+                            details="Der erzeugte Link ist zu lang, um ihn zu kopieren oder als QR-Code bereitzustellen. Bitte reduzieren Sie die Anzahl der vorbefüllten Felder oder kürzen Sie deren Inhalte."
                             isError={true}
                             sx={{
                                 ml: 0,
@@ -264,19 +295,20 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     <Button
                         onClick={handleDownloadQrCode}
                         disabled={linkTooLong}
+                        startIcon={<QrCode2OutlinedIcon />}
                         sx={{
                             ml: 2,
                         }}
                     >
-                        QR-Code herunterladen
+                        QR-Code mit Link herunterladen
                     </Button>
 
                     {
                         linkTooLong &&
                         <Hint
-                            summary="Link zu lang"
+                            summary={`Der erzeugte Link ist um ${linkOverflow} Zeichen zu lang und überschreitet damit das technische Limit.`}
                             detailsTitle="Link zu lang"
-                            details="Der generierte Link ist zu lang, um ihn zu kopieren oder als QR-Code herunterzuladen. Bitte reduzieren Sie die Anzahl der vorbefüllten Felder oder die Länge der Werte."
+                            details="Der erzeugte Link ist zu lang, um ihn zu kopieren oder als QR-Code bereitzustellen. Bitte reduzieren Sie die Anzahl der vorbefüllten Felder oder kürzen Sie deren Inhalte."
                             isError={true}
                             sx={{
                                 ml: 0,
@@ -287,30 +319,22 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleExport}
-                        sx={{
-                            ml: 2,
-                        }}
-                    >
-                        Vorbefüllung Exportieren
-                    </Button>
-
-                    <Button
-                        onClick={handleImport}
-                        sx={{
-                            ml: 2,
-                        }}
-                    >
-                        Vorbefüllung Importieren
-                    </Button>
-
-                    <Button
-                        variant="contained"
-                        onClick={handleClose}
+                        startIcon={<ImportExportOutlinedIcon />}
                         sx={{
                             ml: 'auto',
                         }}
                     >
-                        Schließen
+                        Eingaben exportieren
+                    </Button>
+
+                    <Button
+                        onClick={handleImport}
+                        startIcon={<CloudUploadOutlinedIcon />}
+                        sx={{
+                            ml: 2,
+                        }}
+                    >
+                        Eingaben importieren
                     </Button>
                 </Box>
             </DialogActions>
