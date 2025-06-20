@@ -63,6 +63,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -516,7 +517,7 @@ public class SubmitController {
                         HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition
                                 .attachment()
-                                .filename("Antrag.pdf")
+                                .filename("Antrag.pdf", StandardCharsets.UTF_8)
                                 .build()
                                 .toString()
                 )
