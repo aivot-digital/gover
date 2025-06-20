@@ -168,7 +168,7 @@ const appSlice = createSlice({
             }
         },
 
-        updateCustomerInput: (state, action: PayloadAction<{ key: string, value: any }>) => {
+        updateCustomerInput: (state, action: PayloadAction<{ key: string, value: any, doNotStore?: boolean, }>) => {
             const newInput = {
                 ...state.inputs,
                 [action.payload.key]: action.payload.value,
@@ -179,7 +179,7 @@ const appSlice = createSlice({
                 [action.payload.key]: undefined,
             };
 
-            if (state.loadedForm != null) {
+            if (state.loadedForm != null && !action.payload.doNotStore) {
                 CustomerInputService.storeCustomerInput(state.loadedForm, newInput);
             }
         },

@@ -122,7 +122,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
                 dispatch(enqueueDerivationTriggerId(initialElementId));
             }
         }
-    }, [value, resolvedId, hasReferences, initialElementId, dispatch]);
+    }, [value, valueOverride, resolvedId, hasReferences, initialElementId, dispatch]);
 
     const Component: ComponentType<BaseViewProps<typeof element, V>> | null = useMemo(() => Views[element.type], [element.type]);
 
