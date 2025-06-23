@@ -114,23 +114,30 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
                                         {
                                             isForwardReference && (
                                                 <Hint
-                                                    summary="Vorwärtsreferenz erkannt"
+                                                    summary="Unerlaubte Vorwärtsreferenz erkannt"
                                                     detailsTitle="Unerlaubte Vorwärtsreferenz"
                                                     details={<>
                                                         <Typography
                                                             variant="body1"
                                                             component="div"
-                                                            gutterBottom
                                                         >
-                                                            Vorwärtsreferenzen sind nicht erlaubt, da der Wert zum Zeitpunkt der Berechnung noch nicht vorhanden ist.
-                                                            Dies kann zu schwer verständlichem Verhalten führen und die Nachvollziehbarkeit der Logik erschweren.
+                                                            Es darf nur auf Elemente verwiesen werden, die im Formular vor dem aktuellen Element positioniert sind.
+                                                            Grund dafür ist, dass spätere Elemente zum Zeitpunkt der Berechnung noch nicht bekannt sind. Verweise auf solche „zukünftigen“ Elemente – sogenannte Vorwärtsreferenzen – können zu unerwartetem Verhalten führen und die Nachvollziehbarkeit der Logik erschweren.
                                                         </Typography>
                                                         <Typography
                                                             variant="body1"
                                                             component="div"
+                                                            sx={{mt: 2}}
                                                         >
-                                                            Es sind daher nur Referenzen auf zuvor platzierte Elemente erlaubt, um sicherzustellen, dass alle benötigten
-                                                            Werte bereits definiert und verfügbar sind.
+                                                            Darüber hinaus kann eine Vorwärtsreferenz auch für die Nutzenden des Formulars verwirrend sein:
+                                                            Wenn sich das referenzierte Element außerhalb des sichtbaren Bereichs befindet, ist oft unklar, wodurch eine Veränderung ausgelöst wurde oder woher bestimmte Werte stammen.
+                                                        </Typography>
+                                                        <Typography
+                                                            variant="body1"
+                                                            component="div"
+                                                            sx={{mt: 2}}
+                                                        >
+                                                            Um solche Probleme zu vermeiden, sollten und dürfen Referenzen ausschließlich auf bereits vorhandene, vorher platzierte Elemente erfolgen.
                                                         </Typography>
                                                     </>}
                                                     sx={{ml: 1}}
