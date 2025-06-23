@@ -200,7 +200,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                             relevantElementTypes
                                 .map(getElementNameForType)
                                 .join(', ')
-                        }. Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                        }. Technische Felder, bedingt sichtbare Felder und deaktivierte Felder können nicht vorbefüllt werden.
                         </li>
                         <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden. Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen begrenzt – längere Links können in manchen
                             Browsern zu Problemen führen.
@@ -223,7 +223,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                 .map(getElementNameForType)
                                 .join(', ')
                         }.
-                            Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                            Technische Felder, bedingt sichtbare Felder und deaktivierte Felder können nicht vorbefüllt werden.
                         </AlertComponent>
                     ) : (
                         <AccordionGroup sx={{mb: 2}}>
