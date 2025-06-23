@@ -27,6 +27,7 @@ import {ExpandMoreOutlined} from '@mui/icons-material';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
+import Chip from '@mui/material/Chip';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -99,7 +100,6 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     elements: stepElements,
                 };
             })
-            .filter(({elements}) => elements.length > 0);
     }, [form]);
 
     const handleCopyLink = async () => {
@@ -248,7 +248,9 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                     const StepIcon = getStepIcon(step);
                                                     return <StepIcon sx={{mr: 1}} />;
                                                 })()}
-                                                <Typography>{generateComponentTitle(step)}</Typography>
+                                                <Typography>
+                                                    {generateComponentTitle(step)} {elements.length === 0 && <Chip sx={{ml: 1}} label={"Keine vorbefüllbaren Felder vorhanden"} size='small' variant={"outlined"}/>}
+                                                </Typography>
                                             </AccordionSummary>
 
                                             <AccordionDetails>
@@ -256,6 +258,21 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                     container
                                                     spacing={2}
                                                 >
+                                                    {elements.length === 0 &&
+                                                        <Grid
+                                                            item
+                                                        >
+                                                            <AlertComponent color={'info'} title={"Dieser Abschnitt enthält keine vorbefüllbaren Felder"} sx={{mt: 1, mb: 0}}>
+                                                                Es können ausschließlich die folgenden Felder vorbefüllt werden: {
+                                                                    relevantElementTypes
+                                                                        .map(getElementNameForType)
+                                                                        .join(', ')
+                                                                }.
+                                                                Technische Felder, bedingt sichtbare Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                                                            </AlertComponent>
+                                                        </Grid>
+                                                    }
+
                                                     {elements.map((element) => (
                                                         <ViewDispatcherComponent
                                                             key={element.id}
