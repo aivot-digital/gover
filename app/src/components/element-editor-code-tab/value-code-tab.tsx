@@ -168,17 +168,16 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                             disabled={!props.editable}
                             alert={{
                                 color: 'warning',
-                                title: 'Veralteten Low-Code erkannt',
+                                title: 'Diese Version des Low-Codes ist veraltet',
                                 richtext: true,
                                 text: `
-                                    Diese Art des Low-Codes ist veraltet und wird in Zukunft nicht mehr unterstützt.
-                                    Bitte verwenden Sie stattdessen den neuen Low-Code.
-                                    Klicken Sie dazu auf das Drei-Punkte-Menü oben rechts im Code-Editor und wählen Sie "Anderen Funktionstyp auswählen".
-                                    Bitte beachten Sie, dass der alte Low-Code <strong>nicht automatisch übernommen wird</strong>.
+                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
+                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
+                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
                                 `,
                                 sx: {
                                     mb: 1,
-                                },
+                                }
                             }}
                         />
                     )
