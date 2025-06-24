@@ -142,16 +142,31 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         }
 
         uploadObjectFile<CustomerInput>('.json,application/json')
-            .then((vals) => {
-                if (vals == null) {
+            .then((importedValues) => {
+                if (importedValues == null) {
                     return;
                 }
-                setInputs(vals);
-                dispatch(showSuccessSnackbar(`Daten erfolgreich importiert!`));
+
+                const validValues: CustomerInput = {};
+                for (const step of allElementsPerStep) {
+                    for (const element of step.elements) {
+                        const importedValue = importedValues[element.id];
+                        if (importedValue != null) {
+                            validValues[element.id] = importedValue;
+                        }
+                    }
+                }
+
+                if (Object.keys(validValues).length === 0) {
+                    dispatch(showErrorSnackbar('Keine gültigen Eingaben zum Importieren gefunden.'));
+                } else {
+                    setInputs(validValues);
+                    dispatch(showSuccessSnackbar('Daten erfolgreich importiert!'));
+                }
             })
             .catch((error) => {
                 console.error(error);
-                dispatch(showErrorSnackbar(`Fehler beim Importieren der Daten`));
+                dispatch(showErrorSnackbar('Fehler beim Importieren der Daten'));
             });
     };
 
