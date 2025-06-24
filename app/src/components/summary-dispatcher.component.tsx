@@ -1,4 +1,4 @@
-import React, {ComponentType} from 'react';
+import React, {useMemo} from 'react';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {CustomerInput} from '../models/customer-input';
@@ -19,41 +19,75 @@ interface DispatcherComponentProps<M extends AnyElement> {
 }
 
 export function SummaryDispatcherComponent<M extends AnyElement>(props: DispatcherComponentProps<M>) {
-    if (!Boolean(props.showTechnical) && isAnyInputElement(props.element) && Boolean(props.element.technical)) {
+    const {
+        allElements,
+        element: initialElement,
+        idPrefix,
+        showTechnical,
+        allowStepNavigation,
+        customerInput,
+        isBusy,
+    } = props;
+
+    const {
+        id: initialElementId,
+    } = initialElement;
+
+    const resolvedId = useMemo(() => resolveId(initialElementId, idPrefix), [initialElementId, idPrefix]);
+
+    const isVisibleComputed = useAppSelector(selectVisibility(resolvedId));
+    const customerInputValue = useAppSelector(selectCustomerInputValue(resolvedId));
+    const computedValue = useAppSelector(selectComputedValue(resolvedId));
+    const override = useAppSelector(selectOverride(resolvedId));
+
+    const element: M = useMemo(() => ({
+        ...(override ?? initialElement),
+        id: resolvedId,
+    } as M), [initialElement, resolvedId, override]);
+
+    const Component = useMemo(() => {
+        return Summaries[element.type];
+    }, [element.type]);
+
+    const isVisible = useMemo(() => {
+        if (!isVisibleComputed) {
+            return false;
+        }
+
+        if (isAnyInputElement(element) && element.technical && showTechnical !== true) {
+            return false;
+        }
+
+        if (Component == null) {
+            console.warn(`No summary component found for element type: ${element.type}`);
+            return false;
+        }
+
+        return true;
+    }, [isVisibleComputed, element, showTechnical, Component]);
+
+    const value = useMemo(() => {
+        if (isAnyInputElement(element) && (element.disabled || element.technical)) {
+            return computedValue;
+        }
+
+        return customerInputValue ?? computedValue;
+    }, [element, customerInputValue, computedValue]);
+
+    const viewProps: BaseSummaryProps<M, any> = useMemo(() => ({
+        allElements: allElements,
+        model: element,
+        value: value,
+        idPrefix: idPrefix,
+        allowStepNavigation: allowStepNavigation,
+        showTechnical: showTechnical,
+        customerInput: customerInput,
+        isBusy: isBusy ?? false,
+    }), [allElements, element, value, idPrefix, allowStepNavigation, showTechnical, customerInput, isBusy]);
+
+    if (Component == null || !isVisible) {
         return null;
     }
-
-    const id = resolveId(props.element.id, props.idPrefix);
-
-    const isVisible = useAppSelector(selectVisibility(id));
-    const customerInputValue = useAppSelector(selectCustomerInputValue(id));
-    const computedValue = useAppSelector(selectComputedValue(id));
-    const override = useAppSelector(selectOverride(id));
-
-    const patchedModel = {
-        ...props.element,
-        ...override,
-    };
-
-    if (!isVisible) {
-        return null;
-    }
-
-    const Component: ComponentType<BaseSummaryProps<M, any>> | null = Summaries[props.element.type];
-    if (Component == null) {
-        return null;
-    }
-
-    const viewProps: BaseSummaryProps<M, any> = {
-        allElements: props.allElements,
-        model: patchedModel,
-        value: isAnyInputElement(patchedModel) && (patchedModel.disabled || patchedModel.technical) ? computedValue : (customerInputValue ?? computedValue),
-        idPrefix: props.idPrefix,
-        allowStepNavigation: props.allowStepNavigation,
-        showTechnical: props.showTechnical,
-        customerInput: props.customerInput,
-        isBusy: props.isBusy ?? false,
-    };
 
     return (
         <div id={props.element.id}>
