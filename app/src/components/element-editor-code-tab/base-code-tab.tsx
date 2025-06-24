@@ -100,21 +100,24 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                             Konfigurieren Sie die Logik, die zur Umsetzung der fachlichen Anforderungen erforderlich ist.
                         </ElementEditorSectionHeader>
 
-                        <Actions
-                            sx={{
-                                ml: 'auto',
-                                flexShrink: 0,
-                            }}
-                            actions={[
-                                {
-                                    tooltip: 'Mehr',
-                                    icon: <MoreVertOutlinedIcon />,
-                                    onClick: (event) => {
-                                        setAnchorEl(event.currentTarget);
+                        {
+                            props.editable &&
+                            <Actions
+                                sx={{
+                                    ml: 'auto',
+                                    flexShrink: 0,
+                                }}
+                                actions={[
+                                    {
+                                        tooltip: 'Mehr',
+                                        icon: <MoreVertOutlinedIcon />,
+                                        onClick: (event) => {
+                                            setAnchorEl(event.currentTarget);
+                                        },
                                     },
-                                },
-                            ]}
-                        />
+                                ]}
+                            />
+                        }
                     </Box>
                 }
 

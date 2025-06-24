@@ -25,6 +25,10 @@ export function usePrefill() {
             return;
         }
 
+        if (!allElements) {
+            return;
+        }
+
         for (const key of Object.keys(prefillData)) {
             const value = prefillData[key];
 
@@ -35,11 +39,12 @@ export function usePrefill() {
                 dispatch(updateCustomerInput({
                     key,
                     value,
+                    doNotStore: true, // Do not store in local storage, just update the state (to not overwrite saved customer input)
                 }));
             }
         }
 
         searchParams.delete(prefillQueryParamKey);
         setSearchParams(searchParams);
-    }, [searchParams]);
+    }, [searchParams, allElements]);
 }

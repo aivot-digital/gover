@@ -1343,8 +1343,8 @@
                                                         class="file-list"
                                                         th:if="${child.hasValue() && not child.value().isEmpty()}"
                                                 >
-                                                    <li th:each="file : ${child.value}">
-                                                        <span th:text="${file.name}"></span>
+                                                    <li th:each="file, iterStat : ${child.value}">
+                                                        <span th:text="${file.name} + (${iterStat.last} ? '' : ', ')"></span>
                                                     </li>
                                                 </ul>
 

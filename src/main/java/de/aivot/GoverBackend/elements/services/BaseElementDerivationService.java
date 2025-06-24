@@ -98,17 +98,24 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
 
     protected void deriveStepElement(
             @Nonnull Ctx context,
-            @Nonnull StepElement stepElement,
+            @Nonnull StepElement baseStepElement,
             @Nonnull Boolean deriveVisibilities,
             @Nonnull Boolean deriveOverrides,
             @Nonnull Boolean deriveValues,
             @Nonnull Boolean deriveErrors
     ) {
-        deriveElement(context, stepElement, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, null, true);
+        deriveElement(context, baseStepElement, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, null, true);
+
+        var resolvedId = baseStepElement
+                .getResolvedId(null);
 
         var isVisible = context
                 .getElementDerivationData()
-                .isVisible(stepElement.getResolvedId(null));
+                .isVisible(resolvedId);
+
+        var stepElement = (StepElement) context
+                .getElementDerivationData()
+                .getOverride(resolvedId, baseStepElement);
 
         for (var child : stepElement.getChildren()) {
             switch (child) {
@@ -127,7 +134,7 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
 
     protected void deriveGroupLayoutRecursive(
             @Nonnull Ctx context,
-            @Nonnull GroupLayout groupLayout,
+            @Nonnull GroupLayout baseGroupLayout,
             @Nonnull Boolean deriveVisibilities,
             @Nonnull Boolean deriveOverrides,
             @Nonnull Boolean deriveValues,
@@ -135,11 +142,18 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
             @Nullable String idPrefix,
             @Nonnull Boolean isParentVisible
     ) {
-        deriveElement(context, groupLayout, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, idPrefix, isParentVisible);
+        deriveElement(context, baseGroupLayout, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, idPrefix, isParentVisible);
+
+        var resolvedId = baseGroupLayout
+                .getResolvedId(idPrefix);
 
         var isVisible = context
                 .getElementDerivationData()
-                .isVisible(groupLayout.getResolvedId(idPrefix));
+                .isVisible(resolvedId);
+
+        var groupLayout = (GroupLayout) context
+                .getElementDerivationData()
+                .getOverride(resolvedId, baseGroupLayout);
 
         for (var child : groupLayout.getChildren()) {
             switch (child) {
@@ -158,7 +172,7 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
 
     protected void deriveReplicatingLayoutRecursive(
             @Nonnull Ctx context,
-            @Nonnull ReplicatingContainerLayout groupLayout,
+            @Nonnull ReplicatingContainerLayout baseReplicatingContainerLayout,
             @Nonnull Boolean deriveVisibilities,
             @Nonnull Boolean deriveOverrides,
             @Nonnull Boolean deriveValues,
@@ -166,9 +180,10 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
             @Nullable String idPrefix,
             @Nonnull Boolean isParentVisible
     ) {
-        deriveElement(context, groupLayout, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, idPrefix, isParentVisible);
+        deriveElement(context, baseReplicatingContainerLayout, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, idPrefix, isParentVisible);
 
-        var resolvedId = groupLayout.getResolvedId(idPrefix);
+        var resolvedId = baseReplicatingContainerLayout
+                .getResolvedId(idPrefix);
 
         var isVisible = context
                 .getElementDerivationData()
@@ -179,18 +194,22 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
                 .getValue(resolvedId)
                 .orElse(List.of());
 
+        var replicatingContainerLayout = (ReplicatingContainerLayout) context
+                .getElementDerivationData()
+                .getOverride(resolvedId, baseReplicatingContainerLayout);
+
         if (value instanceof Iterable<?> iterable) {
             for (Object item : iterable) {
                 if (item instanceof String childId) {
                     var childPrefix = resolvedId + "_" + childId;
 
-                    for (var child : groupLayout.getChildren()) {
+                    for (var child : replicatingContainerLayout.getChildren()) {
                         switch (child) {
                             case GroupLayout childGroupLayout:
                                 deriveGroupLayoutRecursive(context, childGroupLayout, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, childPrefix, isParentVisible && isVisible);
                                 break;
-                            case ReplicatingContainerLayout replicatingContainerLayout:
-                                deriveReplicatingLayoutRecursive(context, replicatingContainerLayout, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, childPrefix, isParentVisible && isVisible);
+                            case ReplicatingContainerLayout childReplicatingContainerLayout:
+                                deriveReplicatingLayoutRecursive(context, childReplicatingContainerLayout, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, childPrefix, isParentVisible && isVisible);
                                 break;
                             default:
                                 deriveElement(context, child, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, childPrefix, isParentVisible && isVisible);

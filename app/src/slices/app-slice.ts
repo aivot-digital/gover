@@ -168,7 +168,7 @@ const appSlice = createSlice({
             }
         },
 
-        updateCustomerInput: (state, action: PayloadAction<{ key: string, value: any }>) => {
+        updateCustomerInput: (state, action: PayloadAction<{ key: string, value: any, doNotStore?: boolean, }>) => {
             const newInput = {
                 ...state.inputs,
                 [action.payload.key]: action.payload.value,
@@ -179,7 +179,7 @@ const appSlice = createSlice({
                 [action.payload.key]: undefined,
             };
 
-            if (state.loadedForm != null) {
+            if (state.loadedForm != null && !action.payload.doNotStore) {
                 CustomerInputService.storeCustomerInput(state.loadedForm, newInput);
             }
         },
@@ -203,33 +203,32 @@ const appSlice = createSlice({
         },
 
         hydrateFromDerivation: (state, action: PayloadAction<FormState>) => {
-            state.values = {
-                ...state.values,
-                ...action.payload.values,
-            };
+            state.values = action.payload.values; // Values are always overwritten to prevent computed values from being carried over after a derivation
+
             state.visibilities = {
                 ...state.visibilities,
                 ...action.payload.visibilities,
-            };
+            }; // Visibilities are additive to prevent hiding of previous steps
+
             state.errors = action.payload.errors; // Errors are always overwritten to prevent errors from future steps being carried over
+
             state.overrides = {
                 ...state.overrides,
                 ...action.payload.overrides,
-            };
+            }; // Overrides are additive to prevent changing of previous steps
         },
         hydrateFromDerivationWithoutErrors: (state, action: PayloadAction<FormState>) => {
-            state.values = {
-                ...state.values,
-                ...action.payload.values,
-            };
+            state.values = action.payload.values; // Values are always overwritten to prevent computed values from being carried over after a derivation
+
             state.visibilities = {
                 ...state.visibilities,
                 ...action.payload.visibilities,
-            };
+            }; // Visibilities are additive to prevent hiding of previous steps
+
             state.overrides = {
                 ...state.overrides,
                 ...action.payload.overrides,
-            };
+            }; // Overrides are additive to prevent changing of previous steps
         },
 
         setFormState: (state, action: PayloadAction<{
