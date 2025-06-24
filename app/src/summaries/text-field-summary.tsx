@@ -10,7 +10,7 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
                                                                         }) => {
     const theme = useTheme();
     const [expanded, setExpanded] = useState(false);
-    const content = stringOrDefault(value, 'Keine Angabe');
+    const content = stringOrDefault(value.toString(), 'Keine Angabe');
     const contentTooLong = content.length > 128;
     return (
         <Grid
