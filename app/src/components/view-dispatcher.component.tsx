@@ -9,7 +9,7 @@ import {ElementErrorBoundary} from './element-error-boundary/element-error-bound
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {resolveId} from '../utils/id-utils';
 import {enqueueDerivationTriggerId, selectComputedValue, selectCustomerInputValue, selectDisabled, selectError, selectFunctionReferences, selectOverride, selectVisibility, updateCustomerInput} from '../slices/app-slice';
-import {FunctionType} from '../utils/function-status-utils';
+import {FunctionType, hasElementFunctionType} from '../utils/function-status-utils';
 import {selectDisableVisibility} from '../slices/admin-settings-slice';
 
 interface DispatcherComponentProps<M extends AnyElement, V> {
@@ -118,11 +118,11 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
                 value: updatedValue,
             }));
             // Check if the element has references to trigger the derivation queue
-            if (hasReferences) {
+            if (hasReferences || (updatedValue == null && hasElementFunctionType(initialElement, FunctionType.VALUE))) {
                 dispatch(enqueueDerivationTriggerId(initialElementId));
             }
         }
-    }, [value, valueOverride, resolvedId, hasReferences, initialElementId, dispatch]);
+    }, [value, valueOverride, resolvedId, hasReferences, initialElement, initialElementId, dispatch]);
 
     const Component: ComponentType<BaseViewProps<typeof element, V>> | null = useMemo(() => Views[element.type], [element.type]);
 
