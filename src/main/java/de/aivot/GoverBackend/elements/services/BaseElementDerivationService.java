@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class BaseElementDerivationService<Ctx extends BaseElementDerivationContext> {
-    private final Logger logger = LoggerFactory.getLogger(BaseElementDerivationService.class);
-
     public Ctx derive(
             @Nonnull BaseElement currentElement,
             @Nonnull Map<String, Object> inputValues
@@ -262,10 +260,10 @@ public abstract class BaseElementDerivationService<Ctx extends BaseElementDeriva
             if (deriveValues) {
                 deriveValue(context, idPrefix, baseInputElement);
             }
+        }
 
-            if (deriveErrors) {
-                deriveError(context, idPrefix, baseElement);
-            }
+        if (deriveErrors) {
+            deriveError(context, idPrefix, baseElement);
         }
     }
 
