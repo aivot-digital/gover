@@ -9,8 +9,9 @@ import {clearErrors, selectLoadedForm} from '../../slices/app-slice';
 import {getStepIcon} from '../../data/step-icons';
 import {BaseSummaryProps} from '../../summaries/base-summary';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 
-export function StepComponentSummary({model, allowStepNavigation, isBusy}: BaseSummaryProps<StepElement, any>) {
+export function StepComponentSummary({allElements, model, showTechnical, allowStepNavigation, isBusy}: BaseSummaryProps<StepElement, any>) {
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedForm);
 
@@ -26,6 +27,7 @@ export function StepComponentSummary({model, allowStepNavigation, isBusy}: BaseS
 
     const Icon = getStepIcon(model);
     return (
+        <>
         <Box
             sx={{
                 display: 'flex',
@@ -35,11 +37,17 @@ export function StepComponentSummary({model, allowStepNavigation, isBusy}: BaseS
             }}
         >
             <Typography
-                component={'h3'}
+                component="h3"
                 variant="h5"
                 color="primary"
             >
-                <Icon sx={{marginRight: '8px', fontSize: '1rem', transform: 'scale(1.6) translateY(1px)'}} />
+                <Icon
+                    sx={{
+                        marginRight: '8px',
+                        fontSize: '1rem',
+                        transform: 'scale(1.6) translateY(1px)',
+                    }}
+                />
                 &nbsp;
                 {
                     model.title ? model.title : 'Unbenannter Abschnitt'
@@ -66,5 +74,18 @@ export function StepComponentSummary({model, allowStepNavigation, isBusy}: BaseS
                 </Tooltip>
             }
         </Box>
+            {
+                model.children.map((model, index) => (
+                    <SummaryDispatcherComponent
+                        allElements={allElements}
+                        key={model.id + index.toString()}
+                        element={model}
+                        showTechnical={showTechnical}
+                        allowStepNavigation={allowStepNavigation}
+                        isBusy={isBusy}
+                    />
+                ))
+            }
+        </>
     );
 }

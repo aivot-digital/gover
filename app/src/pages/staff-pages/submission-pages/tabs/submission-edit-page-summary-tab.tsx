@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Form} from '../../../../models/entities/form';
 import {SummaryDispatcherComponent} from '../../../../components/summary-dispatcher.component';
-import {flattenElementsForSummary} from '../../../../components/summary/summary.component.view';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {SubmissionDetailsResponseDTO} from '../../../../modules/submissions/dtos/submission-details-response-dto';
 import {AlertComponent} from '../../../../components/alert/alert-component';
@@ -10,6 +9,8 @@ import {FormsApiService} from '../../../../modules/forms/forms-api-service';
 import {useApi} from '../../../../hooks/use-api';
 import {hydrateFromDerivation} from '../../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loading-placeholder';
+import {Typography} from '@mui/material';
+import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 
 interface SubmissionEditPageSummaryTabProps {
     form: Form;
@@ -20,7 +21,6 @@ export function SubmissionEditPageSummaryTab(props: SubmissionEditPageSummaryTab
     const api = useApi();
     const dispatch = useDispatch();
     const allElements = flattenElements(props.form.root);
-    const models = flattenElementsForSummary(allElements, props.form.root, props.submission.customerInput, {}, undefined);
 
     const [isBusy, setIsBusy] = useState(false);
     const [derivationError, setDerivationError] = useState<string>();
@@ -53,34 +53,44 @@ export function SubmissionEditPageSummaryTab(props: SubmissionEditPageSummaryTab
             <LoadingPlaceholder
                 message="Formulardaten werden geladen"
             />
-        )
+        );
     }
 
     if (derivationError) {
         return (
-            <AlertComponent color="error">
-                {derivationError}
-            </AlertComponent>
+            <>
+                <AlertComponent color="error">
+                    {derivationError}
+                </AlertComponent>
+
+                <Typography
+                    variant="h6"
+                    component="div"
+                    sx={{
+                        mt: 2,
+                    }}
+                >
+                    Daten des Antrags
+                </Typography>
+                <ExpandableCodeBlock
+                    value={JSON.stringify(props.submission.customerInput, null, 2)}
+                />
+            </>
         );
     }
 
     return (
         <>
             {
-                models.length > 0 ?
-                    models.map((model, index) => (
-                        <SummaryDispatcherComponent
-                            allElements={allElements}
-                            key={model.id + index.toString()}
-                            element={model}
-                            allowStepNavigation={false}
-                            showTechnical={true}
-                        />
-                    ))
-                    :
-                    <AlertComponent color="info">
-                        Dieser Antrag enthält keine Daten. Möglicherweise wurden dem Formular (noch) keine Elemente hinzugefügt.
-                    </AlertComponent>
+                props.form.root.children.map((model, index) => (
+                    <SummaryDispatcherComponent
+                        allElements={allElements}
+                        key={model.id + index.toString()}
+                        element={model}
+                        allowStepNavigation={false}
+                        showTechnical={true}
+                    />
+                ))
             }
         </>
     );
