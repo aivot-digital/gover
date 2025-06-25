@@ -97,23 +97,15 @@ export function NumberFieldComponent({
             onChange(fixed);
 
             if (formatAfter) {
-                setInputValue(formatNumToGermanNum(fixed, decimalPlaces));
+                setInputValue(undefined);
             }
         } else {
             onChange(undefined);
             if (formatAfter) {
-                setInputValue('');
+                setInputValue(undefined);
             }
         }
     };
-
-    // Update local state if external value changes
-    useEffect(() => {
-        if (value == null || isNaN(value)) {
-            return;
-        }
-        setInputValue(formatNumToGermanNum(value, decimalPlaces));
-    }, [value]);
 
     // Handle blur event (format value and trigger onChange)
     const handleBlur = () => {
