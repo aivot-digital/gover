@@ -4,15 +4,12 @@ import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
 import {BaseSummaryProps} from '../../summaries/base-summary';
 import SubdirectoryArrowLeftOutlinedIcon from '@mui/icons-material/SubdirectoryArrowLeftOutlined';
-import {useAppSelector} from '../../hooks/use-app-selector';
 import {resolveId} from '../../utils/id-utils';
 
 export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
     const prefixedId = resolveId(props.model.id, props.idPrefix);
 
     const values: string[] = props.value ?? [];
-
-    const customerInput = props.customerInput != null ? props.customerInput : useAppSelector(state => state.app.inputs);
 
     const theme = useTheme();
 
@@ -134,7 +131,8 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                                     element={child}
                                     idPrefix={`${prefixedId}_${val}_`}
                                     showTechnical={props.showTechnical}
-                                    customerInput={customerInput}
+                                    customerInput={props.customerInput}
+                                    isBusy={props.isBusy}
                                 />
                             ))
                         }

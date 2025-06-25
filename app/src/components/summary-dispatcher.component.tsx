@@ -42,8 +42,7 @@ export function SummaryDispatcherComponent<M extends AnyElement>(props: Dispatch
 
     const element: M = useMemo(() => ({
         ...(override ?? initialElement),
-        id: resolvedId,
-    } as M), [initialElement, resolvedId, override]);
+    } as M), [initialElement, override]);
 
     const Component = useMemo(() => {
         return Summaries[element.type];
