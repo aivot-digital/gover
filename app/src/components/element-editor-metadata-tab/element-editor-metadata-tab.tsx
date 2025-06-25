@@ -19,6 +19,7 @@ import {IdentityProviderType} from '../../modules/identity/enums/identity-provid
 import {BayernIdAttributes, BundIdAttributes, MukAttributes, ShIdAttributes} from '../../modules/identity/constants/system-identity-provider-attribute-maps';
 import {BayernIdAttribute, BundIdAttribute, MukAttribute, ShIdAttribute} from '../../modules/identity/constants/system-identity-provider-attributes';
 import {Page} from '../../models/dtos/page';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
     const api = useApi();
@@ -113,6 +114,13 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
 
     return (
         <Box sx={{p: 4}}>
+            <ElementEditorSectionHeader
+                title="Datenzuordnung"
+                disableMarginTop
+            >
+                Definieren Sie, wie dieses Formularelement mit Daten verknüpft ist.
+                Legen Sie fest, welcher Datenschlüssel zur Schnittstelle übertragen wird und welchen Attributen aus Nutzerkonten (wenn aktiviert) das Element zugeordnet ist.
+            </ElementEditorSectionHeader>
             {
                 identityProviders.length > 0 &&
                 <Box
@@ -120,11 +128,10 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                         mb: 4,
                     }}
                 >
-                    <Typography
-                        variant="h6"
-                    >
-                        Verknüpfung mit Nutzerkonten
-                    </Typography>
+                    <ElementEditorSectionHeader
+                        title="Nutzerkonten"
+                        variant={"h5"}
+                    />
 
                     {
                         identityProviders
@@ -171,11 +178,10 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                     mb: 4,
                 }}
             >
-                <Typography
-                    variant="h6"
-                >
-                    Schnittstellendaten
-                </Typography>
+                <ElementEditorSectionHeader
+                    title="Schnittstellen"
+                    variant={"h5"}
+                />
 
                 <TextFieldComponent
                     value={element.destinationKey ?? undefined}

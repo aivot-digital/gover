@@ -12,6 +12,8 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 
 const exampleLegacyVisibilityCode = `/**
  * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element sichtbar ist.
@@ -47,7 +49,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     )
                 )
             ) ||
-            isStringNotNullOrEmpty(props.element.visibilityCode?.code) ||
+            props.element.visibilityCode?.code != null ||
             props.element.visibilityExpression != null;
     }, [props.element]);
 
@@ -55,6 +57,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
         <>
             <BaseCodeTab
                 label="Sichtbarkeit"
+                description={'Hier können Sie die Sichtbarkeit des Elements dynamisch bestimmen. Dies ist besonders nützlich, wenn die Sichtbarkeit des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten.'}
                 requirements={props.element.isVisible?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({
@@ -163,6 +166,19 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            alert={{
+                                color: 'warning',
+                                title: 'Diese Version des Low-Codes ist veraltet',
+                                richtext: true,
+                                text: `
+                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
+                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
+                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
+                                `,
+                                sx: {
+                                    mb: 1,
+                                }
+                            }}
                         />
                     )
                 }
@@ -219,6 +235,14 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                         />
                     )
                 }
+
+                <ReferenceCheck
+                    element={props.element}
+                    lowCodeOld={[props.element.isVisible?.code]}
+                    lowCode={[props.element.visibilityCode?.code]}
+                    noCodeOld={[props.element.isVisible?.conditionSet]}
+                    noCode={[props.element.visibilityExpression]}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

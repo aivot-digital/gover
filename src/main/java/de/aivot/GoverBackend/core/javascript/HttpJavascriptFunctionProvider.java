@@ -19,12 +19,12 @@ import java.util.Map;
 public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvider {
     @Override
     public String getPackageName() {
-        return "http";
+        return "_http";
     }
 
     @Override
     public String getLabel() {
-        return "HTTP";
+        return "HTTP-Anfragen";
     }
 
     @Override

@@ -49,6 +49,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
                         }}
                         allowEmpty={false}
                         disabled={!props.editable}
+                        variant="outlined"
                     />
             }
 
@@ -90,7 +91,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
                             ...params.inputProps,
                             autoComplete: 'new-password', // disable autocomplete and autofill
                         }}
-                        helperText={"Definieren Sie ein Datenattribut, das der Browser für dieses Feld vorschlagen soll. Benutzer können diese Vorschläge (abhängig vom verwendeten Browser) auswählen, um das Element automatisch auszufüllen."}
+                        helperText={"Legen Sie fest, welches Datenfeld der Browser zur Autovervollständigung vorschlagen soll (z. B. Name, E-Mail). Vorschläge sind browserabhängig."}
                     />
                 )}
                 disabled={!props.editable}

@@ -27,10 +27,14 @@ export function Preamble(props: PreambleProps): JSX.Element {
                             md={8}
                             lg={7}
                         >
-                            <div
-                                dangerouslySetInnerHTML={{__html: props.text ?? ''}}
-                                className={"content-without-margin-on-childs"}
-                            />
+                            <Box
+                                sx={{maxWidth: '660px'}}
+                            >
+                                <div
+                                    dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                    className={"content-without-margin-on-childs"}
+                                />
+                            </Box>
                         </Grid>
                         <Grid
                             item

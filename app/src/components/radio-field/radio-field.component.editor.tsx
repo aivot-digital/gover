@@ -43,6 +43,7 @@ export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldEleme
                         }}
                         allowEmpty={false}
                         disabled={!props.editable}
+                        variant="outlined"
                     />
             }
 

@@ -74,8 +74,9 @@ class IdentityServiceTest {
                 .queryParam("client_id", "client-id")
                 .queryParam("response_type", "code")
                 .queryParam("login", "true")
-                .queryParam("redirect_uri", "https://example.com/callback?origin=https://example.com")
+                .queryParam("redirect_uri", "https://example.com/callback")
                 .queryParam("scope", "scope1%20scope2%20scope3")
+                .queryParam("state", "https://example.com")
                 .queryParam("param1", "value1")
                 .queryParam("param2", "value2")
                 .build()
@@ -94,24 +95,6 @@ class IdentityServiceTest {
         );
 
         assertEquals("Der Nutzerkontenanbieter ist nicht angegeben.", exception.getMessage());
-    }
-
-    @Test
-    void createRedirectURL_ShouldThrowException_WhenProviderIsDisabled() throws ResponseException {
-        String providerKey = "disabled-provider";
-        URI callbackBaseUrl = URI.create("https://example.com/callback");
-        String origin = "https://example.com";
-
-        IdentityProviderEntity provider = new IdentityProviderEntity();
-        provider.setIsEnabled(false);
-
-        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-
-        ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(providerKey, callbackBaseUrl, origin, null)
-        );
-
-        assertEquals("Der Nutzerkontenanbieter ist nicht aktiviert.", exception.getMessage());
     }
 
     @Test
@@ -169,7 +152,7 @@ class IdentityServiceTest {
         URI callbackUrl = URI.create("https://example.com/callback");
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, null, callbackUrl, "https://example.com/origin", null)
+                identityService.handleCallback(providerKey, null, callbackUrl, "https://example.com/origin")
         );
 
         assertEquals("Es wurde kein Autorisierungscode übergeben.", exception.getMessage());
@@ -184,28 +167,10 @@ class IdentityServiceTest {
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.empty());
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null)
+                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
         );
 
         assertEquals("Der Nutzerkontenanbieter existiert nicht.", exception.getMessage());
-    }
-
-    @Test
-    void handleCallback_ShouldThrowException_WhenProviderIsDisabled() throws ResponseException {
-        String providerKey = "disabled-provider";
-        String authorizationCode = "auth-code";
-        URI callbackUrl = URI.create("https://example.com/callback");
-
-        IdentityProviderEntity provider = new IdentityProviderEntity();
-        provider.setIsEnabled(false);
-
-        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-
-        ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null)
-        );
-
-        assertEquals("Der Nutzerkontenanbieter ist nicht aktiviert.", exception.getMessage());
     }
 
     @Test
@@ -263,13 +228,19 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
-        IdentityCacheEntity result = identityService
-                .handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null);
+        String result = identityService
+                .handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
 
         assertNotNull(result);
-        assertEquals("John Doe", result.getIdentityData().get("name"));
-        assertEquals("john.doe@example.com", result.getIdentityData().get("email"));
-        assertEquals(providerKey, result.getProviderKey());
+
+        String expectedUrl = UriComponentsBuilder
+                .fromUriString("https://example.com/origin")
+                .queryParam("identity-state", "0")
+                .queryParam("identity-id", savedEntity.getId())
+                .build()
+                .toString();
+
+        assertEquals(expectedUrl, result);
     }
 
     @Test
@@ -286,7 +257,6 @@ class IdentityServiceTest {
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
 
-
         var mockResponse = mock(HttpResponse.class);
         when(mockResponse.statusCode()).thenReturn(400);
         when(mockResponse.body()).thenReturn("Bad Request");
@@ -298,7 +268,7 @@ class IdentityServiceTest {
         )).thenReturn(mockResponse);
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null)
+                identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
         );
 
         assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (valid-provider): 400", exception.getMessage());
@@ -369,12 +339,19 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
-        IdentityCacheEntity result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null);
+        String result = identityService
+                .handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
 
         assertNotNull(result);
-        assertEquals("John Doe", result.getIdentityData().get("name"));
-        assertEquals("john.doe@example.com", result.getIdentityData().get("email"));
-        assertEquals(providerKey, result.getProviderKey());
+
+        String expectedUrl = UriComponentsBuilder
+                .fromUriString("https://example.com/origin")
+                .queryParam("identity-state", "0")
+                .queryParam("identity-id", savedEntity.getId())
+                .build()
+                .toString();
+
+        assertEquals(expectedUrl, result);
 
         // Verify that the logout endpoint was called
         verify(httpService).postFormUrlEncoded(
@@ -445,12 +422,18 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
-        IdentityCacheEntity result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin", null);
+        String result = identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin");
 
         assertNotNull(result);
-        assertEquals("John Doe", result.getIdentityData().get("name"));
-        assertEquals("john.doe@example.com", result.getIdentityData().get("email"));
-        assertEquals(providerKey, result.getProviderKey());
+
+        String expectedUrl = UriComponentsBuilder
+                .fromUriString("https://example.com/origin")
+                .queryParam("identity-state", "0")
+                .queryParam("identity-id", savedEntity.getId())
+                .build()
+                .toString();
+
+        assertEquals(expectedUrl, result);
 
         // Verify that the client secret was retrieved and decrypted
         verify(secretService).retrieve("secret-key");

@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {Box, Button, Divider, Typography} from '@mui/material';
 import ProjectPackage from '../../../package.json';
 import {DndProvider} from 'react-dnd';
@@ -20,6 +20,8 @@ import {AppConfig} from "../../app-config";
 
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>): JSX.Element {
     const [showAddDialog, setShowAddDialog] = useState(false);
+
+    const scrollContainerRef = useRef<HTMLDivElement>();
 
     const handleAddElement = (element: AnyElement): void => {
         props.onPatch({
@@ -62,6 +64,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
     return (
         <>
             <Box
+                ref={scrollContainerRef}
                 sx={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -76,6 +79,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                         onPatch={handleRootPatch}
                         editable={props.editable}
                         scope={props.scope}
+                        scrollContainerRef={scrollContainerRef}
                     />
 
                     <DndProvider

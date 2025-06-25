@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.LogoSystemConfigDefinition;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.services.FormDerivationService;
@@ -24,7 +25,6 @@ import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
-import de.aivot.GoverBackend.utils.ElementUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,11 +95,16 @@ public class PdfService {
     }
 
     public byte[] generatePrintableForm(Form form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        var allElements = ElementUtils.flattenElements(form.getRoot());
+        var allElements = ElementFlattenUtils.flattenElements(form.getRoot());
 
         var derivationContext = formDerivationServiceFactory
                 .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
                 .derive(form.getRoot(), Map.of());
+        try {
+            derivationContext.close();
+        } catch (Exception e) {
+            throw new IOException("Failed to close derivation context", e);
+        }
 
         var dto = new HashMap<String, Object>();
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
@@ -120,6 +125,11 @@ public class PdfService {
         var derivationContext = formDerivationServiceFactory
                 .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
                 .derive(form.getRoot(), submission.getCustomerInput());
+        try {
+            derivationContext.close();
+        } catch (Exception e) {
+            throw new IOException("Failed to close derivation context", e);
+        }
 
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 form.getRoot(),

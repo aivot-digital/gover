@@ -1,6 +1,6 @@
 import React from 'react';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {FormGroup, Grid, InputLabel, Typography} from '@mui/material';
+import {FormGroup, Grid, InputLabel} from '@mui/material';
 import {CheckboxTree} from '../checkbox-tree/checkbox-tree';
 import {StringListInput} from '../string-list-input/string-list-input';
 import {type CheckboxTreeOption} from '../checkbox-tree/checkbox-tree-option';
@@ -9,6 +9,7 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 const eligibleEntities: CheckboxTreeOption[] = [
     {
@@ -85,31 +86,32 @@ function orderEligiblePersons(value: string[]): string[] {
 export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, ElementTreeEntity>): JSX.Element {
     return (
         <>
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Einleitende Informationen
-            </Typography>
-
-            <RichTextEditorComponentView
-                value={props.element.teaserText ?? ''}
-                label="Kurzbeschreibung"
-                hint="Schildern Sie kurz und präzise das Formular und dessen Zweck."
-                onChange={(val) => {
-                    props.onPatch({
-                        teaserText: val,
-                    });
-                }}
-                disabled={!props.editable}
-            />
-
             <Grid
                 container
                 columnSpacing={4}
             >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <RichTextEditorComponentView
+                        value={props.element.teaserText ?? ''}
+                        label="Kurzbeschreibung"
+                        hint="Schildern Sie kurz und präzise das Formular und dessen Zweck."
+                        onChange={(val) => {
+                            props.onPatch({
+                                teaserText: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                />
                 <Grid
                     item
                     xs={12}
@@ -140,65 +142,67 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                                 initiativeName: val,
                             });
                         }}
-                        hint="Der Alternativtext (Alt-Text) sorgt für Barrierefreiheit, indem er den Inhalt des Bildes für Nutzer mit Sehbehinderungen beschreibt. Geben Sie eine kurze, prägnante Beschreibung des Bildinhalts ein, die alle wichtigen Informationen vermittelt."
+                        hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
                         error={isStringNullOrEmpty(props.element.initiativeName) && isStringNotNullOrEmpty(props.element.initiativeLogoLink) ? 'Im Sinne der Barrierefreiheit sollten Sie immer einen Alternativtext für das Bild angeben.' : undefined}
                         disabled={!props.editable}
                     />
                 </Grid>
             </Grid>
 
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                    mb: 2,
-                }}
-            >
-                Informationen für antragstellende Personen
-            </Typography>
-
-            <FormGroup
-                sx={{
-                    mt: 2,
-                    mb: 2,
-                }}
-            >
-                <InputLabel
-                    sx={{
-                        mb: 1,
-                    }}
-                >Antragsberechtigte</InputLabel>
-                <CheckboxTree
-                    options={eligibleEntities}
-                    value={props.element.eligiblePersons ?? []}
-                    onChange={(update) => {
-                        props.onPatch({
-                            eligiblePersons: orderEligiblePersons(update),
-                        });
-                    }}
-                    disabled={!props.editable}
-                />
-            </FormGroup>
-
-            <RichTextEditorComponentView
-                value={props.element.expectedCosts ?? ''}
-                label="Gebühren des Antrages"
-                onChange={(val) => {
-                    props.onPatch({
-                        expectedCosts: val,
-                    });
-                }}
-                disabled={!props.editable}
+            <ElementEditorSectionHeader
+                title="Informationen für antragstellende Personen"
+                variant={"h5"}
             />
 
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
+            <Grid
+                container
+                columnSpacing={4}
             >
-                Dokumente des Antrages
-            </Typography>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <FormGroup
+                        sx={{
+                            mt: 2,
+                            mb: 2,
+                        }}
+                    >
+                        <InputLabel
+                            sx={{
+                                mb: 1,
+                            }}
+                        >Antragsberechtigte</InputLabel>
+                        <CheckboxTree
+                            options={eligibleEntities}
+                            value={props.element.eligiblePersons ?? []}
+                            onChange={(update) => {
+                                props.onPatch({
+                                    eligiblePersons: orderEligiblePersons(update),
+                                });
+                            }}
+                            disabled={!props.editable}
+                        />
+                    </FormGroup>
+
+                    <RichTextEditorComponentView
+                        value={props.element.expectedCosts ?? ''}
+                        label="Gebühren des Antrages"
+                        onChange={(val) => {
+                            props.onPatch({
+                                expectedCosts: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
+
+            <ElementEditorSectionHeader
+                title="Dokumente des Antrages"
+                variant={"h5"}
+            />
 
             <StringListInput
                 label="Relevante Dokumente"

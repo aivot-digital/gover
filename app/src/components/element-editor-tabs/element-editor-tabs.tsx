@@ -1,4 +1,4 @@
-import {Tab, Tabs} from '@mui/material';
+import {Box, Tab, Tabs} from '@mui/material';
 import React, {useCallback} from 'react';
 import {type ElementEditorTabsProps} from './element-editor-tabs-props';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -22,23 +22,15 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 label="Eigenschaften"
                 value={DefaultTabs.properties}
             />
-            {
-                props.component.type !== ElementType.Root &&
-                props.component.type !== ElementType.IntroductionStep &&
-                props.component.type !== ElementType.SummaryStep &&
-                props.component.type !== ElementType.SubmitStep &&
-                <Tab
-                    label="Sichtbarkeiten"
-                    value={DefaultTabs.visibility}
-                />
-            }
+
             {
                 ElementIsInput[props.component.type] &&
                 <Tab
-                    label="Validierungen"
-                    value={DefaultTabs.validation}
+                    label="Datenzuordnung"
+                    value={DefaultTabs.metadata}
                 />
             }
+
             {
                 props.additionalTabs.map((add) => (
                     <Tab
@@ -49,16 +41,31 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 ))
             }
 
-            <Tab
-                label="Prüfung"
-                value={DefaultTabs.test}
+            <Box
+                sx={{
+                    height: 24,
+                    alignSelf: 'center',
+                    borderLeft: '1px solid',
+                    borderColor: 'divider',
+                    mx: 1,
+                }}
             />
 
             {
-                props.rootEditor &&
+                props.component.type !== ElementType.Root &&
+                props.component.type !== ElementType.IntroductionStep &&
+                props.component.type !== ElementType.SummaryStep &&
+                props.component.type !== ElementType.SubmitStep &&
                 <Tab
-                    label="Veröffentlichen"
-                    value={DefaultTabs.publish}
+                    label="Sichtbarkeit"
+                    value={DefaultTabs.visibility}
+                />
+            }
+            {
+                ElementIsInput[props.component.type] &&
+                <Tab
+                    label="Validierung"
+                    value={DefaultTabs.validation}
                 />
             }
 
@@ -81,18 +88,35 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 />
             }
 
-            {
-                ElementIsInput[props.component.type] &&
-                <Tab
-                    label="Metadaten"
-                    value={DefaultTabs.metadata}
-                />
-            }
+
 
             <Tab
                 label="Elementstruktur"
                 value={DefaultTabs.structure}
             />
+
+            <Box
+                sx={{
+                    height: 24,
+                    alignSelf: 'center',
+                    borderLeft: '1px solid',
+                    borderColor: 'divider',
+                    mx: 1,
+                }}
+            />
+
+            <Tab
+                label="Prüfung"
+                value={DefaultTabs.test}
+            />
+
+            {
+                props.rootEditor &&
+                <Tab
+                    label="Veröffentlichen"
+                    value={DefaultTabs.publish}
+                />
+            }
         </Tabs>
     );
 }

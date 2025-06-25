@@ -85,8 +85,9 @@ export function CodeTabCodeEditor(props: CodeTabCodeEditorProps) {
             <Box
                 sx={{
                     mt: 2,
-                    py: 1,
-                    border: '1px solid black',
+                    py: 2,
+                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    borderRadius: 1,
                 }}
             >
                 <Editor

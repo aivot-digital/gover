@@ -15,4 +15,6 @@ export interface OptionListInputProps {
 
     labelLabel?: string;
     keyLabel?: string;
+
+    variant?: 'elevation' | 'outlined';
 }

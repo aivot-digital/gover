@@ -1,5 +1,5 @@
 import {InputAdornment, TextField} from '@mui/material';
-import {ChangeEvent, useMemo, useRef, useState} from 'react';
+import {ChangeEvent, useEffect, useMemo, useRef, useState} from 'react';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {type NumberFieldComponentProps} from './number-field-component-props';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
@@ -97,12 +97,12 @@ export function NumberFieldComponent({
             onChange(fixed);
 
             if (formatAfter) {
-                setInputValue(formatNumToGermanNum(fixed, decimalPlaces));
+                setInputValue(undefined);
             }
         } else {
             onChange(undefined);
             if (formatAfter) {
-                setInputValue('');
+                setInputValue(undefined);
             }
         }
     };

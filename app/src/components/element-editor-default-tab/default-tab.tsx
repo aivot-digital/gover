@@ -1,6 +1,6 @@
 import {type AnyElement} from '../../models/elements/any-element';
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
-import {Box} from '@mui/material';
+import {Box, Grid} from '@mui/material';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {ElementType} from '../../data/element-type/element-type';
 import {SelectFieldComponent} from '../select-field/select-field-component';
@@ -13,9 +13,54 @@ import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {getElementNameForType} from '../../data/element-type/element-names';
+import {AlertComponent} from '../alert/alert-component';
+import Editors from '../../editors';
 
 export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();
+
+    const tabDescription = (() => {
+        switch (props.element.type) {
+            case ElementType.Root:
+                return {
+                    title: 'Eigenschaften des Formulars',
+                    description: 'Hier konfigurieren Sie allgemeine Eigenschaften des gesamten Formulars, z. B. Titel oder technische Einstellungen.',
+                    isElement: false,
+                };
+            case ElementType.IntroductionStep:
+                return {
+                    title: 'Eigenschaften für den Abschnitt „Allgemeine Informationen“',
+                    description: 'Dieser Abschnitt dient der Einführung des Antragstellers in das Formular – z. B. mit einleitenden Informationen und einem Überblick über wichtige Eckdaten wie mögliche Gebühren.',
+                    isElement: false,
+                };
+            case ElementType.SummaryStep:
+                return {
+                    title: 'Eigenschaften für den Abschnitt „Zusammenfassung“',
+                    description: 'Hier wird dem Antragstellenden eine Übersicht der bisherigen Eingaben angezeigt.',
+                    isElement: false,
+                };
+            case ElementType.SubmitStep:
+                return {
+                    title: 'Eigenschaften für den Abschnitt „Absenden des Antrages“',
+                    description: 'In diesem Schritt wird der Antrag final geprüft und abgesendet. Darüber hinaus können hier weitere Informationen angegeben werden, z. B. zur Bearbeitung des Antrages.',
+                    isElement: false,
+                };
+            case ElementType.Step:
+                return {
+                    title: 'Eigenschaften des Abschnitts',
+                    description: 'Konfigurieren Sie diesen Abschnitt des Formulars, z. B. mit eigenen logischen Bedingungen.',
+                    isElement: false,
+                };
+            default:
+                return {
+                    title: 'Eigenschaften des Elements',
+                    description: 'Legen Sie fest, wie dieses Formularelement dargestellt wird, welche Inhalte erfasst werden können und wie sich das Element gegenüber Nutzer:innen verhält.',
+                    isElement: true,
+                };
+        }
+    })();
 
     return (
         <Box
@@ -23,132 +68,173 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                 p: 4,
             }}
         >
-            <TextFieldComponent
-                label="ID (für Entwickler:innen)"
-                value={props.element.id ?? ''}
-                disabled
-                onChange={(_) => {
-                }}
-                endAction={{
-                    icon: <ContentPasteIcon />,
-                    onClick: () => {
-                        navigator.clipboard.writeText(props.element.id ?? '')
-                            .then(() => {
-                                dispatch(showSuccessSnackbar('ID kopiert'));
-                            })
-                            .catch((error) => {
-                                console.error('Failed to copy ID', error);
-                                dispatch(showSuccessSnackbar('ID konnte nicht kopiert werden'));
-                            });
-                    },
-                }}
-            />
+            <ElementEditorSectionHeader
+                title={tabDescription.title}
+                titleSuffix={tabDescription.isElement ? '(' + getElementNameForType(props.element.type) + ')' : undefined}
+                disableMarginTop
+            >
+                {tabDescription.description}
+            </ElementEditorSectionHeader>
 
             {
-                props.element.type !== ElementType.Root &&
-                props.element.type !== ElementType.IntroductionStep &&
-                props.element.type !== ElementType.SummaryStep &&
-                props.element.type !== ElementType.SubmitStep &&
-                <TextFieldComponent
-                    label="Interner Name"
-                    value={props.element.name}
-                    onChange={(val) => {
-                        // @ts-expect-error
-                        props.onChange({
-                            name: val ?? '',
-                        });
-                    }}
-                    hint="Vergeben Sie einen Namen für dieses Element um es besser identifizieren zu können. Diesen Namen können nur Sie und Ihre Kolleg:innen einsehen"
-                    maxCharacters={30}
-                    disabled={!props.editable}
-                />
+                props.element.type === ElementType.SummaryStep &&
+                <AlertComponent color={'info'}>
+                    Dieser Abschnitt hat derzeit keine weiteren Konfigurationsmöglichkeiten.
+                </AlertComponent>
             }
 
             {
-                props.element.type !== ElementType.Root &&
-                props.element.type !== ElementType.IntroductionStep &&
-                props.element.type !== ElementType.Step &&
-                props.element.type !== ElementType.SummaryStep &&
-                props.element.type !== ElementType.SubmitStep &&
-                <SelectFieldComponent
-                    label="Breite des Elements (Darstellung)"
-                    value={(props.element as AnyFormElement)?.weight?.toString() ?? '12'}
-                    onChange={(val) => {
-                        props.onChange({
-                            // @ts-expect-error
-                            weight: val != null ? parseFloat(val) : 12,
-                        });
-                    }}
-                    options={[
-                        {
-                            label: '25%',
-                            value: '3',
-                        },
-                        {
-                            label: '33%',
-                            value: '4',
-                        },
-                        {
-                            label: '37,5%',
-                            value: '4.5',
-                        },
-                        {
-                            label: '50%',
-                            value: '6',
-                        },
-                        {
-                            label: '62,5%',
-                            value: '7.5',
-                        },
-                        {
-                            label: '66%',
-                            value: '8',
-                        },
-                        {
-                            label: '75%',
-                            value: '9',
-                        },
-                        {
-                            label: '100%',
-                            value: '12',
-                        },
-                    ]}
-                    hint="Bestimmen Sie die Breite des Anzeigeelements. Diese ist nur für Tablets und Desktops relevant. Auf mobilen Geräten wird das Element immer über die volle Breite dargestellt."
-                    disabled={!props.editable}
+                tabDescription.isElement &&
+                <ElementEditorSectionHeader
+                    title="Grundlegende Angaben"
+                    variant={'h5'}
                 />
             }
 
-            {
-                isAnyInputElement(props.element) &&
-                <>
-                    <TextFieldComponent
-                        value={props.element.label}
-                        label="Titel"
-                        onChange={(val) => {
-                            props.onChange({
-                                // @ts-expect-error
-                                label: val,
-                            });
-                        }}
-                        hint="Dieser Titel wird im Formular als Label für dieses Feld angezeigt. Bitte beachten Sie die Relevanz dieser Angabe für die Barrierefreiheit des Formulars."
-                        disabled={!props.editable}
-                        softLimitCharacters={20}
-                        softLimitCharactersWarning={'Bitte formulieren Sie das Label so kurz/prägnant wie möglich. Label mit mehr als 20 Zeichen können auf kleinen Bildschirmen abgeschnitten werden und sind ggf. nicht vollständig lesbar.'}
-                    />
+            <Grid
+                container
+                columnSpacing={4}
+            >
 
-                    <TextFieldComponent
-                        value={props.element.hint}
-                        label="Hinweis"
-                        onChange={(val) => {
-                            props.onChange({
+                {
+                    props.element.type !== ElementType.Root &&
+                    props.element.type !== ElementType.IntroductionStep &&
+                    props.element.type !== ElementType.SummaryStep &&
+                    props.element.type !== ElementType.SubmitStep &&
+                    <Grid
+                        item
+                        xs={12}
+                        lg={6}
+                    >
+                        <TextFieldComponent
+                            label="Interner Name"
+                            value={props.element.name}
+                            onChange={(val) => {
                                 // @ts-expect-error
-                                hint: val,
-                            });
-                        }}
-                        hint="Dieser Hinweis sollte genutzt werden, um den antragstellenden Personen weitere Informationen über die Eingabe zu geben."
-                        disabled={!props.editable}
-                    />
-                </>
+                                props.onChange({
+                                    name: val ?? '',
+                                });
+                            }}
+                            hint="Vergeben Sie einen internen Namen zur besseren Identifikation. Nur für Sie und Ihr Team sichtbar."
+                            maxCharacters={30}
+                            disabled={!props.editable}
+                        />
+                    </Grid>
+                }
+
+                {
+                    props.element.type !== ElementType.Root &&
+                    props.element.type !== ElementType.IntroductionStep &&
+                    props.element.type !== ElementType.Step &&
+                    props.element.type !== ElementType.SummaryStep &&
+                    props.element.type !== ElementType.SubmitStep &&
+                    <Grid
+                        item
+                        xs={12}
+                        lg={6}
+                    >
+                        <SelectFieldComponent
+                            label="Breite des Elements in der Darstellung"
+                            value={(props.element as AnyFormElement)?.weight?.toString() ?? '12'}
+                            onChange={(val) => {
+                                props.onChange({
+                                    // @ts-expect-error
+                                    weight: val != null ? parseFloat(val) : 12,
+                                });
+                            }}
+                            options={[
+                                {
+                                    label: '25%',
+                                    value: '3',
+                                },
+                                {
+                                    label: '33%',
+                                    value: '4',
+                                },
+                                {
+                                    label: '37,5%',
+                                    value: '4.5',
+                                },
+                                {
+                                    label: '50%',
+                                    value: '6',
+                                },
+                                {
+                                    label: '62,5%',
+                                    value: '7.5',
+                                },
+                                {
+                                    label: '66%',
+                                    value: '8',
+                                },
+                                {
+                                    label: '75%',
+                                    value: '9',
+                                },
+                                {
+                                    label: '100%',
+                                    value: '12',
+                                },
+                            ]}
+                            hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird stets die volle Breite verwendet."
+                            disabled={!props.editable}
+                        />
+                    </Grid>
+                }
+
+                {
+                    isAnyInputElement(props.element) &&
+                    <>
+                        <Grid
+                            item
+                            xs={12}
+                            lg={6}
+                        >
+                            <TextFieldComponent
+                                value={props.element.label}
+                                label="Titel"
+                                onChange={(val) => {
+                                    props.onChange({
+                                        // @ts-expect-error
+                                        label: val,
+                                    });
+                                }}
+                                hint="Dieser Titel wird als Label für dieses Feld im Formular angezeigt und ist u. A. relevant für die Barrierefreiheit."
+                                disabled={!props.editable}
+                                softLimitCharacters={20}
+                                softLimitCharactersWarning={'Halten Sie das Label so kurz wie möglich (empfohlen max. 20 Zeichen), da es sonst auf kleinen Bildschirmen abgeschnitten werden kann.'}
+                            />
+                        </Grid>
+                        <Grid
+                            item
+                            xs={12}
+                            lg={6}
+                        >
+                            <TextFieldComponent
+                                value={props.element.hint}
+                                label="Hinweis"
+                                onChange={(val) => {
+                                    props.onChange({
+                                        // @ts-expect-error
+                                        hint: val,
+                                    });
+                                }}
+                                hint="Geben Sie hier zusätzliche Hinweise zur Eingabe für Antragstellende an (optional, wird unter dem Eingabefeld angezeigt)."
+                                disabled={!props.editable}
+                            />
+                        </Grid>
+                    </>
+                }
+            </Grid>
+
+            {
+                tabDescription.isElement &&
+                // elements without additional properties – should be replaced with a more generic check if element contains additional properties
+                Editors[props.element.type] != null &&
+                <ElementEditorSectionHeader
+                    title="Elementspezifische Eigenschaften"
+                    variant={'h5'}
+                />
             }
 
             <EditorDispatcher
@@ -162,52 +248,117 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
             {
                 isAnyInputElement(props.element) &&
                 <>
-                    <CheckboxFieldComponent
-                        label="Pflichtangabe"
-                        value={props.element.required}
-                        onChange={(checked) => {
-                            props.onChange({
-                                // @ts-expect-error
-                                required: checked,
-                                disabled: false,
-                                technical: false,
-                            });
-                        }}
-                        hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
-                        disabled={!props.editable || Boolean(props.element.disabled) || Boolean(props.element.technical)}
+                    <ElementEditorSectionHeader
+                        title="Eingabeoptionen"
+                        variant={'h5'}
+                        disableMarginBottom
                     />
-
-                    <CheckboxFieldComponent
-                        label="Eingabe deaktiviert"
-                        value={props.element.disabled}
-                        onChange={(checked) => {
-                            props.onChange({
-                                // @ts-expect-error
-                                required: false,
-                                disabled: checked,
-                                technical: false,
-                            });
-                        }}
-                        hint="Deaktivierte Eingaben können nicht bearbeitet werden."
-                        disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.technical)}
-                    />
-
-                    <CheckboxFieldComponent
-                        label="Technisches Feld"
-                        value={props.element.technical}
-                        onChange={(checked) => {
-                            props.onChange({
-                                // @ts-expect-error
-                                required: false,
-                                disabled: false,
-                                technical: checked,
-                            });
-                        }}
-                        hint="Technische Felder sind für die antragstellenden Personen nicht sichtbar und können nicht bearbeitet werden."
-                        disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.disabled)}
-                    />
+                    <Grid
+                        container
+                        columnSpacing={4}
+                    >
+                        <Grid
+                            item
+                            xs={12}
+                            lg={4}
+                        >
+                            <CheckboxFieldComponent
+                                label="Pflichtangabe"
+                                value={props.element.required}
+                                onChange={(checked) => {
+                                    props.onChange({
+                                        // @ts-expect-error
+                                        required: checked,
+                                        disabled: false,
+                                        technical: false,
+                                    });
+                                }}
+                                hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
+                                disabled={!props.editable || Boolean(props.element.disabled) || Boolean(props.element.technical)}
+                            />
+                        </Grid>
+                        <Grid
+                            item
+                            xs={12}
+                            lg={4}
+                        >
+                            <CheckboxFieldComponent
+                                label="Eingabe deaktiviert"
+                                value={props.element.disabled}
+                                onChange={(checked) => {
+                                    props.onChange({
+                                        // @ts-expect-error
+                                        required: false,
+                                        disabled: checked,
+                                        technical: false,
+                                    });
+                                }}
+                                hint="Deaktivierte Eingaben können nicht bearbeitet werden."
+                                disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.technical)}
+                            />
+                        </Grid>
+                        <Grid
+                            item
+                            xs={12}
+                            lg={4}
+                        >
+                            <CheckboxFieldComponent
+                                label="Technisches Feld"
+                                value={props.element.technical}
+                                onChange={(checked) => {
+                                    props.onChange({
+                                        // @ts-expect-error
+                                        required: false,
+                                        disabled: false,
+                                        technical: checked,
+                                    });
+                                }}
+                                hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
+                                disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.disabled)}
+                            />
+                        </Grid>
+                    </Grid>
                 </>
             }
+
+            <ElementEditorSectionHeader
+                title="Technische Informationen für Entwickler:innen"
+                sx={{mt: 8}}
+            >
+                Hier finden Sie technische Zusatzinformationen, die insbesondere für Entwickler:innen von Bedeutung sein können.
+            </ElementEditorSectionHeader>
+
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        label="ID des Elements"
+                        value={props.element.id ?? ''}
+                        disabled
+                        onChange={(_) => {
+                        }}
+                        endAction={{
+                            icon: <ContentPasteIcon />,
+                            onClick: () => {
+                                navigator.clipboard.writeText(props.element.id ?? '')
+                                    .then(() => {
+                                        dispatch(showSuccessSnackbar('ID des Elements kopiert'));
+                                    })
+                                    .catch((error) => {
+                                        console.error('Failed to copy ID', error);
+                                        dispatch(showSuccessSnackbar('ID konnte nicht kopiert werden'));
+                                    });
+                            },
+                        }}
+                    />
+                </Grid>
+            </Grid>
 
         </Box>
     );

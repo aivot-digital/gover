@@ -3,7 +3,7 @@ import {Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem} fro
 import {type ElementEditorActionsProps} from './element-editor-actions-props';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
@@ -23,7 +23,8 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
         <>
             <Box
                 sx={{
-                    p: 4,
+                    px: 4,
+                    py: 2.5,
                     mt: 'auto',
                     boxShadow: '0 -10px 20px rgba(0, 0, 0, 0.05)',
                     borderTop: '1px solid #E0E0E0',
@@ -95,7 +96,7 @@ export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Elem
                         color="error"
                         onClick={props.onDelete}
                         variant="outlined"
-                        startIcon={<DeleteForeverOutlinedIcon
+                        startIcon={<DeleteOutlinedIcon
                             sx={{
                                 marginTop: '-4px',
                             }}

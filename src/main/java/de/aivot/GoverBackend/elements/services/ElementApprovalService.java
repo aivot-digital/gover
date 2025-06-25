@@ -2,14 +2,14 @@ package de.aivot.GoverBackend.elements.services;
 
 import de.aivot.GoverBackend.elements.enums.ElementApprovalStatus;
 import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.utils.ElementUtils;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ElementApprovalService {
     public static Map<String, ElementApprovalStatus> determineApprovals(RootElement rootElement) {
-        var allElements = ElementUtils
+        var allElements = ElementFlattenUtils
                 .flattenElements(rootElement);
 
         var status = new HashMap<String, ElementApprovalStatus>();
@@ -21,7 +21,7 @@ public class ElementApprovalService {
     }
 
     public static boolean isApproved(RootElement rootElement) {
-        var allElements = ElementUtils
+        var allElements = ElementFlattenUtils
                 .flattenElements(rootElement);
 
         for (var element : allElements) {

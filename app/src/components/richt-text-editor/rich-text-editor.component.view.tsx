@@ -120,7 +120,7 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
                 ) &&
                 <Typography
                     variant="caption"
-                    color={props.error != null ? 'error' : undefined}
+                    color={props.error != null ? 'error' : 'text.secondary'}
                 >
                     {props.error ?? props.hint}
                 </Typography>

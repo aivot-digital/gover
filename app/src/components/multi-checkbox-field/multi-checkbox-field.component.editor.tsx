@@ -54,6 +54,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     }}
                     allowEmpty={false}
                     disabled={!props.editable}
+                    variant="outlined"
                 />
             }
 

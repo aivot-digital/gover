@@ -3,7 +3,7 @@ import {type BaseEditorProps} from './base-editor';
 import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {type StoreDetailModule} from '../models/entities/store-detail-module';
 import {GoverStoreService} from '../services/gover-store.service';
-import {Button, Paper} from '@mui/material';
+import {Button, Grid, Paper} from '@mui/material';
 import {AlertComponent} from '../components/alert/alert-component';
 import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
@@ -57,40 +57,54 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
         <>
             {
                 onlyInputChild != null &&
-                <>
-                    <TextFieldComponent
-                        value={onlyInputChild.destinationKey ?? undefined}
-                        label="HTTP-Schnittstellen-Schlüssel"
-                        onChange={(val) => {
-                            props.onPatch({
-                                children: [
-                                    {
-                                        ...onlyInputChild,
-                                        destinationKey: val,
-                                    },
-                                ],
-                            });
-                        }}
-                        hint="Dieser Schlüssel wird verwendet, wenn die Daten an eine HTTP-Schnittstelle gesendet werden."
-                        disabled={!props.editable}
-                    />
-
-                    <CheckboxFieldComponent
-                        label="Pflichtangabe"
-                        value={onlyInputChild.required}
-                        onChange={(val) => {
-                            props.onPatch({
-                                children: [
-                                    {
-                                        ...onlyInputChild,
-                                        required: val,
-                                    },
-                                ],
-                            });
-                        }}
-                        disabled={!props.editable}
-                    />
-                </>
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        item
+                        xs={12}
+                        lg={6}
+                    >
+                        <TextFieldComponent
+                            value={onlyInputChild.destinationKey ?? undefined}
+                            label="HTTP-Schnittstellen-Schlüssel"
+                            onChange={(val) => {
+                                props.onPatch({
+                                    children: [
+                                        {
+                                            ...onlyInputChild,
+                                            destinationKey: val,
+                                        },
+                                    ],
+                                });
+                            }}
+                            hint="Dieser Schlüssel wird verwendet, wenn die Daten an eine HTTP-Schnittstelle gesendet werden."
+                            disabled={!props.editable}
+                        />
+                    </Grid>
+                    <Grid
+                        item
+                        xs={12}
+                        lg={6}
+                    >
+                        <CheckboxFieldComponent
+                            label="Pflichtangabe"
+                            value={onlyInputChild.required}
+                            onChange={(val) => {
+                                props.onPatch({
+                                    children: [
+                                        {
+                                            ...onlyInputChild,
+                                            required: val,
+                                        },
+                                    ],
+                                });
+                            }}
+                            disabled={!props.editable}
+                        />
+                    </Grid>
+                </Grid>
             }
 
             <AlertComponent

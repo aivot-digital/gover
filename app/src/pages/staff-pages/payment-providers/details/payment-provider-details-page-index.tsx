@@ -32,7 +32,6 @@ import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../../../modules/payment/dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import {AlertComponent} from '../../../../components/alert/alert-component';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -433,6 +432,24 @@ export function PaymentProviderDetailsPageIndex() {
                         >
                             Löschen
                         </Button>
+                    }
+
+                    {
+                        isStringNotNullOrEmpty(paymentProvider.key) &&
+                        item != null &&
+                        item.isEnabled &&
+                        <Tooltip title="Zum Löschen muss der Zahlungsdienstleister zuerst deaktiviert und gespeichert werden.">
+                                <Box sx={{ml: 'auto'}}>
+                                    <Button
+                                        variant="outlined"
+                                        disabled={true}
+                                        color="error"
+                                        startIcon={<DeleteOutlinedIcon />}
+                                    >
+                                        Löschen
+                                    </Button>
+                                </Box>
+                        </Tooltip>
                     }
                 </Box>
             }

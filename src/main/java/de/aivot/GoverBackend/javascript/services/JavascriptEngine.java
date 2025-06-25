@@ -13,6 +13,8 @@ import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 /**
@@ -132,12 +134,22 @@ public class JavascriptEngine implements AutoCloseable {
             if (key instanceof String sKey) {
                 var value = map.get(key);
 
-                if (value instanceof Map<?, ?> childMap) {
-                    mutableMap.put(sKey, mapToProxyObject(childMap));
-                } else if (value instanceof Collection<?> childCollection) {
-                    mutableMap.put(sKey, collectionToProxyArray(childCollection));
-                } else {
-                    mutableMap.put(sKey, value);
+                switch (value) {
+                    case Map<?, ?> childMap -> mutableMap.put(sKey, mapToProxyObject(childMap));
+                    case Collection<?> childCollection -> mutableMap.put(sKey, collectionToProxyArray(childCollection));
+
+                    case BigDecimal number -> mutableMap.put(sKey, number.doubleValue());
+                    case Double number -> mutableMap.put(sKey, number.doubleValue());
+                    case Float number -> mutableMap.put(sKey, number.doubleValue());
+
+                    case BigInteger number -> mutableMap.put(sKey, number.intValue());
+                    case Integer number -> mutableMap.put(sKey, number.intValue());
+                    case Long number -> mutableMap.put(sKey, number.intValue());
+                    case Short number -> mutableMap.put(sKey, number.intValue());
+
+                    case Number number -> mutableMap.put(sKey, number.doubleValue());
+
+                    case null, default -> mutableMap.put(sKey, value);
                 }
             }
         }
@@ -155,12 +167,22 @@ public class JavascriptEngine implements AutoCloseable {
         var mutableList = new ArrayList<>();
 
         for (var value : collection) {
-            if (value instanceof Map<?, ?> childMap) {
-                mutableList.add(mapToProxyObject(childMap));
-            } else if (value instanceof Collection<?> childCollection) {
-                mutableList.add(collectionToProxyArray(childCollection));
-            } else {
-                mutableList.add(value);
+            switch (value) {
+                case Map<?, ?> childMap -> mutableList.add(mapToProxyObject(childMap));
+                case Collection<?> childCollection -> mutableList.add(collectionToProxyArray(childCollection));
+
+                case BigDecimal number -> mutableList.add(number.doubleValue());
+                case Double number -> mutableList.add(number.doubleValue());
+                case Float number -> mutableList.add(number.doubleValue());
+
+                case BigInteger number -> mutableList.add(number.intValue());
+                case Integer number -> mutableList.add(number.intValue());
+                case Long number -> mutableList.add(number.intValue());
+                case Short number -> mutableList.add(number.intValue());
+
+                case Number number -> mutableList.add(number.doubleValue());
+
+                case null, default -> mutableList.add(value);
             }
         }
 

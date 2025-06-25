@@ -327,8 +327,13 @@ public class FormController {
         // Check if the form is locked by another user
         checkFormLock(formId, user);
 
+        // Clone the form to preserve the original state
+        var originalForm = form
+                .clone();
+
         // Publish the form
-        var publishedForm = formService.publish(form);
+        var publishedForm = formService
+                .publish(form);
 
         // Log the form publication
         auditService.logAction(
@@ -358,7 +363,7 @@ public class FormController {
         }
 
         // Create a revision for the form
-        formRevisionService.create(user, publishedForm, form);
+        formRevisionService.create(user, publishedForm, originalForm);
 
         // Return the form as a DTO
         return FormDetailsResponseDTO.fromEntity(form);
@@ -400,8 +405,13 @@ public class FormController {
         // Check if the form is locked by another user
         checkFormLock(formId, user);
 
+        // Clone the form to preserve the original state
+        var originalForm = form
+                .clone();
+
         // Revoke the form
-        var revokedForm = formService.revoke(form);
+        var revokedForm = formService
+                .revoke(form);
 
         // Log the form revocation
         auditService.logAction(
@@ -430,7 +440,7 @@ public class FormController {
         }
 
         // Create a revision for the form
-        formRevisionService.create(user, revokedForm, form);
+        formRevisionService.create(user, revokedForm, originalForm);
 
         // Return the form as a DTO
         return FormDetailsResponseDTO.fromEntity(revokedForm);

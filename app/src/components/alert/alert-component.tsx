@@ -1,5 +1,5 @@
 import React from 'react';
-import {Alert, AlertTitle} from '@mui/material';
+import {Box, Alert, AlertTitle} from '@mui/material';
 import {type AlertComponentProps} from './alert-component-props';
 import {type PropsWithChildren} from 'react';
 
@@ -22,27 +22,30 @@ export function AlertComponent(props: PropsWithChildren<AlertComponentProps>): J
                 ...props.sx,
             }}
         >
-            {
-                props.title != null &&
-                <AlertTitle>
-                    {props.title}
-                </AlertTitle>
-            }
+            <Box sx={{maxWidth: '900px'}}>
+                {
+                    props.title != null &&
+                    <AlertTitle>
+                        {props.title}
+                    </AlertTitle>
+                }
 
-            {
-                props.richtext ?
-                    (
-                        <div
-                            dangerouslySetInnerHTML={{__html: props.text ?? ''}}
-                            className={"content-without-margin-on-childs"}
-                        />
-                    ) :
-                    (
-                        typeof props.text === 'string' ? renderTextWithParagraphs(props.text) : props.text
-                    )
-            }
+                {
+                    props.richtext ?
+                        (
+                            <div
+                                dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                className={"content-without-margin-on-childs"}
+                            />
+                        ) :
+                        (
+                            typeof props.text === 'string' ? renderTextWithParagraphs(props.text) : props.text
+                        )
+                }
 
-            {props.children}
+                {props.children}
+
+            </Box>
         </Alert>
     );
 }

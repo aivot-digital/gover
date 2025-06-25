@@ -1,14 +1,16 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Box, Divider, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
 import {
     selectTreeElementSearch,
     selectUseIdsInComponentTree,
     selectUseTestMode,
     selectWarnDuplicateIds,
-    setExpandElementTree, setTreeElementSearch,
+    setElementTreeSearchLookupIndex,
+    setExpandElementTree,
+    setTreeElementSearch,
     toggleIdsInComponentTree,
     toggleTestMode,
-    toggleWarnDuplicateIds
+    toggleWarnDuplicateIds,
 } from '../../slices/admin-settings-slice';
 import {styled, useTheme} from '@mui/material/styles';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -25,8 +27,15 @@ import IntegrationInstructionsOutlinedIcon from '@mui/icons-material/Integration
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import GradingOutlinedIcon from '@mui/icons-material/GradingOutlined';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
-import {SearchInput} from "../search-input/search-input";
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import {SearchInput} from '../search-input-2/search-input';
+import {selectAllElements} from '../../slices/app-slice';
+import Fuse from 'fuse.js';
+import {generateComponentTitle} from '../../utils/generate-component-title';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import {Actions} from '../actions/actions';
 
 const StyledBox = styled(Box)({
     position: 'relative',
@@ -48,20 +57,77 @@ const StyledBox = styled(Box)({
     },
 });
 
+const SEARCH_DEBOUNCE_TIMEOUT = 600; // 2 seconds
+
 export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends ElementTreeEntity>(props: ElementTreeHeaderProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();
+
+    const searchDebounceTimeout = useRef<NodeJS.Timeout>();
 
     const theme = useTheme();
 
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
+    const allElements = useAppSelector(selectAllElements);
+    const searchResult = useAppSelector(selectTreeElementSearch);
 
     const [showEditor, setShowEditor] = useState(false);
     const [cTMenuAnchorEl, setCTMenuAnchorEl] = useState<null | HTMLElement>(null);
 
-    const [showSearch, setShowSearch] = useState(false);
-    const treeElementSearch = useAppSelector(selectTreeElementSearch);
+    const [search, setSearch] = useState<string>();
+
+    const jumpTo = (elementId: string): void => {
+        if (props.scrollContainerRef?.current) {
+            const element = props
+                .scrollContainerRef
+                .current
+                .querySelector(`[data-element-id="${elementId}"]`);
+
+            if (element instanceof HTMLElement) {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                });
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (searchDebounceTimeout.current != null) {
+            clearTimeout(searchDebounceTimeout.current);
+            searchDebounceTimeout.current = undefined;
+        }
+
+        if (search == null || isStringNullOrEmpty(search)) {
+            dispatch(setTreeElementSearch(undefined));
+            return;
+        }
+
+        searchDebounceTimeout.current = setTimeout(() => {
+            const resolvedElements = (allElements ?? [])
+                .map((e) => ({
+                    id: e.id,
+                    title: generateComponentTitle(e),
+                }));
+
+            const fuse = new Fuse(resolvedElements, {
+                keys: ['title', 'id'],
+                threshold: 0.3,
+                shouldSort: false,
+            });
+
+            const fundElementIds = fuse
+                .search(search)
+                .map(result => result.item.id);
+
+            if (fundElementIds.length > 0) {
+                jumpTo(fundElementIds[0]);
+            }
+
+            dispatch(setTreeElementSearch(fundElementIds));
+        }, SEARCH_DEBOUNCE_TIMEOUT);
+    }, [search]);
 
     const handleOpenCTMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
         setCTMenuAnchorEl(event.currentTarget);
@@ -72,12 +138,40 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
     };
 
     const handleToggleSearch = (): void => {
-        if (showSearch) {
-            dispatch(setTreeElementSearch(undefined));
-        } else {
+        if (search == null) {
             dispatch(setExpandElementTree('expanded'));
+            dispatch(setTreeElementSearch([]));
+            setSearch('');
+        } else {
+            dispatch(setTreeElementSearch(undefined));
+            setSearch(undefined);
         }
-        setShowSearch(!showSearch);
+    };
+
+    const handlePreviousSearchResult = (): void => {
+        if (search == null || searchResult == null || searchResult.foundIds == null || searchResult.foundIds.length === 0) {
+            return;
+        }
+
+        const previousIndex = (searchResult.currentLookupIndex - 1 + (searchResult.foundIds.length ?? 0)) % (searchResult.foundIds.length ?? 0);
+        const previousElementId = searchResult.foundIds[previousIndex];
+
+        dispatch(setElementTreeSearchLookupIndex(previousIndex));
+
+        jumpTo(previousElementId);
+    };
+
+    const handleNextSearchResult = (): void => {
+        if (search == null || searchResult == null || searchResult.foundIds == null || searchResult.foundIds.length === 0) {
+            return;
+        }
+
+        const nextIndex = (searchResult.currentLookupIndex + 1) % (searchResult.foundIds.length ?? 0);
+        const nextElementId = searchResult.foundIds[nextIndex];
+
+        dispatch(setElementTreeSearchLookupIndex(nextIndex));
+
+        jumpTo(nextElementId);
     };
 
     return (
@@ -100,110 +194,110 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                         padding: 1,
                     }}
                 >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                    }}
-                >
-                    <AccountTreeOutlinedIcon
+                    <Box
                         sx={{
-                            color: theme.palette.primary.dark,
+                            display: 'flex',
+                            alignItems: 'center',
                         }}
-                    />
-
-                    <Typography
-                        variant="h4"
-                        color="primary"
-                        sx={{ml: 2}}
                     >
-                        Struktur
-                    </Typography>
+                        <AccountTreeOutlinedIcon
+                            sx={{
+                                color: theme.palette.primary.dark,
+                            }}
+                        />
 
-                    {
-                        testMode &&
-                        props.element.testProtocolSet == null &&
-                        <Tooltip title="Fachliche Prüfung ausstehend">
+                        <Typography
+                            variant="h4"
+                            color="primary"
+                            sx={{ml: 2}}
+                        >
+                            Struktur
+                        </Typography>
+
+                        {
+                            testMode &&
+                            props.element.testProtocolSet == null &&
+                            <Tooltip title="Fachliche Prüfung ausstehend">
+                                <IconButton
+                                    sx={{
+                                        ml: 1,
+                                    }}
+                                >
+                                    <GradingOutlinedIcon
+                                        fontSize="small"
+                                        color="warning"
+                                    />
+                                </IconButton>
+                            </Tooltip>
+                        }
+                    </Box>
+
+                    <Box>
+                        <Tooltip
+                            title="Suchen"
+                            arrow
+                        >
                             <IconButton
-                                sx={{
-                                    ml: 1,
-                                }}
+                                size="small"
+                                onClick={handleToggleSearch}
                             >
-                                <GradingOutlinedIcon
-                                    fontSize="small"
-                                    color="warning"
-                                />
+                                <SearchOutlinedIcon />
                             </IconButton>
                         </Tooltip>
-                    }
-                </Box>
 
-                <Box>
-                    <Tooltip
-                        title="Suchen"
-                        arrow
-                    >
-                        <IconButton
-                            size="small"
-                            onClick={handleToggleSearch}
+                        <Tooltip
+                            title="Alles ausklappen"
+                            arrow
                         >
-                            <SearchOutlinedIcon/>
-                        </IconButton>
-                    </Tooltip>
+                            <IconButton
+                                size="small"
+                                onClick={() => dispatch(setExpandElementTree('expanded'))}
+                            >
+                                <ExpandOutlinedIcon />
+                            </IconButton>
+                        </Tooltip>
 
-                    <Tooltip
-                        title="Alles ausklappen"
-                        arrow
-                    >
-                        <IconButton
-                            size="small"
-                            onClick={() => dispatch(setExpandElementTree('expanded'))}
+                        <Tooltip
+                            title="Alles einklappen"
+                            arrow
                         >
-                            <ExpandOutlinedIcon/>
-                        </IconButton>
-                    </Tooltip>
+                            <IconButton
+                                size="small"
+                                onClick={() => dispatch(setExpandElementTree('collapsed'))}
+                            >
+                                <CompressOutlinedIcon />
+                            </IconButton>
+                        </Tooltip>
 
-                    <Tooltip
-                        title="Alles einklappen"
-                        arrow
-                    >
-                        <IconButton
-                            size="small"
-                            onClick={() => dispatch(setExpandElementTree('collapsed'))}
+                        <Tooltip
+                            title="Einstellungen für Entwickler:innen"
+                            arrow
                         >
-                            <CompressOutlinedIcon/>
-                        </IconButton>
-                    </Tooltip>
-
-                    <Tooltip
-                        title="Einstellungen für Entwickler:innen"
-                        arrow
-                    >
-                        <IconButton
-                            size="small"
-                            onClick={handleOpenCTMenu}
-                            sx={{position: "relative"}}
+                            <IconButton
+                                size="small"
+                                onClick={handleOpenCTMenu}
+                                sx={{position: 'relative'}}
+                            >
+                                <IntegrationInstructionsOutlinedIcon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip
+                            title={props.scope === 'application' ? 'Formular konfigurieren' : 'Vorlage konfigurieren'}
+                            arrow
                         >
-                            <IntegrationInstructionsOutlinedIcon/>
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                        title={props.scope === 'application' ? 'Formular konfigurieren' : 'Vorlage konfigurieren'}
-                        arrow
-                    >
-                        <IconButton
-                            size="small"
-                            onClick={() => {
-                                setShowEditor(true);
-                            }}
-                            sx={{
-                                marginRight: '7px',
-                            }}
-                        >
-                            <SettingsOutlinedIcon/>
-                        </IconButton>
-                    </Tooltip>
-                </Box>
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setShowEditor(true);
+                                }}
+                                sx={{
+                                    marginRight: '7px',
+                                }}
+                            >
+                                <SettingsOutlinedIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 </Box>
                 <Divider
                     sx={{
@@ -212,35 +306,44 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                     }}
                 />
                 {
-                    showSearch &&
+                    search != null &&
                     <>
                         <Box
                             sx={{
                                 display: 'flex',
                             }}
                         >
-                            <Tooltip title="Suche schließen">
-                                <IconButton
-                                    onClick={handleToggleSearch}
-                                    size="small"
-                                >
-                                    <CloseOutlinedIcon/>
-                                </IconButton>
-                            </Tooltip>
-
-                            <Box
+                            <SearchInput
+                                value={search}
+                                onChange={setSearch}
+                                placeholder="Element Suchen"
                                 sx={{
                                     flex: 1,
                                 }}
-                            >
-                                <SearchInput
-                                    value={treeElementSearch ?? ''}
-                                    onChange={(val) => {
-                                        dispatch(setTreeElementSearch(val));
-                                    }}
-                                    placeholder="Element Suchen"
-                                />
-                            </Box>
+                            />
+
+                            <Actions
+                                dense={true}
+                                actions={[
+                                    {
+                                        tooltip: 'Nächstes Element',
+                                        icon: <ArrowDownwardIcon />,
+                                        onClick: handleNextSearchResult,
+                                        disabled: searchResult?.foundIds == null || searchResult?.foundIds.length === 0,
+                                    },
+                                    {
+                                        tooltip: 'Vorheriges Element',
+                                        icon: <ArrowUpwardIcon />,
+                                        onClick: handlePreviousSearchResult,
+                                        disabled: searchResult?.foundIds == null || searchResult?.foundIds.length === 0,
+                                    },
+                                    {
+                                        tooltip: 'Suche Schließen',
+                                        icon: <CloseOutlinedIcon />,
+                                        onClick: handleToggleSearch,
+                                    },
+                                ]}
+                            />
                         </Box>
 
                         <Divider

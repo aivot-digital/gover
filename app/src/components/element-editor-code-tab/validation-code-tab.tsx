@@ -17,6 +17,7 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 
 const exampleLegacyValidationCode = `/**
  * Diese Funktion wird aufgerufen, um zu überprüfen, ob das Element valide ist.
@@ -40,22 +41,27 @@ const exampleValidationCode = `(function(){
 })();`;
 
 export function ValidationCodeTab(props: ValidationCodeTabProps) {
+    const {
+        element,
+    } = props;
+
     const dispatch = useAppDispatch();
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
     const hasValidationFunction = useMemo(() => {
         return (
-            isStringNotNullOrEmpty(props.element.validate?.code) ||
-            props.element.validate?.conditionSet != null ||
-            isStringNotNullOrEmpty(props.element.validationCode?.code) ||
-            props.element.validationExpressions != null
+            isStringNotNullOrEmpty(element.validate?.code) ||
+            element.validate?.conditionSet != null ||
+            element.validationCode?.code != null ||
+            element.validationExpressions != null
         );
-    }, [props.element]);
+    }, [element]);
 
     return (
         <>
             <BaseCodeTab
                 label="Validierung"
+                description={'Hier können Sie die Validierung des Elements konfigurieren. Hierzu definieren Sie die Regeln, die das Element erfüllen muss, um als valide/gültig zu gelten.'}
                 requirements={props.element.validate?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({
@@ -169,6 +175,19 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            alert={{
+                                color: 'warning',
+                                title: 'Diese Version des Low-Codes ist veraltet',
+                                richtext: true,
+                                text: `
+                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
+                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
+                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
+                                `,
+                                sx: {
+                                    mb: 1,
+                                }
+                            }}
                         />
                     )
                 }
@@ -331,6 +350,14 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                         </>
                     )
                 }
+
+                <ReferenceCheck
+                    element={props.element}
+                    lowCodeOld={[props.element.validate?.code]}
+                    lowCode={[props.element.validationCode?.code]}
+                    noCodeOld={[props.element.validate?.conditionSet]}
+                    noCode={props.element.validationExpressions?.map(value => value.expression) ?? []}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

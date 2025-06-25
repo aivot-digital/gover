@@ -4,7 +4,6 @@ import {useTheme} from '@mui/material';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {AppConfig} from "../../app-config";
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 
 interface MetaElementProps {
@@ -33,12 +32,8 @@ export function MetaElement({title, titlePrefix}: MetaElementProps): JSX.Element
                 content="noindex, nofollow"
             />
             <meta
-                name="version"
-                content={AppConfig.version}
-            />
-            <meta
-                name="date"
-                content={AppConfig.date}
+                name="generator"
+                content="Gover – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse. (gover.digital)"
             />
             {favicon ? (
                 <link rel="icon"

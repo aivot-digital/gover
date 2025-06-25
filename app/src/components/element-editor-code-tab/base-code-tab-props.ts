@@ -2,6 +2,7 @@ export type FunctionType = 'legacy-code' | 'legacy-condition' | 'code' | 'expres
 
 export interface BaseCodeTabProps {
     label: string;
+    description?: string;
     requirements?: string;
     onRequirementsChange: (changedRequirement: string | undefined) => void;
 

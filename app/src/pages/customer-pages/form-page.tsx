@@ -23,11 +23,14 @@ import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
+import {usePrefill} from '../../hooks/use-prefill';
 
 export const DialogSearchParam = 'dialog';
 
 export function FormPage() {
     const api = useApi();
+
+    usePrefill();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);

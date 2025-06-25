@@ -4,11 +4,13 @@ import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
+import {AlertComponent} from '../alert/alert-component';
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const {
         onChange,
         value,
+        typeHints,
     } = props;
 
     const monacoRef = useRef<Monaco>();
@@ -20,7 +22,13 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
         monacoRef.current = monaco;
         editorRef.current = editor;
         editorRef.current.setValue(value ?? '');
+
+        monacoApplyTypeHints(monaco, typeHints);
     }, []);
+
+    useEffect(() => {
+        monacoApplyTypeHints(monacoRef.current, typeHints);
+    }, [typeHints]);
 
     const handleEditorChange = useCallback((value: string | undefined) => {
         onChange(value ?? '');
@@ -28,6 +36,10 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
 
     return (
         <Box sx={props.sx}>
+            {
+                props.alert &&
+                <AlertComponent {...props.alert} />
+            }
             {
                 hasTopContent && (
                     <Box
@@ -53,8 +65,9 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
             <Box
                 sx={{
                     mt: hasTopContent ? 2 : 0,
-                    py: 1,
-                    border: '1px solid black',
+                    py: 2,
+                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    borderRadius: 1,
                 }}
             >
                 <Editor
@@ -72,4 +85,17 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
             </Box>
         </Box>
     );
+}
+
+function monacoApplyTypeHints(monaco: any, typeHints: CodeEditorProps['typeHints']) {
+    if (monaco == null || typeHints == null || typeHints.length === 0) {
+        return;
+    }
+
+    for (const typeHint of typeHints) {
+        monaco.languages.typescript.javascriptDefaults.addExtraLib(
+            typeHint.content,
+            `@types/${typeHint.name}.d.ts`,
+        );
+    }
 }

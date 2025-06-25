@@ -1,5 +1,5 @@
 import Editor from '@monaco-editor/react';
-import {Box, Button, FormControlLabel, Switch} from '@mui/material';
+import {Box, Button, FormControlLabel, Switch, Typography} from '@mui/material';
 import React, {type ChangeEvent, useCallback, useRef, useState} from 'react';
 import {type StructureTabProps} from './structure-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -13,6 +13,7 @@ import {generateComponentTitle} from '../../utils/generate-component-title';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import {useConfirm} from "../../providers/confirm-provider";
 import {AlertComponent} from "../alert/alert-component";
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -92,13 +93,18 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
     };
 
     return (
-        <Box sx={{my: 4}}>
+        <Box sx={{p: 4}}>
+            <ElementEditorSectionHeader
+                title="Elementstruktur"
+                disableMarginTop
+            >
+                Die Elementstruktur ist eine Expertenfunktion für erfahrene Nutzer:innen, die es erlaubt die zugrundeliegende Datenstruktur für Elemente einzusehen und zu überschreiben.
+            </ElementEditorSectionHeader>
+
             {
                 props.editable &&
                 <Box
                     sx={{
-                        ml: 8,
-                        mr: 2,
                         mb: 2,
                         display: 'flex',
                     }}
@@ -161,19 +167,26 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
                 </Box>
 
             }
-
-            <Editor
-                height="calc(100vh - 256px)"
-                defaultLanguage="json"
-                value={JSON.stringify(props.elementModel, null, 4)}
-                options={{
-                    minimap: {
-                        enabled: false,
-                    },
-                    readOnly: !editable,
+            <Box
+                sx={{
+                    py: 2,
+                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    borderRadius: 1,
                 }}
-                onMount={handleEditorDidMount}
-            />
+            >
+                <Editor
+                    height="calc(100vh - 400px)"
+                    defaultLanguage="json"
+                    value={JSON.stringify(props.elementModel, null, 4)}
+                    options={{
+                        minimap: {
+                            enabled: false,
+                        },
+                        readOnly: !editable,
+                    }}
+                    onMount={handleEditorDidMount}
+                />
+            </Box>
         </Box>
     );
 }

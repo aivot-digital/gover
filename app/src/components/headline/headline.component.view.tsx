@@ -8,6 +8,7 @@ export function HeadlineComponentView({element}: BaseViewProps<HeadlineElement, 
     return (
         <HeadlineComponent
             small={element.small ?? false}
+            uppercase={element.uppercase ?? false}
             content={element.content ?? ''}
         />
     );

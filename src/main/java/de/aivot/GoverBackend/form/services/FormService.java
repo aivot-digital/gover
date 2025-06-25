@@ -400,7 +400,7 @@ public class FormService implements EntityService<Form, Integer> {
         checklist.add(
                 FormPublishChecklistItem
                         .create()
-                        .setLabel("Alle Elemente getestet")
+                        .setLabel("Alle Elemente des Formulars geprüft")
                         .setDone(ElementApprovalService.isApproved(existingForm.getRoot()))
         );
 
