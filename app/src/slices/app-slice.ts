@@ -243,10 +243,7 @@ const appSlice = createSlice({
                 options,
             } = action.payload;
 
-            state.values = {
-                ...state.values,
-                ...formState.values,
-            };
+            state.values = formState.values;
 
             if (options.freshVisibilities) {
                 state.visibilities = {
@@ -263,10 +260,7 @@ const appSlice = createSlice({
                 state.errors = formState.errors; // Errors are always overwritten to prevent errors from future steps being carried over
             }
 
-            state.overrides = {
-                ...state.overrides,
-                ...formState.overrides,
-            };
+            state.overrides = formState.overrides;
         },
 
         enqueueDerivationTriggerId: (state, action: PayloadAction<string>) => {
