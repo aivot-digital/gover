@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (TBD)
+
+### Feature
+* **Dev:** Introduce settings to override visibilities of elements in the ViewDispatcher
+
 ## [4.4.0](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
 
 ### Features
