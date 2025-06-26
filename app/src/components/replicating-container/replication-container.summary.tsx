@@ -1,31 +1,17 @@
 import {Box, Chip, Grid, Typography, useTheme} from '@mui/material';
 import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
-import {flattenElementsForSummary} from '../summary/summary.component.view';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
-import {AnyElement} from '../../models/elements/any-element';
 import {BaseSummaryProps} from '../../summaries/base-summary';
 import SubdirectoryArrowLeftOutlinedIcon from '@mui/icons-material/SubdirectoryArrowLeftOutlined';
-import {useAppSelector} from '../../hooks/use-app-selector';
 import {resolveId} from '../../utils/id-utils';
 
 export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
-    const visibilities = useAppSelector(state => state.app.visibilities);
     const prefixedId = resolveId(props.model.id, props.idPrefix);
 
     const values: string[] = props.value ?? [];
 
-    const customerInput = props.customerInput != null ? props.customerInput : useAppSelector(state => state.app.inputs);
-
     const theme = useTheme();
-
-    const makeChildModels = (val: string) => {
-        let childModels: AnyElement[] = [];
-        for (const child of props.model.children ?? []) {
-            childModels = childModels.concat(flattenElementsForSummary(props.allElements, child, customerInput, visibilities, `${prefixedId}_${val}_`));
-        }
-        return childModels;
-    };
 
     return (
         <>
@@ -138,14 +124,15 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                             </Grid>
                         </Grid>
                         {
-                            makeChildModels(val).map(child => (
+                            props.model.children.map(child => (
                                 <SummaryDispatcherComponent
                                     allElements={props.allElements}
                                     key={`${prefixedId}_${val}_${child.id}`}
                                     element={child}
                                     idPrefix={`${prefixedId}_${val}_`}
                                     showTechnical={props.showTechnical}
-                                    customerInput={customerInput}
+                                    customerInput={props.customerInput}
+                                    isBusy={props.isBusy}
                                 />
                             ))
                         }

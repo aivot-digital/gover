@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.identity.models.IdentityValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Optional;
 
 public class FormErrorDerivationService extends BaseElementErrorDerivationService<FormDerivationContext> {
 
@@ -113,7 +114,14 @@ public class FormErrorDerivationService extends BaseElementErrorDerivationServic
     private void deriveErrorsForSubmitStep(FormDerivationContext context, SubmitStepElement submitStep) {
         var derivationData = context.getElementDerivationData();
 
-        var captchaRawValue = derivationData.getValue(SubmitStepElement.CAPTCHA_FIELD_ID, String.class);
+        Optional<String> captchaRawValue;
+        try {
+            captchaRawValue = derivationData
+                    .getValue(SubmitStepElement.CAPTCHA_FIELD_ID, String.class);
+        } catch (ClassCastException e) {
+            captchaRawValue = Optional.empty();
+        }
+
         if (captchaRawValue.isEmpty()) {
             derivationData.setError(
                     SubmitStepElement.CAPTCHA_FIELD_ID,

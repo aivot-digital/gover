@@ -33,7 +33,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     };
 
     const addHighlightElement = (): void => {
-        const elem = document.getElementById(props.element.id);
+        const elem = document
+            .querySelector(`[data-initial-id="${props.element.id}"]`) as HTMLElement;
         if (elem != null) {
             elem.style.outline = highlightOutlineStyle;
             elem.style.boxShadow = highlightBoxShadowStyle;
@@ -41,7 +42,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     };
 
     const removeHighlightElement = (): void => {
-        const elem = document.getElementById(props.element.id);
+        const elem = document
+            .querySelector(`[data-initial-id="${props.element.id}"]`) as HTMLElement;
         if (elem != null) {
             elem.style.outline = 'none';
             elem.style.boxShadow = 'none';

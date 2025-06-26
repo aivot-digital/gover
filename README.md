@@ -8,44 +8,57 @@
   Gover
 </h1>
 <h3 align="center">
-  The foundation for modern digital e-government services
+  The open source platform for fully digital, end-to-end application processes
 </h3>
 
 <p>
-  Our mission is to build the digital bridge between administration and citizens. 
-  There are countries with an extreme need to catch up in the area of digitalization. 
-  They are too rigid and slow to digitize on their own. 
-  We want to change that and offer a way for administrations to catapult themselves to the spearhead of digitalization, especially at the touchpoint with citizens.
+  Gover is purpose-built to help public authorities digitize administrative processes efficiently, transparently, and in full legal compliance. 
+  As an open source low-/no-code platform, it empowers governments to deliver modern digital services at scale — without needing deep technical expertise.
 </p>
 
-<!-- Badges go here -->
+[![GitHub release](https://img.shields.io/github/v/release/aivot-digital/gover)](https://github.com/aivot-digital/gover/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/aivot-digital/gover/build-image.yml)](https://github.com/aivot-digital/gover/actions)
+[![Docker image on GHCR](https://img.shields.io/badge/image-gover-blue?logo=docker)](https://github.com/aivot-digital/gover/pkgs/container/gover)
+[![Helm Chart](https://img.shields.io/badge/helm-chart-blue)](https://github.com/aivot-digital/gover-chart)
+[![License: Sustainable Use License](https://img.shields.io/badge/license-Sustainable%20Use%20License-blue)](https://github.com/aivot-digital/gover/blob/main/LICENSE)
 
-# What is Gover?
-Gover is an efficient low-code e-government platform for creating and managing user-centric online applications.  
-We enable administrations to:
-- build and manage visually stunning online applications fast
-- document changes reliably and automatically
-- ensure quality
-- comply with all legislation (at least in Germany 😅)
+## What is Gover?
+Gover is a specialized software platform designed to digitize and manage public sector application processes from start to finish. 
+Unlike general-purpose software for forms and automation, Gover is tailored exclusively to the workflows and requirements of public administration.
 
-All this while putting user experience (for citizens and administration staff) first.
+It enables administrative teams to:
+* Easily create user-centric online applications/forms and complete workflows
+* Digitally model and manage professional processes in a structured way
+* Integrate existing systems and registers without friction
+* Ensure traceability through reliable documentation and change tracking
+* Stay fully compliant with all relevant legal requirements in Germany
 
-For more information visit us at <https://aivot.de/gover>
+By combining powerful functionality with an intuitive user experience, Gover allows administrations to implement digital services quickly and at scale — benefiting both staff and citizens.
 
-# Example Server Setup
+For more information visit <https://aivot.de/gover>
+
+## Who uses Gover?
+
+Gover is primarily used by public administrations at the local level – cities, municipalities, and counties. It supports authorities that aim to fully digitize their application processes end-to-end, making them more efficient and accessible for both citizens and staff.
+
+Gover is especially valued by administrations that want to reduce reliance on overburdened IT departments by enabling subject-matter experts in individual departments to build and manage digital processes themselves. It’s also chosen by those who care about digital sovereignty and seek to avoid vendor lock-in by using a solution that puts control back in the hands of the public sector.
+
+Want to learn more? Feel free to contact us anytime at <https://aivot.de/kontakt>.
+
+## Example Server Setup
 
 The following setup instructions are primarily designed for server installations.
 This setup requires a server with Docker and Docker Compose installed.
 The server must be reachable via a given domain name from the internet.
 
-## Prerequisites
+### Prerequisites
 
 - Ubuntu 20.04 LTS
 - Docker
 
-## Setup
+### Setup
 
-### Docker-Compose File
+#### Docker-Compose File
 
 Create a new file named `docker-compose.yml` with the content of the example [docker-compose file](./docker-compose.yml) in the root directory of the Gover repository.
 
@@ -55,7 +68,7 @@ After you have created the Docker Compose file, you can start the Traefik and Ke
 docker compose up -d traefik keycloak
 ```
 
-### Setup Keycloak
+#### Setup Keycloak
 
 After Keycloak has started, you can import the required realm templates by importing them into the Keycloak administration console. 
 The administration console can be accessed at `https://<YOUR_DOMAIN>/idp/`.
@@ -66,11 +79,11 @@ To import the realm templates, click on the Realm dropdown in the left drawer an
 Then click on the `Browse...` button and select the realm template file you want to import.
 When the template has loaded click `Create` to import the realm.
 
-#### Setup Master-Realm
+##### Setup Master-Realm
 
 The Master-Realm comes pre-configured with every keycloak installation and cannot be removed. Since we do not rely heavily on anything in the Master-Realm just go to the `Realm settings` section in the drawer on the left and select the `Themes` tab. Set the login, account and admin theme to `gover` and the email theme to `keycloak`.
 
-#### Setup Staff-Realm
+##### Setup Staff-Realm
 
 After importing the Staff-Realm go to the newly created realm.
 First you need to set the E-Mail-Credentials in for the Staff-Realm to support sending E-Mail-Verifications.
@@ -88,7 +101,7 @@ Select the `Clients` section in the drawer on the left and navigate to the `back
 Go to the tab `Credentials` and regenerate the `Client Secret` via the button `Regenerate`.
 Copy the new secret and insert it into the `docker-compose.yml` file for the `KEYCLOAK_BACKEND_CLIENT_SECRET` environment variable.
 
-#### Setup Customer-Realm
+##### Setup Customer-Realm
 
 After importing the Customer-Realm go to the newly created realm.
 Select the `Identity Providers` section in the drawer on the left and update the `Service provider entity ID` for all identity providers via the settings to match your Gover instance domain.
@@ -96,7 +109,7 @@ Select the `Identity Providers` section in the drawer on the left and update the
 Then you need to set the correct redirect URIs as well as web origins for the app client.
 To set this up, select the `Clients` section in the drawer on the left. Choose the tab `Clients list`. In the list choose the client id `app`. Update the `Valid redirect URIs` as well as the `Web origins` to reflect the correct URL of your gover instance.
 
-### Start Gover
+#### Start Gover
 
 You can then start the Gover application by running the following command:
 
@@ -107,17 +120,14 @@ docker compose up -d gover
 After this process is complete, you can access the Gover application at `https://<YOUR_DOMAIN>/staff`.
 You can log in with the user you have created in the Staff-Realm.
 
-# Development Setup
+## Development Setup
 Refer to the [development setup instructions](./dev/README.md) for setting up Gover for development.
 
-# Who uses Gover?
-Currently top secret. If you want to get an introduction into using Gover contact us at <https://aivot.de/kontakt>.
-
-# Documentation
+## Documentation
 If you are looking for code documentation as well as end user documentation visit our [documentation overview](https://aivot.de/docs) and select
 the respective project.
 
-# Contributing
+## Contributing
 Anyone can support us. There are many different ways to contribute to Gover. There is certainly one for you as well.
 
 | Support opportunity               | Remark                                                                                                                                                                                                                                                                 |
@@ -129,16 +139,16 @@ Anyone can support us. There are many different ways to contribute to Gover. The
 
 ❤ Thank you for contributing! ❤
 
-# Changelog
+## Changelog
 Please refer to the [changelog](./CHANGELOG.md) for details of what has changed.
 
-# Roadmap
+## Roadmap
 Future functionalities and improvements in prioritized order can be found in the project's [roadmap](https://aivot.de/roadmaps).
 
-# License
+## License
 This project is licensed under the terms of the [Sustainable Use License](./LICENSE.md).
 
-# Services used
+## Services used
 These great services build Aivot's core infrastructure for this project:
 
 [<img loading="lazy" alt="GitHub" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Logo.png" height="25">](https://github.com/)

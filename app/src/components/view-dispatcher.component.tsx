@@ -159,6 +159,8 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
             xs={12}
             md={('weight' in element && element.weight != null) ? element.weight : 12}
             id={resolvedId}
+            data-initial-id={initialElementId}
+            data-resolved-id={resolvedId}
             sx={{
                 position: 'relative',
             }}
