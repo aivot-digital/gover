@@ -308,6 +308,8 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                                     });
                                                                 },
                                                             }}
+                                                            visibilitiesOverride={{}}
+                                                            overridesOverride={{}}
                                                         />
                                                     ))}
                                                 </Grid>
