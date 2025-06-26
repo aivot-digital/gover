@@ -270,6 +270,8 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         isDeriving={props.isDeriving}
                                         valueOverride={props.valueOverride}
                                         errorsOverride={props.errorsOverride}
+                                        visibilitiesOverride={props.visibilitiesOverride}
+                                        overridesOverride={props.overridesOverride}
                                         mode={props.mode}
                                     />
                                 ))
