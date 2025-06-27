@@ -22,7 +22,6 @@
 * **App:** The process for deleting payment providers and user account providers has been unified.
 * **Export:** PDF exports now better support umlauts and list multiple attachments separated by commas.
 * **UI:** Minor spelling errors and inconsistent wording in the user interface have been corrected.
-* **Dev:** The team is happy to receive further feedback, ideas, and wishes via the support portal or email.
 
 ## [4.4.0](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
 
