@@ -17,7 +17,7 @@
 </p>
 
 [![GitHub release](https://img.shields.io/github/v/release/aivot-digital/gover)](https://github.com/aivot-digital/gover/releases)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/aivot-digital/gover/build-image.yml)](https://github.com/aivot-digital/gover/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/aivot-digital/gover/build-and-push.yml)](https://github.com/aivot-digital/gover/actions)
 [![Docker image on GHCR](https://img.shields.io/badge/image-gover-blue?logo=docker)](https://github.com/aivot-digital/gover/pkgs/container/gover)
 [![Helm Chart](https://img.shields.io/badge/helm-chart-blue)](https://github.com/aivot-digital/gover-chart)
 [![License: Sustainable Use License](https://img.shields.io/badge/license-Sustainable%20Use%20License-blue)](https://github.com/aivot-digital/gover/blob/main/LICENSE)
