@@ -27,6 +27,8 @@ interface DispatcherComponentProps<M extends AnyElement, V> {
         onBlur?: (key: string, value: any) => void;
     };
     errorsOverride?: Record<string, string>;
+    visibilitiesOverride?: Record<string, boolean>;
+    overridesOverride?: Record<string, AnyElement>;
 }
 
 export function ViewDispatcherComponent<M extends AnyElement, V>(props: DispatcherComponentProps<M, V>) {
@@ -42,6 +44,8 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
         isBusy,
         isDeriving,
         mode,
+        visibilitiesOverride,
+        overridesOverride,
     } = props;
 
     const {
@@ -75,7 +79,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
 
     const element: AnyElement = useMemo(() => {
         const element = {
-            ...(override ?? initialElement),
+            ...((overridesOverride != null ? overridesOverride[resolvedId] : override) ?? initialElement),
             id: resolvedId,
         };
 
@@ -84,7 +88,7 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
         }
 
         return element;
-    }, [override, resolvedId, isDisabled, initialElement]);
+    }, [overridesOverride, override, resolvedId, isDisabled, initialElement]);
 
     const value = useMemo(() => {
         if (valueOverride != null) {
@@ -131,8 +135,12 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
             return false;
         }
 
-        return storedIsVisible;
-    }, [storedIsVisible, element, mode, disableVisibility]);
+        if (visibilitiesOverride != null) {
+            return visibilitiesOverride[resolvedId] ?? true;
+        } else {
+            return storedIsVisible;
+        }
+    }, [storedIsVisible, element, mode, disableVisibility, visibilitiesOverride]);
 
     const viewProps: BaseViewProps<typeof element, V> = useMemo(() => ({
         allElements: allElements,
@@ -146,8 +154,10 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
         isDeriving: isDeriving,
         valueOverride: valueOverride,
         errorsOverride: errorsOverride,
+        visibilitiesOverride: visibilitiesOverride,
+        overridesOverride: overridesOverride,
         mode: mode,
-    }), [allElements, element, error, value, handleSetValue, idPrefix, scrollContainerRef, isDeriving, mode, isBusy]);
+    }), [allElements, element, error, value, handleSetValue, idPrefix, scrollContainerRef, isDeriving, mode, isBusy, visibilitiesOverride, overridesOverride]);
 
     if (Component == null || !isVisible) {
         return null;

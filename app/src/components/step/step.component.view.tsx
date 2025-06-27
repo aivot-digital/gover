@@ -11,6 +11,8 @@ export function StepComponentView({
     isDeriving,
     valueOverride,
     errorsOverride,
+    visibilitiesOverride,
+    overridesOverride,
     scrollContainerRef,
     idPrefix,
     mode,
@@ -27,6 +29,8 @@ export function StepComponentView({
             isDeriving={isDeriving}
             valueOverride={valueOverride}
             errorsOverride={errorsOverride}
+            visibilitiesOverride={visibilitiesOverride}
+            overridesOverride={overridesOverride}
             idPrefix={idPrefix}
             scrollContainerRef={scrollContainerRef}
             mode={mode}
