@@ -1,9 +1,27 @@
 # Changelog
 
-## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (TBD)
+## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 
-### Feature
-* **Dev:** Introduce settings to override visibilities of elements in the ViewDispatcher
+### Features
+* **Dev:** Introduce settings to override visibilities of elements in the ViewDispatcher.
+* **App:** New Low-Code introduced, which is modular, powerful, and future-proof. It allows access to APIs, stored secrets, and documents.
+* **App:** Editor for the new Low-Code automatically warns of risky references. The previous Low-Code will remain for the time being, with a recommended transition by the end of 2025.
+* **App:** Forms can now be pre-filled via a URL link with predefined values. This function is available in the form's admin tools under "Formular vorbefüllen".
+
+### Improvements
+* **Forms:** The form editor has been comprehensively revised and restructured for better accessibility and clarity.
+* **Forms:** Form design has been refined, with a redesigned heading hierarchy.
+* **Forms:** Content in information boxes can now be displayed in two columns to use space more efficiently.
+* **Forms:** The element search in the editor has been expanded to allow jumping between results using buttons.
+* **Forms:** Form history now saves status changes, such as "published" or "withdrawn," in addition to content changes.
+* **Forms:** Heading elements now have a clearer distinction between compact and primary modes, and correct capitalization is used by default.
+
+### Bug Fixes & Optimizations
+* **App:** Element IDs are now generated more compactly to save space in links.
+* **App:** Structured lists and file elements now correctly interpret a "0" as "unlimited".
+* **App:** The process for deleting payment providers and user account providers has been unified.
+* **Export:** PDF exports now better support umlauts and list multiple attachments separated by commas.
+* **UI:** Minor spelling errors and inconsistent wording in the user interface have been corrected.
 
 ## [4.4.0](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
 
