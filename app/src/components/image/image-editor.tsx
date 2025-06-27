@@ -4,7 +4,7 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
-import {Alert, AlertTitle, Typography} from "@mui/material";
+import {Alert, AlertTitle, Grid, Typography} from '@mui/material';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 
 export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEntity>): JSX.Element {
@@ -21,30 +21,46 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                 disabled={!props.editable}
             />
 
-            <TextFieldComponent
-                value={props.element.caption ?? ''}
-                label="Bildbeschreibung (Caption)"
-                onChange={(val) => {
-                    props.onPatch({
-                        caption: val,
-                    });
-                }}
-                hint="Die Bildbeschreibung wird unter dem Bild angezeigt und liefert zusätzliche Informationen für Nutzer. Sie kann den Inhalt des Bildes erklären oder relevante Details ergänzen (z. B. Urheberrechtsangaben)."
-                disabled={!props.editable}
-            />
-
-            <TextFieldComponent
-                value={props.element.alt ?? ''}
-                label="Alternativtext (Alt-Text)"
-                onChange={(val) => {
-                    props.onPatch({
-                        alt: val,
-                    });
-                }}
-                hint="Der Alternativtext wird verwendet, wenn das Bild nicht geladen werden kann oder wird für Nutzer mit Sehbehinderungenvon durch Screenreader vorgelesen. Geben Sie eine kurze, prägnante Beschreibung des Bildinhalts ein, die alle wichtigen Informationen vermittelt."
-                error={isStringNullOrEmpty(props.element.alt) && isStringNotNullOrEmpty(props.element.src) ? 'Im Sinne der Barrierefreiheit sollten Sie immer einen Alternativtext für das Bild angeben.' : undefined}
-                disabled={!props.editable}
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={props.element.caption ?? ''}
+                        label="Bildbeschreibung (Caption)"
+                        onChange={(val) => {
+                            props.onPatch({
+                                caption: val,
+                            });
+                        }}
+                        hint="Die Bildbeschreibung erscheint unter dem Bild und ergänzt Informationen, z. B. Erläuterungen oder Urheberangaben."
+                        disabled={!props.editable}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={props.element.alt ?? ''}
+                        label="Alternativtext (Alt-Text)"
+                        onChange={(val) => {
+                            props.onPatch({
+                                alt: val,
+                            });
+                        }}
+                        hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
+                        error={isStringNullOrEmpty(props.element.alt) && isStringNotNullOrEmpty(props.element.src) ? 'Im Sinne der Barrierefreiheit sollten Sie immer einen Alternativtext für das Bild angeben.' : undefined}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
 
             <Alert severity="info" sx={{mt: 4}} icon={<AccessibilityNewIcon/>}>
                 <AlertTitle>Hinweis zur Barrierefreiheit von eingebundenen Bildern</AlertTitle>

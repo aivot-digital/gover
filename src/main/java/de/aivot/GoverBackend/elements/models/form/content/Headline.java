@@ -19,6 +19,7 @@ public class Headline extends BaseFormElement {
 
     private String content;
     private Boolean small;
+    private Boolean uppercase;
     private int size = 3;
 
     public Headline(Map<String, Object> data) {
@@ -30,6 +31,7 @@ public class Headline extends BaseFormElement {
         super.applyValues(values);
         content = MapUtils.getString(values, "content", "");
         small = MapUtils.getBoolean(values, "small", false);
+        uppercase = MapUtils.getBoolean(values, "uppercase", false);
         size = small ? 4 : 3;
     }
 
@@ -52,6 +54,7 @@ public class Headline extends BaseFormElement {
         Headline headline = (Headline) o;
 
         if (!Objects.equals(content, headline.content)) return false;
+        if (!Objects.equals(uppercase, headline.uppercase)) return false;
         return Objects.equals(small, headline.small);
     }
 
@@ -59,6 +62,7 @@ public class Headline extends BaseFormElement {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (content != null ? content.hashCode() : 0);
+        result = 31 * result + (uppercase != null ? uppercase.hashCode() : 0);
         result = 31 * result + (small != null ? small.hashCode() : 0);
         return result;
     }
@@ -79,6 +83,14 @@ public class Headline extends BaseFormElement {
 
     public void setSmall(Boolean small) {
         this.small = small;
+    }
+
+    public Boolean getUppercase() {
+        return uppercase;
+    }
+
+    public void setUppercase(Boolean uppercase) {
+        this.uppercase = uppercase;
     }
 
     @JsonIgnore

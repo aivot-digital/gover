@@ -8,6 +8,7 @@ import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 
 const exampleLegacyOverrideCode = `/**
  * Diese Funktion wird aufgerufen, die Struktur des Elements zu überschreiben.
@@ -33,21 +34,26 @@ const exampleOverrideCode = `(function(){
 })();`;
 
 export function OverrideCodeTab(props: OverrideCodeTabProps) {
+    const {
+        element,
+    } = props;
+
     const log = useLogger('OverrideCodeTab');
     const dispatch = useAppDispatch();
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
     const hasOverrideFunction = useMemo(() => {
         return (
-            isStringNotNullOrEmpty(props.element.patchElement?.code) ||
-            isStringNotNullOrEmpty(props.element.overrideCode?.code)
+            isStringNotNullOrEmpty(element.patchElement?.code) ||
+            element.overrideCode?.code != null
         );
-    }, [props.element]);
+    }, [element]);
 
     return (
         <>
             <BaseCodeTab
-                label="Elementstruktur überschreiben"
+                label="Dynamische Struktur"
+                description="Hier können Sie die Struktur des Elements dynamisch anpassen bzw. überschreiben. Dies ist besonders nützlich, wenn die Struktur des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."
                 requirements={props.element.patchElement?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({
@@ -125,6 +131,19 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            alert={{
+                                color: 'warning',
+                                title: 'Diese Version des Low-Codes ist veraltet',
+                                richtext: true,
+                                text: `
+                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
+                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
+                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
+                                `,
+                                sx: {
+                                    mb: 1,
+                                }
+                            }}
                         />
                     )
                 }
@@ -150,6 +169,14 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                         />
                     )
                 }
+
+                <ReferenceCheck
+                    element={element}
+                    lowCodeOld={[element.patchElement?.code]}
+                    lowCode={[element.overrideCode?.code]}
+                    noCodeOld={[element.patchElement?.conditionSet]}
+                    noCode={[element.overrideExpression]}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

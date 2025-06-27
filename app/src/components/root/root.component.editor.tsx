@@ -20,6 +20,7 @@ import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
 import {FormType, FormTypeDescriptions, FormTypeLabels, FormTypes} from '../../modules/forms/enums/form-type';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -83,65 +84,77 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
 
     return (
         <>
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
+            <Grid
+                container
+                columnSpacing={4}
             >
-                Über dieses Formular
-            </Typography>
-
-            <TextFieldComponent
-                value={props.entity?.title}
-                label="Interner Titel des Formulars"
-                hint="Dieser Titel wird intern in Gover verwendet und ist nicht öffentlich sichtbar."
-                onChange={(val) => {
-                    props.onPatchEntity({
-                        title: val,
-                    });
-                }}
-                minCharacters={1}
-                maxCharacters={96}
-                disabled={!props.editable}
-                required={true}
-                error={
-                    !props.entity?.title || props.entity.title.length < 1
-                        ? "Der Titel muss mindestens 1 Zeichen lang sein."
-                        : props.entity.title.length > 96
-                            ? "Der Titel darf maximal 96 Zeichen lang sein."
-                            : undefined
-                }
-            />
-
-            <TextFieldComponent
-                value={props.element.headline}
-                label="Öffentlicher Titel & Überschrift des Formulars"
-                multiline
-                hint="Dieser Titel wird öffentlicht für das Formular verwendet und ggü. Anstragstellenden angezeigt."
-                onChange={(val) => {
-                    props.onPatch({
-                        headline: val,
-                    });
-                }}
-                rows={3}
-                maxCharacters={120}
-                required
-                disabled={!props.editable}
-            />
-
-            <TextFieldComponent
-                value={props.element.tabTitle}
-                label="Titel des Formulars im Browser-Tab"
-                hint="Dieser Titel (oftmals eine Kurzform) erscheint als Bezeichnung des Formulars im Tab des Webbrowsers. Wenn Sie keinen spezifischen Titel angeben, wird die Überschrift des Formulars verwendet."
-                onChange={(val) => {
-                    props.onPatch({
-                        tabTitle: val,
-                    });
-                }}
-                maxCharacters={60}
-                disabled={!props.editable}
-            />
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={props.entity?.title}
+                        label="Interner Titel des Formulars"
+                        hint="Dieser Titel wird intern in Gover verwendet und ist nicht öffentlich sichtbar."
+                        onChange={(val) => {
+                            props.onPatchEntity({
+                                title: val,
+                            });
+                        }}
+                        minCharacters={1}
+                        maxCharacters={96}
+                        disabled={!props.editable}
+                        required={true}
+                        error={
+                            !props.entity?.title || props.entity.title.length < 1
+                                ? "Der Titel muss mindestens 1 Zeichen lang sein."
+                                : props.entity.title.length > 96
+                                    ? "Der Titel darf maximal 96 Zeichen lang sein."
+                                    : undefined
+                        }
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={props.element.tabTitle}
+                        label="Titel des Formulars im Browser-Tab"
+                        hint="Dieser Titel (oftmals eine Kurzform) erscheint als Bezeichnung des Formulars im Tab des Webbrowsers. Wenn Sie keinen spezifischen Titel angeben, wird die Überschrift des Formulars verwendet."
+                        onChange={(val) => {
+                            props.onPatch({
+                                tabTitle: val,
+                            });
+                        }}
+                        maxCharacters={60}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={props.element.headline}
+                        label="Öffentlicher Titel & Überschrift des Formulars"
+                        multiline
+                        hint="Dieser Titel wird öffentlicht für das Formular verwendet und ggü. Anstragstellenden angezeigt."
+                        onChange={(val) => {
+                            props.onPatch({
+                                headline: val,
+                            });
+                        }}
+                        rows={3}
+                        maxCharacters={120}
+                        required
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
 
             <Grid
                 container
@@ -230,34 +243,37 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         }
                     />
                 </Grid>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <SelectFieldComponent
+                        label="Art des Formulars"
+                        hint="Öffentliche Formulare werden auf der Übersichtsseite angezeigt und können von Bürger:innen ausgefüllt werden. Interne Formulare werden nicht auf der Übersichtsseite angezeigt, können aber über den Link geteilt werden."
+                        value={(props.entity.type ?? FormType.Public).toString()}
+                        required={true}
+                        onChange={(val) => {
+                            props.onPatchEntity({
+                                type: val != null ? parseInt(val) : FormType.Public,
+                            });
+                        }}
+                        options={FormTypes.map((type) => ({
+                            value: type.toString(),
+                            label: FormTypeLabels[type],
+                            subLabel: FormTypeDescriptions[type],
+                        }))}
+                        disabled={!props.editable}
+                    />
+                </Grid>
             </Grid>
 
-            <SelectFieldComponent
-                label="Art des Formulars"
-                hint="Öffentliche Formulare werden auf der Übersichtsseite angezeigt und können von Bürger:innen ausgefüllt werden. Interne Formulare werden nicht auf der Übersichtsseite angezeigt, können aber über den Link geteilt werden."
-                value={(props.entity.type ?? FormType.Public).toString()}
-                required={true}
-                onChange={(val) => {
-                    props.onPatchEntity({
-                        type: val != null ? parseInt(val) : FormType.Public,
-                    });
-                }}
-                options={FormTypes.map((type) => ({
-                    value: type.toString(),
-                    label: FormTypeLabels[type],
-                    subLabel: FormTypeDescriptions[type],
-                }))}
-                disabled={!props.editable}
-            />
-
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
+            <ElementEditorSectionHeader
+                title="Für dieses Formular zuständige Fachbereiche"
+                variant="h5"
             >
-                Zuständige Fachbereiche
-            </Typography>
+                Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge bearbeitet (falls abweichend).
+            </ElementEditorSectionHeader>
 
             <Grid
                 container
@@ -319,14 +335,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 </Grid>
             </Grid>
 
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
+            <ElementEditorSectionHeader
+                title="Erscheinungsbild"
+                variant="h5"
             >
-                Erscheinungsbild
-            </Typography>
+                Hinterlegen Sie bei Bedarf ein abweichendes Farbschema und wählen Sie ggf. eine PDF-Vorlage, welche zur Generierung des Formulars zur Offline-Einreichung verwendet wird.
+            </ElementEditorSectionHeader>
 
             <Grid
                 container
@@ -395,35 +409,42 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 </Grid>
             </Grid>
 
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Fristen
-            </Typography>
-
-            <TextFieldComponent
-                label="Antragsfristen"
-                multiline
-                value={props.element.expiring}
-                onChange={(val) => {
-                    props.onPatch({
-                        expiring: val,
-                    });
-                }}
-                disabled={!props.editable}
-            />
-
-            <Typography
+            <ElementEditorSectionHeader
+                title="Fristen"
                 variant="h5"
-                sx={{
-                    mt: 4,
-                }}
             >
-                Kontakte
-            </Typography>
+                Geben Sie die für diesen Antrag gültigen Fristen ein, welche den Antragstellenden im Formular angezeigt werden.
+            </ElementEditorSectionHeader>
+
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        label="Antragsfristen"
+                        multiline
+                        value={props.element.expiring}
+                        onChange={(val) => {
+                            props.onPatch({
+                                expiring: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
+
+            <ElementEditorSectionHeader
+                title="Kontakte"
+                variant="h5"
+            >
+                Kontaktinformationen werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen möchten.
+            </ElementEditorSectionHeader>
 
             <Grid
                 container
@@ -465,44 +486,46 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 </Grid>
             </Grid>
 
-            <Typography
-                variant="caption"
-                color={'text.secondary'}
+            <ElementEditorSectionHeader
+                title="Hinweise zur Offline-Einreichung"
+                variant="h5"
             >
-                Kontakte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Kontakt Sie verwenden und anzeigen möchten.
-            </Typography>
+                Diese Angaben werden für den PDF-Vordruck des Formulars genutzt. Sie sind nicht relevant, wenn ausschließlich eine Online-Einreichung zugelassen wird.
+            </ElementEditorSectionHeader>
 
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
+            <Grid
+                container
+                columnSpacing={4}
             >
-                Hinweise zur Offline-Einreichung
-            </Typography>
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <RichTextEditorComponentView
+                        hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
+                        value={props.element.offlineSubmissionText ?? ''}
+                        onChange={val => {
+                            props.onPatch({
+                                offlineSubmissionText: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
 
-            <RichTextEditorComponentView
-                hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
-                value={props.element.offlineSubmissionText ?? ''}
-                onChange={val => {
-                    props.onPatch({
-                        offlineSubmissionText: val,
-                    });
-                }}
-                disabled={!props.editable}
-            />
-
-            <CheckboxFieldComponent
-                label="Das Formular erfordert eine Unterschrift"
-                hint="Wenn diese Option aktiviert ist, wird im PDF-Vordruck ein Unterschriftenfeld eingefügt. Dies erfolgt nur, sofern die PDF-Vorlage dies unterstützt."
-                value={props.element.offlineSignatureNeeded}
-                onChange={val => {
-                    props.onPatch({
-                        offlineSignatureNeeded: val,
-                    });
-                }}
-                disabled={!props.editable}
-            />
+                    <CheckboxFieldComponent
+                        label="Das Formular erfordert eine Unterschrift"
+                        hint="Wenn diese Option aktiviert ist, wird im PDF-Vordruck ein Unterschriftenfeld eingefügt. Dies erfolgt nur, sofern die PDF-Vorlage dies unterstützt."
+                        value={props.element.offlineSignatureNeeded}
+                        onChange={val => {
+                            props.onPatch({
+                                offlineSignatureNeeded: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
         </>
     );
 }

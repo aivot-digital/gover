@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
-import {Box, Button, FormControl, FormLabel, Tooltip, Typography} from '@mui/material';
+import {Box, Button, FormControl, FormLabel, Grid, Tooltip, Typography} from '@mui/material';
 import {StepIconsMap} from '../../data/step-icons';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
@@ -22,16 +22,27 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
 
     return (
         <>
-            <TextFieldComponent
-                value={props.element.title ?? ''}
-                label="Titel des Abschnitts"
-                onChange={(val) => {
-                    props.onPatch({
-                        title: val,
-                    });
-                }}
-                disabled={!props.editable}
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    item
+                    xs={12}
+                    lg={6}
+                >
+                    <TextFieldComponent
+                        value={props.element.title ?? ''}
+                        label="Titel des Abschnitts"
+                        onChange={(val) => {
+                            props.onPatch({
+                                title: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
 
             <FormControl margin="normal">
                 <FormLabel>Symbol (Icon) für diesen Abschnitt</FormLabel>

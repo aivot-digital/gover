@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.form.services;
 
+import de.aivot.GoverBackend.elements.models.BaseElement;
 import de.aivot.GoverBackend.elements.services.BaseElementErrorDerivationService;
 import de.aivot.GoverBackend.form.models.FormDerivationContext;
 import de.aivot.GoverBackend.elements.models.RootElement;
@@ -13,52 +14,56 @@ import de.aivot.GoverBackend.identity.models.IdentityValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Optional;
 
 public class FormErrorDerivationService extends BaseElementErrorDerivationService<FormDerivationContext> {
+
     @Override
-    protected void deriveErrorsForRootElement(
+    public void deriveErrorForElement(
             @Nonnull FormDerivationContext context,
             @Nullable String idPrefix,
-            @Nonnull RootElement rootElement
+            @Nonnull BaseElement originalElement
     ) {
-        if (context.getStepsToValidate().isEmpty() || context.getStepsToValidate().contains(FormDerivationService.FORM_STEP_LIMIT_NONE_IDENTIFIER)) {
-            return;
-        }
-
         if (context.getStepsToValidate().contains(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER)) {
-            deriveErrorsForIntroductionStep(context, rootElement.getIntroductionStep());
-            deriveErrorsForSummaryStep(context, rootElement.getSummaryStep());
-            deriveErrorsForSubmitStep(context, rootElement.getSubmitStep());
-        } else {
-            if (context.getStepsToValidate().contains(rootElement.getIntroductionStep().getId())) {
-                deriveErrorsForIntroductionStep(context, rootElement.getIntroductionStep());
-            }
-
-            if (context.getStepsToValidate().contains(rootElement.getSummaryStep().getId())) {
-                deriveErrorsForSummaryStep(context, rootElement.getSummaryStep());
-            }
-
-            if (context.getStepsToValidate().contains(rootElement.getSubmitStep().getId())) {
-                deriveErrorsForSubmitStep(context, rootElement.getSubmitStep());
+            switch (originalElement) {
+                case IntroductionStepElement introductionStepElement -> {
+                    deriveErrorsForIntroductionStep(context, introductionStepElement);
+                }
+                case SummaryStepElement summaryStepElement -> {
+                    deriveErrorsForSummaryStep(context, summaryStepElement);
+                }
+                case SubmitStepElement submitStepElement -> {
+                    deriveErrorsForSubmitStep(context, submitStepElement);
+                }
+                default -> {
+                    // No specific error derivation for other elements
+                }
             }
         }
 
-        super.deriveErrorsForRootElement(context, idPrefix, rootElement);
-    }
+        else if (
+                originalElement instanceof IntroductionStepElement introductionStepElement &&
+                context.getStepsToValidate().contains(introductionStepElement.getId())
+        ) {
+            deriveErrorsForIntroductionStep(context, introductionStepElement);
+        }
 
-    @Override
-    protected void deriveErrorsForStepElement(
-            @Nonnull FormDerivationContext context,
-            @Nullable String idPrefix,
-            @Nonnull StepElement stepElement
-    ) {
-        boolean needsDerivation = (
-                context.getStepsToValidate().contains(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER) ||
-                context.getStepsToValidate().contains(stepElement.getId())
-        );
+        else if (
+                originalElement instanceof SummaryStepElement summaryStepElement &&
+                context.getStepsToValidate().contains(summaryStepElement.getId())
+        ) {
+            deriveErrorsForSummaryStep(context, summaryStepElement);
+        }
 
-        if (needsDerivation) {
-            super.deriveErrorsForStepElement(context, idPrefix, stepElement);
+        else if (
+                originalElement instanceof SubmitStepElement submitStepElement &&
+                context.getStepsToValidate().contains(submitStepElement.getId())
+        ) {
+            deriveErrorsForSubmitStep(context, submitStepElement);
+        }
+
+        else {
+            super.deriveErrorForElement(context, idPrefix, originalElement);
         }
     }
 
@@ -109,7 +114,14 @@ public class FormErrorDerivationService extends BaseElementErrorDerivationServic
     private void deriveErrorsForSubmitStep(FormDerivationContext context, SubmitStepElement submitStep) {
         var derivationData = context.getElementDerivationData();
 
-        var captchaRawValue = derivationData.getValue(SubmitStepElement.CAPTCHA_FIELD_ID, String.class);
+        Optional<String> captchaRawValue;
+        try {
+            captchaRawValue = derivationData
+                    .getValue(SubmitStepElement.CAPTCHA_FIELD_ID, String.class);
+        } catch (ClassCastException e) {
+            captchaRawValue = Optional.empty();
+        }
+
         if (captchaRawValue.isEmpty()) {
             derivationData.setError(
                     SubmitStepElement.CAPTCHA_FIELD_ID,

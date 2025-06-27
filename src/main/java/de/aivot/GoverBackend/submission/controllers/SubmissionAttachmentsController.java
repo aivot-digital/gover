@@ -34,6 +34,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -112,9 +113,9 @@ public class SubmissionAttachmentsController {
         }
 
         // Create content disposition
-        ContentDisposition contentDisposition = ContentDisposition
+        var contentDisposition = ContentDisposition
                 .builder("inline")
-                .filename(attachment.getFilename())
+                .filename(attachment.getFilename(), StandardCharsets.UTF_8)
                 .build();
 
         // Respond resource
@@ -225,7 +226,7 @@ public class SubmissionAttachmentsController {
         // Create content disposition
         ContentDisposition contentDisposition = ContentDisposition
                 .builder("inline")
-                .filename(form.getFormTitle().replaceAll("[^\\w\\d-_]+", "") + ".pdf")
+                .filename(form.getFormTitle().replaceAll("[^\\w\\d-_]+", "") + ".pdf", StandardCharsets.UTF_8)
                 .build();
 
         // Respond resource

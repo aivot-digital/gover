@@ -55,6 +55,9 @@ public class TextField extends BaseInputElement<String> {
         if (value instanceof String sValue) {
             return sValue;
         }
+        if (value instanceof Number nValue) {
+            return nValue.toString();
+        }
         return null;
     }
 

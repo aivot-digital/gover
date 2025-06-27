@@ -12,6 +12,8 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
+import {ReferenceCheck} from './components/reference-check/reference-check';
 
 const exampleLegacyValueCode = `/**
  * Diese Funktion wird aufgerufen, um einen Wert für das Element zu berechnen.
@@ -47,7 +49,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                     )
                 )
             ) ||
-            isStringNotNullOrEmpty(props.element.valueCode?.code) ||
+            props.element.valueCode?.code != null ||
             props.element.valueExpression != null;
     }, [props.element]);
 
@@ -55,6 +57,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
         <>
             <BaseCodeTab
                 label="Dynamischer Wert"
+                description={'Hier können Sie einen dynamischen Wert für das Element definieren. Dieser Wert wird in der Anzeige des Elements verwendet und kann von den Nutzereingaben abhängen.'}
                 requirements={props.element.computeValue?.requirements}
                 onRequirementsChange={(req) => {
                     props.onChange({
@@ -163,6 +166,19 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            alert={{
+                                color: 'warning',
+                                title: 'Diese Version des Low-Codes ist veraltet',
+                                richtext: true,
+                                text: `
+                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
+                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
+                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
+                                `,
+                                sx: {
+                                    mb: 1,
+                                }
+                            }}
                         />
                     )
                 }
@@ -219,6 +235,14 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                         />
                     )
                 }
+
+                <ReferenceCheck
+                    element={props.element}
+                    lowCodeOld={[props.element.computeValue?.code]}
+                    lowCode={[props.element.valueCode?.code]}
+                    noCodeOld={[props.element.computeValue?.conditionSet]}
+                    noCode={[props.element.valueExpression]}
+                />
             </BaseCodeTab>
 
             <SelectElementDialog

@@ -1,19 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../preamble/preamble';
-import {
-    Box,
-    Button,
-    CircularProgress,
-    Divider,
-    FormHelperText,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-    useTheme
-} from '@mui/material';
+import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {type Department} from '../../modules/departments/models/department';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -30,8 +18,8 @@ import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
-import ExpandableList from "../expandable-list/expandable-list";
-import {AltchaWidget} from "../altcha/altcha-widget";
+import ExpandableList from '../expandable-list/expandable-list';
+import {AltchaWidget} from '../altcha/altcha-widget';
 
 export const SubmitHumanKey = '__human__';
 export const SubmitPaymentDataKey = '__payment_data__';
@@ -42,13 +30,10 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
     const dispatch = useAppDispatch();
     const initialDisplayCount = 4;
 
-    const [isCalculating, setIsCalculating] = useState(false);
     const customerInputs = useAppSelector(state => state.app.inputs);
     const isHuman = useAppSelector(selectCustomerInputValue(SubmitHumanKey));
     const error = useAppSelector(selectCustomerInputError(SubmitHumanKey));
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const [showAllDocumentsToReceive, setShowAllDocumentsToReceive] = useState(false);
-
 
     const form = useAppSelector(selectLoadedForm);
 
@@ -56,10 +41,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
     const [managingDepartment, setManagingDepartment] = useState<Department>();
 
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
-
-    const handleToggleShowAllDocumentsToReceive = () => {
-        setShowAllDocumentsToReceive(!showAllDocumentsToReceive);
-    };
 
     useEffect(() => {
         if (form == null) {
@@ -110,6 +91,95 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
         return null;
     }
 
+    const sections: JSX.Element[] = [];
+
+    if (responsibleDepartment != null) {
+        sections.push(
+            <Box key="responsible">
+                <Typography
+                    component={'h3'}
+                    variant="h5"
+                    color="primary"
+                >
+                    Zuständige Stelle
+                </Typography>
+                <Typography
+                    component={"pre"}
+                    variant="body2"
+                    sx={{mt: 1}}
+                >
+                    {[
+                        isStringNotNullOrEmpty(providerName) ? providerName : null,
+                        responsibleDepartment.name,
+                        responsibleDepartment.address
+                    ].filter(Boolean).join("\n")}
+                </Typography>
+            </Box>
+        )
+    }
+
+    if (managingDepartment != null) {
+        sections.push(
+            <Box key="managing">
+                <Typography
+                    component={'h3'}
+                    variant="h5"
+                    color="primary"
+                >
+                    Bewirtschaftende Stelle
+                </Typography>
+                <Typography
+                    component={"pre"}
+                    variant="body2"
+                    sx={{mt: 1}}
+                >
+                    {[
+                        isStringNotNullOrEmpty(providerName) ? providerName : null,
+                        managingDepartment.name,
+                        managingDepartment.address
+                    ].filter(Boolean).join("\n")}
+                </Typography>
+            </Box>
+        )
+    }
+
+    if (props.element.textProcessingTime) {
+        sections.push(
+            <Box key="processing-time">
+                <Typography
+                    component={'h3'}
+                    variant="h5"
+                    color="primary"
+                >
+                    Geschätzte Bearbeitungszeit
+                </Typography>
+                <Typography
+                    component="pre"
+                    variant="body2"
+                    sx={{mt: 1}}
+                >
+                    {props.element.textProcessingTime}
+                </Typography>
+            </Box>
+        )
+    }
+
+    if ((props.element.documentsToReceive != null)
+        && props.element.documentsToReceive.length > 0) {
+        sections.push(
+            <ExpandableList
+                key="documents-to-receive"
+                title="Sie erhalten folgende Dokumente"
+                items={props.element.documentsToReceive}
+                initialVisible={initialDisplayCount}
+                singularLabel="Dokument"
+                pluralLabel="Dokumente"
+                listId="documents-to-receive"
+                renderItem={renderDocumentToReceive}
+            />
+        )
+    }
+
     return (
         <>
             {
@@ -130,104 +200,26 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     ((props.element.documentsToReceive != null) && props.element.documentsToReceive.length > 0)
                 ) &&
                 <FadingPaper>
-                    {
-                        (responsibleDepartment != null) &&
-                        <Box
-                            sx={{
-                                mb: 3,
-                                position: 'relative',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Typography
-                                component={'h3'}
-                                variant="subtitle1"
-                                color="primary"
-                                sx={{textTransform: 'uppercase'}}
+                    <Box
+                        sx={{
+                            columnCount: { xs: 1, md: 2 },
+                            columnGap: 7,
+                        }}
+                    >
+                        {sections.map((section, index) => (
+                            <Box
+                                key={index}
+                                sx={{
+                                    breakInside: 'avoid',
+                                    mb: 3,
+                                    display: 'inline-block',
+                                    width: '100%',
+                                }}
                             >
-                                Zuständige Stelle
-                            </Typography>
-                            <Typography
-                                component={"pre"}
-                                variant="body2"
-                            >
-                                {[
-                                    isStringNotNullOrEmpty(providerName) ? providerName : null,
-                                    responsibleDepartment.name,
-                                    responsibleDepartment.address
-                                ].filter(Boolean).join("\n")}
-                            </Typography>
-                        </Box>
-                    }
-
-                    {
-                        (managingDepartment != null) &&
-                        <Box
-                            sx={{
-                                mb: 3,
-                                position: 'relative',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Typography
-                                component={'h3'}
-                                variant="subtitle1"
-                                color="primary"
-                                sx={{textTransform: 'uppercase'}}
-                            >
-                                Bewirtschaftende Stelle
-                            </Typography>
-                            <Typography
-                                component={"pre"}
-                                variant="body2"
-                            >
-                                {[
-                                    isStringNotNullOrEmpty(providerName) ? providerName : null,
-                                    managingDepartment.name,
-                                    managingDepartment.address
-                                ].filter(Boolean).join("\n")}
-                            </Typography>
-                        </Box>
-                    }
-
-                    {
-                        props.element.textProcessingTime &&
-                        <Box
-                            sx={{
-                                mb: 3,
-                                position: 'relative',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Typography
-                                component={'h3'}
-                                variant="subtitle1"
-                                color="primary"
-                                sx={{textTransform: 'uppercase'}}
-                            >
-                                Geschätzte Bearbeitungszeit
-                            </Typography>
-                            <Typography
-                                component="pre"
-                                variant="body2"
-                            >
-                                {props.element.textProcessingTime}
-                            </Typography>
-                        </Box>
-                    }
-
-                    {
-                        (props.element.documentsToReceive != null) && props.element.documentsToReceive.length > 0 &&
-                        <ExpandableList
-                            title="Sie erhalten folgende Dokumente"
-                            items={props.element.documentsToReceive}
-                            initialVisible={initialDisplayCount}
-                            singularLabel="Dokument"
-                            pluralLabel="Dokumente"
-                            listId="documents-to-receive"
-                            renderItem={renderDocumentToReceive}
-                        />
-                    }
+                                {section}
+                            </Box>
+                        ))}
+                    </Box>
                 </FadingPaper>
             }
 
@@ -240,7 +232,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 <Box sx={{mt: 4}}>
                     <Typography
                         component={'h3'}
-                        variant="h6"
+                        variant="h5"
                         color="primary"
                     >
                         Gebührenübersicht
@@ -304,10 +296,20 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 <Typography
                     id={SubmitHumanKey}
                     component={'h3'}
-                    variant="h6"
+                    variant="h5"
                     color="primary"
                 >
                     Schutz vor automatisierten Einreichungen
+                </Typography>
+
+                <Typography
+                    sx={{
+                        maxWidth: '600px',
+                        mt: 1,
+                    }}
+                >
+                    Bitte bestätigen Sie mit einem Klick, dass Sie ein Mensch sind.
+                    Die Verifizierung erfolgt automatisch und kann einen kleinen Moment dauern. Vielen Dank!
                 </Typography>
 
                 <Box

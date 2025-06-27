@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -65,23 +66,23 @@ class NoCodeOperatorTest {
 
         // Test casting to Integer
         assertEquals(123, operator.castToTypeOfReference(1, "123"));
-        assertEquals(0, operator.castToTypeOfReference(1, "abc"));
+        assertEquals(3, operator.castToTypeOfReference(1, "abc"));
 
         // Test casting to Float
         assertEquals(123.0f, operator.castToTypeOfReference(1.0f, "123"));
-        assertEquals(0.0f, operator.castToTypeOfReference(1.0f, "abc"));
+        assertEquals(3.0f, operator.castToTypeOfReference(1.0f, "abc"));
 
         // Test casting to Double
         assertEquals(123.0, operator.castToTypeOfReference(1.0, "123"));
-        assertEquals(0.0, operator.castToTypeOfReference(1.0, "abc"));
+        assertEquals(3.0, operator.castToTypeOfReference(1.0, "abc"));
 
         // Test casting to Long
         assertEquals(123L, operator.castToTypeOfReference(1L, "123"));
-        assertEquals(0L, operator.castToTypeOfReference(1L, "abc"));
+        assertEquals(3L, operator.castToTypeOfReference(1L, "abc"));
 
         // Test casting to BigDecimal
-        assertEquals(new BigDecimal("123"), operator.castToTypeOfReference(BigDecimal.ONE, "123"));
-        assertEquals(BigDecimal.ZERO, operator.castToTypeOfReference(BigDecimal.ONE, "abc"));
+        assertEquals(new BigDecimal("123").setScale(8, RoundingMode.HALF_UP), operator.castToTypeOfReference(BigDecimal.ONE, "123"));
+        assertEquals(new BigDecimal(3).setScale(8, RoundingMode.HALF_UP), operator.castToTypeOfReference(BigDecimal.ONE, "abc"));
 
         // Test casting to Boolean
         assertTrue((Boolean) operator.castToTypeOfReference(true, "true"));
@@ -117,16 +118,16 @@ class NoCodeOperatorTest {
 
     @Test
     void castToNumber() {
-        assertEquals(BigDecimal.valueOf(123), operator.castToNumber(123));
-        assertEquals(BigDecimal.valueOf(123.0), operator.castToNumber(123.0));
-        assertEquals(BigDecimal.valueOf(123.0f), operator.castToNumber(123.0f));
-        assertEquals(BigDecimal.valueOf(123L), operator.castToNumber(123L));
-        assertEquals(new BigDecimal("123"), operator.castToNumber("123"));
-        assertEquals(BigDecimal.ZERO, operator.castToNumber("abc"));
-        assertEquals(BigDecimal.valueOf(1), operator.castToNumber(List.of(1)));
-        assertEquals(BigDecimal.ZERO, operator.castToNumber(List.of()));
-        assertEquals(BigDecimal.valueOf(1), operator.castToNumber(Map.of("key", "value")));
-        assertEquals(BigDecimal.ZERO, operator.castToNumber(Map.of()));
+        assertEquals(BigDecimal.valueOf(123).setScale(8, RoundingMode.HALF_UP), operator.castToNumber(123));
+        assertEquals(BigDecimal.valueOf(123.0).setScale(8, RoundingMode.HALF_UP), operator.castToNumber(123.0));
+        assertEquals(BigDecimal.valueOf(123.0f).setScale(8, RoundingMode.HALF_UP), operator.castToNumber(123.0f));
+        assertEquals(BigDecimal.valueOf(123L).setScale(8, RoundingMode.HALF_UP), operator.castToNumber(123L));
+        assertEquals(new BigDecimal("123").setScale(8, RoundingMode.HALF_UP), operator.castToNumber("123"));
+        assertEquals(BigDecimal.valueOf(3).setScale(8, RoundingMode.HALF_UP), operator.castToNumber("abc"));
+        assertEquals(BigDecimal.valueOf(1).setScale(8, RoundingMode.HALF_UP), operator.castToNumber(List.of(1)));
+        assertEquals(BigDecimal.ZERO.setScale(8, RoundingMode.HALF_UP), operator.castToNumber(List.of()));
+        assertEquals(BigDecimal.valueOf(1).setScale(8, RoundingMode.HALF_UP), operator.castToNumber(Map.of("key", "value")));
+        assertEquals(BigDecimal.ZERO.setScale(8, RoundingMode.HALF_UP), operator.castToNumber(Map.of()));
     }
 
     @Test

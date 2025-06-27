@@ -18,7 +18,7 @@ export function Collapse(props: PropsWithChildren<CollapseProps>) {
                 }}
             >
                 <Typography
-                    variant="subtitle2"
+                    variant="h6"
                 >
                     {props.label}
                 </Typography>

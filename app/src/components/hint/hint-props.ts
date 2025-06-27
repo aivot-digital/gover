@@ -6,4 +6,5 @@ export interface HintProps {
     detailsTitle: string;
     details: ReactNode;
     sx?: SxProps;
+    isError?: boolean;
 }

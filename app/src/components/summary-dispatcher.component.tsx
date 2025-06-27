@@ -1,4 +1,4 @@
-import React, {ComponentType} from 'react';
+import React, {useMemo} from 'react';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {CustomerInput} from '../models/customer-input';
@@ -6,8 +6,7 @@ import Summaries from '../summaries';
 import {BaseSummaryProps} from '../summaries/base-summary';
 import {resolveId} from '../utils/id-utils';
 import {useAppSelector} from '../hooks/use-app-selector';
-import {selectOverride, selectValue, selectVisibility} from '../slices/app-slice';
-import {FunctionType, hasElementFunctionType} from '../utils/function-status-utils';
+import {selectComputedValue, selectCustomerInputValue, selectOverride, selectVisibility} from '../slices/app-slice';
 
 interface DispatcherComponentProps<M extends AnyElement> {
     allElements: AnyElement[];
@@ -20,40 +19,74 @@ interface DispatcherComponentProps<M extends AnyElement> {
 }
 
 export function SummaryDispatcherComponent<M extends AnyElement>(props: DispatcherComponentProps<M>) {
-    if (!Boolean(props.showTechnical) && isAnyInputElement(props.element) && Boolean(props.element.technical)) {
-        return null;
-    }
+    const {
+        allElements,
+        element: initialElement,
+        idPrefix,
+        showTechnical,
+        allowStepNavigation,
+        customerInput,
+        isBusy,
+    } = props;
 
-    const id = resolveId(props.element.id, props.idPrefix);
+    const {
+        id: initialElementId,
+    } = initialElement;
 
-    const isVisible = useAppSelector(selectVisibility(id));
-    const value = useAppSelector(selectValue(id));
-    const override = useAppSelector(selectOverride(id));
+    const resolvedId = useMemo(() => resolveId(initialElementId, idPrefix), [initialElementId, idPrefix]);
 
-    const patchedModel = {
-        ...props.element,
-        ...override,
-    };
+    const isVisibleComputed = useAppSelector(selectVisibility(resolvedId));
+    const customerInputValue = useAppSelector(selectCustomerInputValue(resolvedId));
+    const computedValue = useAppSelector(selectComputedValue(resolvedId));
+    const override = useAppSelector(selectOverride(resolvedId));
 
-    if (!isVisible) {
-        return null;
-    }
+    const element: M = useMemo(() => ({
+        ...(override ?? initialElement),
+    } as M), [initialElement, override]);
 
-    const Component: ComponentType<BaseSummaryProps<M, any>> | null = Summaries[props.element.type];
-    if (Component == null) {
-        return null;
-    }
+    const Component = useMemo(() => {
+        return Summaries[element.type];
+    }, [element.type]);
 
-    const viewProps: BaseSummaryProps<M, any> = {
-        allElements: props.allElements,
-        model: patchedModel,
+    const isVisible = useMemo(() => {
+        if (!isVisibleComputed) {
+            return false;
+        }
+
+        if (isAnyInputElement(element) && element.technical && showTechnical !== true) {
+            return false;
+        }
+
+        if (Component == null) {
+            console.warn(`No summary component found for element type: ${element.type}`);
+            return false;
+        }
+
+        return true;
+    }, [isVisibleComputed, element, showTechnical, Component]);
+
+    const value = useMemo(() => {
+        if (isAnyInputElement(element) && (element.disabled || element.technical)) {
+            return computedValue;
+        }
+
+        return customerInputValue ?? computedValue;
+    }, [element, customerInputValue, computedValue]);
+
+    const viewProps: BaseSummaryProps<M, any> = useMemo(() => ({
+        allElements: allElements,
+        model: element,
         value: value,
-        idPrefix: props.idPrefix,
-        allowStepNavigation: props.allowStepNavigation,
-        showTechnical: props.showTechnical,
-        customerInput: props.customerInput,
-        isBusy: props.isBusy ?? false,
-    };
+        idPrefix: idPrefix,
+        allowStepNavigation: allowStepNavigation,
+        showTechnical: showTechnical,
+        customerInput: customerInput,
+        isBusy: isBusy ?? false,
+    }), [allElements, element, value, idPrefix, allowStepNavigation, showTechnical, customerInput, isBusy]);
+
+    if (Component == null || !isVisible) {
+        return null;
+    }
 
     return (
         <div id={props.element.id}>

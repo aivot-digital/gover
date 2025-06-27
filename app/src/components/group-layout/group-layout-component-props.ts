@@ -11,5 +11,7 @@ export interface GroupLayoutComponentProps {
         onChange: (key: string, value: any) => void;
     };
     errorsOverride?: Record<string, string>;
+    visibilitiesOverride?: Record<string, boolean>;
+    overridesOverride?: Record<string, AnyElement>;
     mode: 'editor' | 'viewer';
 }

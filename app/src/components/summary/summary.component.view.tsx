@@ -6,27 +6,18 @@ import {ElementType} from '../../data/element-type/element-type';
 import {Box, Typography} from '@mui/material';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {selectLoadedForm} from '../../slices/app-slice';
-import {AnyElement} from '../../models/elements/any-element';
-import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
-import {CustomerInput} from '../../models/customer-input';
 import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from '../../views/base-view';
-import SummaryMap from '../../summaries';
-import {useAppSelector} from '../../hooks/use-app-selector';
 
 export const SummaryUserInputKey = '__summary__';
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
 
 export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: BaseViewProps<SummaryStepElement, any>) {
     const form = useSelector(selectLoadedForm);
-    const customerInput = useAppSelector(state => state.app.inputs);
-    const visibilities = useAppSelector(state => state.app.visibilities);
 
     if (form == null) {
         return null;
     }
-
-    const models = flattenElementsForSummary(allElements, form.root, customerInput, visibilities, undefined);
 
     return (
         <>
@@ -35,7 +26,7 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
                     mb: 5,
                     maxWidth: '620px',
                 }}
-                variant={'body2'}
+                variant="body2"
             >
                 Bitte prüfen Sie die von Ihnen eingegebenen Daten sorgfältig, bevor Sie den Antrag einreichen. Durch
                 einen Klick auf das jeweilige Datenfeld gelangen Sie zurück zu dem dazugehörigen Abschnitt um die
@@ -43,7 +34,7 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
             </Typography>
 
             {
-                models.map((model, index) => (
+                form.root.children.map((model, index) => (
                     <SummaryDispatcherComponent
                         allElements={allElements}
                         key={model.id + index.toString()}
@@ -56,8 +47,8 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
             }
 
             <Typography
-                component={'h3'}
-                variant="h6"
+                component="h3"
+                variant="h5"
                 color="primary"
                 sx={{mt: 6}}
             >
@@ -67,13 +58,13 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
             <Typography
                 sx={{
                     mt: 1,
-                    maxWidth: '700px',
+                    maxWidth: '660px',
                 }}
-                variant={'body2'}
+                variant="body2"
             >
                 Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben Ihres Antrages geprüft haben.
                 Fehlerhafte Eingaben können zu einer Verzögerung bei der Bearbeitung Ihres Antrages durch
-                die zuständige und/oder bewirtschaftende Stelle führen. Vielen Dank!
+                die zuständige und/oder bewirtschaftende Stelle führen.
             </Typography>
 
             <Box>
@@ -94,34 +85,3 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
     );
 }
 
-export function flattenElementsForSummary(allElements: AnyElement[], model: AnyElement, userInput: CustomerInput, visibilities: Record<string, boolean>, idPrefix?: string): AnyElement[] {
-    const isVisible = visibilities[model.id] ?? true;
-
-    if (!isVisible) {
-        return [];
-    }
-
-    const modelSummary = SummaryMap[model.type];
-
-    let childElements: AnyElement[] = [];
-    if (model.type !== ElementType.ReplicatingContainer && isAnyElementWithChildren(model)) {
-        for (const child of model.children) {
-            childElements = childElements.concat(flattenElementsForSummary(allElements, child, userInput, visibilities, idPrefix));
-        }
-    }
-
-    if (modelSummary != null) {
-        if (model.type === ElementType.Step && childElements.length === 0) {
-            return [];
-        }
-
-        return [
-            model,
-            ...childElements,
-        ];
-    } else {
-        return [
-            ...childElements,
-        ];
-    }
-}

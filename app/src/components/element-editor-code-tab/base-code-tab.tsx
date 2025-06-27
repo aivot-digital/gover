@@ -1,4 +1,4 @@
-import {Box, Dialog, DialogContent, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
+import {Box, Dialog, DialogContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import React, {PropsWithChildren, useState} from 'react';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {FunctionSelector} from './components/function-selector/function-selector';
@@ -9,6 +9,7 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Element {
     const [anchorEl, setAnchorEl] = useState<Element>();
@@ -25,28 +26,38 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     m: 4,
                 }}
             >
-                <Typography
-                    sx={{
-                        mb: 2,
-                    }}
-                    variant="subtitle1"
+                <ElementEditorSectionHeader
+                    title={props.label}
+                    disableMarginTop
                 >
-                    Fachliche Anforderungen
-                </Typography>
+                    {props.description}
+                </ElementEditorSectionHeader>
 
-                <Box
-                    sx={{
-                        mb: 4,
-                    }}
+                <ElementEditorSectionHeader
+                    title="Fachliche Anforderungen"
+                    variant={"h5"}
                 >
-                    <RichTextEditorComponentView
-                        value={props.requirements ?? ''}
-                        onChange={(req) => {
-                            props.onRequirementsChange(req);
-                        }}
-                        disabled={notEditable}
-                    />
-                </Box>
+                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden No-/Low-Code Funktion.
+                </ElementEditorSectionHeader>
+
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        item
+                        xs={12}
+                        lg={6}
+                    >
+                        <RichTextEditorComponentView
+                            value={props.requirements ?? ''}
+                            onChange={(req) => {
+                                props.onRequirementsChange(req);
+                            }}
+                            disabled={notEditable}
+                        />
+                    </Grid>
+                </Grid>
 
                 {
                     props.editable &&
@@ -77,27 +88,36 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            mt: 4,
                         }}
                     >
-                        <Typography>
-                            {props.label}
-                        </Typography>
-
-                        <Actions
+                        <ElementEditorSectionHeader
+                            title={"Funktion"}
+                            variant={"h5"}
                             sx={{
-                                ml: 'auto',
+                                flexGrow: 1,
                             }}
-                            actions={[
-                                {
-                                    tooltip: 'Mehr',
-                                    icon: <MoreVertOutlinedIcon />,
-                                    onClick: (event) => {
-                                        setAnchorEl(event.currentTarget);
+                        >
+                            Konfigurieren Sie die Logik, die zur Umsetzung der fachlichen Anforderungen erforderlich ist.
+                        </ElementEditorSectionHeader>
+
+                        {
+                            props.editable &&
+                            <Actions
+                                sx={{
+                                    ml: 'auto',
+                                    flexShrink: 0,
+                                }}
+                                actions={[
+                                    {
+                                        tooltip: 'Mehr',
+                                        icon: <MoreVertOutlinedIcon />,
+                                        onClick: (event) => {
+                                            setAnchorEl(event.currentTarget);
+                                        },
                                     },
-                                },
-                            ]}
-                        />
+                                ]}
+                            />
+                        }
                     </Box>
                 }
 

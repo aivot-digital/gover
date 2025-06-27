@@ -158,7 +158,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
                         <>
                             <Typography
                                 component="h4"
-                                variant="h6"
+                                variant="h5"
                                 color="primary"
                                 sx={{
                                     mt: 4,
@@ -179,7 +179,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
                         <>
                             <Typography
                                 component="h4"
-                                variant="h6"
+                                variant="h5"
                                 color="primary"
                                 sx={{
                                     mt: 4,

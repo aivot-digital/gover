@@ -864,13 +864,13 @@
                                 *********************************************************************** */-->
                                 <th:block th:case="Headline">
                                     <h3
-                                            th:text="${child.element.content}"
+                                            th:text="${child.element.uppercase} ? ${#strings.toUpperCase(child.element.content)} : ${child.element.content}"
                                             th:if="${!child.element.small}"
                                     >
                                         Großes Überschriftenelement
                                     </h3>
                                     <h4
-                                            th:text="${child.element.content}"
+                                            th:text="${child.element.uppercase} ? ${#strings.toUpperCase(child.element.content)} : ${child.element.content}"
                                             th:if="${child.element.small}"
                                     >
                                         Kleines Überschriftenelement
@@ -1343,8 +1343,8 @@
                                                         class="file-list"
                                                         th:if="${child.hasValue() && not child.value().isEmpty()}"
                                                 >
-                                                    <li th:each="file : ${child.value}">
-                                                        <span th:text="${file.name}"></span>
+                                                    <li th:each="file, iterStat : ${child.value}">
+                                                        <span th:text="${file.name} + (${iterStat.last} ? '' : ', ')"></span>
                                                     </li>
                                                 </ul>
 

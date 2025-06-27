@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
+import {Box, Grid, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
@@ -122,6 +122,149 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         </ListItem>
     );
 
+    const sections: JSX.Element[] = [];
+
+    if (responsibleDepartment != null) {
+        sections.push(
+            <Box key="responsible">
+                <Typography
+                    component={'h3'}
+                    variant="h5"
+                    color="primary"
+                >
+                    Zuständige Stelle
+                </Typography>
+                <Typography
+                    component={'pre'}
+                    variant="body2"
+                    sx={{mt: 1}}
+                >
+                    {[
+                        isStringNotNullOrEmpty(providerName) ? providerName : null,
+                        responsibleDepartment.name,
+                        responsibleDepartment.address,
+                    ].filter(Boolean).join('\n')}
+                </Typography>
+            </Box>
+        );
+    }
+
+    if (managingDepartment != null) {
+        sections.push(
+            <Box key="managing">
+                <Typography
+                    component={'h3'}
+                    variant="h5"
+                    color="primary"
+                >
+                    Bewirtschaftende Stelle
+                </Typography>
+                <Typography
+                    component={'pre'}
+                    variant="body2"
+                >
+                    {[
+                        isStringNotNullOrEmpty(providerName) ? providerName : null,
+                        managingDepartment.name,
+                        managingDepartment.address,
+                    ].filter(Boolean).join('\n')}
+                </Typography>
+            </Box>
+        );
+    }
+
+    if (props.element.eligiblePersons != null &&
+        props.element.eligiblePersons.length > 0) {
+        sections.push(
+            <ExpandableList
+                key="eligible"
+                title="Antragsberechtigte"
+                items={props.element.eligiblePersons}
+                initialVisible={initialDisplayCount}
+                singularLabel="Person"
+                pluralLabel="Personen"
+                listId="eligible-persons-list"
+                renderItem={renderEligiblePerson}
+            />
+        );
+    }
+
+    if (supportingDocuments.length > 0) {
+        sections.push(
+            <ExpandableList
+                key="supporting"
+                title="Relevante Dokumente"
+                items={supportingDocuments}
+                initialVisible={initialDisplayCount}
+                singularLabel="Dokument"
+                pluralLabel="Dokumente"
+                listId="supporting-documents-list"
+                renderItem={renderSupportingDocument}
+            />
+        );
+    }
+
+    if (documentsToAttach.length > 0) {
+        sections.push(
+            <ExpandableList
+                key="attachments"
+                title="Einzureichende Dokumente"
+                items={documentsToAttach}
+                initialVisible={initialDisplayCount}
+                singularLabel="Dokument"
+                pluralLabel="Dokumente"
+                listId="documents-to-attach-list"
+                renderItem={renderDocumentToAttach}
+            />
+        );
+    }
+
+    if (application != null &&
+        !isStringNullOrEmpty(application?.root.expiring)) {
+        sections.push(
+            <Box key="deadline">
+                <Typography
+                    component={'h3'}
+                    variant="h5"
+                    color="primary"
+                >
+                    Antragsfristen
+                </Typography>
+                <Typography
+                    component="pre"
+                    variant="body2"
+                    sx={{mt: 1}}
+                >
+                    {application.root.expiring}
+                </Typography>
+            </Box>
+        );
+    }
+
+    if (props.element.expectedCosts != null &&
+        !isStringNullOrEmpty(props.element.expectedCosts)) {
+        sections.push(
+            <Box key="costs">
+                <Typography
+                    component={'h3'}
+                    variant="h5"
+                    color="primary"
+                >
+                    Gebühren dieses Antrages
+                </Typography>
+
+                <Typography
+                    component={"div"}
+                    variant="body2"
+                    className={"content-without-margin-on-childs"}
+                    sx={{mt: 1}}
+                    dangerouslySetInnerHTML={{__html: props.element.expectedCosts ?? ''}}
+                />
+            </Box>
+        );
+    }
+
+
 
     return (
         <>
@@ -146,161 +289,26 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     !isStringNullOrEmpty(props.element.expectedCosts)
                 ) &&
                 <FadingPaper>
-                    {
-                        responsibleDepartment != null &&
-                        <Box
-                            sx={{
-                                mb: 3,
-                                position: 'relative',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Typography
-                                component={'h3'}
-                                variant="subtitle1"
-                                color="primary"
-                                sx={{textTransform: 'uppercase'}}
+                    <Box
+                        sx={{
+                            columnCount: { xs: 1, md: 2 },
+                            columnGap: 7,
+                        }}
+                    >
+                        {sections.map((section, index) => (
+                            <Box
+                                key={index}
+                                sx={{
+                                    breakInside: 'avoid',
+                                    mb: 3,
+                                    display: 'inline-block',
+                                    width: '100%',
+                                }}
                             >
-                                Zuständige Stelle
-                            </Typography>
-                            <Typography
-                                component={'pre'}
-                                variant="body2"
-                            >
-                                {[
-                                    isStringNotNullOrEmpty(providerName) ? providerName : null,
-                                    responsibleDepartment.name,
-                                    responsibleDepartment.address,
-                                ].filter(Boolean).join('\n')}
-                            </Typography>
-                        </Box>
-                    }
-
-                    {
-                        managingDepartment != null &&
-                        <Box
-                            sx={{
-                                mb: 3,
-                                position: 'relative',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Typography
-                                component={'h3'}
-                                variant="subtitle1"
-                                color="primary"
-                                sx={{textTransform: 'uppercase'}}
-                            >
-                                Bewirtschaftende Stelle
-                            </Typography>
-                            <Typography
-                                component={'pre'}
-                                variant="body2"
-                            >
-                                {[
-                                    isStringNotNullOrEmpty(providerName) ? providerName : null,
-                                    managingDepartment.name,
-                                    managingDepartment.address,
-                                ].filter(Boolean).join('\n')}
-                            </Typography>
-                        </Box>
-                    }
-
-                    {
-                        props.element.eligiblePersons != null &&
-                        props.element.eligiblePersons.length > 0 &&
-                        <ExpandableList
-                            title="Antragsberechtigte"
-                            items={props.element.eligiblePersons}
-                            initialVisible={initialDisplayCount}
-                            singularLabel="Person"
-                            pluralLabel="Personen"
-                            listId="eligible-persons-list"
-                            renderItem={renderEligiblePerson}
-                        />
-                    }
-
-                    {
-                        supportingDocuments.length > 0 &&
-                        <ExpandableList
-                            title="Relevante Dokumente"
-                            items={supportingDocuments}
-                            initialVisible={initialDisplayCount}
-                            singularLabel="Dokument"
-                            pluralLabel="Dokumente"
-                            listId="supporting-documents-list"
-                            renderItem={renderSupportingDocument}
-                        />
-                    }
-
-                    {
-                        documentsToAttach.length > 0 &&
-                        <ExpandableList
-                            title="Einzureichende Dokumente"
-                            items={documentsToAttach}
-                            initialVisible={initialDisplayCount}
-                            singularLabel="Dokument"
-                            pluralLabel="Dokumente"
-                            listId="documents-to-attach-list"
-                            renderItem={renderDocumentToAttach}
-                        />
-                    }
-
-                    {
-                        application != null &&
-                        !isStringNullOrEmpty(application?.root.expiring) &&
-                        <Box
-                            sx={{
-                                mb: 3,
-                                position: 'relative',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Typography
-                                component={'h3'}
-                                variant="subtitle1"
-                                color="primary"
-                                sx={{textTransform: 'uppercase'}}
-                            >
-                                Antragsfristen
-                            </Typography>
-                            <Typography
-                                component="pre"
-                                variant="body2"
-                            >
-                                {application.root.expiring}
-                            </Typography>
-                        </Box>
-                    }
-
-                    {
-                        props.element.expectedCosts != null &&
-                        !isStringNullOrEmpty(props.element.expectedCosts) &&
-                        <Box
-                            sx={{
-                                mb: 3,
-                                position: 'relative',
-                                zIndex: 1,
-                            }}
-                        >
-                            <Typography
-                                component={'h3'}
-                                variant="subtitle1"
-                                color="primary"
-                                sx={{textTransform: 'uppercase'}}
-                            >
-                                Gebühren dieses Antrages
-                            </Typography>
-
-                            <Typography
-                                component={"div"}
-                                variant="body2"
-                                className={"content-without-margin-on-childs"}
-                                sx={{mt: 0.5}}
-                                dangerouslySetInnerHTML={{__html: props.element.expectedCosts ?? ''}}
-                            />
-                        </Box>
-                    }
+                                {section}
+                            </Box>
+                        ))}
+                    </Box>
                 </FadingPaper>
             }
 
@@ -310,7 +318,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
             <Typography
                 component={'h4'}
-                variant="h6"
+                variant="h5"
                 color="primary"
                 sx={{
                     mt: 4,

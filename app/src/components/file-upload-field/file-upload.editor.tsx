@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Checkbox, FormControl, FormControlLabel} from '@mui/material';
+import {Checkbox, FormControl, FormControlLabel, FormHelperText, Grid} from '@mui/material';
 import {type FileUploadElement} from '../../models/elements/form/input/file-upload-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
@@ -25,45 +25,70 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             });
     }, []);
 
-    const invalidMinMax = props.element.minFiles != null && props.element.maxFiles != null && props.element.minFiles > props.element.maxFiles;
+    const invalidMinMax =
+        props.element.minFiles != null && props.element.minFiles > 0 &&
+        props.element.maxFiles != null && props.element.maxFiles > 0 &&
+        props.element.minFiles > props.element.maxFiles;
 
     return (
-        <>
-            <FormControl>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={props.element.isMultifile ?? false}
-                            onChange={(event) => {
-                                props.onPatch({
-                                    isMultifile: event.target.checked,
-                                    minFiles: undefined,
-                                    maxFiles: undefined,
-                                });
-                            }}
-                            disabled={!props.editable}
-                        />
-                    }
-                    label="Mehrere Anlagen zulässig"
-                />
-            </FormControl>
+        <Grid
+            container
+            columnSpacing={4}
+        >
+            <Grid
+                item
+                xs={12}
+                lg={4}
+            >
+                <FormControl>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={props.element.isMultifile ?? false}
+                                onChange={(event) => {
+                                    props.onPatch({
+                                        isMultifile: event.target.checked,
+                                        minFiles: undefined,
+                                        maxFiles: undefined,
+                                    });
+                                }}
+                                disabled={!props.editable}
+                            />
+                        }
+                        label="Mehrere Anlagen zulässig"
+                    />
+                    <FormHelperText sx={{ ml: 4 }}>
+                        Lässt das Hochladen von mehr als nur einer Anlage zu.
+                    </FormHelperText>
+                </FormControl>
+            </Grid>
 
             {
                 props.element.isMultifile === true &&
                 <>
-                    <NumberFieldComponent
-                        value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles}
-                        label="Minimalanzahl an Anlagen"
-                        hint="Geben Sie 0 ein, um keine Minimalanzahl zu fordern."
-                        onChange={(val) => {
-                            props.onPatch({
-                                minFiles: val,
-                            });
-                        }}
-                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
-                        disabled={!props.editable}
-                    />
-
+                    <Grid
+                        item
+                        xs={12}
+                        lg={4}
+                    >
+                        <NumberFieldComponent
+                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles}
+                            label="Mindestanzahl an Anlagen"
+                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
+                            onChange={(val) => {
+                                props.onPatch({
+                                    minFiles: val,
+                                });
+                            }}
+                            error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                            disabled={!props.editable}
+                        />
+                    </Grid>
+                    <Grid
+                        item
+                        xs={12}
+                        lg={4}
+                    >
                     <NumberFieldComponent
                         value={props.element.maxFiles}
                         label="Maximalanzahl an Anlagen"
@@ -76,24 +101,30 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                         error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
                         disabled={!props.editable}
                     />
+                    </Grid>
                 </>
             }
 
-            <MultiCheckboxComponent
-                label="Erlaubte Dateiendungen"
-                value={props.element.extensions}
-                onChange={(val) => {
-                    props.onPatch({
-                        extensions: val,
-                    });
-                }}
-                hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
-                error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
-                options={allowedExtensions ?? []}
-                required
-                disabled={!props.editable}
-                displayInline={true}
-            />
-        </>
+            <Grid
+                item
+                xs={12}
+            >
+                <MultiCheckboxComponent
+                    label="Erlaubte Dateiendungen"
+                    value={props.element.extensions}
+                    onChange={(val) => {
+                        props.onPatch({
+                            extensions: val,
+                        });
+                    }}
+                    hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
+                    error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
+                    options={allowedExtensions ?? []}
+                    required
+                    disabled={!props.editable}
+                    displayInline={true}
+                />
+            </Grid>
+        </Grid>
     );
 };

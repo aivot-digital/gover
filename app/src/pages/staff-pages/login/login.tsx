@@ -44,7 +44,7 @@ export function Login(): JSX.Element {
                     </Box>
 
                     <Typography
-                        variant="h5"
+                        variant="h4"
                         color="primary"
                     >
                         Authentifizierung erforderlich

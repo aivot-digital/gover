@@ -144,179 +144,185 @@ export function OptionListInput(props: OptionListInputProps): JSX.Element {
 
 
     return (
-        <FormControl
-            error={hasNotEnoughItems || hasEmptyField || hasDuplicateLabels || hasDuplicateValues}
-            component={Paper}
-            sx={{p: 2}}
+        <Paper
+            variant={props.variant}
+            sx={{
+                p: 1,
+            }}
         >
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                }}
+            <FormControl
+                error={hasNotEnoughItems || hasEmptyField || hasDuplicateLabels || hasDuplicateValues}
+                margin="none"
             >
-
-                {
-                    isEditable &&
-                    <Tooltip
-                        title="Modus umschalten"
-                    >
-                        <IconButton
-                            size="small"
-                            onClick={toggleTextInputMode}
-                        >
-                            <SwapHorizOutlinedIcon />
-                        </IconButton>
-                    </Tooltip>
-                }
-
-                <FormLabel
-                    sx={{ml: 1}}
-                >
-                    {props.label}
-                </FormLabel>
-
-                {
-                    isEditable &&
-                    !textInputMode &&
-                    <Button
-                        sx={{
-                            ml: 'auto',
-                        }}
-                        startIcon={
-                            <AddOutlinedIcon />
-                        }
-                        onClick={handleAdd}
-                    >
-                        {props.addLabel}
-                    </Button>
-                }
-            </Box>
-
-            {
-                !textInputMode &&
-                options.length > 0 &&
-                <TableVirtuoso
-                    style={{height: 380}}
-                    data={options}
-                    //@ts-ignore
-                    components={TableComponents}
-                    itemContent={renderRow}
-                />
-            }
-
-            {
-                textInputMode &&
-                <TextFieldComponent
-                    label="Einträge"
-                    placeholder={'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3'}
-                    value={textInputBuffer != null ? textInputBuffer : options.map((opt) => `${opt.label}|${opt.value}`).join('\n')}
-                    onChange={(val) => {
-                        setTextInputBuffer(val ?? '');
-                    }}
-                    onBlur={(val) => {
-                        setTextInputBuffer(undefined);
-
-                        if (val != null) {
-                            const lines = val.split('\n');
-                            const values = lines.map((ln) => {
-                                const parts = ln.split('|');
-                                return {
-                                    value: (parts[1] ?? '').trim(),
-                                    label: (parts[0] ?? '').trim(),
-                                };
-                            });
-                            props.onChange(values);
-                        } else {
-                            props.onChange(undefined);
-                        }
-                    }}
-                    multiline
-                />
-            }
-
-            {
-                hasEmptyField &&
-                !hasNotEnoughItems &&
-                !hasDuplicateLabels &&
-                !hasDuplicateValues &&
-                <FormHelperText sx={{mt: 2}}>
-                    Jede Zeile muss einen Wert enthalten. Befüllen Sie fehlende Werte oder entfernen Sie die
-                    entsprechenden Zeilen.
-                </FormHelperText>
-            }
-
-            {
-                !hasEmptyField &&
-                hasNotEnoughItems &&
-                !hasDuplicateLabels &&
-                !hasDuplicateValues &&
-                <FormHelperText sx={{mt: 2}}>
-                    Bitte fügen Sie mindestens einen Wert hinzu.
-                </FormHelperText>
-            }
-
-            {
-                !hasEmptyField &&
-                !hasNotEnoughItems &&
-                hasDuplicateLabels &&
-                !hasDuplicateValues &&
-                <FormHelperText sx={{mt: 2}}>
-                    Es gibt mindestens zwei Einträge mit der gleichen Beschriftung. Bitte ändern Sie die Beschriftungen
-                    so, dass sie eindeutig sind.
-                </FormHelperText>
-            }
-
-            {
-                !hasEmptyField &&
-                !hasNotEnoughItems &&
-                !hasDuplicateLabels &&
-                hasDuplicateValues &&
-                <FormHelperText sx={{mt: 2}}>
-                    Es gibt mindestens zwei Einträge mit dem gleichen Wert. Bitte ändern Sie die Werte so, dass sie
-                    eindeutig sind.
-                </FormHelperText>
-            }
-
-            {
-                !hasEmptyField &&
-                !hasNotEnoughItems &&
-                hasDuplicateLabels &&
-                hasDuplicateValues &&
-                <FormHelperText sx={{mt: 2}}>
-                    Es gibt mindestens zwei Einträge mit dem gleichen Wert oder gleicher Beschriftung. Bitte ändern Sie
-                    die Werte und Beschriftungen so, dass sie eindeutig sind.
-                </FormHelperText>
-            }
-
-            {
-                /*
-                !hasEmptyField &&
-                !hasNotEnoughItems &&
-                !hasDuplicateLabels &&
-                !hasDuplicateValues &&
-                 */
-                <FormHelperText
-                    sx={{mt: 2}}
-                    error={false}
-                >
-                    {props.hint} Bitte scrollen Sie ggf. um alle Optionen zu sehen.
-                </FormHelperText>
-            }
-
-            {
-                options.length === 0 &&
-                <Alert
+                <Box
                     sx={{
-                        my: 4,
+                        display: 'flex',
+                        alignItems: 'center',
                     }}
-                    severity={isRequired ? 'error' : 'info'}
                 >
-                    <Typography>
-                        {props.noItemsHint}
-                    </Typography>
-                </Alert>
-            }
-        </FormControl>
+
+                    {
+                        isEditable &&
+                        <Tooltip
+                            title="Modus umschalten"
+                        >
+                            <IconButton
+                                size="small"
+                                onClick={toggleTextInputMode}
+                            >
+                                <SwapHorizOutlinedIcon />
+                            </IconButton>
+                        </Tooltip>
+                    }
+
+                    <FormLabel
+                        sx={{ml: 1}}
+                    >
+                        {props.label}
+                    </FormLabel>
+
+                    {
+                        isEditable &&
+                        !textInputMode &&
+                        <Button
+                            sx={{
+                                ml: 'auto',
+                            }}
+                            startIcon={
+                                <AddOutlinedIcon />
+                            }
+                            onClick={handleAdd}
+                        >
+                            {props.addLabel}
+                        </Button>
+                    }
+                </Box>
+
+                {
+                    !textInputMode &&
+                    options.length > 0 &&
+                    <TableVirtuoso
+                        style={{height: 380}}
+                        data={options}
+                        //@ts-ignore
+                        components={TableComponents}
+                        itemContent={renderRow}
+                    />
+                }
+
+                {
+                    textInputMode &&
+                    <TextFieldComponent
+                        label="Einträge"
+                        placeholder={'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3'}
+                        value={textInputBuffer != null ? textInputBuffer : options.map((opt) => `${opt.label}|${opt.value}`).join('\n')}
+                        onChange={(val) => {
+                            setTextInputBuffer(val ?? '');
+                        }}
+                        onBlur={(val) => {
+                            setTextInputBuffer(undefined);
+
+                            if (val != null) {
+                                const lines = val.split('\n');
+                                const values = lines.map((ln) => {
+                                    const parts = ln.split('|');
+                                    return {
+                                        value: (parts[1] ?? '').trim(),
+                                        label: (parts[0] ?? '').trim(),
+                                    };
+                                });
+                                props.onChange(values);
+                            } else {
+                                props.onChange(undefined);
+                            }
+                        }}
+                        multiline
+                    />
+                }
+
+                {
+                    hasEmptyField &&
+                    !hasNotEnoughItems &&
+                    !hasDuplicateLabels &&
+                    !hasDuplicateValues &&
+                    <FormHelperText sx={{mt: 2}}>
+                        Jede Zeile muss einen Wert enthalten. Befüllen Sie fehlende Werte oder entfernen Sie die
+                        entsprechenden Zeilen.
+                    </FormHelperText>
+                }
+
+                {
+                    !hasEmptyField &&
+                    hasNotEnoughItems &&
+                    !hasDuplicateLabels &&
+                    !hasDuplicateValues &&
+                    <FormHelperText sx={{mt: 2}}>
+                        Bitte fügen Sie mindestens einen Wert hinzu.
+                    </FormHelperText>
+                }
+
+                {
+                    !hasEmptyField &&
+                    !hasNotEnoughItems &&
+                    hasDuplicateLabels &&
+                    !hasDuplicateValues &&
+                    <FormHelperText sx={{mt: 2}}>
+                        Es gibt mindestens zwei Einträge mit der gleichen Beschriftung. Bitte ändern Sie die Beschriftungen
+                        so, dass sie eindeutig sind.
+                    </FormHelperText>
+                }
+
+                {
+                    !hasEmptyField &&
+                    !hasNotEnoughItems &&
+                    !hasDuplicateLabels &&
+                    hasDuplicateValues &&
+                    <FormHelperText sx={{mt: 2}}>
+                        Es gibt mindestens zwei Einträge mit dem gleichen Wert. Bitte ändern Sie die Werte so, dass sie
+                        eindeutig sind.
+                    </FormHelperText>
+                }
+
+                {
+                    !hasEmptyField &&
+                    !hasNotEnoughItems &&
+                    hasDuplicateLabels &&
+                    hasDuplicateValues &&
+                    <FormHelperText sx={{mt: 2}}>
+                        Es gibt mindestens zwei Einträge mit dem gleichen Wert oder gleicher Beschriftung. Bitte ändern Sie
+                        die Werte und Beschriftungen so, dass sie eindeutig sind.
+                    </FormHelperText>
+                }
+
+                {
+                    /*
+                    !hasEmptyField &&
+                    !hasNotEnoughItems &&
+                    !hasDuplicateLabels &&
+                    !hasDuplicateValues &&
+                     */
+                    <FormHelperText
+                        sx={{mt: 2}}
+                        error={false}
+                    >
+                        {props.hint} Bitte scrollen Sie ggf. um alle Optionen zu sehen.
+                    </FormHelperText>
+                }
+
+                {
+                    options.length === 0 &&
+                    <Alert
+                        sx={{
+                            my: 4,
+                        }}
+                        severity={isRequired ? 'error' : 'info'}
+                    >
+                        <Typography>
+                            {props.noItemsHint}
+                        </Typography>
+                    </Alert>
+                }
+            </FormControl>
+        </Paper>
     );
 }

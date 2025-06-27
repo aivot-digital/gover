@@ -69,7 +69,7 @@ public class PresetDerivationController {
 
         step.setChildren(List.of(presetVersionObject.getRoot()));
 
-        return formDerivationServiceFactory
+        var ctx = formDerivationServiceFactory
                 .create(
                         dummyForm,
                         List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER),
@@ -77,7 +77,16 @@ public class PresetDerivationController {
                         List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER),
                         List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER)
                 )
-                .derive(root, customerInput)
-                .getFormState();
+                .derive(root, customerInput);
+
+        var formState = ctx.getFormState();
+
+        try {
+            ctx.close();
+        } catch (Exception e) {
+            throw ResponseException.internalServerError(e);
+        }
+
+        return formState;
     }
 }

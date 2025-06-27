@@ -1,4 +1,5 @@
 import {Function} from '../functions/function';
+import {JavascriptCode} from '../functions/javascript-code';
 
 export interface PaymentProduct {
     id: string;
@@ -7,6 +8,7 @@ export interface PaymentProduct {
     type: PaymentType;
     upfrontFixedQuantity?: number;
     upfrontQuantityFunction?: Omit<Function, 'code' | 'conditionSet'> & { code: string };
+    upfrontQuantityJavascript?: JavascriptCode;
     taxRate: number;
     netPrice: number;
     bookingData: BookingDataItem[];

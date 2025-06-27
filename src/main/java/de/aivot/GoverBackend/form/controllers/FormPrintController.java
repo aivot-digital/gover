@@ -21,6 +21,7 @@ import org.thymeleaf.exceptions.TemplateProcessingException;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/forms/{formId}/print/")
@@ -69,7 +70,7 @@ public class FormPrintController {
                         HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition
                                 .attachment()
-                                .filename(form.getSlug() + "-" + form.getVersion() + ".pdf")
+                                .filename(form.getSlug() + "-" + form.getVersion() + ".pdf", StandardCharsets.UTF_8)
                                 .build()
                                 .toString()
                 )

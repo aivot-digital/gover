@@ -2,9 +2,10 @@ import React from 'react';
 import {Box, Button, Grid, Typography} from '@mui/material';
 import {FunctionSelectorProps} from './function-selector-props';
 import {FunctionTypeIcon} from '../../function-type-icon';
-import {useAppSelector} from "../../../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../../../data/system-config-keys";
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
+import {ElementEditorSectionHeader} from '../../../element-editor-section-header/element-editor-section-header';
 
 export function FunctionSelector(props: FunctionSelectorProps) {
     const enableNewCodeEditors = useAppSelector(selectSystemConfigValue(SystemConfigKeys.experimentalFeatures.newCodeEditors));
@@ -14,7 +15,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
         options.push(
             {
                 title: 'No-Code (Regelbasierte Konfiguration)',
-                description: 'Diese Funktion erlaubt eine einfache, regelbasierte Konfiguration ohne Programmierung. Sie eignet sich besonders für grundlegende Entscheidungen, Berechnungen oder Validierungen, die auf den eingegebenen Formulardaten basieren. Diese Variante ist intuitiv und erfordert keine technischen Kenntnisse.',
+                description: 'Diese Funktion erlaubt eine einfache, regelbasierte Konfiguration ohne Programmierung. Sie eignet sich besonders für grundlegende Entscheidungen, Berechnungen oder Validierungen, die auf den eingegebenen Formulardaten basieren.',
                 onSelect: props.onSelectNoCode,
                 icon: FunctionTypeIcon['legacy-condition'],
             },
@@ -23,8 +24,8 @@ export function FunctionSelector(props: FunctionSelectorProps) {
     if (props.allowExpression && enableNewCodeEditors) {
         options.push(
             {
-                title: 'Erweiterter No-Code (Fortgeschrittene Regelgestaltung)',
-                description: 'Diese Variante ermöglicht eine leistungsfähigere Regelverarbeitung mit erweiterten Bedingungen und komplexeren Berechnungen. Der Editor bietet mehr Flexibilität, setzt jedoch ein grundlegendes Verständnis von logischen Verknüpfungen und strukturierten Regeln voraus. Daher sind Vorkenntnisse im Umgang mit regelbasierten Systemen empfehlenswert.',
+                title: '[ALPHA] Erweiterter No-Code (Fortgeschrittene Regelgestaltung)',
+                description: 'Diese neue No-Code-Variante ermöglicht eine leistungsfähigere Regelverarbeitung mit erweiterten Bedingungen und komplexeren Berechnungen. Der Editor bietet mehr Flexibilität, setzt jedoch ein grundlegendes Verständnis von logischen Verknüpfungen und strukturierten Regeln voraus. Daher sind Vorkenntnisse im Umgang mit regelbasierten Systemen empfehlenswert.',
                 onSelect: props.onSelectNoCodeExpression,
                 icon: FunctionTypeIcon['expression'],
             },
@@ -33,31 +34,21 @@ export function FunctionSelector(props: FunctionSelectorProps) {
 
     options.push(
         {
-            title: 'Low-Code (Individuelle Logik durch eigene Skripte)',
-            description: 'Diese Variante erlaubt es, eigene Skripte für Berechnungen, Validierungen und dynamische Anpassungen zu verwenden. Sie eignet sich besonders für spezifische Anforderungen, die mit reinen No-Code-Regeln nicht abgedeckt werden können. Basiskenntnisse in der Skriptgestaltung sind hilfreich.',
-            onSelect: props.onSelectFunctionCode,
-            icon: FunctionTypeIcon['legacy-code'],
+            title: 'Low-Code (Individuelle Logik und Zugriff auf externe Datenquellen)',
+            description: 'Diese Funktion bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Sie eignet sich besonders für spezifische Anforderungen, die mit reinen No-Code-Regeln nicht abgedeckt werden können. Für die Nutzung ist technisches Verständnis und Erfahrung im Umgang mit Skriptsprachen hilfreich.',
+            onSelect: props.onSelectCloudCode,
+            icon: FunctionTypeIcon['code'],
         },
     );
 
-    if(enableNewCodeEditors) {
-        options.push(
-            {
-                title: 'Erweiterter Low-Code (Individuelle Logik mit Zugriff auf externe Datenquellen)',
-                description: 'Bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Ideal für anspruchsvolle Prozesse, die eine Verbindung zu anderen Systemen erfordern. Diese Variante eignet sich für komplexe Automatisierungen und datengetriebene Entscheidungen.',
-                onSelect: props.onSelectCloudCode,
-                icon: FunctionTypeIcon['code'],
-            },
-        );
-    }
-
     return (
         <Box>
-            <Typography
-                variant="subtitle1"
+            <ElementEditorSectionHeader
+                title="No-/Low-Code Funktion"
+                variant="h5"
             >
-                Wählen Sie einen geeigneten Typ für die Funktion aus
-            </Typography>
+                Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.
+            </ElementEditorSectionHeader>
 
             <Grid
                 container

@@ -33,7 +33,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     };
 
     const addHighlightElement = (): void => {
-        const elem = document.getElementById(props.element.id);
+        const elem = document
+            .querySelector(`[data-initial-id="${props.element.id}"]`) as HTMLElement;
         if (elem != null) {
             elem.style.outline = highlightOutlineStyle;
             elem.style.boxShadow = highlightBoxShadowStyle;
@@ -41,7 +42,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     };
 
     const removeHighlightElement = (): void => {
-        const elem = document.getElementById(props.element.id);
+        const elem = document
+            .querySelector(`[data-initial-id="${props.element.id}"]`) as HTMLElement;
         if (elem != null) {
             elem.style.outline = 'none';
             elem.style.boxShadow = 'none';
@@ -72,7 +74,8 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
     const elementTitle = generateComponentTitle(props.element);
     const titleCharLimit = testMode ? 30 : 40;
     const ElementIcon = props.element.type === ElementType.Step ? getStepIcon(props.element) : getElementIcon(props.element);
-    const matchesSearch = treeElementSearch != null && treeElementSearch.length > 2 && (elementTitle.toLowerCase().includes(treeElementSearch.toLowerCase()) || props.element.id.toLowerCase().includes(treeElementSearch.toLocaleLowerCase()));
+    const matchesSearch = treeElementSearch != null && treeElementSearch.foundIds != null && treeElementSearch.foundIds.includes(props.element.id);
+    const isCurrentlyActive = treeElementSearch != null && treeElementSearch.foundIds != null && treeElementSearch.foundIds[treeElementSearch.currentLookupIndex] === props.element.id;
 
     return (
         <div
@@ -82,11 +85,13 @@ export function ElementTreeItemTitle<T extends AnyElement>(props: ElementTreeIte
                 display: 'flex',
                 outline: matchesSearch ? highlightOutlineStyle : undefined,
                 boxShadow: matchesSearch ? highlightBoxShadowStyle : undefined,
+                background: isCurrentlyActive ? theme.palette.grey.A200 : undefined,
             }}
             onMouseEnter={addHighlightElement}
             onMouseLeave={removeHighlightElement}
             onMouseDown={removeHighlightElement}
             onMouseUp={addHighlightElement}
+            data-element-id={props.element.id}
         >
             {
                 (props.onToggleExpanded != null) ?

@@ -115,7 +115,14 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
             open={true}
             PaperProps={{
                 sx: {
-                    width: '66%',
+                    width: {
+                        xs: '100%',
+                        sm: '100%',
+                        md: '90%',
+                        lg: '85%',
+                        xl: '75%',
+                    },
+                    maxWidth: '1720px',
                 },
             }}
             onClose={handleClose}

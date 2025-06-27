@@ -1,24 +1,28 @@
 import {Typography, useTheme} from '@mui/material';
+import Balancer from 'react-wrap-balancer';
 
 export function HeadlineComponent({
                                       content,
                                       small,
-                                  }: {content: string, small: boolean}) {
+                                      uppercase,
+                                  }: {content: string, small: boolean, uppercase?: boolean}) {
     const theme = useTheme();
     return (
         <Typography
-            variant={small ? 'subtitle2' : 'subtitle1'}
-            /*component={small ? 'h4' : 'h3'}*/
+            variant={small ? 'h5' : 'h4'}
             component={'h3'} // we set h3 explicitly to avoid a user creating a wrong headline hierarchy (A11y)
             className={"headline-component-content"}
             sx={{
                 color: small ? "#16191F" : theme.palette.primary.dark,
-                fontSize: small ? "1rem" : "1.25rem",
-                textTransform: small ? "uppercase" : "none",
-                margin: '1.5em 0 0.5em 0',
+                fontSize: small ? "1.125rem" : "1.25rem",
+                textTransform: uppercase ? "uppercase" : "none",
+                margin: small ? '0.5rem 0 0.5rem 0' : '1.25rem 0 0.5rem 0',
+                maxWidth: '660px',
             }}
         >
-            {content}
+            <Balancer>
+                {content}
+            </Balancer>
         </Typography>
     );
 }

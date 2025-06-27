@@ -1,5 +1,5 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
-import {Alert, AlertTitle, Box, Button, Divider, Tooltip, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, Button, Divider, Paper, Tooltip} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
@@ -22,6 +22,7 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../slices/loading-overl
 import {useConfirm} from '../../providers/confirm-provider';
 import {FormType} from '../../modules/forms/enums/form-type';
 import {SxProps} from '@mui/material/styles';
+import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>): JSX.Element {
     const api = useApi();
@@ -175,17 +176,13 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
     return (
         <>
-            <Typography
-                variant="h6"
-            >
-                Formular veröffentlichen
-            </Typography>
-
-            <Typography
-                variant="body1"
+            <ElementEditorSectionHeader
+                title="Formular veröffentlichen"
+                disableMarginTop
+                sx={{mb: 3}}
             >
                 Bevor ein Formular veröffentlicht werden kann, müssen die folgenden Punkte erfüllt sein.
-            </Typography>
+            </ElementEditorSectionHeader>
 
             <Box
                 sx={{
@@ -199,12 +196,14 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
                 {
                     checklist != null &&
-                    <Checklist
-                        items={checklist}
-                        sx={{
-                            opacity: props.hasChanges ? 0.5 : 1,
-                        }}
-                    />
+                    <Paper variant={"outlined"}>
+                        <Checklist
+                            items={checklist}
+                            sx={{
+                                opacity: props.hasChanges ? 0.5 : 1,
+                            }}
+                        />
+                    </Paper>
                 }
             </Box>
 

@@ -17,6 +17,8 @@ export interface BaseViewProps<M extends AnyElement, V> {
         onBlur?: (key: string, value: any) => void;
     };
     errorsOverride?: Record<string, string>;
+    visibilitiesOverride?: Record<string, boolean>;
+    overridesOverride?: Record<string, AnyElement>;
     mode: 'editor' | 'viewer';
 }
 

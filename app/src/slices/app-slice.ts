@@ -168,7 +168,7 @@ const appSlice = createSlice({
             }
         },
 
-        updateCustomerInput: (state, action: PayloadAction<{ key: string, value: any }>) => {
+        updateCustomerInput: (state, action: PayloadAction<{ key: string, value: any, doNotStore?: boolean, }>) => {
             const newInput = {
                 ...state.inputs,
                 [action.payload.key]: action.payload.value,
@@ -179,7 +179,7 @@ const appSlice = createSlice({
                 [action.payload.key]: undefined,
             };
 
-            if (state.loadedForm != null) {
+            if (state.loadedForm != null && !action.payload.doNotStore) {
                 CustomerInputService.storeCustomerInput(state.loadedForm, newInput);
             }
         },
@@ -203,33 +203,32 @@ const appSlice = createSlice({
         },
 
         hydrateFromDerivation: (state, action: PayloadAction<FormState>) => {
-            state.values = {
-                ...state.values,
-                ...action.payload.values,
-            };
+            state.values = action.payload.values; // Values are always overwritten to prevent computed values from being carried over after a derivation
+
             state.visibilities = {
                 ...state.visibilities,
                 ...action.payload.visibilities,
-            };
+            }; // Visibilities are additive to prevent hiding of previous steps
+
             state.errors = action.payload.errors; // Errors are always overwritten to prevent errors from future steps being carried over
+
             state.overrides = {
                 ...state.overrides,
                 ...action.payload.overrides,
-            };
+            }; // Overrides are additive to prevent changing of previous steps
         },
         hydrateFromDerivationWithoutErrors: (state, action: PayloadAction<FormState>) => {
-            state.values = {
-                ...state.values,
-                ...action.payload.values,
-            };
+            state.values = action.payload.values; // Values are always overwritten to prevent computed values from being carried over after a derivation
+
             state.visibilities = {
                 ...state.visibilities,
                 ...action.payload.visibilities,
-            };
+            }; // Visibilities are additive to prevent hiding of previous steps
+
             state.overrides = {
                 ...state.overrides,
                 ...action.payload.overrides,
-            };
+            }; // Overrides are additive to prevent changing of previous steps
         },
 
         setFormState: (state, action: PayloadAction<{
@@ -244,10 +243,7 @@ const appSlice = createSlice({
                 options,
             } = action.payload;
 
-            state.values = {
-                ...state.values,
-                ...formState.values,
-            };
+            state.values = formState.values;
 
             if (options.freshVisibilities) {
                 state.visibilities = {
@@ -264,10 +260,7 @@ const appSlice = createSlice({
                 state.errors = formState.errors; // Errors are always overwritten to prevent errors from future steps being carried over
             }
 
-            state.overrides = {
-                ...state.overrides,
-                ...formState.overrides,
-            };
+            state.overrides = formState.overrides;
         },
 
         enqueueDerivationTriggerId: (state, action: PayloadAction<string>) => {
@@ -345,7 +338,7 @@ export const selectVisibilies = (state: RootState) => state.app.visibilities;
 export const selectVisibility = (key: string) => (state: RootState) => state.app.visibilities[key] ?? true;
 export const selectError = (key: string) => (state: RootState) => state.app.errors[key];
 export const selectOverride = (key: string) => (state: RootState) => state.app.overrides[key];
-export const selectValue = (key: string) => (state: RootState) => state.app.inputs[key] ?? state.app.values[key];
+export const selectComputedValue = (key: string) => (state: RootState) => state.app.values[key];
 
 export const selectDerivationTriggerIdQueue = (state: RootState) => state.app.derivationTriggerIdQueue;
 

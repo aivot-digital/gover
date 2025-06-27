@@ -45,7 +45,7 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
-import de.aivot.GoverBackend.utils.ElementUtils;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.mail.MessagingException;
 import org.json.JSONObject;
@@ -63,6 +63,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -197,12 +198,17 @@ public class SubmitController {
         destinationSubmitService.testDestinationAttachmentSize(destination, files);
 
         // Validate customer input
-        var derivationResult = formDerivationServiceFactory
+        var derivationContext = formDerivationServiceFactory
                 .create(form, List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
                 .derive(form.getRoot(), customerInput);
+        try {
+            derivationContext.close();
+        } catch (Exception e) {
+            throw ResponseException.internalServerError(e);
+        }
 
-        if (derivationResult.getElementDerivationData().hasErrors()) {
-            var details = derivationResult
+        if (derivationContext.getElementDerivationData().hasErrors()) {
+            var details = derivationContext
                     .getElementDerivationData()
                     .getErrors()
                     .entrySet()
@@ -213,7 +219,9 @@ public class SubmitController {
         }
 
         // Transfer derived values to customer input
-        customerInput = derivationResult.getCombinedValues();
+        customerInput = derivationContext
+                .getElementDerivationData()
+                .getCombinedValues();
 
         // Prepare submission id
         var submissionId = UUID
@@ -346,7 +354,7 @@ public class SubmitController {
 
         var identityCacheEntity = optionalIdp.get();
 
-        var flatElements = ElementUtils
+        var flatElements = ElementFlattenUtils
                 .flattenElements(form.getRoot());
 
         for (var element : flatElements) {
@@ -509,7 +517,7 @@ public class SubmitController {
                         HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition
                                 .attachment()
-                                .filename("Antrag.pdf")
+                                .filename("Antrag.pdf", StandardCharsets.UTF_8)
                                 .build()
                                 .toString()
                 )

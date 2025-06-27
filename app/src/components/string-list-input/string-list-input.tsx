@@ -27,6 +27,7 @@ export function StringListInput(props: StringListInputProps): JSX.Element {
         <FormControl
             error={hasEmptyItem || isValueEmpty}
             component={Paper}
+            variant={"outlined"}
             sx={{p: 2}}
         >
             <Box

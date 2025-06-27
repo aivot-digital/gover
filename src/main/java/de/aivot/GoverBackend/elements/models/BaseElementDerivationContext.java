@@ -17,6 +17,7 @@ public abstract class BaseElementDerivationContext implements AutoCloseable {
     public static final String ID_JS_CONTEXT_OBJECT_NAME = "id";
     public static final String INPUT_VALUES_JS_CONTEXT_OBJECT_NAME = "inputValues";
     public static final String COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME = "computedValues";
+    public static final String VALUES_JS_CONTEXT_OBJECT_NAME = "values";
     public static final String VISIBILITIES_JS_CONTEXT_OBJECT_NAME = "visibilities";
     public static final String ERRORS_JS_CONTEXT_OBJECT_NAME = "errors";
     public static final String OVERRIDES_JS_CONTEXT_OBJECT_NAME = "overrides";
@@ -261,6 +262,7 @@ public abstract class BaseElementDerivationContext implements AutoCloseable {
 
         map.put(INPUT_VALUES_JS_CONTEXT_OBJECT_NAME, elementDerivationData.inputValues);
         map.put(COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME, elementDerivationData.computedValues);
+        map.put(VALUES_JS_CONTEXT_OBJECT_NAME, elementDerivationData.getCombinedValues());
         map.put(VISIBILITIES_JS_CONTEXT_OBJECT_NAME, elementDerivationData.visibilities);
         map.put(ERRORS_JS_CONTEXT_OBJECT_NAME, elementDerivationData.errors);
         map.put(OVERRIDES_JS_CONTEXT_OBJECT_NAME, elementDerivationData.overrides);

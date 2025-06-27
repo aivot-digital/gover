@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.models.payment;
 
 import de.aivot.GoverBackend.enums.PaymentType;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.models.functions.FunctionCode;
 
 import java.io.Serializable;
@@ -13,6 +14,7 @@ public class PaymentProduct implements Serializable {
     private PaymentType type;
     private Integer upfrontFixedQuantity;
     private FunctionCode upfrontQuantityFunction;
+    private JavascriptCode upfrontQuantityJavascript;
     private Double taxRate;
     private Double netPrice;
     private List<BookingDataItem> bookingData;
@@ -96,6 +98,14 @@ public class PaymentProduct implements Serializable {
 
     public void setTaxInformation(String taxInformation) {
         this.taxInformation = taxInformation;
+    }
+
+    public JavascriptCode getUpfrontQuantityJavascript() {
+        return upfrontQuantityJavascript;
+    }
+
+    public void setUpfrontQuantityJavascript(JavascriptCode upfrontQuantityJavascript) {
+        this.upfrontQuantityJavascript = upfrontQuantityJavascript;
     }
 
     public record BookingDataItem(String key, String value) implements Serializable {}
