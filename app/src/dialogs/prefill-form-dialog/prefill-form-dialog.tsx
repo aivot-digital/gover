@@ -28,6 +28,7 @@ import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../
 import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -192,37 +193,50 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                         Mit diesem Werkzeug können Sie einen Link erzeugen, über den ein Formular mit vorab definierten Werten vorbefüllt wird.
                         Das ist besonders nützlich, wenn Sie ein Formular z. B. an einen Personenkreis mit teilweise bereits bekannten Angaben weitergeben möchten.
                     </Typography>
-                    <Typography
-                        variant="h5"
-                        sx={{mt: 2}}
-                    >
-                        Wichtige Hinweise zur Verwendung
-                    </Typography>
-
-                    <Box
-                        component="ul"
-                        sx={{
-                            pl: 3,
-                            mt: 1,
-                            mb: 2,
-                            typography: 'body2',
-                            '& li': {
-                                mb: 1,
-                            },
-                        }}
-                    >
-                        <li>Es können ausschließlich die folgenden Felder vorbefüllt werden: {
-                            relevantElementTypes
-                                .map(getElementNameForType)
-                                .join(', ')
-                        }. Technische Felder, bedingt sichtbare Felder und deaktivierte Felder können nicht vorbefüllt werden.
-                        </li>
-                        <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden. Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen begrenzt – längere Links können in manchen
-                            Browsern zu Problemen führen.
-                        </li>
-                        <li>Die eingegebenen Werte werden nicht gespeichert, sondern nur im Link kodiert. Wenn Sie den Link später bearbeiten möchten, können Sie die vorbefüllten Werte exportieren und ggf. wieder importieren.</li>
-                    </Box>
                 </Box>
+
+                <AccordionGroup sx={{mt: 3}}>
+                    <Accordion defaultExpanded>
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreOutlined />}
+                            aria-controls={`panel-moreinfo-content`}
+                            id={`panel-moreinfo-header`}
+                        >
+                            <InfoOutlinedIcon sx={{mr: 1}} />
+                            <Typography>
+                                Wichtige Hinweise zur Verwendung
+                            </Typography>
+                        </AccordionSummary>
+
+                        <AccordionDetails>
+                            <Box
+                                component="ul"
+                                sx={{
+                                    pl: 3,
+                                    mt: 1,
+                                    mb: 2,
+                                    typography: 'body2',
+                                    '& li': {
+                                        mb: 1,
+                                    },
+                                    maxWidth: 920,
+                                }}
+                            >
+                                <li>Es können ausschließlich die folgenden Felder vorbefüllt werden: {
+                                    relevantElementTypes
+                                        .map(getElementNameForType)
+                                        .join(', ')
+                                }. Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                                </li>
+                                <li>Für die Anzeige der vorbefüllbaren Felder (s.u.) ist die Berechnung der Sichtbarkeiten deaktiviert. Bitte bedenken Sie, dass demnach auch Felder vorbefüllt werden können, die ggf. später im durch Nutzer:innen aufgerufenen Formular nicht sichtbar sein könnten.</li>
+                                <li>Der erzeugte Link enthält alle vorbefüllten Werte und kann dadurch sehr lang werden. Aus technischen Gründen ist die maximale Länge auf {MAX_LINK_LENGTH} Zeichen begrenzt – längere Links können in manchen
+                                    Browsern zu Problemen führen.
+                                </li>
+                                <li>Die eingegebenen Werte werden nicht gespeichert, sondern nur im Link kodiert. Wenn Sie den Link später bearbeiten möchten, können Sie die vorbefüllten Werte exportieren und ggf. wieder importieren.</li>
+                            </Box>
+                        </AccordionDetails>
+                    </Accordion>
+                </AccordionGroup>
 
                 <Divider sx={{my: 4}} />
 
@@ -238,7 +252,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                 .map(getElementNameForType)
                                 .join(', ')
                         }.
-                            Technische Felder, bedingt sichtbare Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                            Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
                         </AlertComponent>
                     ) : (
                         <AccordionGroup sx={{mb: 2}}>
@@ -283,7 +297,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                                         .map(getElementNameForType)
                                                                         .join(', ')
                                                                 }.
-                                                                Technische Felder, bedingt sichtbare Felder und deaktivierte Felder können nicht vorbefüllt werden.
+                                                                Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
                                                             </AlertComponent>
                                                         </Grid>
                                                     }
