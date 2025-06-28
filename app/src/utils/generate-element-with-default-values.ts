@@ -4,12 +4,12 @@ import {type SummaryStepElement} from '../models/elements/steps/summary-step-ele
 import {type SubmitStepElement} from '../models/elements/steps/submit-step-element';
 import {type AnyElement} from '../models/elements/any-element';
 import {generateElementIdForType} from './id-utils';
-import ProjectPackage from '../../package.json';
 import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
+import {AppConfig} from '../app-config';
 
 export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
     const id = generateElementIdForType(type);
-    const appVersion = ProjectPackage.version;
+    const appVersion = AppConfig.version;
 
     switch (type) {
         case ElementType.Root:

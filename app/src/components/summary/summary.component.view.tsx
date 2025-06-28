@@ -6,10 +6,8 @@ import {ElementType} from '../../data/element-type/element-type';
 import {Box, Typography} from '@mui/material';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {selectLoadedForm} from '../../slices/app-slice';
-import ProjectPackage from '../../../package.json';
 import {BaseViewProps} from '../../views/base-view';
-import {summaries as SummaryMap} from '../../summaries';
-import {useAppSelector} from '../../hooks/use-app-selector';
+import {AppConfig} from '../../app-config';
 
 export const SummaryUserInputKey = '__summary__';
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
@@ -76,7 +74,7 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
                         type: ElementType.Checkbox,
                         label: 'Ich habe die Zusammenfassung meines Antrages geprüft. *',
                         id: SummaryUserInputKey,
-                        appVersion: ProjectPackage.version,
+                        appVersion: AppConfig.version,
                     }}
                     isBusy={isBusy}
                     isDeriving={isDeriving}

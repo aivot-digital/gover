@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import {Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, Typography} from '@mui/material';
-import ProjectPackage from '../../../../../../package.json';
 import {format} from 'date-fns';
 import {HealthData, HealthDataComponents, Status} from '../../../../../models/dtos/health-data';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -19,20 +18,6 @@ import {downloadTextFile} from '../../../../../utils/download-utils';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {ServiceProviderApiService} from '../../../../../services/service-provider-api-service';
 import {ServiceProviderDTO} from '../../../../../models/dtos/service-provider-dto';
-
-const systemInformationItems: StatusTablePropsItem[] = [
-    {
-        label: 'Version',
-        icon: <TagIcon />,
-        children: ProjectPackage.version,
-    },
-    {
-        label: 'Compile-Datum',
-        icon: <EventIcon />,
-        children: format(new Date(AppConfig.date), 'dd.MM.yyyy'),
-    },
-];
-
 
 export function SystemInformation() {
     const api = useApi();
@@ -152,6 +137,24 @@ export function SystemInformation() {
             children: getStatusLabel('puppet'),
         },
     ];
+
+    let systemInformationItems: StatusTablePropsItem[] = [];
+    try {
+        systemInformationItems = [
+            {
+                label: 'Version',
+                icon: <TagIcon />,
+                children: `$ AppConfig.version}.${AppConfig.number}`,
+            },
+            {
+                label: 'Compile-Datum',
+                icon: <EventIcon />,
+                children: format(new Date(AppConfig.date), 'dd.MM.yyyy'),
+            },
+        ];
+    } catch (err) {
+        console.error('Error while creating system information items:', err);
+    }
 
     return (
         <>

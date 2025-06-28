@@ -1,6 +1,6 @@
 {
   "name": "gover",
-  "version": "X.X.X",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
     "start:staff": "VITE_APP_MODE=staff vite --config vite.config.staff.js",

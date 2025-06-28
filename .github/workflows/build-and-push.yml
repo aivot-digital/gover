@@ -106,6 +106,7 @@ jobs:
     env:
       BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -156,6 +157,7 @@ jobs:
     env:
       BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

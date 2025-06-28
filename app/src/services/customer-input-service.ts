@@ -1,10 +1,10 @@
 import {type CustomerInput} from '../models/customer-input';
 import {type Form as Application} from '../models/entities/form';
-import ProjectPackage from '../../package.json';
 import {StorageScope, StorageService} from './storage-service';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
+import {AppConfig} from '../app-config';
 
-const MAJOR_VERSION = ProjectPackage.version.split('.')[0];
+const MAJOR_VERSION = AppConfig.version.split('.')[0];
 const DATA_KEY = 'state';
 const DATE_KEY = 'date';
 

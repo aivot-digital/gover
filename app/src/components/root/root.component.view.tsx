@@ -31,7 +31,6 @@ import {ElementType} from '../../data/element-type/element-type';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar} from '../../slices/snackbar-slice';
 import {useLogger} from '../../hooks/use-logging';
 import {type FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
-import ProjectPackage from '../../../package.json';
 import {type BaseViewProps} from '../../views/base-view';
 import {withAsyncWrapper} from '../../utils/with-async-wrapper';
 import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
@@ -46,6 +45,7 @@ import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
 import {selectIdentityId} from '../../slices/identity-slice';
+import {AppConfig} from '../../app-config';
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -473,7 +473,7 @@ export function RootComponentView({
                                 step={{
                                     id: '',
                                     type: ElementType.SubmittedStep,
-                                    appVersion: ProjectPackage.version,
+                                    appVersion: AppConfig.version,
                                 }}
                                 title="Ihr Antrag wurde erfolgreich eingereicht"
                                 active

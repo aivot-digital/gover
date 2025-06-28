@@ -2,6 +2,7 @@ package de.aivot.GoverBackend;
 
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.config.StorageConfig;
+import de.aivot.GoverBackend.system.properties.BuildProperties;
 import io.sentry.Sentry;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
@@ -13,24 +14,47 @@ import org.springframework.stereotype.Component;
 
 
 @Component
-public class ServerStartup implements ApplicationListener<ApplicationReadyEvent> {
-    private static final Logger logger = LoggerFactory.getLogger(ServerStartup.class);
+public class ServerReadyEventListener implements ApplicationListener<ApplicationReadyEvent> {
+    private static final Logger logger = LoggerFactory.getLogger(ServerReadyEventListener.class);
+    private final BuildProperties buildProperties;
     private final GoverConfig goverConfig;
     private final StorageConfig storageConfig;
 
     @Autowired
-    public ServerStartup(
+    public ServerReadyEventListener(
+            BuildProperties buildProperties,
             GoverConfig goverConfig,
             StorageConfig storageConfig
     ) {
+        this.buildProperties = buildProperties;
         this.goverConfig = goverConfig;
         this.storageConfig = storageConfig;
     }
 
     @Override
     public void onApplicationEvent(@NotNull final ApplicationReadyEvent event) {
+        logBuildInfo();
+
         initializeSentry();
         initializeStorages();
+    }
+
+    private void logBuildInfo() {
+        var message = "Gover Version %s.%s (%s)";
+        var fm = String.format(
+                message,
+                buildProperties.getBuildVersion(),
+                buildProperties.getBuildNumber(),
+                buildProperties.getDate()
+        );
+
+        logger
+                .atInfo()
+                .setMessage(fm)
+                .addKeyValue("buildVersion", buildProperties.getBuildVersion())
+                .addKeyValue("buildNumber", buildProperties.getBuildNumber())
+                .addKeyValue("buildTime", buildProperties.getDate())
+                .log();
     }
 
     private void initializeSentry() {
