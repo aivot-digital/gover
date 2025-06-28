@@ -2,8 +2,6 @@ name: Check a pull request
 
 on:
   push:
-    branches:
-      - "main"
     tags:
       - "*"
 
