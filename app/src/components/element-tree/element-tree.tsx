@@ -15,7 +15,7 @@ import {isForm} from '../../models/entities/form';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import {type ElementTreeEntity} from './element-tree-entity';
-import {AppConfig} from '../../app-config';
+import {AppInfo} from '../../app-info';
 
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>): JSX.Element {
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -40,7 +40,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
             handleAddElement({
                 id: generateElementIdForType(ElementType.Step),
                 type: ElementType.Step,
-                appVersion: AppConfig.version,
+                appVersion: AppInfo.version,
                 children: [],
             });
         } else {
@@ -270,7 +270,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                                 color: '#BFBFBF',
                             }}
                         >
-                            &copy; {new Date(AppConfig.date).getFullYear()} Aivot
+                            &copy; {new Date(AppInfo.date).getFullYear()} Aivot
                         </Typography>
 
                         <Typography
@@ -279,7 +279,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                                 color: '#BFBFBF',
                             }}
                         >
-                            Gover Version {AppConfig.version}
+                            Gover Version {AppInfo.version}
                         </Typography>
                     </Box>
                 </Box>

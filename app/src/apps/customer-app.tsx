@@ -7,6 +7,7 @@ import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {Error} from '../pages/shared/error/error';
 import {SystemConfigResponseDto} from '../modules/configs/dtos/system-config-response-dto';
 import {Page} from '../models/dtos/page';
+import {createApiPath} from '../utils/create-api-path';
 
 const router = createRouter(
     [
@@ -24,7 +25,7 @@ export function CustomerApp() {
 
     useEffect(() => {
         new ApiService()
-            .get<Page<SystemConfigResponseDto>>('/api/public/system-configs/')
+            .get<Page<SystemConfigResponseDto>>(createApiPath('/api/public/system-configs/'))
             .then((configs) => {
                 dispatch(setSystemConfigs(configs.content));
             })

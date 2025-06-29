@@ -17,7 +17,7 @@ import {type GroupLayout, isGroupLayout, isPresetGroupLayout} from '../../models
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {useChangeBlocker} from '../../hooks/use-change-blocker';
 import {useConfirm} from '../../providers/confirm-provider';
-import {AppConfig} from '../../app-config';
+import {AppInfo} from '../../app-info';
 
 export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): JSX.Element | null {
     const dispatch = useAppDispatch();
@@ -40,7 +40,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
         if (updatedElement != null) {
             elementToSave = {
                 ...updatedElement,
-                appVersion: AppConfig.version,
+                appVersion: AppInfo.version,
             };
         }
 

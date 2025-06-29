@@ -17,7 +17,6 @@ import {ApiService} from '../services/api-service';
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
 import {getUrlWithoutQuery} from '../utils/location-utils';
 import {SessionExpiredDialog} from '../dialogs/session-expired-dialog/session-expired-dialog';
-import {AppConfig} from '../app-config';
 import {LoadingOverlay} from '../components/loading-overlay/loading-overlay';
 import {Error} from '../pages/shared/error/error';
 import {providerLinksRoutes} from '../modules/provider-links/provider-links-routes';
@@ -70,8 +69,6 @@ export function StaffApp() {
 
     const [theme, setTheme] = useState<Theme>();
 
-    console.log('test');
-
     // Reload the auth data from the local storage if any change happens.
     // This is needed for the case when the user refreshes the tokens in another tab.
     const handleAuthDataChange = useCallback(() => {
@@ -82,7 +79,7 @@ export function StaffApp() {
     const authCode = useMemo(() => {
         const searchParams = new URLSearchParams(window.location.search);
         const iss = searchParams.get('iss');
-        if (iss != null && iss.endsWith('realms/' + AppConfig.staff.realm)) {
+        if (iss != null && iss.endsWith('realms/' + AppConfig.oidc.realm)) {
             const code = searchParams.get('code');
             return stringOrUndefined(code);
         }
@@ -92,9 +89,9 @@ export function StaffApp() {
     useEffect(() => {
         if (authCode != null && authCode.length > 0) {
             new ApiService()
-                .postFormUrlEncoded<AuthDataDto>(`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/token`, {
+                .postFormUrlEncoded<AuthDataDto>(`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`, {
                     grant_type: 'authorization_code',
-                    client_id: AppConfig.staff.client,
+                    client_id: AppConfig.oidc.client,
                     code: authCode,
                     redirect_uri: getUrlWithoutQuery(),
                 })

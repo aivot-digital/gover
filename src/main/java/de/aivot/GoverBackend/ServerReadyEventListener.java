@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend;
 
+import com.beust.jcommander.Strings;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.config.StorageConfig;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
+import de.aivot.GoverBackend.system.properties.CORSProperties;
 import io.sentry.Sentry;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
@@ -19,21 +21,25 @@ public class ServerReadyEventListener implements ApplicationListener<Application
     private final BuildProperties buildProperties;
     private final GoverConfig goverConfig;
     private final StorageConfig storageConfig;
+    private final CORSProperties corsProperties;
 
     @Autowired
     public ServerReadyEventListener(
             BuildProperties buildProperties,
             GoverConfig goverConfig,
-            StorageConfig storageConfig
+            StorageConfig storageConfig,
+            CORSProperties corsProperties
     ) {
         this.buildProperties = buildProperties;
         this.goverConfig = goverConfig;
         this.storageConfig = storageConfig;
+        this.corsProperties = corsProperties;
     }
 
     @Override
     public void onApplicationEvent(@NotNull final ApplicationReadyEvent event) {
         logBuildInfo();
+        logCorsConfiguration();
 
         initializeSentry();
         initializeStorages();
@@ -45,7 +51,7 @@ public class ServerReadyEventListener implements ApplicationListener<Application
                 message,
                 buildProperties.getBuildVersion(),
                 buildProperties.getBuildNumber(),
-                buildProperties.getDate()
+                buildProperties.getBuildTimestamp()
         );
 
         logger
@@ -53,7 +59,7 @@ public class ServerReadyEventListener implements ApplicationListener<Application
                 .setMessage(fm)
                 .addKeyValue("buildVersion", buildProperties.getBuildVersion())
                 .addKeyValue("buildNumber", buildProperties.getBuildNumber())
-                .addKeyValue("buildTime", buildProperties.getDate())
+                .addKeyValue("buildTime", buildProperties.getBuildTimestamp())
                 .log();
     }
 
@@ -93,6 +99,26 @@ public class ServerReadyEventListener implements ApplicationListener<Application
                     .setMessage("Using remote storage.")
                     .addKeyValue("remoteEndpoint", storageConfig.getRemoteEndpoint())
                     .addKeyValue("remoteBucket", storageConfig.getRemoteBucket())
+                    .log();
+        }
+    }
+
+    private void logCorsConfiguration() {
+        if (corsProperties.isEnabled()) {
+            var message = String.format(
+                    "CORS configuration: allowed origins: %s",
+                    Strings.join(", ", corsProperties.getAllowedOrigins())
+            );
+
+            logger
+                    .atInfo()
+                    .setMessage(message)
+                    .addKeyValue("allowedOrigins", corsProperties.getAllowedOrigins())
+                    .log();
+        } else {
+            logger
+                    .atInfo()
+                    .setMessage("CORS is disabled.")
                     .log();
         }
     }

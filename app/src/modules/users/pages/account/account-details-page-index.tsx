@@ -2,13 +2,12 @@ import {Box, Button, Typography} from '@mui/material';
 import React from 'react';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
-import {stringOrDefault} from "../../../../utils/string-utils";
-import {AppConfig} from "../../../../app-config";
-import {StatusTablePropsItem} from "../../../../components/status-table/status-table-props";
-import {StatusTable} from "../../../../components/status-table/status-table";
-import {ApiOutlined, BadgeOutlined, LockOutlined, MailOutlined} from "@mui/icons-material";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
+import {stringOrDefault} from '../../../../utils/string-utils';
+import {StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
+import {StatusTable} from '../../../../components/status-table/status-table';
+import {ApiOutlined, BadgeOutlined, LockOutlined, MailOutlined} from '@mui/icons-material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 
 export function AccountDetailsPageIndex() {
     const user = useSelector(selectUser);
@@ -23,7 +22,7 @@ export function AccountDetailsPageIndex() {
         {
             label: 'Name',
             icon: <BadgeOutlined />,
-            children: stringOrDefault(user?.firstName, '(Kein Vorname hinterlegt)') + " " + stringOrDefault(user?.lastName, '(Kein Nachname hinterlegt)'),
+            children: stringOrDefault(user?.firstName, '(Kein Vorname hinterlegt)') + ' ' + stringOrDefault(user?.lastName, '(Kein Nachname hinterlegt)'),
         },
         {
             label: 'E-Mail-Adresse',
@@ -74,7 +73,7 @@ export function AccountDetailsPageIndex() {
             >
                 <Button
                     target="_blank"
-                    href={`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/account/#/personal-info`}
+                    href={`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/account/#/personal-info`}
                     variant="contained"
                     color="primary"
                     startIcon={<OpenInNewIcon />}

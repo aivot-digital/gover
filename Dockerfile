@@ -20,6 +20,11 @@ WORKDIR /app
 # Copy frontend source files
 COPY app .
 
+# Set build version and date
+RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/app-info.ts && \
+    sed -i 's/@buildNumber/'"$BUILD_NUMBER"'/g' /app/src/app-info.ts && \
+    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' /app/src/app-info.ts
+
 # Install frontend dependencies
 RUN npm install
 
@@ -45,12 +50,10 @@ COPY pom.xml pom.xml
 # Copy backend source files
 COPY src/main src/main
 
+# Set build version and date
 RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/main/resources/application.properties && \
     sed -i 's/@buildNumber/'"$BUILD_NUMBER"'/g' /app/src/main/resources/application.properties && \
-    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' /app/src/main/resources/application.properties && \
-    sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' app/src/app-config.ts && \
-    sed -i 's/@buildNumber/'"$BUILD_NUMBER"'/g' app/src/app-config.ts && \
-    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' app/src/app-config.ts
+    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' /app/src/main/resources/application.properties
 
 # Copy mails files
 COPY --from=build_mails /mails/dist src/main/resources/templates/mail
@@ -85,24 +88,21 @@ ENV LC_ALL=de_DE.UTF-8
 # Prepare app working directoy
 WORKDIR /app
 
-# Copy nginx configs
-COPY docker/nginx.staff.conf /etc/nginx/sites-available/staff.conf
-COPY docker/nginx.customer.conf /etc/nginx/sites-available/customer.conf
-
 # Copy entrypoint script
 COPY docker/entrypoint.sh /app/entrypoint.sh
 
 # Install locale, nginx, configure nginx and entrypoint script
 RUN apk upgrade --no-cache && \
     apk add tzdata musl musl-utils musl-locales nginx && \
-    rm /etc/nginx/http.d/default.conf && \
-    echo "daemon off;" >> /etc/nginx/nginx.conf && \
     chmod +x /app/entrypoint.sh
+
+# Copy nginx configs
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 
 # Copy app files
 COPY --from=build_server /app/target/Gover-0.0.0.jar /app/gover.jar
-COPY --from=build_app /app/build/staff /var/www/staff/html
-COPY --from=build_app /app/build/customer /var/www/customer/html
+COPY --from=build_app /app/build/customer /app/www
+COPY --from=build_app /app/build/staff /app/www/staff
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["customer"]
+CMD ["app"]

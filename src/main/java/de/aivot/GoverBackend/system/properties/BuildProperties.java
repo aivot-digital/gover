@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class BuildProperties {
     private String buildVersion;
     private String buildNumber;
-    private String date;
+    private String buildTimestamp;
 
     public String getBuildVersion() {
         return buildVersion;
@@ -26,11 +26,11 @@ public class BuildProperties {
         this.buildNumber = buildNumber;
     }
 
-    public String getDate() {
-        return date;
+    public String getBuildTimestamp() {
+        return buildTimestamp;
     }
 
-    public void setDate(String date) {
-        this.date = date;
+    public void setBuildTimestamp(String buildTimestamp) {
+        this.buildTimestamp = buildTimestamp;
     }
 }

@@ -7,7 +7,7 @@ import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutli
 import {AlertComponent} from '../../../../../components/alert/alert-component';
 import {useApi} from '../../../../../hooks/use-api';
 import {useSystemApi} from '../../../../../hooks/use-system-api';
-import {AppConfig} from '../../../../../app-config';
+import {AppInfo} from '../../../../../app-info';
 import {StatusTable} from '../../../../../components/status-table/status-table';
 import {StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
 
@@ -144,12 +144,12 @@ export function SystemInformation() {
             {
                 label: 'Version',
                 icon: <TagIcon />,
-                children: `$ AppConfig.version}.${AppConfig.number}`,
+                children: `$ AppConfig.version}.${AppInfo.number}`,
             },
             {
                 label: 'Compile-Datum',
                 icon: <EventIcon />,
-                children: format(new Date(AppConfig.date), 'dd.MM.yyyy'),
+                children: format(new Date(AppInfo.date), 'dd.MM.yyyy'),
             },
         ];
     } catch (err) {

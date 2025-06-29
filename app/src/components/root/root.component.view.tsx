@@ -45,7 +45,7 @@ import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
 import {selectIdentityId} from '../../slices/identity-slice';
-import {AppConfig} from '../../app-config';
+import {AppInfo} from '../../app-info';
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -473,7 +473,7 @@ export function RootComponentView({
                                 step={{
                                     id: '',
                                     type: ElementType.SubmittedStep,
-                                    appVersion: AppConfig.version,
+                                    appVersion: AppInfo.version,
                                 }}
                                 title="Ihr Antrag wurde erfolgreich eingereicht"
                                 active

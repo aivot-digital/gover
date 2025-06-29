@@ -20,7 +20,7 @@ import {AssetsApiService} from '../assets-api-service';
 import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
-import {AppConfig} from '../../../app-config';
+import {AppInfo} from '../../../app-info';
 import {hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {CheckboxFieldComponent} from '../../../components/checkbox-field/checkbox-field-component';
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
@@ -130,7 +130,7 @@ export function AssetDetailsPageIndex() {
                 } else if (err.status === 409) {
                     setUploadError('Die von Ihnen hochgeladene Datei weist die Signatur eines Virus auf und wurde abgelehnt. Probieren Sie eine andere Datei.');
                 } else if (err.status === 413) {
-                    setUploadError(`Die von Ihnen hochgeladene Datei überschreitet das Limit von ${AppConfig.maxFileSizeMB}MB. Probieren Sie eine andere Datei.`);
+                    setUploadError(`Die von Ihnen hochgeladene Datei überschreitet das Limit von ${AppInfo.maxFileSizeMB}MB. Probieren Sie eine andere Datei.`);
                 } else {
                     console.error(err);
                     setUploadError('Die Datei konnte nicht hochgeladen werden. Probieren Sie eine andere Datei.');

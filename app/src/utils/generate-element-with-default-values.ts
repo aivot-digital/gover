@@ -5,11 +5,11 @@ import {type SubmitStepElement} from '../models/elements/steps/submit-step-eleme
 import {type AnyElement} from '../models/elements/any-element';
 import {generateElementIdForType} from './id-utils';
 import {DateFieldComponentModelMode} from '../models/elements/form/input/date-field-element';
-import {AppConfig} from '../app-config';
+import {AppInfo} from '../app-info';
 
 export function generateElementWithDefaultValues<T extends ElementType>(type: T): AnyElement | undefined {
     const id = generateElementIdForType(type);
-    const appVersion = AppConfig.version;
+    const appVersion = AppInfo.version;
 
     switch (type) {
         case ElementType.Root:

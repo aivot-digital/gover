@@ -38,17 +38,3 @@ export function useSystemApi(api: Api): SystemApi {
         getHttpExchanges,
     };
 }
-
-export async function getSentryDsn(): Promise<string | undefined> {
-    const response = await fetch('/api/public/system/sentry-dsn', {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-        },
-    });
-    const dsn = await response.json();
-    if (dsn.length < 1 || dsn[0].trim().length === 0) {
-        return undefined;
-    }
-    return dsn[0].trim();
-}
