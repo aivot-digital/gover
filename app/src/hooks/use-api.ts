@@ -6,7 +6,7 @@ import {clearAuthData, selectAuthData, setAuthData} from '../slices/auth-slice';
 import {isApiError} from '../models/api-error';
 import {ApiOptions, ApiService} from '../services/api-service';
 import {Api} from '@mui/icons-material';
-import {createApiPath} from '../utils/create-api-path';
+import {createApiPath} from '../utils/url-path-utils';
 
 export interface Api {
     isAuthenticated: boolean;

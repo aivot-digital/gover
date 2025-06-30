@@ -7,7 +7,7 @@ import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {Error} from '../pages/shared/error/error';
 import {SystemConfigResponseDto} from '../modules/configs/dtos/system-config-response-dto';
 import {Page} from '../models/dtos/page';
-import {createApiPath} from '../utils/create-api-path';
+import {createApiPath} from '../utils/url-path-utils';
 
 const router = createRouter(
     [

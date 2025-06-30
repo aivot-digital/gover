@@ -21,6 +21,7 @@ import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
 import {FormType, FormTypeDescriptions, FormTypeLabels, FormTypes} from '../../modules/forms/enums/form-type';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {createCustomerPath} from '../../utils/url-path-utils';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>): JSX.Element {
     const dispatch = useAppDispatch();
@@ -79,8 +80,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
             });
     }, []);
 
-    const generalLink = `${window.location.protocol}//${window.location.host}/${props.entity?.slug ?? ''}`;
-    const versionedLink = `${window.location.protocol}//${window.location.host}/${props.entity?.slug ?? ''}/${props.entity?.version ?? ''}`;
+    const generalLink = createCustomerPath(`${props.entity?.slug ?? ''}`);
+    const versionedLink = createCustomerPath(`${props.entity?.slug ?? ''}/${props.entity?.version ?? ''}`);
 
     return (
         <>
