@@ -7,6 +7,12 @@ window.AppConfig = {
     api: {
         hostname: 'http://localhost:8080',
     },
+    staff: {
+        hostname: 'http://localhost:3001',
+    },
+    customer: {
+        hostname: 'http://localhost:3000',
+    },
     sentry: {
         dsn: '',
     },

@@ -7,6 +7,12 @@ declare var AppConfig: {
     api: {
         hostname: string;
     };
+    staff: {
+        hostname: string;
+    };
+    customer: {
+        hostname: string;
+    };
     sentry: {
         dsn: string;
     };

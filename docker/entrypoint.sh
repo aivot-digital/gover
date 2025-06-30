@@ -10,6 +10,12 @@ window.AppConfig = {
     api: {
         hostname: '$GOVER_HOSTNAME',
     },
+    staff: {
+        hostname: '$GOVER_STAFF_HOSTNAME',
+    },
+    customer: {
+        hostname: '$GOVER_CUSTOMER_HOSTNAME',
+    },
     sentry: {
         dsn: '$GOVER_SENTRY_WEB_APP',
     },
