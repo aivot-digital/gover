@@ -140,8 +140,9 @@ jobs:
           provenance: false # Disable provenance to avoid unknown/unknown
           sbom: false       # Disable sbom to avoid unknown/unknown
           build-args: |
-            buildDate=${{ env.BUILD_DATE }}
-            version=${{ env.BUILD_VERSION }}
+            BUILD_VERSION=${{ env.BUILD_VERSION }}
+            BUILD_NUMBER=${{ env.BUILD_NUMBER }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
 
   buildAmd64Image:
     name: Build and push AMD64 image
@@ -193,8 +194,9 @@ jobs:
           provenance: false # Disable provenance to avoid unknown/unknown
           sbom: false       # Disable sbom to avoid unknown/unknown
           build-args: |
-            buildDate=${{ env.BUILD_DATE }}
-            version=${{ env.BUILD_VERSION }}
+            BUILD_VERSION=${{ env.BUILD_VERSION }}
+            BUILD_NUMBER=${{ env.BUILD_NUMBER }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
 
   mergeImages:
     name: Merge ARM64 and AMD64 images and push to registry
