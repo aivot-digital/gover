@@ -23,6 +23,7 @@ import {FormsApiService} from '../../modules/forms/forms-api-service';
 import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
 import {ExportApplicationDialog} from '../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
+import {createCustomerPath} from '../../utils/url-path-utils';
 
 
 export function ApplicationListItem(props: ApplicationListItemProps): JSX.Element {
@@ -110,6 +111,8 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
             dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
         }
     };
+
+    const versionLink = createCustomerPath(`${props.application.id}/${props.application.version}`);
 
     return (
         <Box className={styles.listItem}>
@@ -223,7 +226,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         <MenuItem
                             component="a"
-                            href={`/${props.application.slug}/${props.application.version}`}
+                            href={versionLink}
                             target="_blank"
                         >
                             <ListItemIcon>
@@ -236,10 +239,9 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         <MenuItem
                             onClick={() => {
-                                const link = `${window.location.protocol}//${window.location.host}/${props.application.slug}/${props.application.version}`;
                                 navigator
                                     .clipboard
-                                    .writeText(link)
+                                    .writeText(versionLink)
                                     .then(() => {
                                         dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert'));
                                     })
@@ -260,8 +262,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
 
                         <MenuItem
                             onClick={async () => {
-                                const link = `${window.location.protocol}//${window.location.host}/${props.application.slug}/${props.application.version}`;
-                                await handleDownloadQrCode(link, `qr-code-${props.application.slug}-${(props.application.version).replace(/\./g, '-')}.png`);
+                                await handleDownloadQrCode(versionLink, `qr-code-${props.application.slug}-${(props.application.version).replace(/\./g, '-')}.png`);
                                 handleCloseOptions();
                             }}
                         >
