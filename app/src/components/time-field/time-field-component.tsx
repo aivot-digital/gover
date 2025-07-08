@@ -1,9 +1,11 @@
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV2';
-import deLocale from 'date-fns/locale/de';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import de from 'date-fns/locale/de';
 import {useEffect, useRef, useState} from 'react';
 import {renderTimeViewClock} from '@mui/x-date-pickers/timeViewRenderers';
 import {SxProps, Theme} from "@mui/material";
+import type { Locale } from 'date-fns';
+const deLocale = de as unknown as Locale;
 
 interface TimeFieldComponentProps {
     label: string;

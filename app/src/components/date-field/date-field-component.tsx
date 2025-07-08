@@ -1,9 +1,11 @@
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
 import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV2';
-import deLocale from 'date-fns/locale/de';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import de from 'date-fns/locale/de';
 import {DateFieldComponentProps} from "./date-field-component-props";
 import {useEffect, useMemo, useRef, useState} from 'react';
+import type { Locale } from 'date-fns';
+const deLocale = de as unknown as Locale;
 
 const formatMap = {
     [DateFieldComponentModelMode.Day]: 'dd.MM.yyyy',
