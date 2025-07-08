@@ -197,7 +197,7 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 {
                     identityProviders != null &&
                     identityProviders.length === 0 &&
-                    <Alert>
+                    <Alert severity="info">
                         <AlertTitle>
                             Keine Nutzerkontenanbieter verfügbar
                         </AlertTitle>
