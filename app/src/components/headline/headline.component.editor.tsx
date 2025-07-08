@@ -5,6 +5,8 @@ import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
+import type { JSX } from "react";
+
 export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, ElementTreeEntity>): JSX.Element {
     return (
         <>

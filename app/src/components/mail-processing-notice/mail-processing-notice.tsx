@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type JSX } from "react";
 import { Alert, AlertTitle, Typography } from "@mui/material";
 
 export function MailProcessingNotice(): JSX.Element {

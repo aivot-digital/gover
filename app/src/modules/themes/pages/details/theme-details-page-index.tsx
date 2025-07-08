@@ -1,5 +1,5 @@
 import {Alert, AlertTitle, Box, Button, Divider, Grid, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
+import React, { useContext, useMemo, useState, type JSX } from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';

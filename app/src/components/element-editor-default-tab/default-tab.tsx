@@ -8,7 +8,7 @@ import {type AnyFormElement} from '../../models/elements/form/any-form-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {EditorDispatcher} from '../editor-dispatcher';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';

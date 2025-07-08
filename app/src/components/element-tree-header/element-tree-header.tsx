@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState, type JSX } from 'react';
 import {Box, Divider, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
 import {
     selectTreeElementSearch,
@@ -62,7 +62,7 @@ const SEARCH_DEBOUNCE_TIMEOUT = 600; // 2 seconds
 export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends ElementTreeEntity>(props: ElementTreeHeaderProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();
 
-    const searchDebounceTimeout = useRef<NodeJS.Timeout>();
+    const searchDebounceTimeout = useRef<NodeJS.Timeout>(undefined);
 
     const theme = useTheme();
 

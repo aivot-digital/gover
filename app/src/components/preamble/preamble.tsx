@@ -1,5 +1,5 @@
 import {Box, Grid, useTheme} from '@mui/material';
-import React from 'react';
+import React, { type JSX } from 'react';
 
 interface PreambleProps {
     text: string;

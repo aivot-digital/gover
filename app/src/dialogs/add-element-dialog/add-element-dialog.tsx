@@ -1,6 +1,6 @@
 import {Box, Dialog, Grid, Tab, Tabs} from '@mui/material';
 import {type AddElementDialogProps} from './add-element-dialog-props';
-import React, {useState} from 'react';
+import React, { useState, type JSX } from 'react';
 import {type ElementType} from '../../data/element-type/element-type';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {PresetTab} from './tabs/preset-tab';

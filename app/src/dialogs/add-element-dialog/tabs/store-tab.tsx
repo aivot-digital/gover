@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {cloneElement} from '../../../utils/clone-element';
 import {type BaseTabProps} from './base-tab-props';
 import {useAppSelector} from '../../../hooks/use-app-selector';

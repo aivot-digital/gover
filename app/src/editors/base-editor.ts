@@ -1,6 +1,8 @@
 import {type AnyElement} from '../models/elements/any-element';
 import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 
+import type { JSX } from "react";
+
 export interface BaseEditorProps<T extends AnyElement, E extends ElementTreeEntity> {
     element: T;
     onPatch: (patch: Partial<T>) => void;

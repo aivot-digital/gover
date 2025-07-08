@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Box, Button, Container, type SxProps, Typography, useTheme} from '@mui/material';
 import {type AppFooterProps} from './app-footer-props';
 import {AppMode} from '../../data/app-mode';

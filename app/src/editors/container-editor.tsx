@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {type BaseEditorProps} from './base-editor';
 import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {type StoreDetailModule} from '../models/entities/store-detail-module';

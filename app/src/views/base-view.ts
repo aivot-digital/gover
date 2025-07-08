@@ -8,7 +8,7 @@ export interface BaseViewProps<M extends AnyElement, V> {
     value?: V | null | undefined;
     idPrefix?: string;
     allElements: AnyElement[];
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
     isBusy: boolean;
     isDeriving: boolean;
     valueOverride?: {

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Box, Grid, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -156,7 +156,6 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -268,14 +267,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Für dieses Formular zuständige Fachbereiche"
                 variant="h5"
             >
                 Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge bearbeitet (falls abweichend).
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -335,14 +332,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Erscheinungsbild"
                 variant="h5"
             >
                 Hinterlegen Sie bei Bedarf ein abweichendes Farbschema und wählen Sie ggf. eine PDF-Vorlage, welche zur Generierung des Formulars zur Offline-Einreichung verwendet wird.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -409,14 +404,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     </Box>
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Fristen"
                 variant="h5"
             >
                 Geben Sie die für diesen Antrag gültigen Fristen ein, welche den Antragstellenden im Formular angezeigt werden.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -439,14 +432,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Kontakte"
                 variant="h5"
             >
                 Kontaktinformationen werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen möchten.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -486,14 +477,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Hinweise zur Offline-Einreichung"
                 variant="h5"
             >
                 Diese Angaben werden für den PDF-Vordruck des Formulars genutzt. Sie sind nicht relevant, wenn ausschließlich eine Online-Einreichung zugelassen wird.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}

@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, { useMemo, type JSX } from 'react';
 import {type FormMetricsProps} from './form-metrics-props';
 import {Box, Table, TableBody, TableCell, TableContainer, TableRow, Typography} from '@mui/material';
 import {flattenElements} from '../../utils/flatten-elements';

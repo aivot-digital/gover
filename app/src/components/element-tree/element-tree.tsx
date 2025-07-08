@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, { useRef, useState, type JSX } from 'react';
 import {Box, Button, Divider, Typography} from '@mui/material';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
@@ -20,7 +20,7 @@ import {AppInfo} from '../../app-info';
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>): JSX.Element {
     const [showAddDialog, setShowAddDialog] = useState(false);
 
-    const scrollContainerRef = useRef<HTMLDivElement>();
+    const scrollContainerRef = useRef<HTMLDivElement>(undefined);
 
     const handleAddElement = (element: AnyElement): void => {
         props.onPatch({

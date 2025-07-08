@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FormGroup, Grid, InputLabel} from '@mui/material';
 import {CheckboxTree} from '../checkbox-tree/checkbox-tree';

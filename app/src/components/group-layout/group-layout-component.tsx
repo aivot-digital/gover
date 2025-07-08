@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {Grid} from '@mui/material';
 import {type GroupLayoutComponentProps} from './group-layout-component-props';

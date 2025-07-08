@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import {AppToolbarAction, type AppToolbarProps} from './app-toolbar-props';
 import {AppBar, Box, Button, IconButton, styled, Toolbar, Tooltip, Typography} from '@mui/material';
 import {Link} from 'react-router-dom';

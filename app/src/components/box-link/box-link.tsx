@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import styles from './box-link.module.scss';
 import {type BoxLinkProps} from './box-link-props';
 import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';

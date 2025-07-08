@@ -1,4 +1,4 @@
-import React, {type FormEvent, type PropsWithChildren, useState} from 'react';
+import React, { type FormEvent, type PropsWithChildren, useState, type JSX } from 'react';
 import {type FormPageWrapperProps} from './form-page-wrapper-props';
 import {PageWrapper} from '../page-wrapper/page-wrapper';
 import {Box, Button, Tab, Tabs} from '@mui/material';

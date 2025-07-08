@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Grid, List, ListItem, Typography, useTheme} from '@mui/material';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseSummaryProps} from '../../summaries/base-summary';

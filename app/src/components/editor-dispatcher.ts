@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type EditorDispatcherProps} from './editor-dispatcher-props';
 import {type AnyElement} from '../models/elements/any-element';
 import {editors as Editors} from '../editors';

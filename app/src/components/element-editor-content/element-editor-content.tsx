@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {DefaultTab} from '../element-editor-default-tab/default-tab';

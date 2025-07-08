@@ -4,7 +4,7 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {OptionListInput} from '../option-list-input/option-list-input';
 import {type SelectFieldElementOption} from '../../models/elements/form/input/select-field-element';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {isStringArray} from '../../utils/is-string-array';
 import {CheckboxFieldComponent} from "../checkbox-field/checkbox-field-component";
 

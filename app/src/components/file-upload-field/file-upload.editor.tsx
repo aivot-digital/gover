@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormHelperText, Grid} from '@mui/material';
 import {type FileUploadElement} from '../../models/elements/form/input/file-upload-element';
 import {type BaseEditorProps} from '../../editors/base-editor';

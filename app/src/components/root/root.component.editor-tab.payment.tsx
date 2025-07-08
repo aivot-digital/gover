@@ -1,4 +1,4 @@
-import React, {useEffect, useReducer, useState} from 'react';
+import React, { useEffect, useReducer, useState, type JSX } from 'react';
 import {Box, Button, Grid, IconButton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -561,7 +561,6 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
             >
                 Wählen Sie einen Zahlungsdienstleister aus und hinterlegen Sie Zahlungspositionen, um Online-Zahlungen über dieses Formular zu ermöglichen.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -604,7 +603,6 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                 </Grid>
             </Grid>
-
             {
                 isStringNotNullOrEmpty(props.entity.paymentProvider) &&
                 <>
@@ -683,7 +681,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                     props.onPatchEntity({
                                         ...props.entity,
                                         products: [
-                                            ...props.entity.products ?? [],
+                                            ...(props.entity.products ?? []),
                                             {
                                                 id: uuid4(),
                                                 reference: '',
@@ -722,7 +720,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                     product={product}
                                     form={props.entity}
                                     onDelete={() => {
-                                        const products = [...props.entity.products ?? []];
+                                        const products = [...(props.entity.products ?? [])];
                                         products.splice(index, 1);
                                         props.onPatchEntity({
                                             ...props.entity,

@@ -16,7 +16,7 @@ interface DispatcherComponentProps<M extends AnyElement, V> {
     allElements: AnyElement[];
     element: M;
     idPrefix?: string;
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
     isBusy: boolean;
     isDeriving: boolean;
     mode: 'editor' | 'viewer';
