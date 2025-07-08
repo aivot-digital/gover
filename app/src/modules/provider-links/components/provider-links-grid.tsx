@@ -43,10 +43,10 @@ export function ProviderLinksGrid() {
                 }}
             >
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <BoxLink
                         link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
                         text={'Über Gover\nHilfen, Anleitungen und FAQs'}
@@ -56,10 +56,10 @@ export function ProviderLinksGrid() {
                     providerLinks?.content.map((link, index) => (
                         <Grid
                             key={`link-${index}`}
-                            item
-                            xs={12}
-                            md={6}
-                        >
+                            size={{
+                                xs: 12,
+                                md: 6
+                            }}>
                             <BoxLink
                                 link={link.link}
                                 text={link.text}

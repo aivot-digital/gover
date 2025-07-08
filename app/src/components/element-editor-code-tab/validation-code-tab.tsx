@@ -269,7 +269,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                                 tooltip: 'Delete Expression',
                                                                 onClick: () => {
                                                                     const updatedValidationExpressions = [
-                                                                        ...props.element.validationExpressions ?? [],
+                                                                        ...(props.element.validationExpressions ?? []),
                                                                     ];
                                                                     updatedValidationExpressions.splice(index, 1);
                                                                     props.onChange({
@@ -291,7 +291,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                         value={message}
                                                         onChange={errorMessage => {
                                                             const updatedValidationExpressions = [
-                                                                ...props.element.validationExpressions ?? [],
+                                                                ...(props.element.validationExpressions ?? []),
                                                             ];
                                                             updatedValidationExpressions[index] = {
                                                                 message: errorMessage ?? '',
@@ -312,7 +312,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                         expression={expression}
                                                         onChange={(expression) => {
                                                             const updatedValidationExpressions = [
-                                                                ...props.element.validationExpressions ?? [],
+                                                                ...(props.element.validationExpressions ?? []),
                                                             ];
                                                             updatedValidationExpressions[index] = {
                                                                 message: updatedValidationExpressions[index].message,
@@ -337,7 +337,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                 onClick={() => {
                                     props.onChange({
                                         validationExpressions: [
-                                            ...props.element.validationExpressions ?? [],
+                                            ...(props.element.validationExpressions ?? []),
                                             {
                                                 expression: {
                                                     operatorIdentifier: '',
@@ -364,7 +364,6 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                     noCode={props.element.validationExpressions?.map(value => value.expression) ?? []}
                 />
             </BaseCodeTab>
-
             <SelectElementDialog
                 open={showElementSelectDialog}
                 onSelect={(element) => {

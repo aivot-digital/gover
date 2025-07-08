@@ -45,10 +45,10 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     columnSpacing={4}
                 >
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 6
+                        }}>
                         <RichTextEditorComponentView
                             value={props.requirements ?? ''}
                             onChange={(req) => {
@@ -132,7 +132,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     </Box>
                 }
             </Box>
-
             <Menu
                 open={anchorEl != null}
                 anchorEl={anchorEl}
@@ -171,7 +170,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     </ListItemText>
                 </MenuItem>
             </Menu>
-
             <Dialog
                 open={showFunctionSelector}
                 onClose={() => {
@@ -222,7 +220,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     />
                 </DialogContent>
             </Dialog>
-
             <ConfirmDialog
                 title="Funktion löschen"
                 onConfirm={confirmDelete}
@@ -235,7 +232,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann.
                 </Typography>
             </ConfirmDialog>
-
             <ConfirmDialog
                 title="Funktionstyp ändern"
                 onConfirm={confirmChangeFunction}

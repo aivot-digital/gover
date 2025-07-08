@@ -1,5 +1,5 @@
 import {type VersionsPresetDialogProps} from './versions-preset-dialog-props';
-import {type DialogProps} from '@mui/material/Dialog/Dialog';
+import {type DialogProps} from '@mui/material/Dialog';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {Dialog, DialogContent, List, ListItem, ListItemButton, ListItemText} from '@mui/material';
 import React, { useEffect, useState, type JSX } from 'react';

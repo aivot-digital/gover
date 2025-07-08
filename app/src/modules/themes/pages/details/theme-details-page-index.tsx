@@ -194,10 +194,10 @@ export function ThemeDetailsPageIndex() {
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Name des Farbschemas"
                         value={theme.name}
@@ -211,7 +211,6 @@ export function ThemeDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-
             {
                 themeId === appThemeId &&
                 <AlertComponent
@@ -228,7 +227,6 @@ export function ThemeDetailsPageIndex() {
                     </Box>
                 </AlertComponent>
             }
-
             <Typography
                 variant="h5"
                 sx={{
@@ -238,12 +236,10 @@ export function ThemeDetailsPageIndex() {
             >
                 Auswahl der Farben
             </Typography>
-
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Wählen Sie die Farben für das Farbschema aus. Die Farben werden in der Anwendung
                 verwendet, um die Benutzeroberfläche zu gestalten. Bitte beachten Sie auch die Hinweise zur Barrierefreiheit.
             </Typography>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -274,13 +270,11 @@ export function ThemeDetailsPageIndex() {
                     onChange={handleInputChange("accent")}
                 />
             </Grid>
-
             <Divider
                 sx={{
                     my: 8,
                 }}
             />
-
             <Grid
                 container
                 columnSpacing={4}
@@ -310,7 +304,6 @@ export function ThemeDetailsPageIndex() {
                     onChange={handleInputChange("success")}
                 />
             </Grid>
-
             <Alert
                 severity="info"
                 sx={{mt: 4}}
@@ -323,7 +316,6 @@ export function ThemeDetailsPageIndex() {
                     Hierbei gilt der Kontrast von der gewählten Farbe zur Vorder- (i.d.R. Text) oder Hintergrundfarbe.
                 </Typography>
             </Alert>
-
             {
                 userIsAdmin &&
                 <Box
@@ -373,9 +365,7 @@ export function ThemeDetailsPageIndex() {
                     }
                 </Box>
             }
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
                 title="Fachbereich löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
@@ -388,7 +378,6 @@ export function ThemeDetailsPageIndex() {
                     Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
-
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
@@ -396,7 +385,6 @@ export function ThemeDetailsPageIndex() {
                 solutionText="Bitte konfigurieren Sie für diese Formulare ein anderes Farbschema und versuchen Sie es erneut:"
                 links={relatedApplications}
             />
-
             <ConstraintDialog
                 open={showConstraintDefaultThemeDialog}
                 onClose={() => setConstraintDefaultThemeDialog(false)}
@@ -628,11 +616,11 @@ function ColorPicker({
 }): JSX.Element {
     return (
         <Grid
-            item
-            xs={12}
-            md={6}
-            lg={4}
-        >
+            size={{
+                xs: 12,
+                md: 6,
+                lg: 4
+            }}>
             <Box
                 sx={{
                     mb: 1,
@@ -657,7 +645,6 @@ function ColorPicker({
                     {label}
                 </Typography>
             </Box>
-
             <SketchPicker
                 color={value}
                 onChange={(color) => {

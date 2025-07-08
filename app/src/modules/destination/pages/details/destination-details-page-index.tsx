@@ -257,20 +257,18 @@ export function DestinationDetailsPageIndex() {
             >
                 Schnittstelle konfigurieren
             </Typography>
-
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Konfigurieren Sie die Schnittstelle, an die Anträge gesendet werden sollen. Sie können die Einstellungen jederzeit anpassen, auch wenn die Schnittstelle bereits für Formulare verwendet wird.
             </Typography>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Name der Schnittstelle"
                         placeholder="Schnittstelle"
@@ -285,10 +283,10 @@ export function DestinationDetailsPageIndex() {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Schnittstellen-Typ"
                         hint="Der Typ bestimmt die Übertragungsart für diese Schnittstelle."
@@ -309,7 +307,6 @@ export function DestinationDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-
             {
                 destination?.type === DestinationType.Mail &&
                 <>
@@ -332,10 +329,10 @@ export function DestinationDetailsPageIndex() {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="Mail-To-Adressen"
                                 placeholder="destination@gover.digital"
@@ -349,10 +346,10 @@ export function DestinationDetailsPageIndex() {
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="Mail CC-Adressen"
                                 placeholder="other-destination@gover.digital"
@@ -365,10 +362,10 @@ export function DestinationDetailsPageIndex() {
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="Mail BCC-Adressen"
                                 placeholder="yet-another-destination@gover.digital"
@@ -381,11 +378,11 @@ export function DestinationDetailsPageIndex() {
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={12}
                             sx={{mb: 3}}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 12
+                            }}>
                             <Box>
                                 <MailProcessingNotice />
                             </Box>
@@ -393,7 +390,6 @@ export function DestinationDetailsPageIndex() {
                     </Grid>
                 </>
             }
-
             {
                 destination?.type === DestinationType.HTTP &&
                 <>
@@ -416,10 +412,10 @@ export function DestinationDetailsPageIndex() {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="API Adresse"
                                 placeholder="https://my-api-hostname.com:9000/v1/gover-hook"
@@ -433,10 +429,10 @@ export function DestinationDetailsPageIndex() {
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="API Schlüssel"
                                 placeholder="my-super-secret-api-key"
@@ -451,7 +447,6 @@ export function DestinationDetailsPageIndex() {
                     </Grid>
                 </>
             }
-
             <Typography
                 variant="h6"
                 sx={{
@@ -461,20 +456,18 @@ export function DestinationDetailsPageIndex() {
             >
                 Einstellungen für Anlagen
             </Typography>
-
             <Typography sx={{mb: 2}}>
                 Konfigurieren Sie die maximale Größe der Anlagen, die an die Schnittstelle übermittelt werden können.
             </Typography>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <NumberFieldComponent
                         label="Maximale Gesamtgröße der Anlagen (MB)"
                         placeholder="20"
@@ -488,12 +481,11 @@ export function DestinationDetailsPageIndex() {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                />
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }} />
             </Grid>
-
             {
                 userIsAdmin &&
                 <Box
@@ -543,9 +535,7 @@ export function DestinationDetailsPageIndex() {
                     }
                 </Box>
             }
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
                 title="Schnittstelle löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
@@ -558,7 +548,6 @@ export function DestinationDetailsPageIndex() {
                     Möchten Sie diese Schnittstelle wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
-
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}

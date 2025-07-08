@@ -259,10 +259,10 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            md={8}
-                        >
+                            size={{
+                                xs: 12,
+                                md: 8
+                            }}>
                             <AlertComponent
                                 color="warning"
                                 title="Bitte bezahlen Sie die für Ihren Antrag anfallenden Gebühren"
@@ -281,15 +281,15 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            md={4}
                             sx={{
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
                             }}
-                        >
+                            size={{
+                                xs: 12,
+                                md: 4
+                            }}>
                             <Box
                                 sx={{
                                     mt: {
@@ -328,7 +328,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     </Grid>
                 </Box>
             }
-
             {
                 status != null &&
                 status.paymentDone &&
@@ -345,7 +344,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     Vielen Dank!
                 </AlertComponent>
             }
-
             {
                 status != null &&
                 status.paymentFailed &&
@@ -362,14 +360,12 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
                 </AlertComponent>
             }
-
             {
                 status != null &&
                 status.paymentProviderName != null &&
                 status.paymentProviderUrl != null &&
                 <Divider sx={{my: 8}} />
             }
-
             {
                 submitStep?.textPostSubmit != null &&
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
@@ -379,7 +375,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     logoAlt={application?.root.introductionStep.initiativeName}
                 />
             }
-
             {
                 status != null &&
                 !status.accessExpired &&
@@ -391,9 +386,9 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     }}
                 >
                     <Grid
-                        item
-                        md={6}
-                    >
+                        size={{
+                            md: 6
+                        }}>
                         <Typography
                             component="h3"
                             variant="h5"
@@ -427,9 +422,9 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                         </Button>
                     </Grid>
                     <Grid
-                        item
-                        md={6}
-                    >
+                        size={{
+                            md: 6
+                        }}>
                         <Typography
                             component="h3"
                             variant="h5"
@@ -485,8 +480,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     </Grid>
                 </Grid>
             }
-
-
             {
                 status != null &&
                 status.accessExpired &&
@@ -510,9 +503,7 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     </AlertComponent>
                 </Box>
             }
-
             <Divider sx={{my: 8}} />
-
             <Typography
                 component="h3"
                 variant="h5"
@@ -549,7 +540,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     }}
                 />
             </Box>
-
             {shouldRenderConfetti && (
                 <ReactCanvasConfetti
                     refConfetti={getInstance}
@@ -557,7 +547,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     style={canvasStyles}
                 />
             )}
-
             <InfoDialog
                 title="E-Mail versendet"
                 severity="success"

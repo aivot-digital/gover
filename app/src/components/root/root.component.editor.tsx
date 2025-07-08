@@ -90,10 +90,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.entity?.title}
                         label="Interner Titel des Formulars"
@@ -117,10 +117,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.tabTitle}
                         label="Titel des Formulars im Browser-Tab"
@@ -135,10 +135,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.headline}
                         label="Öffentlicher Titel & Überschrift des Formulars"
@@ -161,10 +161,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Allgemeiner Link des Formulars"
                         disabled
@@ -202,10 +202,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
 
                     <TextFieldComponent
                         label="Versionsspezifischer Link des Formulars"
@@ -244,10 +244,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Art des Formulars"
                         hint="Öffentliche Formulare werden auf der Übersichtsseite angezeigt und können von Bürger:innen ausgefüllt werden. Interne Formulare werden nicht auf der Übersichtsseite angezeigt, können aber über den Link geteilt werden."
@@ -278,10 +278,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Entwickelnder Fachbereich"
                         value={props.entity?.developingDepartmentId?.toString() ?? undefined}
@@ -298,10 +298,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Zuständiger Fachbereich"
                         value={props.entity?.responsibleDepartmentId?.toString() ?? undefined}
@@ -315,10 +315,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Bewirtschaftender Fachbereich"
                         value={props.entity?.managingDepartmentId?.toString() ?? undefined}
@@ -343,10 +343,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Farbschema (Visuelles Erscheinungsbild)"
                         value={props.entity?.themeId?.toString() ?? undefined}
@@ -360,10 +360,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <Box
                         display="flex"
                         alignItems="center"
@@ -415,10 +415,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Antragsfristen"
                         multiline
@@ -443,10 +443,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Fachlicher Support"
                         value={props.entity?.legalSupportDepartmentId?.toString() ?? undefined}
@@ -460,10 +460,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Technischer Support"
                         value={props.entity?.technicalSupportDepartmentId?.toString() ?? undefined}
@@ -488,10 +488,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <RichTextEditorComponentView
                         hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
                         value={props.element.offlineSubmissionText ?? ''}

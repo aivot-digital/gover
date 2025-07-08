@@ -22,10 +22,10 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={element.placeholder}
                         label="Platzhalter"
@@ -39,10 +39,10 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
 
                     <Autocomplete
                         id="autocomplete-select"
@@ -88,10 +88,10 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <NumberFieldComponent
                         label="Minimalanzahl an Zeichen"
                         value={element.minCharacters}
@@ -106,10 +106,10 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <NumberFieldComponent
                         label="Maximalanzahl an Zeichen"
                         value={element.maxCharacters}
@@ -124,10 +124,10 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <CheckboxFieldComponent
                         label="Mehrzeilige Texteingabe"
                         value={element.isMultiline}

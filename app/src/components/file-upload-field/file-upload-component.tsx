@@ -62,7 +62,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         const maxFiles = props.isMultifile ? (props.maxFiles != null && props.maxFiles > 0 ? props.maxFiles : null) : 1;
 
         const fileUploadItems: File[] = [
-            ...props.value ?? [],
+            ...(props.value ?? []),
         ];
         let addedItems = 0;
         for (let i = 0; (i < files.length && (maxFiles == null || fileUploadItems.length < maxFiles)); i++) {

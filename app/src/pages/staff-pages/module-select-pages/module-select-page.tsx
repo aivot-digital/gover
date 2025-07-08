@@ -57,15 +57,12 @@ export function ModuleSelectPage(): JSX.Element {
             <MetaElement
                 title={providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}
             />
-
             <AppHeader
                 mode={AppMode.Staff}
             />
-
             <Introductory
                 mode={AppMode.Staff}
             />
-
             <Box
                 sx={{
                     backgroundColor: '#F3F3F3',
@@ -95,9 +92,11 @@ export function ModuleSelectPage(): JSX.Element {
                           sx={{mt: 2, mb: 3}}>
                         {
                             moduleLinks.map(linkItem => (
-                                <Grid item
-                                      md={6}
-                                      key={linkItem.to}>
+                                <Grid
+                                    key={linkItem.to}
+                                    size={{
+                                        md: 6
+                                    }}>
                                     <Card sx={{maxWidth: "100%"}}>
                                         <CardActionArea onClick={() => {
                                             if (saveSelection) {
@@ -151,9 +150,7 @@ export function ModuleSelectPage(): JSX.Element {
                     />
                 </Container>
             </Box>
-
             <ProviderLinksGrid/>
-
             <AppFooter mode={AppMode.Staff}/>
         </>
     );

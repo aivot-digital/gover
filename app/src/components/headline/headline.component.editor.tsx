@@ -15,10 +15,10 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.content ?? ''}
                         label="Überschrift"
@@ -31,15 +31,15 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                />
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }} />
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <CheckboxFieldComponent
                         label="Kompakte Überschrift verwenden"
                         value={props.element.small}
@@ -53,10 +53,10 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <CheckboxFieldComponent
                         label="In Großbuchstaben anzeigen"
                         value={props.element.uppercase}

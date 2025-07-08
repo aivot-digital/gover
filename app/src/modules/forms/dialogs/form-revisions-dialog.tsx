@@ -306,10 +306,10 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                         sx={{mt: -1}}
                                                     >
                                                         <Grid
-                                                            item
-                                                            xs={12}
-                                                            md={6}
-                                                        >
+                                                            size={{
+                                                                xs: 12,
+                                                                md: 6
+                                                            }}>
                                                             <Typography
                                                                 variant="caption"
                                                                 sx={{
@@ -323,10 +323,10 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                                                         </Grid>
 
                                                         <Grid
-                                                            item
-                                                            xs={12}
-                                                            md={6}
-                                                        >
+                                                            size={{
+                                                                xs: 12,
+                                                                md: 6
+                                                            }}>
                                                             <Typography
                                                                 variant="caption"
                                                                 sx={{
@@ -398,7 +398,6 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Elemen
                     }
                 </DialogContent>
             </Dialog>
-
             <ConfirmDialog
                 title="Änderung rückgängig machen"
                 onCancel={() => setHandleRollback(undefined)}

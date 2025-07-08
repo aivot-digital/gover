@@ -222,20 +222,18 @@ export function DepartmentsDetailsPageIndex() {
             >
                 Öffentliche Informationen des Fachbereichs
             </Typography>
-
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Hinterlegen Sie grundsätzliche Informationen über diesen Fachbereich. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
             </Typography>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Name des Fachbereichs"
                         value={department.name}
@@ -248,15 +246,15 @@ export function DepartmentsDetailsPageIndex() {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                />
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }} />
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Adresse des Fachbereichs"
                         value={department.address}
@@ -270,7 +268,6 @@ export function DepartmentsDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-
             <Typography
                 variant="h6"
                 sx={{
@@ -280,20 +277,18 @@ export function DepartmentsDetailsPageIndex() {
             >
                 Kontakt-E-Mail-Adressen für antragstellende Personen
             </Typography>
-
             <Typography sx={{mb: 2}}>
                 Die hier hinterlegten Kontaktinformationen werden Nutzer:innen zum Beispiel im Hilfe-Dialog zur Verfügung gestellt.
             </Typography>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Kontakt-E-Mail-Adresse fachliche Unterstützung"
                         type="email"
@@ -306,10 +301,10 @@ export function DepartmentsDetailsPageIndex() {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Kontakt-E-Mail-Adresse technische Unterstützung"
                         type="email"
@@ -322,18 +317,15 @@ export function DepartmentsDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-
             <Typography
                 variant="h6"
                 sx={{mt: 2, mb: 1}}
             >
                 Rechtliche Informationen
             </Typography>
-
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Die folgenden rechtlichen Angaben und Texte können in Formularen referenziert werden.
             </Typography>
-
             <Box sx={{mb: 3}}>
                 <RichTextEditorComponentView
                     label="Impressum"
@@ -343,7 +335,6 @@ export function DepartmentsDetailsPageIndex() {
                     error={errors.imprint}
                 />
             </Box>
-
             <Box sx={{mb: 3}}>
                 <RichTextEditorComponentView
                     label="Datenschutzerklärung"
@@ -353,7 +344,6 @@ export function DepartmentsDetailsPageIndex() {
                     error={errors.privacy}
                 />
             </Box>
-
             <Box sx={{mb: 3}}>
                 <RichTextEditorComponentView
                     label="Barrierefreiheitserklärung"
@@ -363,7 +353,6 @@ export function DepartmentsDetailsPageIndex() {
                     error={errors.accessibility}
                 />
             </Box>
-
             <Typography
                 variant="h5"
                 sx={{
@@ -373,12 +362,10 @@ export function DepartmentsDetailsPageIndex() {
             >
                 Zentrale E-Mail-Adressen für Systembenachrichtigungen
             </Typography>
-
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Systembenachrichtigungen (wie z.B. Eingang eines neuen Antrags) werden grundsätzlich an jede Mitarbeiter:in im Fachbereich gesendet.
                 Wenn Sie hier eine oder mehrere zentrale E-Mail-Adressen hinterlegen, erhalten nur noch diese die Systembenachrichtigungen.
             </Typography>
-
             <TextFieldComponent
                 label="Zentrale E-Mail-Adressen für Systembenachrichtigungen"
                 value={department.departmentMail ?? undefined}
@@ -388,7 +375,6 @@ export function DepartmentsDetailsPageIndex() {
                 error={errors.departmentMail}
                 hint="Sie können mehrere E-Mail-Adressen durch ein Komma getrennt eingeben."
             />
-
             <Box
                 sx={{
                     display: 'flex',
@@ -435,9 +421,7 @@ export function DepartmentsDetailsPageIndex() {
                     </Button>
                 }
             </Box>
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
                 title="Fachbereich löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
@@ -450,7 +434,6 @@ export function DepartmentsDetailsPageIndex() {
                     Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
-
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}

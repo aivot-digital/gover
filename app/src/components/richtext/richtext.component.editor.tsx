@@ -12,10 +12,10 @@ export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement, 
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <RichTextEditorComponentView
                     value={props.element.content ?? ''}
                     onChange={(value) => {

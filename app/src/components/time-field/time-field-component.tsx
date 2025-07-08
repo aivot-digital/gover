@@ -1,5 +1,5 @@
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
-import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV2';
 import deLocale from 'date-fns/locale/de';
 import {useEffect, useRef, useState} from 'react';
 import {renderTimeViewClock} from '@mui/x-date-pickers/timeViewRenderers';

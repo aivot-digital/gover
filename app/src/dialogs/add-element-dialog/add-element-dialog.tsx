@@ -39,7 +39,6 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
             >
                 Neues Element hinzufügen
             </DialogTitleWithClose>
-
             <Tabs
                 value={currentTab}
                 onChange={(evt, val) => {
@@ -63,12 +62,9 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
                     value={2}
                 />
             </Tabs>
-
             <Grid container>
                 <Grid
-                    item
-                    xs={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}
-                >
+                    size={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}>
                     <Box
                         sx={{
                             height: '50vh',
@@ -106,10 +102,7 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
                 {
                     currentTab === 0 &&
                     showElementInfo != null &&
-                    <Grid
-                        item
-                        xs={6}
-                    >
+                    <Grid size={6}>
                         <Box
                             sx={{
                                 height: '50vh',
@@ -129,10 +122,7 @@ export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
                 {
                     currentTab === 2 &&
                     showModuleId != null &&
-                    <Grid
-                        item
-                        xs={6}
-                    >
+                    <Grid size={6}>
                         <Box
                             sx={{
                                 height: '50vh',

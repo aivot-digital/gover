@@ -20,16 +20,15 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                 }}
                 disabled={!props.editable}
             />
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.caption ?? ''}
                         label="Bildbeschreibung (Caption)"
@@ -43,10 +42,10 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.alt ?? ''}
                         label="Alternativtext (Alt-Text)"
@@ -61,7 +60,6 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                     />
                 </Grid>
             </Grid>
-
             <Alert severity="info" sx={{mt: 4}} icon={<AccessibilityNewIcon/>}>
                 <AlertTitle>Hinweis zur Barrierefreiheit von eingebundenen Bildern</AlertTitle>
                 <Typography sx={{maxWidth: 860}}>

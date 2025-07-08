@@ -1,4 +1,4 @@
-import {type DialogProps} from '@mui/material/Dialog/Dialog';
+import {type DialogProps} from '@mui/material/Dialog';
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography, useTheme} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';

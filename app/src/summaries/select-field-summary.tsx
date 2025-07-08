@@ -27,9 +27,6 @@ export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, s
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -37,7 +34,10 @@ export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, s
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -51,10 +51,10 @@ export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, s
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography
                     variant="body2"
                 >

@@ -13,10 +13,10 @@ export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement, Elem
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <NumberFieldComponent
                     value={props.element.height != null ? parseInt(props.element.height) : undefined}
                     label="Abstand"

@@ -88,7 +88,6 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     </Button>
                 }
             </Box>
-
             {
                 expanded &&
                 <>
@@ -97,10 +96,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         columnSpacing={4}
                         sx={{mt: 2}}
                     >
-                        <Grid
-                            item
-                            xs={6}
-                        >
+                        <Grid size={6}>
                             <TextFieldComponent
                                 label="Referenz"
                                 value={props.product.reference}
@@ -121,10 +117,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="ID"
                                 value={props.product.id}
@@ -146,10 +142,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="Beschreibung"
                                 value={props.product.description}
@@ -172,16 +168,16 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        />
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }} />
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={3}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 3
+                            }}>
                             <NumberFieldComponent
                                 label="Einzelpreis (Netto)"
                                 value={props.product.netPrice}
@@ -201,10 +197,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={3}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 3
+                            }}>
                             <NumberFieldComponent
                                 label="Steuersatz"
                                 value={props.product.taxRate}
@@ -224,10 +220,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         </Grid>
 
                         <Grid
-                            item
-                            xs={12}
-                            lg={3}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 3
+                            }}>
                             <NumberFieldComponent
                                 label="Einzelpreis (Brutto)"
                                 value={props.product.netPrice * (1 + props.product.taxRate / 100)}
@@ -245,10 +241,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                         {
                             props.product.taxRate === 0 &&
                             <Grid
-                                item
-                                xs={12}
-                                lg={6}
-                            >
+                                size={{
+                                    xs: 12,
+                                    lg: 6
+                                }}>
                                 <TextFieldComponent
                                     label="Begründung des Steuersatzes"
                                     value={props.product.taxInformation}
@@ -337,10 +333,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             sx={{mt: 1}}
                         >
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
-                            >
+                                size={{
+                                    xs: 12,
+                                    lg: 3
+                                }}>
                                 <NumberFieldComponent
                                     label="Menge"
                                     value={props.product.upfrontFixedQuantity}
@@ -360,10 +356,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             </Grid>
 
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
-                            >
+                                size={{
+                                    xs: 12,
+                                    lg: 3
+                                }}>
                                 <NumberFieldComponent
                                     label="Gesamtpreis (Netto)"
                                     value={props.product.netPrice * (props.product.upfrontFixedQuantity ?? 0)}
@@ -379,10 +375,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             </Grid>
 
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
-                            >
+                                size={{
+                                    xs: 12,
+                                    lg: 3
+                                }}>
                                 <NumberFieldComponent
                                     label="Enthaltener Steuerbetrag"
                                     value={props.product.netPrice * (props.product.taxRate / 100) * (props.product.upfrontFixedQuantity ?? 0)}
@@ -397,10 +393,10 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                                 />
                             </Grid>
                             <Grid
-                                item
-                                xs={12}
-                                lg={3}
-                            >
+                                size={{
+                                    xs: 12,
+                                    lg: 3
+                                }}>
                                 <NumberFieldComponent
                                     label="Gesamtpreis (Brutto)"
                                     value={props.product.netPrice * (1 + props.product.taxRate / 100) * (props.product.upfrontFixedQuantity ?? 0)}
@@ -475,7 +471,6 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                     }
                 </>
             }
-
             <SelectElementDialog
                 open={showElementSelectDialog}
                 onSelect={(element) => {
@@ -566,10 +561,10 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
 
                     <SelectFieldComponent
                         label="Zahlungsdienstleister"
@@ -611,10 +606,10 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 label="Buchungstext"
                                 value={props.entity.paymentPurpose}

@@ -195,20 +195,20 @@ export function HelpDialog(props: HelpDialogProps): JSX.Element {
                         }}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            md={6}
-                        >
+                            size={{
+                                xs: 12,
+                                md: 6
+                            }}>
                             <BoxLink
                                 link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.title}`}
                                 text={'Fachlicher Support\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            md={6}
-                        >
+                            size={{
+                                xs: 12,
+                                md: 6
+                            }}>
                             <BoxLink
                                 link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.title}`}
                                 text={'Technischer Support\nUnterstützung bei technischen Problemen und Fehlern'}
