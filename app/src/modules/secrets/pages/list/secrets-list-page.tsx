@@ -12,6 +12,7 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function SecretsListPage() {
     useAdminGuard();
@@ -73,7 +74,7 @@ export function SecretsListPage() {
                     {
                         field: 'icon',
                         headerName: '',
-                        renderCell: () => <KeyOutlinedIcon />,
+                        renderCell: () => <CellContentWrapper><KeyOutlinedIcon /></CellContentWrapper>,
                         disableColumnMenu: true,
                         width: 24,
                         sortable: false,

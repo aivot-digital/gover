@@ -32,7 +32,6 @@ export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildr
         page: 0,
     });
 
-
     return (
         <>
             <ListHeader

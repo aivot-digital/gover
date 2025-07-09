@@ -1,7 +1,7 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Typography} from '@mui/material';
+import {Box, Typography} from '@mui/material';
 import {DescriptionOutlined, EditOutlined, GroupOutlined} from '@mui/icons-material';
 import {DepartmentsApiService} from '../../departments-api-service';
 import {Department} from '../../models/department';
@@ -12,6 +12,7 @@ import {useMemo} from 'react';
 import {isAdmin} from '../../../../utils/is-admin';
 import {useAdminMembershipGuard} from '../../../../hooks/use-admin-membership-guard';
 import {CellLink} from "../../../../components/cell-link/cell-link";
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function DepartmentsListPage() {
     const user = useSelector(selectUser);
@@ -75,7 +76,7 @@ export function DepartmentsListPage() {
                     {
                         field: 'icon',
                         headerName: '',
-                        renderCell: () => <BusinessOutlinedIcon />,
+                        renderCell: () => <CellContentWrapper><BusinessOutlinedIcon /></CellContentWrapper>,
                         disableColumnMenu: true,
                         width: 24,
                         sortable: false,

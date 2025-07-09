@@ -10,6 +10,7 @@ import {Destination} from '../../models/destination';
 import {DestinationsApiService} from '../../destinations-api-service';
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function DestinationListPage() {
     useAdminGuard();
@@ -72,7 +73,7 @@ export function DestinationListPage() {
                         headerName: '',
                         renderCell: (params) => {
                             const Icon = DestinationTypeIcons[params.row.type];
-                            return (<Icon />);
+                            return (<CellContentWrapper><Icon /></CellContentWrapper>);
                         },
                         disableColumnMenu: true,
                         width: 24,

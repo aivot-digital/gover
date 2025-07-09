@@ -39,7 +39,7 @@ export function ProviderLinksGrid() {
                 container
                 spacing={4}
                 sx={{
-                    mt: -2,
+                    mt: 2,
                 }}
             >
                 <Grid

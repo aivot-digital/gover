@@ -10,6 +10,7 @@ export function Actions(props: ActionsProps) {
                 ...props.sx,
                 display: 'flex',
                 alignItems: 'center',
+                height: '100%',
             }}
         >
             {

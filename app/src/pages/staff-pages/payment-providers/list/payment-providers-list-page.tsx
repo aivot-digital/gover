@@ -13,6 +13,7 @@ import Chip from "@mui/material/Chip";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import {CellLink} from "../../../../components/cell-link/cell-link";
 import {useAdminGuard} from "../../../../hooks/use-admin-guard";
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function PaymentProvidersListPage() {
     useAdminGuard();
@@ -79,7 +80,7 @@ export function PaymentProvidersListPage() {
                         {
                             field: 'icon',
                             headerName: '',
-                            renderCell: () => <PaymentOutlinedIcon />,
+                            renderCell: () => <CellContentWrapper><PaymentOutlinedIcon /></CellContentWrapper>,
                             disableColumnMenu: true,
                             width: 24,
                             sortable: false,

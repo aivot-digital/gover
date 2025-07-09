@@ -89,7 +89,7 @@ export function ModuleSelectPage(): JSX.Element {
 
                     <Grid container
                           spacing={4}
-                          sx={{mt: 2, mb: 3}}>
+                          sx={{mt: 5, mb: 3}}>
                         {
                             moduleLinks.map(linkItem => (
                                 <Grid

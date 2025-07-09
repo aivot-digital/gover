@@ -39,6 +39,7 @@ import {SubmissionListResponseDTO} from '../../../modules/submissions/dtos/submi
 import {SubmissionsApiService} from '../../../modules/submissions/submissions-api-service';
 import {SettingsSuggestOutlined} from "@mui/icons-material";
 import {UsersApiService} from '../../../modules/users/users-api-service';
+import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 
 type Submission = SubmissionListResponseDTO & {
     assignee: User | undefined;
@@ -93,14 +94,7 @@ const columns: Array<GridColDef<Submission>> = [
             const state = createSubmissionState(params.row);
             const Icon = state.icon;
             return (
-                <Box
-                    display="flex"
-                    alignItems="center"
-                    sx={{
-                        width: '100%',
-                        height: '100%',
-                    }}
-                >
+                <CellContentWrapper sx={{width: '100%'}}>
                     <Tooltip title={state.label}>
                         <Icon color={state.color} />
                     </Tooltip>
@@ -123,7 +117,7 @@ const columns: Array<GridColDef<Submission>> = [
                             />
                         </Tooltip>
                     }
-                </Box>
+                </CellContentWrapper>
             );
         },
         valueGetter: (value, row) => row.status,
@@ -150,7 +144,7 @@ const columns: Array<GridColDef<Submission>> = [
         field: 'assignee',
         headerName: 'Mitarbeiter:in',
         renderCell: (params) => (
-            <Box display="flex" alignItems="center">
+            <CellContentWrapper>
             {
                     params.row.destinationId != null &&
                     <DataObjectOutlinedIcon
@@ -180,7 +174,7 @@ const columns: Array<GridColDef<Submission>> = [
                     params.row.assignee == null &&
                     <i>Nicht zugewiesen</i>
                 }
-            </Box>
+            </CellContentWrapper>
         ),
         valueGetter: (value, row) => row.destination != null ? row.destination.name : (row.assignee != null ? getFullName(row.assignee) : null),
         flex: 1,
