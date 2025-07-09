@@ -96,7 +96,7 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
                     cursor: (props.disabled ?? false) ? 'not-allowed' : 'text',
                     border: '1px solid rgba(0, 0, 0, 0.23)',
                     '&:hover': (props.disabled ?? false) ? {} : {border: '1px solid rgba(0, 0, 0, 0.87)'},
-                    '&:focus-within': {borderColor: 'var(--hw-primary)'},
+                    '&:focus-within': {borderColor: (theme) => theme.palette.primary.main},
                 }}
                 className="editorWrapper"
                 onClick={() => {

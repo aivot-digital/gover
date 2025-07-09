@@ -17,9 +17,9 @@ export function MetaElement({title, titlePrefix}: MetaElementProps): JSX.Element
 
     useEffect(() => {
         const root = document.documentElement;
-        root.style.setProperty('--hw-primary', theme.palette.primary.main);
-        root.style.setProperty('--hw-primary-dark', theme.palette.primary.dark);
-        root.style.setProperty('--hw-secondary', theme.palette.secondary.main);
+        root.style.setProperty('--gover-theme-primary', theme.palette.primary.main);
+        root.style.setProperty('--gover-theme-primary-dark', theme.palette.primary.dark);
+        root.style.setProperty('--gover-theme-secondary', theme.palette.secondary.main);
     }, [theme]);
 
     return (
