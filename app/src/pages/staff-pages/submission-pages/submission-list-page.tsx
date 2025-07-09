@@ -98,6 +98,7 @@ const columns: Array<GridColDef<Submission>> = [
                     alignItems="center"
                     sx={{
                         width: '100%',
+                        height: '100%',
                     }}
                 >
                     <Tooltip title={state.label}>
@@ -125,13 +126,13 @@ const columns: Array<GridColDef<Submission>> = [
                 </Box>
             );
         },
-        valueGetter: (params) => params.row.status,
+        valueGetter: (value, row) => row.status,
         flex: 1,
     },
     {
         field: 'fileNumber',
         headerName: 'Aktenzeichen',
-        valueGetter: (params) => isStringNotNullOrEmpty(params.row.fileNumber) ? params.row.fileNumber : 'Kein Aktenzeichen',
+        valueGetter: (value, row) => isStringNotNullOrEmpty(row.fileNumber) ? row.fileNumber : 'Kein Aktenzeichen',
         flex: 1,
     },
     {
@@ -142,15 +143,15 @@ const columns: Array<GridColDef<Submission>> = [
             const created = parseISO(params.row.created);
             return `${format(created, 'dd.MM.yyyy')} - ${format(created, 'HH:mm')} Uhr`;
         },
-        valueGetter: (params) => parseISO(params.row.created),
+        valueGetter: (value, row) => parseISO(row.created),
         flex: 1,
     },
     {
         field: 'assignee',
         headerName: 'Mitarbeiter:in',
         renderCell: (params) => (
-            <>
-                {
+            <Box display="flex" alignItems="center">
+            {
                     params.row.destinationId != null &&
                     <DataObjectOutlinedIcon
                         sx={{marginRight: '0.5em'}}
@@ -179,9 +180,9 @@ const columns: Array<GridColDef<Submission>> = [
                     params.row.assignee == null &&
                     <i>Nicht zugewiesen</i>
                 }
-            </>
+            </Box>
         ),
-        valueGetter: (params) => params.row.destination != null ? params.row.destination.name : (params.row.assignee != null ? getFullName(params.row.assignee) : null),
+        valueGetter: (value, row) => row.destination != null ? row.destination.name : (row.assignee != null ? getFullName(row.assignee) : null),
         flex: 1,
     },
     {
@@ -189,14 +190,14 @@ const columns: Array<GridColDef<Submission>> = [
         headerName: 'Formular',
         type: 'string',
         flex: 1,
-        valueGetter: (params) => params.row.form?.title,
+        valueGetter: (value, row) => row.form?.title,
     },
     {
         field: 'form.version',
         headerName: 'Version',
         type: 'string',
         flex: 1,
-        valueGetter: (params) => params.row.form?.version,
+        valueGetter: (value, row) => row.form?.version,
     },
 ];
 
