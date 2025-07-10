@@ -54,8 +54,7 @@ def main():
         f.write("<!-- license-check -->\n")
         f.write("## 🧾 License Compliance Report\n\n")
         f.write("This report analyzes the licenses of all dependencies used in this project, based on the Software Bill of Materials (SBOM).\n")
-        f.write("It includes both direct and transitive (indirect) dependencies, as all of them are relevant for legal compliance and redistribution.\n")
-        f.write("The goal is to ensure that only approved open source licenses are used, in accordance with our contribution guidelines.\n\n")
+        f.write("It includes both direct and transitive (indirect) dependencies, as all of them are relevant for legal compliance and redistribution. The goal is to ensure that only approved open source licenses are used.\n\n\n")
         f.write("For more information about allowed licenses and compliance rules, please refer to our [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-).\n\n")
         f.write("_This comment is automatically updated with every push to ensure up-to-date compliance information._\n\n")
 
