@@ -25,12 +25,13 @@ with open(sbom_path, "r") as f:
 csv_path = os.path.join(output_dir, "licenses.csv")
 with open(csv_path, "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(["Component", "Version", "License(s)"])
+    writer.writerow(["Name", "Version", "License(s)", "PURL"])
     for comp in sbom.get("components", []):
         name = comp.get("name", "UNKNOWN")
         version = comp.get("version", "UNKNOWN")
         licenses = ", ".join(get_license_ids(comp))
-        writer.writerow([name, version, licenses])
+        purl = comp.get("purl", "N/A")
+        writer.writerow([name, version, licenses, purl])
 
 # TXT output
 txt_path = os.path.join(output_dir, "licenses.txt")
@@ -39,4 +40,8 @@ with open(txt_path, "w") as f:
         name = comp.get("name", "UNKNOWN")
         version = comp.get("version", "UNKNOWN")
         licenses = ", ".join(get_license_ids(comp))
+        purl = comp.get("purl")
         f.write(f"{name}@{version} → {licenses}\n")
+        if purl:
+            f.write(f"  ↳ {purl}\n")
+
