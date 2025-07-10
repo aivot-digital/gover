@@ -2,15 +2,15 @@ import json
 import sys
 
 # ✅ Approved licenses (safe to use)
-WHITELIST = {
+ALLOWLIST = {
     "MIT",
     "MIT-0",
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
-    "Unlicense"
-    "ISC"
-    "UPL-1.0"
+    "Unlicense",
+    "ISC",
+    "UPL-1.0",
     "CC0-1.0"
 }
 
@@ -46,7 +46,7 @@ def main():
         for lic in get_license_ids(comp):
             if not lic:
                 continue
-            if lic in WHITELIST:
+            if lic in ALLOWLIST:
                 continue
             elif lic in CAUTION:
                 caution.append((name, lic))
