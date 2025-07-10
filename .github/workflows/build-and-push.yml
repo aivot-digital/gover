@@ -140,6 +140,7 @@ jobs:
 
       - name: Merge SBOMs into one
         run: |
+          echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           cyclonedx merge \
             --input-files app/sbom-frontend.json target/bom.json \
             --output-file sbom-full.json \
