@@ -4,10 +4,14 @@ import sys
 # ✅ Approved licenses (safe to use)
 WHITELIST = {
     "MIT",
+    "MIT-0",
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "Unlicense"
+    "ISC"
+    "UPL-1.0"
+    "CC0-1.0"
 }
 
 # ⚠️ Licenses that require caution and review
@@ -27,7 +31,7 @@ def get_license_ids(component):
 def main():
     # Try to load the SBOM JSON file
     try:
-        with open("app/public/sbom.json", "r") as f:
+        with open("app/public/sbom/sbom.json", "r") as f:
             sbom = json.load(f)
     except Exception as e:
         print(f"❌ Could not read SBOM: {e}")
