@@ -126,9 +126,21 @@ jobs:
         working-directory: ./app
         run: npm install @cyclonedx/cyclonedx-npm
 
+      - name: Install SPDX generator
+        run: |
+          curl -LO https://github.com/spdx/spdx-sbom-generator/releases/latest/download/spdx-sbom-generator-linux-amd64
+          chmod +x spdx-sbom-generator-linux-amd64
+          sudo mv spdx-sbom-generator-linux-amd64 /usr/local/bin/spdx-sbom-generator
+
       - name: Generate SBOM for frontend
         working-directory: ./app
         run: npx @cyclonedx/cyclonedx-npm --output-file sbom-frontend.json
+
+      - name: Generate SPDX SBOM for frontend
+        working-directory: ./app
+        run: |
+          spdx-sbom-generator generate -p frontend -o ../public/sbom
+          mv ../public/sbom/spdx-sbom.json ../public/sbom/sbom.spdx.frontend.json
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -146,30 +158,54 @@ jobs:
         run: |
           mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
 
+      - name: Generate SPDX SBOM (backend)
+        run: |
+          mvn spdx:spdx \
+            -Dspdx.outputDirectory=app/public/sbom \
+            -Dspdx.fileName=sbom.spdx.backend.tag
+
+      - name: Convert backend SPDX to JSON
+        run: |
+          pip install spdx-tools
+          spdx-tool convert tag \
+            app/public/sbom/sbom.spdx.backend.tag \
+            app/public/sbom/sbom.spdx.backend.json
+
       - name: Install cyclonedx-cli
         run: |
           curl -sSL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
           chmod +x cyclonedx
           sudo mv cyclonedx /usr/local/bin/
 
-      - name: Merge SBOMs into one
-        run: |
-          cyclonedx merge \
-            --input-files app/sbom-frontend.json target/bom.json \
-            --output-file sbom-full.json \
-
       - name: Ensure sbom folder exists
         run: mkdir -p app/public/sbom
 
-      - name: Copy SBOM to public directory
-        run: mv sbom-full.json app/public/sbom/sbom.json
+      - name: Merge SBOMs into CycloneDX JSON
+        run: |
+          cyclonedx merge \
+            --input-files app/sbom-frontend.json target/bom.json \
+            --output-file app/public/sbom/sbom.cyclonedx.json
 
-      - name: Convert SBOM to XML format
+      - name: Merge SPDX SBOMs
+        run: python3 .github/scripts/merge_spdx.py
+        env:
+          BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+
+      - name: Convert SPDX JSON to tag format
+        run: |
+          spdx-tool convert json \
+            app/public/sbom/sbom.spdx.json \
+            app/public/sbom/sbom.spdx.tag
+
+      - name: Clean up intermediate SBOMs
+        run: rm -f app/public/sbom/sbom.spdx.*backend* app/public/sbom/sbom.spdx.*frontend*
+
+      - name: Convert merged CycloneDX JSON to XML
         run: |
           cyclonedx convert \
-            --input-file app/public/sbom/sbom.json \
+            --input-file app/public/sbom/sbom.cyclonedx.json \
             --input-format json \
-            --output-file app/public/sbom/sbom.xml \
+            --output-file app/public/sbom/sbom.cyclonedx.xml \
             --output-format xml
 
       - name: Generate manifest.json with version and metadata

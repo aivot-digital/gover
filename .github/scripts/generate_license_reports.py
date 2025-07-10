@@ -14,7 +14,7 @@ def get_license_ids(component):
     return ids or ["UNKNOWN"]
 
 # Path to SBOM input
-sbom_path = "app/public/sbom/sbom.json"
+sbom_path = "app/public/sbom/sbom.cyclonedx.json"
 output_dir = os.path.dirname(sbom_path)
 
 # Load SBOM JSON
