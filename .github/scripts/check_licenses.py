@@ -56,19 +56,20 @@ def main():
         f.write("This report analyzes the licenses of all dependencies used in this project, based on the Software Bill of Materials (SBOM).\n")
         f.write("It helps ensure that only approved open source licenses are used — in line with our contribution and legal guidelines.\n\n")
         f.write("For more information about allowed licenses and compliance rules, please refer to our [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-).\n\n")
+        f.write("_This comment is automatically updated with every push to ensure up-to-date compliance information._\n\n")
 
         if caution:
-            f.write("⚠️ *Packages with caution licenses:*\n\n")
+            f.write("\n### ⚠️ *Packages with caution licenses:*\n\n")
             for name, lic in caution:
                 f.write(f"- `{name}` → `{lic}`\n")
 
         if bad:
-            f.write("\n❌ *Prohibited or unknown licenses:*\n\n")
+            f.write("\n### ❌ *Prohibited or unknown licenses:*\n\n")
             for name, lic in bad:
                 f.write(f"- `{name}` → `{lic}`\n")
 
         if not caution and not bad:
-            f.write("✅ All licenses approved.\n")
+            f.write("\n### ✅ All licenses approved.\n")
 
     # Fail the CI step only if forbidden licenses are detected
     if bad:
