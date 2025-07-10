@@ -126,17 +126,18 @@ jobs:
         working-directory: ./app
         run: npm install @cyclonedx/cyclonedx-npm
 
-      - name: Install SPDX generator
+      - name: Install SPDX SBOM Generator
         run: |
-          curl -LO https://github.com/spdx/spdx-sbom-generator/releases/latest/download/spdx-sbom-generator-linux-amd64
-          chmod +x spdx-sbom-generator-linux-amd64
-          sudo mv spdx-sbom-generator-linux-amd64 /usr/local/bin/spdx-sbom-generator
+          curl -L -o spdx-sbom-generator \
+            https://github.com/spdx/spdx-sbom-generator/releases/latest/download/spdx-sbom-generator-linux-amd64
+          chmod +x spdx-sbom-generator
+          sudo mv spdx-sbom-generator /usr/local/bin/spdx-sbom-generator
 
       - name: Generate SBOM for frontend
         working-directory: ./app
         run: npx @cyclonedx/cyclonedx-npm --output-file sbom-frontend.json
 
-      - name: Generate SPDX SBOM for frontend
+      - name: Generate SPDX for frontend
         working-directory: ./app
         run: |
           spdx-sbom-generator generate -p frontend -o ../public/sbom
@@ -208,16 +209,38 @@ jobs:
             --output-file app/public/sbom/sbom.cyclonedx.xml \
             --output-format xml
 
-      - name: Generate manifest.json with version and metadata
+      - name: Generate extended manifest.json with SBOM metadata
         run: |
-          echo '{
+          cat <<EOF > app/public/sbom/manifest.json
+          {
             "name": "gover",
             "version": "${{ env.BUILD_VERSION }}",
             "commit": "${{ github.sha }}",
             "buildDate": "${{ env.BUILD_DATE }}",
-            "sbomFormat": "CycloneDX",
-            "sbomSpecVersion": "1.5"
-          }' > app/public/sbom/manifest.json
+            "sboms": [
+              {
+                "format": "CycloneDX",
+                "version": "1.5",
+                "files": [
+                  "sbom.cyclonedx.json",
+                  "sbom.cyclonedx.xml"
+                ]
+              },
+              {
+                "format": "SPDX",
+                "version": "2.3",
+                "files": [
+                  "sbom.spdx.json",
+                  "sbom.spdx.tag"
+                ]
+              }
+            ],
+            "reports": [
+              "licenses.csv",
+              "licenses.txt"
+            ]
+          }
+          EOF
 
       - name: Generate license reports (CSV and TXT)
         run: python3 .github/scripts/generate_license_reports.py
