@@ -139,8 +139,9 @@ jobs:
       - name: Merge SBOMs into one
         run: |
           cyclonedx merge \
-            --input-files app/sbom-frontend.json,target/bom.json \
-            --output-file sbom-full.json
+            --input-file app/sbom-frontend.json \
+            --input-file target/bom.json \
+            --output-file sbom-full.json  
 
       - name: Copy SBOM to public directory
         run: mv sbom-full.json app/public/sbom.json
