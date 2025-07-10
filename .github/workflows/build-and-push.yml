@@ -92,6 +92,63 @@ jobs:
             echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           fi
 
+  generateSbom:
+    name: Generate SBOMs
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    needs:
+      - testBackend
+      - testChangelogChanged
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: ./app
+        run: npm install
+
+      - name: Generate SBOM for frontend
+        working-directory: ./app
+        run: |
+          npm install -g @cyclonedx/bom
+          cyclonedx-bom -o sbom-frontend.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+
+      - name: Generate SBOM for backend
+        run: |
+          mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+
+      - name: Install cyclonedx-cli
+        run: |
+          curl -sSL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
+          chmod +x cyclonedx
+          sudo mv cyclonedx /usr/local/bin/
+
+      - name: Merge SBOMs into one
+        run: |
+          cyclonedx merge \
+            --input-files app/sbom-frontend.json,target/bom.json \
+            --output-file sbom-full.json
+
+      - name: Copy SBOM to public directory
+        run: mv sbom-full.json app/public/sbom.json
+
+      - name: Upload sbom for later use
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-json
+          path: app/public/sbom.json
+
   buildArm64Image:
     name: Build and push ARM64 image
     if: github.event.pull_request.draft == false
@@ -100,6 +157,7 @@ jobs:
       - testBackend
       - testChangelogChanged
       - prepareBuildVars
+      - generateSbom
     permissions:
       contents: read
       packages: write
@@ -130,6 +188,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Download sbom.json
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-json
+          path: app/public
+
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
@@ -151,6 +215,7 @@ jobs:
       - testBackend
       - testChangelogChanged
       - prepareBuildVars
+      - generateSbom
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -181,6 +246,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Download sbom.json
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-json
+          path: app/public
 
       - name: Build and push image
         uses: docker/build-push-action@v5
