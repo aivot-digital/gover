@@ -93,7 +93,7 @@ jobs:
           fi
 
   generateSbom:
-    name: Generate SBOMs
+    name: Generate SBOMs and verify license compliance
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04
     needs:
@@ -148,7 +148,7 @@ jobs:
       - name: Run license compliance check
         id: license-check
         run: |
-          python3 .github/scripts/check_licenses.py > license-check.md || true
+          python3 .github/scripts/check_licenses.py || true
 
       - name: Post or update license compliance comment
         uses: actions/github-script@v7
