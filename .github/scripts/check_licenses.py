@@ -53,6 +53,9 @@ def main():
     with open("license_report.md", "w") as f:
         f.write("<!-- license-check -->\n")
         f.write("## 🧾 License Compliance Report\n\n")
+        f.write("This report analyzes the licenses of all dependencies used in this project, based on the Software Bill of Materials (SBOM).\n")
+        f.write("It helps ensure that only approved open source licenses are used — in line with our contribution and legal guidelines.\n\n")
+        f.write("For more information about allowed licenses and compliance rules, please refer to our [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-).\n\n")
 
         if caution:
             f.write("⚠️ *Packages with caution licenses:*\n\n")
