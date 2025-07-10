@@ -112,11 +112,13 @@ jobs:
         working-directory: ./app
         run: npm install
 
+      - name: Install cyclonedx-bom locally
+        working-directory: ./app
+        run: npm install @cyclonedx/cyclonedx-npm
+
       - name: Generate SBOM for frontend
         working-directory: ./app
-        run: |
-          npm install -g @cyclonedx/bom
-          cyclonedx-bom -o sbom-frontend.json
+        run: npx @cyclonedx/cyclonedx-npm --output-file sbom-frontend.json
 
       - name: Setup Java
         uses: actions/setup-java@v4
