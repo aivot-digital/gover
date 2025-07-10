@@ -99,6 +99,7 @@ jobs:
     needs:
       - testBackend
       - testChangelogChanged
+      - prepareBuildVars
     env:
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
     steps:
@@ -109,6 +110,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Inject release version into package.json
+        working-directory: ./app
+        run: |
+          echo "Using Gover version: ${{ env.BUILD_VERSION }}"
+          jq --arg version "${{ env.BUILD_VERSION }}" '.version = $version' package.json > tmp.$$.json && mv tmp.$$.json package.json
 
       - name: Install frontend dependencies
         working-directory: ./app
@@ -140,12 +147,9 @@ jobs:
 
       - name: Merge SBOMs into one
         run: |
-          echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           cyclonedx merge \
             --input-files app/sbom-frontend.json target/bom.json \
             --output-file sbom-full.json \
-            --name gover \
-            --version "${{ env.BUILD_VERSION }}"
 
       - name: Copy SBOM to public directory
         run: mv sbom-full.json app/public/sbom.json
