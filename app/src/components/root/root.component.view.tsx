@@ -392,7 +392,7 @@ export function RootComponentView({
                     sx={{
                         mt: 5,
                         mb: 5,
-                        /* Remove spacing for richtext components that are immediately preceded by a headline component  */
+                        /* Remove spacing for richtext components that are immediately preceded by a headline component */
                         '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content)': {
                             paddingTop: 0,
                         },

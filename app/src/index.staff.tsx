@@ -35,7 +35,7 @@ if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {
                 useEffect: React.useEffect,
                 useLocation,
                 useNavigationType,
-                createRoutesFromChildren,
+                createRoutesFromChildren, // Included for type compliance; unused with createBrowserRouter setup.
                 matchRoutes,
             }),
             Sentry.replayIntegration({
