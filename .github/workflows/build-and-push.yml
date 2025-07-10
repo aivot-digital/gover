@@ -135,6 +135,12 @@ jobs:
           java-version: '21'
           distribution: temurin
 
+      - name: Inject release version into backend (pom.xml)
+        working-directory: ./
+        run: |
+          echo "Using Gover version: ${{ env.BUILD_VERSION }}"
+          mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
+
       - name: Generate SBOM for backend
         run: |
           mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
