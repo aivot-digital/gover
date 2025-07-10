@@ -158,11 +158,11 @@ jobs:
             --input-files app/sbom-frontend.json target/bom.json \
             --output-file sbom-full.json \
 
-      - name: Copy SBOM to public directory
-        run: mv sbom-full.json app/public/sbom/sbom.json
-
       - name: Ensure sbom folder exists
         run: mkdir -p app/public/sbom
+
+      - name: Copy SBOM to public directory
+        run: mv sbom-full.json app/public/sbom/sbom.json
 
       - name: Convert SBOM to XML format
         run: |
