@@ -14,6 +14,13 @@
     <version>0.0.0</version>
     <name>Gover</name>
     <description>Gover Project</description>
+    <licenses>
+        <license>
+            <name>Sustainable Use License</name>
+            <url>https://github.com/aivot-digital/gover/blob/main/LICENSE.md</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <properties>
         <java.version>21</java.version>

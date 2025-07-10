@@ -183,13 +183,8 @@ jobs:
             "sbomSpecVersion": "1.5"
           }' > app/public/sbom/manifest.json
 
-      - name: Generate license list (CSV)
-        run: |
-          python3 .github/scripts/generate_license_csv.py
-
-      - name: Generate license list (TXT)
-        run: |
-          python3 .github/scripts/generate_license_txt.py
+      - name: Generate license reports (CSV and TXT)
+        run: python3 .github/scripts/generate_license_reports.py
 
       - name: Run license compliance check
         id: license-check
