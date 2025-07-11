@@ -171,10 +171,12 @@ jobs:
         env:
           BUILD_VERSION: ${{ env.BUILD_VERSION }}
 
-      - name: Convert SPDX JSON to tag format
+      - name: Convert SPDX JSON to Tag format
         run: |
           pip install spdx-tools
-          spdx-tool convert json app/public/sbom/sbom.spdx.json app/public/sbom/sbom.spdx.tag
+          python3 .github/scripts/convert_spdx_json_to_tag.py \
+            app/public/sbom/sbom.spdx.json \
+            app/public/sbom/sbom.spdx.tag
 
       - name: Clean up intermediate SPDX files
         run: rm -f app/public/sbom/sbom.spdx.*frontend* app/public/sbom/sbom.spdx.*backend*
