@@ -146,14 +146,13 @@ jobs:
           trivy sbom \
             --format spdx-json \
             --output app/public/sbom/sbom.spdx.frontend.json \
-            --scanners license,dependency \
+            --scanners license \
             --skip-db-update \
             ./app
-
           trivy sbom \
             --format spdx \
             --output app/public/sbom/sbom.spdx.frontend.tag \
-            --scanners license,dependency \
+            --scanners license \
             --skip-db-update \
             ./app
 
