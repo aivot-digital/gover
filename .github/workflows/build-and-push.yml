@@ -134,50 +134,39 @@ jobs:
           echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
 
-      - name: Install Trivy
+      - name: Install Syft
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Ensure sbom folder exists
         run: mkdir -p app/public/sbom
 
-      - name: Generate SPDX for frontend
+      - name: Generate SPDX and CycloneDX for frontend
         run: |
-          trivy fs \
-            --format spdx-json \
-            --output app/public/sbom/sbom.spdx.frontend.json \
-            ./app
-          
-          trivy fs \
-            --format spdx \
-            --output app/public/sbom/sbom.spdx.frontend.tag \
-            ./app
+          syft ./app -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
+          syft ./app -o spdx-tag-value > app/public/sbom/sbom.spdx.frontend.tag
+          syft ./app -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.frontend.json
 
-
-      - name: Generate SPDX for backend
+      - name: Generate SPDX and CycloneDX for backend
         run: |
-          trivy fs \
-            --format spdx-json \
-            --output app/public/sbom/sbom.spdx.backend.json \
-            .
-          
-          trivy fs \
-            --format spdx \
-            --output app/public/sbom/sbom.spdx.backend.tag \
-            .
+          syft . -o spdx-json > app/public/sbom/sbom.spdx.backend.json
+          syft . -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
+          syft . -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.backend.json
 
       - name: Merge SPDX SBOMs
         run: python3 .github/scripts/merge_spdx.py
         env:
           BUILD_VERSION: ${{ env.BUILD_VERSION }}
 
+      - name: Merge SPDX .tag for frontend and backend
+        run: |
+          python3 .github/scripts/merge_spdx_tag.py \
+            app/public/sbom/sbom.spdx.frontend.tag \
+            app/public/sbom/sbom.spdx.backend.tag \
+            app/public/sbom/sbom.spdx.tag
+
       - name: Clean up intermediate SPDX files
         run: rm -f app/public/sbom/sbom.spdx.*frontend* app/public/sbom/sbom.spdx.*backend*
-
-      - name: Generate CycloneDX SBOMs
-        run: |
-          trivy fs --format cyclonedx-json --output app/public/sbom/sbom.cyclonedx.backend.json .
-          trivy fs --format cyclonedx-json --output app/public/sbom/sbom.cyclonedx.frontend.json ./app
 
       - name: Install cyclonedx-cli
         run: |
