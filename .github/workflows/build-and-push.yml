@@ -135,7 +135,8 @@ jobs:
           mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
 
       - name: Install Trivy
-        uses: aquasecurity/trivy-action@master
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Ensure sbom folder exists
         run: mkdir -p app/public/sbom
