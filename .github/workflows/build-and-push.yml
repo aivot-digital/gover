@@ -143,8 +143,19 @@ jobs:
 
       - name: Generate SPDX for frontend
         run: |
-          trivy sbom --format spdx-json --output app/public/sbom/sbom.spdx.frontend.json ./app
-          trivy sbom --format spdx --output app/public/sbom/sbom.spdx.frontend.tag ./app
+          trivy sbom \
+            --format spdx-json \
+            --output app/public/sbom/sbom.spdx.frontend.json \
+            --scanners license,dependency \
+            --skip-db-update \
+            ./app
+
+          trivy sbom \
+            --format spdx \
+            --output app/public/sbom/sbom.spdx.frontend.tag \
+            --scanners license,dependency \
+            --skip-db-update \
+            ./app
 
       - name: Generate SPDX for backend
         run: |
