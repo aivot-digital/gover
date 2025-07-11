@@ -100,7 +100,7 @@ RUN apk upgrade --no-cache && \
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 
 # Copy app files
-COPY --from=build_server /app/target/Gover-0.0.0.jar /app/gover.jar
+COPY --from=build_server /app/target/gover-backend-0.0.0.jar /app/gover.jar
 COPY --from=build_app /app/build/customer /app/www
 COPY --from=build_app /app/build/staff /app/www/staff
 

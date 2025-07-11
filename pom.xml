@@ -10,10 +10,10 @@
     </parent>
 
     <groupId>de.aivot</groupId>
-    <artifactId>Gover</artifactId>
+    <artifactId>gover-backend</artifactId>
     <version>0.0.0</version>
-    <name>Gover</name>
-    <description>Gover Project</description>
+    <name>gover-backend</name>
+    <description>The open source platform for fully digital, end-to-end application processes</description>
     <licenses>
         <license>
             <name>Sustainable Use License</name>
