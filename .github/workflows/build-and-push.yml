@@ -171,14 +171,14 @@ jobs:
         env:
           BUILD_VERSION: ${{ env.BUILD_VERSION }}
 
-      - name: Setup Python venv for SPDX conversion
+      - name: Convert SPDX JSON to Tag format
         run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install spdx-tools
-          python .github/scripts/convert_spdx_json_to_tag.py \
-            app/public/sbom/sbom.spdx.full.json \
-            app/public/sbom/sbom.spdx.full.tag
+          bash -c "python3 -m venv venv && \
+                   source venv/bin/activate && \
+                   pip install spdx-tools && \
+                   python .github/scripts/convert_spdx_json_to_tag.py \
+                     app/public/sbom/sbom.spdx.json \
+                     app/public/sbom/sbom.spdx.tag"
 
       - name: Clean up intermediate SPDX files
         run: rm -f app/public/sbom/sbom.spdx.*frontend* app/public/sbom/sbom.spdx.*backend*
