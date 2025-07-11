@@ -1,8 +1,8 @@
 {
-  "name": "gover",
+  "name": "gover-frontend",
   "version": "0.0.0",
   "private": true,
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "Sustainable Use License (see LICENSE file)",
   "scripts": {
     "start:staff": "VITE_APP_MODE=staff vite --config vite.config.staff.js",
     "start:customer": "VITE_APP_MODE=customer vite --config vite.config.customer.js",

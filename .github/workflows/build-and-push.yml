@@ -144,30 +144,30 @@ jobs:
       - name: Generate SPDX and CycloneDX for frontend
         run: |
           syft ./app -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
-          syft ./app -o spdx-tag-value > app/public/sbom/sbom.spdx.frontend.tag
           syft ./app -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.frontend.json
-          syft ./app -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.frontend.xml
 
       - name: Generate SPDX and CycloneDX for mail templates
         run: |
           syft ./mails -o spdx-json > app/public/sbom/sbom.spdx.mails.json
-          syft ./mails -o spdx-tag-value > app/public/sbom/sbom.spdx.mails.tag
           syft ./mails -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.mails.json
-          syft ./mails -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.mails.xml
 
       - name: Generate SPDX and CycloneDX for backend
         run: |
           syft . --exclude ./app --exclude ./mails --exclude ./.github -o spdx-json > app/public/sbom/sbom.spdx.backend.json
-          syft . --exclude ./app --exclude ./mails --exclude ./.github -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
           syft . --exclude ./app --exclude ./mails --exclude ./.github -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.backend.json
-          syft . --exclude ./app --exclude ./mails --exclude ./.github -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.backend.xml
 
       - name: Generate combined SPDX and CycloneDX SBOMs
         run: |
           syft . --exclude ./.github -o spdx-json > app/public/sbom/sbom.spdx.json
-          syft . --exclude ./.github -o spdx-tag-value > app/public/sbom/sbom.spdx.tag
           syft . --exclude ./.github -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.json
-          syft . --exclude ./.github -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.xml
+
+      - name: Remove irrelevant file components from all SPDX and CycloneDX JSONs
+        run: |
+          for file in app/public/sbom/*.json; do
+            echo "Cleaning $file ..."
+            jq 'del(.components[] | select(.type == "file"))' "$file" > "$file.cleaned"
+            mv "$file.cleaned" "$file"
+          done
 
       - name: Generate extended manifest.json with SBOM metadata
         run: |
