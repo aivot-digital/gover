@@ -165,7 +165,7 @@ jobs:
         run: |
           for file in app/public/sbom/*.json; do
             echo "Cleaning $file ..."
-            jq 'del(.components[] | select(.type == "file"))' "$file" > "$file.cleaned"
+            jq 'if .components then .components |= map(select(.type != "file")) else . end' "$file" > "$file.cleaned"
             mv "$file.cleaned" "$file"
           done
 
