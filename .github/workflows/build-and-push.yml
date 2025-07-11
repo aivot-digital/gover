@@ -145,55 +145,29 @@ jobs:
         run: |
           syft ./app -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
           syft ./app -o spdx-tag-value > app/public/sbom/sbom.spdx.frontend.tag
-          syft ./app -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.frontend.json
+          syft ./app -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.frontend.json
+          syft ./app -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.frontend.xml
 
       - name: Generate SPDX and CycloneDX for mail templates
         run: |
           syft ./mails -o spdx-json > app/public/sbom/sbom.spdx.mails.json
           syft ./mails -o spdx-tag-value > app/public/sbom/sbom.spdx.mails.tag
-          syft ./mails -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.mails.json
+          syft ./mails -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.mails.json
+          syft ./mails -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.mails.xml
 
       - name: Generate SPDX and CycloneDX for backend
         run: |
-          syft . --exclude ./app --exclude ./mails -o spdx-json > app/public/sbom/sbom.spdx.backend.json
-          syft . --exclude ./app --exclude ./mails -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
-          syft . --exclude ./app --exclude ./mails -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.backend.json
+          syft . --exclude ./app --exclude ./mails --exclude ./.github -o spdx-json > app/public/sbom/sbom.spdx.backend.json
+          syft . --exclude ./app --exclude ./mails --exclude ./.github -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
+          syft . --exclude ./app --exclude ./mails --exclude ./.github -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.backend.json
+          syft . --exclude ./app --exclude ./mails --exclude ./.github -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.backend.xml
 
-      - name: Merge SPDX SBOMs
-        run: python3 .github/scripts/merge_spdx.py
-        env:
-          BUILD_VERSION: ${{ env.BUILD_VERSION }}
-
-      - name: Merge SPDX .tag for frontend and backend
+      - name: Generate combined SPDX and CycloneDX SBOMs
         run: |
-          python3 .github/scripts/merge_spdx_tag.py \
-            app/public/sbom/sbom.spdx.frontend.tag \
-            app/public/sbom/sbom.spdx.backend.tag \
-            app/public/sbom/sbom.spdx.tag
-
-      - name: Install cyclonedx-cli
-        run: |
-          curl -sSfL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
-          chmod +x cyclonedx
-          sudo mv cyclonedx /usr/local/bin/cyclonedx
-
-      - name: Merge CycloneDX SBOMs
-        run: |
-          cyclonedx merge \
-            --input-files \
-              app/public/sbom/sbom.cyclonedx.backend.json \
-              app/public/sbom/sbom.cyclonedx.frontend.json \
-              app/public/sbom/sbom.cyclonedx.mails.json \
-            --output-file app/public/sbom/sbom.cyclonedx.json \
-            --output-version v1_5
-
-      - name: Convert merged SBOM to XML
-        run: |
-          cyclonedx convert \
-            --input-file app/public/sbom/sbom.cyclonedx.json \
-            --output-file app/public/sbom/sbom.cyclonedx.xml \
-            --output-format xml \
-            --output-version v1_5
+          syft . --exclude ./.github -o spdx-json > app/public/sbom/sbom.spdx.json
+          syft . --exclude ./.github -o spdx-tag-value > app/public/sbom/sbom.spdx.tag
+          syft . --exclude ./.github -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.json
+          syft . --exclude ./.github -o cyclonedx-xml@1.5 > app/public/sbom/sbom.cyclonedx.xml
 
       - name: Generate extended manifest.json with SBOM metadata
         run: |
