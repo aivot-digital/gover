@@ -174,12 +174,21 @@ jobs:
           chmod +x cyclonedx
           sudo mv cyclonedx /usr/local/bin/cyclonedx
 
-      - name: Merge CycloneDX SBOMs and convert to XML
+      - name: Merge CycloneDX SBOMs
         run: |
           cyclonedx merge \
-            --input-files app/public/sbom/sbom.cyclonedx.backend.json app/public/sbom/sbom.cyclonedx.frontend.json \
+            --input-files \
+              app/public/sbom/sbom.cyclonedx.backend.json \
+              app/public/sbom/sbom.cyclonedx.frontend.json \
             --output-file app/public/sbom/sbom.cyclonedx.json
-          cyclonedx convert -i app/public/sbom/sbom.cyclonedx.json -o app/public/sbom/sbom.cyclonedx.xml
+
+      - name: Convert merged SBOM to XML
+        run: |
+          cyclonedx convert \
+            --input-file app/public/sbom/sbom.cyclonedx.json \
+            --output-file app/public/sbom/sbom.cyclonedx.xml \
+            --output-format xml \
+            --output-version v1_5
 
       - name: Remove intermediate CycloneDX files
         run: rm -f app/public/sbom/sbom.cyclonedx.*.json
