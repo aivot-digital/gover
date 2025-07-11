@@ -118,9 +118,9 @@ jobs:
           echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           jq --arg version "${{ env.BUILD_VERSION }}" '.version = $version' package.json > tmp.$$.json && mv tmp.$$.json package.json
 
-      - name: Install all frontend dependencies
+      - name: Install frontend dependencies
         working-directory: ./app
-        run: npm ci --include=dev
+        run: npm install
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -180,7 +180,8 @@ jobs:
             --input-files \
               app/public/sbom/sbom.cyclonedx.backend.json \
               app/public/sbom/sbom.cyclonedx.frontend.json \
-            --output-file app/public/sbom/sbom.cyclonedx.json
+            --output-file app/public/sbom/sbom.cyclonedx.json \
+            --output-version v1_5
 
       - name: Convert merged SBOM to XML
         run: |
