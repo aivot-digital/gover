@@ -134,9 +134,17 @@ jobs:
           echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
 
-      - name: Install Trivy (latest stable)
+      - name: Debug node_modules presence
+        working-directory: ./app
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.65.0
+          echo "npm root:"
+          npm root
+          echo "npm list:"
+          npm ls --depth=1 || true
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Ensure sbom folder exists
         run: mkdir -p app/public/sbom
@@ -146,14 +154,12 @@ jobs:
           trivy sbom \
             --format spdx-json \
             --output app/public/sbom/sbom.spdx.frontend.json \
-            --scanners license \
             --skip-db-update \
             --debug \
             ./app
           trivy sbom \
             --format spdx \
             --output app/public/sbom/sbom.spdx.frontend.tag \
-            --scanners license \
             --skip-db-update \
             ./app
 
