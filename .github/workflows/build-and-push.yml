@@ -134,14 +134,6 @@ jobs:
           echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
 
-      - name: Debug node_modules presence
-        working-directory: ./app
-        run: |
-          echo "npm root:"
-          npm root
-          echo "npm list:"
-          npm ls --depth=1 || true
-
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -153,20 +145,30 @@ jobs:
         run: |
           trivy sbom \
             --format spdx-json \
+            --type npm \
             --output app/public/sbom/sbom.spdx.frontend.json \
             --skip-db-update \
             --debug \
             ./app
           trivy sbom \
             --format spdx \
+            --type npm \
             --output app/public/sbom/sbom.spdx.frontend.tag \
             --skip-db-update \
             ./app
 
       - name: Generate SPDX for backend
         run: |
-          trivy sbom --format spdx-json --output app/public/sbom/sbom.spdx.backend.json .
-          trivy sbom --format spdx --output app/public/sbom/sbom.spdx.backend.tag .
+          trivy sbom \
+            --format spdx-json \
+            --type jar \
+            --output app/public/sbom/sbom.spdx.backend.json \
+            .
+          trivy sbom \
+            --format spdx \
+            --type jar \
+            --output app/public/sbom/sbom.spdx.backend.tag \
+            .
 
       - name: Merge SPDX SBOMs
         run: python3 .github/scripts/merge_spdx.py
