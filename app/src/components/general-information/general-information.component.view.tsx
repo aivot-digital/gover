@@ -27,10 +27,29 @@ import {IdentityButtonGroup} from '../../modules/identity/components/identity-bu
 
 export const PrivacyUserInputKey = '__privacy__';
 
-export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, void>): JSX.Element {
+function cleanDocuments(documents: Array<string> | undefined | null) {
+    if (documents) {
+        return documents.filter(document => document.trim() !== '');
+    } else {
+        return [];
+    }
+}
+
+export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>): JSX.Element {
     const api = useApi();
     const dispatch = useAppDispatch();
     const theme = useTheme();
+
+    const {
+        element,
+        value,
+        setValue,
+        errors,
+    } = props;
+
+    const {
+
+    } = element;
 
     const application = useAppSelector(selectLoadedForm);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -43,16 +62,8 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
     const initialDisplayCount = 4;
 
-    function cleanDocuments(documents: Array<string> | undefined) {
-        if (documents) {
-            return documents.filter(document => document.trim() !== '');
-        } else {
-            return [];
-        }
-    }
-
-    const supportingDocuments = cleanDocuments(props.element.supportingDocuments);
-    const documentsToAttach = cleanDocuments(props.element.documentsToAttach);
+    const supportingDocuments = cleanDocuments(element.supportingDocuments);
+    const documentsToAttach = cleanDocuments(element.documentsToAttach);
 
     useEffect(() => {
         if (application != null) {
@@ -344,14 +355,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <Box id={PrivacyUserInputKey}>
                 <CheckboxFieldComponent
                     label="Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen."
-                    value={privacyValue}
+                    value={value}
                     onChange={(checked) => {
-                        if (application != null) {
-                            dispatch(updateCustomerInput({
-                                key: PrivacyUserInputKey,
-                                value: checked,
-                            }));
-                        }
+                        setValue(checked);
                     }}
                     required={true}
                     error={privacyError}

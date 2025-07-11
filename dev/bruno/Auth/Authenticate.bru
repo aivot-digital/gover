@@ -1,0 +1,22 @@
+meta {
+  name: Authenticate
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{IDP_HOST}}/realms/staff/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: password
+  client_id: app
+  username: {{username}}
+  password: {{password}}
+}
+
+vars:post-response {
+  gover_jwt: res.body.access_token
+}

@@ -2,10 +2,9 @@ package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.json.JSONObject;
-
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+
 import java.util.Map;
 
 @Converter
@@ -22,6 +21,12 @@ public class JsonObjectConverter implements AttributeConverter<Map<String, Objec
 
     @Override
     public Map<String, Object> convertToEntityAttribute(String s) {
-        return new JSONObject(s).toMap();
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            return (Map<String, Object>) mapper.readValue(s, Map.class); // TODO: Check cast
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

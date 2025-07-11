@@ -3,5 +3,5 @@ import {BaseFormElement} from '../base-form-element';
 
 
 export interface RichtextElement extends BaseFormElement<ElementType.Richtext> {
-    content?: string;
+    content: string | null | undefined;
 }

@@ -46,6 +46,7 @@ public class SecurityConfiguration {
                         requests -> requests
                                 .requestMatchers(new AntPathRequestMatcher("/api/public/actuator/httpexchanges")).authenticated()
                                 .requestMatchers(new AntPathRequestMatcher("/api/public/**")).permitAll()
+                                .requestMatchers(new AntPathRequestMatcher("/api/auth/login/")).permitAll()
 
                                 .anyRequest().authenticated()
                 )

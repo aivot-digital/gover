@@ -144,7 +144,7 @@ export function SystemInformation() {
             {
                 label: 'Version',
                 icon: <TagIcon />,
-                children: `$ AppConfig.version}.${AppInfo.number}`,
+                children: `${AppInfo.version} (Build ${AppInfo.number})`,
             },
             {
                 label: 'Compile-Datum',

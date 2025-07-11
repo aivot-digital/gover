@@ -22,6 +22,7 @@ import {generateComponentTitle} from '../../utils/generate-component-title';
 import {FunctionType} from '../../utils/function-status-utils';
 import {DragHandleOutlined} from "@mui/icons-material";
 import {DeveloperToolsTabVisibilities} from './developer-tools-tab-visiblities';
+import {ElementData} from '../../models/element-data';
 
 interface TabContentProps {
     selectedTab: number;
@@ -54,12 +55,19 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
     );
 }
 
-export function DeveloperTools() {
+interface DeveloperToolsProps {
+    elementData: ElementData;
+}
+
+export function DeveloperTools(props: DeveloperToolsProps) {
+    const {
+        elementData,
+    } = props;
+
     const dispatch = useAppDispatch();
     const form = useAppSelector(selectLoadedForm);
     const tab = useAppSelector(selectDevToolsTab);
-    const userInput = useAppSelector(state => state.app.inputs);
-    const values = useAppSelector(state => state.app.values);
+
     const currentLogLevel = useAppSelector(selectLogLevel);
     const logs = useAppSelector(selectLogs(currentLogLevel));
     const references = useAppSelector(selectFunctionReferences);
@@ -70,7 +78,7 @@ export function DeveloperTools() {
 
     const handleExport = (): void => {
         const filename = `nutzereingaben-${form?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
-        const input = cleanCustomerInput(userInput);
+        const input = cleanCustomerInput(elementData);
         downloadObjectFile(filename, input);
     };
 
@@ -233,7 +241,7 @@ export function DeveloperTools() {
 
                     <Box component="code">
                         <Box component="pre">{
-                            JSON.stringify(userInput, null, 4)
+                            JSON.stringify(elementData, null, 4)
                         }</Box>
                     </Box>
 
@@ -243,7 +251,7 @@ export function DeveloperTools() {
 
                     <Box component="code">
                         <Box component="pre">{
-                            JSON.stringify(values, null, 4)
+                            JSON.stringify(elementData, null, 4)
                         }</Box>
                     </Box>
                 </TabContent>

@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.nocode.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.ElementDerivationData;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -55,6 +55,17 @@ public abstract class NoCodeOperator {
     public abstract String getDescription();
 
     /**
+     * Returns the tags of the operator.
+     * Tags are used to categorize the operator and can be used for filtering in the UI.
+     * If no tags are defined, an empty array is returned.
+     *
+     * @return the tags of the operator
+     */
+    public String[] getTags() {
+        return new String[0];
+    }
+
+    /**
      * Returns the list of parameters that the operator expects.
      *
      * @return the list of parameters that the operator expects
@@ -69,7 +80,7 @@ public abstract class NoCodeOperator {
     public abstract NoCodeDataType getReturnType();
 
     @Nonnull
-    public NoCodeResult evaluate(ElementDerivationData data, Object... args) throws NoCodeException {
+    public NoCodeResult evaluate(ElementData data, Object... args) throws NoCodeException {
         if (data == null) {
             throw new NullPointerException("Data is null. Needs to be at least an empty map");
         }
@@ -101,7 +112,7 @@ public abstract class NoCodeOperator {
      * @return the result of the evaluation.
      * @throws NoCodeException if an error occurs during the evaluation.
      */
-    protected abstract NoCodeResult performEvaluation(ElementDerivationData data, Object... args) throws NoCodeException;
+    protected abstract NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException;
 
     /**
      * Returns the message that should be displayed when the operator is deprecated.

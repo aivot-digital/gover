@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.models.elements;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;

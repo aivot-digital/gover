@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 
 import java.util.Map;
 

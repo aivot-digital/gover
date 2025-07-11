@@ -1,14 +1,9 @@
 package de.aivot.GoverBackend.form.entities;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementDeserializer;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementSerializer;
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.enums.*;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
-import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import jakarta.persistence.*;
@@ -31,8 +26,6 @@ public class FormWithMembership {
     private FormStatus status;
     private FormType type;
     @Convert(converter = RootElementConverter.class)
-    @JsonSerialize(converter = JacksonRootElementSerializer.class)
-    @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
     @Column(columnDefinition = "jsonb")
     private RootElement root;
     private Integer destinationId;

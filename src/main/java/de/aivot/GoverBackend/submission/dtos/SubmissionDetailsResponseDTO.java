@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.submission.dtos;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionWithMembership;
@@ -16,7 +17,7 @@ public record SubmissionDetailsResponseDTO(
         SubmissionStatus status,
         String assigneeId,
         String fileNumber,
-        Map<String, Object> customerInput,
+        ElementData customerInput,
         Integer destinationId,
         Boolean destinationSuccess,
         String destinationResult,

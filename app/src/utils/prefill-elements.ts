@@ -6,7 +6,6 @@ import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {LegacySystemIdpKey} from '../data/legacy-system-idp-key';
-import {resolveId} from './id-utils';
 import {ElementType} from '../data/element-type/element-type';
 import {isStringNullOrEmpty} from './string-utils';
 import {systemIdentityProviderFormatValues} from '../modules/identity/utils/system-identity-provider-format-values';

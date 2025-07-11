@@ -1,70 +1,55 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.form.models.FormState;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 public class CitizenFormDerivationController {
     private final FormRepository formRepository;
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public CitizenFormDerivationController(
             FormRepository formRepository,
-            FormDerivationServiceFactory formDerivationServiceFactory
-    ) {
+            ElementDerivationService elementDerivationService) {
         this.formRepository = formRepository;
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
+        this.elementDerivationService = elementDerivationService;
     }
 
-    /**
-     * Derive the state of a form based on the given customer input.
-     *
-     * @param formId            The id of the form to derive.
-     * @param customerInput     The customer input to derive the form state from.
-     * @param disableValidation Disable the validation during this derivation
-     * @param limitToStepId     Limit the override and validation to the step with the given id
-     * @return The result of the derivation as the new state of the form.
-     */
     @PostMapping("/api/public/forms/{formId}/derive")
-    public FormState derive(
+    public ElementData derive(
             @Nonnull @PathVariable Integer formId,
-            @Nonnull @Valid @RequestBody Map<String, Object> customerInput,
-            @Nonnull @RequestParam(defaultValue = "ALL", value = "stepsToValidate") List<String> stepsToValidate,
-            @Nonnull @RequestParam(defaultValue = "ALL", value = "stepsToCalculateVisibilities") List<String> stepsToCalculateVisibilities,
-            @Nonnull @RequestParam(defaultValue = "ALL", value = "stepsToCalculateValues") List<String> stepsToCalculateValues,
-            @Nonnull @RequestParam(defaultValue = "ALL", value = "stepsToCalculateOverrides") List<String> stepsToCalculateOverrides
+            @Nonnull @Valid @RequestBody ElementData elementData,
+            @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipErrorsFor") List<String> skipErrorsFor,
+            @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
+            @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipValuesFor") List<String> skipValuesFor,
+            @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipOverridesFor") List<String> skipOverridesFor
     ) throws ResponseException {
         var form = formRepository
                 .findById(formId)
                 .orElseThrow(ResponseException::notFound);
 
-        var ctx = formDerivationServiceFactory
-                .create(
-                        form,
-                        stepsToValidate,
-                        stepsToCalculateVisibilities,
-                        stepsToCalculateValues,
-                        stepsToCalculateOverrides
-                )
-                .derive(form.getRoot(), customerInput);
-        try {
-            ctx.close();
-        } catch (Exception e) {
-            throw ResponseException.internalServerError(e);
-        }
+        var options = new ElementDerivationOptions()
+                .setSkipValuesForElementIds(skipValuesFor)
+                .setSkipOverridesForElementIds(skipOverridesFor)
+                .setSkipErrorsForElementIds(skipErrorsFor)
+                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor);
 
-        return ctx.getFormState();
+        var request = new ElementDerivationRequest()
+                .setElement(form.getRoot())
+                .setElementData(elementData)
+                .setOptions(options);
+
+        return elementDerivationService.derive(request);
     }
 }

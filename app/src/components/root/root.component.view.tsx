@@ -1,5 +1,9 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
+import Container from '@mui/material/Container';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Stepper from '@mui/material/Stepper';
+import useTheme from '@mui/material/styles/useTheme';
 import {type RootElement} from '../../models/elements/root-element';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import Chip from '@mui/material/Chip';
@@ -14,22 +18,10 @@ import {AppMode} from '../../data/app-mode';
 import {AppHeader} from '../app-header/app-header';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {
-    addError,
-    clearErrors,
-    dequeueDerivationTriggerId,
-    hydrateFromDerivation,
-    hydrateFromDerivationWithoutErrors,
-    selectCustomerInputs,
-    selectDerivationTriggerIdQueue,
-    selectLoadedForm,
-    selectVisibilies,
-    updateCustomerInput,
-} from '../../slices/app-slice';
+import {addError, clearErrors, dequeueDerivationTriggerId, selectLoadedForm, updateCustomerInput} from '../../slices/app-slice';
 import {nextStep, previousStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar} from '../../slices/snackbar-slice';
-import {useLogger} from '../../hooks/use-logging';
 import {type FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {type BaseViewProps} from '../../views/base-view';
 import {withAsyncWrapper} from '../../utils/with-async-wrapper';
@@ -38,38 +30,53 @@ import {CustomStep} from '../custom-step/custom-step';
 import {useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
-import {DerivationStepIdentifiers, FormsApiService} from '../../modules/forms/forms-api-service';
+import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {SubmissionStatus} from '../../modules/submissions/enums/submission-status';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
 import {selectIdentityId} from '../../slices/identity-slice';
-import {AppInfo} from '../../app-info';
+import {StepElement} from '../../models/elements/steps/step-element';
+import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import {ElementData} from '../../models/element-data';
+import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
+import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
+import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
+import {flattenElements} from '../../utils/flatten-elements';
+import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 
 const SubmissionIdSearchParam = 'submissionId';
 
 const checkTimeoutMinMs = 1000;
 
-export function RootComponentView({
-                                      allElements,
-                                      element,
-                                      scrollContainerRef,
-                                      mode,
-                                  }: BaseViewProps<RootElement, void>) {
-    const log = useLogger('RootComponentView');
+export function RootComponentView(props: BaseViewProps<RootElement, void>) {
+    const {
+        allElements,
+        element,
+        scrollContainerRef,
+        mode,
+        elementData,
+        onElementDataChange,
+        onElementBlur,
+        disableVisibility,
+        derivationTriggerIdQueue,
+    } = props;
+
     const api = useApi();
     const theme = useTheme();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const dispatch = useAppDispatch();
+
+    // TODO: internalize these information
     const form = useAppSelector(selectLoadedForm);
-    const customerInput = useAppSelector(selectCustomerInputs);
     const adminSettings = useAppSelector((state) => state.adminSettings);
     const currentStep = useAppSelector(selectCurrentStep);
     const upcomingStepDirection = useAppSelector(selectUpcomingStepDirection);
-    const visibilities = useAppSelector(selectVisibilies);
-    const derivationTriggerIdQueue = useAppSelector(selectDerivationTriggerIdQueue);
+
     const identityId = useAppSelector(selectIdentityId);
 
     const [isBusy, setIsBusy] = useState(false);
@@ -87,42 +94,53 @@ export function RootComponentView({
         submitStep,
     } = element;
 
-    // Determine the steps to be displayed.
-    const visibleChildSteps = useMemo(() => {
-        if (children == null) {
+    // Collecting all steps including the fixed steps
+    const allVisibleSteps: (StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement)[] = useMemo(() => {
+        if (children == null || introductionStep == null || summaryStep == null || submitStep == null) {
             return [];
         }
 
-        return children
-            .filter((stepElement) => {
-                return visibilities[stepElement.id] ?? true;
-            });
-    }, [children, visibilities]);
+        return [
+            introductionStep,
+            ...children.filter((stepElement) => {
+                return elementData[stepElement.id]?.isVisible ?? true;
+            }),
+            summaryStep,
+            submitStep,
+        ];
+    }, [children, introductionStep, summaryStep, submitStep]);
 
-    // Collecting all steps including the fixed steps
-    const allSteps = useMemo(() => [
-        introductionStep,
-        ...visibleChildSteps,
-        summaryStep,
-        submitStep,
-    ], [introductionStep, summaryStep, submitStep, visibleChildSteps]);
+    const currentStepElement = useMemo(() => {
+        if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
+            return null;
+        }
+        return allVisibleSteps[currentStep];
+    }, [currentStep, allVisibleSteps]);
 
     // Determine the total number of steps
     const totalStepCount = useMemo(() => {
-        return allSteps.length;
-    }, [allSteps]);
+        return allVisibleSteps.length;
+    }, [allVisibleSteps]);
 
-    const stepRefs = useRef(allSteps.map(() => React.createRef<HTMLDivElement>()));
+    const stepRefs = useRef(allVisibleSteps.map(() => React.createRef<HTMLDivElement>()));
 
     // Check if a form derivation is necessary, when the form is loaded and some of the steps have derivable aspects.
     useSingleUpdateEffect(() => {
-        if (form != null && form.root.children.some(step => hasDerivableAspects(step, true))) {
-            determineFormState(false, 'busy', ['ALL']);
+        if (element.children == null) {
+            return;
         }
-    }, [form]);
+
+        const stepsWithDerivableAspectsExist = element
+            .children
+            .some(step => hasDerivableAspects(step, true));
+
+        if (stepsWithDerivableAspectsExist) {
+            determineFormState(false, 'busy', true);
+        }
+    }, [element]);
 
     // Set basic submission data from query params.
-    // This is used, when redirected from payment provider.
+    // This is used when redirected from payment provider.
     useEffect(() => {
         const submissionId = searchParams.get(SubmissionIdSearchParam);
 
@@ -202,7 +220,7 @@ export function RootComponentView({
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
                 submitResponse = await formsApiService
-                    .submit(form.id, customerInput, identityId);
+                    .submit(form.id, elementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
                     switch (error.status) {
@@ -245,26 +263,43 @@ export function RootComponentView({
         }
     };
 
-    const determineFormState = async (validate: boolean, blockingMode: 'busy' | 'deriving', stepOverride?: DerivationStepIdentifiers): Promise<boolean> => {
-        log.debug('Determine form state.');
-
+    const determineFormState = async (validate: boolean, blockingMode: 'busy' | 'deriving', forceAll: boolean = false): Promise<boolean> => {
         // Can't derive state for null application
-        if (form == null) {
-            log.warn('Cannot determine form state: No form was loaded.');
+        if (form == null || form.root == null || form.root.children == null) {
             return false;
         }
 
-        const currentStepId = allSteps[currentStep]?.id as string | undefined;
+        const currentStepId = allVisibleSteps[currentStep]?.id as string | undefined;
 
         if (currentStepId == null) {
             return false;
         }
 
-        const nextStepId = allSteps[currentStep + 1]?.id as string | undefined;
+        const currentStepElement = allVisibleSteps[currentStep];
 
-        const otherStepsToDerive = form.root.children
-            .filter(step => hasDerivableAspects(step, true))
-            .map(step => step.id);
+        const nextStepId = allVisibleSteps[currentStep + 1]?.id as string | undefined;
+
+        const allStepsWithoutDerivableAspects = [
+            form.root.introductionStep?.id ?? '',
+            ...form.root.children
+                .filter(step => !hasDerivableAspects(step, true))
+                .map(step => step.id),
+            form.root.summaryStep?.id ?? '',
+            form.root.submitStep?.id ?? '',
+        ];
+
+        const skipErrorsForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId);
+        const skipVisibilitiesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && stepId != nextStepId);
+        const skipOverridesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && stepId != nextStepId);
+        const skipValuesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && stepId != nextStepId);
+
+        const doNotPerformErrorDerivation = !validate || adminSettings.disableValidation;
+        const doNotPerformVisibilityDerivation = adminSettings.disableVisibility;
+
 
         const blocker = blockingMode === 'busy' ? setIsBusy : setIsDeriving;
 
@@ -279,21 +314,14 @@ export function RootComponentView({
                 desiredMinRuntime: 600,
                 main: () => new FormsApiService(api).determineFormState(
                     form.id,
-                    customerInput,
+                    elementData,
                     {
-                        stepsToValidate: stepOverride ?? ((adminSettings.disableValidation || !validate) ? ['NONE'] : [currentStepId]),
-                        stepsToCalculateVisibilities: stepOverride ?? (adminSettings.disableVisibility ? ['NONE'] : (nextStepId != null ? [currentStepId, nextStepId, ...otherStepsToDerive] : [currentStepId, ...otherStepsToDerive])),
-                        stepsToCalculateValues: stepOverride ?? (nextStepId != null ? [currentStepId, nextStepId] : [currentStepId]),
-                        stepsToCalculateOverrides: stepOverride ?? (nextStepId != null ? [currentStepId, nextStepId] : [currentStepId]),
+                        skipErrorsFor: forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
+                        skipVisibilitiesFor: forceAll ? [] : (doNotPerformVisibilityDerivation ? ['ALL'] : skipVisibilitiesForStepIds),
+                        skipValuesFor: forceAll ? [] : (skipValuesForStepIds),
+                        skipOverridesFor: forceAll ? [] : (skipOverridesForStepIds),
                     },
                 ),
-                after: async (derivationResult) => {
-                    if (validate) {
-                        dispatch(hydrateFromDerivation(derivationResult));
-                    } else {
-                        dispatch(hydrateFromDerivationWithoutErrors(derivationResult));
-                    }
-                },
             }).finally(() => {
                 blocker(false);
 
@@ -302,7 +330,9 @@ export function RootComponentView({
                 }
             });
 
-            return Object.keys(derivationResult.errors).length === 0 || adminSettings.disableValidation;
+            onElementDataChange(derivationResult, [element.id]);
+
+            return collectErrors(currentStepElement, derivationResult).length === 0 || adminSettings.disableValidation;
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Dynamische Funktionen konnten nicht ausgewertet werden.'));
@@ -319,8 +349,8 @@ export function RootComponentView({
                 try {
                     const {maxFileSize} = await new FormsApiService(api).getMaxFileSize(form!.id);
                     const maxFileSizeBytes = maxFileSize * 1000 * 1000;
-                    const totalFileSize = Object.keys(customerInput)
-                        .map((c) => customerInput[c])
+                    const totalFileSize = Object.keys(elementData)
+                        .map((c) => elementData[c])
                         .filter((c) => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
                         .map((c) => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
                         .reduce((acc, size) => acc + size, 0);
@@ -351,7 +381,7 @@ export function RootComponentView({
             main: async () => {
                 try {
                     const calculatedCosts = await new FormsApiService(api)
-                        .calculateCosts(form!.id, customerInput);
+                        .calculateCosts(form!.id, elementData);
                     dispatch(updateCustomerInput({
                         key: SubmitPaymentDataKey,
                         value: calculatedCosts,
@@ -365,6 +395,96 @@ export function RootComponentView({
                 return true;
             },
         });
+    };
+
+    const handleElementDataChange = (elementData: ElementData, triggeringElementIds: string[]): void => {
+        if (form == null || currentStepElement == null || element.children == null) {
+            return;
+        }
+
+        const allElementsToConsider = [
+            ...flattenElements(currentStepElement),
+            ...element.children,
+        ].filter(e => {
+            return e.visibility != null ||
+                e.override != null ||
+                (isAnyInputElement(e) && e.value != null);
+        });
+
+        let shouldDerive = false;
+        for (const element of allElementsToConsider) {
+            for (const triggeringElementId of triggeringElementIds) {
+                shouldDerive = (element.visibility?.referencedIds?.includes(triggeringElementId) ||
+                    element.override?.referencedIds?.includes(triggeringElementId) ||
+                    (isAnyInputElement(element) && element.value?.referencedIds?.includes(triggeringElementId))) ?? false;
+
+                if (shouldDerive) {
+                    break;
+                }
+            }
+            if (shouldDerive) {
+                break;
+            }
+        }
+
+        if (shouldDerive) {
+            setIsDeriving(true);
+
+            const currentStepId = currentStepElement.id;
+
+            const skipSteps = [
+                element.introductionStep?.id ?? '',
+                ...element.children
+                    .filter(step => !hasDerivableAspects(step, true))
+                    .map(step => step.id),
+                element.summaryStep?.id ?? '',
+                element.submitStep?.id ?? '',
+            ].filter((stepId) => stepId != currentStepId);
+
+            const doNotPerformVisibilityDerivation = adminSettings.disableVisibility;
+
+            onElementDataChange(elementData, []);
+
+            withAsyncWrapper({
+                desiredMinRuntime: 600,
+                main: async () => {
+                    return await new FormsApiService(api)
+                        .determineFormState(
+                            form.id,
+                            elementData,
+                            {
+                                skipErrorsFor: ['ALL'],
+                                skipVisibilitiesFor: doNotPerformVisibilityDerivation ? ['ALL'] : skipSteps,
+                                skipValuesFor: skipSteps,
+                                skipOverridesFor: skipSteps,
+                            },
+                        );
+                },
+            })
+                .then((derivedElementData) => {
+                    function mergeData(...ed: ElementData[]) {
+                        return ed.reduce((acc, curr) => {
+                            Object.keys(curr).forEach((key) => {
+                                if (acc[key] == null) {
+                                    acc[key] = curr[key];
+                                } else if (Array.isArray(acc[key]) && Array.isArray(curr[key])) {
+                                    acc[key] = [...acc[key], ...curr[key]];
+                                } else {
+                                    acc[key] = curr[key];
+                                }
+                            });
+                            return acc;
+                        }, {} as ElementData);
+                    }
+
+                    onElementDataChange(derivedElementData, []);
+                })
+                .finally(() => {
+                    setIsDeriving(false);
+                });
+        } else {
+            onElementDataChange(elementData, []);
+        }
     };
 
     return (
@@ -418,14 +538,14 @@ export function RootComponentView({
                             orientation="vertical"
                         >
                             {
-                                allSteps
+                                allVisibleSteps
                                     .map((step, index) => (
                                         <CustomStep
                                             key={index}
                                             step={step}
                                             stepIndex={index}
                                             isFirstStep={index === 0}
-                                            isLastStep={index === allSteps.length - 1}
+                                            isLastStep={index === allVisibleSteps.length - 1}
                                             onNext={handleNextStep}
                                             onPrevious={() => {
                                                 dispatch(clearErrors());
@@ -444,6 +564,17 @@ export function RootComponentView({
                                                 isBusy={isBusy}
                                                 isDeriving={isDeriving ?? false}
                                                 mode={mode}
+                                                elementData={elementData}
+                                                onElementDataChange={handleElementDataChange}
+                                                onElementBlur={onElementBlur}
+                                                scrollContainerRef={scrollContainerRef}
+                                                disableVisibility={disableVisibility}
+                                                derivationTriggerIdQueue={derivationTriggerIdQueue}
+                                            />
+
+                                            <ErrorAlert
+                                                element={step}
+                                                elementData={elementData}
                                             />
                                         </CustomStep>
                                     ))
@@ -470,11 +601,7 @@ export function RootComponentView({
                                 stepIndex={-1}
                                 isFirstStep={false}
                                 isLastStep={false}
-                                step={{
-                                    id: '',
-                                    type: ElementType.SubmittedStep,
-                                    appVersion: AppInfo.version,
-                                }}
+                                step={generateElementWithDefaultValues(ElementType.SubmittedStep) as SubmittedStepElement}
                                 title="Ihr Antrag wurde erfolgreich eingereicht"
                                 active
                                 navDirection={upcomingStepDirection}

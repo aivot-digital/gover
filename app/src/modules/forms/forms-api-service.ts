@@ -20,6 +20,7 @@ import {FormType} from './enums/form-type';
 import {ElementApprovalStatus} from '../elements/enums/ElementApprovalStatus';
 import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
 import {IdentityIdHeader} from '../identity/constants/identity-id-header';
+import {ElementData} from '../../models/element-data';
 
 interface FormFilters {
     id: number;
@@ -48,7 +49,7 @@ interface FormFilters {
     identityProviderKey: string;
 }
 
-export type DerivationStepIdentifiers = string[] | ['NONE'] | ['ALL'];
+export type DerivationSkipIdentifier = string[] | ['ALL'];
 
 export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListResponseDTO, Form, Form, number, FormFilters> {
     public constructor(api: Api) {
@@ -108,12 +109,12 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
     }
 
     public async determineFormState(formId: number, customerInput: CustomerInput, filter: {
-        stepsToValidate: DerivationStepIdentifiers,
-        stepsToCalculateVisibilities: DerivationStepIdentifiers,
-        stepsToCalculateValues: DerivationStepIdentifiers,
-        stepsToCalculateOverrides: DerivationStepIdentifiers,
-    }): Promise<FormState> {
-        return await this.api.post<FormState>(`public/forms/${formId}/derive`, customerInput, {queryParams: filter});
+        skipErrorsFor: DerivationSkipIdentifier,
+        skipVisibilitiesFor: DerivationSkipIdentifier,
+        skipValuesFor: DerivationSkipIdentifier,
+        skipOverridesFor: DerivationSkipIdentifier,
+    }): Promise<ElementData> {
+        return await this.api.post<ElementData>(`public/forms/${formId}/derive`, customerInput, {queryParams: filter});
     }
 
     public async calculateCosts(formId: number, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {

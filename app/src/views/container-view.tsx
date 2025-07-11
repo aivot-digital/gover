@@ -1,32 +1,47 @@
-import {BaseView} from './base-view';
-import {GroupLayoutComponent} from '../components/group-layout/group-layout-component';
-import {GroupLayout} from '../models/elements/form/layout/group-layout';
-import {useMemo} from 'react';
+import {type BaseViewProps} from './base-view';
+import {type GroupLayout} from '../models/elements/form/layout/group-layout';
+import React, {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {ViewDispatcherComponent} from '../components/view-dispatcher.component';
+import Grid from '@mui/material/Grid';
 
-// TODO: Unify with the group layout
-export const ContainerView: BaseView<GroupLayout, any> = (props) => {
+export function ContainerView(props: BaseViewProps<GroupLayout, any>) {
     const {
         element,
         isDeriving,
     } = props;
+
+    const {
+        children,
+    } = element;
 
     const pass = useMemo(() => {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
     return (
-        <GroupLayoutComponent
-            allElements={props.allElements}
-            children={props.element.children}
-            idPrefix={props.idPrefix}
-            isBusy={props.isBusy}
-            isDeriving={props.isDeriving || pass}
-            valueOverride={props.valueOverride}
-            errorsOverride={props.errorsOverride}
-            visibilitiesOverride={props.visibilitiesOverride}
-            overridesOverride={props.overridesOverride}
-            mode={props.mode}
-        />
+        <Grid
+            container
+            spacing={2}
+        >
+            {
+                children.map((child, index) => (
+                    <ViewDispatcherComponent
+                        allElements={props.allElements}
+                        key={index}
+                        element={child}
+                        isBusy={props.isBusy}
+                        isDeriving={props.isDeriving || pass}
+                        mode={props.mode}
+                        elementData={props.elementData}
+                        onElementDataChange={props.onElementDataChange}
+                        onElementBlur={props.onElementBlur}
+                        scrollContainerRef={props.scrollContainerRef}
+                        disableVisibility={props.disableVisibility}
+                        derivationTriggerIdQueue={props.derivationTriggerIdQueue}
+                    />
+                ))
+            }
+        </Grid>
     );
-};
+}

@@ -1,16 +1,15 @@
 package de.aivot.GoverBackend.submission.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.Form;
-import org.hibernate.annotations.ColumnDefault;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Entity
 @Table(name = "submissions")
@@ -40,8 +39,8 @@ public class Submission {
 
     @NotNull
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> customerInput;
+    @Convert(converter = ElementDataConverter.class)
+    private ElementData customerInput;
 
     private Integer destinationId;
 
@@ -152,11 +151,11 @@ public class Submission {
         return this;
     }
 
-    public Map<String, Object> getCustomerInput() {
+    public ElementData getCustomerInput() {
         return customerInput;
     }
 
-    public Submission setCustomerInput(Map<String, Object> customerInput) {
+    public Submission setCustomerInput(ElementData customerInput) {
         this.customerInput = customerInput;
         return this;
     }

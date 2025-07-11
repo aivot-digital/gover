@@ -9,8 +9,6 @@ import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.services.FormDerivationService;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityValue;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
@@ -37,7 +35,9 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class PdfService {
@@ -47,7 +47,6 @@ public class PdfService {
     private final AssetRepository assetRepository;
     private final GoverConfig goverConfig;
     private final ThemeRepository themeRepository;
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final IdentityProviderRepository identityProviderRepository;
     private final PaymentProviderRepository paymentProviderRepository;
@@ -61,7 +60,6 @@ public class PdfService {
             AssetRepository assetRepository,
             GoverConfig goverConfig,
             ThemeRepository themeRepository,
-            FormDerivationServiceFactory formDerivationServiceFactory,
             PaymentTransactionRepository paymentTransactionRepository,
             IdentityProviderRepository identityProviderRepository,
             PaymentProviderRepository paymentProviderRepository,
@@ -73,7 +71,6 @@ public class PdfService {
         this.assetRepository = assetRepository;
         this.goverConfig = goverConfig;
         this.themeRepository = themeRepository;
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.identityProviderRepository = identityProviderRepository;
         this.paymentProviderRepository = paymentProviderRepository;
@@ -97,20 +94,10 @@ public class PdfService {
     public byte[] generatePrintableForm(Form form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
         var allElements = ElementFlattenUtils.flattenElements(form.getRoot());
 
-        var derivationContext = formDerivationServiceFactory
-                .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                .derive(form.getRoot(), Map.of());
-        try {
-            derivationContext.close();
-        } catch (Exception e) {
-            throw new IOException("Failed to close derivation context", e);
-        }
-
         var dto = new HashMap<String, Object>();
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 form.getRoot(),
-                Optional.empty(),
-                derivationContext.getFormState(),
+                null,
                 true
         ));
         dto.put("form", form);
@@ -122,19 +109,9 @@ public class PdfService {
     public byte[] generateCustomerSummary(Form form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
 
-        var derivationContext = formDerivationServiceFactory
-                .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                .derive(form.getRoot(), submission.getCustomerInput());
-        try {
-            derivationContext.close();
-        } catch (Exception e) {
-            throw new IOException("Failed to close derivation context", e);
-        }
-
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 form.getRoot(),
-                Optional.of(submission.getCustomerInput()),
-                derivationContext.getFormState(),
+                submission.getCustomerInput(),
                 scope != FormPdfScope.Staff
         ));
         dto.put("form", form);

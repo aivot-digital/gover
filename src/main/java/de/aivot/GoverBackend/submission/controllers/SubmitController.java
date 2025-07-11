@@ -1,9 +1,16 @@
 package de.aivot.GoverBackend.submission.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.captcha.services.AltchaService;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
-import de.aivot.GoverBackend.elements.models.steps.SubmitStepElement;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
@@ -13,8 +20,6 @@ import de.aivot.GoverBackend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
-import de.aivot.GoverBackend.form.services.FormDerivationService;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
@@ -48,7 +53,6 @@ import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.mail.MessagingException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -82,13 +86,13 @@ public class SubmitController {
     private final CustomerMailService customerMailService;
     private final SubmissionMailService submissionMailService;
     private final ExceptionMailService exceptionMailService;
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final FormPaymentService paymentService;
     private final PaymentProviderService paymentProviderService;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderRepository paymentProviderRepository;
     private final IdentityCacheRepository identityCacheRepository;
     private final AltchaService altchaService;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public SubmitController(
@@ -104,13 +108,12 @@ public class SubmitController {
             CustomerMailService customerMailService,
             SubmissionMailService submissionMailService,
             ExceptionMailService exceptionMailService,
-            FormDerivationServiceFactory formDerivationServiceFactory,
             FormPaymentService paymentService,
             PaymentProviderService paymentProviderService,
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentProviderRepository paymentProviderRepository,
             IdentityCacheRepository identityCacheRepository,
-            AltchaService altchaService) {
+            AltchaService altchaService, ElementDerivationService elementDerivationService) {
         this.formRepository = formRepository;
         this.submissionRepository = submissionRepository;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
@@ -123,13 +126,13 @@ public class SubmitController {
         this.customerMailService = customerMailService;
         this.submissionMailService = submissionMailService;
         this.exceptionMailService = exceptionMailService;
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.identityCacheRepository = identityCacheRepository;
         this.altchaService = altchaService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @PostMapping("/api/public/submit/{applicationId}/")
@@ -158,30 +161,37 @@ public class SubmitController {
         }
 
         // Get customer input
-        var customerInput = new JSONObject(inputs).toMap();
-
+        ElementData elementData;
         try {
-            var rawValue = (String) customerInput.get(SubmitStepElement.CAPTCHA_FIELD_ID);
+            elementData = new ObjectMapper()
+                    .readValue(inputs, ElementData.class);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.badRequest(
+                    "Ungültige Eingabedaten.",
+                    "Die Eingabedaten konnten nicht verarbeitet werden. Bitte überprüfen Sie die Struktur der Daten."
+            );
+        }
 
-            if (rawValue == null || rawValue.isBlank()) {
-                throw new Exception("Missing Captcha payload");
-            }
+        // Verify captcha if present
+        try {
+            var rawCaptchaValue = elementData
+                    .get(form.getRoot().getSubmitStep().getId())
+                    .getValue();
 
-            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            var json = mapper.readTree(rawValue);
+            var formattedCaptchaValue = SubmitStepElement
+                    ._formatValue(rawCaptchaValue);
 
-            var payloadNode = json.get("payload");
+            var payloadNode = formattedCaptchaValue != null ? formattedCaptchaValue.get("payload") : null;
             if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
-                throw new Exception("Missing 'payload' field in Captcha JSON");
+                throw new Exception("Bitte bestätigen Sie, dass Sie ein Mensch sind.");
             }
 
             var payload = payloadNode.asText();
             var captchaVerificationStatus = altchaService.verify(payload);
 
             if (!captchaVerificationStatus) {
-                throw new Exception("Verification failed");
+                throw new Exception("Captcha-Verifizierung fehlgeschlagen.");
             }
-
         } catch (Exception e) {
             throw ResponseException.badRequest("Verifizierung des Captcha fehlgeschlagen.");
         }
@@ -189,7 +199,7 @@ public class SubmitController {
         var optionalIdp = extractIdp(identityId);
 
         // Hydrate the customer input with the data from an idp
-        hydrateCustomerInputWithIdpData(form, optionalIdp, customerInput);
+        hydrateCustomerInputWithIdpData(form, optionalIdp, elementData);
 
         // Test files for viruses
         avService.testMultipartFiles(files);
@@ -198,36 +208,21 @@ public class SubmitController {
         destinationSubmitService.testDestinationAttachmentSize(destination, files);
 
         // Validate customer input
-        var derivationContext = formDerivationServiceFactory
-                .create(form, List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                .derive(form.getRoot(), customerInput);
-        try {
-            derivationContext.close();
-        } catch (Exception e) {
-            throw ResponseException.internalServerError(e);
-        }
+        var verifiedElementData = elementDerivationService
+                .derive(new ElementDerivationRequest()
+                        .setElement(form.getRoot())
+                        .setElementData(elementData)
+                        .setOptions(new ElementDerivationOptions())
+                );
 
-        if (derivationContext.getElementDerivationData().hasErrors()) {
-            var details = derivationContext
-                    .getElementDerivationData()
-                    .getErrors()
-                    .entrySet()
-                    .stream()
-                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                    .collect(Collectors.joining("\n"));
-            throw ResponseException.badRequest("Validierung fehlgeschlagen", details); // TODO: Extend error message
+        if (verifiedElementData.hasAnyError()) {
+            throw ResponseException.badRequest("Validierung fehlgeschlagen"); // TODO: Extend error message
         }
-
-        // Transfer derived values to customer input
-        customerInput = derivationContext
-                .getElementDerivationData()
-                .getCombinedValues();
 
         // Prepare submission id
         var submissionId = UUID
                 .randomUUID()
                 .toString();
-
 
         // Create submission
         Submission submission = new Submission();
@@ -238,7 +233,7 @@ public class SubmitController {
         submission.setCreated(LocalDateTime.now());
         submission.setUpdated(LocalDateTime.now());
         submission.setAssigneeId(null);
-        submission.setCustomerInput(customerInput);
+        submission.setCustomerInput(verifiedElementData);
         submission.setIsTestSubmission(form.getStatus() != FormStatus.Published || jwt != null);
         submission.setCopySent(false);
         submission.setCopyTries(0);
@@ -288,7 +283,7 @@ public class SubmitController {
         if (form.getPaymentProvider() != null) {
             try {
                 paymentRequest = paymentService
-                        .createTransaction(form, submissionId, customerInput);
+                        .createTransaction(form, submissionId, verifiedElementData);
             } catch (PaymentException e) {
                 // If the payment creation failed, delete the submission and throw an exception
                 submissionRepository.delete(submission);
@@ -343,7 +338,7 @@ public class SubmitController {
         return submissionCopy;
     }
 
-    private void hydrateCustomerInputWithIdpData(Form form, Optional<IdentityCacheEntity> optionalIdp, Map<String, Object> customerInput) throws ResponseException {
+    private void hydrateCustomerInputWithIdpData(Form form, Optional<IdentityCacheEntity> optionalIdp, ElementData customerInput) throws ResponseException {
         if (form.getIdentityRequired() && optionalIdp.isEmpty()) {
             throw ResponseException.badRequest("Ein Identitätsnachweis ist erforderlich, um den Antrag einzureichen.");
         }
@@ -385,7 +380,11 @@ public class SubmitController {
             // If the metadata identifier is an identifier of a system identity provider, format the value accordingly
             mappedValue = SystemIdentityProviderFormatter.formatForSystemIdentityProvider(identityCacheEntity.getMetadataIdentifier(), mapping, mappedValue);
 
-            customerInput.put(element.getId(), mappedValue);
+            var existingDataObject = customerInput.getOrDefault(element.getId(), new ElementDataObject());
+            existingDataObject.setType(element.getType());
+            existingDataObject.setInputValue(mappedValue);
+
+            customerInput.put(element, existingDataObject);
         }
 
         // Create the identity value
@@ -395,8 +394,11 @@ public class SubmitController {
                 identityCacheEntity.getIdentityData()
         );
 
+        var identityValueDataObject = new ElementDataObject();
+        identityValueDataObject.setInputValue(identityValue);
+
         // Add the idp data to the customer input
-        customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValue.toMap());
+        customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValueDataObject);
     }
 
     @PostMapping("/api/public/send-copy/{submissionId}/")

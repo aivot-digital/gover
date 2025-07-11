@@ -1,163 +1,162 @@
 import React, {ComponentType, useCallback, useMemo} from 'react';
 import Grid from '@mui/material/Grid';
-import {AnyElement} from '../models/elements/any-element';
+import {type AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {views as Views} from '../views';
-import {BaseViewProps} from '../views/base-view';
-import {useAppSelector} from '../hooks/use-app-selector';
+import {type BaseViewProps} from '../views/base-view';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
-import {useAppDispatch} from '../hooks/use-app-dispatch';
-import {resolveId} from '../utils/id-utils';
-import {enqueueDerivationTriggerId, selectComputedValue, selectCustomerInputValue, selectDisabled, selectError, selectFunctionReferences, selectOverride, selectVisibility, updateCustomerInput} from '../slices/app-slice';
-import {FunctionType, hasElementFunctionType} from '../utils/function-status-utils';
-import {selectDisableVisibility} from '../slices/admin-settings-slice';
+import {type AnyElementDataObject, type ElementData} from '../models/element-data';
 
-interface DispatcherComponentProps<M extends AnyElement, V> {
+interface DispatcherComponentProps<T extends AnyElement> {
     allElements: AnyElement[];
-    element: M;
-    idPrefix?: string;
+    element: T;
+
     scrollContainerRef?: React.RefObject<HTMLDivElement>;
     isBusy: boolean;
     isDeriving: boolean;
     mode: 'editor' | 'viewer';
 
-    valueOverride?: {
-        values: Record<string, any>;
-        onChange: (key: string, value: any) => void;
-        onBlur?: (key: string, value: any) => void;
-    };
-    errorsOverride?: Record<string, string>;
-    visibilitiesOverride?: Record<string, boolean>;
-    overridesOverride?: Record<string, AnyElement>;
+    elementData: ElementData;
+    onElementDataChange: (data: ElementData, triggeringElementIds: string[]) => void;
+    onElementBlur?: (data: ElementData, triggeringElementIds: string[]) => void;
+
+    disableVisibility?: boolean;
+    derivationTriggerIdQueue: string[];
 }
 
-export function ViewDispatcherComponent<M extends AnyElement, V>(props: DispatcherComponentProps<M, V>) {
-    const dispatch = useAppDispatch();
-
+export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherComponentProps<T>) {
     const {
         element: initialElement,
-        idPrefix,
-        valueOverride,
-        errorsOverride,
         allElements,
         scrollContainerRef,
         isBusy,
         isDeriving,
         mode,
-        visibilitiesOverride,
-        overridesOverride,
+        elementData,
+        onElementDataChange,
+        onElementBlur,
+        disableVisibility,
+        derivationTriggerIdQueue,
     } = props;
 
     const {
-        id: initialElementId,
+        id: elementId,
+        type: elementType,
     } = initialElement;
 
-    const resolvedId = useMemo(() => {
-        return resolveId(initialElementId, idPrefix);
-    }, [initialElementId, idPrefix]);
-
-    const storedIsVisible = useAppSelector(selectVisibility(resolvedId));
-    const isDisabled = useAppSelector(selectDisabled(resolvedId));
-    const customerInputValue = useAppSelector(selectCustomerInputValue(resolvedId));
-    const computedValue = useAppSelector(selectComputedValue(resolvedId));
-    const override = useAppSelector(selectOverride(resolvedId));
-    const storedError = useAppSelector(selectError(resolvedId));
-    const references = useAppSelector(selectFunctionReferences);
-    const disableVisibility = useAppSelector(selectDisableVisibility);
-
-    const hasReferences = useMemo(() => {
-        if (references == null) {
-            return false;
-        }
-        return references
-            .some(ref => (
-                ref.target.id === initialElementId &&
-                (ref.isSameStep || ref.sourceIsStep) &&
-                ref.functionType !== FunctionType.VALIDATION
-            ));
-    }, [initialElementId, references]);
+    const elementDataObject: AnyElementDataObject = useMemo(() => {
+        return elementData[elementId] ?? {
+            $type: elementType,
+            inputValue: undefined,
+            isVisible: true,
+            isPrefilled: false,
+            isDirty: false,
+            computedOverride: undefined,
+            computedValue: undefined,
+            computedErrors: undefined,
+            value: undefined,
+        };
+    }, [elementData, elementId, elementType]);
 
     const element: AnyElement = useMemo(() => {
-        const element = {
-            ...((overridesOverride != null ? overridesOverride[resolvedId] : override) ?? initialElement),
-            id: resolvedId,
-        };
-
-        if (isAnyInputElement(element)) {
-            element.disabled = element.disabled || isDisabled;
-        }
-
-        return element;
-    }, [overridesOverride, override, resolvedId, isDisabled, initialElement]);
+        return elementDataObject.computedOverride ?? initialElement;
+    }, [elementDataObject, initialElement]);
 
     const value = useMemo(() => {
-        if (valueOverride != null) {
-            return valueOverride.values[resolvedId];
-        }
+        const inputValue = elementDataObject.inputValue;
+        const computedValue = elementDataObject.computedValue;
 
         if (isAnyInputElement(element) && (element.disabled || element.technical)) {
+            console.warn(`Returning computed value for disabled or technical element: ${element.id}`);
             return computedValue;
         }
 
-        return customerInputValue ?? computedValue;
-    }, [element, customerInputValue, valueOverride, resolvedId, computedValue]);
+        return inputValue ?? computedValue;
+    }, [elementDataObject, element]);
 
-    const error: string | undefined | null = useMemo(() => {
-        if (errorsOverride != null) {
-            return errorsOverride[resolvedId];
-        }
-        return storedError;
-    }, [errorsOverride, storedError, resolvedId]);
+    const error: string[] | undefined | null = useMemo(() => {
+        return elementDataObject.computedErrors;
+    }, [elementDataObject]);
 
-    const handleSetValue = useCallback((updatedValue: V | null | undefined) => {
+    const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value) {
             return;
         }
-        if (valueOverride != null) {
-            valueOverride.onChange(resolvedId, updatedValue);
-        } else {
-            // Keep this order of operations to guarantee that listeners consuming the derivation queue have the updated customer input in place
-            dispatch(updateCustomerInput({
-                key: resolvedId,
-                value: updatedValue,
-            }));
-            // Check if the element has references to trigger the derivation queue
-            if (hasReferences || (updatedValue == null && hasElementFunctionType(initialElement, FunctionType.VALUE))) {
-                dispatch(enqueueDerivationTriggerId(initialElementId));
-            }
-        }
-    }, [value, valueOverride, resolvedId, hasReferences, initialElement, initialElementId, dispatch]);
 
-    const Component: ComponentType<BaseViewProps<typeof element, V>> | null = useMemo(() => Views[element.type], [element.type]);
+        const newElementData = {
+            ...elementData,
+            [elementId]: {
+                ...elementDataObject,
+                $type: elementType,
+                inputValue: updatedValue,
+                isDirty: true,
+            },
+        };
+
+        onElementDataChange(newElementData, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [value, elementData, onElementDataChange, elementId, elementType]);
+
+    const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
+        if (updatedValue == value || onElementBlur == null) {
+            return;
+        }
+
+        const newElementData = {
+            ...elementData,
+            [elementId]: {
+                ...elementDataObject,
+                $type: elementType,
+                inputValue: updatedValue,
+                isDirty: true,
+            },
+        };
+
+        onElementBlur(newElementData, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [value, elementData, onElementDataChange, elementId, elementType]);
+
+    const Component: ComponentType<BaseViewProps<typeof element, any>> | null = useMemo(() => Views[element.type], [element.type]);
 
     const isVisible = useMemo(() => {
         if (isAnyInputElement(element) && element.technical && (mode !== 'editor' || !disableVisibility)) {
             return false;
         }
 
-        if (visibilitiesOverride != null) {
-            return visibilitiesOverride[resolvedId] ?? true;
-        } else {
-            return storedIsVisible;
-        }
-    }, [storedIsVisible, element, mode, disableVisibility, visibilitiesOverride]);
+        return elementDataObject.isVisible ?? true;
+    }, [elementDataObject, element, mode, disableVisibility]);
 
-    const viewProps: BaseViewProps<typeof element, V> = useMemo(() => ({
+    const viewProps: BaseViewProps<typeof element, any> = useMemo(() => ({
         allElements: allElements,
         element: element,
         setValue: handleSetValue,
-        error: error,
+        onBlur: handleOnBlur,
+        errors: error,
         value: value,
-        idPrefix: idPrefix,
         scrollContainerRef: scrollContainerRef,
         isBusy: isBusy,
         isDeriving: isDeriving,
-        valueOverride: valueOverride,
-        errorsOverride: errorsOverride,
-        visibilitiesOverride: visibilitiesOverride,
-        overridesOverride: overridesOverride,
         mode: mode,
-    }), [allElements, element, error, value, handleSetValue, idPrefix, scrollContainerRef, isDeriving, mode, isBusy, visibilitiesOverride, overridesOverride]);
+        elementData: elementData,
+        onElementDataChange: onElementDataChange,
+        onElementBlur: onElementBlur,
+        disableVisibility: disableVisibility,
+        derivationTriggerIdQueue: derivationTriggerIdQueue,
+    }), [
+        allElements,
+        element,
+        handleSetValue,
+        handleOnBlur,
+        error,
+        value,
+        scrollContainerRef,
+        isBusy,
+        isDeriving,
+        mode,
+        elementData,
+        onElementDataChange,
+        onElementBlur,
+        disableVisibility,
+        derivationTriggerIdQueue,
+    ]);
 
     if (Component == null || !isVisible) {
         return null;
@@ -168,9 +167,9 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
             item
             xs={12}
             md={('weight' in element && element.weight != null) ? element.weight : 12}
-            id={resolvedId}
-            data-initial-id={initialElementId}
-            data-resolved-id={resolvedId}
+            id={elementId}
+            data-initial-id={elementId /* TODO: Remove here and where referenced */}
+            data-resolved-id={elementId /* TODO: Remove here and where referenced */}
             sx={{
                 position: 'relative',
             }}

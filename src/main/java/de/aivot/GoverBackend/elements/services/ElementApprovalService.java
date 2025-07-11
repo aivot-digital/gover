@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.elements.services;
 
 import de.aivot.GoverBackend.elements.enums.ElementApprovalStatus;
-import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 
 import java.util.HashMap;

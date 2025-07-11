@@ -2,9 +2,7 @@ package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import org.json.JSONObject;
-
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -12,10 +10,10 @@ import jakarta.persistence.Converter;
 public class RootElementConverter implements AttributeConverter<RootElement, String> {
     @Override
     public String convertToDatabaseColumn(RootElement baseElement) {
-        ObjectMapper mapper = new ObjectMapper();
+        var mapper = new ObjectMapper();
+
         try {
-            var res = mapper.writeValueAsString(baseElement);
-            return res;
+            return mapper.writeValueAsString(baseElement);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -23,7 +21,12 @@ public class RootElementConverter implements AttributeConverter<RootElement, Str
 
     @Override
     public RootElement convertToEntityAttribute(String s) {
-        var elem = new RootElement(new JSONObject(s).toMap());
-        return elem;
+        var mapper = new ObjectMapper();
+
+        try {
+            return mapper.readValue(s, RootElement.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

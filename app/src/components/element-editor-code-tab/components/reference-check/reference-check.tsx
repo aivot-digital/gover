@@ -267,13 +267,7 @@ function getLowCodeReferencedIds(code: string): string[] {
 
     const expliciteReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
 
-    const implicitRegex = `(${JavascriptEngine.JS_CONTEXT_OBJECT_NAME}\\.)?` +
-        `(${BaseElementDerivationContext.INPUT_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.VALUES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.VISIBILITIES_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.ERRORS_JS_CONTEXT_OBJECT_NAME}|` +
-        `${BaseElementDerivationContext.OVERRIDES_JS_CONTEXT_OBJECT_NAME})\\.([a-zA-Z0-9_-]+)`;
+    const implicitRegex = `${JavascriptEngine.JS_CONTEXT_OBJECT_NAME}\\.([a-zA-Z0-9_-]+)`;
     const implicitReferencePattern = new RegExp(implicitRegex, 'g');
 
     const ids = new Set<string>();
@@ -287,7 +281,7 @@ function getLowCodeReferencedIds(code: string): string[] {
 
     // Match implicit references
     while ((match = implicitReferencePattern.exec(code)) !== null) {
-        ids.add(match[3]);
+        ids.add(match[2]);
     }
 
     return Array.from(ids);
@@ -332,7 +326,7 @@ function getNoCodeReferencedIds(noCodeExpression: NoCodeExpression): string[] {
 
     if (noCodeExpression.operands != null) {
         for (const operand of noCodeExpression.operands) {
-            if (isNoCodeReference(operand)) {
+            if (isNoCodeReference(operand) && operand.elementId != null) {
                 referencedIds.add(operand.elementId);
             } else if (isNoCodeExpression(operand)) {
                 const nestedReferencedIds = getNoCodeReferencedIds(operand);

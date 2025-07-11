@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.submission.controllers;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.exceptions.ForbiddenException;
 import de.aivot.GoverBackend.exceptions.NotFoundException;
 import de.aivot.GoverBackend.exceptions.UnauthorizedException;
@@ -130,7 +131,7 @@ public class SubmissionAttachmentsController {
     }
 
     @GetMapping("gover-data.json")
-    public Map<String, Object> downloadGoverDataAttachment(
+    public ElementData downloadGoverDataAttachment(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String submissionId
     ) throws ResponseException {

@@ -1,5 +1,6 @@
 import {SxProps} from '@mui/material';
 import {AlertComponentProps} from '../alert/alert-component-props';
+import {editor} from 'monaco-editor';
 
 export interface CodeEditorProps {
     label?: string;
@@ -14,4 +15,5 @@ export interface CodeEditorProps {
         content: string;
     }[];
     alert?: AlertComponentProps;
+    onEditorMount?: (editor: editor.IStandaloneCodeEditor) => void;
 }

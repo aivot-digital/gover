@@ -33,6 +33,7 @@ import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {FormState} from '../../../models/dtos/form-state';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
+import {ElementData} from '../../../models/element-data';
 
 export function PresetEditPage(): JSX.Element {
     const api = useApi();
@@ -287,7 +288,7 @@ export function PresetEditPage(): JSX.Element {
             });
     };
 
-    const handleValueChange = (key: string, value: any) => {
+    const handleValueChange = (elementData: ElementData) => {
         if (preset == null || presetVersion == null) {
             return;
         }
@@ -296,11 +297,7 @@ export function PresetEditPage(): JSX.Element {
             return;
         }
 
-        const newData = {
-            ...customerData,
-            [key]: value,
-        };
-        setCustomerData(newData);
+        setCustomerData(elementData);
 
         setIsDeriving(true);
         dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
@@ -311,7 +308,7 @@ export function PresetEditPage(): JSX.Element {
                 return await presetsApiService.determinePresetState(
                     preset.key,
                     presetVersion.version,
-                    newData,
+                    elementData,
                     {
                         disableValidation: true,
                         disableVisibilities: false,
@@ -446,11 +443,13 @@ export function PresetEditPage(): JSX.Element {
                             element={presetVersion.root}
                             isBusy={isBusy}
                             isDeriving={isDeriving}
-                            valueOverride={{
-                                values: customerData,
-                                onChange: handleValueChange,
-                            }}
+                            elementData={customerData}
+                            onElementDataChange={handleValueChange}
+                            onElementBlur={undefined}
                             mode="editor"
+                            disableVisibility={false}
+                            derivationTriggerIdQueue={[]}
+                            scrollContainerRef={undefined}
                         />
                     </Container>
                 </Grid>

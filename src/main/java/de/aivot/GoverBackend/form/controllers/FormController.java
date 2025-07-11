@@ -5,6 +5,8 @@ import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.filters.DepartmentMembershipFilter;
 import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.exceptions.*;
 import de.aivot.GoverBackend.form.cache.entities.FormLock;
@@ -249,8 +251,17 @@ public class FormController {
             throw new RuntimeException(e);
         }
 
+        // Convert the request DTO to an entity
+        var formToUpdate = requestDTO
+                .toEntity();
+
+        // Recalculate referenced IDs for all elements in the form
+        ElementStreamUtils
+                .applyAction(formToUpdate.getRoot(), BaseElement::recalculateReferencedIds);
+
         // Update the form
-        var updatedForm = formService.update(formId, requestDTO.toEntity());
+        var updatedForm = formService
+                .update(formId, formToUpdate);
 
         // Log the form update
         auditService.logAction(user, AuditAction.Update, Form.class, Map.of(

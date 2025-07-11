@@ -1,15 +1,12 @@
 package de.aivot.GoverBackend.submission.entities;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementDeserializer;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementSerializer;
-import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.enums.*;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
-import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -17,7 +14,6 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Map;
 
 @Entity
 @Table(name = "submissions_with_memberships")
@@ -31,8 +27,8 @@ public class SubmissionWithMembership {
     private String fileNumber;
     private Integer destinationId;
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> customerInput;
+    @Convert(converter = ElementDataConverter.class)
+    private ElementData customerInput;
     private Boolean destinationSuccess;
     private Boolean isTestSubmission;
     private Boolean copySent;
@@ -52,8 +48,6 @@ public class SubmissionWithMembership {
     private FormStatus formStatus;
     private FormType formType;
     @Convert(converter = RootElementConverter.class)
-    @JsonSerialize(converter = JacksonRootElementSerializer.class)
-    @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
     @Column(columnDefinition = "jsonb")
     private RootElement formRoot;
     private Integer formDestinationId;
@@ -166,11 +160,11 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public Map<String, Object> getCustomerInput() {
+    public ElementData getCustomerInput() {
         return customerInput;
     }
 
-    public SubmissionWithMembership setCustomerInput(Map<String, Object> customerInput) {
+    public SubmissionWithMembership setCustomerInput(ElementData customerInput) {
         this.customerInput = customerInput;
         return this;
     }

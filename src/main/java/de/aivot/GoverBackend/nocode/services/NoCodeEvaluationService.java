@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.nocode.services;
 
-import de.aivot.GoverBackend.elements.models.ElementDerivationData;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
@@ -66,11 +66,11 @@ public class NoCodeEvaluationService {
      * Evaluate a no code expression.
      *
      * @param exp     The expression to evaluate
-     * @param context The form state, containing the values and visibilities of the elements
+     * @param elementData The form state, containing the values and visibilities of the elements
      * @return The result of the evaluation
      */
     @Nonnull
-    public NoCodeResult evaluate(@Nonnull NoCodeExpression exp, @Nonnull ElementDerivationData context, @Nullable String idPrefix) {
+    public NoCodeResult evaluate(@Nonnull NoCodeExpression exp, @Nonnull ElementData elementData) {
         var operands = exp.getOperands();
         if (operands == null) {
             operands = List.of();
@@ -78,20 +78,20 @@ public class NoCodeEvaluationService {
 
         var operandValues = operands
                 .stream()
-                .map(op -> resolveNoCodeOperand(op, context, idPrefix))
+                .map(op -> resolveNoCodeOperand(op, elementData))
                 .toArray();
 
         var operator = getNoCodeOperator(exp.getOperatorIdentifier());
 
         try {
-            return operator.evaluate(context, operandValues);
+            return operator.evaluate(elementData, operandValues);
         } catch (NoCodeException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Nullable
-    private Object resolveNoCodeOperand(@Nullable NoCodeOperand operand, @Nonnull ElementDerivationData context, @Nullable String idPrefix) {
+    private Object resolveNoCodeOperand(@Nullable NoCodeOperand operand, @Nonnull ElementData elementData) {
         if (operand == null) {
             return null;
         }
@@ -101,12 +101,12 @@ public class NoCodeEvaluationService {
             case NoCodeStaticValue staticValue -> staticValue.getValue();
 
             // Referenced elements resolve based on their visibility and the values map
-            case NoCodeReference reference -> context
-                    .getValue(idPrefix != null ? idPrefix + "_" + reference.getElementId() : reference.getElementId())
-                    .orElse(null);
+            case NoCodeReference reference -> elementData
+                    .get(reference.getElementId())
+                    .getValue();
 
             // Expressions resolve by evaluating them
-            case NoCodeExpression expression -> evaluate(expression, context, idPrefix).getValue();
+            case NoCodeExpression expression -> evaluate(expression, elementData).getValue();
 
             // Unknown operands are not supported
             default -> throw new IllegalStateException("Unexpected value: " + operand);

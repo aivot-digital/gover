@@ -1,6 +1,9 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
-import de.aivot.GoverBackend.elements.models.BaseElementDerivationContext;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
 import de.aivot.GoverBackend.utils.MapUtils;
 
@@ -42,10 +45,10 @@ public class ConditionSet {
         this.conditionSetUnmetMessage = conditionSetUnmetMessage;
     }
 
-    public String evaluate(String idPrefix, BaseElementDerivationContext context) {
+    public String evaluate(ElementWithChildren<?> rootElement, ElementData elementData, BaseElement element) {
         return switch (operator) {
-            case All -> evaluateAll(idPrefix, context);
-            case Any -> evaluateAny(idPrefix, context);
+            case All -> evaluateAll(rootElement, elementData, element);
+            case Any -> evaluateAny(rootElement, elementData, element);
         };
     }
 
@@ -53,10 +56,10 @@ public class ConditionSet {
      * Evaluates if all conditions and condition sets return no error message.
      * Returns NULL if no error message was returned, otherwise returns the occurred error message.
      */
-    private String evaluateAll(String idPrefix, BaseElementDerivationContext context) {
+    private String evaluateAll(ElementWithChildren<?> rootElement, ElementData elementData, BaseElement element) {
         if (conditions != null) {
             for (var condition : conditions) {
-                var conditionResult = condition.evaluate(idPrefix, context);
+                var conditionResult = condition.evaluate(rootElement, elementData, element);
                 if (conditionResult != null) {
                     return conditionResult;
                 }
@@ -65,7 +68,7 @@ public class ConditionSet {
 
         if (conditionsSets != null) {
             for (var conditionSet : conditionsSets) {
-                var conditionSerResult = conditionSet.evaluate(idPrefix, context);
+                var conditionSerResult = conditionSet.evaluate(rootElement, elementData, element);
                 if (conditionSerResult != null) {
                     return conditionSerResult;
                 }
@@ -79,10 +82,10 @@ public class ConditionSet {
      * Evaluates if at least one condition or condition set returns no error message.
      * Returns NULL at least one condition or condition set returns no error message, otherwise returns the condition set unmet message.
      */
-    private String evaluateAny(String idPrefix, BaseElementDerivationContext context) {
+    private String evaluateAny(ElementWithChildren<?> rootElement, ElementData elementData, BaseElement element) {
         if (conditions != null) {
             for (var condition : conditions) {
-                var conditionResult = condition.evaluate(idPrefix, context);
+                var conditionResult = condition.evaluate(rootElement, elementData, element);
                 if (conditionResult == null) {
                     return null;
                 }
@@ -91,7 +94,7 @@ public class ConditionSet {
 
         if (conditionsSets != null) {
             for (var conditionSet : conditionsSets) {
-                var conditionSetResult = conditionSet.evaluate(idPrefix, context);
+                var conditionSetResult = conditionSet.evaluate(rootElement, elementData, element);
                 if (conditionSetResult == null) {
                     return null;
                 }
@@ -164,6 +167,7 @@ public class ConditionSet {
         this.conditionSetUnmetMessage = conditionSetUnmetMessage;
     }
 
+    @JsonIgnore
     public Set<String> getReferencedIds() {
         var referencedIds = new HashSet<String>();
 

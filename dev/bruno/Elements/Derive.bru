@@ -1,0 +1,78 @@
+meta {
+  name: Derive
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{API_HOST}}/api/elements/derive/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "element": {
+      "id": "grp",
+      "type": 3,
+      "children": [
+        {
+          "type": 15,
+          "id": "text_1",
+          "required": true,
+          "visibility": {
+            "javascriptCode": {
+              "code": "var a = false; a;"
+            }
+          }
+        },
+        {
+          "type": 9,
+          "id": "repl",
+          "children": [
+            {
+              "type": 15,
+              "id": "text",
+              "required": true
+            },
+            {
+              "type": 8,
+              "id": "zahl",
+              "required": false,
+              "decimalPlaces": 4
+            }
+          ]
+        }
+      ]
+    },
+    "elementData": {
+      "repl": {
+        "inputValue": [
+          {
+            "text": {
+              "inputValue": null
+            },
+            "zahl": {
+              "inputValue": 95
+            }
+          },
+          {
+            "text": {
+              "inputValue": "Hallo Andere Welt!"
+            },
+            "zahl": {
+              "inputValue": 1992029.123456789
+            }
+          }
+        ]
+      }
+    },
+    "options": {
+      "skipErrorsForElementIds": ["repl"]
+    }
+  }
+}

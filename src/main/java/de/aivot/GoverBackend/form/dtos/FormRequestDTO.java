@@ -1,17 +1,12 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementDeserializer;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementSerializer;
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.enums.*;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.lib.ReqeustDTO;
-import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import jakarta.persistence.Convert;
 import jakarta.validation.constraints.NotBlank;
@@ -45,8 +40,6 @@ public record FormRequestDTO(
 
         @NotNull(message = "root cannot be null")
         @Convert(converter = RootElementConverter.class)
-        @JsonSerialize(converter = JacksonRootElementSerializer.class)
-        @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
         RootElement root,
 
         @NotNull(message = "destinationId cannot be null")

@@ -29,6 +29,8 @@ import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {ElementData} from '../../models/element-data';
+import {isForm} from '../../models/entities/form';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -59,7 +61,7 @@ export function canPrefillElement(e: AnyElement): boolean {
 
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
-    const [inputs, setInputs] = useState<CustomerInput>({});
+    const [inputs, setInputs] = useState<ElementData>({});
     const form = useAppSelector(selectLoadedForm);
 
     const link = useMemo(() => {
@@ -88,7 +90,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         step: StepElement,
         elements: AnyElement[],
     }[] = useMemo(() => {
-        if (form == null) {
+        if (form == null || form.root == null || form.root.children == null) {
             return [];
         }
 
@@ -306,24 +308,15 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                         <ViewDispatcherComponent
                                                             key={element.id}
                                                             allElements={[]}
-                                                            element={{
-                                                                ...element,
-                                                                width: 12,
-                                                            }}
+                                                            element={element}
                                                             isBusy={false}
                                                             isDeriving={false}
                                                             mode="viewer"
-                                                            valueOverride={{
-                                                                values: inputs,
-                                                                onChange: (key, value) => {
-                                                                    setInputs({
-                                                                        ...inputs,
-                                                                        [key]: value,
-                                                                    });
-                                                                },
-                                                            }}
-                                                            visibilitiesOverride={{}}
-                                                            overridesOverride={{}}
+                                                            elementData={inputs}
+                                                            onElementDataChange={setInputs}
+                                                            onElementBlur={undefined}
+                                                            disableVisibility={true}
+                                                            scrollContainerRef={undefined}
                                                         />
                                                     ))}
                                                 </Grid>

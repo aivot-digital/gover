@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.nocode.operators.bool;
 
+import de.aivot.GoverBackend.core.operators.bool.NoCodeAndOperator;
 import de.aivot.GoverBackend.elements.models.ElementDerivationData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;

@@ -1,4 +1,5 @@
 import Editor, {loader, Monaco} from '@monaco-editor/react';
+import {editor} from 'monaco-editor';
 import {Box, Typography} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
@@ -29,17 +30,22 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
         onChange,
         value,
         typeHints,
+        onEditorMount,
     } = props;
 
     const monacoRef = useRef<Monaco>();
-    const editorRef = useRef<any>();
+    const editorRef = useRef<editor.IStandaloneCodeEditor>();
 
     const hasTopContent = props.label != null || props.actions.length > 0;
 
-    const handleEditorMount = useCallback((editor: any, monaco: Monaco) => {
+    const handleEditorMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         monacoRef.current = monaco;
         editorRef.current = editor;
         editorRef.current.setValue(value ?? '');
+
+        if (onEditorMount) {
+            onEditorMount(editor);
+        }
 
         monacoApplyTypeHints(monaco, typeHints);
     }, []);

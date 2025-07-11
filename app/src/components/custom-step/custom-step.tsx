@@ -10,7 +10,6 @@ import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import {type CustomStepProps} from './custom-step-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableAutoScrollForSteps} from '../../slices/admin-settings-slice';
-import {ErrorAlert} from '../error-alert/error-alert';
 
 export function CustomStep({
                                stepIndex,
@@ -151,8 +150,6 @@ export function CustomStep({
                     {children}
                 </div>
 
-                <ErrorAlert />
-
                 <Box
                     sx={{
                         display: 'flex',
@@ -211,7 +208,7 @@ export function CustomStep({
                                     mt: 0,
                                 },
                             }}
-                            disabled={isBusy|| isDeriving}
+                            disabled={isBusy || isDeriving}
                         >
                             Zum vorherigen Abschnitt
                         </Button>

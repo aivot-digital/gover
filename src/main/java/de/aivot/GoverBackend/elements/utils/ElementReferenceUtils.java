@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.elements.utils;
 
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
-import de.aivot.GoverBackend.models.functions.Function;
+import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 
 import javax.annotation.Nonnull;
@@ -14,7 +14,7 @@ public class ElementReferenceUtils {
     public static Set<String> getReferencedIds(
             @Nullable JavascriptCode jsCode,
             @Nullable NoCodeExpression expression,
-            @Nullable Function func
+            @Nullable ConditionSet conditionSet
     ) {
         var referencedIds = new HashSet<String>();
         if (jsCode != null) {
@@ -23,8 +23,8 @@ public class ElementReferenceUtils {
         if (expression != null) {
             referencedIds.addAll(expression.getReferencedIds());
         }
-        if (func != null) {
-            referencedIds.addAll(func.getReferencedIds());
+        if (conditionSet != null) {
+            referencedIds.addAll(conditionSet.getReferencedIds());
         }
         return referencedIds;
     }

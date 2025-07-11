@@ -1,0 +1,132 @@
+package de.aivot.GoverBackend.elements.models;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.enums.ElementType;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+
+public class ElementDataObject {
+    @JsonProperty("$type")
+    private ElementType type;
+    @Nullable
+    private Object inputValue;
+    @Nullable
+    private Boolean isVisible;
+    @Nullable
+    private Boolean isPrefilled;
+    @Nullable
+    private Boolean isDirty;
+    @Nullable
+    private BaseElement computedOverride;
+    @Nullable
+    private Object computedValue;
+    @Nullable
+    private List<String> computedErrors;
+
+    public ElementType getType() {
+        return type;
+    }
+
+    public ElementDataObject setType(ElementType type) {
+        this.type = type;
+        return this;
+    }
+
+    @Nullable
+    public Object getInputValue() {
+        return inputValue;
+    }
+
+    public ElementDataObject setInputValue(@Nullable Object inputValue) {
+        this.inputValue = inputValue;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getIsVisible() {
+        return isVisible != null ? isVisible : true;
+    }
+
+    public ElementDataObject setIsVisible(@Nullable Boolean visible) {
+        isVisible = visible;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getIsPrefilled() {
+        return isPrefilled != null ? isPrefilled : false;
+    }
+
+    public ElementDataObject setIsPrefilled(@Nullable Boolean prefilled) {
+        isPrefilled = prefilled;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getIsDirty() {
+        return isDirty != null ? isDirty : false;
+    }
+
+    public ElementDataObject setIsDirty(@Nullable Boolean dirty) {
+        isDirty = dirty;
+        return this;
+    }
+
+    @Nullable
+    public BaseElement getComputedOverride() {
+        return computedOverride;
+    }
+
+    @Nonnull
+    public BaseElement getComputedOverrideOrDefault(@Nonnull BaseElement element) {
+        return Objects.requireNonNullElse(computedOverride, element);
+    }
+
+    public ElementDataObject setComputedOverride(@Nullable BaseElement computedOverride) {
+        this.computedOverride = computedOverride;
+        return this;
+    }
+
+    @Nullable
+    public Object getComputedValue() {
+        return computedValue;
+    }
+
+    public ElementDataObject setComputedValue(@Nullable Object computedValue) {
+        this.computedValue = computedValue;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getComputedErrors() {
+        return computedErrors;
+    }
+
+    public ElementDataObject setComputedErrors(@Nullable List<String> computedError) {
+        this.computedErrors = computedError;
+        return this;
+    }
+
+    public ElementDataObject addComputedError(@Nullable String computedError) {
+        if (this.computedErrors == null) {
+            this.computedErrors = new LinkedList<>();
+        }
+        this.computedErrors.add(computedError);
+        return this;
+    }
+
+    public void setValue(Object value) {}
+
+    @Nullable
+    public Object getValue() {
+        if (isDirty != null && isDirty) {
+            return inputValue;
+        }
+        return inputValue != null ? inputValue : computedValue;
+    }
+}

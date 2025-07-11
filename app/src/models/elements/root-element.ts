@@ -6,19 +6,19 @@ import {type SummaryStepElement} from './steps/summary-step-element';
 import {type SubmitStepElement} from './steps/submit-step-element';
 
 export interface RootElement extends BaseElement<ElementType.Root> {
-    headline?: string;
-    tabTitle?: string;
-    children: StepElement[];
+    headline: string | null | undefined;
+    tabTitle: string | null | undefined;
+    children: StepElement[] | null | undefined;
 
-    expiring?: string;
+    expiring: string | null | undefined;
 
-    privacyText?: string;
-    offlineSubmissionText?: string;
-    offlineSignatureNeeded?: boolean;
+    privacyText: string | null | undefined;
+    offlineSubmissionText: string | null | undefined;
+    offlineSignatureNeeded: boolean | null | undefined;
 
-    introductionStep: IntroductionStepElement;
-    summaryStep: SummaryStepElement;
-    submitStep: SubmitStepElement;
+    introductionStep: IntroductionStepElement | null | undefined;
+    summaryStep: SummaryStepElement | null | undefined;
+    submitStep: SubmitStepElement | null | undefined;
 }
 
 export function isRootElement(obj: any): obj is RootElement {

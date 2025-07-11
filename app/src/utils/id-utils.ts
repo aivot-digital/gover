@@ -68,25 +68,15 @@ export function generateElementIdForType(type: ElementType): string {
     return generateElementId(prefixMap[type]);
 }
 
-export function generateElementIdForReplicatingContainerChild(): string {
-    return generateElementId(prefixMap[ElementType.ReplicatingContainer] + '_c');
-}
-
 function generateElementId(prefix: string): string {
     //@ts-expect-error Something is wrong with the types of the ShortUniqueId library
     const _uid = uid.rnd(10);
     return prefix + '_' + _uid;
 }
 
-/**
- * @deprecated Use resolveId instead
- * @param element
- * @param idPrefix
- */
-export function makeId(element: AnyElement, idPrefix?: string | null): string {
-    return idPrefix != null ? (idPrefix + element.id) : element.id;
-}
-
-export function resolveId(id: string, idPrefix?: string | null): string {
-    return idPrefix != null ? (idPrefix + id) : id;
+export function resolveId(id: string, idPrefix?: string): string {
+    if (idPrefix == null || idPrefix.length === 0) {
+        return id;
+    }
+    return idPrefix + '_' + id;
 }

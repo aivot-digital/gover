@@ -1,23 +1,16 @@
 import {AlertComponent} from '../alert/alert-component';
-import {useAppSelector} from '../../hooks/use-app-selector';
 import {useMemo} from 'react';
 import {AnyElement} from '../../models/elements/any-element';
-import {selectLoadedForm} from '../../slices/app-slice';
-import {flattenElements} from '../../utils/flatten-elements';
 import {Link, Typography} from '@mui/material';
-import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {PrivacyUserInputKey} from '../general-information/general-information.component.view';
 import {SummaryAttachmentsTooLargeKey, SummaryUserInputKey} from '../summary/summary.component.view';
 import {SubmitHumanKey} from '../submit/submit.component.view';
 import {ElementType} from '../../data/element-type/element-type';
-import {CheckboxFieldElement} from '../../models/elements/form/input/checkbox-field-element';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
-
-interface ErrorItem {
-    element: AnyElement;
-    error: string;
-}
+import {AnyElementDataObject, ElementData} from '../../models/element-data';
+import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
+import {generateComponentTitle} from '../../utils/generate-component-title';
 
 const additionErrorKeys: Record<string, string> = {
     [PrivacyUserInputKey]: 'Datenschutzrechtliche Einwilligung',
@@ -29,63 +22,72 @@ const additionErrorKeys: Record<string, string> = {
 
 const noLinkKeys = [SummaryAttachmentsTooLargeKey];
 
-export function ErrorAlert() {
-    const loadedForm = useAppSelector(selectLoadedForm);
+interface ErrorAlertProps {
+    element: AnyElement;
+    elementData: ElementData;
+}
 
-    const allErrors = useAppSelector(state => state.app.errors);
+interface CollectedError {
+    id: string;
+    label: string;
+    error: string;
+}
 
-    const allElements = useMemo(() => {
-        if (loadedForm == null) {
-            return [];
-        }
-        return flattenElements(loadedForm.root, false);
-    }, [loadedForm]);
+export function collectErrors(element: AnyElement, elementData: ElementData): CollectedError[] {
+    const elementObjectData: AnyElementDataObject | undefined = elementData[element.id];
 
-    const errors: ErrorItem[] = useMemo(() => {
-        if (!loadedForm) {
-            return [];
-        }
+    if (elementObjectData == null) {
+        return [];
+    }
 
-        const errors = Object
-            .keys(allErrors)
-            .map((errorKey) => {
-                let referencedElement = allElements.find(element => errorKey.endsWith(element.id));
+    const col: CollectedError[] = [];
 
-                if (referencedElement == null) {
-                    console.warn(`Error key ${errorKey} does not reference an element`);
-                    return null;
-                }
-
-                const error = allErrors[errorKey];
-
-                return {
-                    element: {
-                        ...referencedElement,
-                        id: errorKey,
-                    },
-                    error,
-                };
-            })
-            .filter(e => e != null) as ErrorItem[];
-
-        Object.entries(additionErrorKeys).forEach(([key, value]) => {
-            const error = allErrors[key];
-            if (error) {
-                const elem: CheckboxFieldElement = {
-                    id: key,
-                    label: value,
-                    type: ElementType.Checkbox,
-                    appVersion: '0.0.0',
-                };
-                errors.push({
-                    element: elem,
-                    error,
-                });
-            }
+    if (elementObjectData.computedErrors != null) {
+        elementObjectData.computedErrors.forEach((error) => {
+            col.push({
+                id: element.id,
+                label: generateComponentTitle(element),
+                error: error,
+            });
         });
+    }
 
-        return errors;
-    }, [allErrors, allElements]);
+    if (isAnyElementWithChildren(element) && element.children != null) {
+        if (element.type === ElementType.ReplicatingContainer) {
+            const childElementData = elementObjectData.value;
+
+            if (Array.isArray(childElementData)) {
+                for (const cElementData of childElementData) {
+                    for (const child of element.children) {
+                        const childErrors = collectErrors(child, cElementData as ElementData);
+                        if (childErrors.length > 0) {
+                            col.push(...childErrors);
+                        }
+                    }
+                }
+            }
+        } else if (isAnyElementWithChildren(element)) {
+            for (const child of element.children) {
+                const childErrors = collectErrors(child, elementData);
+                if (childErrors.length > 0) {
+                    col.push(...childErrors);
+                }
+            }
+        }
+    }
+
+    return col;
+}
+
+export function ErrorAlert(props: ErrorAlertProps) {
+    const {
+        element,
+        elementData,
+    } = props;
+
+    const errors: CollectedError[] = useMemo(() => {
+        return collectErrors(element, elementData);
+    }, [element, elementData]);
 
     if (errors.length === 0) {
         return null;
@@ -103,40 +105,43 @@ export function ErrorAlert() {
             <ul style={{paddingInlineStart: '20px'}}>
                 {
                     errors
-                        .map(({element, error}) => {
-                            const isLinked = !noLinkKeys.includes(element.id);
+                        .map(({id, label, error}) => {
+                            const isLinked = !noLinkKeys.includes(id);
 
                             return (
-                                <li key={element.id}>
+                                <li key={id}>
                                     {
                                         isLinked ? (
                                             <Link
                                                 color="inherit"
                                                 onClick={() => {
-                                                    const target = document.getElementById(element.id);
+                                                    const target = document.getElementById(id);
                                                     if (target) {
-                                                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                        target.scrollIntoView({behavior: 'smooth', block: 'start'});
                                                         target.focus?.();
                                                     }
                                                 }}
                                                 title="Klicken Sie hier, um zu dieser Angabe zu springen"
                                                 sx={{cursor: 'pointer', fontWeight: '600'}}
                                             >
-                                                {isAnyInputElement(element) ? `${element.label}` : element.id}
+                                                {label}
                                                 <EditOutlinedIcon
                                                     fontSize="small"
                                                     sx={{transform: 'translateY(4px)'}}
                                                 />
                                             </Link>
                                         ) : (
-                                            <Typography component="span" sx={{fontWeight: '600'}}>
-                                                {isAnyInputElement(element) ? `${element.label}` : element.id}
+                                            <Typography
+                                                component="span"
+                                                sx={{fontWeight: '600'}}
+                                            >
+                                                {label}
                                             </Typography>
                                         )
                                     }
                                     : {error}
                                 </li>
-                            )
+                            );
                         })
                 }
             </ul>

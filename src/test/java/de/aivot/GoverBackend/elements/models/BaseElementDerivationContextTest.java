@@ -1,5 +1,7 @@
 package de.aivot.GoverBackend.elements.models;
 
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import org.junit.jupiter.api.BeforeEach;

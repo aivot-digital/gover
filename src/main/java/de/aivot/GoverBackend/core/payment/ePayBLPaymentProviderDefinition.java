@@ -4,13 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextPattern;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.elements.models.form.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.form.input.SelectField;
-import de.aivot.GoverBackend.elements.models.form.input.TextField;
-import de.aivot.GoverBackend.elements.models.form.input.TextPattern;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
@@ -80,8 +81,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     public GroupLayout getPaymentConfigLayout() throws ResponseException {
         var list = new LinkedList<BaseFormElement>();
 
-        var originatorIdInput = new TextField(Map.of());
-        originatorIdInput.setType(ElementType.Text);
+        var originatorIdInput = new TextField();
         originatorIdInput.setId(ORIGINATOR_ID_FIELD);
         originatorIdInput.setIsMultiline(false);
         originatorIdInput.setRequired(true);
@@ -91,8 +91,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         originatorIdInput.setWeight(6.0d);
         list.add(originatorIdInput);
 
-        var endpointIdInput = new TextField(Map.of());
-        endpointIdInput.setType(ElementType.Text);
+        var endpointIdInput = new TextField();
         endpointIdInput.setId(ENDPOINT_ID_FIELD);
         endpointIdInput.setIsMultiline(false);
         endpointIdInput.setRequired(true);
@@ -103,8 +102,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         list.add(endpointIdInput);
 
 
-        var clientCertificateInput = new SelectField(Map.of());
-        clientCertificateInput.setType(ElementType.Select);
+        var clientCertificateInput = new SelectField();
         clientCertificateInput.setId(CERTIFICATE_FIELD);
         clientCertificateInput.setRequired(true);
         clientCertificateInput.setLabel("Zertifikat");
@@ -114,17 +112,16 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
                 .findAll()
                 .stream()
                 .filter(secret -> "application/x-pkcs12".equals(secret.getContentType()))
-                .map(secret -> (Object) Map.of(
-                        "value", secret.getKey(),
-                        "label", secret.getFilename()
-                ))
+                .map(secret -> new RadioFieldOption()
+                        .setValue(secret.getKey())
+                        .setLabel(secret.getFilename())
+                )
                 .toList();
         clientCertificateInput.setOptions(clientCertificateInputOptions);
         clientCertificateInput.setWeight(6.0d);
         list.add(clientCertificateInput);
 
-        var clientSecretInput = new SelectField(Map.of());
-        clientSecretInput.setType(ElementType.Select);
+        var clientSecretInput = new SelectField();
         clientSecretInput.setId(CERTIFICATE_PASSWORD_FIELD);
         clientSecretInput.setRequired(true);
         clientSecretInput.setLabel("Zertifikatpasswort");
@@ -133,30 +130,28 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         var clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> (Object) Map.of(
-                        "value", secret.getKey(),
-                        "label", secret.getName()
-                ))
+                .map(secret -> new RadioFieldOption()
+                        .setValue(secret.getKey())
+                        .setLabel(secret.getName())
+                )
                 .toList();
         clientSecretInput.setOptions(clientSecretInputOptions);
         clientSecretInput.setWeight(6.0d);
         list.add(clientSecretInput);
 
-        var paymentTransactionUrlInput = new TextField(Map.of());
-        paymentTransactionUrlInput.setType(ElementType.Text);
+        var paymentTransactionUrlInput = new TextField();
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
         paymentTransactionUrlInput.setRequired(true);
         paymentTransactionUrlInput.setLabel("Basis-URL");
         paymentTransactionUrlInput.setPlaceholder("https://epayment-stage.dataport.de/konnektor/epayment/");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
-        TextPattern urlPattern = new TextPattern(Map.of(
-                "regex", "^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$",
-                "message", "Bitte geben Sie eine gültige URL ein (z. B. https://example.com)."
-        ));
+        TextPattern urlPattern = new TextPattern()
+                .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
+                .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
         paymentTransactionUrlInput.setPattern(urlPattern);
         list.add(paymentTransactionUrlInput);
 
-        var group = new GroupLayout(Map.of());
+        var group = new GroupLayout();
         group.setType(ElementType.Group);
         group.setId("ePayBLConfig");
         group.setChildren(list);

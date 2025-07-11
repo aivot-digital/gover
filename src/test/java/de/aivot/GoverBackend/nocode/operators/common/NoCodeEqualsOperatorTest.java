@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.nocode.operators.common;
 
+import de.aivot.GoverBackend.core.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.elements.models.ElementDerivationData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;

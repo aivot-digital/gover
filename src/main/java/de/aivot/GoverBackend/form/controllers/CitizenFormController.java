@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.destination.services.DestinationService;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCitizenListResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
@@ -187,7 +188,7 @@ public class CitizenFormController {
     @PostMapping("{applicationId}/costs/")
     public FormCostCalculationResponseDTO calculateCosts(
             @PathVariable Integer applicationId,
-            @RequestBody Map<String, Object> customerData
+            @RequestBody ElementData customerData
     ) throws PaymentException, ResponseException {
         var form = formService
                 .retrieve(applicationId)

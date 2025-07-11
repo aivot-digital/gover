@@ -338,20 +338,15 @@ export function PaymentProviderDetailsPageIndex() {
                     element={definition.configLayout}
                     isBusy={isBusy}
                     isDeriving={false}
-                    valueOverride={{
-                        values: paymentProvider.config,
-                        onChange: (key, value) => {
-                            handleInputChange('config')({
-                                ...paymentProvider.config,
-                                [key]: value,
-                            });
-                        },
-                    }}
-                    errorsOverride={configErrors}
+                    elementData={paymentProvider.config}
+                    onElementDataChange={handleInputChange('config')}
+                    onElementBlur={undefined}
                     mode="viewer"
+                    derivationTriggerIdQueue={[]}
+                    disableVisibility={true}
+                    scrollContainerRef={undefined}
                 />
             }
-
 
             <CheckboxFieldComponent
                 label="Aktiv (kann in konfigurierten Formularen genutzt werden)"

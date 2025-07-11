@@ -1,8 +1,13 @@
 package de.aivot.GoverBackend.form.services;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.PaymentType;
 import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.models.FormDerivationContext;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
@@ -18,32 +23,32 @@ import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class FormPaymentService {
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderService paymentProviderService;
+    private final ElementDerivationService elementDerivationService;
+    private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     @Autowired
-    public FormPaymentService(
-            FormDerivationServiceFactory formDerivationServiceFactory,
-            PaymentTransactionService paymentTransactionService,
-            PaymentProviderService paymentProviderService
-    ) {
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
+    public FormPaymentService(PaymentTransactionService paymentTransactionService,
+                              PaymentProviderService paymentProviderService,
+                              ElementDerivationService elementDerivationService,
+                              JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderService = paymentProviderService;
+        this.elementDerivationService = elementDerivationService;
+        this.javascriptEngineFactoryService = javascriptEngineFactoryService;
     }
 
     public Optional<PaymentTransactionEntity> createTransaction(
             @Nonnull Form form,
             @Nonnull String submissionId,
-            @Nonnull Map<String, Object> customerInput
+            @Nonnull ElementData elementData
     ) throws PaymentException, ResponseException {
-        var paymentItems = createPaymentItems(form, customerInput);
+        var paymentItems = createPaymentItems(form, elementData);
 
         if (paymentItems.isEmpty()) {
             return Optional.empty();
@@ -70,11 +75,24 @@ public class FormPaymentService {
 
     public List<PaymentItem> createPaymentItems(
             @Nonnull Form form,
-            @Nonnull Map<String, Object> customerInput
+            @Nonnull ElementData elementData
     ) throws PaymentException {
-        var formDerivationContext = formDerivationServiceFactory
-                .create(form, NO_STEPS, ALL_STEPS, ALL_STEPS, ALL_STEPS)
-                .derive(form.getRoot(), customerInput);
+        var derivationRequest = new ElementDerivationRequest()
+                .setElement(form.getRoot())
+                .setElementData(elementData)
+                .setOptions(
+                        new ElementDerivationOptions()
+                                .setSkipErrorsForElementIds(List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                                .setSkipOverridesForElementIds(List.of())
+                                .setSkipValuesForElementIds(List.of())
+                                .setSkipVisibilitiesForElementIds(List.of())
+                );
+
+        var derivedElementData = elementDerivationService
+                .derive(derivationRequest);
+
+        var javascriptEngine = javascriptEngineFactoryService
+                .getEngine();
 
         List<PaymentItem> items = new LinkedList<>();
 
@@ -102,7 +120,7 @@ public class FormPaymentService {
                     }
                     yield product.getUpfrontFixedQuantity();
                 }
-                case PaymentType.UpfrontCalculated -> calculateProductQuantity(form, customerInput, formDerivationContext, product);
+                case PaymentType.UpfrontCalculated -> calculateProductQuantity(javascriptEngine, form, derivedElementData, product);
                 default -> 0;
             };
 
@@ -123,7 +141,8 @@ public class FormPaymentService {
         }
 
         try {
-            formDerivationContext.close();
+            javascriptEngine
+                    .close();
         } catch (Exception e) {
             throw new PaymentException(e, "Error closing form derivation context for form %s", form.getTitle());
         }
@@ -131,44 +150,29 @@ public class FormPaymentService {
         return items;
     }
 
-    private static final List<String> NO_STEPS = List.of(FormDerivationService.FORM_STEP_LIMIT_NONE_IDENTIFIER);
-    private static final List<String> ALL_STEPS = List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER);
-
     @Nonnull
     private Long calculateProductQuantity(
+            @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull Form form,
-            @Nonnull Map<String, Object> customerInput,
-            @Nonnull FormDerivationContext context,
+            @Nonnull ElementData context,
             @Nonnull PaymentProduct product
     ) throws PaymentException {
-        if (product.getUpfrontQuantityFunction() != null && product.getUpfrontQuantityFunction().isNotEmpty()) {
-            var res = product
-                    .getUpfrontQuantityFunction()
-                    .evaluate(null, form.getRoot(), context);
-            if (res == null) {
-                return 0L;
-            }
-            var value = res.getIntegerValue();
-            if (value == null) {
-                throw new PaymentException("Upfront quantity calculation function for product %s of form %s produced no value", product.getId(), form.getTitle());
-            }
-            return Long.valueOf(value);
-        }
-
         if (product.getUpfrontQuantityJavascript() != null && product.getUpfrontQuantityJavascript().isNotEmpty()) {
-            var res = context
-                    .getJavascriptEngine()
+            var res = javascriptEngine
                     .evaluateCode(product.getUpfrontQuantityJavascript());
+
             if (res == null) {
                 return 0L;
             }
+
             var value = res.asNumber();
             if (value == null) {
                 throw new PaymentException("Upfront quantity calculation JavaScript for product %s of form %s produced no value", product.getId(), form.getTitle());
             }
+
             return value.longValue();
         }
 
-        throw new PaymentException("Product %s of form %s has no upfront quantity function or JavaScript", product.getId(), form.getTitle());
+        throw new PaymentException("Product %s of form %s has no upfront quantity code", product.getId(), form.getTitle());
     }
 }

@@ -1,21 +1,7 @@
 import {Grid, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {type RootState} from '../../../store';
-import {
-    clearCustomerInput,
-    clearErrors,
-    clearLoadedForm,
-    clearVisibilities,
-    hydrateFromDerivationWithoutErrors,
-    redoLoadedForm,
-    selectFutureLoadedForm,
-    selectLoadedForm,
-    selectPastLoadedForm,
-    setFormState,
-    showDialog,
-    undoLoadedForm,
-    updateLoadedForm,
-} from '../../../slices/app-slice';
+import {clearCustomerInput, clearErrors, clearLoadedForm, clearVisibilities, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
@@ -65,10 +51,10 @@ import {Form} from '../../../models/entities/form';
 import {ElementTreeEntity} from '../../../components/element-tree/element-tree-entity';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
-import {FormState} from '../../../models/dtos/form-state';
 import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {setIdentityId} from '../../../slices/identity-slice';
+import {ElementData} from '../../../models/element-data';
 
 export const DialogSearchParam = 'dialog';
 
@@ -88,6 +74,8 @@ export function FormEditPage() {
     const [showAdminTools, setShowAdminTools] = useState(false);
     const [showRevisions, setShowRevisions] = useState(false);
 
+    const [elementData, setElementData] = useState<ElementData>({});
+
     const {
         disableVisibility,
         disableValidation,
@@ -95,7 +83,7 @@ export function FormEditPage() {
     } = useAppSelector((state: RootState) => state.adminSettings);
 
     const loadedForm = useAppSelector(selectLoadedForm);
-    const customerInput = useAppSelector((state) => state.app.inputs);
+    //const customerInput = useAppSelector((state) => state.app.inputs);
 
     const pastLoadedForm = useAppSelector(selectPastLoadedForm);
     const hasPastLoadedForm = useMemo(() => pastLoadedForm.length > 0, [pastLoadedForm]);
@@ -196,30 +184,24 @@ export function FormEditPage() {
 
         dispatch(showLoadingOverlay('Sichtbarkeiten berechnen'));
 
-        withAsyncWrapper<any, FormState>({
+        withAsyncWrapper<any, ElementData>({
             desiredMinRuntime: 600,
             main: () => {
                 return new FormsApiService(api)
                     .determineFormState(
                         loadedForm.id,
-                        customerInput,
+                        elementData,
                         {
-                            stepsToValidate: ['NONE'],
-                            stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                            stepsToCalculateValues: ['ALL'],
-                            stepsToCalculateOverrides: ['ALL'],
+                            skipErrorsFor: [],
+                            skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                            skipValuesFor: [],
+                            skipOverridesFor: [],
                         },
                     );
             },
         })
             .then((newState) => {
-                dispatch(setFormState({
-                    formState: newState,
-                    options: {
-                        freshVisibilities: true,
-                        ignoreErrors: true,
-                    },
-                }));
+                setElementData(newState);
             })
             .finally(() => {
                 dispatch(hideLoadingOverlay());
@@ -267,18 +249,18 @@ export function FormEditPage() {
                 new FormsApiService(api)
                     .determineFormState(
                         loadedForm.id,
-                        customerInput,
+                        elementData,
                         {
-                            stepsToValidate: ['NONE'],
-                            stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                            stepsToCalculateValues: ['ALL'],
-                            stepsToCalculateOverrides: ['ALL'],
+                            skipErrorsFor: ['ALL'],
+                            skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                            skipValuesFor: [],
+                            skipOverridesFor: [],
                         },
                     )
                     .then((state) => {
                         dispatch(clearVisibilities());
                         dispatch(clearErrors());
-                        dispatch(hydrateFromDerivationWithoutErrors(state));
+                        setElementData(state);
                     });
             })
             .catch((err) => {
@@ -299,18 +281,18 @@ export function FormEditPage() {
                 new FormsApiService(api)
                     .determineFormState(
                         loadedForm.id,
-                        customerInput,
+                        elementData,
                         {
-                            stepsToValidate: ['NONE'],
-                            stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                            stepsToCalculateValues: ['ALL'],
-                            stepsToCalculateOverrides: ['ALL'],
+                            skipErrorsFor: ['ALL'],
+                            skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                            skipValuesFor: [],
+                            skipOverridesFor: [],
                         },
                     )
                     .then((state) => {
                         dispatch(clearVisibilities());
                         dispatch(clearErrors());
-                        dispatch(hydrateFromDerivationWithoutErrors(state));
+                        setElementData(state);
                     });
             })
             .catch((err) => {
@@ -407,21 +389,15 @@ export function FormEditPage() {
                         const newState = await apiService
                             .determineFormState(
                                 updatedAppModel.id,
-                                customerInput,
+                                elementData,
                                 {
-                                    stepsToValidate: ['NONE'],
-                                    stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                                    stepsToCalculateValues: ['ALL'],
-                                    stepsToCalculateOverrides: ['ALL'],
+                                    skipErrorsFor: ['ALL'],
+                                    skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                                    skipValuesFor: [],
+                                    skipOverridesFor: [],
                                 },
                             );
-                        dispatch(setFormState({
-                            formState: newState,
-                            options: {
-                                freshVisibilities: true,
-                                ignoreErrors: true,
-                            },
-                        }));
+                        setElementData(newState);
                     } catch (err: any) {
                         console.error(err);
                         dispatch(showErrorSnackbar('Die Formularzustände konnten nicht berechnet werden.'));
@@ -553,6 +529,11 @@ export function FormEditPage() {
                             isBusy={false}
                             isDeriving={false}
                             mode="editor"
+                            elementData={elementData}
+                            onElementDataChange={setElementData}
+                            onElementBlur={undefined}
+                            derivationTriggerIdQueue={[] /* TODO */}
+                            disableVisibility={disableVisibility}
                         />
                     </Grid>
                 </Grid>
@@ -564,7 +545,7 @@ export function FormEditPage() {
                     }}
                 />
 
-                <DeveloperTools />
+                <DeveloperTools elementData={elementData} />
 
                 <HelpDialog
                     onHide={() => dispatch(showDialog(undefined))}

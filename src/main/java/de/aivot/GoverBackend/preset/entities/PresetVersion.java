@@ -1,15 +1,11 @@
 package de.aivot.GoverBackend.preset.entities;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import de.aivot.GoverBackend.core.converters.GroupLayoutConverter;
-import de.aivot.GoverBackend.core.converters.JacksonGroupLayoutDeserializer;
-import de.aivot.GoverBackend.core.converters.JacksonGroupLayoutSerializer;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.models.lib.PresetVersionKey;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,8 +21,6 @@ public class PresetVersion {
 
     @NotNull
     @Convert(converter = GroupLayoutConverter.class)
-    @JsonSerialize(converter = JacksonGroupLayoutSerializer.class)
-    @JsonDeserialize(converter = JacksonGroupLayoutDeserializer.class)
     @Column(columnDefinition = "jsonb")
     private GroupLayout root;
 
