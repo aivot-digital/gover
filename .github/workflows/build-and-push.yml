@@ -143,30 +143,26 @@ jobs:
 
       - name: Generate SPDX for frontend
         run: |
-          trivy sbom \
+          trivy fs \
             --format spdx-json \
-            --type npm \
             --output app/public/sbom/sbom.spdx.frontend.json \
-            --skip-db-update \
-            --debug \
             ./app
-          trivy sbom \
+          
+          trivy fs \
             --format spdx \
-            --type npm \
             --output app/public/sbom/sbom.spdx.frontend.tag \
-            --skip-db-update \
             ./app
+
 
       - name: Generate SPDX for backend
         run: |
-          trivy sbom \
+          trivy fs \
             --format spdx-json \
-            --type jar \
             --output app/public/sbom/sbom.spdx.backend.json \
             .
-          trivy sbom \
+          
+          trivy fs \
             --format spdx \
-            --type jar \
             --output app/public/sbom/sbom.spdx.backend.tag \
             .
 
@@ -185,8 +181,8 @@ jobs:
 
       - name: Generate CycloneDX SBOMs
         run: |
-          trivy sbom --format cyclonedx-json --output app/public/sbom/sbom.cyclonedx.backend.json .
-          trivy sbom --format cyclonedx-json --output app/public/sbom/sbom.cyclonedx.frontend.json ./app
+          trivy fs --format cyclonedx-json --output app/public/sbom/sbom.cyclonedx.backend.json .
+          trivy fs --format cyclonedx-json --output app/public/sbom/sbom.cyclonedx.frontend.json ./app
 
       - name: Install cyclonedx-cli
         run: |
