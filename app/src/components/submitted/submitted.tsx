@@ -1,7 +1,6 @@
 import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState, type JSX } from 'react';
 import {Preamble} from '../preamble/preamble';
-import ReactCanvasConfetti from 'react-canvas-confetti';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm, showDialog} from '../../slices/app-slice';
 import {validateEmail} from '../../utils/validate-email';
@@ -25,6 +24,7 @@ import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submis
 import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {createApiPath} from '../../utils/url-path-utils';
+import confetti from 'canvas-confetti';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -60,7 +60,75 @@ export function Submitted(props: SubmittedProps): JSX.Element {
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
-    const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const animationInstance = useRef<ReturnType<typeof confetti.create> | null>(null);
+
+    useEffect(() => {
+        if (canvasRef.current && !animationInstance.current) {
+            animationInstance.current = confetti.create(canvasRef.current, {
+                resize: true,
+                useWorker: true,
+            });
+        }
+    }, []);
+
+    const nextTickAnimation = useCallback(() => {
+        animationInstance.current?.({
+            particleCount: 2,
+            startVelocity: 40,
+            spread: 80,
+            angle: 60,
+            origin: {x: 0},
+            colors: ['#fcaa67', '#b0413e'],
+            disableForReducedMotion: true,
+        });
+        animationInstance.current?.({
+            particleCount: 2,
+            startVelocity: 40,
+            spread: 80,
+            angle: 120,
+            origin: {x: 1},
+            colors: ['#fcaa67', '#b0413e'],
+            disableForReducedMotion: true,
+        });
+    }, []);
+
+    const intervalId = useRef<NodeJS.Timeout | null>(null);
+
+    const startAnimation = useCallback(() => {
+        if (!intervalId.current) {
+            intervalId.current = setInterval(nextTickAnimation, 16);
+        }
+    }, [nextTickAnimation]);
+
+    const pauseAnimation = useCallback(() => {
+        if (intervalId.current) {
+            clearInterval(intervalId.current);
+            intervalId.current = null;
+        }
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            startAnimation();
+        }, animationStartDelay);
+        return () => clearTimeout(timer);
+    }, [startAnimation]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            pauseAnimation();
+        }, animationDuration);
+        return () => clearTimeout(timer);
+    }, [pauseAnimation]);
+
+    useEffect(() => {
+        return () => {
+            if (intervalId.current) {
+                clearInterval(intervalId.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         new SubmissionsApiService(api)
@@ -80,91 +148,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             setQrCode(url);
         });
     }, [status]);
-
-    const canvasStyles = {
-        position: 'fixed',
-        pointerEvents: 'none',
-        width: '100%',
-        height: '100%',
-        top: 0,
-        left: 0,
-    };
-
-    // @ts-expect-error
-    function getAnimationSettings(angle, originX) {
-        return {
-            startVelocity: 40,
-            particleCount: 2,
-            angle,
-            spread: 80,
-            origin: {x: originX},
-            colors: ['#fcaa67', '#b0413e'],
-            disableForReducedMotion: true,
-        };
-    }
-
-    const refAnimationInstance = useRef(null);
-    const [intervalId, setIntervalId] = useState();
-
-    const getInstance = useCallback((instance: any) => {
-        refAnimationInstance.current = instance;
-    }, []);
-
-    const nextTickAnimation = useCallback(() => {
-        if (refAnimationInstance.current) {
-            // @ts-expect-error
-            refAnimationInstance.current(getAnimationSettings(60, 0));
-            // @ts-expect-error
-            refAnimationInstance.current(getAnimationSettings(120, 1));
-        }
-    }, []);
-
-    const startAnimation = useCallback(() => {
-        if (!intervalId) {
-            // @ts-expect-error
-            setIntervalId(setInterval(nextTickAnimation, 16));
-        }
-    }, [nextTickAnimation, intervalId]);
-
-    const pauseAnimation = useCallback(() => {
-        clearInterval(intervalId);
-        // @ts-expect-error
-        setIntervalId(null);
-    }, [intervalId]);
-
-    /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
-    const stopAnimation = useCallback(() => {
-        clearInterval(intervalId);
-        // @ts-ignore
-        setIntervalId(null);
-        // @ts-ignore
-        refAnimationInstance.current && refAnimationInstance.current.reset();
-    }, [intervalId]);
-     */
-
-    // Mutation Observer to watch the dom for the Canvas element of the confetti to set ARIA attribute
-    useEffect(() => {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    const canvasElement = document.querySelector('canvas');
-                    if (canvasElement) {
-                        canvasElement.setAttribute('aria-hidden', 'true');
-                        observer.disconnect();
-                    }
-                }
-            });
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-        });
-
-        return () => {
-            observer.disconnect();
-        };
-    }, []);
 
     const dispatch = useAppDispatch();
 
@@ -215,36 +198,6 @@ export function Submitted(props: SubmittedProps): JSX.Element {
             }
         }
     };
-
-    useEffect(() => {
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, [intervalId]);
-
-    useEffect(() => {
-        setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-    }, []);
-
-    useEffect(() => {
-        setTimeout(() => {
-            pauseAnimation();
-        }, animationDuration);
-    }, []);
-
-    useEffect(() => {
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
-        const handleChange = () => {
-            setShouldRenderConfetti(mediaQuery.matches);
-        };
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, []);
 
     return (
         <>
@@ -540,13 +493,21 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                     }}
                 />
             </Box>
-            {shouldRenderConfetti && (
-                <ReactCanvasConfetti
-                    refConfetti={getInstance}
-                    // @ts-expect-error
-                    style={canvasStyles}
-                />
-            )}
+            <canvas
+                ref={canvasRef}
+                style={{
+                    position: 'fixed',
+                    pointerEvents: 'none',
+                    width: '100%',
+                    height: '100%',
+                    top: 0,
+                    left: 0,
+                    zIndex: 9999,
+                    display: 'block',
+                    background: 'transparent',
+                }}
+                aria-hidden="true"
+            />
             <InfoDialog
                 title="E-Mail versendet"
                 severity="success"
