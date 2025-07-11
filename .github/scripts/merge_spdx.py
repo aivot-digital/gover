@@ -1,3 +1,4 @@
+import os
 import json
 
 build_version = os.getenv("BUILD_VERSION", "dev")
