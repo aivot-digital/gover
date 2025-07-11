@@ -143,21 +143,21 @@ jobs:
 
       - name: Generate SPDX and CycloneDX for frontend
         run: |
-          syft ./app --package-type npm -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
-          syft ./app --package-type npm -o spdx-tag-value > app/public/sbom/sbom.spdx.frontend.tag
-          syft ./app --package-type npm -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.frontend.json
+          syft ./app -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
+          syft ./app -o spdx-tag-value > app/public/sbom/sbom.spdx.frontend.tag
+          syft ./app -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.frontend.json
 
       - name: Generate SPDX and CycloneDX for mail templates
         run: |
-          syft ./mails --package-type npm -o spdx-json > app/public/sbom/sbom.spdx.mails.json
-          syft ./mails --package-type npm -o spdx-tag-value > app/public/sbom/sbom.spdx.mails.tag
-          syft ./mails --package-type npm -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.mails.json
+          syft ./mails -o spdx-json > app/public/sbom/sbom.spdx.mails.json
+          syft ./mails -o spdx-tag-value > app/public/sbom/sbom.spdx.mails.tag
+          syft ./mails -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.mails.json
 
       - name: Generate SPDX and CycloneDX for backend
         run: |
-          syft . --exclude ./app --exclude ./mails --package-type java -o spdx-json > app/public/sbom/sbom.spdx.backend.json
-          syft . --exclude ./app --exclude ./mails --package-type java -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
-          syft . --exclude ./app --exclude ./mails --package-type java -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.backend.json
+          syft . --exclude ./app --exclude ./mails -o spdx-json > app/public/sbom/sbom.spdx.backend.json
+          syft . --exclude ./app --exclude ./mails -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
+          syft . --exclude ./app --exclude ./mails -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.backend.json
 
       - name: Merge SPDX SBOMs
         run: python3 .github/scripts/merge_spdx.py
@@ -170,9 +170,6 @@ jobs:
             app/public/sbom/sbom.spdx.frontend.tag \
             app/public/sbom/sbom.spdx.backend.tag \
             app/public/sbom/sbom.spdx.tag
-
-      - name: Clean up intermediate SPDX files
-        run: rm -f app/public/sbom/sbom.spdx.*frontend* app/public/sbom/sbom.spdx.*backend*
 
       - name: Install cyclonedx-cli
         run: |
@@ -197,9 +194,6 @@ jobs:
             --output-file app/public/sbom/sbom.cyclonedx.xml \
             --output-format xml \
             --output-version v1_5
-
-      - name: Remove intermediate CycloneDX files
-        run: rm -f app/public/sbom/sbom.cyclonedx.*.json
 
       - name: Generate extended manifest.json with SBOM metadata
         run: |
