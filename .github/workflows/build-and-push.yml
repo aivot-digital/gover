@@ -143,15 +143,21 @@ jobs:
 
       - name: Generate SPDX and CycloneDX for frontend
         run: |
-          syft ./app -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
-          syft ./app -o spdx-tag-value > app/public/sbom/sbom.spdx.frontend.tag
-          syft ./app -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.frontend.json
+          syft ./app --package-type npm -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
+          syft ./app --package-type npm -o spdx-tag-value > app/public/sbom/sbom.spdx.frontend.tag
+          syft ./app --package-type npm -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.frontend.json
+
+      - name: Generate SPDX and CycloneDX for mail templates
+        run: |
+          syft ./mails --package-type npm -o spdx-json > app/public/sbom/sbom.spdx.mails.json
+          syft ./mails --package-type npm -o spdx-tag-value > app/public/sbom/sbom.spdx.mails.tag
+          syft ./mails --package-type npm -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.mails.json
 
       - name: Generate SPDX and CycloneDX for backend
         run: |
-          syft . -o spdx-json > app/public/sbom/sbom.spdx.backend.json
-          syft . -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
-          syft . -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.backend.json
+          syft . --exclude ./app --exclude ./mails --package-type java -o spdx-json > app/public/sbom/sbom.spdx.backend.json
+          syft . --exclude ./app --exclude ./mails --package-type java -o spdx-tag-value > app/public/sbom/sbom.spdx.backend.tag
+          syft . --exclude ./app --exclude ./mails --package-type java -o cyclonedx-json > app/public/sbom/sbom.cyclonedx.backend.json
 
       - name: Merge SPDX SBOMs
         run: python3 .github/scripts/merge_spdx.py
@@ -180,6 +186,7 @@ jobs:
             --input-files \
               app/public/sbom/sbom.cyclonedx.backend.json \
               app/public/sbom/sbom.cyclonedx.frontend.json \
+              app/public/sbom/sbom.cyclonedx.mails.json \
             --output-file app/public/sbom/sbom.cyclonedx.json \
             --output-version v1_5
 
