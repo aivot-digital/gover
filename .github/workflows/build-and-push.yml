@@ -118,9 +118,9 @@ jobs:
           echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           jq --arg version "${{ env.BUILD_VERSION }}" '.version = $version' package.json > tmp.$$.json && mv tmp.$$.json package.json
 
-      - name: Install frontend dependencies
+      - name: Install all frontend dependencies
         working-directory: ./app
-        run: npm install
+        run: npm ci --include=dev
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -134,9 +134,9 @@ jobs:
           echo "Using Gover version: ${{ env.BUILD_VERSION }}"
           mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
 
-      - name: Install Trivy
+      - name: Install Trivy (latest stable)
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.65.0
 
       - name: Ensure sbom folder exists
         run: mkdir -p app/public/sbom
@@ -148,6 +148,7 @@ jobs:
             --output app/public/sbom/sbom.spdx.frontend.json \
             --scanners license \
             --skip-db-update \
+            --debug \
             ./app
           trivy sbom \
             --format spdx \
