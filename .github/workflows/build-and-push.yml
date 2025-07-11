@@ -122,6 +122,10 @@ jobs:
         working-directory: ./app
         run: npm install
 
+      - name: Install mail-template dependencies
+        working-directory: ./mails
+        run: npm install
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
