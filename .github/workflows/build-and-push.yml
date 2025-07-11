@@ -407,4 +407,6 @@ jobs:
           --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-arm64 \
           --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-amd64 \
           --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }} \
-          --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          $( [ "${IS_RELEASE}" = "true" ] && echo "--tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" )
+        env:
+          IS_RELEASE: ${{ env.IS_RELEASE }}
