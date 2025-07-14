@@ -134,8 +134,8 @@ jobs:
 
       - name: Generate frontend & mail SBOMs
         run: |
-          npx --yes --prefix app @cyclonedx/cyclonedx-npm --output-file app/public/sbom/partials/sbom.frontend.json
-          npx --yes --prefix mails @cyclonedx/cyclonedx-npm --output-file app/public/sbom/partials/sbom.mails.json
+          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file ../public/sbom/partials/sbom.frontend.json)
+          (cd mails && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.mails.json)
 
       - name: Inject backend version and generate SBOM
         run: |
