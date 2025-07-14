@@ -13,6 +13,11 @@ CAUTION = {
     "LGPL-3.0-only", "LGPL-3.0-or-later", "MPL-2.0"
 }
 
+# Allowlist of specific packages (optionally with versions) allowed to have no license
+IGNORE_NO_LICENSE = {
+    # Format: "package": ["1.0.0", "2.3.4"], or ["*"] for all versions
+}
+
 # Manual overrides for missing or incorrect license information in the SBOM
 KNOWN_LICENSES = {
     "config-chain@1.1.13": "MIT",
@@ -56,6 +61,11 @@ def main():
         with open("app/public/sbom/sbom.json", "r") as f:
             sbom = json.load(f)
     except Exception as e:
+        # Always write a minimal report for downstream steps
+        with open("license_report.md", "w") as f:
+            f.write("<!-- license-check -->\n")
+            f.write("## 🧾 License Compliance Report\n\n")
+            f.write(f"❌ Could not read SBOM: {e}\n")
         print(f"❌ Could not read SBOM: {e}")
         sys.exit(1)
 
