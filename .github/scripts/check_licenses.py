@@ -38,6 +38,11 @@ def is_mixed_license(license_str, allowlist, caution):
     bad = [l for l in licenses if l not in allowlist and l not in caution]
     return allowed and bad
 
+def is_fully_allowed(license_str, allowlist):
+    cleaned = license_str.replace('(', '').replace(')', '')
+    licenses = [l.strip() for l in cleaned.split('OR')]
+    return all(l in allowlist for l in licenses)
+
 def get_license_ids(component):
     licenses = component.get("licenses", [])
     if not licenses:
@@ -86,6 +91,8 @@ def main():
                 if is_ignored_missing_license(name, version):
                     continue
                 unknown.append((name, version, "UNKNOWN", purl))
+            elif is_fully_allowed(lic, ALLOWLIST):
+                continue
             elif is_mixed_license(lic, ALLOWLIST, CAUTION):
                 caution.append((name, version, f"MIXED: {lic}", purl))
             elif lic in ALLOWLIST:
@@ -106,24 +113,23 @@ def main():
         if caution:
             f.write("### ⚠️ Packages with caution or mixed licenses:\n\n")
             for name, version, lic, purl in caution:
-                f.write(f"- `{name}@{version}` → `{lic}` {f'({purl})' if purl else ''}\n")
+                f.write(f"- `{name}@{version}` → `{lic}` {f' [`{purl}`]' if purl else ''}\n")
 
         if bad:
             f.write("\n### ❌ Prohibited or unknown licenses:\n\n")
             for name, version, lic, purl in bad:
-                f.write(f"- `{name}@{version}` → `{lic}` {f'({purl})' if purl else ''}\n")
+                f.write(f"- `{name}@{version}` → `{lic}` {f' [`{purl}`]' if purl else ''}\n")
 
         if unknown:
             f.write("\n### ❓ Components with unknown or missing license info:\n\n")
             for name, version, lic, purl in unknown:
-                f.write(f"- `{name}@{version}` → `{lic}` {f'({purl})' if purl else ''}\n")
+                f.write(f"- `{name}@{version}` → `{lic}` {f' [`{purl}`]' if purl else ''}\n")
 
         if not caution and not bad and not unknown:
             f.write("\n### ✅ All licenses approved.\n")
 
         f.write("\n---\n")
-        f.write("> 📌 **Note:** This report only includes dependencies explicitly declared by the application (e.g. in `package.json`, `pom.xml`, etc.).  \n")
-        f.write("> Dependencies introduced by Docker base images, GitHub Actions, or external CI/CD tools are not included and must be reviewed manually.\n")
+        f.write("> **Note:** This report only includes dependencies explicitly declared by the application (e.g. in `package.json`, `pom.xml`, etc.). Dependencies introduced by Docker base images, GitHub Actions, or external CI/CD tools are not included and must be reviewed manually.\n")
 
     if bad:
         print("❌ Compliance check failed due to forbidden licenses.")
