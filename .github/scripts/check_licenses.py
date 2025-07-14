@@ -38,7 +38,7 @@ def get_license_ids(component):
 
 def main():
     try:
-        with open("app/public/sbom/sbom.cyclonedx.json", "r") as f:
+        with open("app/public/sbom/sbom.json", "r") as f:
             sbom = json.load(f)
     except Exception as e:
         print(f"❌ Could not read SBOM: {e}")

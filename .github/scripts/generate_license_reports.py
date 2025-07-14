@@ -17,7 +17,7 @@ def get_license_string(component):
             license_ids.append(entry["license"]["name"])
     return " OR ".join(license_ids) if license_ids else "UNKNOWN"
 
-sbom_path = "app/public/sbom/sbom.cyclonedx.json"
+sbom_path = "app/public/sbom/sbom.json"
 output_dir = os.path.dirname(sbom_path)
 
 with open(sbom_path, "r") as f:

@@ -107,73 +107,57 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Java and Node.js
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Inject release version into package.json
-        working-directory: ./app
+      - name: Prepare sbom output directory
+        run: mkdir -p app/public/sbom/partials
+
+      - name: Update package.json versions
         run: |
-          echo "Using Gover version: ${{ env.BUILD_VERSION }}"
-          jq --arg version "${{ env.BUILD_VERSION }}" '.version = $version' package.json > tmp.$$.json && mv tmp.$$.json package.json
+          echo "Injecting version: ${{ env.BUILD_VERSION }}"
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' app/package.json > app/tmp.json && mv app/tmp.json app/package.json
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' mails/package.json > mails/tmp.json && mv mails/tmp.json mails/package.json
 
-      - name: Install frontend dependencies
-        working-directory: ./app
-        run: npm install
-
-      - name: Install mail-template dependencies
-        working-directory: ./mails
-        run: npm install
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: temurin
-
-      - name: Inject release version into backend (pom.xml)
-        working-directory: ./
+      - name: Install dependencies
         run: |
-          echo "Using Gover version: ${{ env.BUILD_VERSION }}"
+          npm install --prefix app
+          npm install --prefix mails
+          npm install @cyclonedx/cyclonedx-npm --prefix app
+          npm install @cyclonedx/cyclonedx-npm --prefix mails
+
+      - name: Generate frontend & mail SBOMs
+        run: |
+          npx --prefix app @cyclonedx/cyclonedx-npm --output-file app/public/sbom/partials/sbom.frontend.json
+          npx --prefix mails @cyclonedx/cyclonedx-npm --output-file app/public/sbom/partials/sbom.mails.json
+
+      - name: Inject backend version and generate SBOM
+        run: |
           mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
+          mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+          cp target/bom.json app/public/sbom/partials/sbom.backend.json
 
-      - name: Install Syft
+      - name: Install cyclonedx-cli
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          curl -sSL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
+          chmod +x cyclonedx
+          sudo mv cyclonedx /usr/local/bin/
 
-      - name: Ensure sbom folder exists
-        run: mkdir -p app/public/sbom
-
-      - name: Generate SPDX and CycloneDX for frontend
+      - name: Merge SBOMs
         run: |
-          syft ./app -o spdx-json > app/public/sbom/sbom.spdx.frontend.json
-          syft ./app -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.frontend.json
+          cyclonedx merge \
+            --input-files app/public/sbom/partials/sbom.frontend.json \
+                           app/public/sbom/partials/sbom.mails.json \
+                           app/public/sbom/partials/sbom.backend.json \
+            --output-file app/public/sbom/sbom.json
 
-      - name: Generate SPDX and CycloneDX for mail templates
-        run: |
-          syft ./mails -o spdx-json > app/public/sbom/sbom.spdx.mails.json
-          syft ./mails -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.mails.json
-
-      - name: Generate SPDX and CycloneDX for backend
-        run: |
-          syft . --exclude ./app --exclude ./mails --exclude ./.github -o spdx-json > app/public/sbom/sbom.spdx.backend.json
-          syft . --exclude ./app --exclude ./mails --exclude ./.github -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.backend.json
-
-      - name: Generate combined SPDX and CycloneDX SBOMs
-        run: |
-          syft . --exclude ./.github -o spdx-json > app/public/sbom/sbom.spdx.json
-          syft . --exclude ./.github -o cyclonedx-json@1.5 > app/public/sbom/sbom.cyclonedx.json
-
-      - name: Remove irrelevant file components from all SPDX and CycloneDX JSONs
-        run: |
-          for file in app/public/sbom/*.json; do
-            echo "Cleaning $file ..."
-            jq 'if .components then .components |= map(select(.type != "file")) else . end' "$file" > "$file.cleaned"
-            mv "$file.cleaned" "$file"
-          done
-
-      - name: Generate extended manifest.json with SBOM metadata
+      - name: Generate manifest.json
         run: |
           cat <<EOF > app/public/sbom/manifest.json
           {
@@ -181,24 +165,14 @@ jobs:
             "version": "${{ env.BUILD_VERSION }}",
             "commit": "${{ github.sha }}",
             "buildDate": "${{ env.BUILD_DATE }}",
-            "sboms": [
-              {
-                "format": "CycloneDX",
-                "version": "1.5",
-                "files": [
-                  "sbom.cyclonedx.json",
-                  "sbom.cyclonedx.xml"
-                ]
-              },
-              {
-                "format": "SPDX",
-                "version": "2.3",
-                "files": [
-                  "sbom.spdx.json",
-                  "sbom.spdx.tag"
-                ]
-              }
-            ],
+            "sbomFormat": "CycloneDX",
+            "sbomSpecVersion": "1.5",
+            "sboms": {
+              "frontend": "partials/sbom.frontend.json",
+              "mails": "partials/sbom.mails.json",
+              "backend": "partials/sbom.backend.json",
+              "merged": "sbom.json"
+            },
             "reports": [
               "licenses.csv",
               "licenses.txt"
