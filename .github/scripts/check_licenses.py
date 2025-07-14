@@ -13,7 +13,15 @@ CAUTION = {
     "LGPL-3.0-only", "LGPL-3.0-or-later", "MPL-2.0"
 }
 
-# Allowlist of specific packages (optionally with versions) allowed to have no license
+# Allow specific packages to use non-allowlisted licenses
+PACKAGE_LICENSE_ALLOWLIST = {
+    # Format: "package": ["1.0.0", "2.3.4"], or ["*"] for all versions
+    "gover-frontend": ["*"],
+    "gover-backend": ["*"],
+    "gover-mail-templates": ["*"],
+}
+
+# Allow specific packages (optionally with versions) to have no license
 IGNORE_NO_LICENSE = {
     # Format: "package": ["1.0.0", "2.3.4"], or ["*"] for all versions
 }
@@ -21,8 +29,6 @@ IGNORE_NO_LICENSE = {
 # Manual overrides for missing or incorrect license information in the SBOM
 KNOWN_LICENSES = {
     "config-chain@1.1.13": "MIT",
-    # additional entries:
-    # "example-lib@2.0.0": "Apache-2.0"
 }
 
 def is_ignored_missing_license(name, version):
@@ -42,6 +48,12 @@ def is_fully_allowed(license_str, allowlist):
     cleaned = license_str.replace('(', '').replace(')', '')
     licenses = [l.strip() for l in cleaned.split('OR')]
     return all(l in allowlist for l in licenses)
+
+def is_allowed_nonstandard_license(name, version):
+    if name in PACKAGE_LICENSE_ALLOWLIST:
+        versions = PACKAGE_LICENSE_ALLOWLIST[name]
+        return "*" in versions or version in versions
+    return False
 
 def get_license_ids(component):
     licenses = component.get("licenses", [])
@@ -91,6 +103,8 @@ def main():
                 if is_ignored_missing_license(name, version):
                     continue
                 unknown.append((name, version, "UNKNOWN", purl))
+            elif is_allowed_nonstandard_license(name, version):
+                continue
             elif is_fully_allowed(lic, ALLOWLIST):
                 continue
             elif is_mixed_license(lic, ALLOWLIST, CAUTION):
