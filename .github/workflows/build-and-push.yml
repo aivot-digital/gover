@@ -134,7 +134,7 @@ jobs:
 
       - name: Generate frontend & mail SBOMs
         run: |
-          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file ../public/sbom/partials/sbom.frontend.json)
+          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.frontend.json)
           (cd mails && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.mails.json)
 
       - name: Inject backend version and generate SBOM
@@ -148,6 +148,12 @@ jobs:
           curl -sSL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
           chmod +x cyclonedx
           sudo mv cyclonedx /usr/local/bin/
+
+      - name: Verify SBOM files exist
+        run: |
+          test -f app/public/sbom/partials/sbom.frontend.json || (echo "Missing sbom.frontend.json" && exit 1)
+          test -f app/public/sbom/partials/sbom.mails.json || (echo "Missing sbom.mails.json" && exit 1)
+          test -f app/public/sbom/partials/sbom.backend.json || (echo "Missing sbom.backend.json" && exit 1)
 
       - name: Merge SBOMs
         run: |
