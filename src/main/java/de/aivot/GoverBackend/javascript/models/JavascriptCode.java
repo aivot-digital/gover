@@ -89,7 +89,7 @@ public class JavascriptCode {
 
         matcher = implicitReferencePattern.matcher(code);
         while (matcher.find()) {
-            ids.add(matcher.group(2));
+            ids.add(matcher.group(1));
         }
 
         return ids;

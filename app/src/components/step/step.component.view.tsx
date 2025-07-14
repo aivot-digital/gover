@@ -32,6 +32,7 @@ export function StepComponentView(props: BaseViewProps<StepElement, void>) {
             {
                 (children ?? []).map((child) => (
                     <ViewDispatcherComponent
+                        key={child.id}
                         allElements={allElements}
                         element={child}
                         isBusy={isBusy}

@@ -13,16 +13,17 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {format} from 'date-fns';
 import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
 import type {CustomerInput} from '../../models/customer-input';
-import {hydrateCustomerInput, selectLoadedForm, selectFunctionReferences} from '../../slices/app-slice';
+import {hydrateCustomerInput, selectFunctionReferences, selectLoadedForm} from '../../slices/app-slice';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {LogLevel, selectLogLevel, selectLogs, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {FunctionType} from '../../utils/function-status-utils';
-import {DragHandleOutlined} from "@mui/icons-material";
-import {DeveloperToolsTabVisibilities} from './developer-tools-tab-visiblities';
+import {DragHandleOutlined} from '@mui/icons-material';
 import {ElementData} from '../../models/element-data';
+import {AnyElement} from '../../models/elements/any-element';
+import {ElementDataDebugger} from './element-data-debugger/element-data-debugger';
 
 interface TabContentProps {
     selectedTab: number;
@@ -56,11 +57,13 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
 }
 
 interface DeveloperToolsProps {
+    rootElement: AnyElement;
     elementData: ElementData;
 }
 
 export function DeveloperTools(props: DeveloperToolsProps) {
     const {
+        rootElement,
         elementData,
     } = props;
 
@@ -112,12 +115,12 @@ export function DeveloperTools(props: DeveloperToolsProps) {
 
         const handleMouseUp = () => {
             setIsResizing(false);
-            document.removeEventListener("mousemove", handleMouseMove);
-            document.removeEventListener("mouseup", handleMouseUp);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
         };
 
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     };
 
     if (tab === undefined) {
@@ -150,10 +153,10 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    '&:hover': { backgroundColor: '#cfcfcf' },
+                    '&:hover': {backgroundColor: '#cfcfcf'},
                 }}
                 onMouseDown={startResize}
-                title={"Höhe der Entwicklerwerkzeuge anpassen"}
+                title={'Höhe der Entwicklerwerkzeuge anpassen'}
             >
                 <DragHandleOutlined fontSize="small" />
             </Box>
@@ -168,20 +171,16 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     onChange={(_, newValue) => dispatch(setDevToolsTab(newValue))}
                 >
                     <Tab
-                        label="Nutzereingaben"
+                        label="Element-Daten"
                         value={0}
                     />
                     <Tab
-                        label="Sichtbarkeiten"
+                        label="Abhängigkeiten"
                         value={1}
                     />
                     <Tab
-                        label="Abhängigkeiten"
-                        value={2}
-                    />
-                    <Tab
                         label="Log"
-                        value={3}
+                        value={2}
                     />
                 </Tabs>
 
@@ -220,52 +219,16 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                 <TabContent
                     selectedTab={tab}
                     index={0}
-                    actions={[
-                        {
-                            tooltip: 'Exportieren',
-                            label: 'Exportieren',
-                            icon: <FileDownloadOutlinedIcon />,
-                            onClick: handleExport,
-                        },
-                        {
-                            tooltip: 'Importieren',
-                            label: 'Importieren',
-                            icon: <UploadFileOutlinedIcon />,
-                            onClick: handleUpload,
-                        },
-                    ]}
                 >
-                    <Typography>
-                        Eingaben:
-                    </Typography>
-
-                    <Box component="code">
-                        <Box component="pre">{
-                            JSON.stringify(elementData, null, 4)
-                        }</Box>
-                    </Box>
-
-                    <Typography>
-                        Berechnet:
-                    </Typography>
-
-                    <Box component="code">
-                        <Box component="pre">{
-                            JSON.stringify(elementData, null, 4)
-                        }</Box>
-                    </Box>
+                    <ElementDataDebugger
+                        rootElement={rootElement}
+                        elementData={elementData}
+                    />
                 </TabContent>
 
                 <TabContent
                     selectedTab={tab}
                     index={1}
-                >
-                    <DeveloperToolsTabVisibilities/>
-                </TabContent>
-
-                <TabContent
-                    selectedTab={tab}
-                    index={2}
                 >
                     {
                         references != null &&
@@ -314,14 +277,16 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                                                                 {
                                                                     functionType === FunctionType.OVERRIDE &&
                                                                     <Typography>
-                                                                        Die Elementstruktur von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id}) ab.
+                                                                        Die Elementstruktur von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id})
+                                                                        ab.
                                                                     </Typography>
                                                                 }
 
                                                                 {
                                                                     functionType === FunctionType.VALIDATION &&
                                                                     <Typography>
-                                                                        Die Validierung von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id}) ab.
+                                                                        Die Validierung von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id})
+                                                                        ab.
                                                                     </Typography>
                                                                 }
 
@@ -335,7 +300,8 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                                                                 {
                                                                     functionType === FunctionType.VISIBILITY &&
                                                                     <Typography>
-                                                                        Die Sichtbarkeit von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id}) ab.
+                                                                        Die Sichtbarkeit von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id})
+                                                                        ab.
                                                                     </Typography>
                                                                 }
 
@@ -358,7 +324,7 @@ export function DeveloperTools(props: DeveloperToolsProps) {
 
                 <TabContent
                     selectedTab={tab}
-                    index={3}
+                    index={2}
                     actions={[
                         {
                             tooltip: 'Debug',

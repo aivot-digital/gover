@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -120,9 +121,8 @@ public class ElementDataObject {
         return this;
     }
 
-    public void setValue(Object value) {}
-
     @Nullable
+    @JsonIgnore
     public Object getValue() {
         if (isDirty != null && isDirty) {
             return inputValue;

@@ -16,6 +16,7 @@ import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
 import {type ElementData} from '../../models/element-data';
+import {walkElementData} from '../../utils/element-data-utils';
 
 export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ElementData[]>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
@@ -41,52 +42,6 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     const {
         children,
     } = element;
-
-    const someChildWithAReferenceExists = useMemo(() => {
-        /*
-        if (references == null) {
-            return false;
-        }
-
-        const flattenedChildren = [];
-        for (const child of children ?? []) {
-            const flattened = flattenElements(child, false);
-            flattenedChildren.push(...flattened);
-        }
-
-        for (const child of flattenedChildren) {
-            const childReferences = references
-                .filter(ref => (
-                    ref.source.id === child.id &&
-                    ref.isSameStep &&
-                    ref.functionType !== FunctionType.VALIDATION
-                ));
-
-            if (childReferences.length > 0) {
-                return true;
-            }
-        }
-
-         */
-
-        return false;
-    }, []);
-
-    const someChildWithDerivableAspectsExists = useMemo(() => {
-        const flattenedChildren = [];
-        for (const child of children ?? []) {
-            const flattened = flattenElements(child, false);
-            flattenedChildren.push(...flattened);
-        }
-
-        for (const child of flattenedChildren) {
-            if (hasDerivableAspects(child)) {
-                return true;
-            }
-        }
-
-        return false;
-    }, [children]);
 
     const isDisabled = useMemo(() => {
         if (element.disabled) {
@@ -114,18 +69,22 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     }, [setValue, value, element]);
 
     const handleAdd = useCallback(() => {
-        setValue([
+        const updatedValue: ElementData[] = [
             ...(value ?? []),
             {},
-        ] as ElementData[]);
-    }, [element, setValue, value, someChildWithAReferenceExists]);
+        ];
+
+        setValue(updatedValue, [`${element.id}.${updatedValue.length - 1}`]);
+    }, [element, setValue, value]);
 
     const handleDelete = useCallback((_: ElementData, index: number) => {
         const newValue = (value ?? [])
             .filter((_: ElementData, i: number) => i !== index);
-        setValue(
-            newValue.length === 0 ? undefined : newValue,
-        );
+
+        const allChildIds = flattenElements(element, false)
+            .map(child => child.id);
+
+        setValue(newValue.length === 0 ? undefined : newValue, allChildIds);
         setConfirmDelete(undefined);
     }, [setValue, value]);
 

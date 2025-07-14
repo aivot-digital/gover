@@ -18,16 +18,16 @@ import {AppMode} from '../../data/app-mode';
 import {AppHeader} from '../app-header/app-header';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {addError, clearErrors, dequeueDerivationTriggerId, selectLoadedForm, updateCustomerInput} from '../../slices/app-slice';
+import {addError, clearErrors, selectLoadedForm, updateCustomerInput} from '../../slices/app-slice';
 import {nextStep, previousStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar} from '../../slices/snackbar-slice';
-import {type FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
+import {type FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {type BaseViewProps} from '../../views/base-view';
 import {withAsyncWrapper} from '../../utils/with-async-wrapper';
 import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 import {CustomStep} from '../custom-step/custom-step';
-import {useApi} from '../../hooks/use-api';
+import {Api, useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
@@ -47,10 +47,45 @@ import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-e
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
 import {flattenElements} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
+import {Form} from '../../models/entities/form';
+import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
+
+type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
 const SubmissionIdSearchParam = 'submissionId';
 
 const checkTimeoutMinMs = 1000;
+
+function extractVisibleSteps(children: StepElement[] | null | undefined, introductionStep: IntroductionStepElement | null | undefined, summaryStep: SummaryStepElement | null | undefined, submitStep: SubmitStepElement | null | undefined, elementData: ElementData): AnyStepElement[] {
+    if (children == null || introductionStep == null || summaryStep == null || submitStep == null) {
+        return [];
+    }
+
+    const visibleChildren = [];
+    for (const child of children) {
+        const childData = elementData[child.id];
+        console.log('CHILD STEP', child, childData);
+        if (childData?.isVisible ?? true) {
+            visibleChildren.push(child);
+        }
+    }
+
+    return [
+        introductionStep,
+        ...visibleChildren,
+        summaryStep,
+        submitStep,
+    ];
+}
+
+function extractCurrentStep(currentStep: number, allVisibleSteps: AnyStepElement[]) {
+    if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
+        return null;
+    }
+    return allVisibleSteps[currentStep];
+}
+
 
 export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     const {
@@ -62,7 +97,6 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         onElementDataChange,
         onElementBlur,
         disableVisibility,
-        derivationTriggerIdQueue,
     } = props;
 
     const api = useApi();
@@ -79,12 +113,20 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
     const identityId = useAppSelector(selectIdentityId);
 
+    const [derivationTriggerIdQueue, setDerivationTriggerIdQueue] = useState<string[]>([]);
+    const elementDataBufferRef = useRef<ElementData>();
+
     const [isBusy, setIsBusy] = useState(false);
-    const [isDeriving, setIsDeriving] = useState<boolean | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const [submission, setSubmission] = useState<SubmissionListResponseDTO>();
+
+    // The `isDeriving` state is used to indicate if the form is currently deriving its state.
+    // Deriving is active when there are items in the `derivationTriggerIdQueue`.
+    const isDeriving = useMemo(() => {
+        return derivationTriggerIdQueue.length > 0;
+    }, [derivationTriggerIdQueue]);
 
     // Deconstruct the element to get the steps.
     const {
@@ -95,33 +137,15 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     } = element;
 
     // Collecting all steps including the fixed steps
-    const allVisibleSteps: (StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement)[] = useMemo(() => {
-        if (children == null || introductionStep == null || summaryStep == null || submitStep == null) {
-            return [];
-        }
+    const allVisibleSteps = useMemo(() => extractVisibleSteps(children, introductionStep, summaryStep, submitStep, elementData), [children, introductionStep, summaryStep, submitStep, elementData]);
 
-        return [
-            introductionStep,
-            ...children.filter((stepElement) => {
-                return elementData[stepElement.id]?.isVisible ?? true;
-            }),
-            summaryStep,
-            submitStep,
-        ];
-    }, [children, introductionStep, summaryStep, submitStep]);
-
-    const currentStepElement = useMemo(() => {
-        if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
-            return null;
-        }
-        return allVisibleSteps[currentStep];
-    }, [currentStep, allVisibleSteps]);
+    // Extract the current step based on the current step index and all visible steps
+    const currentStepElement = useMemo(() => extractCurrentStep(currentStep, allVisibleSteps), [currentStep, allVisibleSteps]);
 
     // Determine the total number of steps
-    const totalStepCount = useMemo(() => {
-        return allVisibleSteps.length;
-    }, [allVisibleSteps]);
+    const totalStepCount = useMemo(() => allVisibleSteps.length, [allVisibleSteps]);
 
+    // Create a ref for each step to allow scrolling to the step when it becomes active.
     const stepRefs = useRef(allVisibleSteps.map(() => React.createRef<HTMLDivElement>()));
 
     // Check if a form derivation is necessary, when the form is loaded and some of the steps have derivable aspects.
@@ -135,7 +159,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             .some(step => hasDerivableAspects(step, true));
 
         if (stepsWithDerivableAspectsExist) {
-            determineFormState(false, 'busy', true);
+            determineFormState({
+                triggeringElementIds: [],
+                performValidation: false,
+                forceAll: true,
+                lookahead: false,
+            });
         }
     }, [element]);
 
@@ -163,14 +192,25 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         dispatch(setCurrentStep(totalStepCount));
     }, [searchParams, totalStepCount]);
 
+    // Handle the derivation trigger queue.
+    // This effect runs whenever there are items in the derivationTriggerIdQueue.
     useEffect(() => {
         if (derivationTriggerIdQueue.length === 0) {
             return;
         }
 
-        determineFormState(false, 'deriving')
+        determineFormState({
+            triggeringElementIds: derivationTriggerIdQueue,
+            performValidation: false,
+            forceAll: false,
+            lookahead: false,
+        })
             .finally(() => {
-                dispatch(dequeueDerivationTriggerId());
+                setDerivationTriggerIdQueue(prevState => {
+                    const copy = [...prevState];
+                    copy.shift();
+                    return copy;
+                });
             });
     }, [derivationTriggerIdQueue]);
 
@@ -184,7 +224,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         dispatch(clearErrors());
 
         // Check if the current step is valid
-        const currentPageValid = await determineFormState(true, 'busy');
+        const currentPageValid = await determineFormState({
+            triggeringElementIds: [],
+            performValidation: true,
+            forceAll: false,
+            lookahead: true,
+        });
 
         if (!currentPageValid) {
             return;
@@ -263,49 +308,83 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         }
     };
 
-    const determineFormState = async (validate: boolean, blockingMode: 'busy' | 'deriving', forceAll: boolean = false): Promise<boolean> => {
+    const determineFormState = async (options: {
+        performValidation: boolean;
+        triggeringElementIds: string[];
+        forceAll: boolean;
+        lookahead: boolean;
+    }): Promise<boolean> => {
         // Can't derive state for null application
-        if (form == null || form.root == null || form.root.children == null) {
+        if (form == null || element == null || children == null || currentStepElement == null) {
             return false;
         }
 
-        const currentStepId = allVisibleSteps[currentStep]?.id as string | undefined;
+        console.group('Start determining form state with options:', options);
 
-        if (currentStepId == null) {
-            return false;
-        }
+        // Get the id of the current step and the next step.
+        const currentStepId: string = currentStepElement.id;
+        const nextStepId: string | undefined = allVisibleSteps[currentStep + 1]?.id;
 
-        const currentStepElement = allVisibleSteps[currentStep];
+        console.log('Current step id:', currentStepId);
+        console.log('Next step id:', nextStepId);
 
-        const nextStepId = allVisibleSteps[currentStep + 1]?.id as string | undefined;
-
+        // Get the list of all steps, which are relevant for the derivation.
+        // This includes the introduction step, all children that do not have derivable aspects, the summary step and the submit step.
         const allStepsWithoutDerivableAspects = [
-            form.root.introductionStep?.id ?? '',
-            ...form.root.children
+            element.introductionStep?.id ?? '',
+            ...children
                 .filter(step => !hasDerivableAspects(step, true))
                 .map(step => step.id),
-            form.root.summaryStep?.id ?? '',
-            form.root.submitStep?.id ?? '',
+            element.summaryStep?.id ?? '',
+            element.submitStep?.id ?? '',
         ];
 
-        const skipErrorsForStepIds = allStepsWithoutDerivableAspects
-            .filter((stepId) => stepId != currentStepId);
-        const skipVisibilitiesForStepIds = allStepsWithoutDerivableAspects
-            .filter((stepId) => stepId != currentStepId && stepId != nextStepId);
-        const skipOverridesForStepIds = allStepsWithoutDerivableAspects
-            .filter((stepId) => stepId != currentStepId && stepId != nextStepId);
-        const skipValuesForStepIds = allStepsWithoutDerivableAspects
-            .filter((stepId) => stepId != currentStepId && stepId != nextStepId);
+        const allSteps = [
+            element.introductionStep?.id ?? '',
+            ...children
+                .map(step => step.id),
+            element.summaryStep?.id ?? '',
+            element.submitStep?.id ?? '',
+        ];
 
-        const doNotPerformErrorDerivation = !validate || adminSettings.disableValidation;
+        console.log('Found steps without derivable aspects:', allStepsWithoutDerivableAspects);
+
+        // Determine the list of step ids that should be skipped for errors, visibilities, overrides and values.
+
+        const skipErrorsForStepIds = allSteps
+            .filter((stepId) => stepId != currentStepId);
+
+        console.log('Skip errors for step ids:', skipErrorsForStepIds);
+
+        const skipVisibilitiesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && (!options.lookahead || stepId != nextStepId));
+
+        console.log('Skip visibilities for step ids:', skipVisibilitiesForStepIds);
+
+        const skipOverridesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && (!options.lookahead || stepId != nextStepId));
+
+        console.log('Skip overrides for step ids:', skipOverridesForStepIds);
+
+        const skipValuesForStepIds = allStepsWithoutDerivableAspects
+            .filter((stepId) => stepId != currentStepId && (!options.lookahead || stepId != nextStepId));
+
+        console.log('Skip values for step ids:', skipValuesForStepIds);
+
+        // Check if we should perform validation or visibility derivation.
+        const doNotPerformErrorDerivation = !options.performValidation || adminSettings.disableValidation;
         const doNotPerformVisibilityDerivation = adminSettings.disableVisibility;
 
+        // If no derivation is triggered were running in blocking mode 'busy'.
+        const mode = (options.triggeringElementIds ?? []).length > 0 ? 'deriving' : 'busy';
 
-        const blocker = blockingMode === 'busy' ? setIsBusy : setIsDeriving;
+        console.log('Determined mode:', mode);
 
-        blocker(true);
-
-        if (blockingMode === 'deriving') {
+        // Set a busy state if we are in deriving mode or busy mode.
+        // If we are in deriving mode, we show a loading snackbar.
+        if (mode === 'busy') {
+            setIsBusy(true);
+        } else {
             dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
         }
 
@@ -316,60 +395,80 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     form.id,
                     elementData,
                     {
-                        skipErrorsFor: forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
-                        skipVisibilitiesFor: forceAll ? [] : (doNotPerformVisibilityDerivation ? ['ALL'] : skipVisibilitiesForStepIds),
-                        skipValuesFor: forceAll ? [] : (skipValuesForStepIds),
-                        skipOverridesFor: forceAll ? [] : (skipOverridesForStepIds),
+                        skipErrorsFor: options.forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
+                        skipVisibilitiesFor: options.forceAll ? [] : (doNotPerformVisibilityDerivation ? ['ALL'] : skipVisibilitiesForStepIds),
+                        skipValuesFor: options.forceAll ? [] : (skipValuesForStepIds),
+                        skipOverridesFor: options.forceAll ? [] : (skipOverridesForStepIds),
                     },
                 ),
             }).finally(() => {
-                blocker(false);
-
-                if (blockingMode === 'deriving') {
+                if (mode === 'busy') {
+                    setIsBusy(false);
+                } else {
                     dispatch(removeLoadingSnackbar());
                 }
             });
 
-            onElementDataChange(derivationResult, [element.id]);
+            if (elementDataBufferRef.current != null) {
+                console.log('Merging derived element data with local element data buffer');
+                console.log('Derivation result:', derivationResult);
+                console.log('Element data buffer:', elementDataBufferRef.current);
+
+                const mergedElementData = mergeDerivedElementDataWithLocal(
+                    derivationResult,
+                    elementDataBufferRef.current,
+                    element,
+                    {
+                        dontOverwriteErrors: options.performValidation ? false : true,
+                    },
+                );
+                elementDataBufferRef.current = undefined;
+                onElementDataChange(mergedElementData, []);
+            } else {
+                console.log('Setting derived element data directly');
+                onElementDataChange(derivationResult, []);
+            }
+
+            console.groupEnd();
 
             return collectErrors(currentStepElement, derivationResult).length === 0 || adminSettings.disableValidation;
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Dynamische Funktionen konnten nicht ausgewertet werden.'));
 
+            console.groupEnd();
+
             return adminSettings.disableValidation;
         }
     };
 
     const determineUploadSize = (): Promise<boolean> => {
-        return withAsyncWrapper<undefined, boolean>({
+        return withAsyncWrapper<undefined, string | null>({
             desiredMinRuntime: checkTimeoutMinMs,
             runtimeCallback: setIsLoading,
-            main: async () => {
-                try {
-                    const {maxFileSize} = await new FormsApiService(api).getMaxFileSize(form!.id);
-                    const maxFileSizeBytes = maxFileSize * 1000 * 1000;
-                    const totalFileSize = Object.keys(elementData)
-                        .map((c) => elementData[c])
-                        .filter((c) => Array.isArray(c) && c.length > 0 && isFileUploadElementItem(c[0]))
-                        .map((c) => c.reduce((acc: number, item: FileUploadElementItem) => acc + item.size, 0))
-                        .reduce((acc, size) => acc + size, 0);
-                    if (totalFileSize > maxFileSizeBytes) {
-                        dispatch(addError({
-                            key: SummaryAttachmentsTooLargeKey,
-                            error: `Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das Maximum von ${maxFileSize.toFixed(0)} Megabyte.`,
-                        }));
-
-                        return false;
-                    }
-                    return true;
-                } catch (error) {
-                    console.error(error);
-                    dispatch(showErrorSnackbar('Der Maximalgröße der Anlagen konnte nicht korrekt überprüft werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+            main: () => determineUploadSizeError(
+                element,
+                elementData,
+                form!,
+                api,
+            ),
+        })
+            .then((errorMessage) => {
+                if (errorMessage != null) {
+                    dispatch(addError({
+                        key: SummaryAttachmentsTooLargeKey,
+                        error: errorMessage,
+                    }));
                     return false;
+                } else {
+                    return true;
                 }
-            },
-        });
+            })
+            .catch((error) => {
+                console.error(error);
+                dispatch(showErrorSnackbar('Der Maximalgröße der Anlagen konnte nicht korrekt überprüft werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                return false;
+            });
     };
 
     // Calculates the price for the current form and customer input.
@@ -398,93 +497,47 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     };
 
     const handleElementDataChange = (elementData: ElementData, triggeringElementIds: string[]): void => {
-        if (form == null || currentStepElement == null || element.children == null) {
+        if (currentStepElement == null || children == null) {
             return;
         }
 
+        console.group('Start element data change', elementData, triggeringElementIds);
+
+        onElementDataChange(elementData, []);
+
         const allElementsToConsider = [
             ...flattenElements(currentStepElement),
-            ...element.children,
+            ...children,
         ].filter(e => {
             return e.visibility != null ||
                 e.override != null ||
                 (isAnyInputElement(e) && e.value != null);
         });
 
-        let shouldDerive = false;
-        for (const element of allElementsToConsider) {
-            for (const triggeringElementId of triggeringElementIds) {
-                shouldDerive = (element.visibility?.referencedIds?.includes(triggeringElementId) ||
-                    element.override?.referencedIds?.includes(triggeringElementId) ||
-                    (isAnyInputElement(element) && element.value?.referencedIds?.includes(triggeringElementId))) ?? false;
+        const relevantTriggeringElementIds = triggeringElementIds
+            .filter((id) => allElementsToConsider.some((element) => isElementChangedByTrigger(element, id)));
 
-                if (shouldDerive) {
-                    break;
-                }
-            }
-            if (shouldDerive) {
-                break;
-            }
-        }
+        if (relevantTriggeringElementIds.length > 0) {
+            console.log('Found relevant triggering element ids:', relevantTriggeringElementIds);
 
-        if (shouldDerive) {
-            setIsDeriving(true);
-
-            const currentStepId = currentStepElement.id;
-
-            const skipSteps = [
-                element.introductionStep?.id ?? '',
-                ...element.children
-                    .filter(step => !hasDerivableAspects(step, true))
-                    .map(step => step.id),
-                element.summaryStep?.id ?? '',
-                element.submitStep?.id ?? '',
-            ].filter((stepId) => stepId != currentStepId);
-
-            const doNotPerformVisibilityDerivation = adminSettings.disableVisibility;
-
-            onElementDataChange(elementData, []);
-
-            withAsyncWrapper({
-                desiredMinRuntime: 600,
-                main: async () => {
-                    return await new FormsApiService(api)
-                        .determineFormState(
-                            form.id,
-                            elementData,
-                            {
-                                skipErrorsFor: ['ALL'],
-                                skipVisibilitiesFor: doNotPerformVisibilityDerivation ? ['ALL'] : skipSteps,
-                                skipValuesFor: skipSteps,
-                                skipOverridesFor: skipSteps,
-                            },
-                        );
-                },
-            })
-                .then((derivedElementData) => {
-                    function mergeData(...ed: ElementData[]) {
-                        return ed.reduce((acc, curr) => {
-                            Object.keys(curr).forEach((key) => {
-                                if (acc[key] == null) {
-                                    acc[key] = curr[key];
-                                } else if (Array.isArray(acc[key]) && Array.isArray(curr[key])) {
-                                    acc[key] = [...acc[key], ...curr[key]];
-                                } else {
-                                    acc[key] = curr[key];
-                                }
-                            });
-                            return acc;
-                        }, {} as ElementData);
-                    }
-
-                    onElementDataChange(derivedElementData, []);
-                })
-                .finally(() => {
-                    setIsDeriving(false);
-                });
+            elementDataBufferRef.current = elementData;
+            setDerivationTriggerIdQueue((prev) => [
+                ...prev,
+                ...relevantTriggeringElementIds,
+            ]);
         } else {
-            onElementDataChange(elementData, []);
+            console.log('No relevant triggering element ids found');
+
+            if (derivationTriggerIdQueue.length > 0) {
+                console.log('Setting element data buffer to current element data as no relevant triggering element ids were found, but derivation queue is not empty');
+                elementDataBufferRef.current = elementData;
+            } else {
+                console.log('Setting element data buffer to undefined as no relevant triggering element ids were found and derivation queue is empty');
+                elementDataBufferRef.current = undefined;
+            }
         }
+
+        console.groupEnd();
     };
 
     return (
@@ -689,3 +742,36 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     );
 }
 
+/**
+ * Returns null if the file sizes are within the limits, returns an error message if the total file size exceeds the maximum allowed size.
+ */
+async function determineUploadSizeError(element: RootElement, elementData: ElementData, form: Form, api: Api): Promise<string | null> {
+    let totalFileSize = 0;
+
+    walkElementData(
+        element,
+        elementData,
+        (element, value) => {
+            if (element.type === ElementType.FileUpload && value != null) {
+                totalFileSize += (value as FileUploadElementItem[])
+                    .reduce((acc, item) => acc + item.size, 0);
+            }
+        },
+    );
+
+    if (totalFileSize === 0) {
+        // No file uploads, so no size check needed
+        return null;
+    }
+
+    const {maxFileSize} = await new FormsApiService(api)
+        .getMaxFileSize(form.id);
+
+    const maxFileSizeBytes = maxFileSize * 1000 * 1000;
+
+    if (totalFileSize > maxFileSizeBytes) {
+        return `Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das Maximum von ${maxFileSize.toFixed(0)} Megabyte.`;
+    }
+
+    return null;
+}

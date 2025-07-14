@@ -8,7 +8,7 @@ import {SubmitHumanKey} from '../submit/submit.component.view';
 import {ElementType} from '../../data/element-type/element-type';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
-import {AnyElementDataObject, ElementData} from '../../models/element-data';
+import {ElementDataObject, ElementData} from '../../models/element-data';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 
@@ -34,7 +34,7 @@ interface CollectedError {
 }
 
 export function collectErrors(element: AnyElement, elementData: ElementData): CollectedError[] {
-    const elementObjectData: AnyElementDataObject | undefined = elementData[element.id];
+    const elementObjectData: ElementDataObject | undefined = elementData[element.id];
 
     if (elementObjectData == null) {
         return [];

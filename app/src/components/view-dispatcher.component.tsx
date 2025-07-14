@@ -5,7 +5,7 @@ import {isAnyInputElement} from '../models/elements/form/input/any-input-element
 import {views as Views} from '../views';
 import {type BaseViewProps} from '../views/base-view';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
-import {type AnyElementDataObject, type ElementData} from '../models/element-data';
+import {type ElementData, type ElementDataObject} from '../models/element-data';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     allElements: AnyElement[];
@@ -29,8 +29,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         element: initialElement,
         allElements,
         scrollContainerRef,
-        isBusy,
-        isDeriving,
+        isBusy: baseIsBusy,
+        isDeriving: baseIsDeriving,
         mode,
         elementData,
         onElementDataChange,
@@ -44,7 +44,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         type: elementType,
     } = initialElement;
 
-    const elementDataObject: AnyElementDataObject = useMemo(() => {
+    const elementDataObject: ElementDataObject = useMemo(() => {
         return elementData[elementId] ?? {
             $type: elementType,
             inputValue: undefined,
@@ -124,6 +124,14 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         return elementDataObject.isVisible ?? true;
     }, [elementDataObject, element, mode, disableVisibility]);
 
+    const isBusy: boolean = useMemo(() => {
+        return baseIsBusy || baseIsDeriving && (
+            (element.visibility?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false) ||
+            (element.override?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false) ||
+            (isAnyInputElement(element) && (element.value?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false))
+        );
+    }, [baseIsBusy, baseIsDeriving, element]);
+
     const viewProps: BaseViewProps<typeof element, any> = useMemo(() => ({
         allElements: allElements,
         element: element,
@@ -133,7 +141,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         value: value,
         scrollContainerRef: scrollContainerRef,
         isBusy: isBusy,
-        isDeriving: isDeriving,
+        isDeriving: baseIsDeriving,
         mode: mode,
         elementData: elementData,
         onElementDataChange: onElementDataChange,
@@ -149,7 +157,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         value,
         scrollContainerRef,
         isBusy,
-        isDeriving,
+        baseIsDeriving,
         mode,
         elementData,
         onElementDataChange,

@@ -532,7 +532,7 @@ export function FormEditPage() {
                             elementData={elementData}
                             onElementDataChange={setElementData}
                             onElementBlur={undefined}
-                            derivationTriggerIdQueue={[] /* TODO */}
+                            derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
                             disableVisibility={disableVisibility}
                         />
                     </Grid>
@@ -545,7 +545,10 @@ export function FormEditPage() {
                     }}
                 />
 
-                <DeveloperTools elementData={elementData} />
+                <DeveloperTools
+                    rootElement={loadedForm.root}
+                    elementData={elementData}
+                />
 
                 <HelpDialog
                     onHide={() => dispatch(showDialog(undefined))}
