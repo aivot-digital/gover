@@ -15,27 +15,8 @@ public class ConditionSet {
     private Collection<ConditionSet> conditionsSets;
     private String conditionSetUnmetMessage;
 
-    public ConditionSet(Map<String, Object> data) {
-        operator = MapUtils.getEnum(data, "operator", Integer.class, ConditionSetOperator.class, ConditionSetOperator.values());
-        if (data.containsKey("conditions")) {
-            List<Map<String, Object>> conditionsData = (List<Map<String, Object>>) data.get("conditions");
-            if (conditionsData != null) {
-                conditions = new LinkedList<>();
-                for (Map<String, Object> conditionData : conditionsData) {
-                    conditions.add(new Condition(conditionData));
-                }
-            }
-        }
-        if (data.containsKey("conditionsSets")) {
-            List<Map<String, Object>> conditionSetsData = (List<Map<String, Object>>) data.get("conditionsSets");
-            if (conditionSetsData != null) {
-                conditionsSets = new LinkedList<>();
-                for (Map<String, Object> conditionSetData : conditionSetsData) {
-                    conditionsSets.add(new ConditionSet(conditionSetData));
-                }
-            }
-        }
-        conditionSetUnmetMessage = MapUtils.getString(data, "conditionSetUnmetMessage");
+    public ConditionSet() {
+
     }
 
     public ConditionSet(ConditionSetOperator operator, Collection<Condition> conditions, Collection<ConditionSet> conditionsSets, String conditionSetUnmetMessage) {

@@ -1,14 +1,16 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {BaseSummaryProps} from "./base-summary";
-import {NumberFieldElement} from "../models/elements/form/input/number-field-element";
-import {isStringNullOrEmpty, stringOrDefault} from "../utils/string-utils";
-import {formatNumStringToGermanNum} from "../utils/format-german-numbers";
-import React from "react";
+import {BaseSummaryProps} from './base-summary';
+import {NumberFieldElement} from '../models/elements/form/input/number-field-element';
+import {isStringNullOrEmpty} from '../utils/string-utils';
+import {formatNumStringToGermanNum} from '../utils/format-german-numbers';
+import React from 'react';
 
-export function NumberSummary({
-                                  model,
-                                  value,
-                              }: BaseSummaryProps<NumberFieldElement, number>) {
+export function NumberSummary(props: BaseSummaryProps<NumberFieldElement, number>) {
+    const {
+        model,
+        value,
+    } = props;
+
     const theme = useTheme();
 
     return (
@@ -52,7 +54,7 @@ export function NumberSummary({
                     {
                         (value == null || (typeof value === 'string' && isStringNullOrEmpty(value))) ?
                             'Keine Angabe' :
-                            formatNumStringToGermanNum(value, model.decimalPlaces) + (!isStringNullOrEmpty(model.suffix) ? ' ' + model.suffix : '')
+                            formatNumStringToGermanNum(value, model.decimalPlaces ?? 0) + (!isStringNullOrEmpty(model.suffix) ? ' ' + model.suffix : '')
                     }
                 </Typography>
             </Grid>

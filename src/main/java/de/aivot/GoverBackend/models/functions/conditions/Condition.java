@@ -1,14 +1,12 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
-import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ConditionOperator;
-import de.aivot.GoverBackend.utils.MapUtils;
 
-import java.util.Map;
 import java.util.Objects;
 
 public class Condition {
@@ -18,14 +16,8 @@ public class Condition {
     private String value;
     private String conditionUnmetMessage;
 
-    public Condition(Map<String, Object> data) {
-        operator = MapUtils.getEnum(data, "operator", Integer.class, ConditionOperator.class, ConditionOperator.values());
+    public Condition() {
 
-        reference = MapUtils.getString(data, "reference");
-        target = MapUtils.getString(data, "target");
-        value = MapUtils.getString(data, "value");
-
-        conditionUnmetMessage = MapUtils.getString(data, "conditionUnmetMessage");
     }
 
     public String evaluate(ElementWithChildren<?> rootElement, ElementData elementData, BaseElement element) {

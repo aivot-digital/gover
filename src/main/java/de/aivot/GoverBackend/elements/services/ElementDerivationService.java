@@ -355,12 +355,12 @@ public class ElementDerivationService {
             @Nonnull Boolean isParentVisible
     ) {
         // Get or create the data object for the current element
-        var existingDataObject = accumulator
+        var inputDataObject = accumulator
                 .computeIfAbsent(_currentElement.getId(), id -> new ElementDataObject());
         var dataObject = new ElementDataObject()
                 .setType(_currentElement.getType())
-                .setInputValue(existingDataObject.getInputValue())
-                .setIsDirty(existingDataObject.getIsDirty());
+                .setInputValue(inputDataObject.getInputValue())
+                .setIsDirty(inputDataObject.getIsDirty());
 
         // Set the dirty flag if the element has an input value
         if (dataObject.getInputValue() != null) {
@@ -374,7 +374,9 @@ public class ElementDerivationService {
         }
 
         BaseElement overriddenElement = null;
-        if (options.notContainsSkipErrors(_currentElement.getId())) {
+        if (options.containsSkipOverrides(_currentElement.getId())) {
+            overriddenElement = inputDataObject.getComputedOverride();
+        } else {
             try {
                 overriddenElement = overrideDerivationService
                         .derive(rootElement,
@@ -383,11 +385,11 @@ public class ElementDerivationService {
                                 _currentElement,
                                 javascriptEngine,
                                 noCodeEvaluationService);
-                dataObject.setComputedOverride(overriddenElement);
             } catch (DerivationException e) {
                 dataObject.addComputedError(e.getMessage());
             }
         }
+        dataObject.setComputedOverride(overriddenElement);
 
         // If an override was applied, use it as the current element for further processing
         var currentElement = overriddenElement != null ?
@@ -407,7 +409,9 @@ public class ElementDerivationService {
         }
 
         boolean computedVisibility = true;
-        if (options.notContainsSkipVisibilities(currentElement.getId())) {
+        if (options.containsSkipVisibilities(currentElement.getId())) {
+            computedVisibility = inputDataObject.getIsVisible();
+        } else {
             try {
                 computedVisibility = visibilityDerivationService
                         .derive(
@@ -427,7 +431,9 @@ public class ElementDerivationService {
         var isVisible = isParentVisible && computedVisibility;
 
         if (isVisible && currentElement instanceof BaseInputElement<?> baseInputElement) {
-            if (options.notContainsSkipValues(currentElement.getId())) {
+            if (options.containsSkipValues(baseInputElement.getId())) {
+                dataObject.setComputedValue(inputDataObject.getComputedValue());
+            } else {
                 try {
                     var computedValue = valueDerivationService
                             .derive(rootElement,
@@ -445,7 +451,9 @@ public class ElementDerivationService {
                 }
             }
 
-            if (options.notContainsSkipErrors(currentElement.getId())) {
+            if (options.containsSkipErrors(baseInputElement.getId())) {
+                dataObject.setComputedErrors(inputDataObject.getComputedErrors());
+            } else {
                 try {
                     var computedErrors = errorDerivationService
                             .derive(rootElement,

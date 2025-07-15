@@ -1,8 +1,8 @@
 import {type BaseSummaryProps} from './base-summary';
-import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {SummaryDispatcherComponent} from '../components/summary-dispatcher.component';
+import {type RootElement} from '../models/elements/root-element';
 
-export function GroupSummary(props: BaseSummaryProps<GroupLayout, void>) {
+export function RootSummary(props: BaseSummaryProps<RootElement, void>) {
     const {
         model,
         showTechnical,

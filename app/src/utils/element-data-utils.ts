@@ -14,8 +14,12 @@ export function resolveOverride(originalElement: AnyElement, data: ElementData):
     return originalElement;
 }
 
-export function resolveValue(originalElement: AnyElement, data: ElementData): any | undefined {
+export function resolveValue(originalElement: AnyElement, data: ElementData): any | undefined | null {
     const element = resolveOverride(originalElement, data);
+    return resolveValueForResolvedOverride(element, data);
+}
+
+export function resolveValueForResolvedOverride(element: AnyElement, data: ElementData): any | undefined | null {
     const elementId = element.id;
     const elementDataObject: ElementDataObject | undefined = data[elementId];
 
@@ -32,6 +36,28 @@ export function resolveValue(originalElement: AnyElement, data: ElementData): an
     }
 
     return undefined;
+}
+
+export function resolveErrors(element: AnyElement, data: ElementData): string[] | undefined | null {
+    const elementId = element.id;
+    const elementDataObject: ElementDataObject | undefined = data[elementId];
+
+    if (elementDataObject != null) {
+        return elementDataObject.computedErrors;
+    }
+
+    return undefined;
+}
+
+export function resolveVisibility(element: AnyElement, data: ElementData): boolean {
+    const elementId = element.id;
+    const elementDataObject: ElementDataObject | undefined = data[elementId];
+
+    if (elementDataObject != null) {
+        return elementDataObject.isVisible ?? true;
+    }
+
+    return true; // Default visibility is true if no data is found
 }
 
 export interface MergeOptions {

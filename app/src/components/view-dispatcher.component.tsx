@@ -6,6 +6,7 @@ import {views as Views} from '../views';
 import {type BaseViewProps} from '../views/base-view';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
 import {type ElementData, type ElementDataObject} from '../models/element-data';
+import {resolveErrors, resolveOverride, resolveValue, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     allElements: AnyElement[];
@@ -59,24 +60,16 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     }, [elementData, elementId, elementType]);
 
     const element: AnyElement = useMemo(() => {
-        return elementDataObject.computedOverride ?? initialElement;
-    }, [elementDataObject, initialElement]);
+        return resolveOverride(initialElement, elementData) as AnyElement;
+    }, [initialElement, elementData]);
 
     const value = useMemo(() => {
-        const inputValue = elementDataObject.inputValue;
-        const computedValue = elementDataObject.computedValue;
-
-        if (isAnyInputElement(element) && (element.disabled || element.technical)) {
-            console.warn(`Returning computed value for disabled or technical element: ${element.id}`);
-            return computedValue;
-        }
-
-        return inputValue ?? computedValue;
-    }, [elementDataObject, element]);
+        return resolveValueForResolvedOverride(element, elementData);
+    }, [element, elementData]);
 
     const error: string[] | undefined | null = useMemo(() => {
-        return elementDataObject.computedErrors;
-    }, [elementDataObject]);
+        return resolveErrors(element, elementData);
+    }, [element, elementData]);
 
     const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value) {
@@ -121,8 +114,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             return false;
         }
 
-        return elementDataObject.isVisible ?? true;
-    }, [elementDataObject, element, mode, disableVisibility]);
+        return resolveVisibility(element, elementData);
+    }, [elementData, element, mode, disableVisibility]);
 
     const isBusy: boolean = useMemo(() => {
         return baseIsBusy || baseIsDeriving && (

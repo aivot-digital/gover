@@ -1,15 +1,30 @@
-import {Box, Chip, Grid, Typography, useTheme} from '@mui/material';
-import {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
+import useTheme from '@mui/material/styles/useTheme';
+import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
-import {BaseSummaryProps} from '../../summaries/base-summary';
+import {type BaseSummaryProps} from '../../summaries/base-summary';
 import SubdirectoryArrowLeftOutlinedIcon from '@mui/icons-material/SubdirectoryArrowLeftOutlined';
-import {resolveId} from '../../utils/id-utils';
+import {type ElementData} from '../../models/element-data';
 
-export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, string[]>) {
-    const prefixedId = resolveId(props.model.id, props.idPrefix);
+export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingContainerLayout, ElementData[]>) {
+    const {
+        model,
+        showTechnical,
+        allowStepNavigation,
+        elementData,
+        value,
+    } = props;
 
-    const values: string[] = props.value ?? [];
+    const {
+        children,
+    } = model;
+
+
+    const values = (value ?? []) as ElementData[];
 
     const theme = useTheme();
 
@@ -64,7 +79,7 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
             {
                 values.map((val, index) => (
                     <Box
-                        key={val}
+                        key={`${model.id}-${index}`}
                         sx={{
                             border: '1px solid #D4D4D4',
                             mb: 2,
@@ -124,17 +139,16 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                             </Grid>
                         </Grid>
                         {
-                            props.model.children.map(child => (
-                                <SummaryDispatcherComponent
-                                    allElements={props.allElements}
-                                    key={`${prefixedId}_${val}_${child.id}`}
-                                    element={child}
-                                    idPrefix={`${prefixedId}_${val}_`}
-                                    showTechnical={props.showTechnical}
-                                    customerInput={props.customerInput}
-                                    isBusy={props.isBusy}
-                                />
-                            ))
+                            (children ?? [])
+                                .map(child => (
+                                    <SummaryDispatcherComponent
+                                        key={child.id}
+                                        element={child}
+                                        showTechnical={showTechnical}
+                                        allowStepNavigation={allowStepNavigation}
+                                        elementData={val}
+                                    />
+                                ))
                         }
                     </Box>
                 ))
