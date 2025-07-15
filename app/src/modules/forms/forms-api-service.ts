@@ -21,6 +21,7 @@ import {ElementApprovalStatus} from '../elements/enums/ElementApprovalStatus';
 import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
 import {IdentityIdHeader} from '../identity/constants/identity-id-header';
 import {ElementData} from '../../models/element-data';
+import {createApiPath} from '../../utils/url-path-utils';
 
 interface FormFilters {
     id: number;
@@ -177,7 +178,7 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
     }
 
     public static async getIdentityProviders(id: number): Promise<Page<IdentityProviderInfo>> {
-        const res = await fetch(`/api/public/forms/${id}/identity-providers/`);
+        const res = await fetch(createApiPath(`/api/public/forms/${id}/identity-providers/`));
         return await res.json();
     }
 
