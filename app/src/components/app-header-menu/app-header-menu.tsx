@@ -46,6 +46,9 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
 
     const handleDelete = useCallback((closeMenuCallback: () => void) => {
         dispatch(clearCustomerInput());
+        if (props.onDeleteFormData != null) {
+            props.onDeleteFormData();
+        }
         dispatch(resetStepper());
         dispatch(clearErrors());
         dispatch(clearDisabled());

@@ -17,7 +17,7 @@ import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import Balancer from 'react-wrap-balancer';
 
-export function AppHeader({mode}: AppHeaderProps): JSX.Element {
+export function AppHeader({mode, onDeleteFormData}: AppHeaderProps): JSX.Element {
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -195,6 +195,7 @@ export function AppHeader({mode}: AppHeaderProps): JSX.Element {
                     mode={mode}
                     onClose={handleCloseMenu}
                     anchorElement={menuAnchorEl}
+                    onDeleteFormData={onDeleteFormData}
                 />
             }
         </header>

@@ -542,7 +542,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
     return (
         <>
-            <AppHeader mode={AppMode.Customer} />
+            <AppHeader
+                mode={AppMode.Customer}
+                onDeleteFormData={() => {
+                    onElementDataChange({}, []);
+                }}
+            />
 
             <main role="main">
                 <span
