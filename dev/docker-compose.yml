@@ -32,8 +32,8 @@ services:
   gotenberg:
     image: gotenberg/gotenberg:8
     restart: always
-    ports:
-      - "9191:3000"
+    environment:
+      API_PORT: 9191
     network_mode: host
 
   minio:
