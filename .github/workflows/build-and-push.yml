@@ -172,7 +172,7 @@ jobs:
             "commit": "${{ github.sha }}",
             "buildDate": "${{ env.BUILD_DATE }}",
             "sbomFormat": "CycloneDX",
-            "sbomSpecVersion": "1.5",
+            "sbomSpecVersion": "1.6",
             "sboms": {
               "frontend": "partials/sbom.frontend.json",
               "mails": "partials/sbom.mails.json",

@@ -2,58 +2,24 @@ import os
 import json
 import sys
 
-# ✅ Approved licenses (safe to use)
-ALLOWLIST = {
-    "MIT", "MIT-0", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause",
-    "Unlicense", "ISC", "UPL-1.0", "CC0-1.0"
-}
+def load_policy():
+    with open(".github/scripts/data/license_policy.json", "r", encoding="utf-8") as f:
+        raw = json.load(f)
 
-# ⚠️ Licenses that require caution and review
-CAUTION = {
-    "LGPL-3.0-only", "LGPL-3.0-or-later", "MPL-2.0"
-}
+        def extract_versions(obj):
+            return {k: v["versions"] for k, v in obj.items()}
 
-# Allow specific packages to use non-allowlisted licenses
-PACKAGE_LICENSE_ALLOWLIST = {
-    # Format: "package": ["1.0.0", "2.3.4"], or ["*"] for all versions
-    "gover-frontend": ["*"],
-    "gover-backend": ["*"],
-    "gover-mail-templates": ["*"],
-}
+        def extract_known_licenses(obj):
+            return {k: v["license"] for k, v in obj.items()}
 
-# Allow specific packages (optionally with versions) to have no license
-IGNORE_NO_LICENSE = {
-    # Format: "package": ["1.0.0", "2.3.4"], or ["*"] for all versions
-}
-
-# Manual overrides for missing or incorrect license information in the SBOM
-KNOWN_LICENSES = {
-    "config-chain@1.1.13": "MIT",
-}
-
-def is_ignored_missing_license(name, version):
-    if name in IGNORE_NO_LICENSE:
-        versions = IGNORE_NO_LICENSE[name]
-        return "*" in versions or version in versions
-    return False
-
-def is_mixed_license(license_str, allowlist, caution):
-    cleaned = license_str.replace('(', '').replace(')', '')
-    licenses = [l.strip() for l in cleaned.split('OR')]
-    allowed = [l for l in licenses if l in allowlist]
-    bad = [l for l in licenses if l not in allowlist and l not in caution]
-    return allowed and bad
-
-def is_fully_allowed(license_str, allowlist):
-    cleaned = license_str.replace('(', '').replace(')', '')
-    licenses = [l.strip() for l in cleaned.split('OR')]
-    return all(l in allowlist for l in licenses)
-
-def is_allowed_nonstandard_license(name, version):
-    if name in PACKAGE_LICENSE_ALLOWLIST:
-        versions = PACKAGE_LICENSE_ALLOWLIST[name]
-        return "*" in versions or version in versions
-    return False
+        return {
+            "approved": set(raw.get("approved", [])),
+            "restricted": set(raw.get("restricted", [])),
+            "prohibited": set(raw.get("prohibited", [])),
+            "packageLicenseOverrides": extract_versions(raw.get("packageLicenseOverrides", {})),
+            "ignoredNoLicense": extract_versions(raw.get("ignoredNoLicense", {})),
+            "knownLicenses": extract_known_licenses(raw.get("knownLicenses", {})),
+        }
 
 def get_license_ids(component):
     licenses = component.get("licenses", [])
@@ -69,16 +35,39 @@ def get_license_ids(component):
             ids.append(entry["license"]["name"])
     return ids if ids else ["UNKNOWN"]
 
-def get_known_license(name, version):
+def get_known_license(name, version, known_licenses):
     key = f"{name}@{version}"
-    return [KNOWN_LICENSES[key]] if key in KNOWN_LICENSES else None
+    return [known_licenses[key]] if key in known_licenses else None
+
+def is_ignored_missing_license(name, version, ignored):
+    if name in ignored:
+        versions = ignored[name]
+        return "*" in versions or version in versions
+    return False
+
+def is_allowed_nonstandard_license(name, version, overrides):
+    if name in overrides:
+        versions = overrides[name]
+        return "*" in versions or version in versions
+    return False
+
+def is_fully_approved(license_str, approved):
+    cleaned = license_str.replace('(', '').replace(')', '')
+    licenses = [l.strip() for l in cleaned.split('OR')]
+    return all(l in approved for l in licenses)
+
+def is_mixed_license(license_str, approved, restricted):
+    cleaned = license_str.replace('(', '').replace(')', '')
+    licenses = [l.strip() for l in cleaned.split('OR')]
+    allowed = [l for l in licenses if l in approved]
+    bad = [l for l in licenses if l not in approved and l not in restricted]
+    return allowed and bad
 
 def main():
     try:
-        with open("app/public/sbom/sbom.json", "r") as f:
+        with open("app/public/sbom/sbom.json", "r", encoding="utf-8") as f:
             sbom = json.load(f)
     except Exception as e:
-        # Always write a minimal report for downstream steps
         with open("license_report.md", "w") as f:
             f.write("<!-- license-check -->\n")
             f.write("## 🧾 License Compliance Report\n\n")
@@ -86,67 +75,86 @@ def main():
         print(f"❌ Could not read SBOM: {e}")
         sys.exit(1)
 
-    bad = []
+    try:
+        policy = load_policy()
+    except Exception as e:
+        print(f"❌ Failed to load license policy: {e}")
+        sys.exit(1)
+
+    approved = policy["approved"]
+    restricted = policy["restricted"]
+    prohibited = policy["prohibited"]
+    known_licenses = policy["knownLicenses"]
+    ignored = policy["ignoredNoLicense"]
+    overrides = policy["packageLicenseOverrides"]
+
     caution = []
+    denied = []
     unknown = []
 
     for comp in sbom.get("components", []):
         name = comp.get("name", "UNKNOWN")
         version = comp.get("version", "")
         purl = comp.get("purl", "")
-        licenses = get_known_license(name, version)
+        licenses = get_known_license(name, version, known_licenses)
         if not licenses:
             licenses = get_license_ids(comp)
 
         for lic in licenses:
             if lic == "UNKNOWN":
-                if is_ignored_missing_license(name, version):
+                if is_ignored_missing_license(name, version, ignored):
                     continue
-                unknown.append((name, version, "UNKNOWN", purl))
-            elif is_allowed_nonstandard_license(name, version):
+                unknown.append((name, version, lic, purl))
+            elif is_allowed_nonstandard_license(name, version, overrides):
                 continue
-            elif is_fully_allowed(lic, ALLOWLIST):
+            elif is_fully_approved(lic, approved):
                 continue
-            elif is_mixed_license(lic, ALLOWLIST, CAUTION):
+            elif is_mixed_license(lic, approved, restricted):
                 caution.append((name, version, f"MIXED: {lic}", purl))
-            elif lic in ALLOWLIST:
+            elif lic in approved:
                 continue
-            elif lic in CAUTION:
+            elif lic in restricted:
                 caution.append((name, version, lic, purl))
+            elif lic in prohibited:
+                denied.append((name, version, lic, purl))
             else:
-                bad.append((name, version, lic, purl))
+                unknown.append((name, version, lic, purl))
 
-    with open("license_report.md", "w") as f:
+    with open("license_report.md", "w", encoding="utf-8") as f:
         f.write("<!-- license-check -->\n")
         f.write("## 🧾 License Compliance Report\n\n")
         f.write("This report analyzes the licenses of all dependencies used in this project, based on the Software Bill of Materials (SBOM).\n")
-        f.write("It includes both direct and transitive (indirect) dependencies, as all of them are relevant for legal compliance and redistribution. The goal is to ensure that only approved open source licenses are used.\n\n")
-        f.write("For more information about allowed licenses and compliance rules, please refer to our [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-).\n\n")
+        f.write("It includes both direct and transitive dependencies. The goal is to ensure that only approved open source licenses are used.\n\n")
+        f.write("For more information, see the [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-).\n\n")
         f.write("_This comment is automatically updated with every push to ensure up-to-date compliance information._\n\n")
 
         if caution:
             f.write("### ⚠️ Packages with caution or mixed licenses:\n\n")
             for name, version, lic, purl in caution:
-                f.write(f"- `{name}@{version}` → `{lic}` {f' [`{purl}`]' if purl else ''}\n")
+                f.write(f"- `{name}@{version}` → `{lic}` {f'[`{purl}`]' if purl else ''}\n")
 
-        if bad:
-            f.write("\n### ❌ Prohibited or unknown licenses:\n\n")
-            for name, version, lic, purl in bad:
-                f.write(f"- `{name}@{version}` → `{lic}` {f' [`{purl}`]' if purl else ''}\n")
+        if denied:
+            f.write("\n### ❌ Prohibited licenses:\n\n")
+            f.write("> The following dependencies use licenses that are not allowed under any circumstances. These components **must not be used** in this project.\n")
+            f.write("> Please **remove and replace** them as soon as possible.\n\n")
+            for name, version, lic, purl in denied:
+                f.write(f"- `{name}@{version}` → `{lic}` {f'[`{purl}`]' if purl else ''}\n")
 
         if unknown:
-            f.write("\n### ❓ Components with unknown or missing license info:\n\n")
+            f.write("\n### ❓ Unknown or unverified licenses:\n\n")
+            f.write("> The following dependencies have unknown or unverified licenses.\n")
+            f.write("> Please **contact the project administrators** to review and validate these components.\n\n")
             for name, version, lic, purl in unknown:
-                f.write(f"- `{name}@{version}` → `{lic}` {f' [`{purl}`]' if purl else ''}\n")
+                f.write(f"- `{name}@{version}` → `{lic}` {f'[`{purl}`]' if purl else ''}\n")
 
-        if not caution and not bad and not unknown:
+        if not caution and not denied and not unknown:
             f.write("\n### ✅ All licenses approved.\n")
 
         f.write("\n---\n")
         f.write("> **Note:** This report only includes dependencies explicitly declared by the application (e.g. in `package.json`, `pom.xml`, etc.). Dependencies introduced by Docker base images, GitHub Actions, or external CI/CD tools are not included and must be reviewed manually.\n")
 
-    if bad:
-        print("❌ Compliance check failed due to forbidden licenses.")
+    if denied:
+        print("❌ Compliance check failed due to prohibited licenses.")
         sys.exit(1)
     elif unknown:
         print("⚠️ Compliance check completed with unknown licenses.")
