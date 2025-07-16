@@ -60,6 +60,7 @@ export function ModuleSelectPage(): JSX.Element {
 
             <AppHeader
                 mode={AppMode.Staff}
+                onDeleteFormData={() => {}}
             />
 
             <Introductory

@@ -11,7 +11,7 @@ import {type AnyElementWithChildren, isAnyElementWithChildren} from '../../model
 import {type AnyElement} from '../../models/elements/any-element';
 import {AddElementDialog} from '../../dialogs/add-element-dialog/add-element-dialog';
 import {ElementType} from '../../data/element-type/element-type';
-import {findNoCodeUsage, findNoCodeUsageOfChildren} from '../../utils/find-no-code-usage';
+import {findNoCodeUsage, findUsageOfChild} from '../../utils/find-no-code-usage';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isChildOf} from '../../utils/is-child-of';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -64,7 +64,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             props.onPatch({
                 ...props.element,
                 children: [
-                    ...props.element.children,
+                    ...props.element.children ?? [],
                     addedElement,
                 ],
             }, {});
@@ -84,7 +84,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
         }
 
         if (isAnyElementWithChildren(props.element)) {
-            const childUsages = findNoCodeUsageOfChildren(props.element, props.parents[0]);
+            const childUsages = findUsageOfChild(props.element, props.parents[0]);
             if (childUsages.length > 0) {
                 const allReferencesAreChildrenOfElement = childUsages.every(([_, referencingElements]) => referencingElements.every((e) => isChildOf(e, props.element as AnyElementWithChildren)));
                 if (!allReferencesAreChildrenOfElement) {

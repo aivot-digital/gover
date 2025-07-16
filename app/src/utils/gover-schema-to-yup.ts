@@ -64,7 +64,7 @@ export function goverSchemaToYup(elem: AnyElement): any {
 
     // If element has children, recursively generate schema
     if (isAnyElementWithChildren(elem)) {
-        for (const child of elem.children) {
+        for (const child of elem.children ?? []) {
             const childSchema = goverSchemaToYup(child);
             res = {
                 ...res,

@@ -2,25 +2,20 @@ import {AlertComponent} from '../alert/alert-component';
 import {useMemo} from 'react';
 import {AnyElement} from '../../models/elements/any-element';
 import {Link, Typography} from '@mui/material';
-import {PrivacyUserInputKey} from '../general-information/general-information.component.view';
-import {SummaryAttachmentsTooLargeKey, SummaryUserInputKey} from '../summary/summary.component.view';
-import {SubmitHumanKey} from '../submit/submit.component.view';
+import {SummaryAttachmentsTooLargeKey} from '../summary/summary.component.view';
 import {ElementType} from '../../data/element-type/element-type';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
-import {ElementDataObject, ElementData} from '../../models/element-data';
+import {ElementData, ElementDataObject} from '../../models/element-data';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {generateComponentTitle} from '../../utils/generate-component-title';
-
-const additionErrorKeys: Record<string, string> = {
-    [PrivacyUserInputKey]: 'Datenschutzrechtliche Einwilligung',
-    [IdentityCustomerInputKey]: 'Nutzerkonto',
-    [SummaryUserInputKey]: 'Zusammenfassung',
-    [SummaryAttachmentsTooLargeKey]: 'Hinzugefügte Anlagen',
-    [SubmitHumanKey]: 'Verifizierung',
-};
+import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 
 const noLinkKeys = [SummaryAttachmentsTooLargeKey];
+
+const additionErrorKeys: Record<string, string> = {
+    [IdentityCustomerInputKey]: 'Nutzerkonto',
+    [SummaryAttachmentsTooLargeKey]: 'Hinzugefügte Anlagen',
+};
 
 interface ErrorAlertProps {
     element: AnyElement;
@@ -34,6 +29,23 @@ interface CollectedError {
 }
 
 export function collectErrors(element: AnyElement, elementData: ElementData): CollectedError[] {
+    const errs = _collectErrors(element, elementData);
+
+    for (const key of Object.keys(additionErrorKeys)) {
+        const err = elementData[key]?.computedErrors;
+        if (err != null && err.length > 0) {
+            errs.push({
+                id: key,
+                label: additionErrorKeys[key],
+                error: err.join(', '),
+            });
+        }
+    }
+
+    return errs;
+}
+
+export function _collectErrors(element: AnyElement, elementData: ElementData): CollectedError[] {
     const elementObjectData: ElementDataObject | undefined = elementData[element.id];
 
     if (elementObjectData == null) {
@@ -54,7 +66,7 @@ export function collectErrors(element: AnyElement, elementData: ElementData): Co
 
     if (isAnyElementWithChildren(element) && element.children != null) {
         if (element.type === ElementType.ReplicatingContainer) {
-            const childElementData = elementObjectData.value;
+            const childElementData = elementObjectData.inputValue;
 
             if (Array.isArray(childElementData)) {
                 for (const cElementData of childElementData) {
@@ -102,7 +114,11 @@ export function ErrorAlert(props: ErrorAlertProps) {
                 Bitte korrigieren Sie Ihre Angaben und fahren Sie fort, damit diese erneut überprüft werden.
             </Typography>
 
-            <ul style={{paddingInlineStart: '20px'}}>
+            <ul
+                style={{
+                    paddingInlineStart: '20px',
+                }}
+            >
                 {
                     errors
                         .map(({id, label, error}) => {

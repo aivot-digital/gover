@@ -39,8 +39,8 @@ function extractReferencedElementIds(expression: NoCodeExpression): string[] {
         }
 
         if (isNoCodeReference(op)) {
-            if (!ids.includes(op.elementId)) {
-                ids.push(op.elementId);
+            if (!ids.includes(op.elementId!)) {
+                ids.push(op.elementId!);
             }
         } else if (isNoCodeExpression(op)) {
             extractReferencedElementIds(op).forEach((id) => {

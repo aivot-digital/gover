@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {type MultiCheckboxFieldElement, type MultiCheckboxFieldElementOption} from '../../models/elements/form/input/multi-checkbox-field-element';
+import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseViewProps} from '../../views/base-view';
 import {MultiCheckboxComponent} from './multi-checkbox-component';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
@@ -9,33 +9,15 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
 
     const {
         disabled,
-        options: baseOptions,
+        options,
     } = element;
-
-    const options = useMemo(() => {
-        if (baseOptions == null) {
-            return [];
-        }
-
-        return baseOptions
-            .map((option: string | MultiCheckboxFieldElementOption) => {
-                if (typeof option === 'string') {
-                    return {
-                        value: option,
-                        label: option,
-                    };
-                } else {
-                    return option;
-                }
-            });
-    }, [baseOptions]);
 
     const isDisabled = useMemo(() => {
         return disabled || isGloballyDisabled;
@@ -50,12 +32,12 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
             label={element.label ?? ''}
             value={value ?? undefined}
             onChange={setValue}
-            options={options}
+            options={options ?? []}
             disabled={isDisabled}
-            required={element.required}
-            error={error}
-            hint={element.hint}
-            displayInline={element.displayInline}
+            required={element.required ?? undefined}
+            error={errors != null ? errors.join(' ') : undefined}
+            hint={element.hint ?? undefined}
+            displayInline={element.displayInline ?? undefined}
             busy={isBusy}
         />
     );

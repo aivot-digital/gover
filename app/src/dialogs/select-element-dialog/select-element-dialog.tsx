@@ -55,13 +55,15 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                 detailsBuilder: (option) => {
                     return (
                         <ViewDispatcherComponent
+                            rootElement={option.$}
                             allElements={[]}
                             element={option.$}
                             isBusy={false}
                             isDeriving={false}
                             mode="editor"
                             elementData={{}}
-                            onElementDataChange={() => {}}
+                            onElementDataChange={() => {
+                            }}
                             onElementBlur={undefined}
                             disableVisibility={true}
                             derivationTriggerIdQueue={[]}

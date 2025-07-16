@@ -12,4 +12,31 @@ export type ElementDataObject = {
     computedErrors: string[] | null | undefined;
 }
 
+export function newElementDataObject(type: ElementType): ElementDataObject {
+    return {
+        $type: type,
+        inputValue: undefined,
+        isVisible: true,
+        isPrefilled: false,
+        isDirty: false,
+        computedOverride: undefined,
+        computedValue: undefined,
+        computedErrors: undefined,
+    }
+}
+
 export type ElementData = Partial<Record<string, ElementDataObject>>;
+
+export function hasElementDataSomeInput(elementData: ElementData | null | undefined): boolean {
+    if (elementData == null) {
+        return false;
+    }
+
+    for (const key of Object.keys(elementData)) {
+        const elementDataObject = elementData[key];
+        if (elementDataObject != null && elementDataObject.inputValue != null) {
+            return true;
+        }
+    }
+    return false;
+}

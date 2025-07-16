@@ -1,10 +1,12 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,19 @@ public class CitizenFormDerivationController {
                 .setElementData(elementData)
                 .setOptions(options);
 
-        return elementDerivationService.derive(request);
+        var derivedElementData = elementDerivationService
+                .derive(request);
+
+        var inputIdValue = elementData
+                .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject());
+        derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);
+
+        if (options.notContainsSkipErrors(form.getRoot().getIntroductionStep().getId())) {
+            if (form.getIdentityRequired() && inputIdValue.isEmpty()) {
+                inputIdValue.setComputedErrors(List.of("Bitte melden Sie sich mit einem der Nutzerkonten an."));
+            }
+        }
+
+        return derivedElementData;
     }
 }

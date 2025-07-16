@@ -3,7 +3,6 @@ import {type AppHeaderMenuProps} from './app-header-menu-props';
 import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {AppMode} from '../../data/app-mode';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {resetStepper} from '../../slices/stepper-slice';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectMemberships, selectUser} from '../../slices/user-slice';
@@ -21,7 +20,6 @@ import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {isAdmin} from '../../utils/is-admin';
 import {clearAuthData, selectLogoutLink} from '../../slices/auth-slice';
-import {clearCustomerInput, clearDisabled, clearErrors, selectLoadedForm} from '../../slices/app-slice';
 import TaskOutlinedIcon from '@mui/icons-material/TaskOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {StorageService} from '../../services/storage-service';
@@ -31,7 +29,7 @@ import {CopyAllOutlined, SvgIconComponent} from '@mui/icons-material';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
-import {setIdentityId} from '../../slices/identity-slice';
+import {selectLoadedForm} from '../../slices/app-slice';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const dispatch = useAppDispatch();
@@ -45,14 +43,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
     const logoutLink = useAppSelector(selectLogoutLink);
 
     const handleDelete = useCallback((closeMenuCallback: () => void) => {
-        dispatch(clearCustomerInput());
-        if (props.onDeleteFormData != null) {
-            props.onDeleteFormData();
-        }
-        dispatch(resetStepper());
-        dispatch(clearErrors());
-        dispatch(clearDisabled());
-        dispatch(setIdentityId(undefined));
+        props.onDeleteFormData();
         closeMenuCallback();
         setConfirmDelete(undefined);
     }, []);

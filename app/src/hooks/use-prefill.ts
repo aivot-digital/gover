@@ -2,15 +2,22 @@ import {useSearchParams} from 'react-router-dom';
 import {useEffect} from 'react';
 import {prefillQueryParamKey} from '../data/prefill-query-param-key';
 import {isStringNullOrEmpty} from '../utils/string-utils';
-import {useAppDispatch} from './use-app-dispatch';
-import {selectAllElements, updateCustomerInput} from '../slices/app-slice';
+import {selectAllElements} from '../slices/app-slice';
 import {useAppSelector} from './use-app-selector';
 import {canPrefillElement} from '../dialogs/prefill-form-dialog/prefill-form-dialog';
+import {type ElementData, newElementDataObject} from '../models/element-data';
 
-export function usePrefill() {
-    const dispatch = useAppDispatch();
+interface PrefillOptions {
+    onPrefill: (prefillData: ElementData) => void;
+}
+
+export function usePrefill(options: PrefillOptions) {
     const [searchParams, setSearchParams] = useSearchParams();
     const allElements = useAppSelector(selectAllElements);
+
+    const {
+        onPrefill,
+    } = options;
 
     useEffect(() => {
         const prefill = searchParams.get(prefillQueryParamKey);
@@ -29,6 +36,8 @@ export function usePrefill() {
             return;
         }
 
+        const cleanedPrefillData: ElementData = {};
+
         for (const key of Object.keys(prefillData)) {
             const value = prefillData[key];
 
@@ -36,15 +45,15 @@ export function usePrefill() {
                 .find(e => e.id === key);
 
             if (elem != null && canPrefillElement(elem)) {
-                dispatch(updateCustomerInput({
-                    key,
-                    value,
-                    doNotStore: true, // Do not store in local storage, just update the state (to not overwrite saved customer input)
-                }));
+                const dataObject = newElementDataObject(elem.type);
+                dataObject.inputValue = value;
+                cleanedPrefillData[key] = dataObject;
             }
         }
 
         searchParams.delete(prefillQueryParamKey);
         setSearchParams(searchParams);
-    }, [searchParams, allElements]);
+
+        onPrefill(cleanedPrefillData);
+    }, [searchParams, allElements, onPrefill]);
 }

@@ -1,12 +1,10 @@
 import React from 'react';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
-import {StringListInput} from '../string-list-input/string-list-input';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {isStringArray} from '../../utils/is-string-array';
 import {OptionListInput} from '../option-list-input/option-list-input';
-import {CheckboxFieldComponent} from "../checkbox-field/checkbox-field-component";
+import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
 export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement, ElementTreeEntity>): JSX.Element {
     const minRequiredError = (
@@ -19,44 +17,22 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
 
     return (
         <>
-            {
-                isStringArray(options) &&
-                options.length > 0 &&
-                <StringListInput
-                    label="Optionen"
-                    addLabel="Option hinzufügen"
-                    hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
-                    noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
-                    value={options}
-                    onChange={(options) => {
-                        props.onPatch({
-                            options,
-                        });
-                    }}
-                    allowEmpty={false}
-                    disabled={!props.editable}
-                />
-            }
-
-            {
-                (!isStringArray(options) ||
-                options.length === 0) &&
-                <OptionListInput
-                    label="Optionen"
-                    addLabel="Option hinzufügen"
-                    hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
-                    noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
-                    value={options as any}
-                    onChange={(options) => {
-                        props.onPatch({
-                            options,
-                        });
-                    }}
-                    allowEmpty={false}
-                    disabled={!props.editable}
-                    variant="outlined"
-                />
-            }
+            options.length === 0) &&
+            <OptionListInput
+                label="Optionen"
+                addLabel="Option hinzufügen"
+                hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
+                noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
+                value={options as any}
+                onChange={(options) => {
+                    props.onPatch({
+                        options,
+                    });
+                }}
+                allowEmpty={false}
+                disabled={!props.editable}
+                variant="outlined"
+            />
 
             {
                 props.element.required === true &&
@@ -77,14 +53,14 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
 
             <CheckboxFieldComponent
                 label="Optionen nebeneinander anzeigen"
-                value={props.element.displayInline}
+                value={props.element.displayInline ?? undefined}
                 onChange={(checked) => {
                     props.onPatch({
                         displayInline: checked,
                     });
                 }}
                 disabled={!props.editable}
-                hint={"Zeigt die Optionen nebeneinander anstatt untereinander an. Dies kann Platz sparen und die Übersichtlichkeit verbessern."}
+                hint="Zeigt die Optionen nebeneinander anstatt untereinander an. Dies kann Platz sparen und die Übersichtlichkeit verbessern."
             />
         </>
     );

@@ -6,6 +6,7 @@ import Grid from '@mui/material/Grid';
 
 export function StepComponentView(props: BaseViewProps<StepElement, void>) {
     const {
+        rootElement,
         allElements,
         element,
         isBusy,
@@ -32,6 +33,7 @@ export function StepComponentView(props: BaseViewProps<StepElement, void>) {
             {
                 (children ?? []).map((child) => (
                     <ViewDispatcherComponent
+                        rootElement={rootElement}
                         key={child.id}
                         allElements={allElements}
                         element={child}

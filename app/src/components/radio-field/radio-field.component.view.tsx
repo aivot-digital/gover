@@ -11,7 +11,7 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -75,7 +75,7 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
 
     return (
         <FormControl
-            error={error != null}
+            error={errors != null}
             disabled={isDisabled}
         >
             <FormLabel
@@ -120,16 +120,16 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
                 {optionElements}
             </RadioGroup>
             {
-                (element.hint != null || error != null) &&
+                (element.hint != null || errors != null) &&
                 <FormHelperText sx={{ml: 0}}>
                     {
                         element.hint != null &&
-                        error == null &&
+                        errors == null &&
                         element.hint
                     }
                     {
-                        error != null &&
-                        <span>{error}</span>
+                        errors != null &&
+                        <span>{errors.join(' ')}</span>
                     }
                 </FormHelperText>
             }

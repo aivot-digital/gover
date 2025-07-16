@@ -16,6 +16,8 @@ import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import {type ElementTreeEntity} from './element-tree-entity';
 import {AppInfo} from '../../app-info';
+import {StepElement} from '../../models/elements/steps/step-element';
+import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>): JSX.Element {
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -28,7 +30,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
             root: {
                 ...props.entity.root,
                 children: [
-                    ...props.entity.root.children,
+                    ...props.entity.root.children ?? [],
                     element,
                 ],
             },
@@ -37,12 +39,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
 
     const handleAdd = (): void => {
         if (isForm(props.entity)) {
-            handleAddElement({
-                id: generateElementIdForType(ElementType.Step),
-                type: ElementType.Step,
-                appVersion: AppInfo.version,
-                children: [],
-            });
+            handleAddElement(generateElementWithDefaultValues(ElementType.Step) as StepElement);
         } else {
             setShowAddDialog(true);
         }
@@ -89,7 +86,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             <ElementTreeItem
                                 parents={[props.entity.root]}
                                 entity={props.entity}
-                                element={props.entity.root.introductionStep}
+                                element={props.entity.root.introductionStep!}
                                 disableDrag={true}
                                 onPatch={(updatedElement, updatedEntity) => {
                                     if (isForm(props.entity)) {
@@ -152,7 +149,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             <ElementTreeItem
                                 parents={[props.entity.root]}
                                 entity={props.entity}
-                                element={props.entity.root.summaryStep}
+                                element={props.entity.root.summaryStep!}
                                 disableDrag={true}
                                 onPatch={(updatedElement, updatedEntity) => {
                                     if (isForm(props.entity)) {
@@ -191,7 +188,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             <ElementTreeItem
                                 parents={[props.entity.root]}
                                 entity={props.entity}
-                                element={props.entity.root.submitStep}
+                                element={props.entity.root.submitStep!}
                                 disableDrag={true}
                                 onPatch={(updatedElement, updatedEntity) => {
                                     if (isForm(props.entity)) {

@@ -3,6 +3,7 @@ import {Api} from '../../hooks/use-api';
 import {Preset} from "../../models/entities/preset";
 import {CustomerInput} from '../../models/customer-input';
 import {FormState} from '../../models/dtos/form-state';
+import {ElementData} from '../../models/element-data';
 
 interface PresetFilter {
     title: string;
@@ -29,10 +30,10 @@ export class PresetsApiService extends CrudApiService<Preset, Preset, Preset, Pr
         };
     }
 
-    public async determinePresetState(presetKey: string, presetVersion: string, customerInput: CustomerInput, args: {
+    public async determinePresetState(presetKey: string, presetVersion: string, elementData: ElementData, args: {
         disableVisibilities: boolean,
         disableValidation: boolean,
-    }): Promise<FormState> {
-        return await this.api.post<FormState>(`presets/${presetKey}/${presetVersion}/derive`, customerInput, {queryParams: args});
+    }): Promise<ElementData> {
+        return await this.api.post<ElementData>(`presets/${presetKey}/${presetVersion}/derive`, elementData, {queryParams: args});
     }
 }

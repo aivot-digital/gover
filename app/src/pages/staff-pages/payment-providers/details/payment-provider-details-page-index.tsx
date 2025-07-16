@@ -334,6 +334,7 @@ export function PaymentProviderDetailsPageIndex() {
                 definition != null &&
                 definition.configLayout != null &&
                 <ViewDispatcherComponent
+                    rootElement={definition.configLayout}
                     allElements={flattenElements(definition.configLayout)}
                     element={definition.configLayout}
                     isBusy={isBusy}

@@ -108,7 +108,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                     open={pickerOpen}
                     onClose={() => setPickerOpen(false)}
                     onSelect={(id) => props.onPatch({icon: id})}
-                    selectedIconId={props.element.icon}
+                    selectedIconId={props.element.icon ?? undefined}
                     title={"Symbol (Icon) für Abschnitt auswählen"}
                     showLabels
                     autoSelect

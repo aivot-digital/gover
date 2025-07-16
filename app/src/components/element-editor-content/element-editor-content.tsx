@@ -70,7 +70,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                 <ValidationCodeTab
                     editable={props.editable}
                     parents={props.parents}
-                    element={props.element as BaseInputElement<any, any>}
+                    element={props.element as BaseInputElement<any>}
                     onChange={(updatedElement) => {
                         if (props.element.testProtocolSet?.technicalTest != null) {
                             if (props.element.testProtocolSet.professionalTest == null) {
@@ -90,7 +90,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                 <ValueCodeTab
                     editable={props.editable}
                     parents={props.parents}
-                    element={props.element as BaseInputElement<any, any>}
+                    element={props.element as BaseInputElement<any>}
                     onChange={(updatedElement) => {
                         if (props.element.testProtocolSet?.technicalTest != null) {
                             if (props.element.testProtocolSet.professionalTest == null) {

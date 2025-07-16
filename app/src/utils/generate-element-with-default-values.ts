@@ -34,16 +34,9 @@ function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
         type: t,
         name: undefined,
         metadata: undefined,
-        overrideCode: undefined,
-        overrideExpression: undefined,
-        overrideReferencedIds: undefined,
-        overrideRequirement: undefined,
+        override: undefined,
+        visibility: undefined,
         testProtocolSet: undefined,
-        visibilityCode: undefined,
-        visibilityConditionSet: undefined,
-        visibilityExpression: undefined,
-        visibilityReferencedIds: undefined,
-        visibilityRequirement: undefined,
     };
 }
 
@@ -62,15 +55,8 @@ function makeInputBase<T extends ElementType>(t: T, id: string): Omit<BaseInputE
         hint: undefined,
         required: undefined,
         technical: undefined,
-        validationCode: undefined,
-        validationConditionSet: undefined,
-        validationExpressions: undefined,
-        validationReferencedIds: undefined,
-        validationRequirement: undefined,
-        valueCode: undefined,
-        valueExpression: undefined,
-        valueReferencedIds: undefined,
-        valueRequirement: undefined,
+        validation: undefined,
+        value: undefined,
     };
 }
 

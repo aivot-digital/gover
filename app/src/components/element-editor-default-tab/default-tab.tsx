@@ -264,10 +264,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         >
                             <CheckboxFieldComponent
                                 label="Pflichtangabe"
-                                value={props.element.required}
+                                value={props.element.required ?? undefined}
                                 onChange={(checked) => {
                                     props.onChange({
-                                        // @ts-expect-error
+                                        // @ts-ignore
                                         required: checked,
                                         disabled: false,
                                         technical: false,
@@ -284,10 +284,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         >
                             <CheckboxFieldComponent
                                 label="Eingabe deaktiviert"
-                                value={props.element.disabled}
+                                value={props.element.disabled ?? undefined}
                                 onChange={(checked) => {
                                     props.onChange({
-                                        // @ts-expect-error
+                                        // @ts-ignore
                                         required: false,
                                         disabled: checked,
                                         technical: false,
@@ -304,10 +304,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         >
                             <CheckboxFieldComponent
                                 label="Technisches Feld"
-                                value={props.element.technical}
+                                value={props.element.technical ?? undefined}
                                 onChange={(checked) => {
                                     props.onChange({
-                                        // @ts-expect-error
+                                        // @ts-ignore
                                         required: false,
                                         disabled: false,
                                         technical: checked,

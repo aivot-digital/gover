@@ -15,7 +15,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -44,7 +44,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         }
 
         const newRow = (fields ?? []).reduce((acc, val) => {
-            acc[val.label] = null;
+            acc[val.key ?? ''] = null;
             return acc;
         }, {} as { [key: string]: string | number | null });
 
@@ -113,11 +113,11 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
         return fields
             .map((field) => ({
-                field: field.label,
+                field: field.key ?? '',
                 headerName: field.label + (field.optional ? '' : ' *'),
                 editable: !field.disabled && !isDisabled && !isBusy && !isDeriving,
                 flex: 1,
-                type: field.datatype,
+                type: field.datatype ?? 'string',
                 renderCell: (params: GridRenderCellParams<string>) => (
                     (params.value == null || params.value.length === 0) &&
                     field.placeholder != null &&
@@ -160,7 +160,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                 }}
             >
                 <FormLabel
-                    error={error != null}
+                    error={errors != null}
                 >
                     {element.label} {element.required && ' *'}
                 </FormLabel>
@@ -220,15 +220,15 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             </div>
 
             {
-                (error || element.hint) &&
+                (errors != null || element.hint) &&
                 <FormHelperText
                     sx={{mt: 1}}
-                    error={error != null}
+                    error={errors != null}
                 >
                     {
-                        error == null ?
+                        errors == null ?
                             element.hint :
-                            error
+                            errors.join(' ')
                     }
                 </FormHelperText>
             }

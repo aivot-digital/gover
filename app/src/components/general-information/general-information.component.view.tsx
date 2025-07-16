@@ -1,10 +1,15 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Grid, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
+import Box from '@mui/material/Box';
+import ListItem from '@mui/material/ListItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
+import useTheme from '@mui/material/styles/useTheme';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
 import {type Department} from '../../modules/departments/models/department';
-import {selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, showDialog, updateCustomerInput} from '../../slices/app-slice';
+import {selectLoadedForm, showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
@@ -25,8 +30,6 @@ import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
 
-export const PrivacyUserInputKey = '__privacy__';
-
 function cleanDocuments(documents: Array<string> | undefined | null) {
     if (documents) {
         return documents.filter(document => document.trim() !== '');
@@ -41,21 +44,19 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const theme = useTheme();
 
     const {
+        rootElement,
         element,
         value,
         setValue,
         errors,
+        elementData,
+        onElementDataChange,
     } = props;
 
-    const {
-
-    } = element;
+    const {} = element;
 
     const application = useAppSelector(selectLoadedForm);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-
-    const privacyValue = useAppSelector(selectCustomerInputValue(PrivacyUserInputKey));
-    const privacyError = useAppSelector(selectCustomerInputError(PrivacyUserInputKey));
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<Department>();
     const [managingDepartment, setManagingDepartment] = useState<Department>();
@@ -156,7 +157,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         responsibleDepartment.address,
                     ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
+            </Box>,
         );
     }
 
@@ -180,7 +181,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         managingDepartment.address,
                     ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
+            </Box>,
         );
     }
 
@@ -196,7 +197,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 pluralLabel="Personen"
                 listId="eligible-persons-list"
                 renderItem={renderEligiblePerson}
-            />
+            />,
         );
     }
 
@@ -211,7 +212,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 pluralLabel="Dokumente"
                 listId="supporting-documents-list"
                 renderItem={renderSupportingDocument}
-            />
+            />,
         );
     }
 
@@ -226,7 +227,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 pluralLabel="Dokumente"
                 listId="documents-to-attach-list"
                 renderItem={renderDocumentToAttach}
-            />
+            />,
         );
     }
 
@@ -248,7 +249,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 >
                     {application.root.expiring}
                 </Typography>
-            </Box>
+            </Box>,
         );
     }
 
@@ -265,27 +266,29 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 </Typography>
 
                 <Typography
-                    component={"div"}
+                    component={'div'}
                     variant="body2"
-                    className={"content-without-margin-on-childs"}
+                    className={'content-without-margin-on-childs'}
                     sx={{mt: 1}}
                     dangerouslySetInnerHTML={{__html: props.element.expectedCosts ?? ''}}
                 />
-            </Box>
+            </Box>,
         );
     }
-
-
 
     return (
         <>
             {
-                props.element.teaserText != null &&
-                isStringNotNullOrEmpty(props.element.teaserText) &&
+                element.teaserText != null &&
+                element.initiativeLogoLink != null &&
+                element.initiativeName != null &&
+                isStringNotNullOrEmpty(element.teaserText) &&
+                isStringNotNullOrEmpty(element.initiativeLogoLink) &&
+                isStringNotNullOrEmpty(element.initiativeName) &&
                 <Preamble
-                    text={props.element.teaserText}
-                    logoLink={props.element.initiativeLogoLink}
-                    logoAlt={props.element.initiativeName}
+                    text={element.teaserText}
+                    logoLink={element.initiativeLogoLink}
+                    logoAlt={element.initiativeName}
                 />
             }
 
@@ -302,7 +305,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <FadingPaper>
                     <Box
                         sx={{
-                            columnCount: { xs: 1, md: 2 },
+                            columnCount: {xs: 1, md: 2},
                             columnGap: 7,
                         }}
                     >
@@ -324,11 +327,15 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             }
 
             <IdentityButtonGroup
+                rootElement={rootElement}
                 isBusy={props.isBusy}
+                elementData={elementData}
+                onElementDataChange={ed => onElementDataChange(ed, [])}
+                form={application!}
             />
 
             <Typography
-                component={'h4'}
+                component="h4"
                 variant="h5"
                 color="primary"
                 sx={{
@@ -352,21 +359,21 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 </Box>
             }
 
-            <Box id={PrivacyUserInputKey}>
+            <Box id={element.id}>
                 <CheckboxFieldComponent
                     label="Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen."
-                    value={value}
+                    value={value ?? undefined}
                     onChange={(checked) => {
                         setValue(checked);
                     }}
                     required={true}
-                    error={privacyError}
+                    error={errors != null ? errors[0] ?? undefined : undefined}
                     disabled={props.isBusy}
                 />
             </Box>
 
             <Typography
-                variant={'caption'}
+                variant="caption"
                 sx={{
                     mt: 4,
                 }}

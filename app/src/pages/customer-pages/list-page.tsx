@@ -15,7 +15,7 @@ import {Introductory} from '../../components/introductory/introductory';
 import {ApplicationListItemPublic} from '../../components/application-list-item/application-list-item-public';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetStepper} from '../../slices/stepper-slice';
-import {clearCustomerInput, clearErrors, clearLoadedForm, showDialog} from '../../slices/app-slice';
+import {clearLoadedForm, showDialog} from '../../slices/app-slice';
 import {AlertComponent} from '../../components/alert/alert-component';
 import {useApi} from '../../hooks/use-api';
 import {Theme} from '../../modules/themes/models/theme';
@@ -53,8 +53,6 @@ export function ListPage(): JSX.Element {
                 setFailedToLoad(true);
             });
 
-        dispatch(clearCustomerInput());
-        dispatch(clearErrors());
         dispatch(resetStepper());
         dispatch(clearLoadedForm());
         dispatch(setIdentityId(undefined));
@@ -109,6 +107,7 @@ export function ListPage(): JSX.Element {
 
                 <AppHeader
                     mode={AppMode.CustomerDisplay}
+                    onDeleteFormData={() => {}}
                 />
 
                 <main role="main">

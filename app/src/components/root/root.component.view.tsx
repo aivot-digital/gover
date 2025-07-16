@@ -18,7 +18,7 @@ import {AppMode} from '../../data/app-mode';
 import {AppHeader} from '../app-header/app-header';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {addError, clearErrors, selectLoadedForm, updateCustomerInput} from '../../slices/app-slice';
+import {selectLoadedForm} from '../../slices/app-slice';
 import {nextStep, previousStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar} from '../../slices/snackbar-slice';
@@ -89,6 +89,7 @@ function extractCurrentStep(currentStep: number, allVisibleSteps: AnyStepElement
 
 export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     const {
+        rootElement,
         allElements,
         element,
         scrollContainerRef,
@@ -219,9 +220,6 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         if (form == null) {
             return;
         }
-
-        // Clear existing errors
-        dispatch(clearErrors());
 
         // Check if the current step is valid
         const currentPageValid = await determineFormState({
@@ -455,10 +453,19 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         })
             .then((errorMessage) => {
                 if (errorMessage != null) {
-                    dispatch(addError({
-                        key: SummaryAttachmentsTooLargeKey,
-                        error: errorMessage,
-                    }));
+                    onElementDataChange({
+                        ...elementData,
+                        [SummaryAttachmentsTooLargeKey]: {
+                            $type: ElementType.FileUpload,
+                            inputValue: [],
+                            isVisible: true,
+                            isPrefilled: false,
+                            isDirty: true,
+                            computedErrors: [errorMessage],
+                            computedOverride: undefined,
+                            computedValue: undefined,
+                        },
+                    }, []);
                     return false;
                 } else {
                     return true;
@@ -481,10 +488,19 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 try {
                     const calculatedCosts = await new FormsApiService(api)
                         .calculateCosts(form!.id, elementData);
-                    dispatch(updateCustomerInput({
-                        key: SubmitPaymentDataKey,
-                        value: calculatedCosts,
-                    }));
+                    onElementDataChange({
+                        ...elementData,
+                        [SubmitPaymentDataKey]: {
+                            $type: ElementType.Number,
+                            inputValue: calculatedCosts,
+                            isVisible: true,
+                            isPrefilled: false,
+                            isDirty: true,
+                            computedErrors: undefined,
+                            computedOverride: undefined,
+                            computedValue: calculatedCosts,
+                        },
+                    }, []);
                 } catch (error: any) {
                     console.error(error);
                     dispatch(showErrorSnackbar('Die Kosten konnten nicht korrekt berechnet werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
@@ -606,7 +622,6 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                             isLastStep={index === allVisibleSteps.length - 1}
                                             onNext={handleNextStep}
                                             onPrevious={() => {
-                                                dispatch(clearErrors());
                                                 dispatch(previousStep());
                                             }}
                                             active={currentStep === index}
@@ -617,6 +632,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                             isDeriving={isDeriving ?? false}
                                         >
                                             <ViewDispatcherComponent
+                                                rootElement={rootElement}
                                                 allElements={allElements}
                                                 element={step}
                                                 isBusy={isBusy}

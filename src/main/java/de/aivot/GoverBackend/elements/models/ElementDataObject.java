@@ -129,4 +129,14 @@ public class ElementDataObject {
         }
         return inputValue != null ? inputValue : computedValue;
     }
+
+    @JsonIgnore
+    public boolean isEmpty() {
+        return getValue() == null;
+    }
+
+    @JsonIgnore
+    public boolean isNotEmpty() {
+        return !isEmpty();
+    }
 }

@@ -6,9 +6,10 @@ import {views as Views} from '../views';
 import {type BaseViewProps} from '../views/base-view';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
 import {type ElementData, type ElementDataObject} from '../models/element-data';
-import {resolveErrors, resolveOverride, resolveValue, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
+import {resolveErrors, resolveOverride, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
 
 interface DispatcherComponentProps<T extends AnyElement> {
+    rootElement: AnyElement;
     allElements: AnyElement[];
     element: T;
 
@@ -27,6 +28,7 @@ interface DispatcherComponentProps<T extends AnyElement> {
 
 export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherComponentProps<T>) {
     const {
+        rootElement,
         element: initialElement,
         allElements,
         scrollContainerRef,
@@ -126,6 +128,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     }, [baseIsBusy, baseIsDeriving, element]);
 
     const viewProps: BaseViewProps<typeof element, any> = useMemo(() => ({
+        rootElement: rootElement,
         allElements: allElements,
         element: element,
         setValue: handleSetValue,

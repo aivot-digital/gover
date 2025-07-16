@@ -2,18 +2,14 @@ package de.aivot.GoverBackend.identity.controllers;
 
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
-import de.aivot.GoverBackend.identity.enums.IdentityResultState;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,6 +40,7 @@ public class IdentityController {
     @GetMapping("{key}/start/")
     public void start(
             @Nonnull @PathVariable String key,
+            @Nullable @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ADDITIONAL_SCOPES, required = false) List<String> additionalScopes,
             @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response
@@ -52,7 +49,7 @@ public class IdentityController {
                 .createRedirectURL(
                         key,
                         createCallbackURI(key),
-                        request.getHeader(HttpHeaders.REFERER),
+                        origin,
                         additionalScopes
                 );
 
@@ -106,7 +103,7 @@ public class IdentityController {
                         .unauthorized("Sie haben sich bisher nicht angemeldet."));
 
         return IdentityData
-                .from(identityCacheEntity);
+                .from(identityId, identityCacheEntity);
     }
 
     // region Utility methods

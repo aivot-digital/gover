@@ -1,7 +1,7 @@
 import {Grid, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {type RootState} from '../../../store';
-import {clearCustomerInput, clearErrors, clearLoadedForm, clearVisibilities, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
+import {clearLoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
@@ -55,6 +55,7 @@ import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {setIdentityId} from '../../../slices/identity-slice';
 import {ElementData} from '../../../models/element-data';
+import {IdentityCustomerInputKey} from '../../../modules/identity/constants/identity-customer-input-key';
 
 export const DialogSearchParam = 'dialog';
 
@@ -137,8 +138,6 @@ export function FormEditPage() {
     useEffect(() => {
         dispatch(clearLoadedForm());
         dispatch(resetAdminSettings());
-        dispatch(clearCustomerInput());
-        dispatch(clearErrors());
         dispatch(setCurrentStep(0));
         dispatch(setIdentityId(undefined));
         setFailedToLoad(false);
@@ -258,8 +257,6 @@ export function FormEditPage() {
                         },
                     )
                     .then((state) => {
-                        dispatch(clearVisibilities());
-                        dispatch(clearErrors());
                         setElementData(state);
                     });
             })
@@ -290,8 +287,6 @@ export function FormEditPage() {
                         },
                     )
                     .then((state) => {
-                        dispatch(clearVisibilities());
-                        dispatch(clearErrors());
                         setElementData(state);
                     });
             })
@@ -523,6 +518,7 @@ export function FormEditPage() {
                         ref={scrollContainerRef}
                     >
                         <ViewDispatcherComponent
+                            rootElement={loadedForm.root}
                             allElements={allElements}
                             element={loadedForm.root}
                             scrollContainerRef={scrollContainerRef}

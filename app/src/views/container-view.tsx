@@ -27,6 +27,7 @@ export function ContainerView(props: BaseViewProps<GroupLayout, any>) {
             {
                 children.map((child, index) => (
                     <ViewDispatcherComponent
+                        rootElement={props.rootElement}
                         allElements={props.allElements}
                         key={index}
                         element={child}

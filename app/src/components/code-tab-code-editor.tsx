@@ -126,7 +126,7 @@ function LookupElementIdDialog(props: { open: boolean, onClose: () => void }) {
         if (form == null) {
             return [];
         }
-        return form.root.children
+        return (form.root.children ?? [])
             .flatMap(ch => flattenElementsWithParents(ch, []))
             .map((e) => ({
                 ...e,

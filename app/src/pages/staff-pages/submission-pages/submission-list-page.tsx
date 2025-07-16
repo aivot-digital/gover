@@ -269,6 +269,7 @@ export function SubmissionListPage(): JSX.Element {
 
             <AppHeader
                 mode={AppMode.Staff}
+                onDeleteFormData={() => {}}
             />
 
             <Introductory

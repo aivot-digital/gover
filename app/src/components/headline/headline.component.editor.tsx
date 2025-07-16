@@ -40,7 +40,7 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                 >
                     <CheckboxFieldComponent
                         label="Kompakte Überschrift verwenden"
-                        value={props.element.small}
+                        value={props.element.small ?? undefined}
                         onChange={(val) => {
                             props.onPatch({
                                 small: val,
@@ -57,7 +57,7 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, 
                 >
                     <CheckboxFieldComponent
                         label="In Großbuchstaben anzeigen"
-                        value={props.element.uppercase}
+                        value={props.element.uppercase ?? undefined}
                         onChange={(val) => {
                             props.onPatch({
                                 uppercase: val,

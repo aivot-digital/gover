@@ -194,42 +194,50 @@ function markAsTestedRecursively<T extends AnyElement>(user: User, element: T): 
     }
 
     if (isRootElement(updatedElement)) {
-        updatedElement.introductionStep = {
-            ...updatedElement.introductionStep,
-            testProtocolSet: {
-                ...updatedElement.introductionStep.testProtocolSet,
-                professionalTest: {
-                    userId: user.id,
-                    timestamp: new Date().toISOString(),
+        if (updatedElement.introductionStep != null) {
+            updatedElement.introductionStep = {
+                ...updatedElement.introductionStep,
+                testProtocolSet: {
+                    ...updatedElement.introductionStep.testProtocolSet,
+                    professionalTest: {
+                        userId: user.id,
+                        timestamp: new Date().toISOString(),
+                    },
                 },
-            },
-        };
-        updatedElement.summaryStep = {
-            ...updatedElement.summaryStep,
-            testProtocolSet: {
-                ...updatedElement.summaryStep.testProtocolSet,
-                professionalTest: {
-                    userId: user.id,
-                    timestamp: new Date().toISOString(),
+            };
+        }
+
+        if (updatedElement.summaryStep != null) {
+            updatedElement.summaryStep = {
+                ...updatedElement.summaryStep,
+                testProtocolSet: {
+                    ...updatedElement.summaryStep.testProtocolSet,
+                    professionalTest: {
+                        userId: user.id,
+                        timestamp: new Date().toISOString(),
+                    },
                 },
-            },
-        };
-        updatedElement.submitStep = {
-            ...updatedElement.submitStep,
-            testProtocolSet: {
-                ...updatedElement.submitStep.testProtocolSet,
-                professionalTest: {
-                    userId: user.id,
-                    timestamp: new Date().toISOString(),
+            };
+        }
+
+        if (updatedElement.submitStep != null) {
+            updatedElement.submitStep = {
+                ...updatedElement.submitStep,
+                testProtocolSet: {
+                    ...updatedElement.submitStep.testProtocolSet,
+                    professionalTest: {
+                        userId: user.id,
+                        timestamp: new Date().toISOString(),
+                    },
                 },
-            },
-        };
+            };
+        }
     }
 
-    if (isRootElement(updatedElement)) {
+    if (isRootElement(updatedElement) && updatedElement.children != null) {
         updatedElement.children = updatedElement.children.map(child => markAsTestedRecursively(user, child));
-    } else if (isAnyElementWithChildren(updatedElement)) {
-        updatedElement.children = updatedElement.children.map(child => markAsTestedRecursively(user, child));
+    } else if (isAnyElementWithChildren(updatedElement) && updatedElement.children != null) {
+        updatedElement.children = updatedElement.children.map(child => markAsTestedRecursively(user, child)) as any[];
     }
 
     return updatedElement;

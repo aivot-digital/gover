@@ -32,7 +32,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
 
             // Create a copy of the children array
             const updatedChildren = [
-                ...thisElementWithoutDroppedElement.children,
+                ...thisElementWithoutDroppedElement.children ?? [],
             ];
 
             // Insert the dropped element at the correct position
@@ -48,7 +48,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
         else {
             // Create a copy of the children array
             const updatedChildren = [
-                ...element.children,
+                ...element.children ?? [],
             ];
 
             // Insert the dropped element at the correct position
@@ -84,7 +84,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                 entity={props.entity}
                                 element={child}
                                 onPatch={(updatedElement, updatedEntity) => {
-                                    const updatedChildren = [...props.element.children];
+                                    const updatedChildren = [...props.element.children ?? []];
                                     const index = updatedChildren.indexOf(child);
                                     if (index >= 0) {
                                         // @ts-expect-error
@@ -106,14 +106,14 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                     if (hasChildElement(props.element, droppedElement)) {
                                         const parentWithoutDroppedElement = removeChildElement(props.element, droppedElement);
 
-                                        parentWithoutDroppedElement.children[index] = {
-                                            ...parentWithoutDroppedElement.children[index],
+                                        (parentWithoutDroppedElement.children ?? [])[index] = {
+                                            ...(parentWithoutDroppedElement.children ?? [])[index],
                                             ...updatedElement,
                                         } as any;
 
                                         props.onPatch(parentWithoutDroppedElement, props.entity);
                                     } else {
-                                        const updatedChildren = [...props.element.children];
+                                        const updatedChildren = [...props.element.children ?? []];
                                         updatedChildren[index] = updatedElement as any;
 
                                         props.onMove({
@@ -123,7 +123,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                     }
                                 }}
                                 onDelete={() => {
-                                    const updatedChildren = [...props.element.children];
+                                    const updatedChildren = [...props.element.children ?? []];
                                     const index = updatedChildren.indexOf(child);
                                     if (index >= 0) {
                                         updatedChildren.splice(index, 1);
@@ -137,7 +137,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                     props.onPatch(patch, {});
                                 }}
                                 onClone={() => {
-                                    const updatedChildren = [...props.element.children];
+                                    const updatedChildren = [...props.element.children ?? []];
                                     const index = updatedChildren.indexOf(child);
                                     if (index >= 0) {
                                         const clonedElem = cloneElement(child);
@@ -160,7 +160,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
             }
 
             {
-                props.element.children.length === 0 &&
+                (props.element.children ?? []).length === 0 &&
                 <ElementTreeItemDropTarget
                     element={props.element}
                     isPlaceholder
@@ -181,13 +181,13 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
             }
 
             {
-                props.element.children.length > 0 &&
+                (props.element.children ?? []).length > 0 &&
                 isDraggingTreeElement &&
                 <ElementTreeItemDropTarget
                     element={props.element}
                     isPlaceholder
                     onDrop={(droppedElement) => {
-                        handleElementDropAsChildOfThisElement(droppedElement, props.element.children.length);
+                        handleElementDropAsChildOfThisElement(droppedElement, (props.element.children ?? []).length);
                     }}
                 >
                     <Typography

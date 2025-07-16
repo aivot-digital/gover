@@ -74,9 +74,7 @@ function generateElementId(prefix: string): string {
     return prefix + '_' + _uid;
 }
 
-export function resolveId(id: string, idPrefix?: string): string {
-    if (idPrefix == null || idPrefix.length === 0) {
-        return id;
-    }
-    return idPrefix + '_' + id;
+export function generateId(length: number = 10) {
+    //@ts-expect-error Something is wrong with the types of the ShortUniqueId library
+    return uid.rnd(length);
 }

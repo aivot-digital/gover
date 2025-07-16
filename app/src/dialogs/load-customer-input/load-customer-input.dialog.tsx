@@ -1,44 +1,68 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Typography from '@mui/material/Typography';
 import {CustomerInputService} from '../../services/customer-input-service';
 import {useDispatch} from 'react-redux';
 import {format} from 'date-fns';
-import {Form as Application} from '../../models/entities/form';
-import {CustomerInput} from '../../models/customer-input';
+import {type Form as Application} from '../../models/entities/form';
 import SettingsBackupRestoreOutlinedIcon from '@mui/icons-material/SettingsBackupRestoreOutlined';
-import {hydrateCustomerInput, selectHasLoadedSavedCustomerInput, setHasLoadedSavedCustomerInput} from '../../slices/app-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
+import {flagLoadedSavedCustomerInput, selectHasLoadedSavedCustomerInput} from '../../slices/app-slice';
 import {useSearchParams} from 'react-router-dom';
-import {selectCurrentStep} from '../../slices/stepper-slice';
 import RestorePageIcon from '@mui/icons-material/RestorePage';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
 import {IdentityStateQueryParam} from '../../modules/identity/constants/identity-state-query-param';
+import {type ElementData, hasElementDataSomeInput} from '../../models/element-data';
+import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
+import {useAppSelector} from '../../hooks/use-app-selector';
 
 interface LoadUserInputDialogProps {
     form: Application;
+    onElementDataLoad: (elementData: ElementData) => void;
 }
 
-export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
+export function LoadCustomerInputDialog(props: LoadUserInputDialogProps) {
+    const {
+        form,
+        onElementDataLoad,
+    } = props;
+
     const [searchParams, _] = useSearchParams();
     const dispatch = useDispatch();
-    const [lastSaveDate, setLastSaveDate] = useState<Date | null>(null);
-    const [lastSaveData, setLastSaveData] = useState<CustomerInput | null>(null);
-    const hasLoadedSavedCustomerInput = useAppSelector(selectHasLoadedSavedCustomerInput());
-    const currentStep = useAppSelector(selectCurrentStep);
-    const isIdpCodePresent = useMemo(() => searchParams.get(IdentityStateQueryParam) != null, [searchParams]);
+
+    const hasLoadedSavedCustomerInput = useAppSelector(selectHasLoadedSavedCustomerInput);
+
+    const [lastSaveDate, setLastSaveDate] = useState<Date>();
+    const [lastSaveData, setLastSaveData] = useState<ElementData>();
 
     useEffect(() => {
-        if (currentStep === 0) {
-            setLastSaveDate(CustomerInputService.loadCustomerInputDate(form));
-            setLastSaveData(CustomerInputService.loadCustomerInputState(form));
-        } else {
-            setLastSaveDate(null);
-            setLastSaveData(null);
-        }
+        setLastSaveDate(CustomerInputService.loadCustomerInputDate(form) ?? undefined);
+        setLastSaveData(CustomerInputService.loadCustomerInputState(form) ?? undefined);
     }, [form]);
 
+    const isReturningFromIdp = useMemo(() => {
+        return (
+            searchParams.get(IdentityStateQueryParam) != null &&
+            searchParams.get(IdentityIdQueryParam) != null
+        );
+    }, [searchParams]);
+
+    const isOpen = useMemo(() => {
+        return (
+            !isReturningFromIdp &&
+            !hasLoadedSavedCustomerInput &&
+            hasElementDataSomeInput(lastSaveData)
+        );
+    }, [lastSaveData, isReturningFromIdp, hasLoadedSavedCustomerInput]);
+
     const handleClose = () => {
-        setLastSaveDate(null);
+        setLastSaveDate(undefined);
+        setLastSaveData(undefined);
     };
 
     const handleRestart = () => {
@@ -48,15 +72,15 @@ export function LoadCustomerInputDialog({form}: LoadUserInputDialogProps) {
 
     const handleLoad = () => {
         if (lastSaveData != null) {
-            dispatch(hydrateCustomerInput(lastSaveData));
-            dispatch(setHasLoadedSavedCustomerInput(true));
+            onElementDataLoad(lastSaveData);
+            dispatch(flagLoadedSavedCustomerInput());
         }
         handleClose();
     };
 
     return (
         <Dialog
-            open={lastSaveDate != null && lastSaveData != null && Object.keys(lastSaveData).length > 0 && !hasLoadedSavedCustomerInput && !isIdpCodePresent}
+            open={isOpen}
             disableEscapeKeyDown={true}
         >
             <DialogTitle>

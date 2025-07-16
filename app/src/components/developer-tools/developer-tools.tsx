@@ -1,5 +1,13 @@
 import React, {PropsWithChildren, useState} from 'react';
-import {Box, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableRow, Tabs, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Tab from '@mui/material/Tab';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableRow from '@mui/material/TableRow';
+import Tabs from '@mui/material/Tabs';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDevToolsTab, setDevToolsTab} from '../../slices/admin-settings-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -8,22 +16,17 @@ import {Action} from '../actions/actions-props';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
-import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {format} from 'date-fns';
-import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
+import {downloadObjectFile} from '../../utils/download-utils';
 import type {CustomerInput} from '../../models/customer-input';
-import {hydrateCustomerInput, selectFunctionReferences, selectLoadedForm} from '../../slices/app-slice';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {LogLevel, selectLogLevel, selectLogs, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
-import {generateComponentTitle} from '../../utils/generate-component-title';
-import {FunctionType} from '../../utils/function-status-utils';
 import {DragHandleOutlined} from '@mui/icons-material';
 import {ElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDataDebugger} from './element-data-debugger/element-data-debugger';
+import {selectLoadedForm} from '../../slices/app-slice';
 
 interface TabContentProps {
     selectedTab: number;
@@ -73,7 +76,6 @@ export function DeveloperTools(props: DeveloperToolsProps) {
 
     const currentLogLevel = useAppSelector(selectLogLevel);
     const logs = useAppSelector(selectLogs(currentLogLevel));
-    const references = useAppSelector(selectFunctionReferences);
 
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [height, setHeight] = useState(300);
@@ -83,21 +85,6 @@ export function DeveloperTools(props: DeveloperToolsProps) {
         const filename = `nutzereingaben-${form?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
         const input = cleanCustomerInput(elementData);
         downloadObjectFile(filename, input);
-    };
-
-    const handleUpload = (): void => {
-        uploadObjectFile<CustomerInput>('.json')
-            .then((res) => {
-                if (res == null) {
-                    dispatch(hydrateCustomerInput({}));
-                } else {
-                    dispatch(hydrateCustomerInput(res));
-                }
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Nutzereingaben konnten nicht geladen werden'));
-            });
     };
 
     const startResize = (event: React.MouseEvent) => {
@@ -175,12 +162,8 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                         value={0}
                     />
                     <Tab
-                        label="Abhängigkeiten"
-                        value={1}
-                    />
-                    <Tab
                         label="Log"
-                        value={2}
+                        value={1}
                     />
                 </Tabs>
 
@@ -223,108 +206,15 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     <ElementDataDebugger
                         rootElement={rootElement}
                         elementData={elementData}
+                        onLoadElementData={loadedData => {
+                            console.log(loadedData); // TODO
+                        }}
                     />
                 </TabContent>
 
                 <TabContent
                     selectedTab={tab}
                     index={1}
-                >
-                    {
-                        references != null &&
-                        form?.root?.children != null &&
-                        form
-                            .root
-                            .children
-                            .map(step => (
-                                <Box
-                                    key={step.id}
-                                    sx={{
-                                        mb: 3,
-                                    }}
-                                >
-                                    <Typography variant="subtitle1">
-                                        {generateComponentTitle(step)} (ID: {step.id})
-                                    </Typography>
-
-                                    <Box
-                                        sx={{
-                                            ml: 2,
-                                            pl: 2,
-                                            borderLeft: '1px solid gray',
-                                        }}
-                                    >
-                                        {
-                                            references.every(reference => reference.sourceStep.id !== step.id) &&
-                                            <Typography>
-                                                Keine Abhängigkeiten in diesem Abschnitt
-                                            </Typography>
-                                        }
-
-                                        {
-                                            references.some(reference => reference.sourceStep.id === step.id) &&
-                                            <>
-                                                {
-                                                    references
-                                                        .filter(reference => reference.sourceStep.id === step.id)
-                                                        .map(({source, target, functionType, isSameStep}) => (
-                                                            <Box
-                                                                key={`${source.id}-${target.id}-${functionType}`}
-                                                                sx={{
-                                                                    mb: 1,
-                                                                }}
-                                                            >
-                                                                {
-                                                                    functionType === FunctionType.OVERRIDE &&
-                                                                    <Typography>
-                                                                        Die Elementstruktur von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id})
-                                                                        ab.
-                                                                    </Typography>
-                                                                }
-
-                                                                {
-                                                                    functionType === FunctionType.VALIDATION &&
-                                                                    <Typography>
-                                                                        Die Validierung von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id})
-                                                                        ab.
-                                                                    </Typography>
-                                                                }
-
-                                                                {
-                                                                    functionType === FunctionType.VALUE &&
-                                                                    <Typography>
-                                                                        Der Wert von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id}) ab.
-                                                                    </Typography>
-                                                                }
-
-                                                                {
-                                                                    functionType === FunctionType.VISIBILITY &&
-                                                                    <Typography>
-                                                                        Die Sichtbarkeit von <strong>{generateComponentTitle(source)}</strong> (ID: {source.id}) hängt von <strong>{generateComponentTitle(target)}</strong> (ID: {target.id})
-                                                                        ab.
-                                                                    </Typography>
-                                                                }
-
-                                                                {
-                                                                    isSameStep &&
-                                                                    <Typography>
-                                                                        Die Abhängigkeit bezieht sich auf ein Element, dass sich im gleichen Abschnitt befindet.
-                                                                    </Typography>
-                                                                }
-                                                            </Box>
-                                                        ))
-                                                }
-                                            </>
-                                        }
-                                    </Box>
-                                </Box>
-                            ))
-                    }
-                </TabContent>
-
-                <TabContent
-                    selectedTab={tab}
-                    index={2}
                     actions={[
                         {
                             tooltip: 'Debug',

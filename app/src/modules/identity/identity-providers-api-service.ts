@@ -7,6 +7,7 @@ import {IdentityProviderType} from './enums/identity-provider-type';
 import {IdentityProviderInfo} from './models/identity-provider-info';
 import {IdentityData} from './models/identity-data';
 import {IdentityIdHeader} from './constants/identity-id-header';
+import {createApiPath} from '../../utils/url-path-utils';
 
 export interface IdentityProvidersFilter {
     keys: string[];
@@ -52,11 +53,24 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
     }
 
     public static createLink(key: string, additionalScopes?: string[]): string {
-        return '/api/public/identity/' + key + '/start/' + (additionalScopes != null ? '?additionalScopes=' + additionalScopes.join('%20') : '');
+        const path = createApiPath('/api/public/identity/' + key + '/start/');
+
+        const origin = `${window.location.origin}${window.location.pathname}`;
+        const additionalScopesParam = additionalScopes != null ? additionalScopes.join(' ') : '';
+
+        const searchParams = new URLSearchParams();
+        searchParams.set('origin', origin);
+        if (additionalScopesParam) {
+            searchParams.set('additionalScopes', additionalScopesParam);
+        }
+
+        return path + '?' + searchParams.toString();
+
+        //return createApiPath('/api/public/identity/' + key + '/start/') + (additionalScopes != null ? '?additionalScopes=' + additionalScopes.join('%20') : '');
     }
 
     public static async fetchIdentity(identityId: string): Promise<IdentityData> {
-        const res = await fetch('/api/public/identity/get/', {
+        const res = await fetch(createApiPath('/api/public/identity/get/'), {
             headers: {
                 [IdentityIdHeader]: identityId,
             },

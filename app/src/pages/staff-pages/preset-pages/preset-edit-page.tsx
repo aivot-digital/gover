@@ -20,7 +20,6 @@ import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUpload
 import {VersionsPresetDialog} from '../../../dialogs/preset-dialogs/versions-preset-dialog/versions-preset-dialog';
 import {determinePresetVersionDescriptor} from '../../../utils/determine-preset-version-descriptor';
 import {useApi} from '../../../hooks/use-api';
-import {clearErrors, hydrateFromDerivation, hydrateFromDerivationWithoutErrors} from '../../../slices/app-slice';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {ElementType} from '../../../data/element-type/element-type';
 import {GroupLayout} from '../../../models/elements/form/layout/group-layout';
@@ -66,7 +65,7 @@ export function PresetEditPage(): JSX.Element {
 
     const [showPresetVersions, setShowPresetVersions] = useState(false);
 
-    const [customerData, setCustomerData] = useState<CustomerInput>({});
+    const [elementData, setElementData] = useState<ElementData>({});
 
     const [toolbarHeight, setToolbarHeight] = useState<number>(0);
     const updateToolbarHeight = (height: number) => {
@@ -130,12 +129,12 @@ export function PresetEditPage(): JSX.Element {
         }
 
         presetsApiService
-            .determinePresetState(preset.key, presetVersion.version, customerData, {
+            .determinePresetState(preset.key, presetVersion.version, elementData, {
                 disableVisibilities: false,
                 disableValidation: true,
             })
             .then((presetState) => {
-                dispatch(hydrateFromDerivationWithoutErrors(presetState));
+                setElementData(presetState);
             })
             .catch(err => {
                 console.error(err);
@@ -236,13 +235,13 @@ export function PresetEditPage(): JSX.Element {
                 setIsDeriving(true);
 
                 return presetsApiService
-                    .determinePresetState(preset.key, presetVersion.version, customerData, {
+                    .determinePresetState(preset.key, presetVersion.version, elementData, {
                         disableVisibilities: false,
                         disableValidation: true,
                     });
             })
             .then((presetState) => {
-                dispatch(hydrateFromDerivationWithoutErrors(presetState));
+                setElementData(presetState);
             })
             .catch((err) => {
                 console.error(err);
@@ -263,16 +262,15 @@ export function PresetEditPage(): JSX.Element {
             return;
         }
 
-        dispatch(clearErrors());
         setIsBusy(true);
 
         presetsApiService
-            .determinePresetState(preset.key, presetVersion.version, customerData, {
+            .determinePresetState(preset.key, presetVersion.version, elementData, {
                 disableValidation: false,
                 disableVisibilities: false,
             })
             .then((presetState) => {
-                dispatch(hydrateFromDerivation(presetState));
+                setElementData(presetState);
 
                 // errors always contains 3 base errors from the form (can change if form will extend in the future)
                 if (presetState.errors && Object.keys(presetState.errors).length <= 3) {
@@ -297,12 +295,12 @@ export function PresetEditPage(): JSX.Element {
             return;
         }
 
-        setCustomerData(elementData);
+        setElementData(elementData);
 
         setIsDeriving(true);
         dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
 
-        withAsyncWrapper<void, FormState>({
+        withAsyncWrapper<void, ElementData>({
             desiredMinRuntime: 600,
             main: async () => {
                 return await presetsApiService.determinePresetState(
@@ -316,7 +314,7 @@ export function PresetEditPage(): JSX.Element {
                 );
             },
         }).then((presetState) => {
-            dispatch(hydrateFromDerivationWithoutErrors(presetState));
+            setElementData(presetState);
         }).catch((err) => {
             console.error(err);
             dispatch(showErrorSnackbar('Fehler beim Berechnen des Formularzustands'));
@@ -439,11 +437,12 @@ export function PresetEditPage(): JSX.Element {
                 >
                     <Container>
                         <ViewDispatcherComponent
+                            rootElement={presetVersion.root}
                             allElements={allElements}
                             element={presetVersion.root}
                             isBusy={isBusy}
                             isDeriving={isDeriving}
-                            elementData={customerData}
+                            elementData={elementData}
                             onElementDataChange={handleValueChange}
                             onElementBlur={undefined}
                             mode="editor"

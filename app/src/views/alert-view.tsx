@@ -5,7 +5,7 @@ import {AlertComponent} from "../components/alert/alert-component";
 export const AlertView: BaseView<AlertElement, any> = ({element}) => {
     return (
         <AlertComponent
-            title={element.title}
+            title={element.title ?? ''}
             text={element.text ?? ''}
             color={element.alertType ?? 'info'}
             richtext

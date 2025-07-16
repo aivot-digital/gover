@@ -162,6 +162,7 @@ export function FormListPage(): JSX.Element {
 
             <AppHeader
                 mode={AppMode.Staff}
+                onDeleteFormData={() => {}}
             />
 
             <Introductory

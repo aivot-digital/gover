@@ -375,8 +375,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={application?.root.introductionStep.initiativeLogoLink}
-                    logoAlt={application?.root.introductionStep.initiativeName}
+                    logoLink={application?.root.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={application?.root.introductionStep?.initiativeName ?? undefined}
                 />
             }
 

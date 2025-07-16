@@ -72,7 +72,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                         lg={4}
                     >
                         <NumberFieldComponent
-                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles}
+                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles ?? undefined}
                             label="Mindestanzahl an Anlagen"
                             hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
                             onChange={(val) => {
@@ -90,7 +90,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                         lg={4}
                     >
                     <NumberFieldComponent
-                        value={props.element.maxFiles}
+                        value={props.element.maxFiles ?? undefined}
                         label="Maximalanzahl an Anlagen"
                         hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
                         onChange={(val) => {
@@ -111,7 +111,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             >
                 <MultiCheckboxComponent
                     label="Erlaubte Dateiendungen"
-                    value={props.element.extensions}
+                    value={props.element.extensions ?? undefined}
                     onChange={(val) => {
                         props.onPatch({
                             extensions: val,

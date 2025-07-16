@@ -5,12 +5,13 @@ import {IdentityProviderInfo} from '../../models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
 import {IdentityValue} from '../../models/identity-value';
+import {IdentityData} from '../../models/identity-data';
 
 export interface IdentityButtonProps {
     identityProviderLink: IdentityProviderLink;
     identityProviderInfo: IdentityProviderInfo;
     isBusy: boolean;
-    value?: IdentityValue | undefined | null;
+    value?: IdentityData | undefined | null;
 }
 
 export function IdentityButton(props: IdentityButtonProps) {
@@ -37,7 +38,7 @@ export function IdentityButton(props: IdentityButtonProps) {
         if (value == null) {
             return false;
         }
-        return value.identityProviderKey === identityProviderInfo.key;
+        return value.providerKey === identityProviderInfo.key;
     }, [identityProviderInfo, value]);
 
     const successColorWithOpacity = useMemo(() => {

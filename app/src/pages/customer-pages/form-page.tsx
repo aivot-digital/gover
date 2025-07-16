@@ -24,14 +24,16 @@ import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
 import {usePrefill} from '../../hooks/use-prefill';
+import {ElementData} from '../../models/element-data';
+import {ElementType} from '../../data/element-type/element-type';
+import {mapElementData, walkElementData} from '../../utils/element-data-utils';
+import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 
 export const DialogSearchParam = 'dialog';
 
 export function FormPage() {
     const baseTheme = useTheme();
     const api = useApi();
-
-    usePrefill();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -48,7 +50,13 @@ export function FormPage() {
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const identityId = useAppSelector(selectIdentityId);
 
+    const [elementData, setElementData] = useState<ElementData>({});
+
     const [theme, setTheme] = useState<Theme>();
+
+    usePrefill({
+        onPrefill: setElementData,
+    });
 
     useEffect(() => {
         dispatch(showDialog(metaDialogName ?? undefined));
@@ -87,12 +95,19 @@ export function FormPage() {
     }, [theme, baseTheme]);
 
     if (failedToLoad) {
-        return <><MetaElement
-            title="Seite nicht gefunden"
-            titlePrefix={provider}
-        /><NotFoundPage /></>;
+        return (
+            <>
+                <MetaElement
+                    title="Seite nicht gefunden"
+                    titlePrefix={provider}
+                />
+                <NotFoundPage />
+            </>
+        );
     } else if (form == null) {
-        return <LoadingPlaceholder />;
+        return (
+            <LoadingPlaceholder />
+        );
     } else {
         const allElements = flattenElements(form.root);
 
@@ -100,20 +115,26 @@ export function FormPage() {
             <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
-                        title={form.root.tabTitle ?? form.root.headline}
+                        title={form.root.tabTitle ?? form.root.headline ?? ''}
                         titlePrefix={provider}
                     />
 
                     <ViewDispatcherComponent
+                        rootElement={form.root}
                         allElements={allElements}
                         element={form.root}
                         isBusy={false}
                         isDeriving={false}
                         mode="viewer"
+                        elementData={elementData}
+                        onElementDataChange={setElementData}
+                        derivationTriggerIdQueue={[]}
+                        disableVisibility={false}
                     />
 
                     <LoadCustomerInputDialog
                         form={form}
+                        onElementDataLoad={setElementData}
                     />
 
                     <HelpDialog

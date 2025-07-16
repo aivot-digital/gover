@@ -4,5 +4,5 @@ export interface AppHeaderMenuProps {
     mode: AppMode;
     anchorElement: Element;
     onClose: () => void;
-    onDeleteFormData?: () => void;
+    onDeleteFormData: () => void;
 }

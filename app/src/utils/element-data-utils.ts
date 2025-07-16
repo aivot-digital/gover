@@ -1,9 +1,10 @@
-import {ElementDataObject, ElementData} from '../models/element-data';
+import {ElementData, ElementDataObject, newElementDataObject} from '../models/element-data';
 import {AnyElement} from '../models/elements/any-element';
 import {ElementType} from '../data/element-type/element-type';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
+import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 
 export function resolveOverride(originalElement: AnyElement, data: ElementData): AnyElement {
     const elementId = originalElement.id;
@@ -64,33 +65,38 @@ export interface MergeOptions {
     dontOverwriteErrors?: boolean;
 }
 
+const ADDITIONAL_MERGE_KEYS = [
+    IdentityCustomerInputKey,
+];
+
 export function mergeDerivedElementDataWithLocal(derivedElementData: ElementData, localElementData: ElementData, rootElement: AnyElement, options: MergeOptions): ElementData {
+    const mergedData = _mergeDerivedElementDataWithLocal(derivedElementData, localElementData, rootElement, options);
+
+    for (const additionalKey of ADDITIONAL_MERGE_KEYS) {
+        const localElementDataObject = localElementData[additionalKey] || newElementDataObject(ElementType.Text);
+        const derivedElementDataObject = derivedElementData[additionalKey] || newElementDataObject(ElementType.Text);
+
+        mergedData[additionalKey] = {
+            ...localElementDataObject,
+            isVisible: derivedElementDataObject.isVisible,
+            computedValue: derivedElementDataObject.computedValue,
+            computedErrors: options.dontOverwriteErrors ? localElementDataObject.computedErrors : derivedElementDataObject.computedErrors,
+            computedOverride: derivedElementDataObject.computedOverride,
+        };
+    }
+
+    return mergedData;
+}
+
+function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, localElementData: ElementData, rootElement: AnyElement, options: MergeOptions): ElementData {
     const {
         id: elementId,
         type: elementType,
     } = rootElement;
 
-    const derivedElementDataObject: ElementDataObject = derivedElementData[elementId] || {
-        $type: elementType,
-        computedErrors: undefined,
-        isVisible: true,
-        computedValue: undefined,
-        inputValue: undefined,
-        computedOverride: undefined,
-        isDirty: false,
-        isPrefilled: false,
-    };
+    const derivedElementDataObject: ElementDataObject = derivedElementData[elementId] ?? newElementDataObject(elementType);
 
-    const localElementDataObject: ElementDataObject = localElementData[elementId] || {
-        $type: elementType,
-        computedErrors: undefined,
-        isVisible: true,
-        computedValue: undefined,
-        inputValue: undefined,
-        computedOverride: undefined,
-        isDirty: false,
-        isPrefilled: false,
-    };
+    const localElementDataObject: ElementDataObject = localElementData[elementId] ?? newElementDataObject(elementType);
 
     const mergedElementDataObject: ElementDataObject = {
         ...localElementDataObject,
@@ -116,7 +122,7 @@ export function mergeDerivedElementDataWithLocal(derivedElementData: ElementData
 
                     for (const childElement of rootElement.children) {
                         const childMergedData = mergeDerivedElementDataWithLocal(
-                            derivedChildElementData,
+                            derivedChildElementData ?? {},
                             localChildElementData,
                             childElement,
                             options,
@@ -125,7 +131,7 @@ export function mergeDerivedElementDataWithLocal(derivedElementData: ElementData
                         localChildElementData = {
                             ...localChildElementData,
                             ...childMergedData,
-                        }
+                        };
                     }
 
                     localChildInputValue[i] = localChildElementData;
@@ -172,4 +178,51 @@ export function walkElementData(
             walkElementData(child, currentElementData, callback);
         }
     }
+}
+
+export function mapElementData(
+    currentElement: AnyElement,
+    currentElementData: ElementData,
+    callback: (elem: AnyElement, value: ElementDataObject | null | undefined) => ElementDataObject | null | undefined,
+): ElementData {
+    const elementDataObject: ElementDataObject = currentElementData[currentElement.id] ?? newElementDataObject(currentElement.type);
+
+    const callbackedElementDataObject = callback(currentElement, elementDataObject);
+
+    let newElementData: ElementData = {
+        ...currentElementData,
+        [currentElement.id]: callbackedElementDataObject != null ? callbackedElementDataObject : elementDataObject,
+    };
+
+    const val = resolveValue(currentElement, newElementData);
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        if (Array.isArray(val)) {
+            const mapped = val.map((childData) => {
+                const childMappedData: ElementData = {};
+                for (const child of currentElement.children || []) {
+                    const childMappedValue = mapElementData(child, childData, callback);
+                    Object.assign(childMappedData, childMappedValue);
+                }
+                return childMappedData;
+            });
+            newElementData = {
+                ...newElementData,
+                [currentElement.id]: {
+                    ...elementDataObject,
+                    inputValue: mapped,
+                },
+            };
+        }
+    } else if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            const childMappedData = mapElementData(child, newElementData, callback);
+            newElementData = {
+                ...newElementData,
+                ...childMappedData,
+            };
+        }
+    }
+
+    return newElementData;
 }

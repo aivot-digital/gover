@@ -1,7 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
-import {addError, hydrateCustomerInput, prefillElementsFromIdentityProvider, selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, setHasLoadedSavedCustomerInput} from '../../../../slices/app-slice';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {IdentityCustomerInputKey} from '../../constants/identity-customer-input-key';
 import {IdentityProviderLink} from '../../models/identity-provider-link';
 import {IdentityProviderInfo} from '../../models/identity-provider-info';
@@ -10,17 +8,25 @@ import {IdentityButton} from '../identity-button/identity-button';
 import {useSearchParams} from 'react-router-dom';
 import {IdentityStateQueryParam} from '../../constants/identity-state-query-param';
 import {IdentityResultState} from '../../enums/identity-result-state';
-import {IdentityValue} from '../../models/identity-value';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
-import {CustomerInputService} from '../../../../services/customer-input-service';
 import {IdentityIdQueryParam} from '../../constants/identity-id-query-param';
-import {selectIdentityId, setIdentityId} from '../../../../slices/identity-slice';
 import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
+import {IdentityData} from '../../models/identity-data';
+import {ElementData} from '../../../../models/element-data';
+import {CustomerInputService} from '../../../../services/customer-input-service';
+import {prefillIdentityData} from '../../../../utils/prefill-elements';
+import {ElementType} from '../../../../data/element-type/element-type';
+import {AnyElement} from '../../../../models/elements/any-element';
+import {FormPublicProjection} from '../../../../models/entities/form';
 
 interface IdentityButtonGroupProps {
+    rootElement: AnyElement;
     isBusy: boolean;
+    elementData: ElementData;
+    onElementDataChange: (elementData: ElementData) => void;
+    form: FormPublicProjection;
 }
 
 interface CombinedIdentityProviderLink {
@@ -29,117 +35,87 @@ interface CombinedIdentityProviderLink {
 }
 
 export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
+    const {
+        rootElement,
+        isBusy,
+        elementData,
+        onElementDataChange,
+        form,
+    } = props;
+
     const dispatch = useAppDispatch();
 
     const [searchParams, setSearchParams] = useSearchParams();
-    const form = useAppSelector(selectLoadedForm);
-    const identityId = useAppSelector(selectIdentityId);
 
-    const value: IdentityValue | undefined | null = useAppSelector(selectCustomerInputValue(IdentityCustomerInputKey));
-    const error = useAppSelector(selectCustomerInputError(IdentityCustomerInputKey));
+    const value: IdentityData | undefined | null = elementData[IdentityCustomerInputKey]?.inputValue ?? undefined;
+    const error: string[] | null | undefined = elementData[IdentityCustomerInputKey]?.computedErrors ?? undefined;
 
     const [identityLinks, setIdentityLinks] = useState<CombinedIdentityProviderLink[]>();
-    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [identityData, setIdentityData] = useState<IdentityData>();
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
-        if (form == null) {
-            return;
-        }
-
-        FormsApiService
-            .getIdentityProviders(form.id)
-            .then((page) => {
-                const identityLinks: CombinedIdentityProviderLink[] = [];
-
-                for (const identityProvider of page.content) {
-                    const link = form.identityProviders.find((idpl) => idpl.identityProviderKey === identityProvider.key);
-
-                    if (link == null) {
-                        continue;
-                    }
-
-                    identityLinks.push({
-                        link: link,
-                        provider: identityProvider,
-                    });
-                }
-
-                setIdentityLinks(identityLinks);
-            })
+        getIdentityProviderLinks(form)
+            .then(setIdentityLinks)
             .catch((err) => {
                 console.error('Error fetching identity providers:', err);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Nutzerkontenanbieter.'));
             });
     }, [form]);
 
     useEffect(() => {
-        const stateStr = searchParams.get(IdentityStateQueryParam);
-        const state = stateStr != null ? parseInt(stateStr) : undefined;
-        const id = searchParams.get(IdentityIdQueryParam);
-
-        if (state == null) {
-            return;
-        }
-
-        if (form == null) {
-            return;
-        }
-
-        if (id == null) {
-            return;
-        }
-
-        if (state === IdentityResultState.Success) {
-            dispatch(setIdentityId(id));
-            setShowSuccessDialog(true);
-        } else {
-            dispatch(addError({
-                key: IdentityCustomerInputKey,
-                error: 'Bei der Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
-            }));
-            dispatch(showErrorSnackbar('Bei der Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.'));
-        }
-    }, [searchParams, form]);
-
-    useEffect(() => {
-        if (identityId == null) {
-            return;
-        }
-
-        if (form == null) {
-            return;
-        }
-
-        IdentityProvidersApiService
-            .fetchIdentity(identityId)
-            .then(({providerKey, metadataIdentifier, attributes}) => {
-                const lastSaveData = CustomerInputService
-                    .loadCustomerInputState(form);
-
-                if (lastSaveData != null) {
-                    dispatch(hydrateCustomerInput(lastSaveData));
-                    dispatch(setHasLoadedSavedCustomerInput(true));
+        processIdentityResult(searchParams, setSearchParams)
+            .then((res) => {
+                if (res == null) {
+                    // No identity data or error, do nothing
+                } else if (typeof res === 'string') {
+                    // Error message
+                    console.error(res);
+                    dispatch(showErrorSnackbar(res));
+                } else {
+                    // Valid identity data
+                    setIdentityData(res);
                 }
-
-                dispatch(prefillElementsFromIdentityProvider({
-                    identityProviderKey: providerKey,
-                    metadataIdentifier: metadataIdentifier,
-                    userInfo: attributes,
-                }));
-
-                setSearchParams({});
             })
             .catch((err) => {
-                console.error(err);
-                dispatch(addError({
-                    key: IdentityCustomerInputKey,
-                    error: 'Beim Abruf der Authentifizierungsdaten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
-                }));
+                console.error('Error processing identity result:', err);
+                dispatch(showErrorSnackbar(err.message || 'Ein Fehler ist aufgetreten.'));
             });
-    }, [identityId, form]);
+    }, [searchParams]);
 
     const successIdp = useMemo(() => {
-        return (identityLinks ?? []).find(idp => idp.link.identityProviderKey === value?.identityProviderKey);
+        return (identityLinks ?? []).find(idp => idp.link.identityProviderKey === value?.providerKey);
     }, [identityLinks, value]);
+
+    const handleIDPSuccess = () => {
+        if (identityData == null) {
+            return;
+        }
+
+        setIsProcessing(true);
+
+        const lastSaveData: ElementData = CustomerInputService
+            .loadCustomerInputState(form) ?? {};
+
+        const prefilledData = prefillIdentityData(rootElement, lastSaveData, identityData);
+
+        onElementDataChange({
+            ...prefilledData,
+            [IdentityCustomerInputKey]: {
+                $type: ElementType.IntroductionStep,
+                inputValue: identityData,
+                isDirty: false,
+                isVisible: true,
+                isPrefilled: true,
+                computedErrors: undefined,
+                computedValue: undefined,
+                computedOverride: undefined,
+            },
+        });
+
+        setIsProcessing(false);
+        setIdentityData(undefined);
+    };
 
     if (form == null || identityLinks == null || identityLinks.length === 0) {
         return null;
@@ -215,7 +191,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
                                 key={link.identityProviderKey}
                                 identityProviderLink={link}
                                 identityProviderInfo={provider}
-                                isBusy={props.isBusy}
+                                isBusy={isBusy}
                                 value={value}
                             />
                         ))
@@ -238,12 +214,12 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             </Box>
 
             <Dialog
-                onClose={() => setShowSuccessDialog(false)}
-                open={showSuccessDialog}
+                onClose={() => setIdentityData(undefined)}
+                open={identityData != null}
                 maxWidth="xs"
             >
                 <DialogTitleWithClose
-                    onClose={() => setShowSuccessDialog(false)}
+                    onClose={() => setIdentityData(undefined)}
                     closeTooltip="Schließen"
                 >
                     Authentifizierung erfolgreich
@@ -254,8 +230,9 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        onClick={() => setShowSuccessDialog(false)}
+                        onClick={handleIDPSuccess}
                         variant="contained"
+                        disabled={isProcessing}
                     >
                         Mit Antrag fortfahren
                     </Button>
@@ -263,4 +240,58 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             </Dialog>
         </>
     );
+}
+
+async function getIdentityProviderLinks(form: FormPublicProjection) {
+    const idps = await FormsApiService.getIdentityProviders(form.id);
+
+    const identityLinks: CombinedIdentityProviderLink[] = [];
+
+    for (const identityProvider of idps.content) {
+        const link = form
+            .identityProviders
+            .find((idpl) => idpl.identityProviderKey === identityProvider.key);
+
+        if (link == null) {
+            continue;
+        }
+
+        identityLinks.push({
+            link: link,
+            provider: identityProvider,
+        });
+    }
+
+    return identityLinks;
+}
+
+async function processIdentityResult(searchParams: URLSearchParams, setSearchParams: (sp: URLSearchParams) => void): Promise<string | IdentityData | undefined> {
+    const identityId = searchParams.get(IdentityIdQueryParam);
+    if (identityId == null) {
+        return undefined;
+    }
+
+    const stateStr = searchParams.get(IdentityStateQueryParam);
+    const state = stateStr != null ? parseInt(stateStr) : undefined;
+    if (state == null || isNaN(state)) {
+        return undefined;
+    }
+
+    if (state !== IdentityResultState.Success) {
+        return 'Bei der Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.';
+    }
+
+    let result: IdentityData | undefined;
+    try {
+        result = await IdentityProvidersApiService.fetchIdentity(identityId);
+    } catch (err) {
+        console.error('Error fetching identity data:', err);
+        throw new Error('Beim Abruf der Authentifizierungsdaten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
+    }
+
+    searchParams.delete(IdentityIdQueryParam);
+    searchParams.delete(IdentityStateQueryParam);
+    setSearchParams(searchParams);
+
+    return result;
 }

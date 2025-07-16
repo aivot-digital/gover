@@ -76,11 +76,11 @@ export function TableFieldComponentSummary({
                                     <TableRow key={index}>
                                         {
                                             (model.fields ?? []).map(field => (
-                                                <TableCell key={field.label} sx={{minWidth: '126px'}}>
+                                                <TableCell key={field.key ?? index.toString()} sx={{minWidth: '126px'}}>
                                                     {
                                                         field.datatype === 'number' ?
-                                                            formatNumStringToGermanNum(value[field.label], field.decimalPlaces) :
-                                                            value[field.label]
+                                                            formatNumStringToGermanNum(value[field.label ?? ''], field.decimalPlaces) :
+                                                            value[field.key ?? '']
                                                     }
                                                 </TableCell>
                                             ))

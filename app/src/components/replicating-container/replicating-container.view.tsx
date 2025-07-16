@@ -16,12 +16,12 @@ import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
 import {type ElementData} from '../../models/element-data';
-import {walkElementData} from '../../utils/element-data-utils';
 
 export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ElementData[]>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
 
     const {
+        rootElement,
         element,
         value,
         setValue,
@@ -225,6 +225,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             {
                                 (element.children ?? []).map((child, childIndex) => (
                                     <ViewDispatcherComponent
+                                        rootElement={rootElement}
                                         allElements={allElements}
                                         key={childIndex}
                                         element={child}

@@ -110,6 +110,7 @@ export function AppToolbar(props: AppToolbarProps): JSX.Element {
                     mode={AppMode.Staff}
                     onClose={handleCloseMenu}
                     anchorElement={menuAnchorEl}
+                    onDeleteFormData={() => {}}
                 />
             }
         </>

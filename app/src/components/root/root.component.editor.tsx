@@ -517,7 +517,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     <CheckboxFieldComponent
                         label="Das Formular erfordert eine Unterschrift"
                         hint="Wenn diese Option aktiviert ist, wird im PDF-Vordruck ein Unterschriftenfeld eingefügt. Dies erfolgt nur, sofern die PDF-Vorlage dies unterstützt."
-                        value={props.element.offlineSignatureNeeded}
+                        value={props.element.offlineSignatureNeeded ?? false}
                         onChange={val => {
                             props.onPatch({
                                 offlineSignatureNeeded: val,

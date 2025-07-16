@@ -9,10 +9,10 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
-        valueOverride,
+        onBlur,
     } = props;
 
     const {
@@ -28,27 +28,27 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
     }, [isDeriving, element]);
 
     const handleBlur = (val: string | null | undefined) => {
-        if (valueOverride?.onBlur) {
-            valueOverride.onBlur(element.id, val);
+        if (onBlur != null) {
+            onBlur(val, [element.id]);
         }
     };
 
     return (
         <TextFieldComponent
             label={element.label ?? ''}
-            autocomplete={element.autocomplete}
-            placeholder={element.placeholder}
-            error={error}
-            hint={element.hint}
-            multiline={element.isMultiline}
-            required={element.required}
+            autocomplete={element.autocomplete ?? undefined}
+            placeholder={element.placeholder ?? undefined}
+            error={errors != null ? errors.join(' ') : undefined}
+            hint={element.hint ?? undefined}
+            multiline={element.isMultiline ?? undefined}
+            required={element.required ?? undefined}
             disabled={isDisabled}
             busy={isBusy}
-            maxCharacters={element.maxCharacters}
-            minCharacters={element.minCharacters}
+            maxCharacters={element.maxCharacters ?? undefined}
+            minCharacters={element.minCharacters ?? undefined}
             value={value?.toString() ?? undefined}
             onChange={val => setValue(val)}
-            onBlur={valueOverride?.onBlur ? handleBlur : undefined}
+            onBlur={onBlur != null ? handleBlur : undefined}
             debounce={1000}
         />
     );

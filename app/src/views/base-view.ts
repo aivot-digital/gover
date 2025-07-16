@@ -3,6 +3,7 @@ import React, {type FunctionComponent} from 'react';
 import {type ElementData} from '../models/element-data';
 
 export interface BaseViewProps<M extends AnyElement, V> {
+    rootElement: AnyElement;
     element: M;
     setValue: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
     onBlur: (value: V | null | undefined, triggeringElementIds?: string[]) => void;

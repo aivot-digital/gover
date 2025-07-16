@@ -176,7 +176,7 @@ export function CodeTabCondition({
                                                                 value: val != null ? val.toString() : '',
                                                             });
                                                         }}
-                                                        decimalPlaces={referencedElement.element.type === ElementType.Number ? referencedElement.element.decimalPlaces : 0}
+                                                        decimalPlaces={referencedElement.element.type === ElementType.Number ? (referencedElement.element.decimalPlaces ?? 0) : 0}
                                                         hint={valueHelperText ?? undefined}
                                                         disabled={!editable}
                                                     />

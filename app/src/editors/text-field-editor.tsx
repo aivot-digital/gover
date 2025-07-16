@@ -94,7 +94,7 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                 >
                     <NumberFieldComponent
                         label="Minimalanzahl an Zeichen"
-                        value={element.minCharacters}
+                        value={element.minCharacters ?? undefined}
                         onChange={(val) => {
                             onPatch({
                                 minCharacters: val,
@@ -112,7 +112,7 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                 >
                     <NumberFieldComponent
                         label="Maximalanzahl an Zeichen"
-                        value={element.maxCharacters}
+                        value={element.maxCharacters ?? undefined}
                         onChange={(val) => {
                             onPatch({
                                 maxCharacters: val,
@@ -130,7 +130,7 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                 >
                     <CheckboxFieldComponent
                         label="Mehrzeilige Texteingabe"
-                        value={element.isMultiline}
+                        value={element.isMultiline ?? undefined}
                         onChange={(checked) => {
                             onPatch({
                                 isMultiline: checked,

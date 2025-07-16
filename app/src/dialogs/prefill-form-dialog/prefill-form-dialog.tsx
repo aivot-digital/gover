@@ -61,7 +61,7 @@ export function canPrefillElement(e: AnyElement): boolean {
 
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
-    const [inputs, setInputs] = useState<ElementData>({});
+    const [elementData, setElementData] = useState<ElementData>({});
     const form = useAppSelector(selectLoadedForm);
 
     const link = useMemo(() => {
@@ -71,12 +71,20 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
         const versionedLink = `${window.location.protocol}//${window.location.host}/${form.slug}/${form.version}`;
 
+        const inputs: Record<string, any> = {};
+        for (const key of Object.keys(elementData)) {
+            const dataObject = elementData[key];
+            if (dataObject != null) {
+                inputs[key] = dataObject.inputValue;
+            }
+        }
+
         const queryParams = new URLSearchParams({
             [prefillQueryParamKey]: JSON.stringify(inputs),
         }).toString();
 
         return `${versionedLink}?${queryParams}`;
-    }, [inputs, form]);
+    }, [elementData, form]);
 
     const linkTooLong = useMemo(() => {
         return link.length > MAX_LINK_LENGTH;
@@ -136,7 +144,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             return;
         }
 
-        downloadObjectFile(`prefill-${form.slug}-${form.version}.json`, inputs);
+        downloadObjectFile(`prefill-${form.slug}-${form.version}.json`, elementData);
     };
 
     const handleImport = () => {
@@ -163,7 +171,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 if (Object.keys(validValues).length === 0) {
                     dispatch(showErrorSnackbar('Keine gültigen Eingaben zum Importieren gefunden.'));
                 } else {
-                    setInputs(validValues);
+                    setElementData(validValues);
                     dispatch(showSuccessSnackbar('Daten erfolgreich importiert!'));
                 }
             })
@@ -174,7 +182,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
     };
 
     const handleClose = () => {
-        setInputs({});
+        setElementData({});
         props.onClose();
     };
 
@@ -306,17 +314,19 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                                                     {elements.map((element) => (
                                                         <ViewDispatcherComponent
+                                                            rootElement={element}
                                                             key={element.id}
                                                             allElements={[]}
                                                             element={element}
                                                             isBusy={false}
                                                             isDeriving={false}
                                                             mode="viewer"
-                                                            elementData={inputs}
-                                                            onElementDataChange={setInputs}
+                                                            elementData={elementData}
+                                                            onElementDataChange={setElementData}
                                                             onElementBlur={undefined}
                                                             disableVisibility={true}
                                                             scrollContainerRef={undefined}
+                                                            derivationTriggerIdQueue={[]}
                                                         />
                                                     ))}
                                                 </Grid>

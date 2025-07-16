@@ -60,20 +60,26 @@ function recursivelyApply<T extends AnyElement>(element: T, callback: <C extends
     });
 
     if (isRootElement(appliedElement)) {
-        appliedElement.introductionStep = callback({
-            ...appliedElement.introductionStep,
-        });
+        if (appliedElement.introductionStep != null) {
+            appliedElement.introductionStep = callback({
+                ...appliedElement.introductionStep,
+            });
+        }
 
-        appliedElement.summaryStep = callback({
-            ...appliedElement.summaryStep,
-        });
+        if (appliedElement.summaryStep != null) {
+            appliedElement.summaryStep = callback({
+                ...appliedElement.summaryStep,
+            });
+        }
 
-        appliedElement.submitStep = callback({
-            ...appliedElement.submitStep,
-        });
+        if (appliedElement.submitStep != null) {
+            appliedElement.submitStep = callback({
+                ...appliedElement.submitStep,
+            });
+        }
     }
 
-    if (isAnyElementWithChildren(appliedElement)) {
+    if (isAnyElementWithChildren(appliedElement) && appliedElement.children != null) {
         appliedElement.children = appliedElement
             .children
             .map((e) => recursivelyApply(e as any, callback));

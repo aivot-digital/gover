@@ -9,7 +9,7 @@ export function flattenElements(elem: AnyElement, skipReplicatingChildren?: bool
     ];
 
     if (isAnyElementWithChildren(elem)) {
-        for (const child of elem.children) {
+        for (const child of elem.children ?? []) {
             if (skipReplicatingChildren === true && child.type === ElementType.ReplicatingContainer) {
                 res.push(child);
             } else {
@@ -35,7 +35,7 @@ export function flattenElementsWithParents(elem: AnyElement, parents: AnyElement
     ];
 
     if (isAnyElementWithChildren(elem)) {
-        for (const child of elem.children) {
+        for (const child of elem.children ?? []) {
             if (skipReplicatingChildren === true && child.type === ElementType.ReplicatingContainer) {
                 res.push({
                     element: child,
