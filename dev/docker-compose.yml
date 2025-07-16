@@ -29,11 +29,11 @@ services:
     ports:
       - "6379:6379"
 
-  puppet:
-    image: ghcr.io/aivot-digital/puppet-pdf:2.0.0
+  gotenberg:
+    image: gotenberg/gotenberg:8
     restart: always
-    environment:
-      PORT: 9090
+    ports:
+      - "9191:3000"
     network_mode: host
 
   minio:

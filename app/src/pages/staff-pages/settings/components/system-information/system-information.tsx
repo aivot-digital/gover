@@ -133,8 +133,8 @@ export function SystemInformation() {
         },
         {
             label: 'PDF Service',
-            icon: getStatusIcon('puppet'),
-            children: getStatusLabel('puppet'),
+            icon: getStatusIcon('gotenberg'),
+            children: getStatusLabel('gotenberg'),
         },
     ];
 

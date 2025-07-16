@@ -33,7 +33,7 @@ export interface S3Component {
     };
 }
 
-export interface PuppetComponent {
+export interface GotenbergComponent {
     status: Status;
     details?: {
         error?: string;
@@ -56,6 +56,6 @@ export interface HealthDataComponents {
     diskSpace: DiskSpaceComponent;
     mail: MailComponent;
     s3: S3Component;
-    puppet: PuppetComponent;
+    gotenberg: GotenbergComponent;
     redis: RedisComponent;
 }
