@@ -125,39 +125,39 @@ def main():
         f.write("## 🧾 License Compliance Report\n\n")
         f.write("This report analyzes the licenses of all dependencies used in this project, based on the Software Bill of Materials (SBOM).\n")
         f.write("It includes both direct and transitive dependencies. The goal is to ensure that only approved open source licenses are used.\n\n")
-        f.write("For more information, see the [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-).\n\n")
-        f.write("_This comment is automatically updated with every push to ensure up-to-date compliance information._\n\n")
+        f.write("For more information, see the [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-). This comment is automatically updated with every push.\n\n")
 
         if caution:
             f.write("### ⚠️ Packages with caution or mixed licenses:\n\n")
+            f.write("The following dependencies use licenses that are either partially approved or ambiguous. Each license must be reviewed individually by a project administrator to determine its acceptability.\n")
             for name, version, lic, purl in caution:
                 f.write(f"- `{name}@{version}` → `{lic}` {f'[`{purl}`]' if purl else ''}\n")
 
         if denied:
             f.write("\n### ❌ Prohibited licenses:\n\n")
-            f.write("> The following dependencies use licenses that are not allowed under any circumstances. These components **must not be used** in this project.\n")
-            f.write("> Please **remove and replace** them as soon as possible.\n\n")
+            f.write("The following dependencies use licenses that are not allowed under any circumstances. These components **must not be used** in this project. Please remove and replace them as soon as possible.\n\n")
             for name, version, lic, purl in denied:
                 f.write(f"- `{name}@{version}` → `{lic}` {f'[`{purl}`]' if purl else ''}\n")
 
         if unknown:
             f.write("\n### ❓ Unknown or unverified licenses:\n\n")
-            f.write("> The following dependencies have unknown or unverified licenses.\n")
-            f.write("> Please **contact the project administrators** to review and validate these components.\n\n")
+            f.write("The following dependencies have unknown or unverified licenses. Please contact a project administrators to review and validate these components.\n\n")
             for name, version, lic, purl in unknown:
                 f.write(f"- `{name}@{version}` → `{lic}` {f'[`{purl}`]' if purl else ''}\n")
 
         if not caution and not denied and not unknown:
             f.write("\n### ✅ All licenses approved.\n")
 
-        f.write("\n---\n")
-        f.write("> **Note:** This report only includes dependencies explicitly declared by the application (e.g. in `package.json`, `pom.xml`, etc.). Dependencies introduced by Docker base images, GitHub Actions, or external CI/CD tools are not included and must be reviewed manually.\n")
+        f.write("\n\n> **Note:** This report only includes dependencies explicitly declared by the application (e.g. in `package.json`, `pom.xml`, etc.). Dependencies introduced by Docker base images, GitHub Actions, or external CI/CD tools are not included and must be reviewed manually.\n")
 
     if denied:
         print("❌ Compliance check failed due to prohibited licenses.")
         sys.exit(1)
     elif unknown:
         print("⚠️ Compliance check completed with unknown licenses.")
+        sys.exit(0)
+    elif caution:
+        print("⚠️ Compliance check completed with caution/mixed licenses.")
         sys.exit(0)
     else:
         print("✅ License compliance check passed.")
