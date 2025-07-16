@@ -126,6 +126,7 @@ def main():
         f.write("This report analyzes the licenses of all dependencies used in this project, based on the Software Bill of Materials (SBOM).\n")
         f.write("It includes both direct and transitive dependencies. The goal is to ensure that only approved open source licenses are used.\n\n")
         f.write("For more information, see the [Contribution Guidelines](https://github.com/aivot-digital/.github/blob/main/docs/CONTRIBUTING.md#dependencies-). This comment is automatically updated with every push.\n\n")
+        f.write("\n---\n\n")
 
         if caution:
             f.write("### ⚠️ Packages with caution or mixed licenses:\n\n")
@@ -141,13 +142,14 @@ def main():
 
         if unknown:
             f.write("\n### ❓ Unknown or unverified licenses:\n\n")
-            f.write("The following dependencies have unknown or unverified licenses. Please contact a project administrators to review and validate these components.\n\n")
+            f.write("The following dependencies have unknown or unverified licenses. Please contact a project administrator to review and validate these components.\n\n")
             for name, version, lic, purl in unknown:
                 f.write(f"- `{name}@{version}` → `{lic}` {f'[`{purl}`]' if purl else ''}\n")
 
         if not caution and not denied and not unknown:
             f.write("\n### ✅ All licenses approved.\n")
 
+        f.write("\n---\n")
         f.write("\n\n> **Note:** This report only includes dependencies explicitly declared by the application (e.g. in `package.json`, `pom.xml`, etc.). Dependencies introduced by Docker base images, GitHub Actions, or external CI/CD tools are not included and must be reviewed manually.\n")
 
     if denied:
