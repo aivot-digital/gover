@@ -182,11 +182,11 @@ public class SubmitController {
                     ._formatValue(rawCaptchaValue);
 
             var payloadNode = formattedCaptchaValue != null ? formattedCaptchaValue.get("payload") : null;
-            if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
+            if (payloadNode == null ) {
                 throw new Exception("Bitte bestätigen Sie, dass Sie ein Mensch sind.");
             }
 
-            var payload = payloadNode.asText();
+            var payload = payloadNode.toString();
             var captchaVerificationStatus = altchaService.verify(payload);
 
             if (!captchaVerificationStatus) {

@@ -38,8 +38,8 @@ public class Submission {
     private LocalDateTime archived;
 
     @NotNull
-    @Column(columnDefinition = "jsonb")
     @Convert(converter = ElementDataConverter.class)
+    @Column(columnDefinition = "jsonb")
     private ElementData customerInput;
 
     private Integer destinationId;

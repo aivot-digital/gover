@@ -19,6 +19,7 @@ import {VisibilityCodeTab} from '../element-editor-code-tab/visibility-code-tab'
 import {OverrideCodeTab} from '../element-editor-code-tab/override-code-tab';
 import {ValueCodeTab} from '../element-editor-code-tab/value-code-tab';
 import {ValidationCodeTab} from '../element-editor-code-tab/validation-code-tab';
+import {ReferencesTab} from '../element-editor-references-tab/references-tab';
 
 export function ElementEditorContent<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): JSX.Element | null {
     const {
@@ -133,6 +134,13 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
                         props.onChange(struct);
                     }}
                     editable={props.editable}
+                />
+            );
+        case DefaultTabs.references:
+            return (
+                <ReferencesTab
+                    rootElement={props.entity.root}
+                    element={props.element}
                 />
             );
         case DefaultTabs.test:

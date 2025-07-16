@@ -7,11 +7,12 @@ import de.aivot.GoverBackend.enums.ElementType;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-public class ElementDataObject {
+public class ElementDataObject implements Serializable {
     @JsonProperty("$type")
     private ElementType type;
     @Nullable

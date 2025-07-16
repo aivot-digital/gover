@@ -88,7 +88,10 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 />
             }
 
-
+            <Tab
+                label="Referenzen"
+                value={DefaultTabs.references}
+            />
 
             <Tab
                 label="Elementstruktur"

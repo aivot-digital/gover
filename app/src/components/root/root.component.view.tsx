@@ -50,6 +50,8 @@ import {isAnyInputElement} from '../../models/elements/form/input/any-input-elem
 import {mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
 import {Form} from '../../models/entities/form';
 import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
+import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
+import {IdentityData} from '../../modules/identity/models/identity-data';
 
 type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
@@ -111,8 +113,6 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     const adminSettings = useAppSelector((state) => state.adminSettings);
     const currentStep = useAppSelector(selectCurrentStep);
     const upcomingStepDirection = useAppSelector(selectUpcomingStepDirection);
-
-    const identityId = useAppSelector(selectIdentityId);
 
     const [derivationTriggerIdQueue, setDerivationTriggerIdQueue] = useState<string[]>([]);
     const elementDataBufferRef = useRef<ElementData>();
@@ -255,10 +255,11 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
         // Check if submit step
         else if (currentStep === (totalStepCount - 1)) {
-
             const formsApiService = new FormsApiService(api);
 
             setIsSubmitting(true);
+
+            const identityId = (elementData[IdentityCustomerInputKey]?.inputValue as IdentityData | undefined | null)?.identityId;
 
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {

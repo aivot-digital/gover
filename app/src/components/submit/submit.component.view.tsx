@@ -22,7 +22,7 @@ import {AltchaWidget} from '../altcha/altcha-widget';
 
 export const SubmitPaymentDataKey = '__payment_data__';
 
-export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, string>): JSX.Element | null {
+export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): JSX.Element | null {
     const {
         element,
         value,
@@ -324,10 +324,9 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, stri
                     }}
                 >
                     <AltchaWidget
-                        onChallengeSuccess={(solution) => {
-                            setValue(JSON.stringify(solution));
-                        }}
+                        onChallengeSuccess={setValue}
                     />
+
                     {
                         errors != null &&
                         <Box sx={{mt: 2}}>

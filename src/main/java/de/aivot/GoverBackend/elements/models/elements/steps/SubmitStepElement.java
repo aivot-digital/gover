@@ -5,13 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 
-public class SubmitStepElement extends BaseInputElement<JsonNode> {
+public class SubmitStepElement extends BaseInputElement<Map<String, Object>> {
     @Nullable
     private String textPreSubmit;
     @Nullable
@@ -26,23 +28,23 @@ public class SubmitStepElement extends BaseInputElement<JsonNode> {
     }
 
     @Override
-    public void performValidation(JsonNode value) throws ValidationException {
-        if (value == null || value.isNull()) {
+    public void performValidation(Map<String, Object> value) throws ValidationException {
+        if (value == null || value.isEmpty()) {
             throw new ValidationException(this, "Bitte bestätigen Sie, dass Sie ein Mensch sind.");
         }
 
         try {
-            var payloadNode = value.get("payload");
-            var expiresNode = value.get("expiresAt");
+            var payloadNode = (String) value.get("payload");
+            var expiresNode = (Number) value.get("expiresAt");
 
-            if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
+            if (payloadNode == null || StringUtils.isNullOrEmpty(payloadNode)) {
                 throw new ValidationException(this, "Bitte bestätigen Sie, dass Sie ein Mensch sind.");
             }
 
             // check expiration
-            if (expiresNode != null && expiresNode.isNumber()) {
+            if (expiresNode != null) {
                 long now = java.time.Instant.now().getEpochSecond();
-                long expiresAt = expiresNode.asLong();
+                long expiresAt = expiresNode.longValue();
 
                 if (expiresAt < now) {
                     throw new ValidationException(this, "Die Captcha-Bestätigung ist abgelaufen. Bitte erneut bestätigen.");
@@ -54,20 +56,20 @@ public class SubmitStepElement extends BaseInputElement<JsonNode> {
     }
 
     @Override
-    public JsonNode formatValue(@Nullable Object value) {
+    public Map<String, Object> formatValue(@Nullable Object value) {
         return _formatValue(value);
     }
 
     @Nullable
-    public static JsonNode _formatValue(@Nullable Object value) {
-        if (value instanceof JsonNode jsonNode) {
-            return jsonNode;
+    public static Map<String, Object> _formatValue(@Nullable Object value) {
+        if (value instanceof Map<?, ?> jsonNode) {
+            return (Map<String, Object>) jsonNode;
         }
 
         if (value instanceof String sValue) {
             try {
                 var mapper = new ObjectMapper();
-                return mapper.readTree(sValue);
+                return mapper.valueToTree(sValue);
             } catch (Exception e) {
                 return null;
             }
@@ -78,14 +80,14 @@ public class SubmitStepElement extends BaseInputElement<JsonNode> {
 
     @Nonnull
     @Override
-    public String toDisplayValue(@Nullable JsonNode value) {
-        if (value == null || value.isNull()) {
+    public String toDisplayValue(@Nullable Map<String, Object> value) {
+        if (value == null || value.isEmpty()) {
             return "Nicht bestätigt";
         }
 
         try {
             var payloadNode = value.get("payload");
-            if (payloadNode != null && !payloadNode.isNull()) {
+            if (payloadNode != null) {
                 return "Bestätigt";
             }
         } catch (Exception e) {
