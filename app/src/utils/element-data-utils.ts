@@ -5,6 +5,7 @@ import {isAnyElementWithChildren} from '../models/elements/any-element-with-chil
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
+import {isRootElement} from '../models/elements/root-element';
 
 export function resolveOverride(originalElement: AnyElement, data: ElementData): AnyElement {
     const elementId = originalElement.id;
@@ -110,6 +111,44 @@ function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, loca
         [elementId]: mergedElementDataObject,
     };
 
+    if (isRootElement(rootElement)) {
+        if (rootElement.introductionStep != null) {
+            mergedElementData = {
+                ...mergedElementData,
+                ..._mergeDerivedElementDataWithLocal(
+                    derivedElementData,
+                    localElementData,
+                    rootElement.introductionStep,
+                    options,
+                ),
+            };
+        }
+
+        if (rootElement.summaryStep != null) {
+            mergedElementData = {
+                ...mergedElementData,
+                ..._mergeDerivedElementDataWithLocal(
+                    derivedElementData,
+                    localElementData,
+                    rootElement.summaryStep,
+                    options,
+                ),
+            };
+        }
+
+        if (rootElement.submitStep != null) {
+            mergedElementData = {
+                ...mergedElementData,
+                ..._mergeDerivedElementDataWithLocal(
+                    derivedElementData,
+                    localElementData,
+                    rootElement.submitStep,
+                    options,
+                ),
+            };
+        }
+    }
+
     if (isAnyElementWithChildren(rootElement) && rootElement.children != null) {
         if (rootElement.type === ElementType.ReplicatingContainer) {
             const localChildInputValue = localElementDataObject.inputValue as ElementData[] | null | undefined;
@@ -121,7 +160,7 @@ function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, loca
                     const derivedChildElementData: ElementData | undefined = derivedChildInputValue != null ? derivedChildInputValue[i] : undefined;
 
                     for (const childElement of rootElement.children) {
-                        const childMergedData = mergeDerivedElementDataWithLocal(
+                        const childMergedData = _mergeDerivedElementDataWithLocal(
                             derivedChildElementData ?? {},
                             localChildElementData,
                             childElement,
@@ -139,7 +178,7 @@ function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, loca
             }
         } else {
             for (const childElement of rootElement.children) {
-                const childMergedData = mergeDerivedElementDataWithLocal(
+                const childMergedData = _mergeDerivedElementDataWithLocal(
                     derivedElementData,
                     localElementData,
                     childElement,

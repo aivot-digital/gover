@@ -563,6 +563,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 mode={AppMode.Customer}
                 onDeleteFormData={() => {
                     onElementDataChange({}, []);
+                    dispatch(setCurrentStep(0));
                 }}
             />
 
