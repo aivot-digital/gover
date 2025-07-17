@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.identity.models;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 
 import jakarta.annotation.Nonnull;
+
+import java.io.Serializable;
 import java.util.Map;
 
 public record IdentityData(
@@ -14,7 +16,7 @@ public record IdentityData(
         String metadataIdentifier,
         @Nonnull
         Map<String, String> attributes
-) {
+) implements Serializable {
     public static IdentityData from(@Nonnull String identityId, @Nonnull IdentityCacheEntity entity) {
         return new IdentityData(
                 identityId,

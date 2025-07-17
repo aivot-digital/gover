@@ -12,7 +12,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
-import {LegacySystemIdpKey} from '../../../../data/legacy-system-idp-key';
 import {Destination} from '../../../../modules/destination/models/destination';
 import ReplyOutlinedIcon from '@mui/icons-material/ReplyOutlined';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
@@ -21,7 +20,6 @@ import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurned
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import {StatusTable} from '../../../../components/status-table/status-table';
-import SubdirectoryArrowRightOutlinedIcon from '@mui/icons-material/SubdirectoryArrowRightOutlined';
 import {XBezahldienstePaymentStatus, XBezahldienstePaymentStatusLabels} from '../../../../data/xbezahldienste-payment-status';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {Link} from 'react-router-dom';
@@ -44,8 +42,6 @@ import {determineLabel} from '../../../../utils/submission-state';
 import {resolveUserName} from '../../../../modules/users/utils/resolve-user-name';
 import {departmentMembershipResponseDTOasUser} from '../../../../modules/departments/dtos/department-membership-response-dto';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {IdentityValue} from '../../../../modules/identity/models/identity-value';
-import {IdentityCustomerInputKey} from '../../../../modules/identity/constants/identity-customer-input-key';
 import {IdentitySummary} from '../../../../modules/identity/components/identity-summary/identity-summary';
 
 interface SubmissionEditPageGeneralTabProps {

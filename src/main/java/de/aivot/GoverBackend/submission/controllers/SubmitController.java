@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
@@ -25,7 +26,7 @@ import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
-import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.utils.SystemIdentityProviderFormatter;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.CustomerMailService;
@@ -50,7 +51,6 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
-import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,8 +69,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 public class SubmitController {
@@ -218,6 +220,10 @@ public class SubmitController {
         if (verifiedElementData.hasAnyError()) {
             throw ResponseException.badRequest("Validierung fehlgeschlagen"); // TODO: Extend error message
         }
+
+        // Copy the identity value to the verified element data
+        verifiedElementData
+                .put(IdentityValueKey.IdCustomerInputKey, elementData.get(IdentityValueKey.IdCustomerInputKey));
 
         // Prepare submission id
         var submissionId = UUID
@@ -388,7 +394,8 @@ public class SubmitController {
         }
 
         // Create the identity value
-        var identityValue = new IdentityValue(
+        var identityValue = new IdentityData(
+                identityCacheEntity.getId(),
                 identityCacheEntity.getProviderKey(),
                 identityCacheEntity.getMetadataIdentifier(),
                 identityCacheEntity.getIdentityData()
