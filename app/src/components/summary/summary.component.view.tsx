@@ -17,6 +17,7 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
         value,
         elementData,
         setValue,
+        errors,
     } = props;
 
     const form = useSelector(selectLoadedForm);
@@ -77,6 +78,7 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                         setValue(checked);
                     }}
                     busy={isBusy || isDeriving}
+                    error={errors != null ? errors.join(' ') : undefined}
                 />
             </Box>
         </>
