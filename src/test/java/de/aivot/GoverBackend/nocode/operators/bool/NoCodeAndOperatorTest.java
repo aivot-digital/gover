@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.nocode.operators.bool;
 
 import de.aivot.GoverBackend.core.operators.bool.NoCodeAndOperator;
-import de.aivot.GoverBackend.elements.models.ElementDerivationData;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -16,7 +16,7 @@ class NoCodeAndOperatorTest {
     @Test
     void performEvaluation() throws NoCodeException {
         var operator = new NoCodeAndOperator();
-        var data = new ElementDerivationData(Map.of("a", true, "b", false));
+        var data = ElementData.of("a", true, "b", false);
 
         // Test both true
         assertEquals(NoCodeDataType.Boolean, operator.performEvaluation(data, true, true).getDataType());

@@ -1,22 +1,21 @@
 package de.aivot.GoverBackend.nocode.operators.common;
 
 import de.aivot.GoverBackend.core.operators.common.NoCodeGreaterThanOrEqualOperator;
-import de.aivot.GoverBackend.elements.models.ElementDerivationData;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class NoCodeGreaterThanOrEqualOperatorTest {
 
     @Test
     void performEvaluation() throws NoCodeException {
         var operator = new NoCodeGreaterThanOrEqualOperator();
-        var data = new ElementDerivationData(Map.of("a", 5, "b", 3));
+        var data = ElementData.of("a", 5, "b", 3);
 
         // Test greater than
         assertEquals(NoCodeDataType.Boolean, operator.performEvaluation(data, 5, 3).getDataType());

@@ -1,9 +1,8 @@
 package de.aivot.GoverBackend.nocode.models;
 
-import de.aivot.GoverBackend.elements.models.ElementDerivationData;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
-import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -48,7 +47,7 @@ class NoCodeOperatorTest {
         }
 
         @Override
-        public NoCodeResult performEvaluation(ElementDerivationData data, Object... args) throws NoCodeException {
+        public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
             return null;
         }
     };

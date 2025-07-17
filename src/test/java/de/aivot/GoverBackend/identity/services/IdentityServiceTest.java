@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.services.SecretService;
+import de.aivot.GoverBackend.system.properties.CORSProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -32,6 +33,7 @@ class IdentityServiceTest {
     private IdentityService identityService;
     private HttpService httpService;
     private SecretService secretService;
+    private CORSProperties corsProperties;
 
     @BeforeEach
     void setUp() {
@@ -40,7 +42,15 @@ class IdentityServiceTest {
         identityCacheRepository = mock(IdentityCacheRepository.class);
         httpService = mock(HttpService.class);
         secretService = mock(SecretService.class);
-        identityService = new IdentityService(goverConfig, secretService, httpService, identityProviderService, identityCacheRepository);
+        corsProperties = mock(CORSProperties.class);
+        identityService = new IdentityService(
+                goverConfig,
+                corsProperties,
+                secretService,
+                httpService,
+                identityProviderService,
+                identityCacheRepository
+        );
     }
 
     @Test
