@@ -360,7 +360,8 @@ public class ElementDerivationService {
         var dataObject = new ElementDataObject()
                 .setType(_currentElement.getType())
                 .setInputValue(inputDataObject.getInputValue())
-                .setIsDirty(inputDataObject.getIsDirty());
+                .setIsDirty(inputDataObject.getIsDirty())
+                .setIsPrefilled(inputDataObject.getIsPrefilled());
 
         // Set the dirty flag if the element has an input value
         if (dataObject.getInputValue() != null) {
