@@ -110,7 +110,7 @@ export const {
 export const selectLoadedForm = (state: RootState) => state.app.loadedForm;
 export const selectPastLoadedForm = (state: RootState) => state.app.pastLoadedForm;
 export const selectFutureLoadedForm = (state: RootState) => state.app.futureLoadedForm;
-export const selectHasLoadedSavedCustomerInput = () => (state: RootState) => state.app.hasLoadedSavedCustomerInput;
+export const selectHasLoadedSavedCustomerInput = (state: RootState) => state.app.hasLoadedSavedCustomerInput;
 export const selectAllElements = (state: RootState) => state.app.allElements;
 
 export const appReducer = appSlice.reducer;

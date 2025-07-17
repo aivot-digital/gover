@@ -62,6 +62,17 @@ export function resolveVisibility(element: AnyElement, data: ElementData): boole
     return true; // Default visibility is true if no data is found
 }
 
+export function resolvePrefill(element: AnyElement, data: ElementData): boolean {
+    const elementId = element.id;
+    const elementDataObject: ElementDataObject | undefined = data[elementId];
+
+    if (elementDataObject != null) {
+        return elementDataObject.isPrefilled ?? false;
+    }
+
+    return false; // Default prefill is false if no data is found
+}
+
 export interface MergeOptions {
     dontOverwriteErrors?: boolean;
 }
@@ -264,4 +275,36 @@ export function mapElementData(
     }
 
     return newElementData;
+}
+
+export function cleanElementData(rootElement: AnyElement, elementData: ElementData): ElementData {
+    const elementDataCopy = {
+        ...elementData
+    };
+
+    for (const additionalKey of ADDITIONAL_MERGE_KEYS) {
+        elementDataCopy[additionalKey] = undefined;
+    }
+
+    return mapElementData(rootElement, elementDataCopy, (elem, value) => {
+        if (elem.type === ElementType.FileUpload) {
+            return undefined; // Remove FileUpload elements from the data
+        }
+
+        if (value == null) {
+            return null;
+        }
+
+        const up: ElementDataObject = {
+            ...value,
+            isVisible: true,
+            isDirty: false,
+            isPrefilled: false,
+            computedValue: undefined,
+            computedErrors: undefined,
+            computedOverride: undefined,
+        }
+
+        return up;
+    });
 }

@@ -329,6 +329,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <IdentityButtonGroup
                 rootElement={rootElement}
                 isBusy={props.isBusy}
+                isDeriving={props.isDeriving}
                 elementData={elementData}
                 onElementDataChange={ed => onElementDataChange(ed, [])}
                 form={application!}

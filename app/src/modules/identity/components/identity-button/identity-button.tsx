@@ -4,7 +4,6 @@ import {IdentityProviderLink} from '../../models/identity-provider-link';
 import {IdentityProviderInfo} from '../../models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
-import {IdentityValue} from '../../models/identity-value';
 import {IdentityData} from '../../models/identity-data';
 
 export interface IdentityButtonProps {

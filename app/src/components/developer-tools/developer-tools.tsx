@@ -27,6 +27,7 @@ import {ElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDataDebugger} from './element-data-debugger/element-data-debugger';
 import {selectLoadedForm} from '../../slices/app-slice';
+import {cleanElementData} from '../../utils/element-data-utils';
 
 interface TabContentProps {
     selectedTab: number;
@@ -83,7 +84,7 @@ export function DeveloperTools(props: DeveloperToolsProps) {
 
     const handleExport = (): void => {
         const filename = `nutzereingaben-${form?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
-        const input = cleanCustomerInput(elementData);
+        const input = cleanElementData(rootElement, elementData);
         downloadObjectFile(filename, input);
     };
 
@@ -283,17 +284,4 @@ export function DeveloperTools(props: DeveloperToolsProps) {
             </Box>
         </Box>
     );
-}
-
-function cleanCustomerInput(input: CustomerInput): CustomerInput {
-    const cleanedInput: CustomerInput = {};
-    for (const key of Object.keys(input)) {
-        const value = input[key];
-        if (Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
-
-        } else {
-            cleanedInput[key] = value;
-        }
-    }
-    return cleanedInput;
 }

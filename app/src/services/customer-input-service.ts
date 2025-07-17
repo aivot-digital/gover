@@ -3,6 +3,7 @@ import {StorageScope, StorageService} from './storage-service';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {AppInfo} from '../app-info';
 import {ElementData} from '../models/element-data';
+import {cleanElementData} from '../utils/element-data-utils';
 
 const MAJOR_VERSION = AppInfo.version.split('.')[0];
 const DATA_KEY = 'state';
@@ -27,7 +28,7 @@ export class CustomerInputService {
     }
 
     public static storeCustomerInput(application: Application, state: ElementData): void {
-        const stateCopy = {...state};
+        const stateCopy = cleanElementData(application.root, state);
         delete stateCopy[IdentityCustomerInputKey];
         StorageService.storeObject_unsafe(this.getKey(application, DATA_KEY), stateCopy, StorageScope.Local);
         StorageService.storeString_unsafe(this.getKey(application, DATE_KEY), new Date().toISOString(), StorageScope.Local);

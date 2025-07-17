@@ -6,7 +6,7 @@ import {views as Views} from '../views';
 import {type BaseViewProps} from '../views/base-view';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
 import {type ElementData, type ElementDataObject} from '../models/element-data';
-import {resolveErrors, resolveOverride, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
+import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -67,6 +67,10 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
 
     const value = useMemo(() => {
         return resolveValueForResolvedOverride(element, elementData);
+    }, [element, elementData]);
+
+    const prefilled = useMemo(() => {
+        return resolvePrefill(element, elementData);
     }, [element, elementData]);
 
     const error: string[] | undefined | null = useMemo(() => {
@@ -136,7 +140,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         errors: error,
         value: value,
         scrollContainerRef: scrollContainerRef,
-        isBusy: isBusy,
+        isBusy: isBusy || prefilled,
         isDeriving: baseIsDeriving,
         mode: mode,
         elementData: elementData,
@@ -154,6 +158,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         scrollContainerRef,
         isBusy,
         baseIsDeriving,
+        prefilled,
         mode,
         elementData,
         onElementDataChange,

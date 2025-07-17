@@ -3,7 +3,6 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
 import {ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
-import {LoadCustomerInputDialog} from '../../dialogs/load-customer-input/load-customer-input.dialog';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../components/not-found-page/not-found-page';
 import {MetaElement} from '../../components/meta-element/meta-element';
@@ -23,11 +22,8 @@ import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
-import {usePrefill} from '../../hooks/use-prefill';
 import {ElementData} from '../../models/element-data';
-import {ElementType} from '../../data/element-type/element-type';
-import {mapElementData, walkElementData} from '../../utils/element-data-utils';
-import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
+import {CustomerInputService} from '../../services/customer-input-service';
 
 export const DialogSearchParam = 'dialog';
 
@@ -54,9 +50,14 @@ export function FormPage() {
 
     const [theme, setTheme] = useState<Theme>();
 
-    usePrefill({
-        onPrefill: setElementData,
-    });
+    const handleSetElementData = (data: ElementData, storeData: boolean = true) => {
+        setElementData(data);
+
+        if (storeData && form != null) {
+            CustomerInputService
+                .storeCustomerInput(form, data);
+        }
+    };
 
     useEffect(() => {
         dispatch(showDialog(metaDialogName ?? undefined));
@@ -127,14 +128,9 @@ export function FormPage() {
                         isDeriving={false}
                         mode="viewer"
                         elementData={elementData}
-                        onElementDataChange={setElementData}
+                        onElementDataChange={(data) => handleSetElementData(data)}
                         derivationTriggerIdQueue={[]}
                         disableVisibility={false}
-                    />
-
-                    <LoadCustomerInputDialog
-                        form={form}
-                        onElementDataLoad={setElementData}
                     />
 
                     <HelpDialog

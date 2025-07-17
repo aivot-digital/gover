@@ -52,6 +52,7 @@ import {Form} from '../../models/entities/form';
 import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {IdentityData} from '../../modules/identity/models/identity-data';
+import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
 
 type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
@@ -566,6 +567,15 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     dispatch(setCurrentStep(0));
                 }}
             />
+
+            {
+                form != null &&
+                <CustomerInputLoader
+                    form={form}
+                    onElementDataLoad={data => onElementDataChange(data, [])}
+                    isBusy={isBusy || isDeriving}
+                />
+            }
 
             <main role="main">
                 <span
