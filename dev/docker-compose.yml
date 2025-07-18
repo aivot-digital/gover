@@ -114,9 +114,50 @@ services:
       KC_DB_PASSWORD: keycloak
       KC_FEATURES: transient-users,update-email,hostname:v2
 
+  grafana:
+    image: grafana/grafana:12.0.2
+    restart: always
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana.ds.yml:/etc/grafana/provisioning/datasources/postgres.yml
+    environment:
+      OIDC_CLIENT_ID: grafana
+      OIDC_CLIENT_SECRET: beqZ5dWAubqxhSHDRNHjSfH4aig3AtXC
+      OIDC_HOST: http://localhost:9595/idp
+      OIDC_REALM: staff
+
+  gotenberg:
+    image: thecodingmachine/gotenberg:8.21.1
+    restart: always
+    ports:
+      - "9400:3000"
+
+  rabbitmq:
+    image: rabbitmq:4.1.1-management
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: adminpassword
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  caddy:
+    image: caddy:2.10.0-alpine
+    restart: always
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    ports:
+      - "9595:80"
+
 volumes:
   gover_pg_data:
   keycloak_pg_data:
   minio_data:
   mailpit_data:
   lldap_data:
+  grafana_data:
+  rabbitmq_data:
