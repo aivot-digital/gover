@@ -6,6 +6,7 @@
 
 * **App:** Introduce Vite as the new build tool for the frontend, replacing CRA, to improve the development experience and build performance.
 * **System:** Decoupled the frontend, backend and oidc-provider by introducing new configuration variables
+* **System:** Replaced Puppet PDF generator with a new generator based on Gotenberg, which supports more engines and is easier to maintain.
 
 ## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 
