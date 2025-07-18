@@ -157,10 +157,10 @@ def main():
         sys.exit(1)
     elif unknown:
         print("⚠️ Compliance check completed with unknown licenses.")
-        sys.exit(0)
+        sys.exit(1)
     elif caution:
         print("⚠️ Compliance check completed with caution/mixed licenses.")
-        sys.exit(0)
+        sys.exit(1)
     else:
         print("✅ License compliance check passed.")
         sys.exit(0)
