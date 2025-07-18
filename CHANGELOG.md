@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.5.1](https://github.com/aivot-digital/gover/compare/v4.5.0...v4.5.1) (TBD)
+
+### Bug Fixes
+* **Backend:** Upgrade GraalVM to the newest polyglot version.
+
 ## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 
 ### Features
