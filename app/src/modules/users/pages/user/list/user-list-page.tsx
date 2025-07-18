@@ -6,7 +6,7 @@ import React from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import {useAdminGuard} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
-import {AppConfig} from '../../../../../app-config';
+import {AppInfo} from '../../../../../app-info';
 import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
@@ -43,7 +43,7 @@ export function UserListPage() {
                         {
                             label: 'Mitarbeiter:innen verwalten',
                             icon: <ManageAccountsOutlinedIcon />,
-                            href: `${AppConfig.staff.host}/admin/${AppConfig.staff.realm}/console/#/${AppConfig.staff.realm}/users`,
+                            href: `${AppConfig.oidc.hostname}/admin/${AppConfig.oidc.realm}/console/#/${AppConfig.oidc.realm}/users`,
                             variant: 'contained',
                         },
                     ],

@@ -1,6 +1,7 @@
 import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
 import {Asset} from './models/asset';
+import {createApiPath} from '../../utils/url-path-utils';
 
 interface AssetFilter {
     filename: string;
@@ -21,11 +22,11 @@ export class AssetsApiService extends CrudApiService<Asset, Asset, Asset, Asset,
     }
 
     public static useAssetLink(key: string) {
-        return `/api/public/assets/${key}`;
+        return createApiPath(`/api/public/assets/${key}`);
     }
 
     public static useAssetLinkOfAsset(asset: Asset) {
-        return window.location.protocol + '//' + window.location.host + this.useAssetLink(asset.key);
+        return this.useAssetLink(asset.key);
     }
 
     public initialize(): Asset {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import {MenuItem, TextField, Typography} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
@@ -19,6 +19,33 @@ export function SelectFieldComponent({
                                          sx,
                                      }: SelectFieldComponentProps): JSX.Element {
     const val = value ?? '';
+
+    const optionElements = useMemo(() => {
+        return options
+            .map((option) => (
+                <MenuItem
+                    key={option.value}
+                    value={option.value}
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                    }}
+                >
+                    <Typography>
+                        {option.label}
+                    </Typography>
+                    {
+                        option.subLabel != null &&
+                        <Typography
+                            variant="caption"
+                        >
+                            {option.subLabel}
+                        </Typography>
+                    }
+                </MenuItem>
+            ))
+    }, [options]);
 
     return (
         <TextField
@@ -73,32 +100,7 @@ export function SelectFieldComponent({
                 </MenuItem>
             }
 
-            {
-                options
-                    .map((option) => (
-                        <MenuItem
-                            key={option.value}
-                            value={option.value}
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'flex-start',
-                            }}
-                        >
-                            <Typography>
-                                {option.label}
-                            </Typography>
-                            {
-                                option.subLabel != null &&
-                                <Typography
-                                    variant="caption"
-                                >
-                                    {option.subLabel}
-                                </Typography>
-                            }
-                        </MenuItem>
-                    ))
-            }
+            {optionElements}
         </TextField>
     );
 }

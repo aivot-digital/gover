@@ -20,7 +20,7 @@ import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} f
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import DrawIcon from '@mui/icons-material/Draw';
-import ExportApplicationDialog from '../application-dialogs/export-application-dialog/export-application-dialog';
+import {ExportApplicationDialog} from '../application-dialogs/export-application-dialog/export-application-dialog';
 import {PrefillFormDialog} from '../prefill-form-dialog/prefill-form-dialog';
 
 const switches: Array<{

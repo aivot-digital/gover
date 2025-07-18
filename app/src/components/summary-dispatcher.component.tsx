@@ -2,7 +2,7 @@ import React, {useMemo} from 'react';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {CustomerInput} from '../models/customer-input';
-import Summaries from '../summaries';
+import {summaries as Summaries} from '../summaries';
 import {BaseSummaryProps} from '../summaries/base-summary';
 import {resolveId} from '../utils/id-utils';
 import {useAppSelector} from '../hooks/use-app-selector';

@@ -1,13 +1,12 @@
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography} from '@mui/material';
 import {getUrlWithoutQuery} from '../../utils/location-utils';
-import {AppConfig} from '../../app-config';
 import React, {useEffect, useRef, useState} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {selectAuthData} from '../../slices/auth-slice';
 
 export function SessionExpiredDialog() {
-    const intervalRef = useRef<NodeJS.Timer>();
+    const intervalRef = useRef<any>();
     const authData = useAppSelector(selectAuthData);
     const [isRefreshTokenExpired, setIsRefreshTokenExpired] = useState(false);
 
@@ -70,8 +69,8 @@ export function SessionExpiredDialog() {
                         <LoginOutlinedIcon />
                     }
                     component="a"
-                    href={`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/auth?${new URLSearchParams({
-                        client_id: AppConfig.staff.client,
+                    href={`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth?${new URLSearchParams({
+                        client_id: AppConfig.oidc.client,
                         redirect_uri: getUrlWithoutQuery(),
                         response_type: 'code',
                         scope: 'openid profile email',

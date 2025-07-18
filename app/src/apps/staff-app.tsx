@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {createBrowserRouter as createRouter, RouterProvider} from 'react-router-dom';
 import {selectMemberships, selectUser, setMemberships, setUser} from '../slices/user-slice';
 import {selectSystemConfigValue, setSystemConfigs} from '../slices/system-config-slice';
-import {Box, CircularProgress, type Theme as MuiTheme, ThemeProvider, Typography} from '@mui/material';
+import {Box, CircularProgress, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
@@ -17,7 +17,6 @@ import {ApiService} from '../services/api-service';
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
 import {getUrlWithoutQuery} from '../utils/location-utils';
 import {SessionExpiredDialog} from '../dialogs/session-expired-dialog/session-expired-dialog';
-import {AppConfig} from '../app-config';
 import {LoadingOverlay} from '../components/loading-overlay/loading-overlay';
 import {Error} from '../pages/shared/error/error';
 import {providerLinksRoutes} from '../modules/provider-links/provider-links-routes';
@@ -27,8 +26,6 @@ import {DepartmentMembershipsApiService} from '../modules/departments/department
 import {ThemesApiService} from '../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../modules/configs/system-configs-api-service';
 import {RouterLayout} from './router-layout';
-import {loader} from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
 import {AppProvider} from '../providers/app-provider';
 import {UsersApiService} from '../modules/users/users-api-service';
 import {ExpirationTimer} from '../components/auth-token-debugger/auth-token-debugger';
@@ -36,8 +33,6 @@ import {identityRoutes} from '../modules/identity/identity-routes';
 import {useLocalStorageEffect} from '../hooks/use-local-storage-effect';
 import {AuthDataAccessToken} from '../models/dtos/auth-data';
 import {StorageKey} from '../data/storage-key';
-
-loader.config({monaco});
 
 const router = createRouter(
     [
@@ -60,7 +55,8 @@ const router = createRouter(
     },
 );
 
-function StaffApp() {
+export function StaffApp() {
+    const baseTheme = useTheme();
     const dispatch = useAppDispatch();
     const api = useApi();
 
@@ -83,7 +79,7 @@ function StaffApp() {
     const authCode = useMemo(() => {
         const searchParams = new URLSearchParams(window.location.search);
         const iss = searchParams.get('iss');
-        if (iss != null && iss.endsWith('realms/' + AppConfig.staff.realm)) {
+        if (iss != null && iss.endsWith('realms/' + AppConfig.oidc.realm)) {
             const code = searchParams.get('code');
             return stringOrUndefined(code);
         }
@@ -93,9 +89,9 @@ function StaffApp() {
     useEffect(() => {
         if (authCode != null && authCode.length > 0) {
             new ApiService()
-                .postFormUrlEncoded<AuthDataDto>(`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/token`, {
+                .postFormUrlEncoded<AuthDataDto>(`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`, {
                     grant_type: 'authorization_code',
-                    client_id: AppConfig.staff.client,
+                    client_id: AppConfig.oidc.client,
                     code: authCode,
                     redirect_uri: getUrlWithoutQuery(),
                 })
@@ -171,6 +167,14 @@ function StaffApp() {
         }
     }, [authCode, api, user]);
 
+    const _defaultTheme = useMemo(() => {
+        return createDefaultAppTheme(baseTheme);
+    }, [baseTheme]);
+
+    const _theme = useMemo(() => {
+        return createAppTheme(theme, baseTheme);
+    }, [theme, baseTheme]);
+
     if (!authChecked) {
         return (
             <Box
@@ -190,7 +194,7 @@ function StaffApp() {
 
     if (!api.isAuthenticated) {
         return (
-            <ThemeProvider theme={createDefaultAppTheme}>
+            <ThemeProvider theme={_defaultTheme}>
                 <Login />
             </ThemeProvider>
         );
@@ -214,7 +218,7 @@ function StaffApp() {
     }
 
     return (
-        <AppProvider theme={(baseTheme: MuiTheme) => createAppTheme(theme, baseTheme)}>
+        <AppProvider theme={_theme}>
             <RouterProvider router={router} />
 
             <LoadingOverlay
@@ -228,5 +232,3 @@ function StaffApp() {
         </AppProvider>
     );
 }
-
-export default StaffApp;

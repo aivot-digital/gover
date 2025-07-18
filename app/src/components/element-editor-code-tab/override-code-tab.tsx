@@ -9,6 +9,7 @@ import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-el
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ReferenceCheck} from './components/reference-check/reference-check';
+import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 
 const exampleLegacyOverrideCode = `/**
  * Diese Funktion wird aufgerufen, die Struktur des Elements zu überschreiben.
@@ -166,6 +167,10 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                                 },
                             ] : []}
                             disabled={!props.editable}
+                            typeHints={[{
+                                name: 'Context',
+                                content: createLowCodeContextType(props.element, props.parents[0]),
+                            }]}
                         />
                     )
                 }

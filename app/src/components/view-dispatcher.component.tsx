@@ -2,7 +2,7 @@ import React, {ComponentType, useCallback, useMemo} from 'react';
 import Grid from '@mui/material/Grid';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
-import Views from '../views';
+import {views as Views} from '../views';
 import {BaseViewProps} from '../views/base-view';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';

@@ -6,6 +6,7 @@ import {clearAuthData, selectAuthData, setAuthData} from '../slices/auth-slice';
 import {isApiError} from '../models/api-error';
 import {ApiOptions, ApiService} from '../services/api-service';
 import {Api} from '@mui/icons-material';
+import {createApiPath} from '../utils/url-path-utils';
 
 export interface Api {
     isAuthenticated: boolean;
@@ -64,7 +65,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .get<T>(`/api/${url}`, undefined, options);
+                        .get<T>(createApiPath(`/api/${url}`), undefined, options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }
@@ -73,7 +74,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .get<T>(`/api/public/${url}`, undefined, options);
+                        .get<T>(createApiPath(`/api/public/${url}`), undefined, options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }
@@ -82,7 +83,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .getBlob(`/api/${url}`, options);
+                        .getBlob(createApiPath(`/api/${url}`), options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }
@@ -91,7 +92,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .post(`/api/${url}`, data, options);
+                        .post(createApiPath(`/api/${url}`), data, options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }
@@ -100,7 +101,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .postFormData(`/api/${url}`, data, options);
+                        .postFormData(createApiPath(`/api/${url}`), data, options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }
@@ -109,7 +110,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .postFormUrlEncoded(`/api/${url}`, data, options);
+                        .postFormUrlEncoded(createApiPath(`/api/${url}`), data, options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }
@@ -118,7 +119,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .put(`/api/${url}`, data, options);
+                        .put(createApiPath(`/api/${url}`), data, options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }
@@ -127,7 +128,7 @@ export function useApi(): Api {
                 try {
                     return await serviceRef
                         .current
-                        .delete(`/api/${url}`, options);
+                        .delete(createApiPath(`/api/${url}`), options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }

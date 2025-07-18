@@ -4,7 +4,6 @@ import {AuthData, AuthDataAccessToken, AuthDataRefreshToken} from '../models/dto
 import {StorageScope, StorageService} from '../services/storage-service';
 import {StorageKey} from '../data/storage-key';
 import {AppDispatch, RootState} from '../store';
-import {AppConfig} from '../app-config';
 import {getUrlWithoutQuery} from '../utils/location-utils';
 
 
@@ -33,11 +32,11 @@ export const refreshAuthData = () => async (dispatch: AppDispatch, getState: () 
         return;
     }
 
-    const response = await window.fetch(`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/token`, {
+    const response = await window.fetch(`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`, {
         method: 'POST',
         body: new URLSearchParams({
             grant_type: 'refresh_token',
-            client_id: AppConfig.staff.client,
+            client_id: AppConfig.oidc.client,
             refresh_token: refreshToken.token,
         }),
         headers: {
@@ -103,7 +102,7 @@ export const selectLogoutLink = (state: { auth: AuthState }) => {
         return '#';
     }
 
-    return `${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/logout?` + new URLSearchParams({
+    return `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/logout?` + new URLSearchParams({
         id_token_hint: idToken,
         post_logout_redirect_uri: getUrlWithoutQuery(),
     }).toString();

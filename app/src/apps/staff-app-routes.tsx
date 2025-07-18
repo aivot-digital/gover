@@ -201,7 +201,3 @@ export const staffAppRoutes: Record<string, Route> = {
         element: <NotFound />,
     },
 };
-
-export function getPath(page: keyof typeof staffAppRoutes): string {
-    return staffAppRoutes[page].path;
-}

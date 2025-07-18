@@ -1,20 +1,23 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {type AppToolbarProps, AppToolbarAction} from './app-toolbar-props';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {AppToolbarAction, type AppToolbarProps} from './app-toolbar-props';
 import {AppBar, Box, Button, IconButton, styled, Toolbar, Tooltip, Typography} from '@mui/material';
-import {Link, useNavigate} from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import {getPath} from '../../apps/staff-app-routes';
-import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
-import {AppHeaderMenu} from "../app-header-menu/app-header-menu";
-import {AppMode} from "../../data/app-mode";
+import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
+import {AppHeaderMenu} from '../app-header-menu/app-header-menu';
+import {AppMode} from '../../data/app-mode';
+
+const Offset = styled('div')(({theme}) => theme.mixins.toolbar);
 
 /**
  * Default toolbar of the application.
  * Renders basic navigation as well as a title and actions.
  */
 export function AppToolbar(props: AppToolbarProps): JSX.Element {
-    const {updateToolbarHeight} = props;
-    const Offset = styled('div')(({theme}) => theme.mixins.toolbar);
+    const {
+        actions,
+        updateToolbarHeight,
+    } = props;
 
     const offsetRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +46,11 @@ export function AppToolbar(props: AppToolbarProps): JSX.Element {
         };
     }, [updateToolbarHeight]);
 
+    const toolbarActions = useMemo(() => {
+        return (actions ?? [])
+            .map(dispatchToolbarAction);
+    }, [actions]);
+
     return (
         <>
             <AppBar position="fixed">
@@ -52,7 +60,7 @@ export function AppToolbar(props: AppToolbarProps): JSX.Element {
                             size="small"
                             edge="start"
                             component={Link}
-                            to={getPath('moduleSelect')}
+                            to={'/'}
                             color="inherit"
                         >
                             <HomeOutlinedIcon />
@@ -91,10 +99,7 @@ export function AppToolbar(props: AppToolbarProps): JSX.Element {
                             alignItems: 'center',
                         }}
                     >
-                        {
-                            props.actions != null &&
-                            props.actions.map(dispatchToolbarAction)
-                        }
+                        {toolbarActions}
                     </Box>
                 </Toolbar>
             </AppBar>

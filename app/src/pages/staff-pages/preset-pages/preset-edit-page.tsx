@@ -8,12 +8,7 @@ import {MetaElement} from '../../../components/meta-element/meta-element';
 import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {
-    removeLoadingSnackbar,
-    showErrorSnackbar,
-    showLoadingSnackbar,
-    showSuccessSnackbar
-} from '../../../slices/snackbar-slice';
+import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {ElementTree} from '../../../components/element-tree/element-tree';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
@@ -34,8 +29,8 @@ import {PresetVersionApiService} from '../../../modules/presets/preset-version-a
 import {usePrompt} from '../../../providers/prompt-provider';
 import {CustomerInput} from '../../../models/customer-input';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
-import {withAsyncWrapper} from "../../../utils/with-async-wrapper";
-import {FormState} from "../../../models/dtos/form-state";
+import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {FormState} from '../../../models/dtos/form-state';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
 
@@ -87,7 +82,7 @@ export function PresetEditPage(): JSX.Element {
                 type: idp.type,
                 iconAssetKey: '',
                 metadataIdentifier: idp.metadataIdentifier,
-            }))))
+            }))));
     }, [api]);
 
     // Fetch the preset on key or version change.
@@ -320,7 +315,7 @@ export function PresetEditPage(): JSX.Element {
                     {
                         disableValidation: true,
                         disableVisibilities: false,
-                    }
+                    },
                 );
             },
         }).then((presetState) => {

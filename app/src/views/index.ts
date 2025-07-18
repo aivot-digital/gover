@@ -24,7 +24,7 @@ import {SummaryComponentView} from "../components/summary/summary.component.view
 import {SubmitComponentView} from "../components/submit/submit.component.view";
 import {FileUploadView} from "../components/file-upload-field/file-upload.view";
 
-const views: ElementTypesMap<BaseView<any, any> | null> = {
+export const views: ElementTypesMap<BaseView<any, any> | null> = {
     [ElementType.Root]: RootComponentView,
     [ElementType.Step]: StepComponentView,
     [ElementType.Alert]: AlertView,
@@ -49,5 +49,3 @@ const views: ElementTypesMap<BaseView<any, any> | null> = {
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: FileUploadView,
 };
-
-export default views;

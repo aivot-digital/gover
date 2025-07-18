@@ -34,7 +34,7 @@ export interface EditorSet {
     additionalTabs?: EditorTab[];
 }
 
-const editors: ElementTypesMap<EditorSet | null> = {
+export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.Root]: {
         default: RootComponentEditor,
         additionalTabs: [
@@ -113,5 +113,3 @@ const editors: ElementTypesMap<EditorSet | null> = {
         default: FileUploadEditor,
     },
 };
-
-export default editors;

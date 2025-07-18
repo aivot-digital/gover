@@ -1,7 +1,7 @@
 import React from 'react';
 import {type EditorDispatcherProps} from './editor-dispatcher-props';
 import {type AnyElement} from '../models/elements/any-element';
-import Editors from '../editors';
+import {editors as Editors} from '../editors';
 import {type BaseEditorProps} from '../editors/base-editor';
 import {ElementTreeEntity} from './element-tree/element-tree-entity';
 

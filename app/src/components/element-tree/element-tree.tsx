@@ -1,6 +1,5 @@
-import React, {useMemo, useRef, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {Box, Button, Divider, Typography} from '@mui/material';
-import ProjectPackage from '../../../package.json';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 import {type ElementTreeProps} from './element-tree-props';
@@ -16,7 +15,7 @@ import {isForm} from '../../models/entities/form';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import {type ElementTreeEntity} from './element-tree-entity';
-import {AppConfig} from "../../app-config";
+import {AppInfo} from '../../app-info';
 
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>): JSX.Element {
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -41,7 +40,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
             handleAddElement({
                 id: generateElementIdForType(ElementType.Step),
                 type: ElementType.Step,
-                appVersion: ProjectPackage.version,
+                appVersion: AppInfo.version,
                 children: [],
             });
         } else {
@@ -236,7 +235,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             variant="outlined"
                             size="small"
                             fullWidth
-                            endIcon={<AddCircleOutlineOutlinedIcon sx={{transform: 'translateY(-1px)'}}/>}
+                            endIcon={<AddCircleOutlineOutlinedIcon sx={{transform: 'translateY(-1px)'}} />}
                             sx={{
                                 mt: 4,
                             }}
@@ -271,7 +270,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                                 color: '#BFBFBF',
                             }}
                         >
-                            &copy; {new Date(AppConfig.date).getFullYear()} Aivot
+                            &copy; {new Date(AppInfo.date).getFullYear()} Aivot
                         </Typography>
 
                         <Typography
@@ -280,7 +279,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                                 color: '#BFBFBF',
                             }}
                         >
-                            Gover Version {ProjectPackage.version}
+                            Gover Version {AppInfo.version}
                         </Typography>
                     </Box>
                 </Box>

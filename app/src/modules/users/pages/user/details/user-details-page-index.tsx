@@ -1,6 +1,5 @@
 import {Box, Button, Link, Typography} from '@mui/material';
 import React, {useContext, useMemo, useState} from 'react';
-import {AppConfig} from '../../../../../app-config';
 import {StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
 import {StatusTable} from '../../../../../components/status-table/status-table';
 import {ApiOutlined, BadgeOutlined, Inventory2Outlined, LockOutlined, MailOutlined, ToggleOnOutlined, WarningOutlined} from '@mui/icons-material';
@@ -79,10 +78,10 @@ export function UserDetailsPageIndex() {
                         }}
                     >
                         {user?.deletedInIdp ? 'Gelöscht' : 'Inaktiv'} – {user?.deletedInIdp ?
-                            'Dieses Konto wurde im IDP gelöscht und hat keinen Zugriff mehr auf das System.'
-                            :
-                            'Dieses Konto wurde im IDP deaktiviert und hat derzeit keinen Zugriff auf das System.'
-                        }
+                        'Dieses Konto wurde im IDP gelöscht und hat keinen Zugriff mehr auf das System.'
+                        :
+                        'Dieses Konto wurde im IDP deaktiviert und hat derzeit keinen Zugriff auf das System.'
+                    }
                     </Box>,
             },
             {
@@ -90,7 +89,11 @@ export function UserDetailsPageIndex() {
                 icon: <ApiOutlined />,
                 children: <Typography>
                     Gover Identity Provider{' '}
-                    <Typography component="span" color="text.secondary" fontSize="0.875rem">
+                    <Typography
+                        component="span"
+                        color="text.secondary"
+                        fontSize="0.875rem"
+                    >
                         (basierend auf Keycloak)
                     </Typography>
                 </Typography>,
@@ -113,10 +116,12 @@ export function UserDetailsPageIndex() {
                 children:
                     <>
                         <Typography>
-                            Diese Mitarbeiter:in wurde im IDP gelöscht. Zur Wahrung der Nachvollziehbarkeit von Zuweisungen, Rollen und Mitgliedschaften (z. B. in Fachbereichen und Anträgen) wird eine pseudonymisierte Version des Nutzerkontos in der Plattform archiviert.
+                            Diese Mitarbeiter:in wurde im IDP gelöscht. Zur Wahrung der Nachvollziehbarkeit von Zuweisungen, Rollen und Mitgliedschaften (z. B. in Fachbereichen und Anträgen) wird eine pseudonymisierte Version des
+                            Nutzerkontos in der Plattform archiviert.
                         </Typography>
-                        <Typography sx={{ mt: 2 }}>
-                            Diese Maßnahme erfolgt unter Berücksichtigung der DSGVO, insbesondere im Rahmen von Art. 5 Abs. 1 lit. e (Speicherbegrenzung) und Art. 6 Abs. 1 lit. f (berechtigtes Interesse), um die Integrität historischer Systemdaten sicherzustellen, ohne eine Rückverfolgbarkeit der betroffenen Person zu ermöglichen.
+                        <Typography sx={{mt: 2}}>
+                            Diese Maßnahme erfolgt unter Berücksichtigung der DSGVO, insbesondere im Rahmen von Art. 5 Abs. 1 lit. e (Speicherbegrenzung) und Art. 6 Abs. 1 lit. f (berechtigtes Interesse), um die Integrität historischer
+                            Systemdaten sicherzustellen, ohne eine Rückverfolgbarkeit der betroffenen Person zu ermöglichen.
                         </Typography>
                     </>,
             });
@@ -137,19 +142,19 @@ export function UserDetailsPageIndex() {
         setIsBusy(true);
         try {
             const submissionsApi = new SubmissionsApiService(api);
-            const submissions = await submissionsApi.list(0, 999, undefined, undefined, { assigneeId: user.id, notArchived: true });
+            const submissions = await submissionsApi.list(0, 999, undefined, undefined, {assigneeId: user.id, notArchived: true});
 
             if (submissions.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = submissions.content.slice(0, maxVisibleLinks).map(f => ({
                     label: f.fileNumber ? `Antrag mit Aktenzeichen ${f.fileNumber}` : `Antrag ohne Aktenzeichen (${f.id})`,
-                    to: `/submissions/${f.id}`
+                    to: `/submissions/${f.id}`,
                 }));
 
                 if (submissions.content.length > maxVisibleLinks) {
                     processedLinks.push({
-                        label: "Weitere Anträge anzeigen…",
-                        to: `/submissions`
+                        label: 'Weitere Anträge anzeigen…',
+                        to: `/submissions`,
                     });
                 }
 
@@ -223,9 +228,9 @@ export function UserDetailsPageIndex() {
                 >
                     {
                         !user.deletedInIdp &&
-                            <Button
+                        <Button
                             target="_blank"
-                            href={`${AppConfig.staff.host}/admin/${AppConfig.staff.realm}/console/#/${AppConfig.staff.realm}/users/${user?.id}/settings`}
+                            href={`${AppConfig.oidc.hostname}/admin/${AppConfig.oidc.realm}/console/#/${AppConfig.oidc.realm}/users/${user?.id}/settings`}
                             variant="contained"
                             color="primary"
                             startIcon={<OpenInNewIcon />}

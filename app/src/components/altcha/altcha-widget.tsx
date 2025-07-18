@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from 'react';
 import 'altcha';
 import {useLocalStorageEffect} from '../../hooks/use-local-storage-effect';
 import {StorageKey} from '../../data/storage-key';
+import {createApiPath} from '../../utils/url-path-utils';
 
 interface CaptchaSolution {
     payload: string;
@@ -80,7 +81,7 @@ export const AltchaWidget = ({onChallengeSuccess}: AltchaWidgetProps) => {
             }}
             {...(debuggingEnabled ? {debug: true} : {})}
             strings={localization}
-            challengeurl="/api/public/captcha/challenge/"
+            challengeurl={createApiPath('/api/public/captcha/challenge/')}
         />
     );
 };

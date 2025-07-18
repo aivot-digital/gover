@@ -1,7 +1,6 @@
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
 import {ApiError} from '../models/api-error';
 import {AuthData} from '../models/dtos/auth-data';
-import {AppConfig} from '../app-config';
 
 type QueryParamsValue = string | number | boolean | undefined | null;
 
@@ -51,19 +50,6 @@ export class ApiService {
         return `${url}?${searchParams.toString()}`;
     }
 
-    public getAuthData(): AuthData | undefined {
-        return this.auth?.authData;
-    }
-
-    public isAuthenticated() {
-        return (
-            this.auth != null &&
-            this.auth.authData != null &&
-            this.auth.authData.refreshToken != null &&
-            this.auth.authData.refreshToken.expires > Date.now()
-        );
-    }
-
     protected async getAccessToken(abortController?: AbortController): Promise<string | undefined> {
         if (this.auth == null) {
             return undefined;
@@ -80,11 +66,11 @@ export class ApiService {
             return undefined;
         }
 
-        const response = await window.fetch(`${AppConfig.staff.host}/realms/${AppConfig.staff.realm}/protocol/openid-connect/token`, {
+        const response = await window.fetch(`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`, {
             method: 'POST',
             body: new URLSearchParams({
                 grant_type: 'refresh_token',
-                client_id: AppConfig.staff.client,
+                client_id: AppConfig.oidc.client,
                 refresh_token: authData.refreshToken.token,
             }),
             headers: {

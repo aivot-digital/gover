@@ -80,8 +80,6 @@ services:
       - LLDAP_KEY_SEED=d3w1nb91wd7g1wx0hx1w91wx8x1w
       - LLDAP_LDAP_BASE_DN=dc=aivot,dc=de
       - LLDAP_LDAP_USER_PASS=adminpassword
-    networks:
-      - keycloak
 
   keycloak_database:
     image: postgres:16.4-alpine3.20
@@ -93,44 +91,67 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - keycloak_pg_data:/var/lib/postgresql/data
-    networks:
-      - keycloak
+    ports:
+      - "5433:5432"
 
   keycloak:
     image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.2.4.1
     restart: always
     depends_on:
       - keycloak_database
-    command: [ 'start-dev', '--http-port=8080' ]
+    command: [ 'start-dev' ]
     environment:
-      KC_HTTP_ENABLED: true
-      KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8888
-      KC_HOSTNAME_PATH: /idp
-      KC_HTTP_RELATIVE_PATH: /idp
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: true
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME: http://localhost:9595/idp
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: false
+      KC_HOSTNAME_DEBUG: true
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak
-      KC_FEATURES: transient-users,update-email
-    networks:
-      - keycloak
-      - common
+      KC_FEATURES: transient-users,update-email,hostname:v2
 
-  reverse_proxy:
-    image: nginx:1.27.2-alpine
-    depends_on:
-      - keycloak
+  grafana:
+    image: grafana/grafana:12.0.2
     restart: always
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    networks:
-      - common
+      - grafana_data:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana.ds.yml:/etc/grafana/provisioning/datasources/postgres.yml
+    environment:
+      OIDC_CLIENT_ID: grafana
+      OIDC_CLIENT_SECRET: beqZ5dWAubqxhSHDRNHjSfH4aig3AtXC
+      OIDC_HOST: http://localhost:9595/idp
+      OIDC_REALM: staff
+
+  gotenberg:
+    image: thecodingmachine/gotenberg:8.21.1
+    restart: always
     ports:
-      - "8888:8888"
+      - "9400:3000"
+
+  rabbitmq:
+    image: rabbitmq:4.1.1-management
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: adminpassword
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  caddy:
+    image: caddy:2.10.0-alpine
+    restart: always
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    ports:
+      - "9595:80"
 
 volumes:
   gover_pg_data:
@@ -138,7 +159,5 @@ volumes:
   minio_data:
   mailpit_data:
   lldap_data:
-
-networks:
-  keycloak:
-  common:
+  grafana_data:
+  rabbitmq_data:

@@ -16,7 +16,7 @@ import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {getElementNameForType} from '../../data/element-type/element-names';
 import {AlertComponent} from '../alert/alert-component';
-import Editors from '../../editors';
+import {editors as Editors} from '../../editors';
 
 export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): JSX.Element {
     const dispatch = useAppDispatch();

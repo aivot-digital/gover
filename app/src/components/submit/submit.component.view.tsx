@@ -18,7 +18,7 @@ import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
-import ExpandableList from '../expandable-list/expandable-list';
+import {ExpandableList} from '../expandable-list/expandable-list';
 import {AltchaWidget} from '../altcha/altcha-widget';
 
 export const SubmitHumanKey = '__human__';

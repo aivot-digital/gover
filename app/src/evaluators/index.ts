@@ -10,7 +10,7 @@ import {TimeEvaluator} from "./time-evaluator";
 import {TextEvaluator} from "./text-evaluator";
 import {ReplicatingContainerEvaluator} from './replicating-container-evaluator';
 
-const evaluators: {
+export const evaluators: {
     [key in ElementType]: BaseEvaluator<any> | null;
 } = {
     [ElementType.Root]: null,
@@ -37,5 +37,3 @@ const evaluators: {
     [ElementType.SubmittedStep]: null,
     [ElementType.FileUpload]: null,
 };
-
-export default evaluators;

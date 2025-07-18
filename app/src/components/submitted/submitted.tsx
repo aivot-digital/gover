@@ -24,6 +24,7 @@ import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
 import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
+import {createApiPath} from '../../utils/url-path-utils';
 
 const animationStartDelay = 200;
 const animationDuration = 2000;
@@ -419,8 +420,8 @@ export function Submitted(props: SubmittedProps): JSX.Element {
                             />}
                             component="a"
                             target="_blank"
-                            href={`/api/public/prints/${status.submissionId}`}
-                            size={'large'}
+                            href={createApiPath(`/api/public/prints/${status.submissionId}`)}
+                            size="large"
                         >
                             Antrag als PDF herunterladen
                         </Button>

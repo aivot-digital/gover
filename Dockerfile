@@ -1,69 +1,45 @@
-FROM node:22.11-alpine as build_app
+FROM node:24.2.0-alpine3.21 AS build_mails
 
-ARG buildDate=unknown
-ARG version=0.0.0
-
-# Build Mails
-
+# Set working directory
 WORKDIR /mails
 
-COPY mails/package.json package.json
-COPY mails/package-lock.json package-lock.json
+# Copy mail project files
+COPY mails .
 
 # Install mail dependencies
 RUN npm install
 
-COPY mails/partials partials
-COPY mails/templates templates
-
 # Build mails
 RUN npm run build:prod
 
-# Build Staff and Customer
+FROM node:24.2.0-alpine3.21 AS build_app
 
+# Set work dir
 WORKDIR /app
 
-# Copy frontend project files
-COPY app/package.json package.json
-COPY app/package-lock.json package-lock.json
+# Copy frontend source files
+COPY app .
 
-# Set version in package.json
-RUN sed -i 's/"version": "X.X.X"/"version": "'"$version"'"/g' package.json
+# Set build version and date
+RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/app-info.ts && \
+    sed -i 's/@buildNumber/'"$BUILD_NUMBER"'/g' /app/src/app-info.ts && \
+    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' /app/src/app-info.ts
 
 # Install frontend dependencies
 RUN npm install
 
-# Copy frontend source files
-COPY app/public public
-COPY app/src src
-COPY app/tsconfig.json tsconfig.json
-
-# Set build date in app-config.ts
-RUN sed -i "s|2000-01-01T00:00:00.000Z|$buildDate|g" src/app-config.ts
-
 # Build staff app
-ENV NODE_ENV production
-ENV REACT_APP_BUILD_TARGET staff
-ENV PUBLIC_URL /staff
-ENV DISABLE_ESLINT_PLUGIN true
-
-RUN npm run build
-RUN mv build staff
+RUN npm run build:staff
 
 # Build customer app
-ENV NODE_ENV production
-ENV REACT_APP_BUILD_TARGET customer
-ENV PUBLIC_URL /
-ENV DISABLE_ESLINT_PLUGIN true
+RUN npm run build:customer
 
-RUN npm run build
-RUN mv build customer
+FROM  maven:3.9.9-eclipse-temurin-21-alpine AS build_server
 
-
-# Build server
-FROM  maven:3.9.9-eclipse-temurin-21 as build_server
-
-ARG version=0.0.0
+# Set build version and date
+ARG BUILD_VERSION=0.0.0
+ARG BUILD_NUMBER=0
+ARG BUILD_DATE=2025-05-24T10:15:00Z
 
 # Prepare backend working directoy
 WORKDIR /app
@@ -71,67 +47,62 @@ WORKDIR /app
 # Copy backend project files
 COPY pom.xml pom.xml
 
-# Set version in pom.xml
-RUN sed -i 's%<version>X.X.X</version>%<version>'"$version"'</version>%g' pom.xml
-
 # Copy backend source files
 COPY src/main src/main
 
+# Set build version and date
+RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/main/resources/application.properties && \
+    sed -i 's/@buildNumber/'"$BUILD_NUMBER"'/g' /app/src/main/resources/application.properties && \
+    sed -i 's/@buildTimestamp/'"$BUILD_DATE"'/g' /app/src/main/resources/application.properties
+
 # Copy mails files
-COPY --from=build_app /mails/dist src/main/resources/templates/mail
+COPY --from=build_mails /mails/dist src/main/resources/templates/mail
 
 # Build app
 RUN mvn install -DskipTests
 
 # App
-FROM eclipse-temurin:21.0.5_11-jre
+FROM eclipse-temurin:21.0.7_6-jre-alpine-3.21
 
-ARG buildDate=unknown
-ARG version=0.0.0
-ARG TARGETARCH
+# Set build version and date
+ARG BUILD_VERSION=0.0.0
+ARG BUILD_NUMBER=0
+ARG BUILD_DATE=2025-05-24T10:15:00Z
 
 # Set app metadata
-LABEL org.opencontainers.image.created=$buildDate
+LABEL org.opencontainers.image.created=$BUILD_DATE
 LABEL org.opencontainers.image.url="https://github.com/aivot-digital/gover"
 LABEL org.opencontainers.image.documentation="https://wiki.teamaivot.de/de/dokumentation/gover"
 LABEL org.opencontainers.image.source="https://github.com/aivot-digital/gover"
-LABEL org.opencontainers.image.version=$version
+LABEL org.opencontainers.image.version=$BUILD_VERSION
 LABEL org.opencontainers.image.vendor="Aivot"
 LABEL org.opencontainers.image.title="Gover Backend"
 LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
 
 # Set locale env config
-ENV TZ "Europe/Berlin"
-ENV LANG de_DE.UTF-8
-ENV LANGUAGE de_DE:de
-ENV LC_ALL de_DE.UTF-8
-
-# Copy nginx configs
-COPY docker/nginx.staff.conf /etc/nginx/sites-available/staff.conf
-COPY docker/nginx.customer.conf /etc/nginx/sites-available/customer.conf
-
-# Copy entrypoint script
-COPY docker/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+ENV TZ="Europe/Berlin"
+ENV LANG=de_DE.UTF-8
+ENV LANGUAGE=de_DE:de
+ENV LC_ALL=de_DE.UTF-8
 
 # Prepare app working directoy
 WORKDIR /app
 
-# Install locale dependencies
-RUN apt-get update && \
-    apt-get install -y tzdata locales nginx && \
-    ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata
+# Copy entrypoint script
+COPY docker/entrypoint.sh /app/entrypoint.sh
 
-# Remove default nginx config
-RUN rm /etc/nginx/sites-enabled/default
+# Install locale, nginx, configure nginx and entrypoint script
+RUN apk upgrade --no-cache && \
+    apk add tzdata musl musl-utils musl-locales nginx && \
+    chmod +x /app/entrypoint.sh
 
-# Disable nginx daemon mode
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+# Copy nginx configs
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 
 # Copy app files
-COPY --from=build_server /app/target/Gover-$version.jar /app/gover.jar
-COPY --from=build_app /app/staff /var/www/staff/html
-COPY --from=build_app /app/customer /var/www/customer/html
+COPY --from=build_server /app/target/Gover-0.0.0.jar /app/gover.jar
+COPY --from=build_app /app/build/customer /app/www
+COPY --from=build_app /app/build/staff /app/www/staff
 
 ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["app"]

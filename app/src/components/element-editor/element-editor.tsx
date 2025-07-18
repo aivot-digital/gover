@@ -11,13 +11,13 @@ import {type ElementEditorProps} from './element-editor-props';
 
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {type AnyElement} from '../../models/elements/any-element';
-import ProjectPackage from '../../../package.json';
-import Editors from '../../editors';
+import {editors as Editors} from '../../editors';
 import {AddPresetDialog} from '../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {type GroupLayout, isGroupLayout, isPresetGroupLayout} from '../../models/elements/form/layout/group-layout';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {useChangeBlocker} from "../../hooks/use-change-blocker";
-import {useConfirm} from "../../providers/confirm-provider";
+import {useChangeBlocker} from '../../hooks/use-change-blocker';
+import {useConfirm} from '../../providers/confirm-provider';
+import {AppInfo} from '../../app-info';
 
 export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): JSX.Element | null {
     const dispatch = useAppDispatch();
@@ -30,8 +30,8 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
     const [currentTab, setCurrentTab] = useState(testMode ? DefaultTabs.test : DefaultTabs.properties);
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
-    const initialState = useMemo(() => ({ element: props.element, entity: props.entity }), [props.element, props.entity]);
-    const currentState = useMemo(() => ({ element: updatedElement ?? props.element, entity: updatedEntity ?? props.entity }), [updatedElement, updatedEntity, props.element, props.entity]);
+    const initialState = useMemo(() => ({element: props.element, entity: props.entity}), [props.element, props.entity]);
+    const currentState = useMemo(() => ({element: updatedElement ?? props.element, entity: updatedEntity ?? props.entity}), [updatedElement, updatedEntity, props.element, props.entity]);
 
     const changeBlocker = useChangeBlocker(initialState, currentState);
 
@@ -40,7 +40,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
         if (updatedElement != null) {
             elementToSave = {
                 ...updatedElement,
-                appVersion: ProjectPackage.version,
+                appVersion: AppInfo.version,
             };
         }
 
@@ -88,12 +88,12 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
         if (updatedElement != null || updatedEntity != null) {
 
             const confirmed = await showConfirm({
-                title: "Änderungen verwerfen?",
-                confirmButtonText: "Ja, verwerfen",
+                title: 'Änderungen verwerfen?',
+                confirmButtonText: 'Ja, verwerfen',
                 children: (
                     <div>
-                        Möchten Sie die Änderungen an diesem{" "}
-                        {updatedElement != null ? "Element" : "Formular"} wirklich verwerfen? Diese Aktion kann nicht rückgängig gemacht werden.
+                        Möchten Sie die Änderungen an diesem{' '}
+                        {updatedElement != null ? 'Element' : 'Formular'} wirklich verwerfen? Diese Aktion kann nicht rückgängig gemacht werden.
                     </div>
                 ),
             });

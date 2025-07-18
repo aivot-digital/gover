@@ -42,4 +42,3 @@ export function ExportApplicationDialog({ open, onCancel, onExport }: ExportAppl
     );
 }
 
-export default ExportApplicationDialog;

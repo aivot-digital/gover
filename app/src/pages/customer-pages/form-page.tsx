@@ -1,7 +1,7 @@
 import {useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
-import {type Theme as MuiTheme, ThemeProvider} from '@mui/material';
+import {ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
 import {LoadCustomerInputDialog} from '../../dialogs/load-customer-input/load-customer-input.dialog';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
@@ -28,6 +28,7 @@ import {usePrefill} from '../../hooks/use-prefill';
 export const DialogSearchParam = 'dialog';
 
 export function FormPage() {
+    const baseTheme = useTheme();
     const api = useApi();
 
     usePrefill();
@@ -81,6 +82,10 @@ export function FormPage() {
         }
     }, [form]);
 
+    const _theme = useMemo(() => {
+        return createAppTheme(theme, baseTheme);
+    }, [theme, baseTheme]);
+
     if (failedToLoad) {
         return <><MetaElement
             title="Seite nicht gefunden"
@@ -92,7 +97,7 @@ export function FormPage() {
         const allElements = flattenElements(form.root);
 
         return (
-            <ThemeProvider theme={(baseTheme: MuiTheme) => createAppTheme(theme, baseTheme)}>
+            <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
                         title={form.root.tabTitle ?? form.root.headline}

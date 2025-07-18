@@ -1,7 +1,7 @@
-import {ReactComponent as BayernIdLogo} from './system-icons/bayern-id-logo.svg';
-import {ReactComponent as BundIdLogo} from './system-icons/bund-id-logo.svg';
-import {ReactComponent as MukLogo} from './system-icons/muk-logo.svg';
-import {ReactComponent as ShIdLogo} from './system-icons/sh-id-logo.svg';
+import BayernIdLogo from './system-icons/bayern-id-logo.svg?react';
+import BundIdLogo from './system-icons/bund-id-logo.svg?react';
+import MukLogo from './system-icons/muk-logo.svg?react';
+import ShIdLogo from './system-icons/sh-id-logo.svg?react';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {AssetsApiService} from '../../../assets/assets-api-service';
 import {useMemo} from 'react';
