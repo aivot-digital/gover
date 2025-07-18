@@ -6,6 +6,8 @@
 
 * **App:** Introduce Vite as the new build tool for the frontend, replacing CRA, to improve the development experience and build performance.
 * **System:** Decoupled the frontend, backend and oidc-provider by introducing new configuration variables
+* **System:** Added SBOM generation to the build process, providing a Software Bill of Materials for better transparency and security.
+* **System:** Implemented a license compliance check in the build process to ensure all dependencies comply with licensing requirements.
 
 ## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 
