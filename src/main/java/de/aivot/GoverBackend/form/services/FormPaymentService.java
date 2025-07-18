@@ -158,6 +158,7 @@ public class FormPaymentService {
         if (product.getUpfrontQuantityJavascript() != null && product.getUpfrontQuantityJavascript().isNotEmpty()) {
             var res = context
                     .getJavascriptEngine()
+                    .registerGlobalContextObject(context.getJavascriptContextObject(form.getRoot().getId(), form.getRoot()))
                     .evaluateCode(product.getUpfrontQuantityJavascript());
             if (res == null) {
                 return 0L;
