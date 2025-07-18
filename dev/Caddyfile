@@ -1,0 +1,47 @@
+http://localhost:80 {
+    @customer {
+        path /
+        path /*
+    }
+
+    @staff {
+        path /staff
+        path /staff/*
+    }
+
+    @idp {
+        path /idp
+        path /idp/*
+    }
+
+    @api {
+        path /api
+        path /api/*
+    }
+
+    @bi {
+        path /bi
+        path /bi/*
+    }
+
+    handle @idp {
+        uri strip_prefix /idp
+        reverse_proxy keycloak:8080
+    }
+
+    handle @api {
+        reverse_proxy host.docker.internal:8080
+    }
+
+    handle @bi {
+        reverse_proxy grafana:3000
+    }
+
+    handle @staff {
+        reverse_proxy host.docker.internal:3001
+    }
+
+    handle @customer {
+        reverse_proxy host.docker.internal:3000
+    }
+}

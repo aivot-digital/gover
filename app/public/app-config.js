@@ -2,10 +2,10 @@ window.AppConfig = {
     oidc: {
         realm: 'staff',
         client: 'app',
-        hostname: 'http://localhost:8081',
+        hostname: '/idp',
     },
     api: {
-        hostname: 'http://localhost:8080',
+        hostname: '/',
     },
     sentry: {
         dsn: '',
