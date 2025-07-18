@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.5.1](https://github.com/aivot-digital/gover/compare/v4.5.0...v4.5.1) (TBD)
+
+### Bug Fixes
+* **Payment:** Fix issue with missing context object int the payment quantity calculation low code
+* **Development:** Fix broken keycloak setup in the development environment
+
 ## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 
 ### Features
