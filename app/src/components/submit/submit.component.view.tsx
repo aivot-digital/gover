@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';

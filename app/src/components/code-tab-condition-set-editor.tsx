@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type AnyElement} from '../models/elements/any-element';
 import {type ConditionSet} from '../models/functions/conditions/condition-set';
 import {Box, Button, Divider, IconButton, MenuItem, TextField, Typography} from '@mui/material';
@@ -37,7 +37,6 @@ export function CodeTabConditionSetEditor({
                         'Diese Funktion ist wahr, wenn'
                 }
             </Typography>
-
             <TextField
                 select
                 fullWidth
@@ -88,7 +87,6 @@ export function CodeTabConditionSetEditor({
                         )
                 }
             </TextField>
-
             {
                 shouldReturnString &&
                 conditionSet.operator === ConditionSetOperator.Any &&
@@ -137,7 +135,7 @@ export function CodeTabConditionSetEditor({
                                     onChange({
                                         ...conditionSet,
                                         conditions: [
-                                            ...conditionSet.conditions ?? [],
+                                            ...(conditionSet.conditions ?? []),
                                             {
                                                 operator: ConditionOperator.Equals,
                                                 reference: '',
@@ -224,7 +222,7 @@ export function CodeTabConditionSetEditor({
                                     onChange({
                                         ...conditionSet,
                                         conditionsSets: [
-                                            ...conditionSet.conditionsSets ?? [],
+                                            ...(conditionSet.conditionsSets ?? []),
                                             {
                                                 operator: ConditionSetOperator.All,
                                                 conditions: [],

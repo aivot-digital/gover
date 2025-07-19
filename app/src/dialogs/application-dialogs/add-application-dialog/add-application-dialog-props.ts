@@ -1,4 +1,4 @@
-import {type DialogProps} from '@mui/material/Dialog/Dialog';
+import {type DialogProps} from '@mui/material/Dialog';
 import {type Form as Application, FormListProjection} from '../../../models/entities/form';
 
 export interface AddApplicationDialogProps extends DialogProps {

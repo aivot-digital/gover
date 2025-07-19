@@ -526,28 +526,25 @@ export function IdentityProviderDetailsPageIndex() {
                     <Divider sx={{my: 4}} />
                 </>
             }
-
             <Typography
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
                 Nutzerkontenanbieter konfigurieren
             </Typography>
-
             <Typography sx={{mb: 3, maxWidth: 900}}>
                 Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die Konfiguration bereits für
                 Formulare verwendet wird.
             </Typography>
-
             <Grid
                 container
                 spacing={2}
             >
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <TextFieldComponent
                         label="Name"
                         placeholder="z.B. Keycloak"
@@ -562,16 +559,16 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
                     sx={{
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
                         transform: 'translateY(-10px)',
                     }}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     {
                         identityProvider.iconAssetKey &&
                         <Box
@@ -593,10 +590,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <TextFieldComponent
                         label="Interne Beschreibung"
                         placeholder="z.B. Keycloak für Testumgebung"
@@ -612,10 +609,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     {
                         identityProvider.type != IdentityProviderType.Custom &&
                         <AlertComponent
@@ -628,10 +625,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <SelectFieldComponent
                         label="Logo-Grafik"
                         value={identityProvider.iconAssetKey ?? undefined}
@@ -657,16 +654,16 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                />
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }} />
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <CheckboxFieldComponent
                         label="Aktiv (kann in konfigurierten Formularen genutzt werden)"
                         value={identityProvider.isEnabled}
@@ -678,10 +675,10 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <CheckboxFieldComponent
                         label="Es handelt sich um eine vorproduktive Konfiguration"
                         value={identityProvider.isTestProvider}
@@ -693,10 +690,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <Typography
                         variant="h6"
                         sx={{mt: 4, mb: 0}}
@@ -704,10 +698,7 @@ export function IdentityProviderDetailsPageIndex() {
                         Technische Konfiguration
                     </Typography>
                 </Grid>
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Metadaten-Identifikator"
                         required
@@ -720,10 +711,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zur Authorisierung"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -737,10 +725,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Erstellen des Tokens"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -754,10 +739,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt für Informationen über die Nutzer:in"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -772,10 +754,7 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={12}
-                >
+                <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Beenden der Session"
                         placeholder="https://auth.example.com/xyz oder /idp/xyz"
@@ -791,10 +770,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <TextFieldComponent
                         label="Client ID"
                         required
@@ -808,10 +787,10 @@ export function IdentityProviderDetailsPageIndex() {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={12}
-                    md={6}
-                >
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
                     <SelectFieldComponent
                         label="Client Secret"
                         value={identityProvider.clientSecretKey ?? undefined}
@@ -834,7 +813,6 @@ export function IdentityProviderDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
-
             <StringListInput2
                 label="Scopes"
                 hint=""
@@ -849,7 +827,6 @@ export function IdentityProviderDetailsPageIndex() {
                 error={defaultScopesError}
                 sx={{my: 4}}
             />
-
             <TableFieldComponent2<IdentityAdditionalParameter>
                 label="Zusätzliche Parameter"
                 fields={[
@@ -875,11 +852,7 @@ export function IdentityProviderDetailsPageIndex() {
                 error={additionalParamsError}
                 sx={{my: 4}}
             />
-
-            <Grid
-                item
-                xs={12}
-            >
+            <Grid size={12}>
                 <Typography
                     variant="h6"
                     sx={{mt: 4, mb: 0}}
@@ -887,7 +860,6 @@ export function IdentityProviderDetailsPageIndex() {
                     Attributszuweisungen
                 </Typography>
             </Grid>
-
             <TableFieldComponent2<IdentityAttributeMapping>
                 label="Attributszuweisungen"
                 fields={[
@@ -965,7 +937,6 @@ export function IdentityProviderDetailsPageIndex() {
                 error={attributesError}
                 sx={{my: 4}}
             />
-
             <Box
                 sx={{
                     display: 'flex',
@@ -1039,9 +1010,7 @@ export function IdentityProviderDetailsPageIndex() {
                     </Box>
                 }
             </Box>
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
                 title="Nutzerkontenanbieter löschen"
                 onCancel={() => setShowConfirmDialog(false)}
@@ -1054,7 +1023,6 @@ export function IdentityProviderDetailsPageIndex() {
                     Möchten Sie diesen Nutzerkontenanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
-
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}

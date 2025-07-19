@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, type JSX } from 'react';
 import {Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {type ElementEditorActionsProps} from './element-editor-actions-props';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';

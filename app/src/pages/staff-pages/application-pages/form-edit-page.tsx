@@ -409,7 +409,6 @@ export function FormEditPage() {
                 <MetaElement
                     title={`Editor - ${loadedForm.title} - ${loadedForm.version}`}
                 />
-
                 <AppToolbar
                     title={`${loadedForm.title} - ${loadedForm.version}`}
                     updateToolbarHeight={updateToolbarHeight}
@@ -476,8 +475,6 @@ export function FormEditPage() {
                         },
                     ]}
                 />
-
-
                 <Grid
                     container
                     sx={{
@@ -487,8 +484,6 @@ export function FormEditPage() {
                     {
                         !hideComponentTree &&
                         <Grid
-                            item
-                            xs={4}
                             sx={{
                                 px: 2,
                                 boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
@@ -497,7 +492,7 @@ export function FormEditPage() {
                                 borderRight: '1px solid #E0E7E0',
                                 position: 'relative',
                             }}
-                        >
+                            size={4}>
                             <ElementTree
                                 entity={loadedForm}
                                 onPatch={handlePatch}
@@ -509,14 +504,12 @@ export function FormEditPage() {
                     }
 
                     <Grid
-                        item
-                        xs={hideComponentTree ? 12 : 8}
                         sx={{
                             height: 'calc(100vh - ' + toolbarHeight + 'px)',
                             overflowY: 'scroll',
                         }}
                         ref={scrollContainerRef}
-                    >
+                        size={hideComponentTree ? 12 : 8}>
                         <ViewDispatcherComponent
                             rootElement={loadedForm.root}
                             allElements={allElements}
@@ -533,7 +526,6 @@ export function FormEditPage() {
                         />
                     </Grid>
                 </Grid>
-
                 <AdminToolsDialog
                     open={showAdminTools}
                     onClose={() => {
@@ -545,27 +537,22 @@ export function FormEditPage() {
                     rootElement={loadedForm.root}
                     elementData={elementData}
                 />
-
                 <HelpDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === HelpDialogId}
                 />
-
                 <PrivacyDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === PrivacyDialogId}
                 />
-
                 <ImprintDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === ImprintDialogId}
                 />
-
                 <AccessibilityDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === AccessibilityDialogId}
                 />
-
                 <FormRevisionsDialog
                     open={showRevisions}
                     onClose={() => setShowRevisions(false)}

@@ -1,5 +1,5 @@
 import {Container} from '@mui/material';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {AlertComponent} from '../../../components/alert/alert-component';
 

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';

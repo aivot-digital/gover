@@ -14,7 +14,7 @@ export function ExpirationTimer() {
     const [accessTokenTimeLeft, setAccessTokenTimeLeft] = useState(0);
     const [refreshTokenTimeLeft, setRefreshTokenTimeLeft] = useState(0);
 
-    const intervalRef = useRef<any>();
+    const intervalRef = useRef<any>(undefined);
 
     useLocalStorageEffect<boolean>(setEnabled, StorageKey.TokenDebuggerActive);
 

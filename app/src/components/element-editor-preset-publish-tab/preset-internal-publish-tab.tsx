@@ -1,5 +1,5 @@
 import {Box, Button, Typography} from '@mui/material';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type PresetVersion} from '../../models/entities/preset-version';
 import {AlertComponent} from '../alert/alert-component';

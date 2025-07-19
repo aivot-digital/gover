@@ -1,6 +1,6 @@
 import {type DeleteApplicationDialogProps} from './delete-application-dialog-props';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {
     Button,
     Dialog,

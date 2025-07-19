@@ -1,4 +1,4 @@
-import React, {useReducer} from 'react';
+import React, { useReducer, type JSX } from 'react';
 import {Box, Button} from '@mui/material';
 import {type ApplicationListItemGroupProps} from './application-list-item-group-props';
 import {ApplicationListItem} from '../application-list-item/application-list-item';

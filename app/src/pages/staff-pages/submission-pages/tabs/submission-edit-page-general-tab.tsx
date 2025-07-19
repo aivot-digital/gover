@@ -56,7 +56,7 @@ function createGeneralRows(form: Form, submission: SubmissionDetailsResponseDTO,
     const created = parseISO(submission.created);
 
     const ratingInformation: Record<string, {
-        icon: React.ReactElement;
+        icon: React.ReactElement<any>;
         label: string;
     }> = {
         1: {

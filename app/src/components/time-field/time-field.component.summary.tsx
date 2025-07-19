@@ -18,21 +18,16 @@ export function TimeFieldComponentSummary({
             }}
         >
             <Grid
-                item
-                xs={4}
                 sx={{
                     textAlign: "right",
                     pr: 5,
                 }}
-            >
+                size={4}>
                 <Typography variant={"body2"}>
                     {model.label}
                 </Typography>
             </Grid>
-            <Grid
-                item
-                xs={8}
-            >
+            <Grid size={8}>
                 <Typography variant={"body2"}>
                     {
                         date ? format(date, 'HH:mm') + ' Uhr' : 'Keine Angabe'

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, type JSX } from 'react';
 import {type AppHeaderProps} from './app-header-props';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {useAppSelector} from '../../hooks/use-app-selector';

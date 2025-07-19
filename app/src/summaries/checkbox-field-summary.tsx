@@ -19,9 +19,6 @@ export function CheckboxFieldSummary(props: BaseSummaryProps<CheckboxFieldElemen
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -29,7 +26,10 @@ export function CheckboxFieldSummary(props: BaseSummaryProps<CheckboxFieldElemen
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant={'body2'}
                     sx={{
@@ -43,10 +43,10 @@ export function CheckboxFieldSummary(props: BaseSummaryProps<CheckboxFieldElemen
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography variant="body2">
                     {
                         value ? 'Ja' : 'Nein'

@@ -1,5 +1,5 @@
 import {Box, Tab, Tabs} from '@mui/material';
-import React, {useCallback} from 'react';
+import React, { useCallback, type JSX } from 'react';
 import {type ElementEditorTabsProps} from './element-editor-tabs-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {DefaultTabs} from '../element-editor/default-tabs';

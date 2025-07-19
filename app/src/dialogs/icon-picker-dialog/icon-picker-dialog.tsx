@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useEffect, useMemo, useState, type JSX } from 'react';
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Grid, TextField, Tooltip, Typography} from '@mui/material';
 import {StepIcons} from '../../data/step-icons';
 import Fuse from 'fuse.js';
@@ -97,12 +97,12 @@ export function IconPickerDialog({
                                 const isSelected = selected === icon.id;
                                 return (
                                     <Grid
-                                        item
-                                        xs={12}
-                                        sm={6}
-                                        md={4}
                                         key={icon.id}
-                                    >
+                                        size={{
+                                            xs: 12,
+                                            sm: 6,
+                                            md: 4
+                                        }}>
                                         <Tooltip
                                             title={!showLabels ? icon.label : ''}
                                             arrow

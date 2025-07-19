@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {type BaseViewProps} from '../../views/base-view';

@@ -33,8 +33,8 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
         onEditorMount,
     } = props;
 
-    const monacoRef = useRef<Monaco>();
-    const editorRef = useRef<editor.IStandaloneCodeEditor>();
+    const monacoRef = useRef<Monaco>(undefined);
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
 
     const hasTopContent = props.label != null || props.actions.length > 0;
 

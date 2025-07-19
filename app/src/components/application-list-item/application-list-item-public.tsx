@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
 import {Link} from 'react-router-dom';

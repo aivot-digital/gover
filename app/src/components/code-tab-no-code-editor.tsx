@@ -1,7 +1,7 @@
 import {type AnyElement} from '../models/elements/any-element';
 import {flattenElementsWithParents} from '../utils/flatten-elements';
 import {CodeTabConditionSetEditor} from './code-tab-condition-set-editor';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {ConditionSetOperator} from '../data/condition-set-operator';
 import {evaluators as Evaluators} from '../evaluators';
 import {type Function} from '../models/functions/function';

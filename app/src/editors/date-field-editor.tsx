@@ -35,10 +35,10 @@ export const DateFieldEditor: BaseEditor<DateFieldElement, ElementTreeEntity> = 
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Datums-Format"
                         value={element.mode ?? DateFieldComponentModelMode.Day}
@@ -53,10 +53,10 @@ export const DateFieldEditor: BaseEditor<DateFieldElement, ElementTreeEntity> = 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <Autocomplete
                         id="autocomplete-select"
                         value={HtmlAutofillAttributeOptions.find(item => item.value === element.autocomplete) ?? null}

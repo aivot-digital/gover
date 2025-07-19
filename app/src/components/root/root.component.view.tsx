@@ -1,4 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
+import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -598,7 +599,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     sx={{
                         mt: 5,
                         mb: 5,
-                        /* Remove spacing for richtext components that are immediately preceded by a headline component  */
+                        /* Remove spacing for richtext components that are immediately preceded by a headline component */
                         '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content)': {
                             paddingTop: 0,
                         },
@@ -732,12 +733,13 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                     pr: 1,
                                     cursor: 'help',
                                 }}
-                                icon={<span
-                                    style={{
-                                        color: 'var(--hw-primary)',
+                                icon={<Box
+                                    component='span'
+                                    sx={{
+                                        color: (theme) => theme.palette.primary.main,
                                         transform: 'translateY(2px)',
                                     }}
-                                ><GppGoodOutlinedIcon fontSize="small" /></span>}
+                                ><GppGoodOutlinedIcon fontSize="small" /></Box>}
                                 label="Lokal auf Ihrem Gerät zwischengespeichert"
                                 variant="outlined"
                             />

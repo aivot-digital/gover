@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import Box from '@mui/material/Box';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';

@@ -8,7 +8,7 @@ import {type AnyFormElement} from '../../models/elements/form/any-form-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {EditorDispatcher} from '../editor-dispatcher';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -75,14 +75,12 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
             >
                 {tabDescription.description}
             </ElementEditorSectionHeader>
-
             {
                 props.element.type === ElementType.SummaryStep &&
                 <AlertComponent color={'info'}>
                     Dieser Abschnitt hat derzeit keine weiteren Konfigurationsmöglichkeiten.
                 </AlertComponent>
             }
-
             {
                 tabDescription.isElement &&
                 <ElementEditorSectionHeader
@@ -90,7 +88,6 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     variant={'h5'}
                 />
             }
-
             <Grid
                 container
                 columnSpacing={4}
@@ -102,10 +99,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     props.element.type !== ElementType.SummaryStep &&
                     props.element.type !== ElementType.SubmitStep &&
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 6
+                        }}>
                         <TextFieldComponent
                             label="Interner Name"
                             value={props.element.name}
@@ -129,10 +126,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     props.element.type !== ElementType.SummaryStep &&
                     props.element.type !== ElementType.SubmitStep &&
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 6
+                        }}>
                         <SelectFieldComponent
                             label="Breite des Elements in der Darstellung"
                             value={(props.element as AnyFormElement)?.weight?.toString() ?? '12'}
@@ -186,10 +183,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     isAnyInputElement(props.element) &&
                     <>
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 value={props.element.label}
                                 label="Titel"
@@ -206,10 +203,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={6}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 6
+                            }}>
                             <TextFieldComponent
                                 value={props.element.hint}
                                 label="Hinweis"
@@ -226,7 +223,6 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     </>
                 }
             </Grid>
-
             {
                 tabDescription.isElement &&
                 // elements without additional properties – should be replaced with a more generic check if element contains additional properties
@@ -236,7 +232,6 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     variant={'h5'}
                 />
             }
-
             <EditorDispatcher
                 props={props.element}
                 onPatch={props.onChange}
@@ -244,7 +239,6 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                 onPatchEntity={props.onChangeEntity}
                 editable={props.editable}
             />
-
             {
                 isAnyInputElement(props.element) &&
                 <>
@@ -258,10 +252,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={4}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 4
+                            }}>
                             <CheckboxFieldComponent
                                 label="Pflichtangabe"
                                 value={props.element.required ?? undefined}
@@ -278,10 +272,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={4}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 4
+                            }}>
                             <CheckboxFieldComponent
                                 label="Eingabe deaktiviert"
                                 value={props.element.disabled ?? undefined}
@@ -298,10 +292,10 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                             />
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            lg={4}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 4
+                            }}>
                             <CheckboxFieldComponent
                                 label="Technisches Feld"
                                 value={props.element.technical ?? undefined}
@@ -320,23 +314,21 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     </Grid>
                 </>
             }
-
             <ElementEditorSectionHeader
                 title="Technische Informationen für Entwickler:innen"
                 sx={{mt: 8}}
             >
                 Hier finden Sie technische Zusatzinformationen, die insbesondere für Entwickler:innen von Bedeutung sein können.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="ID des Elements"
                         value={props.element.id ?? ''}
@@ -359,7 +351,6 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     />
                 </Grid>
             </Grid>
-
         </Box>
     );
 }

@@ -30,8 +30,6 @@ export function TableFieldComponentSummary({
                 }}
             >
                 <Grid
-                    item
-                    xs={4}
                     sx={{
                         textAlign: 'left',
                         pr: 5,
@@ -39,7 +37,7 @@ export function TableFieldComponentSummary({
                             textAlign: 'right',
                         },
                     }}
-                >
+                    size={4}>
                     <Typography
                         variant="body2"
                         sx={{

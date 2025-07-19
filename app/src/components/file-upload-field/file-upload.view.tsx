@@ -87,7 +87,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         const maxFiles = element.isMultifile ? (element.maxFiles != null && element.maxFiles > 0 ? element.maxFiles : null) : 1;
 
         const fileUploadItems: FileUploadElementItem[] = [
-            ...value ?? [],
+            ...(value ?? []),
         ];
         let addedItems = 0;
         for (let i = 0; (i < cleanedFiles.length && (maxFiles == null || fileUploadItems.length < maxFiles)); i++) {

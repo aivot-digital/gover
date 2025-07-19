@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {type FormEvent, useEffect, useState} from 'react';
+import React, { type FormEvent, useEffect, useState, type JSX } from 'react';
 import {selectSystemConfig, setSystemConfigs, type SystemConfigMap} from '../../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
@@ -101,7 +101,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Über den Betreiber
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -110,7 +109,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
             </Typography>
-
             <TextFieldComponent
                 label="Name des Betreibers"
                 placeholder="Bad Musterstadt"
@@ -123,7 +121,6 @@ export function ApplicationSettings(): JSX.Element {
                 }}
                 required
             />
-
             {
                 themes.length > 0 &&
                 <>
@@ -158,7 +155,6 @@ export function ApplicationSettings(): JSX.Element {
                     />
                 </>
             }
-
             <Typography
                 variant="subtitle1"
                 sx={{
@@ -167,7 +163,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Gover Store
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -176,7 +171,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare und/oder Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel (API-Key).
             </Typography>
-
             <TextFieldComponent
                 label="Schlüssel für den Gover Store"
                 placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
@@ -189,7 +183,6 @@ export function ApplicationSettings(): JSX.Element {
                     });
                 }}
             />
-
             <Typography
                 variant="h6"
                 sx={{
@@ -198,7 +191,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Öffentliche Auflistung der veröffentlichten Formulare (Index-Seite)
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -208,16 +200,15 @@ export function ApplicationSettings(): JSX.Element {
                 Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
                 angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren und ggf. deaktivieren.
             </Typography>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Text für das Impressum"
                         value={editedConfig[SystemConfigKeys.provider.listingPage.imprintDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.imprintDepartmentId]}
@@ -232,10 +223,10 @@ export function ApplicationSettings(): JSX.Element {
 
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Text für die Datenschutzerklärung"
                         value={editedConfig[SystemConfigKeys.provider.listingPage.privacyDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.privacyDepartmentId]}
@@ -249,10 +240,10 @@ export function ApplicationSettings(): JSX.Element {
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Text für die Erklärung der Barrierefreiheit"
                         value={editedConfig[SystemConfigKeys.provider.listingPage.accessibilityDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.accessibilityDepartmentId]}
@@ -266,14 +257,12 @@ export function ApplicationSettings(): JSX.Element {
                     />
                 </Grid>
             </Grid>
-
             <Typography
                 variant="caption"
                 color={"text.secondary"}
             >
                 Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </Typography>
-
             <CheckboxFieldComponent
                 label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
                 value={(editedConfig[SystemConfigKeys.provider.listingPage.disableGoverListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableGoverListingPage]) == 'true'}
@@ -285,7 +274,6 @@ export function ApplicationSettings(): JSX.Element {
                 }}
                 hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
             />
-
             <Typography
                 variant="subtitle1"
                 sx={{
@@ -294,7 +282,6 @@ export function ApplicationSettings(): JSX.Element {
             >
                 Verweis auf Formular-Index aus Formularen heraus
             </Typography>
-
             <Typography
                 sx={{
                     maxWidth: 900,
@@ -306,7 +293,6 @@ export function ApplicationSettings(): JSX.Element {
                 und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen Link ersetzen
                 (wenn Sie zum Beispiel alle Formulare auf Ihrer eigene Webseite auflisten).
             </Typography>
-
             {
                 (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
                 <Box>
@@ -325,7 +311,6 @@ export function ApplicationSettings(): JSX.Element {
                     />
                 </Box>
             }
-
             <CheckboxFieldComponent
                 label="Verlinkung von Formularen zur Formular-Index-Seite vollständig deaktivieren"
                 value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
@@ -337,7 +322,6 @@ export function ApplicationSettings(): JSX.Element {
                 }}
                 hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
             />
-
             <Box
                 sx={{
                     mt: 4,

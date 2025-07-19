@@ -1,5 +1,5 @@
 import {Box, Drawer} from '@mui/material';
-import React, {useMemo, useState} from 'react';
+import React, { useMemo, useState, type JSX } from 'react';
 import {DefaultTabs} from './default-tabs';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';

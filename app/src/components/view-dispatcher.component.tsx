@@ -13,7 +13,7 @@ interface DispatcherComponentProps<T extends AnyElement> {
     allElements: AnyElement[];
     element: T;
 
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
     isBusy: boolean;
     isDeriving: boolean;
     mode: 'editor' | 'viewer';
@@ -173,16 +173,16 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
 
     return (
         <Grid
-            item
-            xs={12}
-            md={('weight' in element && element.weight != null) ? element.weight : 12}
             id={elementId}
             data-initial-id={elementId /* TODO: Remove here and where referenced */}
             data-resolved-id={elementId /* TODO: Remove here and where referenced */}
             sx={{
                 position: 'relative',
             }}
-        >
+            size={{
+                xs: 12,
+                md: ('weight' in element && element.weight != null) ? element.weight : 12
+            }}>
             <ElementErrorBoundary viewProps={viewProps}>
                 <Component {...viewProps} />
             </ElementErrorBoundary>

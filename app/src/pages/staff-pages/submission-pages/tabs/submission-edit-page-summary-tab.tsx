@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Form} from '../../../../models/entities/form';
 import {SummaryDispatcherComponent} from '../../../../components/summary-dispatcher.component';
 import {SubmissionDetailsResponseDTO} from '../../../../modules/submissions/dtos/submission-details-response-dto';

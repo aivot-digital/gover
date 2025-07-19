@@ -26,10 +26,10 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 {
                     props.element.required &&
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 6
+                        }}>
                         <NumberFieldComponent
                             value={props.element.minimumRequiredRows ?? undefined}
                             label="Mindestanzahl der hinzuzufügenden Zeilen"
@@ -46,10 +46,10 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 }
 
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <NumberFieldComponent
                         value={props.element.maximumRows ?? undefined}
                         label="Maximalanzahl der hinzuzufügenden Zeilen"
@@ -64,14 +64,12 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                     />
                 </Grid>
             </Grid>
-
             <Typography
                 variant="subtitle1"
                 sx={{mt: 4}}
             >
                 Spalten
             </Typography>
-
             {
                 (props.element.fields ?? []).map((column, index) => {
                     const onChange = (patch: Partial<TableFieldComponentColumnModel>) => {
@@ -93,10 +91,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 container
                                 spacing={1}
                             >
-                                <Grid
-                                    item
-                                    xs={4}
-                                >
+                                <Grid size={4}>
                                     <TextField
                                         label="Titel"
                                         margin="normal"
@@ -112,10 +107,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         disabled={!props.editable}
                                     />
                                 </Grid>
-                                <Grid
-                                    item
-                                    xs={4}
-                                >
+                                <Grid size={4}>
                                     <TextField
                                         label="Platzhalter"
                                         margin="normal"
@@ -132,10 +124,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 </Grid>
                                 {
                                     column.datatype === 'number' &&
-                                    <Grid
-                                        item
-                                        xs={4}
-                                    >
+                                    <Grid size={4}>
                                         <TextField
                                             label="Dezimalstellen"
                                             margin="normal"

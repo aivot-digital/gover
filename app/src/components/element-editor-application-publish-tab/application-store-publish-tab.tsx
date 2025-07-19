@@ -1,6 +1,6 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
 import {Box} from '@mui/material';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
 

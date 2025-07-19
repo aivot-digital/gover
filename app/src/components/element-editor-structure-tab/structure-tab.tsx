@@ -1,6 +1,6 @@
 import Editor from '@monaco-editor/react';
 import {Box, Button, FormControlLabel, Switch, Typography} from '@mui/material';
-import React, {type ChangeEvent, useCallback, useRef, useState} from 'react';
+import React, { type ChangeEvent, useCallback, useRef, useState, type JSX } from 'react';
 import {type StructureTabProps} from './structure-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -19,7 +19,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>):
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const editorRef = useRef<any>();
+    const editorRef = useRef<any>(undefined);
     const [editable, setEditable] = useState(false);
 
     const handleEditorDidMount = useCallback((editor: any, _: any) => {

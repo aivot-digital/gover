@@ -35,9 +35,6 @@ export function DateFieldSummary(props: BaseSummaryProps<DateFieldElement, strin
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -45,7 +42,10 @@ export function DateFieldSummary(props: BaseSummaryProps<DateFieldElement, strin
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -59,11 +59,11 @@ export function DateFieldSummary(props: BaseSummaryProps<DateFieldElement, strin
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
-                <Typography variant={'body2'}>
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
+                <Typography variant={"body2"}>
                     {
                         date ? format(date, formatting) : 'Keine Angabe'
                     }

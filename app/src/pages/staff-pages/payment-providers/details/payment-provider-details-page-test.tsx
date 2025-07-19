@@ -88,10 +88,7 @@ export function PaymentProviderDetailsPageTest() {
                 container
                 spacing={2}
             >
-                <Grid
-                    item
-                    xs={6}
-                >
+                <Grid size={6}>
                     <TextFieldComponent
                         label="Buchungstext"
                         value={data.purpose}
@@ -105,10 +102,7 @@ export function PaymentProviderDetailsPageTest() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={6}
-                >
+                <Grid size={6}>
                     <TextFieldComponent
                         label="Beschreibung"
                         value={data.description}
@@ -122,10 +116,7 @@ export function PaymentProviderDetailsPageTest() {
                     />
                 </Grid>
 
-                <Grid
-                    item
-                    xs={6}
-                >
+                <Grid size={6}>
                     <NumberFieldComponent
                         label="Einzelpreis (netto)"
                         value={data.amount}
@@ -141,7 +132,6 @@ export function PaymentProviderDetailsPageTest() {
                     />
                 </Grid>
             </Grid>
-
             {
                 result != null &&
                 <AlertComponent
@@ -201,7 +191,6 @@ export function PaymentProviderDetailsPageTest() {
                     Zahlung testen
                 </Button>
             </Box>
-
             {changeBlocker.dialog}
         </Box>
     );

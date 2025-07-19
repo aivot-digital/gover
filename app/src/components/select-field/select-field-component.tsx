@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, { useMemo, type JSX } from 'react';
 import {MenuItem, TextField, Typography} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';

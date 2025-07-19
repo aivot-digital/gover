@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {createBrowserRouter as createRouter, RouterProvider} from 'react-router-dom';
+import {createBrowserRouter, RouterProvider} from 'react-router-dom';
 import {selectMemberships, selectUser, setMemberships, setUser} from '../slices/user-slice';
 import {selectSystemConfigValue, setSystemConfigs} from '../slices/system-config-slice';
 import {Box, CircularProgress, ThemeProvider, Typography, useTheme} from '@mui/material';
@@ -33,8 +33,14 @@ import {identityRoutes} from '../modules/identity/identity-routes';
 import {useLocalStorageEffect} from '../hooks/use-local-storage-effect';
 import {AuthDataAccessToken} from '../models/dtos/auth-data';
 import {StorageKey} from '../data/storage-key';
+import * as Sentry from "@sentry/react";
 
-const router = createRouter(
+// Must be called after Sentry.init() as per Sentry docs; Wrapped regardless of Sentry being active, safe to call even without Sentry.init()
+const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
+    createBrowserRouter,
+);
+
+const router = sentryCreateBrowserRouter(
     [
         {
             element: <RouterLayout />,

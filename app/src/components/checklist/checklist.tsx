@@ -1,6 +1,6 @@
 import {type ChecklistProps} from './checklist-props';
 import {Checkbox, Divider, List, ListItem, ListItemIcon, ListItemText} from '@mui/material';
-import React from 'react';
+import React, { type JSX } from 'react';
 import {RadioButtonUncheckedOutlined, TaskAltOutlined} from '@mui/icons-material';
 
 export function Checklist(props: ChecklistProps): JSX.Element {

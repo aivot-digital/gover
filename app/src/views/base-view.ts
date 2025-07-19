@@ -10,7 +10,7 @@ export interface BaseViewProps<M extends AnyElement, V> {
     errors?: string[] | null | undefined;
     value?: V | null | undefined;
     allElements: AnyElement[];
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
     isBusy: boolean;
     isDeriving: boolean;
     mode: 'editor' | 'viewer';

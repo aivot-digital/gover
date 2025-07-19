@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Box, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Switch, Typography, useTheme} from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {format, parseISO} from 'date-fns';
@@ -39,6 +39,7 @@ import {SubmissionListResponseDTO} from '../../../modules/submissions/dtos/submi
 import {SubmissionsApiService} from '../../../modules/submissions/submissions-api-service';
 import {SettingsSuggestOutlined} from "@mui/icons-material";
 import {UsersApiService} from '../../../modules/users/users-api-service';
+import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 
 type Submission = SubmissionListResponseDTO & {
     assignee: User | undefined;
@@ -93,13 +94,7 @@ const columns: Array<GridColDef<Submission>> = [
             const state = createSubmissionState(params.row);
             const Icon = state.icon;
             return (
-                <Box
-                    display="flex"
-                    alignItems="center"
-                    sx={{
-                        width: '100%',
-                    }}
-                >
+                <CellContentWrapper sx={{width: '100%'}}>
                     <Tooltip title={state.label}>
                         <Icon color={state.color} />
                     </Tooltip>
@@ -122,16 +117,16 @@ const columns: Array<GridColDef<Submission>> = [
                             />
                         </Tooltip>
                     }
-                </Box>
+                </CellContentWrapper>
             );
         },
-        valueGetter: (params) => params.row.status,
+        valueGetter: (value, row) => row.status,
         flex: 1,
     },
     {
         field: 'fileNumber',
         headerName: 'Aktenzeichen',
-        valueGetter: (params) => isStringNotNullOrEmpty(params.row.fileNumber) ? params.row.fileNumber : 'Kein Aktenzeichen',
+        valueGetter: (value, row) => isStringNotNullOrEmpty(row.fileNumber) ? row.fileNumber : 'Kein Aktenzeichen',
         flex: 1,
     },
     {
@@ -142,15 +137,15 @@ const columns: Array<GridColDef<Submission>> = [
             const created = parseISO(params.row.created);
             return `${format(created, 'dd.MM.yyyy')} - ${format(created, 'HH:mm')} Uhr`;
         },
-        valueGetter: (params) => parseISO(params.row.created),
+        valueGetter: (value, row) => parseISO(row.created),
         flex: 1,
     },
     {
         field: 'assignee',
         headerName: 'Mitarbeiter:in',
         renderCell: (params) => (
-            <>
-                {
+            <CellContentWrapper>
+            {
                     params.row.destinationId != null &&
                     <DataObjectOutlinedIcon
                         sx={{marginRight: '0.5em'}}
@@ -179,9 +174,9 @@ const columns: Array<GridColDef<Submission>> = [
                     params.row.assignee == null &&
                     <i>Nicht zugewiesen</i>
                 }
-            </>
+            </CellContentWrapper>
         ),
-        valueGetter: (params) => params.row.destination != null ? params.row.destination.name : (params.row.assignee != null ? getFullName(params.row.assignee) : null),
+        valueGetter: (value, row) => row.destination != null ? row.destination.name : (row.assignee != null ? getFullName(row.assignee) : null),
         flex: 1,
     },
     {
@@ -189,14 +184,14 @@ const columns: Array<GridColDef<Submission>> = [
         headerName: 'Formular',
         type: 'string',
         flex: 1,
-        valueGetter: (params) => params.row.form?.title,
+        valueGetter: (value, row) => row.form?.title,
     },
     {
         field: 'form.version',
         headerName: 'Version',
         type: 'string',
         flex: 1,
-        valueGetter: (params) => params.row.form?.version,
+        valueGetter: (value, row) => row.form?.version,
     },
 ];
 

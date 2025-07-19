@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';

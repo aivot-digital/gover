@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormHelperText, Grid} from '@mui/material';
 import {type FileUploadElement} from '../../models/elements/form/input/file-upload-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
@@ -36,10 +36,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={4}
-            >
+                size={{
+                    xs: 12,
+                    lg: 4
+                }}>
                 <FormControl>
                     <FormControlLabel
                         control={
@@ -62,15 +62,14 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                     </FormHelperText>
                 </FormControl>
             </Grid>
-
             {
                 props.element.isMultifile === true &&
                 <>
                     <Grid
-                        item
-                        xs={12}
-                        lg={4}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 4
+                        }}>
                         <NumberFieldComponent
                             value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles ?? undefined}
                             label="Mindestanzahl an Anlagen"
@@ -85,10 +84,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                         />
                     </Grid>
                     <Grid
-                        item
-                        xs={12}
-                        lg={4}
-                    >
+                        size={{
+                            xs: 12,
+                            lg: 4
+                        }}>
                     <NumberFieldComponent
                         value={props.element.maxFiles ?? undefined}
                         label="Maximalanzahl an Anlagen"
@@ -104,11 +103,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                     </Grid>
                 </>
             }
-
-            <Grid
-                item
-                xs={12}
-            >
+            <Grid size={12}>
                 <MultiCheckboxComponent
                     label="Erlaubte Dateiendungen"
                     value={props.element.extensions ?? undefined}

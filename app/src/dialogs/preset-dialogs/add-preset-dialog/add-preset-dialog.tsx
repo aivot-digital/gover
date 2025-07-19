@@ -1,5 +1,5 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AddPresetDialogProps} from './add-preset-dialog-props';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';

@@ -28,16 +28,17 @@ if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {
     Sentry.init({
         dsn: AppConfig.sentry.dsn,
         integrations: [
-            new Sentry.BrowserTracing({
-                routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-                    React.useEffect,
-                    useLocation,
-                    useNavigationType,
-                    createRoutesFromChildren,
-                    matchRoutes,
-                ),
+            Sentry.reactRouterV7BrowserTracingIntegration({
+                useEffect: React.useEffect,
+                useLocation,
+                useNavigationType,
+                createRoutesFromChildren, // Included for type compliance; unused with createBrowserRouter setup.
+                matchRoutes,
             }),
-            new Sentry.Replay(),
+            Sentry.replayIntegration({
+                maskAllText: true,
+                blockAllMedia: true,
+            }),
         ],
 
         // Set tracesSampleRate to 0.2 to capture 20%

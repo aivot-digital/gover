@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';

@@ -16,10 +16,10 @@ export const NumberFieldEditor: BaseEditor<NumberFieldElement, ElementTreeEntity
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <TextFieldComponent
                     value={element.placeholder ?? ''}
                     label="Platzhalter"
@@ -33,10 +33,10 @@ export const NumberFieldEditor: BaseEditor<NumberFieldElement, ElementTreeEntity
                 />
             </Grid>
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <TextFieldComponent
                     value={element.suffix ?? ''}
                     label="Einheit"
@@ -50,10 +50,10 @@ export const NumberFieldEditor: BaseEditor<NumberFieldElement, ElementTreeEntity
                 />
             </Grid>
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <NumberFieldComponent
                     value={element.decimalPlaces ?? undefined}
                     label="Anzahl der Dezimalstellen"

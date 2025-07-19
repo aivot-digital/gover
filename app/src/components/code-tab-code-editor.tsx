@@ -24,8 +24,8 @@ interface CodeTabCodeEditorProps {
 }
 
 export function CodeTabCodeEditor(props: CodeTabCodeEditorProps) {
-    const monacoRef = useRef<Monaco>();
-    const editorRef = useRef<any>();
+    const monacoRef = useRef<Monaco>(undefined);
+    const editorRef = useRef<any>(undefined);
     const loadedForm = useAppSelector(selectLoadedForm);
     const [elementSearchDialogOpen, setElementSearchDialogOpen] = useState(false);
 

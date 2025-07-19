@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useEffect, useMemo, useState, type JSX } from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
 import {Box, Container, List, ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
