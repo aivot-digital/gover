@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Grid, Typography, useTheme} from '@mui/material';
 import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {stringOrDefault} from '../../utils/string-utils';
@@ -27,9 +27,6 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -37,7 +34,10 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -51,10 +51,10 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography
                     variant="body2"
                 >

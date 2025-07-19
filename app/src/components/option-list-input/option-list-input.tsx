@@ -16,7 +16,7 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import React, {useCallback, useMemo, useReducer, useState} from 'react';
+import React, { useCallback, useMemo, useReducer, useState, type JSX } from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';

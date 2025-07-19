@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import {Box, Grid, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';

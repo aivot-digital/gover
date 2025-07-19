@@ -10,6 +10,7 @@ import {IdentityProvidersApiService} from '../../identity-providers-api-service'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {IdentityProviderListDTO} from '../../models/identity-provider-list-dto';
 import Chip from "@mui/material/Chip";
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function IdentityProvidersListPage() {
     useAdminGuard();
@@ -87,7 +88,7 @@ export function IdentityProvidersListPage() {
                         {
                             field: 'icon',
                             headerName: '',
-                            renderCell: () => <BadgeOutlinedIcon />,
+                            renderCell: () => <CellContentWrapper><BadgeOutlinedIcon /></CellContentWrapper>,
                             disableColumnMenu: true,
                             width: 24,
                             sortable: false,

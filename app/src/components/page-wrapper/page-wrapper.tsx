@@ -1,5 +1,5 @@
 import {type PageWrapperProps} from './page-wrapper-props';
-import React, {type PropsWithChildren, useState} from 'react';
+import React, { type PropsWithChildren, useState, type JSX } from 'react';
 import {MetaElement} from '../meta-element/meta-element';
 import {AppToolbar} from '../app-toolbar/app-toolbar';
 import {Box, Container} from '@mui/material';

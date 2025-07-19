@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormHelperText, Switch} from '@mui/material';
 import {type CheckboxFieldComponentProps} from './checkbox-field-component-props';
 

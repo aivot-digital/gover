@@ -10,6 +10,7 @@ import {ProviderLinksApiService} from '../../provider-links-api-service';
 import {ProviderLink} from '../../models/provider-link';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function ProviderLinksListPage() {
     useAdminGuard();
@@ -64,7 +65,7 @@ export function ProviderLinksListPage() {
                     {
                         field: 'icon',
                         headerName: '',
-                        renderCell: () => <InsertLinkOutlinedIcon />,
+                        renderCell: () => <CellContentWrapper><InsertLinkOutlinedIcon /></CellContentWrapper>,
                         disableColumnMenu: true,
                         width: 24,
                         sortable: false,

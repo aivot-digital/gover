@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
+import {Box, Container, Dialog, DialogContent, Stepper, useTheme} from '@mui/material';
 import {type RootElement} from '../../models/elements/root-element';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import Chip from '@mui/material/Chip';
@@ -392,7 +392,7 @@ export function RootComponentView({
                     sx={{
                         mt: 5,
                         mb: 5,
-                        /* Remove spacing for richtext components that are immediately preceded by a headline component  */
+                        /* Remove spacing for richtext components that are immediately preceded by a headline component */
                         '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content)': {
                             paddingTop: 0,
                         },
@@ -519,12 +519,13 @@ export function RootComponentView({
                                     pr: 1,
                                     cursor: 'help',
                                 }}
-                                icon={<span
-                                    style={{
-                                        color: 'var(--hw-primary)',
+                                icon={<Box
+                                    component='span'
+                                    sx={{
+                                        color: (theme) => theme.palette.primary.main,
                                         transform: 'translateY(2px)',
                                     }}
-                                ><GppGoodOutlinedIcon fontSize="small" /></span>}
+                                ><GppGoodOutlinedIcon fontSize="small" /></Box>}
                                 label="Lokal auf Ihrem Gerät zwischengespeichert"
                                 variant="outlined"
                             />

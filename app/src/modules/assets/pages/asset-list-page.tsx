@@ -14,6 +14,7 @@ import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
+import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function AssetListPage() {
     const dispatch = useAppDispatch();
@@ -76,9 +77,9 @@ export function AssetListPage() {
                         renderCell: (params) => {
                             const fileType = getFileTypeLabel(params.row.contentType ?? 'application/octet-stream');
                             return (
-                                <Box sx={{display: 'flex', alignItems: 'center'}} title={fileType}>
+                                <CellContentWrapper title={fileType}>
                                     {getFileTypeIcon(params.row.contentType ?? 'application/octet-stream')}
-                                </Box>
+                                </CellContentWrapper>
                             );
                         },
                         disableColumnMenu: true,

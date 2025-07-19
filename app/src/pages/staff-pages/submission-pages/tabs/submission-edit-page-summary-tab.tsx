@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Form} from '../../../../models/entities/form';
 import {SummaryDispatcherComponent} from '../../../../components/summary-dispatcher.component';
 import {flattenElements} from '../../../../utils/flatten-elements';

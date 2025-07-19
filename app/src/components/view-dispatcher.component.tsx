@@ -16,7 +16,7 @@ interface DispatcherComponentProps<M extends AnyElement, V> {
     allElements: AnyElement[];
     element: M;
     idPrefix?: string;
-    scrollContainerRef?: React.RefObject<HTMLDivElement>;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
     isBusy: boolean;
     isDeriving: boolean;
     mode: 'editor' | 'viewer';
@@ -165,16 +165,16 @@ export function ViewDispatcherComponent<M extends AnyElement, V>(props: Dispatch
 
     return (
         <Grid
-            item
-            xs={12}
-            md={('weight' in element && element.weight != null) ? element.weight : 12}
             id={resolvedId}
             data-initial-id={initialElementId}
             data-resolved-id={resolvedId}
             sx={{
                 position: 'relative',
             }}
-        >
+            size={{
+                xs: 12,
+                md: ('weight' in element && element.weight != null) ? element.weight : 12
+            }}>
             <ElementErrorBoundary viewProps={viewProps}>
                 <Component {...viewProps} />
             </ElementErrorBoundary>

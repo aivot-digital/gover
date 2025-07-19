@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Checkbox, FormControlLabel} from '@mui/material';
 import {type CheckboxTreeProps} from './checkbox-tree-props';
 import {CheckboxTreeItem} from './checkbox-tree-item';

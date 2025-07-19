@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
@@ -20,10 +20,10 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <TextFieldComponent
                     value={props.element.headlineTemplate ?? ''}
                     label="Überschrift des einzelnen Datensatzes"
@@ -37,15 +37,15 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 />
             </Grid>
             <Grid
-                item
-                xs={12}
-                lg={6}
-            />
+                size={{
+                    xs: 12,
+                    lg: 6
+                }} />
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <TextFieldComponent
                     value={props.element.addLabel ?? ''}
                     label='Label-Text für Aktion "Hinzufügen"'
@@ -58,10 +58,10 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 />
             </Grid>
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <TextFieldComponent
                     value={props.element.removeLabel ?? ''}
                     label='Label-Text für Aktion "Löschen"'
@@ -73,14 +73,13 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     disabled={!props.editable}
                 />
             </Grid>
-
             {
                 (props.element.required === true) &&
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <NumberFieldComponent
                         value={props.element.minimumRequiredSets ?? 1}
                         label="Mindestanzahl der hinzuzufügenden Datensätze"
@@ -96,12 +95,11 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     />
                 </Grid>
             }
-
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <NumberFieldComponent
                     value={props.element.maximumSets}
                     label="Maximalanzahl der hinzuzufügenden Datensätze"

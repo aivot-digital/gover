@@ -186,7 +186,6 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             <DialogTitleWithClose onClose={handleClose}>
                 Formular vorbefüllen
             </DialogTitleWithClose>
-
             <DialogContent>
                 <Box sx={{maxWidth: 920}}>
                     <Typography variant="body2">
@@ -288,9 +287,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                     spacing={2}
                                                 >
                                                     {elements.length === 0 &&
-                                                        <Grid
-                                                            item
-                                                        >
+                                                        <Grid>
                                                             <AlertComponent color={'info'} title={"Dieser Abschnitt enthält keine vorbefüllbaren Felder"} sx={{mt: 1, mb: 0}}>
                                                                 Es können ausschließlich die folgenden Felder vorbefüllt werden: {
                                                                     relevantElementTypes
@@ -335,7 +332,6 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     )
                 }
             </DialogContent>
-
             <DialogActions>
                 <Box
                     sx={{

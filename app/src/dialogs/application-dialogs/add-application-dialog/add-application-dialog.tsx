@@ -1,5 +1,5 @@
 import {Alert, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Form as Application} from '../../../models/entities/form';
 import {type AddApplicationDialogProps} from './add-application-dialog-props';
@@ -312,7 +312,6 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                     </Alert>
                 }
             </DialogContent>
-
             <DialogActions>
                 <Button
                     variant="contained"

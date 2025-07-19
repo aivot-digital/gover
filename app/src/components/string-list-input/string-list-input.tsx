@@ -1,5 +1,5 @@
 import {Alert, Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Tooltip, Typography} from '@mui/material';
-import React, {useState} from 'react';
+import React, { useState, type JSX } from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
