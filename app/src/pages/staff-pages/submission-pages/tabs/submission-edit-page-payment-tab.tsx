@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useEffect, useMemo, useState, type JSX } from 'react';
 import {Form} from '../../../../models/entities/form';
 import {Box, IconButton, Typography} from '@mui/material';
 import {StatusTable} from '../../../../components/status-table/status-table';

@@ -30,7 +30,7 @@ export function stripDataFromForm(form: Form): Form {
     strippedForm.paymentProvider = undefined;
 
     strippedForm.products = [
-        ...strippedForm.products ?? [],
+        ...(strippedForm.products ?? []),
     ].map(prd => ({
         ...prd,
         bookingData: [],

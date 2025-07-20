@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type Form as Application} from '../../models/entities/form';

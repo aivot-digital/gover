@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import { Dialog, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import {ExportApplicationDialogProps} from "./export-application-dialog-props";
 import {DialogTitleWithClose} from "../../../components/dialog-title-with-close/dialog-title-with-close";

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useEffect, useMemo, useState, type JSX } from 'react';
 import {Box, Button, Container, Grid, Typography} from '@mui/material';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams} from 'react-router-dom';
@@ -371,7 +371,6 @@ export function PresetEditPage(): JSX.Element {
             <MetaElement
                 title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
             />
-
             <AppToolbar
                 title={`${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
                 updateToolbarHeight={updateToolbarHeight}
@@ -404,7 +403,6 @@ export function PresetEditPage(): JSX.Element {
                     },
                 ] : [])}
             />
-
             <Grid
                 container
                 sx={{
@@ -412,8 +410,6 @@ export function PresetEditPage(): JSX.Element {
                 }}
             >
                 <Grid
-                    item
-                    xs={4}
                     sx={{
                         px: 2,
                         boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
@@ -422,7 +418,7 @@ export function PresetEditPage(): JSX.Element {
                         borderRight: '1px solid #E0E7E0',
                         position: 'relative',
                     }}
-                >
+                    size={4}>
                     <ElementTree
                         entity={presetVersion}
                         onPatch={handlePatch}
@@ -433,13 +429,11 @@ export function PresetEditPage(): JSX.Element {
                 </Grid>
 
                 <Grid
-                    item
-                    xs={8}
                     sx={{
                         height: 'calc(100vh - ' + toolbarHeight + 'px)',
                         overflowY: 'scroll',
                     }}
-                >
+                    size={8}>
                     <Container>
                         <ViewDispatcherComponent
                             allElements={allElements}
@@ -455,7 +449,6 @@ export function PresetEditPage(): JSX.Element {
                     </Container>
                 </Grid>
             </Grid>
-
             <ConfirmDialog
                 title="Vorlage wirklich löschen"
                 onConfirm={confirmDelete}
@@ -467,7 +460,6 @@ export function PresetEditPage(): JSX.Element {
                 Vorlage <strong>{preset.title}</strong> wirklich löschen wollen?
                 Diese Aktion kann nicht rückgängig gemacht werden.
             </ConfirmDialog>
-
             <VersionsPresetDialog
                 open={showPresetVersions}
                 onClose={() => {

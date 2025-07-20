@@ -1,4 +1,4 @@
-import {type DialogProps} from '@mui/material/Dialog/Dialog';
+import {type DialogProps} from '@mui/material/Dialog';
 import {type Preset} from '../../../models/entities/preset';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {PresetVersion} from '../../../models/entities/preset-version';

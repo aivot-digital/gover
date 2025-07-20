@@ -7,8 +7,12 @@ import * as Sentry from '@sentry/react';
 import './index.scss';
 import {CssBaseline, ThemeProvider} from '@mui/material';
 import {BaseTheme} from './theming/base-theme';
-import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} from 'react-router-dom';
-import {createRoot} from 'react-dom/client';
+import {
+    useLocation,
+    useNavigationType,
+    createRoutesFromChildren,
+    matchRoutes,
+} from "react-router";import {createRoot} from 'react-dom/client';
 import {StaffApp} from './apps/staff-app';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
 
@@ -27,16 +31,17 @@ if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {
     Sentry.init({
         dsn: AppConfig.sentry.dsn,
         integrations: [
-            new Sentry.BrowserTracing({
-                routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-                    React.useEffect,
-                    useLocation,
-                    useNavigationType,
-                    createRoutesFromChildren,
-                    matchRoutes,
-                ),
+            Sentry.reactRouterV7BrowserTracingIntegration({
+                useEffect: React.useEffect,
+                useLocation,
+                useNavigationType,
+                createRoutesFromChildren, // Included for type compliance; unused with createBrowserRouter setup.
+                matchRoutes,
             }),
-            new Sentry.Replay(),
+            Sentry.replayIntegration({
+                maskAllText: true,
+                blockAllMedia: true,
+            }),
         ],
 
         // Set tracesSampleRate to 0.2 to capture 20%

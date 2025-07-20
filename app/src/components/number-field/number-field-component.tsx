@@ -51,7 +51,7 @@ export function NumberFieldComponent({
     const [inputValue, setInputValue] = useState<string>();
 
     // The timeout reference for the debounce functionality.
-    const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+    const debounceTimeoutRef = useRef<NodeJS.Timeout>(undefined);
 
     // The german string representation of the original value.
     const formattedOriginalValue = useMemo(() => {

@@ -21,9 +21,6 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -31,7 +28,10 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -45,10 +45,10 @@ export const TextFieldSummary: BaseSummary<TextFieldElement, string> = ({
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography
                     variant="body2"
                 >

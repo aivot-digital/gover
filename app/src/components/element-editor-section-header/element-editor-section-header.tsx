@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Box, Typography} from '@mui/material';
 import Balancer from 'react-wrap-balancer';
 import {SxProps, Theme} from "@mui/material";

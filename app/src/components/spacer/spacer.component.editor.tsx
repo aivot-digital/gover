@@ -4,6 +4,8 @@ import {NumberFieldComponent} from '../number-field/number-field-component';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
+import type { JSX } from "react";
+
 export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement, ElementTreeEntity>): JSX.Element {
     return (
         <Grid
@@ -11,10 +13,10 @@ export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement, Elem
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={6}
-            >
+                size={{
+                    xs: 12,
+                    lg: 6
+                }}>
                 <NumberFieldComponent
                     value={props.element.height != null ? parseInt(props.element.height) : undefined}
                     label="Abstand"

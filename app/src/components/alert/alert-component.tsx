@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Box, Alert, AlertTitle} from '@mui/material';
 import {type AlertComponentProps} from './alert-component-props';
 import {type PropsWithChildren} from 'react';

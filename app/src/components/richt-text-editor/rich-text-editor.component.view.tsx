@@ -9,7 +9,7 @@ import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import Link from '@tiptap/extension-link';
 import Text from '@tiptap/extension-text';
-import React, {useEffect} from 'react';
+import React, { useEffect, type JSX } from 'react';
 import {Box, Paper, Typography, useEventCallback} from '@mui/material';
 import {RichTextEditorMenuComponentView} from '../rich-text-editor-menu.component.view';
 import './rich-text-editor.component.scss';
@@ -96,7 +96,7 @@ export function RichTextEditorComponentView(props: RichTextEditorComponentViewPr
                     cursor: (props.disabled ?? false) ? 'not-allowed' : 'text',
                     border: '1px solid rgba(0, 0, 0, 0.23)',
                     '&:hover': (props.disabled ?? false) ? {} : {border: '1px solid rgba(0, 0, 0, 0.87)'},
-                    '&:focus-within': {borderColor: 'var(--hw-primary)'},
+                    '&:focus-within': {borderColor: (theme) => theme.palette.primary.main},
                 }}
                 className="editorWrapper"
                 onClick={() => {

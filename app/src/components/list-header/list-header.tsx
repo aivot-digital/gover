@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Badge, Box, Button, IconButton, Tooltip, Typography} from '@mui/material';
 import {SearchInput} from '../search-input/search-input';
 import {type ListHeaderProps} from './list-header-props';

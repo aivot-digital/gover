@@ -1,6 +1,6 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
 import {Box, Tab, Tabs, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type PresetVersion} from '../../models/entities/preset-version';
 import {type Preset} from '../../models/entities/preset';

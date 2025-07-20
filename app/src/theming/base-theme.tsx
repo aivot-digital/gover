@@ -1,5 +1,5 @@
 import {createTheme} from '@mui/material';
-import {deDE} from '@mui/x-data-grid/locales/deDE';
+import {deDE} from '@mui/x-data-grid/locales';
 import {deDE as coreDeDE} from '@mui/material/locale';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';

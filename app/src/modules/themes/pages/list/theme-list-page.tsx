@@ -16,6 +16,7 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function ThemeListPage() {
     useAdminGuard();
@@ -78,7 +79,7 @@ export function ThemeListPage() {
                     {
                         field: 'icon',
                         headerName: '',
-                        renderCell: () => <PaletteOutlinedIcon />,
+                        renderCell: () => <CellContentWrapper><PaletteOutlinedIcon /></CellContentWrapper>,
                         disableColumnMenu: true,
                         width: 24,
                         sortable: false,
@@ -108,7 +109,7 @@ export function ThemeListPage() {
                             const colorKeys = ['main', 'mainDark', 'accent', '|', 'error', 'warning', 'info', 'success'];
 
                             return (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <CellContentWrapper sx={{gap: 1, position: 'relative', zIndex: 2}}>
                                     {colorKeys.map((key, index) => (
                                         key === '|' ? (
                                             <Box key={index} sx={{ width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5 }} />
@@ -139,7 +140,7 @@ export function ThemeListPage() {
                                             />
                                         )
                                     ))}
-                                </Box>
+                                </CellContentWrapper>
                             );
                         }
                     },

@@ -1,5 +1,5 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type PresetVersion} from '../../models/entities/preset-version';
 import {type StoreDetailModule} from '../../models/entities/store-detail-module';

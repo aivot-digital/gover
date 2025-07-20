@@ -26,10 +26,10 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={element.title}
                         label="Titel"
@@ -42,10 +42,10 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Hinweistyp"
                         value={element.alertType ?? 'info'}
@@ -62,10 +62,10 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <RichTextEditorComponentView
                         value={element.text ?? ''}
                         onChange={(value) => {

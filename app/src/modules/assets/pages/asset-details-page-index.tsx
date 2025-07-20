@@ -220,7 +220,6 @@ export function AssetDetailsPageIndex() {
                     />
                 </>
             }
-
             {
                 asset?.contentType &&
                 <>
@@ -240,10 +239,10 @@ export function AssetDetailsPageIndex() {
                         columnSpacing={4}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            lg={12}
-                        >
+                            size={{
+                                xs: 12,
+                                lg: 12
+                            }}>
                             <TextFieldComponent
                                 label="Dateiname"
                                 value={asset?.filename}
@@ -308,7 +307,6 @@ export function AssetDetailsPageIndex() {
                     )}
                 </>
             }
-
             <Box
                 sx={{
                     display: 'flex',
@@ -355,9 +353,7 @@ export function AssetDetailsPageIndex() {
                     </Button>
                 }
             </Box>
-
             {changeBlocker.dialog}
-
             <ConfirmDialog
                 title="Datei löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}

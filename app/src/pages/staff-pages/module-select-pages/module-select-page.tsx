@@ -1,5 +1,5 @@
 import {Box, Card, CardActionArea, CardContent, Container, Grid, Typography,} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {useNavigate} from 'react-router-dom';
 import {AppFooter} from '../../../components/app-footer/app-footer';
 import {MetaElement} from '../../../components/meta-element/meta-element';
@@ -57,15 +57,12 @@ export function ModuleSelectPage(): JSX.Element {
             <MetaElement
                 title={providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}
             />
-
             <AppHeader
                 mode={AppMode.Staff}
             />
-
             <Introductory
                 mode={AppMode.Staff}
             />
-
             <Box
                 sx={{
                     backgroundColor: '#F3F3F3',
@@ -92,12 +89,14 @@ export function ModuleSelectPage(): JSX.Element {
 
                     <Grid container
                           spacing={4}
-                          sx={{mt: 2, mb: 3}}>
+                          sx={{mt: 5, mb: 3}}>
                         {
                             moduleLinks.map(linkItem => (
-                                <Grid item
-                                      md={6}
-                                      key={linkItem.to}>
+                                <Grid
+                                    key={linkItem.to}
+                                    size={{
+                                        md: 6
+                                    }}>
                                     <Card sx={{maxWidth: "100%"}}>
                                         <CardActionArea onClick={() => {
                                             if (saveSelection) {
@@ -151,9 +150,7 @@ export function ModuleSelectPage(): JSX.Element {
                     />
                 </Container>
             </Box>
-
             <ProviderLinksGrid/>
-
             <AppFooter mode={AppMode.Staff}/>
         </>
     );

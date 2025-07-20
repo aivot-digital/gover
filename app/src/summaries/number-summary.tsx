@@ -20,9 +20,6 @@ export function NumberSummary({
             }}
         >
             <Grid
-                item
-                xs={12}
-                md={4}
                 sx={{
                     textAlign: 'left',
                     pr: 5,
@@ -30,7 +27,10 @@ export function NumberSummary({
                         textAlign: 'right',
                     },
                 }}
-            >
+                size={{
+                    xs: 12,
+                    md: 4
+                }}>
                 <Typography
                     variant="body2"
                     sx={{
@@ -44,10 +44,10 @@ export function NumberSummary({
                 </Typography>
             </Grid>
             <Grid
-                item
-                xs={12}
-                md={8}
-            >
+                size={{
+                    xs: 12,
+                    md: 8
+                }}>
                 <Typography variant={"body2"}>
                     {
                         (value == null || (typeof value === 'string' && isStringNullOrEmpty(value))) ?

@@ -1,5 +1,5 @@
 import {Box, Container, Paper, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {useNavigate} from 'react-router-dom';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {AppFooter} from '../../../components/app-footer/app-footer';

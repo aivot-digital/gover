@@ -1,5 +1,4 @@
-import {Helmet} from 'react-helmet';
-import React from 'react';
+import React, {useEffect, type JSX } from 'react';
 import {useTheme} from '@mui/material';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
@@ -16,17 +15,19 @@ export function MetaElement({title, titlePrefix}: MetaElementProps): JSX.Element
 
     const favicon = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.favicon));
 
-    const colorVariables = Object.entries({
-        'primary': theme.palette.primary.main,
-        'primary-dark': theme.palette.primary.dark,
-        'secondary': theme.palette.secondary.main,
-    }).map(([key, value]) => `--hw-${key}: ${value}`).join(';');
+    useEffect(() => {
+        const root = document.documentElement;
+        root.style.setProperty('--gover-theme-primary', theme.palette.primary.main);
+        root.style.setProperty('--gover-theme-primary-dark', theme.palette.primary.dark);
+        root.style.setProperty('--gover-theme-secondary', theme.palette.secondary.main);
+    }, [theme]);
+
     return (
-        <Helmet
-            style={[{
-                cssText: `:root { ${colorVariables} }`,
-            }]}
-        >
+        <>
+            <meta charSet="utf-8"/>
+            <title>
+                {(titlePrefix ?? 'Gover') + (title ? ` - ${title}` : '')}
+            </title>
             <meta
                 name="robots"
                 content="noindex, nofollow"
@@ -54,11 +55,6 @@ export function MetaElement({title, titlePrefix}: MetaElementProps): JSX.Element
                       sizes="16x16"
                       href={`${import.meta.env.BASE_URL}/favicon-16x16.png`}/>
             ]}
-            <meta charSet="utf-8"/>
-            {
-                title != null &&
-                <title>{titlePrefix ? titlePrefix : 'Gover'} - {title}</title>
-            }
-        </Helmet>
+        </>
     );
 }

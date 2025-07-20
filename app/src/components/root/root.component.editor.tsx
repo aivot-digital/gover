@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Box, Grid, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -90,10 +90,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.entity?.title}
                         label="Interner Titel des Formulars"
@@ -117,10 +117,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.tabTitle}
                         label="Titel des Formulars im Browser-Tab"
@@ -135,10 +135,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.headline}
                         label="Öffentlicher Titel & Überschrift des Formulars"
@@ -156,16 +156,15 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Allgemeiner Link des Formulars"
                         disabled
@@ -203,10 +202,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
 
                     <TextFieldComponent
                         label="Versionsspezifischer Link des Formulars"
@@ -245,10 +244,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Art des Formulars"
                         hint="Öffentliche Formulare werden auf der Übersichtsseite angezeigt und können von Bürger:innen ausgefüllt werden. Interne Formulare werden nicht auf der Übersichtsseite angezeigt, können aber über den Link geteilt werden."
@@ -268,23 +267,21 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Für dieses Formular zuständige Fachbereiche"
                 variant="h5"
             >
                 Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge bearbeitet (falls abweichend).
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Entwickelnder Fachbereich"
                         value={props.entity?.developingDepartmentId?.toString() ?? undefined}
@@ -301,10 +298,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Zuständiger Fachbereich"
                         value={props.entity?.responsibleDepartmentId?.toString() ?? undefined}
@@ -318,10 +315,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Bewirtschaftender Fachbereich"
                         value={props.entity?.managingDepartmentId?.toString() ?? undefined}
@@ -335,23 +332,21 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Erscheinungsbild"
                 variant="h5"
             >
                 Hinterlegen Sie bei Bedarf ein abweichendes Farbschema und wählen Sie ggf. eine PDF-Vorlage, welche zur Generierung des Formulars zur Offline-Einreichung verwendet wird.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Farbschema (Visuelles Erscheinungsbild)"
                         value={props.entity?.themeId?.toString() ?? undefined}
@@ -365,10 +360,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <Box
                         display="flex"
                         alignItems="center"
@@ -409,23 +404,21 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     </Box>
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Fristen"
                 variant="h5"
             >
                 Geben Sie die für diesen Antrag gültigen Fristen ein, welche den Antragstellenden im Formular angezeigt werden.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         label="Antragsfristen"
                         multiline
@@ -439,23 +432,21 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Kontakte"
                 variant="h5"
             >
                 Kontaktinformationen werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen möchten.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Fachlicher Support"
                         value={props.entity?.legalSupportDepartmentId?.toString() ?? undefined}
@@ -469,10 +460,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <SelectFieldComponent
                         label="Technischer Support"
                         value={props.entity?.technicalSupportDepartmentId?.toString() ?? undefined}
@@ -486,23 +477,21 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Hinweise zur Offline-Einreichung"
                 variant="h5"
             >
                 Diese Angaben werden für den PDF-Vordruck des Formulars genutzt. Sie sind nicht relevant, wenn ausschließlich eine Online-Einreichung zugelassen wird.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <RichTextEditorComponentView
                         hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
                         value={props.element.offlineSubmissionText ?? ''}

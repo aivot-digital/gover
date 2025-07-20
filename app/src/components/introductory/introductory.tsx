@@ -45,7 +45,7 @@ export function Introductory({mode}: IntroductoryProps) {
                         mt: 5,
                         mb: 5,
                         backgroundColor: theme.palette.primary.dark,
-                        borderRadius: theme.shape.borderRadius / 2,
+                        borderRadius: Number(theme.shape.borderRadius) / 2,
                     }}
                 >
                     {
@@ -102,7 +102,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                     sx={{
                                         mt: 4,
                                         mb: 4,
-                                        borderColor: 'var(--hw-secondary)',
+                                        borderColor: (theme) => theme.palette.secondary.main,
                                     }}
                                 />
                                 <Typography
@@ -127,7 +127,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                         },
                                         {
                                             '&:hover': {
-                                                color: 'var(--hw-secondary)',
+                                                color: (theme) => theme.palette.secondary.main,
                                             },
                                         }]}
                                 >
@@ -161,7 +161,7 @@ export function Introductory({mode}: IntroductoryProps) {
                                         },
                                         {
                                             '&:hover': {
-                                                color: 'var(--hw-secondary)',
+                                                color: (theme) => theme.palette.secondary.main,
                                             },
                                         }]}
                                 >

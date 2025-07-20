@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
