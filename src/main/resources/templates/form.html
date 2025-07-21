@@ -981,7 +981,7 @@
                                             <div
                                                     class="content"
                                                     th:text="${base.isBlankPrint() ? '' : child.element().toDisplayValue(child.value())}"
-                                                    th:style="${base.isBlankPrint() && child.element().getIsMultiline() ? 'min-height: 12em;' : ''}"
+                                                    th:style="${(base.isBlankPrint() && child.element().getIsMultiline() ? 'min-height: 12em;' : '') + 'white-space: pre-wrap;'}"
                                             >
                                             </div>
                                         </div>
