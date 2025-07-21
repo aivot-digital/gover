@@ -70,7 +70,7 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
     }
 
     public static async fetchIdentity(identityId: string): Promise<IdentityData> {
-        const res = await fetch(createApiPath('/api/public/identity/get/'), {
+        const res = await fetch(createApiPath('api/public/identity/get/'), {
             headers: {
                 [IdentityIdHeader]: identityId,
             },
