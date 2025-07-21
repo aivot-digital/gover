@@ -4,6 +4,7 @@
 
 ### Bug Fixes
 * **Backend:** Upgrade GraalVM to the newest polyglot version.
+* **PDF-Print:** Fix issue with empty PDF print not resolving disabled or technical fields correctly.
 
 ## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 

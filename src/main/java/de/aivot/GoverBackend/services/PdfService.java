@@ -99,7 +99,7 @@ public class PdfService {
 
         var derivationContext = formDerivationServiceFactory
                 .create(form, List.of(), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                .derive(form.getRoot(), Map.of());
+                .derive(form.getRoot(), new HashMap<>());
         try {
             derivationContext.close();
         } catch (Exception e) {
