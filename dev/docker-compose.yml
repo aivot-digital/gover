@@ -103,19 +103,17 @@ services:
       - keycloak_database
     command: [ 'start-dev', '--http-port=8080' ]
     environment:
-      KC_HTTP_ENABLED: true
-      KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8888
-      KC_HOSTNAME_PATH: /idp
-      KC_HTTP_RELATIVE_PATH: /idp
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME: http://localhost:8888/idp
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: false
+      KC_HOSTNAME_DEBUG: true
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak
-      KC_FEATURES: transient-users,update-email
+      KC_FEATURES: transient-users,update-email,hostname:v2
     networks:
       - keycloak
       - common
