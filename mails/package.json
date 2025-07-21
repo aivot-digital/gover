@@ -1,5 +1,5 @@
 {
-  "name": "mails",
+  "name": "gover-mail-templates",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -14,7 +14,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "Sustainable Use License (see LICENSE file)",
   "dependencies": {
     "mjml": "^4.15.3"
   }

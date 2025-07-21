@@ -92,6 +92,148 @@ jobs:
             echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           fi
 
+  generateSbom:
+    name: Generate SBOMs and verify license compliance
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    needs:
+      - testBackend
+      - testChangelogChanged
+      - prepareBuildVars
+    env:
+      BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java and Node.js
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prepare sbom output directory
+        run: mkdir -p app/public/sbom/partials
+
+      - name: Update package.json versions
+        run: |
+          echo "Injecting version: ${{ env.BUILD_VERSION }}"
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' app/package.json > app/tmp.json && mv app/tmp.json app/package.json
+          jq --arg v "${{ env.BUILD_VERSION }}" '.version = $v' mails/package.json > mails/tmp.json && mv mails/tmp.json mails/package.json
+
+      - name: Install dependencies
+        run: |
+          npm install --prefix app
+          npm install --prefix mails
+          npm install @cyclonedx/cyclonedx-npm --prefix app
+          npm install @cyclonedx/cyclonedx-npm --prefix mails
+
+      - name: Generate frontend & mail SBOMs
+        run: |
+          (cd app && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.frontend.json)
+          (cd mails && npx --yes @cyclonedx/cyclonedx-npm --output-file ../app/public/sbom/partials/sbom.mails.json)
+
+      - name: Inject backend version and generate SBOM
+        run: |
+          mvn versions:set -DnewVersion=${{ env.BUILD_VERSION }} -DgenerateBackupPoms=false
+          mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+          cp target/bom.json app/public/sbom/partials/sbom.backend.json
+
+      - name: Install cyclonedx-cli
+        run: |
+          curl -sSL https://github.com/CycloneDX/cyclonedx-cli/releases/latest/download/cyclonedx-linux-x64 -o cyclonedx
+          chmod +x cyclonedx
+          sudo mv cyclonedx /usr/local/bin/
+
+      - name: Verify SBOM files exist
+        run: |
+          test -f app/public/sbom/partials/sbom.frontend.json || (echo "Missing sbom.frontend.json" && exit 1)
+          test -f app/public/sbom/partials/sbom.mails.json || (echo "Missing sbom.mails.json" && exit 1)
+          test -f app/public/sbom/partials/sbom.backend.json || (echo "Missing sbom.backend.json" && exit 1)
+
+      - name: Merge SBOMs
+        run: |
+          cyclonedx merge \
+            --input-files app/public/sbom/partials/sbom.frontend.json \
+                           app/public/sbom/partials/sbom.mails.json \
+                           app/public/sbom/partials/sbom.backend.json \
+            --output-file app/public/sbom/sbom.json
+
+      - name: Generate manifest.json
+        run: |
+          cat <<EOF > app/public/sbom/manifest.json
+          {
+            "name": "gover",
+            "version": "${{ env.BUILD_VERSION }}",
+            "commit": "${{ github.sha }}",
+            "buildDate": "${{ env.BUILD_DATE }}",
+            "sbomFormat": "CycloneDX",
+            "sbomSpecVersion": "1.6",
+            "sboms": {
+              "frontend": "partials/sbom.frontend.json",
+              "mails": "partials/sbom.mails.json",
+              "backend": "partials/sbom.backend.json",
+              "merged": "sbom.json"
+            },
+            "reports": [
+              "licenses.csv",
+              "licenses.txt"
+            ]
+          }
+          EOF
+
+      - name: Generate license reports (CSV and TXT)
+        run: python3 .github/scripts/generate_license_reports.py
+
+      - name: Run license compliance check
+        id: license-check
+        run: |
+          python3 .github/scripts/check_licenses.py || true
+
+      - name: Post or update license compliance comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('license_report.md', 'utf8');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const existing = comments.find(comment =>
+              comment.body.includes('<!-- license-check -->')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+
+      - name: Upload SBOM bundle as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-bundle
+          path: app/public/sbom/
+
   buildArm64Image:
     name: Build and push ARM64 image
     if: github.event.pull_request.draft == false
@@ -100,6 +242,7 @@ jobs:
       - testBackend
       - testChangelogChanged
       - prepareBuildVars
+      - generateSbom
     permissions:
       contents: read
       packages: write
@@ -130,6 +273,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Download SBOM bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-bundle
+          path: app/public/sbom/
+
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
@@ -151,6 +300,7 @@ jobs:
       - testBackend
       - testChangelogChanged
       - prepareBuildVars
+      - generateSbom
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -181,6 +331,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Download SBOM bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-bundle
+          path: app/public/sbom/
 
       - name: Build and push image
         uses: docker/build-push-action@v5
@@ -231,4 +387,6 @@ jobs:
           --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-arm64 \
           --append ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-amd64 \
           --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }} \
-          --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          $( [ "${IS_RELEASE}" = "true" ] && echo "--tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" )
+        env:
+          IS_RELEASE: ${{ env.IS_RELEASE }}
