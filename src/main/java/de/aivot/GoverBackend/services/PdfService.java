@@ -212,7 +212,9 @@ public class PdfService {
                 .addPart("files", "footer.html", footerTemplate)
                 .addPart("index", "index.html")
                 .addPart("header", "header.html")
-                .addPart("footer", "footer.html");
+                .addPart("footer", "footer.html")
+                .addPart("paperHeight", "297mm")
+                .addPart("paperWidth", "210mm");
 
         var client = HttpClient.newHttpClient();
         var request = HttpRequest.newBuilder(uri)
