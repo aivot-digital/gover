@@ -7,6 +7,7 @@
 * **Development:** Fix broken keycloak setup in the development environment
 * **Backend:** Upgrade GraalVM to the newest polyglot version.
 * **PDF-Print:** Fix issue with empty PDF print not resolving disabled or technical fields correctly.
+* **PDF-Print:** Preserve line breaks for multiline text input fields in rendered PDFs.
 * **App:** Fix an issue with the sorting in the department memberships list of user profiles.
 * **App:** Fix an issue with the sorting of user memberships in the department details view.
 
