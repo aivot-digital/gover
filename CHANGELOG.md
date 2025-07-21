@@ -7,6 +7,8 @@
 * **Development:** Fix broken keycloak setup in the development environment
 * **Backend:** Upgrade GraalVM to the newest polyglot version.
 * **PDF-Print:** Fix issue with empty PDF print not resolving disabled or technical fields correctly.
+* **App:** Fix an issue with the sorting in the department memberships list of user profiles.
+* **App:** Fix an issue with the sorting of user memberships in the department details view.
 
 ## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 
