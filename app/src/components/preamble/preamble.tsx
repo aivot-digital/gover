@@ -1,5 +1,5 @@
 import {Box, Grid, useTheme} from '@mui/material';
-import React from 'react';
+import React, { type JSX } from 'react';
 
 interface PreambleProps {
     text: string;
@@ -22,11 +22,11 @@ export function Preamble(props: PreambleProps): JSX.Element {
                         justifyContent={'space-between'}
                     >
                         <Grid
-                            item
-                            xs={12}
-                            md={8}
-                            lg={7}
-                        >
+                            size={{
+                                xs: 12,
+                                md: 8,
+                                lg: 7
+                            }}>
                             <Box
                                 sx={{maxWidth: '660px'}}
                             >
@@ -37,10 +37,6 @@ export function Preamble(props: PreambleProps): JSX.Element {
                             </Box>
                         </Grid>
                         <Grid
-                            item
-                            xs={12}
-                            md={4}
-                            lg={5}
                             sx={{
                                 pr: 6,
                                 textAlign: 'center',
@@ -51,7 +47,11 @@ export function Preamble(props: PreambleProps): JSX.Element {
                                     mb: 1,
                                 }
                             }}
-                        >
+                            size={{
+                                xs: 12,
+                                md: 4,
+                                lg: 5
+                            }}>
                             <img
                                 src={props.logoLink}
                                 alt={props.logoAlt}
@@ -67,10 +67,7 @@ export function Preamble(props: PreambleProps): JSX.Element {
                         spacing={10}
                         justifyContent="space-between"
                     >
-                        <Grid
-                            item
-                            xs={12}
-                        >
+                        <Grid size={12}>
                             <Box
                                 sx={{
                                     maxWidth: '660px',

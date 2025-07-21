@@ -1,7 +1,6 @@
-import {Box, Button, FormHelperText, FormLabel, SxProps} from '@mui/material';
-import {DataGrid, GridCellEditCommitParams, GridColumns, GridFooter, GridFooterContainer, GridRenderCellParams, GridSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
+import {Box, FormHelperText, FormLabel, SxProps} from '@mui/material';
+import {DataGrid, GridColDef, GridFooter, GridFooterContainer, GridPaginationModel, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {ReactNode, useMemo, useState} from 'react';
-import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {GridColType} from '@mui/x-data-grid/models/colDef/gridColType';
 import {Actions} from '../actions/actions';
@@ -67,13 +66,16 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
     } = props;
 
     // Store the currently selected rows in this state to be able to delete them later
-    const [selectionModel, setSelectionModel] = useState<GridSelectionModel>();
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>();
 
     // Store the confirm delete function in this state to signal the confirm dialog that the deletion is about to happen
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
 
-    // Store the currently selected page size in this state to be able to change it later
-    const [pageSize, setPageSize] = useState(8);
+    // Store the currently selected page and size in this state to be able to change it later
+    const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+        pageSize: 8,
+        page: 0,
+    });
 
     // Store the help dialog state in this state to signal the help dialog that the deletion is about to happen
     const [showHelpDialog, setShowHelpDialog] = useState(false);
@@ -97,38 +99,47 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             return;
         }
 
+        const selectedIds = (() => {
+            if (Array.isArray(selectionModel)) {
+                return selectionModel;
+            }
+            if (selectionModel?.type === 'include' && selectionModel?.ids instanceof Set) {
+                return Array.from(selectionModel.ids);
+            }
+            return [];
+        })();
+
         // Filter out the rows that are selected
         const updatedRows = value
-            .filter((_: any, index: number) => !selectionModel.includes(index));
+            .filter((_: any, index: number) => !selectedIds.includes(index));
 
         // Propagate the change. If no rows are left, propagate undefined to signal that the field is empty
         onChange(updatedRows.length > 0 ? updatedRows : undefined);
 
         // Reset the selection model and the confirm dialog
-        setSelectionModel([]);
+        setSelectionModel({ type: 'include', ids: new Set() });
         setConfirmDelete(undefined);
     };
 
-    const handleCellEdit = (params: GridCellEditCommitParams) => {
+    const handleRowUpdate = (newRow: any, oldRow: any) => {
         // Extract the index of the currently edited row
-        let rowIndex = params.id;
+        let rowIndex = newRow.id;
         if (typeof rowIndex === 'string') {
             rowIndex = parseInt(rowIndex, 10);
         }
 
         // Create a new updated value array with the updated value
         const updatedValues = [...value];
-        updatedValues[rowIndex] = {
-            ...updatedValues[rowIndex],
-            [params.field]: params.value,
-        };
+        updatedValues[rowIndex] = newRow;
 
         // Propagate the change
         onChange(updatedValues);
+
+        return { ...newRow, updatedAt: new Date() };
     };
 
     // Determine the columns for the data grid based on the fields of the element
-    const columns: GridColumns = useMemo(() => {
+    const columns: GridColDef[] = useMemo(() => {
         return fields.map((field) => ({
             field: field.key,
             headerName: field.label + (field.required ? ' *' : ''),
@@ -160,7 +171,19 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
         }));
     }, [value, rowsHaveIds]);
 
-    const hasSelectedRows = useMemo(() => selectionModel != null && selectionModel.length > 0, [selectionModel]);
+    const hasSelectedRows = useMemo(() => {
+        if (Array.isArray(selectionModel)) {
+            return selectionModel.length > 0;
+        }
+        if (
+            typeof selectionModel === 'object' &&
+            selectionModel?.type === 'include' &&
+            selectionModel?.ids instanceof Set
+        ) {
+            return selectionModel.ids.size > 0;
+        }
+        return false;
+    }, [selectionModel]);
 
     return (
         <>
@@ -168,23 +191,27 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                 sx={sx}
                 rows={rows}
                 columns={columns}
-                pageSize={pageSize}
-                rowsPerPageOptions={[8, 16, 32]}
-                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={[8, 16, 32]}
                 autoHeight
+                showToolbar
 
-                checkboxSelection={!disabled}
-                disableSelectionOnClick
-                onSelectionModelChange={setSelectionModel}
-                selectionModel={selectionModel}
+                checkboxSelection={!props.disabled}
+                onRowClick={(params, event) => {
+                    event.defaultMuiPrevented = true;
+                }}
 
-                onCellEditCommit={handleCellEdit}
+                rowSelectionModel={selectionModel}
+                onRowSelectionModelChange={(newModel) => setSelectionModel(newModel)}
+
+                processRowUpdate={handleRowUpdate}
 
                 disableColumnSelector
                 disableColumnFilter
 
-                components={{
-                    NoRowsOverlay: () => (
+                slots={{
+                    noRowsOverlay: () => (
                         <Box
                             sx={{
                                 display: 'flex',
@@ -197,7 +224,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                             {noRowsPlaceholder ?? 'Keine Einträge vorhanden'}
                         </Box>
                     ),
-                    Toolbar: () => (
+                    toolbar: () => (
                         <Box
                             sx={{
                                 display: 'flex',
@@ -248,7 +275,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                             }
                         </Box>
                     ),
-                    Footer: () => (
+                    footer: () => (
                         <GridFooterContainer>
                             {
                                 (error ?? hint) != null &&

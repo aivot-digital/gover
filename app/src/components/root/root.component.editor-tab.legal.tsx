@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {Grid, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -43,16 +43,15 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
             >
                 Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Text für das Impressum"
                         value={props.entity.imprintDepartmentId?.toString() ?? undefined}
@@ -66,10 +65,10 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Text für die Datenschutzerklärung"
                         value={props.entity.privacyDepartmentId?.toString() ?? undefined}
@@ -83,10 +82,10 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={4}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 4
+                    }}>
                     <SelectFieldComponent
                         label="Text für die Erklärung der Barrierefreiheit"
                         value={props.entity.accessibilityDepartmentId?.toString() ?? undefined}
@@ -100,21 +99,19 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Informationen zum Datenschutz"
                 variant={"h5"}
             />
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.privacyText ?? ''}
                         label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
@@ -134,21 +131,19 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                     </Typography>
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Lösch- und Zugriffsfristen"
                 variant={"h5"}
             />
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <NumberFieldComponent
                         label="Löschfrist in Wochen"
                         hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie 0 ein um Anträge nicht zu löschen."
@@ -166,10 +161,10 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <NumberFieldComponent
                         label="Zugriffsfrist in Stunden"
                         hint="Die Zeit in Stunden, in der Nutzer:innen noch auf die von Ihnen gestellten Anträge zugreifen und diese herunterladen können."

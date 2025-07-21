@@ -1,6 +1,6 @@
-import React, {FormEvent, useState} from 'react';
+import React, { FormEvent, useState, type JSX } from 'react';
 import {type PublishPresetVersionDialogProps} from './publish-preset-version-dialog-props';
-import Dialog, {type DialogProps} from '@mui/material/Dialog/Dialog';
+import Dialog, {type DialogProps} from '@mui/material/Dialog';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';

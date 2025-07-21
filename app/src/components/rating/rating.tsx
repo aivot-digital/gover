@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {Rating as MuiRating, useTheme} from '@mui/material';
 import {type IconContainerProps} from '@mui/material/Rating';
 import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
@@ -13,7 +13,7 @@ interface RatingProps {
 }
 
 const customIcons: Record<string, {
-    icon: React.ReactElement;
+    icon: React.ReactElement<any>;
     label: string;
 }> = {
     1: {

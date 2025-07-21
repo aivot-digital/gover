@@ -1,8 +1,8 @@
-import React, {type PropsWithChildren, useState} from 'react';
+import React, { type PropsWithChildren, useState, type JSX } from 'react';
 import {type TableWrapperProps} from './table-wrapper-props';
 import {DataGrid, type GridValidRowModel} from '@mui/x-data-grid';
 import {ListHeader} from '../list-header/list-header';
-import {Box, IconButton} from '@mui/material';
+import {Box} from '@mui/material';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
 export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildren<TableWrapperProps<T>>): JSX.Element {
@@ -27,7 +27,10 @@ export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildr
         ...pageWrapperProps
     } = props;
 
-    const [pageSize, setPageSize] = useState(48);
+    const [paginationModel, setPaginationModel] = useState({
+        pageSize: 48,
+        page: 0,
+    });
 
     return (
         <>
@@ -57,18 +60,18 @@ export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildr
                 <DataGrid
                     rows={rows}
                     columns={columns}
-                    pageSize={pageSize}
-                    onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                    rowsPerPageOptions={[12, 24, 48, 96]}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={(model) => setPaginationModel(model)}
+                    pageSizeOptions={[12, 24, 48, 96]}
                     onRowClick={(event) => {
                         onRowClick(event.row);
                     }}
-                    disableSelectionOnClick={true}
+                    isRowSelectable={() => false}
                     disableColumnFilter={false}
                     disableColumnMenu={false}
                     autoHeight={true}
-                    components={{
-                        NoRowsOverlay: () => (
+                    slots={{
+                        noRowsOverlay: () => (
                             <Box
                                 sx={{
                                     width: '100%',
@@ -85,16 +88,6 @@ export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildr
                                 }
                             </Box>
                         ),
-                    }}
-                    componentsProps={{
-                        baseFormControl: {
-                            fullWidth: false,
-                            margin: 'none',
-                        },
-                        baseTextField: {
-                            fullWidth: false,
-                            margin: 'none',
-                        },
                     }}
                     getRowId={getRowId}
                     sx={{

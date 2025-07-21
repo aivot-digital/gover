@@ -49,7 +49,6 @@ export function FunctionSelector(props: FunctionSelectorProps) {
             >
                 Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.
             </ElementEditorSectionHeader>
-
             <Grid
                 container
                 spacing={2}
@@ -60,11 +59,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
                 {
                     options
                         .map((option, index) => (
-                            <Grid
-                                item
-                                xs={props.fullWidth ? 12 : 6}
-                                key={option.title}
-                            >
+                            <Grid key={option.title} size={props.fullWidth ? 12 : 6}>
                                 <Box
                                     sx={{
                                         p: 2,

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, type JSX } from 'react';
 import { Box, Button } from '@mui/material';
 
 function syntaxHighlight(jsonString: string): JSX.Element[] {

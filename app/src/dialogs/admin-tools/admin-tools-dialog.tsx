@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, type JSX } from 'react';
 import {Box, Button, Dialog, DialogContent, FormControlLabel, FormGroup, FormHelperText, Grid, Switch, Typography} from '@mui/material';
 import {useDispatch} from 'react-redux';
 import {type AppDispatch, type RootState} from '../../store';
@@ -189,11 +189,11 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
                         {
                             actions.map(action => (
                                 <Grid
-                                    item
                                     key={action.label}
-                                    xs={12}
-                                    md={6}
-                                >
+                                    size={{
+                                        xs: 12,
+                                        md: 6
+                                    }}>
                                     <Button
                                         fullWidth
                                         onClick={action.onClick}
@@ -211,7 +211,6 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
                     </Grid>
                 </DialogContent>
             </Dialog>
-
             <Dialog
                 open={showMetrics}
                 onClose={() => {
@@ -234,13 +233,11 @@ export function AdminToolsDialog(props: AdminToolsDialogProps): JSX.Element {
                     }
                 </DialogContent>
             </Dialog>
-
             <ExportApplicationDialog
                 open={exportDialogOpen}
                 onCancel={() => setExportDialogOpen(false)}
                 onExport={startExportForm}
             />
-
             <PrefillFormDialog
                 open={showPrefill}
                 onClose={() => setShowPrefill(false)}

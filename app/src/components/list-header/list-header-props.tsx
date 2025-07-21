@@ -1,5 +1,7 @@
 import {BadgeProps} from '@mui/material';
 
+import type { JSX } from "react";
+
 type ListHeaderAction = {icon: JSX.Element, badge?: BadgeProps} & ({label: string} | {tooltip: string}) & ({onClick: (event: React.MouseEvent<HTMLButtonElement>) => void} | {link: string} | {href: string, target?: string;});
 
 export interface ListHeaderProps {

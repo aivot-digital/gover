@@ -1,5 +1,5 @@
 import {Box, Button, Checkbox, FormControlLabel, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {format, parseISO} from 'date-fns';
 import {getFullName, type User} from '../../models/entities/user';

@@ -6,10 +6,10 @@ import React from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import {useAdminGuard} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
-import {AppInfo} from '../../../../../app-info';
 import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
+import {CellContentWrapper} from '../../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function UserListPage() {
     useAdminGuard();
@@ -99,7 +99,7 @@ export function UserListPage() {
                     {
                         field: 'icon',
                         headerName: '',
-                        renderCell: () => <PersonOutlined />,
+                        renderCell: () => <CellContentWrapper><PersonOutlined /></CellContentWrapper>,
                         disableColumnMenu: true,
                         width: 24,
                         sortable: false,

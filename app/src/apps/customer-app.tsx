@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {createBrowserRouter as createRouter, RouterProvider} from 'react-router-dom';
+import {createBrowserRouter, RouterProvider} from 'react-router-dom';
 import {setSystemConfigs} from '../slices/system-config-slice';
 import {customerAppRoutes} from './customer-app-routes';
 import {ApiService} from '../services/api-service';
@@ -8,9 +8,14 @@ import {Error} from '../pages/shared/error/error';
 import {SystemConfigResponseDto} from '../modules/configs/dtos/system-config-response-dto';
 import {Page} from '../models/dtos/page';
 import {createApiPath} from '../utils/url-path-utils';
+import * as Sentry from "@sentry/react";
 
-const router = createRouter(
-    [
+// Must be called after Sentry.init() as per Sentry docs; Wrapped regardless of Sentry being active, safe to call even without Sentry.init()
+const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
+    createBrowserRouter,
+);
+
+const router = sentryCreateBrowserRouter(    [
         {
             errorElement: <Error />,
             children: Object

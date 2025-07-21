@@ -133,18 +133,16 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     {element.label}
                 </FormLabel>
             }
-
             {
                 (element.hint != null) &&
                 <FormHelperText>
                     {element.hint}
                 </FormHelperText>
             }
-
             {
                 value?.map((val: string, valueIndex: number) => derivationTriggerIdQueue.includes(val) ? (
                     // Skeleton
-                    <Box
+                    (<Box
                         key={val}
                         sx={{
                             my: 2,
@@ -181,11 +179,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                         >
                             {
                                 Array.from({length: (element.children?.length ?? 2)}).map((_, i) => (
-                                    <Grid
-                                        item
-                                        xs={12}
-                                        key={i}
-                                    >
+                                    <Grid key={i} size={12}>
                                         <Skeleton
                                             variant="rectangular"
                                             height={56}
@@ -195,7 +189,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                 ))
                             }
                         </Grid>
-                    </Box>
+                    </Box>)
                 ) : (
                     <Box
                         key={val}
@@ -301,7 +295,6 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     </Button>
                 </div>
             }
-
             <ConfirmDialog
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}

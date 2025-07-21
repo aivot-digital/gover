@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, type JSX } from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import {Box, Button, FormControl, FormLabel, Grid, Tooltip, Typography} from '@mui/material';
 import {StepIconsMap} from '../../data/step-icons';
@@ -27,10 +27,10 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.title ?? ''}
                         label="Titel des Abschnitts"
@@ -43,7 +43,6 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, Applicat
                     />
                 </Grid>
             </Grid>
-
             <FormControl margin="normal">
                 <FormLabel>Symbol (Icon) für diesen Abschnitt</FormLabel>
 

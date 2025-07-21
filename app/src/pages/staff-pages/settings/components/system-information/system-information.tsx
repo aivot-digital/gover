@@ -172,8 +172,6 @@ export function SystemInformation() {
                 cardVariant="outlined"
                 items={systemInformationItems}
             />
-
-
             <StatusTable
                 sx={{
                     mt: 4,
@@ -200,7 +198,6 @@ export function SystemInformation() {
                 cardVariant="outlined"
                 items={componentInformationItems}
             />
-
             {
                 health != null &&
                 health === 'error' &&
@@ -208,7 +205,6 @@ export function SystemInformation() {
                     Der Systemstatus konnte nicht abgerufen werden.
                 </AlertComponent>
             }
-
             <Box
                 sx={{
                     mt: 4,
@@ -250,7 +246,6 @@ export function SystemInformation() {
                     HTTP-Austausch herunterladen (CSV)
                 </Button>
             </Box>
-
             <Box
                 sx={{
                     mt: 4,
@@ -273,12 +268,12 @@ export function SystemInformation() {
                 >
                     {serviceProviders.map((serviceProvider) => (
                         <Grid
-                            item
-                            xs={12}
-                            sm={6}
-                            md={4}
                             key={serviceProvider.packageName}
-                        >
+                            size={{
+                                xs: 12,
+                                sm: 6,
+                                md: 4
+                            }}>
                             <Card
                                 variant="outlined"
                                 sx={{display: 'flex', flexDirection: 'column', height: '100%'}}

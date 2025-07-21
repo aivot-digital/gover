@@ -24,9 +24,6 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                 }}
             >
                 <Grid
-                    item
-                    xs={12}
-                    md={4}
                     sx={{
                         textAlign: 'left',
                         pr: 5,
@@ -34,7 +31,10 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                             textAlign: 'right',
                         },
                     }}
-                >
+                    size={{
+                        xs: 12,
+                        md: 4
+                    }}>
                     <Typography
                         variant="body2"
                         sx={{
@@ -48,10 +48,10 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                 {
                     values.length === 0 &&
                     <Grid
-                        item
-                        xs={12}
-                        md={8}
-                    >
+                        size={{
+                            xs: 12,
+                            md: 8
+                        }}>
                         <Typography
                             variant="body2"
                         >
@@ -60,7 +60,6 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                     </Grid>
                 }
             </Grid>
-
             {
                 values.map((val, index) => (
                     <Box
@@ -82,9 +81,6 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                             }}
                         >
                             <Grid
-                                item
-                                xs={12}
-                                md={4}
                                 sx={{
                                     textAlign: 'left',
                                     pr: 5,
@@ -92,7 +88,10 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                                         textAlign: 'right',
                                     },
                                 }}
-                            >
+                                size={{
+                                    xs: 12,
+                                    md: 4
+                                }}>
                                 <Typography
                                     variant="body2"
                                     sx={{
@@ -111,10 +110,10 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                                 </Typography>
                             </Grid>
                             <Grid
-                                item
-                                xs={12}
-                                md={8}
-                            >
+                                size={{
+                                    xs: 12,
+                                    md: 8
+                                }}>
                                 <Chip
                                     sx={{ml: -1}}
                                     size="small"

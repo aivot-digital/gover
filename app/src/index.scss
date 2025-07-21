@@ -53,7 +53,7 @@ body {
 
 .MuiTypography-body2 > a,
 .MuiAccordionDetails-root a {
-  color: var(--hw-primary);
+  color: var(--gover-theme-primary);
   text-decoration: none;
   position: relative;
   transition: all 150ms ease-in-out;
@@ -97,13 +97,13 @@ body {
 
 .MuiTypography-body2 > a:hover,
 .MuiAccordionDetails-root a:hover {
-  color: var(--hw-primary-dark);
+  color: var(--gover-theme-primary-dark);
 }
 
 .MuiTypography-body2 > a:hover::before,
 .MuiAccordionDetails-root a:hover::before {
   height: 1px;
-  background-color: var(--hw-primary);
+  background-color: var(--gover-theme-primary);
 }
 
 /* Public Sans webfonts */

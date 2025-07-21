@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type JSX } from 'react';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FormGroup, Grid, InputLabel} from '@mui/material';
 import {CheckboxTree} from '../checkbox-tree/checkbox-tree';
@@ -91,10 +91,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <RichTextEditorComponentView
                         value={props.element.teaserText ?? ''}
                         label="Kurzbeschreibung"
@@ -108,15 +108,15 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                />
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }} />
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.initiativeLogoLink ?? ''}
                         label="Die Kurzbeschreibung ergänzendes Logo (z.B. für Projekt, Programm o.Ä.)"
@@ -130,10 +130,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <TextFieldComponent
                         value={props.element.initiativeName ?? ''}
                         label="Alternativtext (Alt-Text) für das ergänzende Logo"
@@ -148,21 +148,19 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Informationen für antragstellende Personen"
                 variant={"h5"}
             />
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
                     <FormGroup
                         sx={{
                             mt: 2,
@@ -198,12 +196,10 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     />
                 </Grid>
             </Grid>
-
             <ElementEditorSectionHeader
                 title="Dokumente des Antrages"
                 variant={"h5"}
             />
-
             <StringListInput
                 label="Relevante Dokumente"
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
@@ -218,7 +214,6 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 allowEmpty={true}
                 disabled={!props.editable}
             />
-
             <StringListInput
                 label="Einzureichende Dokumente"
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
@@ -233,7 +228,6 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 allowEmpty={true}
                 disabled={!props.editable}
             />
-
         </>
     );
 }

@@ -16,12 +16,13 @@ import {GridColDef, GridRenderCellParams} from '@mui/x-data-grid';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {useNavigate} from 'react-router-dom';
+import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 
 const _columns: Array<GridColDef<Preset>> = [
     {
         field: 'icon',
         headerName: '',
-        renderCell: () => <CopyAllOutlined />,
+        renderCell: () => <CellContentWrapper><CopyAllOutlined /></CellContentWrapper>,
         disableColumnMenu: true,
         width: 24,
         sortable: false,

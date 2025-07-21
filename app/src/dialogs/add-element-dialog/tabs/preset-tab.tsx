@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState, type JSX } from 'react';
 import {type Preset} from '../../../models/entities/preset';
 import {type BaseTabProps} from './base-tab-props';
 import {

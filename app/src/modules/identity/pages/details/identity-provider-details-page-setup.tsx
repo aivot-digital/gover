@@ -164,8 +164,7 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.BundID && (
                 <SetupInfoBlock
                     title="Einrichtung der BundID"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP)
-                    des Bundesministerium des Innern und für Heimat bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP) des Bundesministerium des Innern und für Heimat bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
@@ -194,8 +193,7 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.BayernID && (
                 <SetupInfoBlock
                     title="Einrichtung der BayernID"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BayernID einer technischen Anbindung bei der AKDB bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BayernID einer technischen Anbindung bei der AKDB bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
@@ -219,8 +217,7 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.SHID && (
                 <SetupInfoBlock
                     title="Einrichtung des Servicekonto Schleswig-Holstein"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei der Dataport bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei der Dataport bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
@@ -244,8 +241,7 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.MUK && (
                 <SetupInfoBlock
                     title="Einrichtung des Mein Unternehmenskonto (MUK)"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Mein Unternehmenskontos einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Mein Unternehmenskontos einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,

@@ -1,5 +1,5 @@
-import {DataGrid, GridSortModel} from '@mui/x-data-grid';
-import {Box, CircularProgress, Menu, MenuItem, Tab, Tabs} from '@mui/material';
+import {DataGrid, gridClasses, GridSortModel} from '@mui/x-data-grid';
+import {Box, CircularProgress, Menu, MenuItem, styled, Tab, Tabs} from '@mui/material';
 import React, {useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
@@ -193,6 +193,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 field: 'actions',
                 headerName: '',
                 sortable: false,
+                resizable: false,
                 // dynamic width calculation would result in a layout shift of the table, so we use a prop
                 width: props.rowActionsCount ? (props.rowActionsCount * 42) + 26 : (4 * 42) + 26,
                 renderCell: (params) => {
@@ -221,6 +222,50 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
 
     const showTopControls =
         ((props.filters != null && props.filters.length > 0) || props.disableFullWidthToggle !== true);
+
+    const StyledGridOverlay = styled('div')(({ theme }) => ({
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        backgroundColor: 'rgba(18, 18, 18, 0.9)',
+        ...theme.applyStyles('light', {
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        }),
+    }));
+
+    const LoadingOverlay = () => (
+        <StyledGridOverlay>
+            <Box
+                sx={{
+                    position: 'relative',
+                    display: 'inline-flex'
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        </StyledGridOverlay>
+    );
+
+    const NoRowsOverlay = () => (
+        <StyledGridOverlay>
+            <Box
+                sx={{
+                    position: 'relative',
+                    display: 'inline-flex'
+                }}
+            >
+                {
+                    isStringNotNullOrEmpty(search) ?
+                        (props.noSearchResultsPlaceholder ?? 'Keine Suchergebnisse gefunden.') :
+                        (props.noDataPlaceholder ?? 'Keine Daten vorhanden.')
+                }
+            </Box>
+        </StyledGridOverlay>
+    );
+
+    const lastColIndex = columnDefinitions.length - 1;
 
     return (
         <Box
@@ -353,15 +398,16 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     columns={columnDefinitions}
                     getRowId={props.getRowIdentifier}
                     rows={items?.content ?? []}
-                    page={currentPage}
-                    onPageChange={(newPage) => setCurrentPage(newPage)}
-                    pageSize={pageSize}
-                    onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                    rowsPerPageOptions={[12, 24, 48, 96]}
+                    paginationModel={{ page: currentPage, pageSize }}
+                    onPaginationModelChange={({ page, pageSize }) => {
+                        setCurrentPage(page);
+                        setPageSize(pageSize);
+                    }}
+                    pageSizeOptions={[12, 24, 48, 96]}
                     loading={isBusy}
                     rowCount={items?.totalElements ?? 0}
                     pagination={true}
-                    disableSelectionOnClick={true}
+                    isRowSelectable={() => false}
                     paginationMode="server"
                     filterMode="server"
                     sortingMode="server"
@@ -385,60 +431,35 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                         borderRadius: 0,
                         borderLeft: 'none',
                         borderRight: 'none',
-                        '& .MuiDataGrid-columnHeader:first-of-type, & .MuiDataGrid-cell:first-of-type': {
+                        '& .MuiDataGrid-columnHeader:first-of-type, & .MuiDataGrid-cell[data-colindex="0"]': {
                             paddingLeft: '16px',
                         },
-                        '& .MuiDataGrid-columnHeader:last-of-type, & .MuiDataGrid-cell:last-of-type': {
+                        [`& .MuiDataGrid-columnHeader:last-of-type, & .MuiDataGrid-cell[data-colindex="${lastColIndex}"]`]: {
                             paddingRight: '16px',
                         },
-                        '& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus': {
-                            outline: 'none',
-                        },
-                        '& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus-within': {
-                            outline: 'none',
-                        },
-                        '& .MuiDataGrid-columnHeaders': {
+                        '& .MuiDataGrid-columnHeader': {
                             backgroundColor: 'rgba(20, 38, 56, 0.06)',
                         },
-                        '& .MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader:last-of-type .MuiDataGrid-columnSeparator': {
-                            display: 'none',
+                        '& .MuiDataGrid-columnHeader .MuiDataGrid-columnSeparator': {
+                            color: 'rgba(20, 38, 56, 0.2)',
+                        },
+                        // Remove cell focus outline
+                        [`& .${gridClasses.cell}:focus, & .${gridClasses.cell}:focus-within`]: {
+                            outline: 'none',
+                        },
+                        [`& .${gridClasses.columnHeader}:focus, & .${gridClasses.columnHeader}:focus-within`]: {
+                            outline: 'none',
+                        },
+                        // Remove drag handle for columns that are not resizeable
+                        [`& .${gridClasses.columnSeparator}`]: {
+                            [`&:not(.${gridClasses['columnSeparator--resizable']})`]: {
+                                display: 'none',
+                            },
                         },
                     }}
-                    components={{
-                        LoadingOverlay: () => (
-                            <Box
-                                sx={{
-                                    position: 'absolute',
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                                    backdropFilter: 'blur(0.5em)',
-                                    zIndex: 1000,
-                                }}
-                            >
-                                <CircularProgress />
-                            </Box>
-                        ),
-                        NoRowsOverlay: () => (
-                            <Box
-                                sx={{
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                            >
-                                {
-                                    isStringNotNullOrEmpty(search) ?
-                                        (props.noSearchResultsPlaceholder ?? 'Keine Suchergebnisse gefunden.') :
-                                        (props.noDataPlaceholder ?? 'Keine Daten vorhanden.')
-                                }
-                            </Box>
-                        ),
+                    slots={{
+                        loadingOverlay: LoadingOverlay,
+                        noRowsOverlay: NoRowsOverlay,
                     }}
                 />
             </Box>

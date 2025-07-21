@@ -1,7 +1,7 @@
 import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {HintTooltip} from '../hint-tooltip/hint-tooltip';
-import React, {useState} from 'react';
+import React, { useState, type JSX } from 'react';
 import {HintProps} from './hint-props';
 import {Box, Dialog, DialogContent, IconButton, Link} from '@mui/material';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';

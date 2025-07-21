@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useRef} from 'react';
+import React, { useState, useMemo, useEffect, useRef, type JSX } from 'react';
 import {Box, IconButton, InputAdornment, TextField, Typography} from '@mui/material';
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
