@@ -1,6 +1,4 @@
 import React, {useContext} from 'react';
-import {useApi} from '../../../../../hooks/use-api';
-import {DepartmentMembership} from '../../../../departments/models/department-membership';
 import {DepartmentMembershipsApiService} from '../../../../departments/department-memberships-api-service';
 import type {GridColDef} from '@mui/x-data-grid';
 import {UserRoleLabels} from '../../../../../data/user-role';
@@ -10,10 +8,7 @@ import {CellLink} from '../../../../../components/cell-link/cell-link';
 import {Box, Typography} from '@mui/material';
 import {type User} from '../../../../../models/entities/user';
 import {DepartmentMembershipResponseDTO} from '../../../../departments/dtos/department-membership-response-dto';
-import {
-    GenericDetailsPageContext,
-    GenericDetailsPageContextType,
-} from '../../../../../components/generic-details-page/generic-details-page-context';
+import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../../components/generic-details-page/generic-details-page-context';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
 
 const columns: Array<GridColDef<DepartmentMembershipResponseDTO>> = [
