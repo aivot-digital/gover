@@ -1,13 +1,14 @@
 import React, {useContext} from 'react';
 import {DepartmentMembershipsApiService} from '../../../../departments/department-memberships-api-service';
-import type {GridColDef} from '@mui/x-data-grid';
+import {type GridColDef} from '@mui/x-data-grid';
 import {UserRoleLabels} from '../../../../../data/user-role';
-import {EditOutlined} from '@mui/icons-material';
+import EditOutlined from '@mui/icons-material/EditOutlined';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
-import {Box, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import {type User} from '../../../../../models/entities/user';
-import {DepartmentMembershipResponseDTO} from '../../../../departments/dtos/department-membership-response-dto';
+import {type DepartmentMembershipResponseDTO} from '../../../../departments/dtos/department-membership-response-dto';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../../components/generic-details-page/generic-details-page-context';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
 
@@ -68,7 +69,7 @@ export function UserDetailsPageDepartmentMemberships() {
                 columnDefinitions={columns}
                 fetch={(options) => {
                     return new DepartmentMembershipsApiService(options.api)
-                        .listAll({
+                        .listAllOrdered((options.sort === 'departmentName' ? 'name' : 'membershipRole') as any, options.order, {
                             userId: user?.id,
                             departmentName: options.search,
                         });
