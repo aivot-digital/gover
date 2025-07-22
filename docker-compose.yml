@@ -117,7 +117,7 @@ services:
 
 
   gover:
-    image: ghcr.io/aivot-digital/gover:4.5.0
+    image: ghcr.io/aivot-digital/gover:4.5.1
     depends_on:
       - gover_database
       - clamav
@@ -190,7 +190,7 @@ services:
 
 
   gover_staff_app:
-    image: ghcr.io/aivot-digital/gover:4.5.0
+    image: ghcr.io/aivot-digital/gover:4.5.1
     restart: always
     command: staff
     networks:
@@ -203,7 +203,7 @@ services:
 
 
   gover_customer_app:
-    image: ghcr.io/aivot-digital/gover:4.5.0
+    image: ghcr.io/aivot-digital/gover:4.5.1
     restart: always
     command: customer
     networks:
