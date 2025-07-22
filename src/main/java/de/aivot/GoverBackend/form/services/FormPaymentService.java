@@ -159,6 +159,7 @@ public class FormPaymentService {
     ) throws PaymentException {
         if (product.getUpfrontQuantityJavascript() != null && product.getUpfrontQuantityJavascript().isNotEmpty()) {
             var res = javascriptEngine
+                    .registerGlobalContextObject(context)
                     .evaluateCode(product.getUpfrontQuantityJavascript());
 
             if (res == null) {

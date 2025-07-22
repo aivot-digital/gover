@@ -245,7 +245,7 @@ export function DepartmentsDetailsPageMembers() {
                         .list(
                             options.page,
                             options.size,
-                            options.sort,
+                            (options.sort as any) === 'enabled' ? 'userEnabled' : options.sort,
                             options.order,
                             filters,
                         );
