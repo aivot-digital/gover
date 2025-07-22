@@ -11,6 +11,17 @@
 * **System:** Implemented a license compliance check in the build process to ensure all dependencies comply with licensing requirements.
 * **Backend:** Upgraded most backend maven dependencies to the latest versions
 
+## [4.5.1](https://github.com/aivot-digital/gover/compare/v4.5.0...v4.5.1) (2025-07-22)
+
+### Bug Fixes
+* **Payment:** Fix issue with missing context object int the payment quantity calculation low code.
+* **Development:** Fix broken keycloak setup in the development environment.
+* **Backend:** Upgrade GraalVM to the newest polyglot version.
+* **PDF-Print:** Fix issue with empty PDF print not resolving disabled or technical fields correctly.
+* **PDF-Print:** Preserve line breaks for multiline text input fields in rendered PDFs.
+* **App:** Fix an issue with the sorting in the department memberships list of user profiles.
+* **App:** Fix an issue with the sorting of user memberships in the department details view.
+
 ## [4.5.0](https://github.com/aivot-digital/gover/compare/v4.4.0...v4.5.0) (2025-06-27)
 
 ### Features
