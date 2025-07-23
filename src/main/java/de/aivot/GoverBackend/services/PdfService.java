@@ -16,7 +16,7 @@ import de.aivot.GoverBackend.identity.models.IdentityValue;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
-import de.aivot.GoverBackend.models.config.PuppetPdfConfig;
+import de.aivot.GoverBackend.models.config.GotenbergConfig;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.GoverBackend.payment.services.PaymentProviderDefinitionsService;
@@ -25,8 +25,8 @@ import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
+import de.aivot.GoverBackend.utils.MultipartUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -41,7 +41,7 @@ import java.util.*;
 
 @Component
 public class PdfService {
-    private final PuppetPdfConfig puppetPdfConfig;
+    private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
     private final DepartmentRepository departmentRepository;
     private final AssetRepository assetRepository;
@@ -55,7 +55,7 @@ public class PdfService {
 
     @Autowired
     public PdfService(
-            PuppetPdfConfig puppetPdfConfig,
+            GotenbergConfig gotenbergConfig,
             SystemConfigService systemConfigService,
             DepartmentRepository departmentRepository,
             AssetRepository assetRepository,
@@ -67,7 +67,7 @@ public class PdfService {
             PaymentProviderRepository paymentProviderRepository,
             PaymentProviderDefinitionsService paymentProviderDefinitionsService
     ) {
-        this.puppetPdfConfig = puppetPdfConfig;
+        this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.departmentRepository = departmentRepository;
         this.assetRepository = assetRepository;
@@ -80,16 +80,16 @@ public class PdfService {
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
     }
 
-    public void testPuppetPdfConnection() throws IOException, InterruptedException {
+    public void testGotenbergConnection() throws IOException, InterruptedException {
         try (var client = HttpClient.newHttpClient()) {
             var request = HttpRequest
-                    .newBuilder(URI.create("http://" + puppetPdfConfig.getHost() + ":" + puppetPdfConfig.getPort() + "/health"))
+                    .newBuilder(URI.create("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/health"))
                     .GET()
                     .build();
-            var response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+
+            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
-                throw new IOException("Failed to connect to Puppet PDF with status code: " + response.statusCode());
+                throw new IOException("Failed to connect to Gotenberg. Status code: " + response.statusCode());
             }
         }
     }
@@ -195,37 +195,42 @@ public class PdfService {
                         : null
         );
 
-        return generatePuppetPdf(form, dto);
+        return generateGotenbergPdf(form, dto);
     }
 
-    private byte[] generatePuppetPdf(Form form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
-        String template = loadContentTemplate(form, dto).replaceAll("(?m)^[ \\t]*\\r?\\n", "");
+    private byte[] generateGotenbergPdf(Form form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+        String template = loadContentTemplate(form, dto);
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
-        var uri = new URI("http://" + puppetPdfConfig.getHost() + ":" + puppetPdfConfig.getPort() + "/print");
+        var boundary = "----GotenbergBoundary";
+        var uri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
-        JSONObject json = new JSONObject();
-        json.put("html", template);
-        json.put("headerTemplate", headerTemplate);
-        json.put("footerTemplate", footerTemplate);
+        var multipart = new MultipartUtils.MultipartBodyPublisher(boundary)
+                .addPart("files", "index.html", template)
+                .addPart("files", "header.html", headerTemplate)
+                .addPart("files", "footer.html", footerTemplate)
+                .addPart("index", "index.html")
+                .addPart("header", "header.html")
+                .addPart("footer", "footer.html")
+                .addPart("paperHeight", "297mm")
+                .addPart("paperWidth", "210mm");
 
         var client = HttpClient.newHttpClient();
-        var request = HttpRequest
-                .newBuilder(uri)
-                .headers("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json.toString()))
+        var request = HttpRequest.newBuilder(uri)
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(multipart.build())
                 .build();
+
         var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
         if (response.statusCode() != 200) {
-            throw new IOException("Failed to generate PDF with status code: " + response.statusCode());
+            throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
         }
 
         var body = response.body();
-        var bytes = body.readAllBytes();
+        byte[] bytes = body.readAllBytes();
         body.close();
-
-        client.close();
 
         return bytes;
     }

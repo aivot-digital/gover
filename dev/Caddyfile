@@ -44,4 +44,8 @@ http://localhost:80 {
     handle @customer {
         reverse_proxy host.docker.internal:3000
     }
+
+    header /assets/fonts/* {
+        Access-Control-Allow-Origin *
+    }
 }

@@ -29,11 +29,11 @@ services:
     ports:
       - "6379:6379"
 
-  puppet:
-    image: ghcr.io/aivot-digital/puppet-pdf:2.0.0
+  gotenberg:
+    image: gotenberg/gotenberg:8
     restart: always
     environment:
-      PORT: 9090
+      API_PORT: 9191
     network_mode: host
 
   minio:
@@ -126,12 +126,6 @@ services:
       OIDC_CLIENT_SECRET: beqZ5dWAubqxhSHDRNHjSfH4aig3AtXC
       OIDC_HOST: http://localhost:9595/idp
       OIDC_REALM: staff
-
-  gotenberg:
-    image: thecodingmachine/gotenberg:8.21.1
-    restart: always
-    ports:
-      - "9400:3000"
 
   rabbitmq:
     image: rabbitmq:4.1.1-management
