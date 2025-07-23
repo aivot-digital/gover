@@ -26,18 +26,18 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
-import {usePrompt} from '../../../providers/prompt-provider';
 import {CustomerInput} from '../../../models/customer-input';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {FormState} from '../../../models/dtos/form-state';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
+import {useConfirm} from '../../../providers/confirm-provider';
 
 export function PresetEditPage(): JSX.Element {
     const api = useApi();
     const dispatch = useAppDispatch();
-    const showPrompt = usePrompt();
+    const showConfirm = useConfirm();
 
     const [isBusy, setIsBusy] = useState(false);
     const [isDeriving, setIsDeriving] = useState(false);
@@ -170,24 +170,36 @@ export function PresetEditPage(): JSX.Element {
     };
 
     const handleAddNewVersion = async () => {
-        if (!preset) return;
+        if (!preset || !preset.key) return;
 
-        const newVersion = await showPrompt({
+        const presetVersionApiService = new PresetVersionApiService(api, preset.key);
+
+        let nextVersion: string;
+        try {
+            nextVersion = await presetVersionApiService.getNextVersion(preset.key);
+        } catch (error) {
+            dispatch(showErrorSnackbar('Nächste Version konnte nicht bestimmt werden.'));
+            console.error(error);
+            return;
+        }
+
+        const createNewVersionPrompt = await showConfirm({
             title: 'Neue Version anlegen',
-            message: 'Bitte geben Sie eine Versionsnummer für die neue Vorlagen-Version ein:',
-            inputLabel: 'Versionsnummer',
-            inputPlaceholder: versionNumber ?? '1.0.0',
-            confirmButtonText: 'Erstellen',
-            cancelButtonText: 'Abbrechen',
-            defaultValue: versionNumber ?? '1.0.0',
+            confirmButtonText: "Ja, Version anlegen",
+            children: (
+                <>
+                    <div>
+                        Möchten Sie wirklich eine neue Version Nr. {nextVersion} der Vorlage "{preset.title}" anlegen?
+                    </div>
+                </>
+            )
         });
 
-        if (!newVersion) return;
-        const presetVersionApiService = new PresetVersionApiService(api, preset.key);
+        if (!createNewVersionPrompt) return;
 
         const newPresetVersion: PresetVersion = {
             preset: preset.key,
-            version: newVersion,
+            version: nextVersion,
             root: presetVersion ? presetVersion.root : generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
             publishedAt: null,
             publishedStoreAt: null,
@@ -369,10 +381,10 @@ export function PresetEditPage(): JSX.Element {
     return (
         <>
             <MetaElement
-                title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+                title={`Vorlagen-Editor - ${preset.title} - Version ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
             />
             <AppToolbar
-                title={`${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+                title={`${preset.title} - Version ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
                 updateToolbarHeight={updateToolbarHeight}
                 actions={[
                     {

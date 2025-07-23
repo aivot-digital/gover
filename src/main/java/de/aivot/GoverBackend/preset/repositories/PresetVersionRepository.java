@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface PresetVersionRepository extends JpaRepository<PresetVersion, String> {
@@ -19,9 +20,9 @@ public interface PresetVersionRepository extends JpaRepository<PresetVersion, St
     @Query("SELECT v FROM PresetVersion v WHERE v.preset = ?1 ORDER BY string_to_array(v.version, '.') DESC")
     Page<PresetVersion> findAllByPreset(String preset, Pageable pageable);
 
-    
     boolean existsByPresetAndVersion(String preset, String version);
 
-    
     boolean existsByPreset(String preset);
+
+    List<PresetVersion> findByPreset(String presetKey);
 }

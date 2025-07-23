@@ -29,4 +29,8 @@ export class PresetVersionApiService extends CrudApiService<
             updated: new Date().toISOString(),
         };
     }
+
+    async getNextVersion(presetKey: string): Promise<string> {
+        return await this.api.get(`presets/${presetKey}/versions/next-version/`);
+    }
 }

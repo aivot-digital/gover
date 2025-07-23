@@ -14,13 +14,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalInt;
+
+import static java.lang.Integer.parseInt;
 
 @RestController
 @RequestMapping("/api/presets/{presetKey}/versions/")
@@ -97,6 +103,8 @@ public class PresetVersionController {
         if (exists) {
             throw ResponseException.conflict("Diese Vorlagen-Version existiert bereits.");
         }
+
+        validateVersionIsNext(newVersion.getPreset(), newVersion.getVersion());
 
         var savedVersion = versionRepository.save(newVersion);
 
@@ -253,4 +261,52 @@ public class PresetVersionController {
                 )
         );
     }
+
+    @GetMapping("next-version/")
+    public ResponseEntity<String> getNextVersion(@Nonnull @PathVariable String presetKey) {
+        String nextVersion = getNextVersionNumber(presetKey);
+        return ResponseEntity.ok(nextVersion);
+    }
+
+    public String getNextVersionNumber(String presetKey) {
+        List<PresetVersion> versions = versionRepository.findByPreset(presetKey);
+
+        int max = versions.stream()
+                .map(PresetVersion::getVersion)
+                .filter(Objects::nonNull)
+                .map(PresetVersionController::extractMajorVersion)
+                .filter(OptionalInt::isPresent)
+                .mapToInt(OptionalInt::getAsInt)
+                .max()
+                .orElse(0);
+
+        return String.valueOf(max + 1);
+    }
+
+    private static OptionalInt extractMajorVersion(String version) {
+        try {
+            if (version.matches("^\\d+$")) {
+                return OptionalInt.of(parseInt(version));
+            } else if (version.matches("^\\d+\\.\\d+(\\.\\d+)?$")) {
+                return OptionalInt.of(parseInt(version.split("\\.")[0]));
+            }
+        } catch (NumberFormatException e) {
+            return OptionalInt.empty();
+        }
+        return OptionalInt.empty();
+    }
+
+    public void validateVersionIsNext(String presetKey, String submittedVersion) {
+        if (!submittedVersion.matches("^\\d+$")) {
+            throw new IllegalArgumentException("Neue Versionen müssen ganze Zahlen sein (z. B. 1, 2, 3).");
+        }
+
+        int submitted = parseInt(submittedVersion);
+        int expected = parseInt(getNextVersionNumber(presetKey));
+
+        if (submitted != expected) {
+            throw new IllegalArgumentException("Ungültige Version. Erwartet wurde Version " + expected + ".");
+        }
+    }
+
 }
