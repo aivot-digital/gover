@@ -6,7 +6,6 @@ import {type AddApplicationDialogProps} from './add-application-dialog-props';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {slugify} from '../../../utils/slugify';
 import {checkTitle} from '../../../utils/check-title';
-import {checkVersion} from '../../../utils/version-utils';
 import {checkSlugAndVersion} from '../../../utils/check-slug-and-version';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {useAppSelector} from '../../../hooks/use-app-selector';
@@ -15,7 +14,6 @@ import {useApi} from '../../../hooks/use-api';
 import {DepartmentsApiService} from '../../../modules/departments/departments-api-service';
 import {Department} from '../../../modules/departments/models/department';
 import {FormsApiService} from '../../../modules/forms/forms-api-service';
-
 
 type ErrorsType = {
     [key in keyof Application]?: string;
@@ -62,6 +60,14 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                     developingDepartment: 0,
                     id: 0,
                 });
+            } else if (mode === 'new-version' && applicationToBaseOn?.slug) {
+                new FormsApiService(api)
+                    .getNextVersion(applicationToBaseOn.slug)
+                    .then(nextVersion => {
+                        let applicationBase = JSON.parse(JSON.stringify(applicationToBaseOn));
+                        applicationBase.version = nextVersion;
+                        setApplication(applicationBase);
+                    });
             } else {
                 let applicationBase = JSON.parse(JSON.stringify(applicationToBaseOn));
 
@@ -97,20 +103,11 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
             errors.title = titleErrors[0];
         }
 
-        const versionErrors = checkVersion(application.version);
-        if (versionErrors.length > 0) {
-            errors.version = versionErrors[0];
-        }
-
         const {
             slugError,
-            versionError,
-        } = checkSlugAndVersion(existingApplications, application.slug, application.version);
+        } = checkSlugAndVersion(existingApplications, application.slug);
         if (slugError != null) {
             errors.slug = slugError;
-        }
-        if (versionError != null) {
-            errors.version = versionError;
         }
 
         if (Object.keys(errors).length > 0) {
@@ -145,7 +142,7 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
 
                 {
                     mode === 'new-version' &&
-                    'Neue Version anlegen'
+                    `Neue Version Nr. ${application.version} anlegen`
                 }
 
                 {
@@ -272,26 +269,17 @@ export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Elem
                         mb: 2,
                     }}
                 >
-                    Vergeben Sie die Version des Formulars. Unter dieser wird das Formular für antragstellende Personen verfügbar
-                    sein. Achten Sie darauf, dass Sie dem Schema der semantischen Versionierung folgen.
-                    Die Version besteht aus drei Zahlen, die jeweils durch einen Punkt getrennt werden. Die erste Zahl
-                    gibt die Hauptversion (Major) an und sollte nur bei tiefgreifenden Änderungen erhöht werden. Die
-                    zweite Zahl gibt die Nebenversion (Minor) an und sollte bei kleineren Änderungen erhöht werden. Die
-                    dritte Zahl gibt die Fehlerkorrekturen (Fix) an und sollte nur bei solchen erhöht werden.
+                    Die Version wird hier nur für das Review angezeigt und wird später entfernt. Bei einer neuen Version wird die Versionsnummer in der Überschrift des Dialogs angezeigt.
                 </Typography>
 
                 <TextFieldComponent
                     label="Version des Formulars"
-                    placeholder="1.0.0"
+                    placeholder="1"
                     value={application.version}
-                    onChange={(val) => {
-                        handlePatch({
-                            version: val,
-                        });
+                    onChange={() => {
                     }}
                     required
-                    error={errors.version}
-                    maxCharacters={11}
+                    disabled
                 />
 
                 <Alert

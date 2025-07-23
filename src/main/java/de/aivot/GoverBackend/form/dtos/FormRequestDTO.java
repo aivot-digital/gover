@@ -30,7 +30,7 @@ public record FormRequestDTO(
 
         @NotNull(message = "version cannot be null")
         @NotBlank(message = "version cannot be blank")
-        @Length(min = 5, max = 11, message = "version must be at least 5 character long")
+        @Length(min = 1, max = 11, message = "version must be at least 1 character long")
         String version,
 
         @NotNull(message = "title cannot be null")

@@ -141,7 +141,7 @@ export function ApplicationListItem(props: ApplicationListItemProps): JSX.Elemen
                         variant="caption"
                         sx={{ml: 1}}
                     >
-                        {props.application.version}
+                        Version {props.application.version}
                     </Typography>
                 </Typography>
 

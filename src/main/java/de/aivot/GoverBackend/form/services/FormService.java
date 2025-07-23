@@ -32,9 +32,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class FormService implements EntityService<Form, Integer> {
@@ -87,6 +85,8 @@ public class FormService implements EntityService<Form, Integer> {
         if (repository.existsBySlugAndVersion(entity.getSlug(), entity.getVersion())) {
             throw new ResponseException(HttpStatus.CONFLICT, "Es existiert bereits ein Formular mit dieser URL und dieser Version");
         }
+
+        validateVersionIsNext(entity.getSlug(), entity.getVersion());
 
         var cleanedEntity = cleanRelatedData(entity);
 
@@ -431,4 +431,51 @@ public class FormService implements EntityService<Form, Integer> {
         existingForm.setStatus(FormStatus.Revoked);
         return repository.save(existingForm);
     }
+
+    @Nonnull
+    public String getNextVersion(String slug) {
+        List<Form> forms = repository.findBySlug(slug);
+
+        int max = forms.stream()
+                .map(Form::getVersion)
+                .filter(Objects::nonNull)
+                .map(FormService::extractMajorVersion)
+                .filter(OptionalInt::isPresent)
+                .mapToInt(OptionalInt::getAsInt)
+                .max()
+                .orElse(0);
+
+        return String.valueOf(max + 1);
+    }
+
+    private static OptionalInt extractMajorVersion(String version) {
+        try {
+            if (version.matches("^\\d+$")) {
+                return OptionalInt.of(Integer.parseInt(version));
+            } else if (version.matches("^\\d+\\.\\d+(\\.\\d+)?$")) {
+                String major = version.split("\\.")[0];
+                return OptionalInt.of(Integer.parseInt(major));
+            } else {
+                return OptionalInt.empty();
+            }
+        } catch (NumberFormatException e) {
+            return OptionalInt.empty();
+        }
+    }
+
+
+    public void validateVersionIsNext(String slug, String version) throws ResponseException {
+        if (!version.matches("\\d+")) {
+            throw new ResponseException(HttpStatus.CONFLICT, "Neue Versionen müssen ganze Zahlen sein (z. B. 1, 2, 3).");
+        }
+
+        int submitted = Integer.parseInt(version);
+        String next = getNextVersion(slug);
+        int expected = Integer.parseInt(next);
+
+        if (submitted != expected) {
+            throw new ResponseException(HttpStatus.CONFLICT, "Ungültige Version. Erwartet wurde Version " + expected + ".");
+        }
+    }
+
 }

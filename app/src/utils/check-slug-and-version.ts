@@ -2,11 +2,9 @@ import {type Form as Application, FormListProjection} from '../models/entities/f
 
 export function checkSlugAndVersion(applications: Application[] | FormListProjection[], slug?: string, version?: string): {
     slugError?: string;
-    versionError?: string;
 } {
     const errors: {
         slugError?: string;
-        versionError?: string;
     } = {};
 
     const trimmedSlug = slug?.trim() ?? '';
@@ -26,7 +24,6 @@ export function checkSlugAndVersion(applications: Application[] | FormListProjec
 
     if (applications != null && applications?.some((app) => app.slug === trimmedSlug && app.version === trimmedVersion)) {
         errors.slugError = 'Es existiert bereits ein Formular mit diesem URL-Element und dieser Version.';
-        errors.versionError = 'Es existiert bereits ein Formular mit diesem URL-Element und dieser Version.';
     }
 
     return errors;

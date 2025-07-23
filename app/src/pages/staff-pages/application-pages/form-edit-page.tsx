@@ -436,10 +436,10 @@ export function FormEditPage() {
         return (
             <ThemeProvider theme={_theme}>
                 <MetaElement
-                    title={`Editor - ${loadedForm.title} - ${loadedForm.version}`}
+                    title={`Editor - ${loadedForm.title} - Version ${loadedForm.version}`}
                 />
                 <AppToolbar
-                    title={`${loadedForm.title} - ${loadedForm.version}`}
+                    title={`${loadedForm.title} - Version ${loadedForm.version}`}
                     updateToolbarHeight={updateToolbarHeight}
                     actions={[
                         {

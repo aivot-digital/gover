@@ -63,7 +63,7 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return {
             id: 0,
             slug: '',
-            version: '',
+            version: '1',
             title: '',
             status: ApplicationStatus.Drafted,
             type: FormType.Public,
@@ -206,4 +206,9 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
     public checkPublish(id: number): Promise<FormPublishChecklistItem[]> {
         return this.api.get<FormPublishChecklistItem[]>(`forms/${id}/check-publish/`);
     }
+
+    public getNextVersion(slug: string): Promise<string> {
+        return this.api.get(`forms/next-version/${slug}`);
+    }
+
 }

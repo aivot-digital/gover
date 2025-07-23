@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.List;
 
 public interface FormRepository extends JpaRepository<Form, Integer>, JpaSpecificationExecutor<Form> {
     @Query(value = """
@@ -33,4 +34,7 @@ public interface FormRepository extends JpaRepository<Form, Integer>, JpaSpecifi
             );
             """, nativeQuery = true)
     boolean existsWithLinkedIdentityProvider(String identityProviderKey);
+
+    List<Form> findBySlug(String slug);
+
 }

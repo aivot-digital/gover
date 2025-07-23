@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -503,6 +504,18 @@ public class FormController {
             exceptionMailService.send(e);
         }
     }
+
+    /**
+     * Get the next version of a form by its slug.
+     *
+     * @param slug The slug of the form.
+     * @return The next version of the form as a string.
+     */
+    @GetMapping("/next-version/{slug}")
+    public ResponseEntity<String> getNextVersion(@PathVariable String slug) {
+        return ResponseEntity.ok(formService.getNextVersion(slug));
+    }
+
 
     /**
      * Check if a form is locked by another user.

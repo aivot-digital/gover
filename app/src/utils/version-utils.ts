@@ -20,39 +20,26 @@ export function checkVersion(version?: string): string[] {
 }
 
 export function compareVersions(versionA: string, versionB: string): number {
-    const vAParts = versionA.split('.').map(v => parseInt(v));
-    const vBParts = versionB.split('.').map(v => parseInt(v));
+    const parseVersion = (v: string): number[] => {
+        return v
+            .split('.')
+            .map(part => parseInt(part, 10))
+            .filter(n => !isNaN(n));
+    };
 
-    if (vAParts.length !== 3) {
-        return 1;
-    }
-    if (vBParts.length !== 3) {
-        return -1;
-    }
+    const vA = parseVersion(versionA);
+    const vB = parseVersion(versionB);
 
-    const [majorA, minorA, patchA] = vAParts;
-    const [majorB, minorB, patchB] = vBParts;
+    const maxLength = Math.max(vA.length, vB.length);
 
-    if (majorA < majorB) {
-        return 1;
-    }
-    if (majorA > majorB) {
-        return -1;
-    }
+    for (let i = 0; i < maxLength; i++) {
+        const a = vA[i] ?? 0;
+        const b = vB[i] ?? 0;
 
-    if (minorA < minorB) {
-        return 1;
-    }
-    if (minorA > minorB) {
-        return -1;
-    }
-
-    if (patchA < patchB) {
-        return 1;
-    }
-    if (patchA > patchB) {
-        return -1;
+        if (a < b) return 1;
+        if (a > b) return -1;
     }
 
     return 0;
 }
+
