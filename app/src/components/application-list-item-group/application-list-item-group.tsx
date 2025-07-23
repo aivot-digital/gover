@@ -1,11 +1,11 @@
-import React, { useReducer, type JSX } from 'react';
+import React, { useReducer } from 'react';
 import {Box, Button} from '@mui/material';
 import {type ApplicationListItemGroupProps} from './application-list-item-group-props';
 import {ApplicationListItem} from '../application-list-item/application-list-item';
 import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 
-export function ApplicationListItemGroup(props: ApplicationListItemGroupProps): JSX.Element {
+export function ApplicationListItemGroup(props: ApplicationListItemGroupProps) {
     const [isCollapsed, toggleCollapsed] = useReducer<(v: boolean) => boolean>((p) => !p, true);
 
     const [first, ...rest] = props.group.applications;

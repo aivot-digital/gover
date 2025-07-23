@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Form} from '../../../../models/entities/form';
 import {SummaryDispatcherComponent} from '../../../../components/summary-dispatcher.component';
 import {flattenElements} from '../../../../utils/flatten-elements';
@@ -17,7 +17,7 @@ interface SubmissionEditPageSummaryTabProps {
     submission: SubmissionDetailsResponseDTO;
 }
 
-export function SubmissionEditPageSummaryTab(props: SubmissionEditPageSummaryTabProps): JSX.Element {
+export function SubmissionEditPageSummaryTab(props: SubmissionEditPageSummaryTabProps) {
     const api = useApi();
     const dispatch = useDispatch();
     const allElements = flattenElements(props.form.root);

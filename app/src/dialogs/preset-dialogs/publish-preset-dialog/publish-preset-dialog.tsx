@@ -1,4 +1,4 @@
-import React, { type FormEvent, useState, type JSX } from 'react';
+import React, { type FormEvent, useState } from 'react';
 import {type PublishPresetDialogProps} from './publish-preset-dialog-props';
 import Dialog, {type DialogProps} from '@mui/material/Dialog';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -17,7 +17,7 @@ import {AlertComponent} from '../../../components/alert/alert-component';
 import {cleanBeforeStoreUpload} from '../../../utils/clean-before-store-upload';
 
 
-export function PublishPresetDialog(props: DialogProps & PublishPresetDialogProps): JSX.Element {
+export function PublishPresetDialog(props: DialogProps & PublishPresetDialogProps) {
     const dispatch = useAppDispatch();
     const {
         preset,

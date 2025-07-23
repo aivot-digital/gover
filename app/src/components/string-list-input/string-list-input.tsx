@@ -1,12 +1,12 @@
 import {Alert, Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Tooltip, Typography} from '@mui/material';
-import React, { useState, type JSX } from 'react';
+import React, { useState } from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {type StringListInputProps} from './string-list-input-props';
 
-export function StringListInput(props: StringListInputProps): JSX.Element {
+export function StringListInput(props: StringListInputProps) {
     const {
         label,
         hint,

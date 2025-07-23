@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {type BaseEditorProps} from './base-editor';
 import {type GroupLayout} from '../models/elements/form/layout/group-layout';
 import {type StoreDetailModule} from '../models/entities/store-detail-module';
@@ -16,7 +16,7 @@ import {type AnyInputElement, isAnyInputElement} from '../models/elements/form/i
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 
-export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeEntity>): JSX.Element {
+export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeEntity>) {
     const [storeModule, setStoreModule] = useState<StoreDetailModule>();
     const [confirmRemoveStore, setConfirmRemoveStore] = useState<() => void>();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));

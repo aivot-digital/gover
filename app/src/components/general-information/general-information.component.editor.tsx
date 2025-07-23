@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FormGroup, Grid, InputLabel} from '@mui/material';
 import {CheckboxTree} from '../checkbox-tree/checkbox-tree';
@@ -83,7 +83,7 @@ function orderEligiblePersons(value: string[]): string[] {
         .filter((opt) => value.includes(opt));
 }
 
-export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, ElementTreeEntity>): JSX.Element {
+export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, ElementTreeEntity>) {
     return (
         <>
             <Grid

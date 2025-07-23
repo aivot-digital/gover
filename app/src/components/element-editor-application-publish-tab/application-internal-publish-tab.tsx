@@ -1,6 +1,6 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
 import {Alert, AlertTitle, Box, Button, Divider, Paper, Tooltip} from '@mui/material';
-import React, { useEffect, useMemo, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -24,7 +24,7 @@ import {FormType} from '../../modules/forms/enums/form-type';
 import {SxProps} from '@mui/material/styles';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
-export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>): JSX.Element {
+export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();

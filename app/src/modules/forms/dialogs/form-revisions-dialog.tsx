@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Box, Button, Card, Dialog, DialogContent, DialogContentText, Grid, Skeleton, Typography} from '@mui/material';
 import { User } from '../../users/models/user';
 import {DiffItem} from '../../../models/entities/form-revision';
@@ -10,7 +10,7 @@ import { Page } from '../../../models/dtos/page';
 import { FormsApiService } from '../forms-api-service';
 import {UsersApiService} from '../../users/users-api-service';
 import { generateComponentTitle } from '../../../utils/generate-component-title';
-import parseISO from 'date-fns/parseISO';
+import { parseISO } from 'date-fns/parseISO';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {clearLoadedFormHistory, selectLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
 import {hideLoadingOverlay, showLoadingOverlay } from '../../../slices/loading-overlay-slice';
@@ -19,7 +19,7 @@ import {showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-
 import { delayPromise } from '../../../utils/with-delay';
 import { DialogTitleWithClose } from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {getFullName} from '../../../models/entities/user';
-import format from 'date-fns/format';
+import { format } from 'date-fns/format';
 import {ApplicationStatus} from '../../../data/application-status';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
@@ -119,7 +119,7 @@ async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | u
     };
 }
 
-export function FormRevisionsDialog(props: FormRevisionsDialogProps): JSX.Element {
+export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
     const dispatch = useAppDispatch();
     const api = useApi();
 

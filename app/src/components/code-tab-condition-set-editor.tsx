@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type AnyElement} from '../models/elements/any-element';
 import {type ConditionSet} from '../models/functions/conditions/condition-set';
 import {Box, Button, Divider, IconButton, MenuItem, TextField, Typography} from '@mui/material';
@@ -27,7 +27,7 @@ export function CodeTabConditionSetEditor({
                                               shouldReturnString,
                                               suppressConditionUnmetMessage,
                                               editable,
-                                          }: CodeTabConditionSetEditorProps): JSX.Element {
+                                          }: CodeTabConditionSetEditorProps) {
     return (
         <Box>
             <Typography>

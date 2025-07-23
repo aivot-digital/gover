@@ -1,9 +1,9 @@
 import {Container} from '@mui/material';
-import React, { type JSX } from 'react';
+import React from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {AlertComponent} from '../../../components/alert/alert-component';
 
-export function NotFound(): JSX.Element {
+export function NotFound() {
     return (
         <>
             <MetaElement

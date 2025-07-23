@@ -4,11 +4,11 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {OptionListInput} from '../option-list-input/option-list-input';
 import {type SelectFieldElementOption} from '../../models/elements/form/input/select-field-element';
-import React, { type JSX } from 'react';
+import React from 'react';
 import {isStringArray} from '../../utils/is-string-array';
 import {CheckboxFieldComponent} from "../checkbox-field/checkbox-field-component";
 
-export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldElement, ElementTreeEntity>): JSX.Element {
+export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldElement, ElementTreeEntity>) {
     const options = props.element.options ?? [];
 
     return (

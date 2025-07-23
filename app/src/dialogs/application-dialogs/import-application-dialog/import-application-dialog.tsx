@@ -1,5 +1,5 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText} from '@mui/material';
-import React, { useState, type JSX } from 'react';
+import React, { useState } from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type ImportApplicationDialogProps} from './import-application-dialog-props';
 import {FileUpload} from '../../../components/file-upload/file-upload';
@@ -8,7 +8,7 @@ import {stripDataFromForm} from '../../../utils/strip-data-from-form';
 import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {useDispatch} from 'react-redux';
 
-export function ImportApplicationDialog(props: ImportApplicationDialogProps): JSX.Element {
+export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
     const {
         onClose,
         onImport,

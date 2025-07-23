@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, type JSX } from 'react';
+import React, { PropsWithChildren } from 'react';
 import {Alert, AlertTitle, Box, Container, Typography} from '@mui/material';
 
 interface NotFoundPageProps {
@@ -6,7 +6,7 @@ interface NotFoundPageProps {
     msg?: string;
 }
 
-export function NotFoundPage(props: PropsWithChildren<NotFoundPageProps>): JSX.Element {
+export function NotFoundPage(props: PropsWithChildren<NotFoundPageProps>) {
     return (
         <Container sx={{display: 'flex', justifyContent: 'center'}}>
             <Alert

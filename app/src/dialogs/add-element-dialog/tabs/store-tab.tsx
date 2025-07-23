@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {cloneElement} from '../../../utils/clone-element';
 import {type BaseTabProps} from './base-tab-props';
 import {useAppSelector} from '../../../hooks/use-app-selector';
@@ -10,7 +10,7 @@ import {StoreModuleList} from '../../../components/store-module-list/store-modul
 export function StoreTab(props: BaseTabProps & {
     showModuleId: (id: string) => void;
     highlightedModuleId?: string;
-}): JSX.Element {
+}) {
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
 
     return (

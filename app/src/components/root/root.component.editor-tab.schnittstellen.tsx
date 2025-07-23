@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {Alert, AlertTitle, Box, Paper, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -29,7 +29,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Chip from "@mui/material/Chip";
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
-export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>): JSX.Element {
+export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectUser);

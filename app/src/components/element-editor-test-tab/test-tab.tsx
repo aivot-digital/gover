@@ -1,5 +1,5 @@
 import {Box, Button, Checkbox, FormControlLabel, Typography} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {format, parseISO} from 'date-fns';
 import {getFullName, type User} from '../../models/entities/user';
@@ -18,7 +18,7 @@ import {isRootElement} from '../../models/elements/root-element';
 import {UsersApiService} from '../../modules/users/users-api-service';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
-export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Element {
+export function TestTab<T extends AnyElement>(props: TestTabProps<T>) {
     const dispatch = useDispatch();
     const user = useSelector(selectUser);
 
@@ -141,7 +141,7 @@ export function TestTab<T extends AnyElement>(props: TestTabProps<T>): JSX.Eleme
     );
 }
 
-function TestProtocol(protocol: TestProtocolModel): JSX.Element | null {
+function TestProtocol(protocol: TestProtocolModel): React.ReactNode | null {
     const api = useApi();
     const [user, setUser] = useState<User>();
 

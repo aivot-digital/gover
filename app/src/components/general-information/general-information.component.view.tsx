@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {Box, Grid, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
@@ -27,7 +27,7 @@ import {IdentityButtonGroup} from '../../modules/identity/components/identity-bu
 
 export const PrivacyUserInputKey = '__privacy__';
 
-export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, void>): JSX.Element {
+export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, void>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const theme = useTheme();
@@ -122,7 +122,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         </ListItem>
     );
 
-    const sections: JSX.Element[] = [];
+    const sections: React.ReactNode[] = [];
 
     if (responsibleDepartment != null) {
         sections.push(

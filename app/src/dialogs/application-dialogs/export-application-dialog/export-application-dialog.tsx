@@ -1,9 +1,9 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import {ExportApplicationDialogProps} from "./export-application-dialog-props";
 import {DialogTitleWithClose} from "../../../components/dialog-title-with-close/dialog-title-with-close";
 
-export function ExportApplicationDialog({ open, onCancel, onExport }: ExportApplicationDialogProps): JSX.Element {
+export function ExportApplicationDialog({ open, onCancel, onExport }: ExportApplicationDialogProps) {
     return (
         <Dialog
             open={open}

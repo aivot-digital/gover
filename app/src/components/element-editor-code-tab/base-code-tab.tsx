@@ -1,5 +1,5 @@
 import {Box, Dialog, DialogContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
-import React, { PropsWithChildren, useState, type JSX } from 'react';
+import React, { PropsWithChildren, useState } from 'react';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {FunctionSelector} from './components/function-selector/function-selector';
 import {BaseCodeTabProps} from './base-code-tab-props';
@@ -11,7 +11,7 @@ import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
-export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Element {
+export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
     const [anchorEl, setAnchorEl] = useState<Element>();
     const [showFunctionSelector, setShowFunctionSelector] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
