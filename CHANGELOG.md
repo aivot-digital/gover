@@ -10,6 +10,7 @@
 * **System:** Added SBOM generation to the build process, providing a Software Bill of Materials for better transparency and security.
 * **System:** Implemented a license compliance check in the build process to ensure all dependencies comply with licensing requirements.
 * **Backend:** Upgraded most backend maven dependencies to the latest versions
+* **Frontend:** Replace JSX.Element type with ReactNode in the frontend codebase.
 * **System:** Replaced Puppet PDF generator with a new generator based on Gotenberg, which supports more engines and is easier to maintain.
 
 ## [4.5.1](https://github.com/aivot-digital/gover/compare/v4.5.0...v4.5.1) (2025-07-22)
