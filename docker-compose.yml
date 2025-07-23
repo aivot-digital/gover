@@ -56,9 +56,11 @@ services:
       - gover
 
 
-  puppet:
-    image: ghcr.io/aivot-digital/puppet-pdf:2.0.0
+  gotenberg:
+    image: gotenberg/gotenberg:8
     restart: always
+    ports:
+      - "9191:3000"
     networks:
       - gover
 
@@ -120,7 +122,7 @@ services:
       - gover_database
       - clamav
       - redis
-      - puppet
+      - gotenberg
       - keycloak
       - gover_customer_app
       - gover_staff_app
@@ -136,8 +138,8 @@ services:
       GOVER_CLAM_HOST: clamav
       GOVER_CLAM_PORT: 3310
 
-      GOVER_PUPPET_PDF_HOST: puppet
-      GOVER_PUPPET_PDF_PORT: 3000
+      GOVER_GOTENBERG_HOST: gotenberg
+      GOVER_GOTENBERG_PORT: 3000
 
       GOVER_SMTP_HOST: "{{ SMTP_HOST }}" # Setzen Sie den Hostnamen des Mail-Servers. Passen Sie diesen Hostnamen unbedingt an.
       GOVER_SMTP_PORT: "{{ SMTP_PORT }}" # Setzen Sie den Port des Mail-Servers. Passen Sie diesen Port unbedingt an.
