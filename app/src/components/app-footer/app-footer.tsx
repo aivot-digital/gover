@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Box, Button, Container, type SxProps, Typography, useTheme} from '@mui/material';
 import {type AppFooterProps} from './app-footer-props';
 import {AppMode} from '../../data/app-mode';
@@ -21,7 +21,7 @@ const buttonStyle: SxProps = {
     fontSize: '1.225rem',
 };
 
-export function AppFooter({mode}: AppFooterProps): JSX.Element {
+export function AppFooter({mode}: AppFooterProps) {
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));

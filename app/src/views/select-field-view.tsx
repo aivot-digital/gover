@@ -1,11 +1,11 @@
-import React, { useMemo, type JSX } from 'react';
+import React, { useMemo } from 'react';
 import {type BaseViewProps} from './base-view';
 import {type SelectFieldElement, type SelectFieldElementOption} from '../models/elements/form/input/select-field-element';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 
 
-export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>): JSX.Element {
+export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>) {
     const {
         element,
         setValue,

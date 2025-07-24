@@ -1,7 +1,7 @@
 import {type Condition} from '../models/functions/conditions/condition';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
 import {type ConditionOperator, ConditionOperatorIsUnary, ConditionOperatorLabel, getConditionOperatorHint} from '../data/condition-operator';
-import React, { type JSX } from 'react';
+import React from 'react';
 import {ElementType} from '../data/element-type/element-type';
 import {evaluators as Evaluators} from '../evaluators';
 import {SelectFieldComponent} from './select-field/select-field-component';
@@ -29,7 +29,7 @@ export function CodeTabCondition({
                                      onDelete,
                                      onChange,
                                      editable,
-                                 }: CodeTabConditionProps): JSX.Element {
+                                 }: CodeTabConditionProps) {
     const referencedElement = allElements.find((e) => e.element.id === cond.reference);
 
     const evaluator = referencedElement != null ? Evaluators[referencedElement.element.type] : null;

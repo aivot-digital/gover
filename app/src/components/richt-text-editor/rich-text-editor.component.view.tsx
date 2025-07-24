@@ -9,7 +9,7 @@ import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import Link from '@tiptap/extension-link';
 import Text from '@tiptap/extension-text';
-import React, { useEffect, type JSX } from 'react';
+import React, { useEffect } from 'react';
 import {Box, Paper, Typography, useEventCallback} from '@mui/material';
 import {RichTextEditorMenuComponentView} from '../rich-text-editor-menu.component.view';
 import './rich-text-editor.component.scss';
@@ -24,7 +24,7 @@ interface RichTextEditorComponentViewProps {
     hint?: string;
 }
 
-export function RichTextEditorComponentView(props: RichTextEditorComponentViewProps): JSX.Element {
+export function RichTextEditorComponentView(props: RichTextEditorComponentViewProps) {
     const onChangeCallback = useEventCallback(({editor}: any) => {
         if (editor.isEmpty) {
             props.onChange(undefined);

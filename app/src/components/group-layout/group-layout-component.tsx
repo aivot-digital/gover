@@ -1,9 +1,9 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {Grid} from '@mui/material';
 import {type GroupLayoutComponentProps} from './group-layout-component-props';
 
-export function GroupLayoutComponent(props: GroupLayoutComponentProps): JSX.Element {
+export function GroupLayoutComponent(props: GroupLayoutComponentProps) {
     return (
         <Grid
             container

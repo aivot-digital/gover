@@ -1,6 +1,6 @@
 import {Box, Dialog, Grid, Tab, Tabs} from '@mui/material';
 import {type AddElementDialogProps} from './add-element-dialog-props';
-import React, { useState, type JSX } from 'react';
+import React, { useState } from 'react';
 import {type ElementType} from '../../data/element-type/element-type';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {PresetTab} from './tabs/preset-tab';
@@ -11,7 +11,7 @@ import {ModuleInfoTab} from './tabs/module-info-tab';
 import {AnyElement} from "../../models/elements/any-element";
 
 
-export function AddElementDialog(props: AddElementDialogProps): JSX.Element {
+export function AddElementDialog(props: AddElementDialogProps) {
     const [currentTab, setCurrentTab] = useState(0);
     const [showElementInfo, setShowElementInfo] = useState<ElementType>();
     const [showModuleId, setShowModuleId] = useState<string>();

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {Form} from '../../../../models/entities/form';
 import {Box, IconButton, Typography} from '@mui/material';
 import {StatusTable} from '../../../../components/status-table/status-table';
@@ -37,7 +37,7 @@ interface SubmissionEditPageSummaryTabProps {
     paymentProvider: PaymentProviderResponseDTO;
 }
 
-export function SubmissionEditPagePaymentTab(props: SubmissionEditPageSummaryTabProps): JSX.Element {
+export function SubmissionEditPagePaymentTab(props: SubmissionEditPageSummaryTabProps) {
     const dispatch = useAppDispatch();
     const api = useApi();
     const apiService = useMemo(() => new PaymentProvidersApiService(api), [api]);

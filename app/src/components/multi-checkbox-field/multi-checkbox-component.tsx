@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormGroup, FormHelperText, FormLabel} from '@mui/material';
 
 export interface MultiCheckboxComponentProps {
@@ -14,7 +14,7 @@ export interface MultiCheckboxComponentProps {
     displayInline?: boolean;
 }
 
-export function MultiCheckboxComponent(props: MultiCheckboxComponentProps): JSX.Element {
+export function MultiCheckboxComponent(props: MultiCheckboxComponentProps) {
     const value = props.value;
     const onChange = props.onChange;
     const error = props.error;

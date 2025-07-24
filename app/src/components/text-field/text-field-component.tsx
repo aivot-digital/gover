@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, type JSX } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {Box, IconButton, InputAdornment, TextField, Typography} from '@mui/material';
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
@@ -42,7 +42,7 @@ function cleanValue(originalValue: string | undefined, flag: 'keepTrailingWhites
     return cleanedValue;
 }
 
-export function TextFieldComponent(props: TextFieldComponentProps): JSX.Element {
+export function TextFieldComponent(props: TextFieldComponentProps) {
     const [inputValue, setInputValue] = useState(props.value ?? '');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 

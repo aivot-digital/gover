@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Tooltip} from '@mui/material';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {getElementNameForType} from '../../../data/element-type/element-names';
@@ -64,7 +64,7 @@ export function ElementTab({
 }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
-}): JSX.Element {
+}) {
     const childOptions = ElementChildOptions[parentType] ?? [];
 
     const optionGroups = childOptions.reduce<{ [key in ElementTypeGroups]?: ElementType[] }>((groups, child) => {

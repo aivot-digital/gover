@@ -1,8 +1,8 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormHelperText, Switch} from '@mui/material';
 import {type CheckboxFieldComponentProps} from './checkbox-field-component-props';
 
-export function CheckboxFieldComponent(props: CheckboxFieldComponentProps): JSX.Element {
+export function CheckboxFieldComponent(props: CheckboxFieldComponentProps) {
     return (
         <FormControl
             error={props.error != null}

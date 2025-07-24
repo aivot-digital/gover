@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {ElementType} from '../../data/element-type/element-type';
@@ -16,7 +16,7 @@ export function StepComponentView({
     scrollContainerRef,
     idPrefix,
     mode,
-}: BaseViewProps<StepElement, void>): JSX.Element {
+}: BaseViewProps<StepElement, void>) {
     return (
         <ViewDispatcherComponent
             allElements={allElements}

@@ -1,4 +1,4 @@
-import React, { useState, type JSX } from 'react';
+import React, { useState } from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import {Box, Button, FormControl, FormLabel, Grid, Tooltip, Typography} from '@mui/material';
 import {StepIconsMap} from '../../data/step-icons';
@@ -9,7 +9,7 @@ import {IconPickerDialog} from '../../dialogs/icon-picker-dialog/icon-picker-dia
 import {SvgIconComponent} from '@mui/icons-material';
 import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
 
-export function StepComponentEditor(props: BaseEditorProps<StepElement, Application>): JSX.Element {
+export function StepComponentEditor(props: BaseEditorProps<StepElement, Application>) {
     const [pickerOpen, setPickerOpen] = useState(false);
 
     const IconComponent: SvgIconComponent =

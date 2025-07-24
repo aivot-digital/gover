@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
@@ -6,7 +6,7 @@ import {NumberFieldComponent} from '../number-field/number-field-component';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout, ElementTreeEntity>): JSX.Element {
+export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout, ElementTreeEntity>) {
     const minRequiredError = (
         props.element.minimumRequiredSets != null &&
         props.element.maximumSets != null &&

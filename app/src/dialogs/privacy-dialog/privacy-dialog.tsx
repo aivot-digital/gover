@@ -1,5 +1,5 @@
 import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
@@ -13,7 +13,7 @@ import {DepartmentsApiService} from '../../modules/departments/departments-api-s
 
 export const PrivacyDialogId = 'privacy';
 
-export function PrivacyDialog(props: PrivacyDialogProps): JSX.Element {
+export function PrivacyDialog(props: PrivacyDialogProps) {
     const api = useApi();
     const application = useSelector(selectLoadedForm);
 

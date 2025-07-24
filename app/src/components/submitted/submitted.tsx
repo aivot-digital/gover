@@ -1,5 +1,5 @@
 import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
-import React, { useCallback, useEffect, useRef, useState, type JSX } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {Preamble} from '../preamble/preamble';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm, showDialog} from '../../slices/app-slice';
@@ -52,7 +52,7 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
     };
 };
 
-export function Submitted(props: SubmittedProps): JSX.Element {
+export function Submitted(props: SubmittedProps) {
     const api = useApi();
     const application = useSelector(selectLoadedForm);
     const submitStep = application?.root.submitStep;

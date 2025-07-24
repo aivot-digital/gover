@@ -1,6 +1,6 @@
 import {Box, DialogContent, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Tooltip, Typography, useTheme} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {type StoreListModule} from '../../models/entities/store-list-module';
 import {GoverStoreService} from '../../services/gover-store.service';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
@@ -13,7 +13,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {type StoreModuleListProps} from './store-module-list-props';
 import {filterItems} from '../../utils/filter-items';
 
-export function StoreModuleList(props: StoreModuleListProps): JSX.Element {
+export function StoreModuleList(props: StoreModuleListProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
     const [modules, setModules] = useState<StoreListModule[]>();

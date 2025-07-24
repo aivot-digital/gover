@@ -1,5 +1,5 @@
 import {Box, Grid, useTheme} from '@mui/material';
-import React, { type JSX } from 'react';
+import React from 'react';
 
 interface PreambleProps {
     text: string;
@@ -7,7 +7,7 @@ interface PreambleProps {
     logoAlt?: string;
 }
 
-export function Preamble(props: PreambleProps): JSX.Element {
+export function Preamble(props: PreambleProps) {
     const theme = useTheme();
     return (
         <>

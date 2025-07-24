@@ -1,6 +1,6 @@
 import {type DeleteApplicationDialogProps} from './delete-application-dialog-props';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Button,
     Dialog,
@@ -20,7 +20,7 @@ import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
-export function DeleteApplicationDialog(props: DeleteApplicationDialogProps): JSX.Element {
+export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
     const api = useApi();
 
     const dispatch = useAppDispatch();

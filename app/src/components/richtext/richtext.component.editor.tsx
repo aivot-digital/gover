@@ -1,11 +1,11 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type RichtextElement} from '../../models/elements/form/content/richtext-element';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement, ElementTreeEntity>): JSX.Element {
+export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement, ElementTreeEntity>) {
     return (
         <Grid
             container

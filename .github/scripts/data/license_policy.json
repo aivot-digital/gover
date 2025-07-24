@@ -482,7 +482,7 @@
         },
         "hibernate-core": {
             "versions": [
-                "6.6.11.Final"
+                "6.6.18.Final"
             ],
             "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
         },
@@ -500,7 +500,7 @@
         },
         "aspectjweaver": {
             "versions": [
-                "1.9.23"
+                "1.9.24"
             ],
             "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
         },
@@ -529,10 +529,10 @@
         "slick@1.12.2": {
             "license": "MIT"
         },
-        "json@20250107": {
+        "json@20250517": {
             "license": "CC0-1.0"
         },
-        "icu4j@24.2.0": {
+        "icu4j@24.2.1": {
             "license": "ICU"
         },
         "jai-imageio-core@1.4.0": {
@@ -541,7 +541,7 @@
         "bcprov-jdk18on@1.78.1": {
             "license": "MIT"
         },
-        "js-community@24.2.0": {
+        "js-community@24.2.1": {
             "license": "MIT"
         }
     }

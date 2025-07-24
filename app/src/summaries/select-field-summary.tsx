@@ -1,10 +1,10 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Box, Button, Grid, Typography, useTheme} from '@mui/material';
 import {type BaseSummaryProps} from './base-summary';
 import {type SelectFieldElement} from '../models/elements/form/input/select-field-element';
 import {stringOrDefault} from '../utils/string-utils';
 
-export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, string>): JSX.Element {
+export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, string>) {
     const options = (props.model.options ?? []).map((option) => {
         if (typeof option === 'string') {
             return {

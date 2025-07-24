@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, { type FormEvent, useEffect, useState, type JSX } from 'react';
+import React, { type FormEvent, useEffect, useState } from 'react';
 import {selectSystemConfig, setSystemConfigs, type SystemConfigMap} from '../../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
@@ -16,7 +16,7 @@ import {DepartmentsApiService} from '../../../../../modules/departments/departme
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
 
-export function ApplicationSettings(): JSX.Element {
+export function ApplicationSettings() {
     const dispatch = useAppDispatch();
     const api = useApi();
 
