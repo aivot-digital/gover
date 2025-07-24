@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.5.2](https://github.com/aivot-digital/gover/compare/v4.5.1...v4.5.2) (2025-07-24)
+
+### Bug Fixes
+* **Backend:** Fix issue with broken preset derivation in the backend.
+
 ## [4.5.1](https://github.com/aivot-digital/gover/compare/v4.5.0...v4.5.1) (2025-07-22)
 
 ### Bug Fixes

@@ -68,9 +68,17 @@ public class FormDerivationService extends BaseElementDerivationService<FormDeri
     ) {
         deriveElement(context, rootElement, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors, null, true);
 
-        deriveIntroductionStepElement(context, rootElement.getIntroductionStep(), deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
-        deriveSummaryStepElement(context, rootElement.getSummaryStep(), deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
-        deriveSubmitStepElement(context, rootElement.getSubmitStep(), deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
+        if (rootElement.getIntroductionStep() != null) {
+            deriveIntroductionStepElement(context, rootElement.getIntroductionStep(), deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
+        }
+
+        if (rootElement.getSummaryStep() != null) {
+            deriveSummaryStepElement(context, rootElement.getSummaryStep(), deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
+        }
+
+        if (rootElement.getSubmitStep() != null) {
+            deriveSubmitStepElement(context, rootElement.getSubmitStep(), deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
+        }
 
         for (var step : rootElement.getChildren()) {
             deriveStepElement(context, step, deriveVisibilities, deriveOverrides, deriveValues, deriveErrors);
