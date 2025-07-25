@@ -4,7 +4,7 @@ import Container from '@mui/material/Container';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Stepper from '@mui/material/Stepper';
-import useTheme from '@mui/material/styles/useTheme';
+import {useTheme} from '@mui/material/styles';
 import {type RootElement} from '../../models/elements/root-element';
 import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import Chip from '@mui/material/Chip';
