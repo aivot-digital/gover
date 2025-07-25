@@ -1,10 +1,10 @@
-import React, { type FormEvent, useState, type JSX } from 'react';
+import React, { type FormEvent, useState } from 'react';
 import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
 import {useApi} from "../../../../../hooks/use-api";
 import {useSystemApi} from "../../../../../hooks/use-system-api";
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 
-export function SmtpTest(): JSX.Element {
+export function SmtpTest() {
     const api = useApi();
     const [targetEmail, setTargetEmail] = useState('');
     const [isSending, setIsSending] = useState(false);

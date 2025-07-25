@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState, type JSX } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import {Box, Button, Grid, IconButton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -484,7 +484,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
     );
 }
 
-export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement, Application>): JSX.Element {
+export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement, Application>) {
     const api = useApi();
 
     const [availablePaymentProviders, setAvailablePaymentProviders] = useState<Page<PaymentProviderResponseDTO>>();

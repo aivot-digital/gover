@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {DefaultTab} from '../element-editor-default-tab/default-tab';
@@ -21,7 +21,7 @@ import {ValueCodeTab} from '../element-editor-code-tab/value-code-tab';
 import {ValidationCodeTab} from '../element-editor-code-tab/validation-code-tab';
 import {ReferencesTab} from '../element-editor-references-tab/references-tab';
 
-export function ElementEditorContent<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): JSX.Element | null {
+export function ElementEditorContent<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): React.ReactNode | null {
     const {
         onChange,
         ...passProps

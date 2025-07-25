@@ -1,9 +1,9 @@
-import { PropsWithChildren, type JSX } from 'react';
+import { PropsWithChildren } from 'react';
 import {SxProps, TypographyVariant} from '@mui/material';
 
 export type StatusTablePropsItem = PropsWithChildren<{
     label: string;
-    icon?: JSX.Element;
+    icon?: React.ReactNode;
     alignTop?: boolean;
     subItems?: StatusTablePropsItem[] | null;
 }>;
@@ -17,6 +17,6 @@ export interface StatusTableProps {
     descriptionSx?: SxProps;
     cardSx?: SxProps;
     cardVariant?: 'outlined' | 'elevation';
-    labelIcon?: JSX.Element;
+    labelIcon?: React.ReactNode;
     items: StatusTablePropsItem[];
 }

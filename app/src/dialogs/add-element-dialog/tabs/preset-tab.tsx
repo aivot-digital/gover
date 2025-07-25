@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {type Preset} from '../../../models/entities/preset';
 import {type BaseTabProps} from './base-tab-props';
 import {
@@ -24,7 +24,7 @@ import {TextFieldComponent} from "../../../components/text-field/text-field-comp
 import {PresetsApiService} from "../../../modules/presets/presets-api-service";
 import {PresetVersionApiService} from "../../../modules/presets/preset-version-api-service";
 
-export function PresetTab(props: BaseTabProps): JSX.Element {
+export function PresetTab(props: BaseTabProps) {
     const api = useApi();
     const [presets, setPresets] = useState<Preset[]>();
     const [search, setSearch] = useState('');

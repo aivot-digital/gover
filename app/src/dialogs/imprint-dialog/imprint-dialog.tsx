@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
@@ -13,7 +13,7 @@ import {DepartmentsApiService} from '../../modules/departments/departments-api-s
 
 export const ImprintDialogId = 'imprint';
 
-export function ImprintDialog(props: ImprintDialogProps): JSX.Element {
+export function ImprintDialog(props: ImprintDialogProps) {
     const api = useApi();
     const application = useSelector(selectLoadedForm);
 

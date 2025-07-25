@@ -4,9 +4,7 @@ import {NumberFieldComponent} from '../number-field/number-field-component';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-import type { JSX } from "react";
-
-export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement, ElementTreeEntity>): JSX.Element {
+export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement, ElementTreeEntity>) {
     return (
         <Grid
             container

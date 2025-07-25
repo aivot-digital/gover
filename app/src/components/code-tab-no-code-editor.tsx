@@ -1,7 +1,7 @@
 import {type AnyElement} from '../models/elements/any-element';
 import {flattenElementsWithParents} from '../utils/flatten-elements';
 import {CodeTabConditionSetEditor} from './code-tab-condition-set-editor';
-import React, { type JSX } from 'react';
+import React from 'react';
 import {ConditionSetOperator} from '../data/condition-set-operator';
 import {evaluators as Evaluators} from '../evaluators';
 import {type Function} from '../models/functions/function';
@@ -28,7 +28,7 @@ export function CodeTabNoCodeEditor({
                                         onChange,
                                         shouldReturnString,
                                         editable,
-                                    }: CodeTabNoCodeEditorProps): JSX.Element {
+                                    }: CodeTabNoCodeEditorProps) {
     let parent: AnyElement | null = null;
     for (const par of [...parents].reverse()) {
         if (par.type === ElementType.ReplicatingContainer) {

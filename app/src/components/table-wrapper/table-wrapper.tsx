@@ -1,11 +1,11 @@
-import React, { type PropsWithChildren, useState, type JSX } from 'react';
+import React, { type PropsWithChildren, useState } from 'react';
 import {type TableWrapperProps} from './table-wrapper-props';
 import {DataGrid, type GridValidRowModel} from '@mui/x-data-grid';
 import {ListHeader} from '../list-header/list-header';
 import {Box} from '@mui/material';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
-export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildren<TableWrapperProps<T>>): JSX.Element {
+export function TableWrapper<T extends GridValidRowModel>(props: PropsWithChildren<TableWrapperProps<T>>) {
     const {
         columns,
         rows,

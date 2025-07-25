@@ -1,5 +1,5 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type PresetVersion} from '../../models/entities/preset-version';
 import {AlertComponent} from '../alert/alert-component';
@@ -12,7 +12,7 @@ import {formatIsoDate} from '../../utils/time-utils';
 import {useApi} from "../../hooks/use-api";
 import {PresetVersionApiService} from "../../modules/presets/preset-version-api-service";
 
-export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVersion>): JSX.Element {
+export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVersion>) {
     const api = useApi();
     const presetVersionApiService = new PresetVersionApiService(api, props.preset.key);
 

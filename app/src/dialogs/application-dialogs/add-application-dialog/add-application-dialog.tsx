@@ -1,5 +1,5 @@
 import {Alert, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Form as Application} from '../../../models/entities/form';
 import {type AddApplicationDialogProps} from './add-application-dialog-props';
@@ -25,7 +25,7 @@ function createEmptyApplication(): Application {
     return FormsApiService.initialize();
 }
 
-export function AddApplicationDialog(props: AddApplicationDialogProps): JSX.Element {
+export function AddApplicationDialog(props: AddApplicationDialogProps) {
     const {
         applicationToBaseOn,
         existingApplications,

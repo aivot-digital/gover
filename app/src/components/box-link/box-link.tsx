@@ -1,9 +1,9 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type BoxLinkProps} from './box-link-props';
 import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
 import { Box, Link } from '@mui/material';
 
-export function BoxLink(props: BoxLinkProps): JSX.Element {
+export function BoxLink(props: BoxLinkProps) {
     const lines = props
         .text
         .split('\n')
@@ -62,7 +62,7 @@ export function BoxLink(props: BoxLinkProps): JSX.Element {
     );
 }
 
-function convertLine(line: string, index: number): JSX.Element {
+function convertLine(line: string, index: number) {
     if (index === 0) {
         return (
             <React.Fragment key={index}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Grid, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -13,7 +13,7 @@ import {useApi} from "../../hooks/use-api";
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
-export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>): JSX.Element {
+export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const [departments, setDepartments] = useState<Department[]>([]);

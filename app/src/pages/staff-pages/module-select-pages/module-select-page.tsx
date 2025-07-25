@@ -1,5 +1,5 @@
 import {Box, Card, CardActionArea, CardContent, Container, Grid, Typography,} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {useNavigate} from 'react-router-dom';
 import {AppFooter} from '../../../components/app-footer/app-footer';
 import {MetaElement} from '../../../components/meta-element/meta-element';
@@ -39,7 +39,7 @@ const moduleLinks = [
     },
 ];
 
-export function ModuleSelectPage(): JSX.Element {
+export function ModuleSelectPage() {
     const navigate = useNavigate();
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const [saveSelection, setSaveSelection] = useState(false);

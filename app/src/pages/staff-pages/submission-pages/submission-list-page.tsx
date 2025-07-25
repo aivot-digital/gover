@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Box, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Switch, Typography, useTheme} from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {format, parseISO} from 'date-fns';
@@ -195,7 +195,7 @@ const columns: Array<GridColDef<Submission>> = [
     },
 ];
 
-export function SubmissionListPage(): JSX.Element {
+export function SubmissionListPage() {
     const theme = useTheme();
     const dispatch = useAppDispatch();
     const api = useApi();

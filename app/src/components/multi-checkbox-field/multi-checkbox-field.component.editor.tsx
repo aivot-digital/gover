@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
@@ -6,7 +6,7 @@ import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {OptionListInput} from '../option-list-input/option-list-input';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
-export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement, ElementTreeEntity>): JSX.Element {
+export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement, ElementTreeEntity>) {
     const minRequiredError = (
         props.element.minimumRequiredOptions != null &&
         props.element.options != null &&

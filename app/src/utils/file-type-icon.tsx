@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
@@ -17,7 +17,7 @@ import { SvgIconProps } from '@mui/material';
  * @param props - Optional: Additional properties for the icon (e.g., sx, className, etc.).
  * @returns A React element representing the corresponding icon.
  */
-export function getFileTypeIcon(contentType: string, props?: SvgIconProps): JSX.Element {
+export function getFileTypeIcon(contentType: string, props?: SvgIconProps) {
     // Map of MIME types to corresponding Material UI icons
     const iconMap: Record<string, React.ElementType> = {
         // Documents

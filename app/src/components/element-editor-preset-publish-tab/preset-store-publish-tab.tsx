@@ -1,5 +1,5 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type PresetVersion} from '../../models/entities/preset-version';
 import {type StoreDetailModule} from '../../models/entities/store-detail-module';
@@ -14,7 +14,7 @@ import {useApi} from "../../hooks/use-api";
 import {PresetsApiService} from "../../modules/presets/presets-api-service";
 import {PresetVersionApiService} from "../../modules/presets/preset-version-api-service";
 
-export function PresetStorePublishTab(props: TabProps<GroupLayout, PresetVersion>): JSX.Element {
+export function PresetStorePublishTab(props: TabProps<GroupLayout, PresetVersion>) {
     const api = useApi();
     const [storeModule, setStoreModule] = useState<StoreDetailModule>();
     const [showPublishDialog, setShowPublishDialog] = useState(false);

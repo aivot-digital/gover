@@ -1,10 +1,10 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Grid, Typography, useTheme} from '@mui/material';
 import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {stringOrDefault} from '../../utils/string-utils';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
 
-export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldElement, string>): JSX.Element {
+export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldElement, string>) {
     const options = (props.model.options ?? []).map((option) => {
         if (typeof option === 'string') {
             return {

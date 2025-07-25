@@ -2,7 +2,7 @@ import {type VersionsPresetDialogProps} from './versions-preset-dialog-props';
 import {type DialogProps} from '@mui/material/Dialog';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {Dialog, DialogContent, List, ListItem, ListItemButton, ListItemText} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {type PresetVersion} from '../../../models/entities/preset-version';
 import {Link} from 'react-router-dom';
 import {format, parseISO} from 'date-fns';
@@ -10,7 +10,7 @@ import {determinePresetVersionDescriptor} from '../../../utils/determine-preset-
 import {useApi} from "../../../hooks/use-api";
 import {PresetVersionApiService} from "../../../modules/presets/preset-version-api-service";
 
-export function VersionsPresetDialog(props: DialogProps & VersionsPresetDialogProps): JSX.Element {
+export function VersionsPresetDialog(props: DialogProps & VersionsPresetDialogProps) {
     const api = useApi();
 
     const {

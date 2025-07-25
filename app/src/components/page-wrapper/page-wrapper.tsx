@@ -1,5 +1,5 @@
 import {type PageWrapperProps} from './page-wrapper-props';
-import React, { type PropsWithChildren, useState, type JSX } from 'react';
+import React, { type PropsWithChildren, useState } from 'react';
 import {MetaElement} from '../meta-element/meta-element';
 import {AppToolbar} from '../app-toolbar/app-toolbar';
 import {Box, Container} from '@mui/material';
@@ -8,7 +8,7 @@ import {AppMode} from '../../data/app-mode';
 import {AlertComponent} from '../alert/alert-component';
 import {LoadingWrapper} from '../loading-wrapper/loading-wrapper';
 
-export function PageWrapper(props: PropsWithChildren<PageWrapperProps>): JSX.Element {
+export function PageWrapper(props: PropsWithChildren<PageWrapperProps>) {
     const [toolbarHeight, setToolbarHeight] = useState<number>(0);
     const updateToolbarHeight = (height: number) => {
         setToolbarHeight(height);
