@@ -11,6 +11,8 @@ public class TestProtocolSet implements Serializable {
     @Nullable
     private TestProtocol professionalTest;
 
+    public TestProtocolSet() {}
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
