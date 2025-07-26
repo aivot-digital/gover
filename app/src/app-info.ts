@@ -7,3 +7,5 @@ export const AppInfo = {
 
     maxFileSizeMB: 10,
 };
+
+window.AppInfo = AppInfo;

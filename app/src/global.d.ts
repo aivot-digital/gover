@@ -11,3 +11,5 @@ declare var AppConfig: {
         dsn: string;
     };
 };
+
+declare var AppInfo: typeof AppInfo;
