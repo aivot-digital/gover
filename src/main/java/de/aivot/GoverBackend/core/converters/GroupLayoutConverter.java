@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import jakarta.persistence.AttributeConverter;
@@ -11,6 +12,7 @@ public class GroupLayoutConverter implements AttributeConverter<GroupLayout, Str
     @Override
     public String convertToDatabaseColumn(GroupLayout baseElement) {
         var mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try {
             return mapper.writeValueAsString(baseElement);
