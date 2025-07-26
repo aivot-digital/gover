@@ -7,7 +7,6 @@ import jakarta.persistence.Converter;
 
 import java.util.stream.Stream;
 
-// TODO: Remove
 @Converter(autoApply = true)
 public class PaymentProviderConverter implements AttributeConverter<PaymentProvider, String> {
     @Override
