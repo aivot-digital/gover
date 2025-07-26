@@ -12,7 +12,6 @@ public class GroupLayoutConverter implements AttributeConverter<GroupLayout, Str
     @Override
     public String convertToDatabaseColumn(GroupLayout baseElement) {
         var mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try {
             return mapper.writeValueAsString(baseElement);
@@ -24,6 +23,7 @@ public class GroupLayoutConverter implements AttributeConverter<GroupLayout, Str
     @Override
     public GroupLayout convertToEntityAttribute(String s) {
         var mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try {
             return mapper.readValue(s, GroupLayout.class);

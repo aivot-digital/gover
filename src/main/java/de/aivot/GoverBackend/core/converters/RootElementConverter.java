@@ -12,7 +12,6 @@ public class RootElementConverter implements AttributeConverter<RootElement, Str
     @Override
     public String convertToDatabaseColumn(RootElement baseElement) {
         var mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try {
             return mapper.writeValueAsString(baseElement);
@@ -24,6 +23,7 @@ public class RootElementConverter implements AttributeConverter<RootElement, Str
     @Override
     public RootElement convertToEntityAttribute(String s) {
         var mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try {
             return mapper.readValue(s, RootElement.class);
