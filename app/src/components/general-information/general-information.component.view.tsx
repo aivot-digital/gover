@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
-import useTheme from '@mui/material/styles/useTheme';
+import {useTheme} from '@mui/material/styles';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
@@ -38,7 +38,7 @@ function cleanDocuments(documents: Array<string> | undefined | null) {
     }
 }
 
-export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>): JSX.Element {
+export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const theme = useTheme();
@@ -134,7 +134,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         </ListItem>
     );
 
-    const sections: JSX.Element[] = [];
+    const sections: React.ReactNode[] = [];
 
     if (responsibleDepartment != null) {
         sections.push(

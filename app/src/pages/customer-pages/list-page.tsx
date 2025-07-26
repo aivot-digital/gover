@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
 import {Box, Container, List, ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
@@ -29,7 +29,7 @@ import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
 import {setIdentityId} from '../../slices/identity-slice';
 
-export function ListPage(): JSX.Element {
+export function ListPage() {
     const baseTheme = useTheme();
     const api = useApi();
     const dispatch = useAppDispatch();

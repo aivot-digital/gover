@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Grid, TextField, Tooltip, Typography} from '@mui/material';
 import {StepIcons} from '../../data/step-icons';
 import Fuse from 'fuse.js';
@@ -23,7 +23,7 @@ export function IconPickerDialog({
                                      title,
                                      showLabels = false,
                                      autoSelect = false,
-                                 }: IconPickerDialogProps): JSX.Element {
+                                 }: IconPickerDialogProps) {
     const [selected, setSelected] = useState<string | undefined>(selectedIconId);
     const [search, setSearch] = useState('');
 

@@ -1,6 +1,6 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
 import {Box, Tab, Tabs, Typography} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type PresetVersion} from '../../models/entities/preset-version';
 import {type Preset} from '../../models/entities/preset';
@@ -13,7 +13,7 @@ import {PresetStorePublishTab} from './preset-store-publish-tab';
 import {useApi} from "../../hooks/use-api";
 import {PresetsApiService} from "../../modules/presets/presets-api-service";
 
-export function PresetPublishTab(props: ElementEditorContentProps<GroupLayout, PresetVersion>): JSX.Element {
+export function PresetPublishTab(props: ElementEditorContentProps<GroupLayout, PresetVersion>) {
     const api = useApi();
     const [preset, setPreset] = useState<Preset>();
 

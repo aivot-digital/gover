@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type BaseEditorProps} from './base-editor';
 import {
     type SelectFieldElement,
@@ -13,7 +13,7 @@ import {getAutofillOptionsForElementType} from '../data/element-type/element-aut
 import {ElementType} from '../data/element-type/element-type';
 import {Autocomplete, Box, TextField, Typography} from '@mui/material';
 
-export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, ElementTreeEntity>): JSX.Element {
+export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, ElementTreeEntity>) {
     const options = props.element.options ?? [];
 
 

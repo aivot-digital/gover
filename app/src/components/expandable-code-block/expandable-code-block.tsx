@@ -1,7 +1,7 @@
-import React, { useState, useMemo, type JSX } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Box, Button } from '@mui/material';
 
-function syntaxHighlight(jsonString: string): JSX.Element[] {
+function syntaxHighlight(jsonString: string): React.ReactNode[] {
     const json = jsonString
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -9,7 +9,7 @@ function syntaxHighlight(jsonString: string): JSX.Element[] {
 
     const regex = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g;
 
-    const elements: JSX.Element[] = [];
+    const elements: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     let index = 0;

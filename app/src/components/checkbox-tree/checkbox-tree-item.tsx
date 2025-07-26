@@ -1,4 +1,4 @@
-import React, { useState, type JSX } from 'react';
+import React, { useState } from 'react';
 import {Box, Checkbox, FormControlLabel, IconButton} from '@mui/material';
 import {CheckboxTree} from './checkbox-tree';
 import {type CheckboxTreeOption} from './checkbox-tree-option';
@@ -23,7 +23,7 @@ function getChildValues(treeOption: CheckboxTreeOption): string[] {
     return vals;
 }
 
-export function CheckboxTreeItem(props: CheckboxTreeItemProps): JSX.Element {
+export function CheckboxTreeItem(props: CheckboxTreeItemProps) {
     const [isExtended, setIsExtended] = useState(false);
     const childValues = getChildValues(props.item);
 

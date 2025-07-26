@@ -1,4 +1,4 @@
-import React, { useMemo, useState, type JSX } from 'react';
+import React, { useMemo, useState } from 'react';
 import {Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
 import {format, isToday, parseISO} from 'date-fns';
@@ -26,7 +26,7 @@ import {ExportApplicationDialog} from '../../dialogs/application-dialogs/export-
 import {createCustomerPath} from '../../utils/url-path-utils';
 
 
-export function ApplicationListItem(props: ApplicationListItemProps): JSX.Element {
+export function ApplicationListItem(props: ApplicationListItemProps) {
     const {
         application,
         memberships,

@@ -1,11 +1,11 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type EditorDispatcherProps} from './editor-dispatcher-props';
 import {type AnyElement} from '../models/elements/any-element';
 import {editors as Editors} from '../editors';
 import {type BaseEditorProps} from '../editors/base-editor';
 import {ElementTreeEntity} from './element-tree/element-tree-entity';
 
-export function EditorDispatcher<T extends AnyElement, E extends ElementTreeEntity>(props: EditorDispatcherProps<T, E>): null | JSX.Element {
+export function EditorDispatcher<T extends AnyElement, E extends ElementTreeEntity>(props: EditorDispatcherProps<T, E>): null | React.ReactNode {
     const editorSet = Editors[props.props.type];
     if (editorSet == null) {
         return null;

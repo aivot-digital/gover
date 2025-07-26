@@ -8,7 +8,7 @@ import {type AnyFormElement} from '../../models/elements/form/any-form-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {EditorDispatcher} from '../editor-dispatcher';
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -18,7 +18,7 @@ import {getElementNameForType} from '../../data/element-type/element-names';
 import {AlertComponent} from '../alert/alert-component';
 import {editors as Editors} from '../../editors';
 
-export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>): JSX.Element {
+export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorContentProps<T, E>) {
     const dispatch = useAppDispatch();
 
     const tabDescription = (() => {

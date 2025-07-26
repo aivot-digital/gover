@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Checkbox, FormControl, FormControlLabel, FormHelperText, Grid} from '@mui/material';
 import {type FileUploadElement} from '../../models/elements/form/input/file-upload-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
@@ -10,7 +10,7 @@ import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {useApi} from "../../hooks/use-api";
 import {useSystemApi} from "../../hooks/use-system-api";
 
-export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, ElementTreeEntity>): JSX.Element {
+export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, ElementTreeEntity>) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const [allowedExtensions, setAllowedExtensions] = useState<string[]>();

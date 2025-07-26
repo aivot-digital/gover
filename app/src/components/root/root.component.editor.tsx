@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Box, Grid, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -23,7 +23,7 @@ import {FormType, FormTypeDescriptions, FormTypeLabels, FormTypes} from '../../m
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {createCustomerPath} from '../../utils/url-path-utils';
 
-export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>): JSX.Element {
+export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>) {
     const dispatch = useAppDispatch();
     const api = useApi();
 

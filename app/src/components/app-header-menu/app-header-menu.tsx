@@ -1,4 +1,4 @@
-import React, { useCallback, useState, type JSX } from 'react';
+import React, { useCallback, useState } from 'react';
 import {type AppHeaderMenuProps} from './app-header-menu-props';
 import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {AppMode} from '../../data/app-mode';
@@ -31,7 +31,7 @@ import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUpload
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {selectLoadedForm} from '../../slices/app-slice';
 
-export function AppHeaderMenu(props: AppHeaderMenuProps): JSX.Element {
+export function AppHeaderMenu(props: AppHeaderMenuProps) {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const location = useLocation();
@@ -266,7 +266,7 @@ interface LinkMenuItemProps {
     active?: boolean;
 }
 
-function LinkMenuItem(props: LinkMenuItemProps): JSX.Element {
+function LinkMenuItem(props: LinkMenuItemProps) {
     const Icon = props.icon;
     return (
         <MenuItem
@@ -293,7 +293,7 @@ interface ActionMenuItemProps {
     active?: boolean;
 }
 
-function ActionMenuItem(props: ActionMenuItemProps): JSX.Element {
+function ActionMenuItem(props: ActionMenuItemProps) {
     const Icon = props.icon;
     return (
         <MenuItem

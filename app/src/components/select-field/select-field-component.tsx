@@ -1,4 +1,4 @@
-import React, { useMemo, type JSX } from 'react';
+import React, { useMemo } from 'react';
 import {MenuItem, TextField, Typography} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
@@ -17,7 +17,7 @@ export function SelectFieldComponent({
                                          options,
                                          emptyStatePlaceholder,
                                          sx,
-                                     }: SelectFieldComponentProps): JSX.Element {
+                                     }: SelectFieldComponentProps) {
     const val = value ?? '';
 
     const optionElements = useMemo(() => {

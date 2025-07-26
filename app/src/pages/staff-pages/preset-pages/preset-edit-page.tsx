@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {Box, Button, Container, Grid, Typography} from '@mui/material';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams} from 'react-router-dom';
@@ -34,7 +34,7 @@ import {IdentityProviderInfo} from '../../../modules/identity/models/identity-pr
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
 import {ElementData} from '../../../models/element-data';
 
-export function PresetEditPage(): JSX.Element {
+export function PresetEditPage() {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showPrompt = usePrompt();

@@ -1,4 +1,4 @@
-import React, { FormEvent, useState, type JSX } from 'react';
+import React, { FormEvent, useState } from 'react';
 import {type PublishPresetVersionDialogProps} from './publish-preset-version-dialog-props';
 import Dialog, {type DialogProps} from '@mui/material/Dialog';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -14,7 +14,7 @@ import {Box, Button, DialogActions, DialogContent, Typography} from '@mui/materi
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 
 
-export function PublishPresetVersionDialog(props: DialogProps & PublishPresetVersionDialogProps): JSX.Element {
+export function PublishPresetVersionDialog(props: DialogProps & PublishPresetVersionDialogProps) {
     const dispatch = useAppDispatch();
     const {
         preset,

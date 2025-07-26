@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Rating as MuiRating, useTheme} from '@mui/material';
 import {type IconContainerProps} from '@mui/material/Rating';
 import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
@@ -63,7 +63,7 @@ const customIcons: Record<string, {
     },
 };
 
-export function Rating(props: RatingProps): JSX.Element {
+export function Rating(props: RatingProps) {
     const theme = useTheme();
 
     return (
@@ -87,7 +87,7 @@ export function Rating(props: RatingProps): JSX.Element {
     );
 }
 
-function IconContainer(props: IconContainerProps): JSX.Element {
+function IconContainer(props: IconContainerProps) {
     const {
         value,
         ...other

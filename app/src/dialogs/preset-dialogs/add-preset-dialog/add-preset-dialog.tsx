@@ -1,5 +1,5 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AddPresetDialogProps} from './add-preset-dialog-props';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
@@ -58,7 +58,7 @@ function validate(preset: Preset): Errors | null {
     return errors;
 }
 
-export function AddPresetDialog(props: AddPresetDialogProps): JSX.Element {
+export function AddPresetDialog(props: AddPresetDialogProps) {
     const api = useApi();
     const dispatch = useAppDispatch();
 

@@ -1,4 +1,4 @@
-import React, {useEffect, type JSX } from 'react';
+import React, {useEffect } from 'react';
 import {useTheme} from '@mui/material';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
@@ -10,7 +10,7 @@ interface MetaElementProps {
     titlePrefix?: string;
 }
 
-export function MetaElement({title, titlePrefix}: MetaElementProps): JSX.Element {
+export function MetaElement({title, titlePrefix}: MetaElementProps) {
     const theme = useTheme();
 
     const favicon = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.favicon));

@@ -1,4 +1,4 @@
-import React, { useRef, useState, type JSX } from 'react';
+import React, { useRef, useState } from 'react';
 import {Box, Button, Divider, Typography} from '@mui/material';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
@@ -19,7 +19,7 @@ import {AppInfo} from '../../app-info';
 import {StepElement} from '../../models/elements/steps/step-element';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 
-export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>): JSX.Element {
+export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>) {
     const [showAddDialog, setShowAddDialog] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(undefined);

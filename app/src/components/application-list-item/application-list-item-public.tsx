@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
 import {Link} from 'react-router-dom';
@@ -11,7 +11,7 @@ interface ApplicationListItemDisplayProps {
     form: FormCitizenListResponseDTO;
 }
 
-export function ApplicationListItemPublic(props: ApplicationListItemDisplayProps): JSX.Element {
+export function ApplicationListItemPublic(props: ApplicationListItemDisplayProps) {
     return (
         <Box className={styles.listItem}>
             <Box

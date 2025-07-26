@@ -1,4 +1,4 @@
-import React, { useState, type JSX } from 'react';
+import React, { useState } from 'react';
 import {Box, Button, IconButton, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {type ElementEditorActionsProps} from './element-editor-actions-props';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
@@ -8,7 +8,7 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import LibraryAddOutlinedIcon from '@mui/icons-material/LibraryAddOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 
-export function ElementEditorActions(props: ElementEditorActionsProps): JSX.Element {
+export function ElementEditorActions(props: ElementEditorActionsProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {

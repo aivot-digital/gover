@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {Box, Typography} from '@mui/material';
 import Balancer from 'react-wrap-balancer';
 import {SxProps, Theme} from "@mui/material";
@@ -23,7 +23,7 @@ export function ElementEditorSectionHeader({
                                      maxWidth = '900px',
                                      children,
                                      sx = {},
-                                 }: ElementEditorSectionHeaderProps): JSX.Element {
+                                 }: ElementEditorSectionHeaderProps) {
     return (
         <Box
             sx={{

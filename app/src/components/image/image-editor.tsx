@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type ImageElement} from '../../models/elements/form/content/image-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
@@ -7,7 +7,7 @@ import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-ut
 import {Alert, AlertTitle, Grid, Typography} from '@mui/material';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 
-export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEntity>): JSX.Element {
+export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEntity>) {
     return (
         <>
             <TextFieldComponent

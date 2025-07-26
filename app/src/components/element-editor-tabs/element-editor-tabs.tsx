@@ -1,12 +1,12 @@
 import {Box, Tab, Tabs} from '@mui/material';
-import React, { useCallback, type JSX } from 'react';
+import React, { useCallback } from 'react';
 import {type ElementEditorTabsProps} from './element-editor-tabs-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {DefaultTabs} from '../element-editor/default-tabs';
 import {ElementType} from '../../data/element-type/element-type';
 import {ElementIsInput} from '../../data/element-type/element-is-input';
 
-export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabsProps<T>): JSX.Element {
+export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabsProps<T>) {
     const handleTabChange = useCallback((_: any, newTab: string) => {
         props.onTabChange(newTab);
     }, [props.onTabChange]);

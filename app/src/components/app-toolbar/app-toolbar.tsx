@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {AppToolbarAction, type AppToolbarProps} from './app-toolbar-props';
 import {AppBar, Box, Button, IconButton, styled, Toolbar, Tooltip, Typography} from '@mui/material';
 import {Link} from 'react-router-dom';
@@ -13,7 +13,7 @@ const Offset = styled('div')(({theme}) => theme.mixins.toolbar);
  * Default toolbar of the application.
  * Renders basic navigation as well as a title and actions.
  */
-export function AppToolbar(props: AppToolbarProps): JSX.Element {
+export function AppToolbar(props: AppToolbarProps) {
     const {
         actions,
         updateToolbarHeight,

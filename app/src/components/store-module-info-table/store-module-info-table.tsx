@@ -1,10 +1,10 @@
 import {type StoreModuleInfoTableProps} from './store-module-info-table-props';
 import {Box, IconButton, Table, TableBody, TableCell, TableContainer, TableRow, Tooltip, Typography} from '@mui/material';
-import React, { type JSX } from 'react';
+import React from 'react';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
-export function StoreModuleInfoTable(props: StoreModuleInfoTableProps): JSX.Element {
+export function StoreModuleInfoTable(props: StoreModuleInfoTableProps) {
     return (
 
         <Box>

@@ -1,4 +1,4 @@
-import React, { type JSX } from 'react';
+import React from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type Form as Application} from '../../models/entities/form';
@@ -6,7 +6,7 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 import {StringListInput} from '../string-list-input/string-list-input';
 import {RichTextEditorComponentView} from "../richt-text-editor/rich-text-editor.component.view";
 
-export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, Application>): JSX.Element {
+export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, Application>) {
     return (
         <>
             <RichTextEditorComponentView

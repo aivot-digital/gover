@@ -1,5 +1,5 @@
 import {type PageWrapperProps} from '../page-wrapper/page-wrapper-props';
-import { FormEvent, type JSX } from 'react';
+import { FormEvent } from 'react';
 
 export interface FormPageWrapperProps extends PageWrapperProps {
     hasChanged?: boolean;
@@ -9,6 +9,6 @@ export interface FormPageWrapperProps extends PageWrapperProps {
 
     tabs?: Array<{
         label: string;
-        content: JSX.Element;
+        content: React.ReactNode;
     }>;
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, type JSX } from 'react';
+import React, { useMemo } from 'react';
 import {type FormMetricsProps} from './form-metrics-props';
 import {Box, Table, TableBody, TableCell, TableContainer, TableRow, Typography} from '@mui/material';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -11,7 +11,7 @@ import HelpIconOutlined from '@mui/icons-material/HelpOutline';
 import {HintTooltip} from '../hint-tooltip/hint-tooltip';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 
-export function FormMetrics(props: FormMetricsProps): JSX.Element {
+export function FormMetrics(props: FormMetricsProps) {
     const metrics = useMemo(() => calculateMetrics(props.root), [props.root]);
     const metricRows = useMemo<Array<{ label: string, hint: string, value: string }>>(() => [
         {

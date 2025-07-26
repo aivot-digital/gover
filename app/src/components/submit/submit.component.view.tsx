@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react';
+import React, { useEffect, useState } from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
@@ -22,7 +22,7 @@ import {AltchaWidget} from '../altcha/altcha-widget';
 
 export const SubmitPaymentDataKey = '__payment_data__';
 
-export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): JSX.Element | null {
+export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): React.ReactNode | null {
     const {
         element,
         value,
@@ -97,7 +97,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         return null;
     }
 
-    const sections: JSX.Element[] = [];
+    const sections: React.ReactNode[] = [];
 
     if (responsibleDepartment != null) {
         sections.push(

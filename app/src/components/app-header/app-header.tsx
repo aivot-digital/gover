@@ -1,4 +1,4 @@
-import React, { useState, type JSX } from 'react';
+import React, { useState } from 'react';
 import {type AppHeaderProps} from './app-header-props';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -17,7 +17,7 @@ import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import Balancer from 'react-wrap-balancer';
 
-export function AppHeader({mode, onDeleteFormData}: AppHeaderProps): JSX.Element {
+export function AppHeader({mode, onDeleteFormData}: AppHeaderProps) {
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));

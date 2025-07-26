@@ -1,5 +1,5 @@
 import {Box, Drawer} from '@mui/material';
-import React, { useMemo, useState, type JSX } from 'react';
+import React, { useMemo, useState } from 'react';
 import {DefaultTabs} from './default-tabs';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -19,7 +19,7 @@ import {useChangeBlocker} from '../../hooks/use-change-blocker';
 import {useConfirm} from '../../providers/confirm-provider';
 import {AppInfo} from '../../app-info';
 
-export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): JSX.Element | null {
+export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): React.ReactNode | null {
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
