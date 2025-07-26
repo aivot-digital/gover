@@ -14,6 +14,11 @@ RUN npm run build:prod
 
 FROM node:24.2.0-alpine3.21 AS build_app
 
+# Set build version and date
+ARG BUILD_VERSION=0.0.0
+ARG BUILD_NUMBER=0
+ARG BUILD_DATE=2025-05-24T10:15:00Z
+
 # Set work dir
 WORKDIR /app
 
