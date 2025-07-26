@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.models.payment;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.aivot.GoverBackend.enums.PaymentType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 
 import java.io.Serializable;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentProduct implements Serializable {
     private String id;
     private String reference;
