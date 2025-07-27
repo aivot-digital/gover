@@ -70,7 +70,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         }
 
         const field = fields
-            .find(field => field.label === params.field);
+            .find(field => field.key === params.field);
 
         if (field == null) {
             return;
