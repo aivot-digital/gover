@@ -25,8 +25,6 @@ env:
   IS_ALPHA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref != 'main' }}
   IS_BETA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref == 'main' }}
   IS_RELEASE: ${{ github.event_name == 'push' }}
-  PACKAGE_NAME: ${{ github.event_name == 'pull_request' && 'gover-next' || 'gover' }}
-  IMAGE_NAME: ${{ github.repository_owner }}/${{ env.PACKAGE_NAME }}
 
 jobs:
   testBackend:
@@ -76,6 +74,8 @@ jobs:
     outputs:
       build_date: ${{ steps.build_date.outputs.value }}
       build_version: ${{ steps.build_version.outputs.value }}
+      package_name: ${{ steps.build_image_vars.outputs.package_name }}
+      image_name: ${{ steps.build_image_vars.outputs.image_name }}
     steps:
       - name: Get current date
         id: build_date
@@ -95,6 +95,16 @@ jobs:
           else
             echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Determine package name and set image name
+        id: build_image_vars
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "package_name=gover-next" >> $GITHUB_OUTPUT
+          else
+            echo "package_name=gover" >> $GITHUB_OUTPUT
+          fi
+          echo "image_name=${{ github.repository_owner }}/$(cat $GITHUB_OUTPUT | grep package_name | cut -d '=' -f2)" >> $GITHUB_OUTPUT
 
   generateSbom:
     name: Generate SBOMs and verify license compliance
@@ -254,6 +264,8 @@ jobs:
       BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
       BUILD_NUMBER: ${{ github.run_number }}
+      PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
+      IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -313,6 +325,8 @@ jobs:
       BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
       BUILD_NUMBER: ${{ github.run_number }}
+      PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
+      IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -367,6 +381,8 @@ jobs:
       packages: write
     env:
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
+      PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
+      IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
     needs:
       - prepareBuildVars
       - buildArm64Image
