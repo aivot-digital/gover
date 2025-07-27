@@ -3,7 +3,7 @@ name: Check a pull request
 on:
   push:
     tags:
-      - "*"
+      - "v*"
     branches-ignore:
       - "next"
 
