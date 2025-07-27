@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.elements.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
@@ -312,13 +313,13 @@ public class ElementDerivationService {
             dataObject.setComputedValue(null);
         } else if (value instanceof Iterable<?> iValue) {
             if (replicatingContainerLayout.getChildren() != null) {
-                var om = new ObjectMapper();
+                var om = new ElementDataConverter();
 
                 var resValue = new LinkedList<ElementData>();
 
                 for (Object item : iValue) {
                     var childInputContextElementData = om
-                            .convertValue(item, ElementData.class);
+                            .convertObjectToEntityAttribute(item);
 
                     var childOutputContextElementData = new ElementData();
 

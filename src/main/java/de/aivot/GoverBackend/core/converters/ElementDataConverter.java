@@ -35,4 +35,25 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
             throw new RuntimeException(e);
         }
     }
+
+    public ElementData convertToEntityAttribute(Map<?, ?> m) {
+        return convertObjectToEntityAttribute(m);
+    }
+
+    public ElementData convertObjectToEntityAttribute(Object o) {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+
+        if (o instanceof Map<?, ?> map) {
+            return convertToEntityAttribute(map);
+        } else if (o instanceof String jsonString) {
+            try {
+                return mapper.readValue(jsonString, ElementData.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported type for conversion: " + o.getClass().getName());
+        }
+    }
 }

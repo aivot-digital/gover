@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.elements.models.elements.form.layout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
@@ -42,7 +43,7 @@ public class ReplicatingContainerLayout extends BaseInputElement<List<ElementDat
         List<ElementData> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
-            var om = new ObjectMapper();
+            var om = new ElementDataConverter();
 
             for (Object itemObj : cValue) {
                 switch (itemObj) {
@@ -56,7 +57,7 @@ public class ReplicatingContainerLayout extends BaseInputElement<List<ElementDat
                     }
                     case Map<?, ?> mapValue -> {
                         try {
-                            var item = om.convertValue(mapValue, ElementData.class);
+                            var item = om.convertToEntityAttribute(mapValue);
                             res.add(item);
                         } catch (IllegalArgumentException ex) {
                             // If conversion fails, skip this item

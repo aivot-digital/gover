@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.submission.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.captcha.services.AltchaService;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
 import de.aivot.GoverBackend.elements.models.ElementData;
@@ -165,9 +164,9 @@ public class SubmitController {
         // Get customer input
         ElementData elementData;
         try {
-            elementData = new ObjectMapper()
-                    .readValue(inputs, ElementData.class);
-        } catch (JsonProcessingException e) {
+            elementData = new ElementDataConverter()
+                    .convertToEntityAttribute(inputs);
+        } catch (Exception e) {
             throw ResponseException.badRequest(
                     "Ungültige Eingabedaten.",
                     "Die Eingabedaten konnten nicht verarbeitet werden. Bitte überprüfen Sie die Struktur der Daten."
@@ -184,7 +183,7 @@ public class SubmitController {
                     ._formatValue(rawCaptchaValue);
 
             var payloadNode = formattedCaptchaValue != null ? formattedCaptchaValue.get("payload") : null;
-            if (payloadNode == null ) {
+            if (payloadNode == null) {
                 throw new Exception("Bitte bestätigen Sie, dass Sie ein Mensch sind.");
             }
 
