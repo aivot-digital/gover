@@ -12,6 +12,7 @@
 * **Backend:** Upgraded most backend maven dependencies to the latest versions
 * **Frontend:** Replace JSX.Element type with ReactNode in the frontend codebase.
 * **System:** Replaced Puppet PDF generator with a new generator based on Gotenberg, which supports more engines and is easier to maintain.
+* **Build-System:** Pre-Release builds are now published to a separate 'gover-next' package.
 
 ## [4.5.2](https://github.com/aivot-digital/gover/compare/v4.5.1...v4.5.2) (2025-07-24)
 
