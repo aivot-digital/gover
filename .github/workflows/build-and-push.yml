@@ -21,12 +21,12 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/$PACKAGE_NAME
   PR_NUMBER: ${{ github.event.pull_request.number }}
   IS_ALPHA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref != 'main' }}
   IS_BETA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref == 'main' }}
   IS_RELEASE: ${{ github.event_name == 'push' }}
   PACKAGE_NAME: ${{ github.event_name == 'pull_request' && 'gover-next' || 'gover' }}
+  IMAGE_NAME: ${{ github.repository_owner }}/${{ env.PACKAGE_NAME }}
 
 jobs:
   testBackend:
