@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.core.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -14,6 +15,8 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
     @Override
     public String convertToDatabaseColumn(ElementData baseElement) {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+
         try {
             return mapper.writeValueAsString(baseElement);
         } catch (JsonProcessingException e) {
@@ -24,6 +27,8 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
     @Override
     public ElementData convertToEntityAttribute(String s) {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+
         try {
             return mapper.readValue(s, ElementData.class);
         } catch (JsonProcessingException e) {
