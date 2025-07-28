@@ -76,7 +76,7 @@ public class TableField extends BaseInputElement<List<Map<String, Object>>> {
 
         for (var row : value) {
             for (var col : fields) {
-                var cellValue = row.get(col.getLabel());
+                var cellValue = row.get(col.getKey());
                 sb.append(cellValue.toString());
                 sb.append(',');
             }
@@ -114,7 +114,7 @@ public class TableField extends BaseInputElement<List<Map<String, Object>>> {
         int rowNumber = 1;
         for (Map<String, Object> row : value) {
             for (TableFieldColumnDefinition col : fields) {
-                Object val = row.get(col.getLabel());
+                Object val = row.get(col.getKey());
 
                 if (val instanceof String sVal) {
                     if (StringUtils.isNullOrEmpty(sVal)) {
@@ -124,10 +124,22 @@ public class TableField extends BaseInputElement<List<Map<String, Object>>> {
 
                 if (!Boolean.TRUE.equals(col.getOptional())) {
                     if (val == null) {
-                        throw new ValidationException(this, "In Spalte " + col.getLabel() + " der Zeile " + rowNumber + " wurde kein Wert angegeben. Diese Spalte ist jedoch eine Pflichtangabe.");
+                        var msg = String.format(
+                                "In Spalte \"%s\" in Zeile %d wurde kein Wert angegeben. Diese Spalte ist jedoch eine Pflichtangabe.",
+                                col.getLabel(),
+                                rowNumber
+                        );
+
+                        throw new ValidationException(this, msg);
                     } else {
                         if (val instanceof String sVal && sVal.trim().isEmpty()) {
-                            throw new ValidationException(this, "In Spalte " + col.getLabel() + " der Zeile " + rowNumber + " wurde kein Wert angegeben. Diese Spalte ist jedoch eine Pflichtangabe.");
+                            var msg = String.format(
+                                    "In Spalte \"%s\" in Zeile %d wurde kein Wert angegeben. Diese Spalte ist jedoch eine Pflichtangabe.",
+                                    col.getLabel(),
+                                    rowNumber
+                            );
+
+                            throw new ValidationException(this, msg);
                         }
                     }
                 }
@@ -140,7 +152,7 @@ public class TableField extends BaseInputElement<List<Map<String, Object>>> {
 
                         if (dValue.compareTo(NumberField.AbsoluteMinValue) < 0) {
                             var msg = String.format(
-                                    "Der Wert in Spalte %s in Zeile %d muss mindestens %s betragen.",
+                                    "Der Wert in Spalte \"%s\" in Zeile %d muss mindestens %s betragen.",
                                     col.getLabel(),
                                     rowNumber,
                                     NumberField.formatGermanNumber(NumberField.AbsoluteMinValue, 0)
@@ -158,7 +170,7 @@ public class TableField extends BaseInputElement<List<Map<String, Object>>> {
                             throw new ValidationException(this, msg);
                         }
                     } else {
-                        throw new ValidationException(this, "Der Wert in Spalte " + col.getLabel() + " der Zeile " + rowNumber + " konnte nicht als Zahl interpretiert werden.");
+                        throw new ValidationException(this, "Der Wert in Spalte \"" + col.getLabel() + "\" der Zeile " + rowNumber + " konnte nicht als Zahl interpretiert werden.");
                     }
                 }
 
@@ -166,7 +178,7 @@ public class TableField extends BaseInputElement<List<Map<String, Object>>> {
                     if (val == null) {
                         // Do nothing, as null is allowed
                     } else if (!(val instanceof String)) {
-                        throw new ValidationException(this, "Der Wert in Spalte " + col.getLabel() + " der Zeile " + rowNumber + " konnte nicht als Text interpretiert werden.");
+                        throw new ValidationException(this, "Der Wert in Spalte \"" + col.getLabel() + "\" der Zeile " + rowNumber + " konnte nicht als Text interpretiert werden.");
                     }
                 }
             }
