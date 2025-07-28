@@ -447,7 +447,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             ]}
                             typeHints={[{
                                 name: 'ctx',
-                                content: createLowCodeContextType(undefined, props.form.root),
+                                content: createLowCodeContextType(props.form.root),
                             }]}
                             onChange={val => {
                                 props.onPatch({

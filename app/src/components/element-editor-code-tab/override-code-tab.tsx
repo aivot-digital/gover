@@ -43,7 +43,7 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
         return isStringNotNullOrEmpty(override.javascriptCode?.code);
     }, [override]);
 
-    const editorRef = useRef<editor.IStandaloneCodeEditor>();
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
     const handleChange = (patch: Partial<ElementOverrideFunction>) => {
@@ -113,7 +113,7 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                             disabled={!props.editable}
                             typeHints={[{
                                 name: 'Context',
-                                content: createLowCodeContextType(props.element, props.parents[0]),
+                                content: createLowCodeContextType(props.parents[0]),
                             }]}
                             onEditorMount={(editor) => {
                                 editorRef.current = editor;
