@@ -102,7 +102,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         >
             <TimePicker
                 label={`${props.label}${props.required ? ' *' : ''}`}
-                value={dateValue}
+                value={localValue}
                 onChange={handleChange}
                 onAccept={handleAccept}
                 onClose={handleClose}
