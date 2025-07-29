@@ -20,8 +20,8 @@ on:
 env:
   REGISTRY: ghcr.io
   PR_NUMBER: ${{ github.event.pull_request.number }}
-  IS_ALPHA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref != 'main' }}
-  IS_BETA_RELEASE: ${{ github.event_name == 'pull_request' && github.head_ref == 'main' }}
+  IS_BETA_RELEASE: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'next') }}
+  IS_ALPHA_RELEASE: ${{ github.event_name == 'pull_request' && !(github.base_ref == 'main' || github.base_ref == 'next') }}
   IS_RELEASE: ${{ github.event_name == 'push' }}
 
 jobs:
@@ -83,7 +83,7 @@ jobs:
         id: build_version
         run: |
           if ${{ github.event_name == 'pull_request' }}; then
-            if ${{ github.event.pull_request.base.ref == 'main' }}; then
+          if [[ "${{ github.event.pull_request.base.ref }}" == "main" || "${{ github.event.pull_request.base.ref }}" == "next" ]]; then
               SOURCE_BRANCH=${{ github.event.pull_request.head.ref }}
               echo "value=${SOURCE_BRANCH##*/}-beta-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
             else
