@@ -188,11 +188,11 @@ public class FileUploadField extends BaseInputElement<List<FileUploadFieldItem>>
     }
 
     @Nullable
-    public Boolean getMultifile() {
+    public Boolean getIsMultifile() {
         return isMultifile;
     }
 
-    public FileUploadField setMultifile(@Nullable Boolean multifile) {
+    public FileUploadField setIsMultifile(@Nullable Boolean multifile) {
         isMultifile = multifile;
         return this;
     }
