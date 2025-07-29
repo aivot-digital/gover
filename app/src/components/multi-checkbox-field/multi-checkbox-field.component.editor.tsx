@@ -17,7 +17,6 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
 
     return (
         <>
-            options.length === 0) &&
             <OptionListInput
                 label="Optionen"
                 addLabel="Option hinzufügen"
