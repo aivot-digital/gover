@@ -4,12 +4,12 @@
   "private": true,
   "license": "Sustainable Use License (see LICENSE file)",
   "scripts": {
-    "start:staff": "VITE_APP_PATH=/staff VITE_APP_MODE=staff vite --config vite.config.staff.js",
-    "start:customer": "VITE_APP_PATH= VITE_APP_MODE=customer vite --config vite.config.customer.js",
-    "build:staff": "VITE_APP_PATH=/staff VITE_APP_MODE=staff vite build --config vite.config.staff.js",
-    "build:customer": "VITE_APP_PATH= VITE_APP_MODE=customer vite build --config vite.config.customer.js",
-    "preview:staff": "VITE_APP_PATH=/staff VITE_APP_MODE=staff vite preview --config vite.config.staff.js",
-    "preview:customer": "VITE_APP_PATH= VITE_APP_MODE=customer vite preview --config vite.config.customer.js"
+    "start:staff": "VITE_APP_MODE=staff vite --config vite.config.staff.js",
+    "start:customer": "VITE_APP_MODE=customer vite --config vite.config.customer.js",
+    "build:staff": "VITE_APP_MODE=staff vite build --config vite.config.staff.js",
+    "build:customer": "VITE_APP_MODE=customer vite build --config vite.config.customer.js",
+    "preview:staff": "VITE_APP_MODE=staff vite preview --config vite.config.staff.js",
+    "preview:customer": "VITE_APP_MODE=customer vite preview --config vite.config.customer.js"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
