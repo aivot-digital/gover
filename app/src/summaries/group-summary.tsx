@@ -14,6 +14,8 @@ export function GroupSummary(props: BaseSummaryProps<GroupLayout, void>) {
                         showTechnical={props.showTechnical}
                         allowStepNavigation={props.allowStepNavigation}
                         isBusy={props.isBusy}
+                        idPrefix={props.idPrefix}
+                        customerInput={props.customerInput}
                     />
                 ))
             }
