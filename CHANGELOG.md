@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.5.3](https://github.com/aivot-digital/gover/compare/v4.5.2...v4.5.3) (2025-08-16)
+
+### Bug Fixes
+* **App:** Fix missing data from group containers in replicating lists in the summary view.
+* **App:** Fix cached data showing up in the submission details summary view.
+
 ## [4.5.2](https://github.com/aivot-digital/gover/compare/v4.5.1...v4.5.2) (2025-07-24)
 
 ### Bug Fixes

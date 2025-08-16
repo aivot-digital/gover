@@ -30,6 +30,7 @@ import CreditCardOffOutlinedIcon from '@mui/icons-material/CreditCardOffOutlined
 import {ConfirmDialogV2} from '../../../dialogs/confirm-dialog/confirm-dialog-v2';
 import {ConfirmDialogOptions} from '../../../hooks/use-confirm-dialog';
 import {isApiError} from '../../../models/api-error';
+import {clearLoadedForm} from '../../../slices/app-slice';
 
 export function SubmissionEditPage() {
     const api = useApi();
@@ -59,6 +60,10 @@ export function SubmissionEditPage() {
     const [isNotFound, setIsNotFound] = useState(false);
 
     const [currentTab, setCurrentTab] = useState(0);
+
+    useEffect(() => {
+        dispatch(clearLoadedForm());
+    }, []);
 
     useEffect(() => {
         if (id != null && api != null) {
