@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.0](https://github.com/aivot-digital/gover/compare/v4.5.0...v5.0.0) (TBD)
+## [5.0.0](https://github.com/aivot-digital/gover/compare/v4.5.3...v5.0.0) (TBD)
 
 ### Features
 
@@ -13,6 +13,13 @@
 * **Frontend:** Replace JSX.Element type with ReactNode in the frontend codebase.
 * **System:** Replaced Puppet PDF generator with a new generator based on Gotenberg, which supports more engines and is easier to maintain.
 * **System:** Reworked the data structure for holding and processing form data.
+* **Build-System:** Pre-Release builds are now published to a separate 'gover-next' package.
+
+## [4.5.3](https://github.com/aivot-digital/gover/compare/v4.5.2...v4.5.3) (2025-08-16)
+
+### Bug Fixes
+* **App:** Fix missing data from group containers in replicating lists in the summary view.
+* **App:** Fix cached data showing up in the submission details summary view.
 
 ## [4.5.2](https://github.com/aivot-digital/gover/compare/v4.5.1...v4.5.2) (2025-07-24)
 
