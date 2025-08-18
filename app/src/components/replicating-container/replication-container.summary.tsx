@@ -132,6 +132,7 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
                                     showTechnical={props.showTechnical}
                                     customerInput={props.customerInput}
                                     isBusy={props.isBusy}
+                                    allowStepNavigation={props.allowStepNavigation}
                                 />
                             ))
                         }

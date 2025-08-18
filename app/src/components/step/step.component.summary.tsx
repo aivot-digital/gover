@@ -11,7 +11,7 @@ import {BaseSummaryProps} from '../../summaries/base-summary';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 
-export function StepComponentSummary({allElements, model, showTechnical, allowStepNavigation, isBusy}: BaseSummaryProps<StepElement, any>) {
+export function StepComponentSummary({allElements, model, showTechnical, allowStepNavigation, isBusy, idPrefix, customerInput}: BaseSummaryProps<StepElement, any>) {
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedForm);
 
@@ -83,6 +83,8 @@ export function StepComponentSummary({allElements, model, showTechnical, allowSt
                         showTechnical={showTechnical}
                         allowStepNavigation={allowStepNavigation}
                         isBusy={isBusy}
+                        idPrefix={idPrefix}
+                        customerInput={customerInput}
                     />
                 ))
             }
