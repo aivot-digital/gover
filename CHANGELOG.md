@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.6.0](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.6.0) (TBD)
+## [5.0.0](https://github.com/aivot-digital/gover/compare/v4.5.3...v5.0.0) (TBD)
 
 ### Features
 
