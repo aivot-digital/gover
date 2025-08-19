@@ -37,7 +37,6 @@ import {SubmissionStatus} from '../../modules/submissions/enums/submission-statu
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
-import {selectIdentityId} from '../../slices/identity-slice';
 import {StepElement} from '../../models/elements/steps/step-element';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
@@ -117,7 +116,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     const upcomingStepDirection = useAppSelector(selectUpcomingStepDirection);
 
     const [derivationTriggerIdQueue, setDerivationTriggerIdQueue] = useState<string[]>([]);
-    const elementDataBufferRef = useRef<ElementData>();
+    const elementDataBufferRef = useRef<ElementData | undefined>(undefined);
 
     const [isBusy, setIsBusy] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -734,7 +733,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                     cursor: 'help',
                                 }}
                                 icon={<Box
-                                    component='span'
+                                    component="span"
                                     sx={{
                                         color: (theme) => theme.palette.primary.main,
                                         transform: 'translateY(2px)',
