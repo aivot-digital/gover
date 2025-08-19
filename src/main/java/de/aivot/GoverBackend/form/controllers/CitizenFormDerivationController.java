@@ -57,7 +57,9 @@ public class CitizenFormDerivationController {
 
 
         var inputIdValue = elementData
-                .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject());
+                .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject())
+                .setComputedErrors(null);
+
         derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);
 
         if (options.notContainsSkipErrors(form.getRoot().getIntroductionStep().getId())) {
@@ -65,7 +67,6 @@ public class CitizenFormDerivationController {
                 inputIdValue.setComputedErrors(List.of("Bitte melden Sie sich mit einem der Nutzerkonten an."));
             }
         }
-
 
         return derivedElementData;
     }
