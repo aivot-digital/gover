@@ -27,6 +27,7 @@ import {TimeFieldElement} from '../models/elements/form/input/time-field-element
 import {ImageElement} from '../models/elements/form/content/image-element';
 import {SubmittedStepElement} from '../models/elements/steps/submitted-step-element';
 import {FileUploadElement} from '../models/elements/form/input/file-upload-element';
+import {AppInfo} from '../app-info';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -281,7 +282,7 @@ const elementConstructors: {
     [ElementType.Image]: (id) => ({
         ...makeFormBase(ElementType.Image, id),
         alt: 'Beispiel-Grafik mit weißem Gover Logo auf blauem Hintergrund (bitte ersetzen)',
-        src: `${window.location.protocol}//${window.location.host}${process.env.PUBLIC_URL}/assets/images/gover-beispiel-grafik.svg`,
+        src: `${AppInfo.mode == 'staff' ? '/staff' : ''}/assets/images/gover-beispiel-grafik.svg`,
         height: undefined,
         width: undefined,
         caption: undefined,
