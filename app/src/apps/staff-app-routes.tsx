@@ -8,13 +8,13 @@ import {SubmissionEditPage} from '../pages/staff-pages/submission-pages/submissi
 import {type Route} from '../models/lib/route';
 import {NotFound} from '../pages/shared/not-found/not-found';
 import {ModuleSelectPage} from '../pages/staff-pages/module-select-pages/module-select-page';
-import {PaymentProvidersListPage} from '../pages/staff-pages/payment-providers/list/payment-providers-list-page';
-import {PaymentProviderDetailsPage} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page';
-import {PaymentProviderDetailsPageIndex} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page-index';
-import {PaymentProviderDetailsPageTest} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page-test';
+import {PaymentProvidersListPage} from '../modules/payment/pages/list/payment-providers-list-page';
+import {PaymentProviderDetailsPage} from '../modules/payment/pages/details/payment-provider-details-page';
+import {PaymentProviderDetailsPageIndex} from '../modules/payment/pages/details/payment-provider-details-page-index';
+import {PaymentProviderDetailsPageTest} from '../modules/payment/pages/details/payment-provider-details-page-test';
 import {
     PaymentProviderDetailsPageForms
-} from "../pages/staff-pages/payment-providers/details/payment-provider-details-page-forms";
+} from "../modules/payment/pages/details/payment-provider-details-page-forms";
 import {AccountDetailsPage} from "../modules/users/pages/account/account-details-page";
 import {AccountDetailsPageIndex} from "../modules/users/pages/account/account-details-page-index";
 import {AccountDetailsPageDepartmentMemberships} from "../modules/users/pages/account/account-details-page-department-memberships";
@@ -37,7 +37,7 @@ import {DestinationDetailsPage} from "../modules/destination/pages/details/desti
 import {DestinationDetailsPageIndex} from "../modules/destination/pages/details/destination-details-page-index";
 import {DestinationDetailsPageForms} from "../modules/destination/pages/details/destination-details-page-forms";
 import {PresetListPage} from "../pages/staff-pages/preset-pages/preset-list-page";
-import {PaymentProviderDetailsPageTransactions} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page-transactions';
+import {PaymentProviderDetailsPageTransactions} from '../modules/payment/pages/details/payment-provider-details-page-transactions';
 
 export const staffAppRoutes: Record<string, Route> = {
     moduleSelect: {

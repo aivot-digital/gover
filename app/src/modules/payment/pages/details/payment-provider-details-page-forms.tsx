@@ -2,11 +2,11 @@ import React, {useContext} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Form} from '../../../../models/entities/form';
-import {FormsApiService} from "../../../../modules/forms/forms-api-service";
+import {FormsApiService} from '../../../forms/forms-api-service';
 import {GridColDef} from '@mui/x-data-grid';
 import {EditOutlined} from "@mui/icons-material";
 import {Box, Typography} from "@mui/material";
-import {PaymentProviderResponseDTO} from '../../../../modules/payment/dtos/payment-provider-response-dto';
+import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import {CellLink} from "../../../../components/cell-link/cell-link";
 import {ApplicationStatus, ApplicationStatusNames} from '../../../../data/application-status';
 

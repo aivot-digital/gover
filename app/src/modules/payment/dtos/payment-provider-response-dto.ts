@@ -1,4 +1,5 @@
-// TODO: Implement this DTO
+import {ElementData} from '../../../models/element-data';
+
 export interface PaymentProviderResponseDTO {
     key: string;
     name: string;
@@ -6,5 +7,5 @@ export interface PaymentProviderResponseDTO {
     providerKey: string;
     isTestProvider: boolean;
     isEnabled: boolean;
-    config: Record<string, any>;
+    config: ElementData;
 }

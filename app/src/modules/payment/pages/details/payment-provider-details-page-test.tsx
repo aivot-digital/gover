@@ -3,13 +3,13 @@ import {TextFieldComponent} from '../../../../components/text-field/text-field-c
 import {useContext, useMemo, useState} from 'react';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {useApi} from '../../../../hooks/use-api';
-import {PaymentProvidersApiService} from '../../../../modules/payment/payment-providers-api-service';
+import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import {PaymentProviderTestDataResponseDTO} from '../../../../modules/payment/dtos/payment-provider-test-data-response-dto';
-import {PaymentProviderTestDataRequestDTO} from '../../../../modules/payment/dtos/payment-provider-test-data-request-dto';
+import {PaymentProviderTestDataResponseDTO} from '../../dtos/payment-provider-test-data-response-dto';
+import {PaymentProviderTestDataRequestDTO} from '../../dtos/payment-provider-test-data-request-dto';
 import {useValidationErrors} from '../../../../hooks/use-validation-errors';
 import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
 

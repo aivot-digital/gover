@@ -1,15 +1,15 @@
 import React, {useContext} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {GridColDef} from '@mui/x-data-grid';
+import {GridColDef, GridValueGetter} from '@mui/x-data-grid';
 import {Box, Typography} from '@mui/material';
-import {PaymentProviderResponseDTO} from '../../../../modules/payment/dtos/payment-provider-response-dto';
-import {TransactionsApiService} from '../../../../modules/payment/transaction-api-service';
-import {PaymentTransactionResponseDTO} from '../../../../modules/payment/dtos/payment-transaction-response-dto';
+import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
+import {TransactionsApiService} from '../../transaction-api-service';
+import {PaymentTransactionResponseDTO} from '../../dtos/payment-transaction-response-dto';
 import {XBezahldienstePaymentStatus} from '../../../../data/xbezahldienste-payment-status';
 import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
-import parseISO from 'date-fns/parseISO';
-import formatDateTime from 'date-fns/format';
+import {parseISO} from 'date-fns/parseISO';
+import {formatDate} from 'date-fns/format';
 
 const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
     {
@@ -18,15 +18,15 @@ const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
         flex: 1,
         renderCell: (params) => {
             const created = parseISO(params.value);
-            return `${formatDateTime(created, 'dd.MM.yyyy')} ${formatDateTime(created, 'HH:mm')} Uhr`;
+            return `${formatDate(created, 'dd.MM.yyyy')} ${formatDate(created, 'HH:mm')} Uhr`;
         },
     },
     {
         field: 'paymentInformation.transactionId',
         headerName: 'Schlüssel der Transaktion',
         flex: 1,
-        valueGetter: params => {
-            const value = params.row.paymentInformation?.transactionId;
+        valueGetter: (_, row) => {
+            const value = row.paymentInformation?.transactionId;
             return value ? String(value) : 'Keine Transaktions-ID vorhanden';
         },
         sortable: false,
@@ -35,8 +35,8 @@ const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
         field: 'paymentRequest.purpose',
         headerName: 'Verwendungszweck',
         flex: 1,
-        valueGetter: params => {
-            const value = params.row.paymentRequest?.purpose;
+        valueGetter: (_, row) => {
+            const value = row.paymentRequest?.purpose;
             return value ? String(value) : 'Kein Verwendungszweck angegeben';
         },
         sortable: false,
@@ -46,8 +46,8 @@ const columns: GridColDef<PaymentTransactionResponseDTO>[] = [
         headerName: 'Gesamtbetrag in Euro',
         flex: 1,
         align: 'right',
-        valueGetter: params => {
-            const value = params.row.paymentRequest?.grosAmount;
+        valueGetter: (_, row) => {
+            const value = row.paymentRequest?.grosAmount;
             return value ? formatNumToGermanNum(Number(value), 2) + ' €' : 'Kein Gesamtbetrag vorhanden';
         },
         sortable: false,

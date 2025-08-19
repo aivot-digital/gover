@@ -2,10 +2,10 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
-import {PaymentProvidersApiService} from '../../../../modules/payment/payment-providers-api-service';
+import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {Api} from '../../../../hooks/use-api';
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
-import {PaymentProviderResponseDTO} from '../../../../modules/payment/dtos/payment-provider-response-dto';
+import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import {useAdminGuard} from "../../../../hooks/use-admin-guard";
 
 export function PaymentProviderDetailsPage() {
