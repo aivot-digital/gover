@@ -45,7 +45,7 @@ public class Condition {
         if (referencedBaseElement instanceof BaseInputElement<?> referencedElement) {
             // Hole den Wert des Referenz-Elements. Dieser kann NULL sein.
             var rawValA = elementData
-                    .getOrDefault(element.getId(), new ElementDataObject())
+                    .getOrDefault(referencedElement.getId(), new ElementDataObject())
                     .getValue();
 
             Object rawValB = null;
