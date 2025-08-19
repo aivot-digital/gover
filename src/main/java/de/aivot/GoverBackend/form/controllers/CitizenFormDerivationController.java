@@ -58,7 +58,7 @@ public class CitizenFormDerivationController {
 
         var inputIdValue = elementData
                 .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject())
-                .setComputedErrors(null);
+                .setComputedErrors(null); // Clear any previous computed errors
 
         derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);
 
