@@ -59,7 +59,9 @@ export function goverSchemaToYup(elem: AnyElement): any {
                 fieldSchema = yup.mixed();
         }
 
-        res[elem.id] = fieldSchema;
+        res[elem.id] = yup.object().shape({
+            inputValue: fieldSchema,
+        });
     }
 
     // If element has children, recursively generate schema
