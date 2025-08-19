@@ -30,7 +30,7 @@ const columns: Array<GridColDef<DepartmentMembershipResponseDTO>> = [
         field: 'role',
         headerName: 'Rolle',
         flex: 1,
-        valueGetter: (params) => UserRoleLabels[params.row.role],
+        valueGetter: (_, row) => UserRoleLabels[row.role],
     },
 ];
 
