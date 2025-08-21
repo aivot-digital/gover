@@ -78,8 +78,8 @@ services:
 
       KC_HEALTH_ENABLED: true
 
-      KEYCLOAK_ADMIN: "{{ KEYCLOAK_ADMIN_USERNAME }}" # Setzen Sie den initialen Benutzernamen für den Keycloak-Admin. Passen Sie diesen Benutzernamen unbedingt an.
-      KEYCLOAK_ADMIN_PASSWORD: "{{ KEYCLOAK_ADMIN_PASSWORD }}" # Setzen Sie das initiale Passwort für den Keycloak-Admin. Passen Sie dieses Passwort unbedingt an.
+      KC_BOOTSTRAP_ADMIN_USERNAME: "{{ KEYCLOAK_ADMIN_USERNAME }}" # Setzen Sie den initialen Benutzernamen für den Keycloak-Admin. Passen Sie diesen Benutzernamen unbedingt an.
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "{{ KEYCLOAK_ADMIN_PASSWORD }}" # Setzen Sie das initiale Passwort für den Keycloak-Admin. Passen Sie dieses Passwort unbedingt an.
 
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
