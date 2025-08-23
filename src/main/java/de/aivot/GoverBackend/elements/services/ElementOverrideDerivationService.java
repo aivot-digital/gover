@@ -37,6 +37,7 @@ public class ElementOverrideDerivationService {
             if (override.getJavascriptCode() != null && override.getJavascriptCode().isNotEmpty()) {
                 var res = javascriptEngine
                         .registerGlobalContextObject(accumulator)
+                        .registerElementObject(currentElement)
                         .evaluateCode(override.getJavascriptCode());
 
                 // Check if the result is null, which indicates no override was generated

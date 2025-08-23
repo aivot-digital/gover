@@ -75,7 +75,8 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         var arg = castToString(args[0]);
-        var isVisible = data.getOrDefault(arg, new ElementDataObject()).getIsVisible();
+        var dataObject = data.get(arg);
+        var isVisible = dataObject != null && dataObject.getIsVisible();
         return new NoCodeResult(NoCodeDataType.Boolean, isVisible);
     }
 }

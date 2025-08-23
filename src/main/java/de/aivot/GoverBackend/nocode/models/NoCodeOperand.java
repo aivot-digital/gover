@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.annotation.Nonnull;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -22,7 +23,7 @@ import java.util.Objects;
         @JsonSubTypes.Type(value = NoCodeReference.class, name = NoCodeReference.TYPE_ID),
         @JsonSubTypes.Type(value = NoCodeStaticValue.class, name = NoCodeStaticValue.TYPE_ID),
 })
-public abstract class NoCodeOperand {
+public abstract class NoCodeOperand implements Serializable {
     @Nonnull
     private String type;
 

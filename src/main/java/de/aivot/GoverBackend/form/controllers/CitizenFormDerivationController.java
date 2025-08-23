@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -55,9 +56,8 @@ public class CitizenFormDerivationController {
         var derivedElementData = elementDerivationService
                 .derive(request);
 
-
         var inputIdValue = elementData
-                .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject())
+                .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject(ElementType.SubmittedStep))
                 .setComputedErrors(null); // Clear any previous computed errors
 
         derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);

@@ -139,6 +139,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                     editable={props.editable}
                     scope={props.scope}
                     enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
+                    limitElementTypes={props.limitElementTypes}
                 />
             }
 
@@ -147,6 +148,9 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 parentType={props.element.type}
                 onAddElement={handleAddElement}
                 onClose={toggleShowAddDialog}
+                limitElementTypes={props.limitElementTypes}
+                hideGoverStore={props.scope === 'data_modelling'}
+                hidePresets={props.scope === 'data_modelling'}
             />
 
             {

@@ -2,9 +2,10 @@ package de.aivot.GoverBackend.elements.models.elements.form.input;
 
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class TextPattern {
+public class TextPattern implements Serializable {
     @Nullable
     private String regex;
     @Nullable

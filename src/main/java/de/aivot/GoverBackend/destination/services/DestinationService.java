@@ -58,6 +58,8 @@ public class DestinationService implements EntityService<Destination, Integer> {
         existingEntity.setMailCC(entity.getMailCC());
         existingEntity.setMailBCC(entity.getMailBCC());
 
+        existingEntity.setScript(entity.getScript());
+
         existingEntity.setMaxAttachmentMegaBytes(entity.getMaxAttachmentMegaBytes());
 
         return destinationRepository.save(existingEntity);

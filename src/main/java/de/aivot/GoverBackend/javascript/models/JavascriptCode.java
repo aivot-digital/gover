@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.utils.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +18,7 @@ import java.util.regex.Pattern;
  * This model should be used to encapsulate javascript code in e.g. form elements.
  * The methods <code>equals</code> and <code>hashCode</code> should always be implemented to allow this class being stored in the database and not always being marked as dirty by hibernate.
  */
-public class JavascriptCode {
+public class JavascriptCode implements Serializable {
     private String code;
 
     // region Utility Constructors

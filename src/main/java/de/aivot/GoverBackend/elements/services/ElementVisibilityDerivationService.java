@@ -66,6 +66,7 @@ public class ElementVisibilityDerivationService {
         if (vis.getJavascriptCode() != null && vis.getJavascriptCode().isNotEmpty()) {
             var res = javascriptEngine
                     .registerGlobalContextObject(elementData)
+                    .registerElementObject(baseElement)
                     .evaluateCode(vis.getJavascriptCode())
                     .asBoolean();
             return res == null || res;

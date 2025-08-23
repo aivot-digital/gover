@@ -6,4 +6,7 @@ export interface AddElementDialogProps {
     parentType: ElementType;
     onAddElement: (element: AnyElement) => void;
     onClose: () => void;
+    limitElementTypes?: ElementType[];
+    hidePresets?: boolean;
+    hideGoverStore?: boolean;
 }

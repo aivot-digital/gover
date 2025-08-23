@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.elements.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
 import de.aivot.GoverBackend.elements.models.ElementData;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
 import java.util.LinkedList;
-import java.util.Map;
 
 @Service
 public class ElementDerivationService {
@@ -357,8 +355,8 @@ public class ElementDerivationService {
     ) {
         // Get or create the data object for the current element
         var inputDataObject = accumulator
-                .computeIfAbsent(_currentElement.getId(), id -> new ElementDataObject());
-        var dataObject = new ElementDataObject()
+                .computeIfAbsent(_currentElement.getId(), id -> new ElementDataObject(_currentElement));
+        var dataObject = new ElementDataObject(_currentElement)
                 .setType(_currentElement.getType())
                 .setInputValue(inputDataObject.getInputValue())
                 .setIsDirty(inputDataObject.getIsDirty())

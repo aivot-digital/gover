@@ -332,8 +332,14 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     <TextFieldComponent
                         label="ID des Elements"
                         value={props.element.id ?? ''}
-                        disabled
-                        onChange={(_) => {
+                        disabled={props.scope === 'application' || props.scope === 'preset' || !props.editable}
+                        onChange={(id) => {
+                            if (props.scope === 'data_modelling') {
+                                // @ts-ignore
+                                props.onChange({
+                                    id: id ?? '',
+                                });
+                            }
                         }}
                         endAction={{
                             icon: <ContentPasteIcon />,

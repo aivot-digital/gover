@@ -1,10 +1,21 @@
 package de.aivot.GoverBackend.elements.models;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import jakarta.annotation.Nullable;
 import net.minidev.json.annotate.JsonIgnore;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public class ElementData extends HashMap<String, ElementDataObject> implements Serializable {
     public ElementData() {
@@ -25,25 +36,10 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
         return dataObject;
     }
 
-    public ElementDataObject putInputValue(String key, Object value) {
-        ElementDataObject elementDataObject = new ElementDataObject();
-        elementDataObject.setInputValue(value);
-        return put(key, elementDataObject);
-    }
-
-    public static ElementData of(Object... args) {
-        if (args.length % 2 != 0) {
-            throw new IllegalArgumentException("Arguments must be in pairs of key and value.");
-        }
-        ElementData elementData = new ElementData();
-        for (int i = 0; i < args.length; i += 2) {
-            String key = (String) args[i];
-            Object value = args[i + 1];
-            ElementDataObject elementDataObject = new ElementDataObject();
+    public ElementDataObject putInputValue(BaseElement element, Object value) {
+            var elementDataObject = new ElementDataObject(element);
             elementDataObject.setInputValue(value);
-            elementData.put(key, elementDataObject);
-        }
-        return elementData;
+            return put(element.getId(), elementDataObject);
     }
 
     @JsonIgnore
@@ -57,5 +53,230 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
                                        d.getValue() instanceof ElementData ed &&
                                        ed.hasAnyError()
                                ));
+    }
+
+    public static ElementData fromValueMap(BaseElement element, Map<String, Object> valueMap) {
+        // Create an object to collect the element data in.
+        var elementData = new ElementData();
+
+        // Put an empty element data object for the root element into the new element data.
+        // This is necessary to ensure that all elements have an entry in the element data.
+        // We will save the element data object for later use.
+        var elementDataObject = new ElementDataObject(element);
+        elementData.put(element.getId(), elementDataObject);
+
+        // If the root element is an instance of BaseInputElement and not a ReplicatingContainerLayout,
+        // the value should be inserted into the element data object.
+        // Replicating container layouts are excluded here, because they are handled separately.
+        if (
+                element instanceof BaseInputElement<?> &&
+                !(element instanceof ReplicatingContainerLayout) &&
+                valueMap.containsKey(element.getId())
+        ) {
+            elementDataObject.setInputValue(valueMap.get(element.getId()));
+        }
+
+        // Pattern match the element type and handle it accordingly.
+        // This is necessary to handle complex elements like the root element or replicating container layouts.
+        // Also, elements with children are handled here.
+        switch (element) {
+            // RootElements are special elements that can contain multiple, additional steps,
+            // which are held in the root element itself.
+            // These steps are the introduction step, summary step and submit step.
+            case RootElement _rootElement -> {
+                if (_rootElement.getIntroductionStep() != null) {
+                    var introductionStepValue = valueMap.get(_rootElement.getIntroductionStep().getId());
+                    elementData.putInputValue(
+                            _rootElement.getIntroductionStep(),
+                            introductionStepValue
+                    );
+                }
+
+                if (_rootElement.getSummaryStep() != null) {
+                    var summaryStepValue = valueMap.get(_rootElement.getSummaryStep().getId());
+                    elementData.putInputValue(
+                            _rootElement.getSummaryStep(),
+                            summaryStepValue
+                    );
+                }
+
+                if (_rootElement.getSubmitStep() != null) {
+                    var submitStepValue = valueMap.get(_rootElement.getSubmitStep().getId());
+                    elementData.putInputValue(
+                            _rootElement.getSubmitStep(),
+                            submitStepValue
+                    );
+                }
+
+                // If the root element has children, iterate over them and call this function recursively.
+                // This is necessary to ensure that all elements in the root element are handled.
+                if (_rootElement.getChildren() != null) {
+                    for (var step : _rootElement.getChildren()) {
+                        elementData.putAll(ElementData.fromValueMap(step, valueMap));
+                    }
+                }
+            }
+            // ReplicatingContainerLayouts are special elements that can contain multiple child elements.
+            // These child elements are replicated for each value in this container.
+            // A value in this container is a scope for all child elements.
+            case ReplicatingContainerLayout replicatingContainerLayout -> {
+                // Extract the context in the source map for the replicating container layout.
+                var rawReplicatingContainerContextsInSourceMap = valueMap
+                        .get(replicatingContainerLayout.getId());
+
+                // Check if the replicating container layout has children and if the values in the map are a collection.
+                if (
+                        replicatingContainerLayout.getChildren() != null &&
+                        rawReplicatingContainerContextsInSourceMap instanceof Collection<?> replicatingContainerContextsInSourceMap
+                ) {
+                    // Create a new list of element data objects.
+                    // This list will hold the element data containers for each "iteration" of the replicating container.
+                    // Each iteration holds all values for all children of the replicating container.
+                    var replicatingContainerElementDataList = new LinkedList<ElementData>();
+
+                    // Iterate over the contexts in the source map for the replicating container layout.
+                    // Each context represents a scope for the child elements of the replicating container.
+                    for (var rawContextInSourceMap : replicatingContainerContextsInSourceMap) {
+                        // If the context is a Map, we can create an ElementData for it.
+                        // This element data will hold the values for the child elements of the replicating container.
+                        if (rawContextInSourceMap instanceof Map<?, ?> contextInSourceMap) {
+                            var childElementData = new ElementData();
+                            var sourceContext = (Map<String, Object>) contextInSourceMap;
+
+                            for (var replicatingContainerChildElement : replicatingContainerLayout.getChildren()) {
+                                var _childElementData = ElementData
+                                        .fromValueMap(replicatingContainerChildElement, sourceContext);
+
+                                childElementData.putAll(_childElementData);
+                            }
+
+                            replicatingContainerElementDataList
+                                    .add(childElementData);
+                        }
+                    }
+
+                    elementDataObject.setInputValue(replicatingContainerElementDataList);
+                }
+            }
+            // ElementWithChildren are elements that can contain multiple child elements.
+            // These child elements are handled recursively.
+            // If the element has children, iterate over them and call this function recursively.
+            case ElementWithChildren<?> elementWithChildren -> {
+                if (elementWithChildren.getChildren() != null) {
+                    for (var child : elementWithChildren.getChildren()) {
+                        var childElementData = ElementData.fromValueMap(child, valueMap);
+                        elementData.putAll(childElementData);
+                    }
+                }
+            }
+            default -> {
+                // Do Nothing
+            }
+        }
+
+        return elementData;
+    }
+
+    /**
+     * Transform a given element data container into a map of values.
+     * Based on the given element, it will extract the values.
+     * Elements with children will be handled recursively.
+     *
+     * @param element the element to extract the values for.
+     * @param elementData the element data container to extract the values from
+     * @return a map of values, where the keys are the element IDs and the values are the values of the elements.
+     */
+    public static Map<String, Object> toValueMap(BaseElement element, ElementData elementData) {
+        var map = new HashMap<String, Object>();
+
+        Consumer<BaseInputElement<?>> addValueToMap = (baseInputElement) -> {
+            if (baseInputElement == null) {
+                return;
+            }
+            var dataObject = elementData.get(baseInputElement.getId());
+            if (dataObject != null) {
+                map.put(baseInputElement.getId(), dataObject.getValue());
+            } else {
+                map.put(baseInputElement.getId(), null);
+            }
+        };
+
+        // Add the input value for the element to the map, if the element is a BaseInputElement.
+        if (element instanceof BaseInputElement<?> baseInputElement) {
+            addValueToMap.accept(baseInputElement);
+        }
+
+        switch (element) {
+            case RootElement _rootElement -> {
+                addValueToMap.accept(_rootElement.getIntroductionStep());
+                addValueToMap.accept(_rootElement.getSummaryStep());
+                addValueToMap.accept(_rootElement.getSubmitStep());
+
+                if (_rootElement.getChildren() != null) {
+                    for (var step : _rootElement.getChildren()) {
+                        map.putAll(toValueMap(step, elementData));
+                    }
+                }
+            }
+            case StepElement _stepElement -> {
+                if (_stepElement.getChildren() != null) {
+                    for (var child : _stepElement.getChildren()) {
+                        map.putAll(toValueMap(child, elementData));
+                    }
+                }
+            }
+            case GroupLayout _groupLayout -> {
+                if (_groupLayout.getChildren() != null) {
+                    for (var child : _groupLayout.getChildren()) {
+                        map.putAll(toValueMap(child, elementData));
+                    }
+                }
+            }
+            case ReplicatingContainerLayout repl -> {
+                var childDataObject = elementData
+                        .get(repl.getId());
+
+                // Reset previously set value
+                map.put(repl.getId(), null);
+
+                if (childDataObject == null) {
+                    break;
+                }
+
+                if (repl.getChildren() == null) {
+                    break;
+                }
+
+                var dataSets = childDataObject
+                        .getValue();
+
+                if (!(dataSets instanceof Collection<?>)) {
+                    break;
+                }
+
+                var valueMapDataSets = new LinkedList<Map<String, Object>>();
+
+                for (var dataSet : (Collection<?>) dataSets) {
+                    if (!(dataSet instanceof ElementData)) {
+                        continue;
+                    }
+
+                    var dataSetED = (ElementData) dataSet;
+                    var dataSetValueMap = new HashMap<String, Object>();
+                    for (var childElement : repl.getChildren()) {
+                        var childValueMap = toValueMap(childElement, dataSetED);
+                        dataSetValueMap.putAll(childValueMap);
+                    }
+                    valueMapDataSets.add(dataSetValueMap);
+                }
+
+                map.put(repl.getId(), valueMapDataSets);
+            }
+            default -> {
+                // Do Nothing
+            }
+        }
+
+        return map;
     }
 }

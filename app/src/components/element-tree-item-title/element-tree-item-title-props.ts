@@ -1,5 +1,6 @@
 import {type AnyElement} from '../../models/elements/any-element';
 import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
+import {ElementType} from '../../data/element-type/element-type';
 
 export interface ElementTreeItemTitleProps<T extends AnyElement> {
     element: T;

@@ -1,5 +1,5 @@
 import {Box, Tab, Tabs} from '@mui/material';
-import React, { useCallback } from 'react';
+import React, {useCallback} from 'react';
 import {type ElementEditorTabsProps} from './element-editor-tabs-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {DefaultTabs} from '../element-editor/default-tabs';
@@ -24,6 +24,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             />
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 ElementIsInput[props.component.type] &&
                 <Tab
                     label="Datenzuordnung"
@@ -32,6 +33,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 props.additionalTabs.map((add) => (
                     <Tab
                         key={add.label}
@@ -52,6 +54,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             />
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 props.component.type !== ElementType.Root &&
                 props.component.type !== ElementType.IntroductionStep &&
                 props.component.type !== ElementType.SummaryStep &&
@@ -62,6 +65,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 />
             }
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 ElementIsInput[props.component.type] &&
                 <Tab
                     label="Validierung"
@@ -70,6 +74,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 ElementIsInput[props.component.type] &&
                 <Tab
                     label="Dynamischer Wert"
@@ -78,6 +83,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
             }
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 props.component.type !== ElementType.Root &&
                 props.component.type !== ElementType.IntroductionStep &&
                 props.component.type !== ElementType.SummaryStep &&
@@ -88,10 +94,13 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 />
             }
 
-            <Tab
-                label="Referenzen"
-                value={DefaultTabs.references}
-            />
+            {
+                (props.scope === 'application' || props.scope === 'preset') &&
+                <Tab
+                    label="Referenzen"
+                    value={DefaultTabs.references}
+                />
+            }
 
             <Tab
                 label="Elementstruktur"
@@ -108,12 +117,16 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 }}
             />
 
-            <Tab
-                label="Prüfung"
-                value={DefaultTabs.test}
-            />
+            {
+                (props.scope === 'application' || props.scope === 'preset') &&
+                <Tab
+                    label="Prüfung"
+                    value={DefaultTabs.test}
+                />
+            }
 
             {
+                (props.scope === 'application' || props.scope === 'preset') &&
                 props.rootEditor &&
                 <Tab
                     label="Veröffentlichen"

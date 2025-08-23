@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
@@ -385,7 +386,7 @@ public class SubmitController {
             // If the metadata identifier is an identifier of a system identity provider, format the value accordingly
             mappedValue = SystemIdentityProviderFormatter.formatForSystemIdentityProvider(identityCacheEntity.getMetadataIdentifier(), mapping, mappedValue);
 
-            var existingDataObject = customerInput.getOrDefault(element.getId(), new ElementDataObject());
+            var existingDataObject = customerInput.getOrDefault(element.getId(), new ElementDataObject(element));
             existingDataObject.setType(element.getType());
             existingDataObject.setInputValue(mappedValue);
 
@@ -400,7 +401,7 @@ public class SubmitController {
                 identityCacheEntity.getIdentityData()
         );
 
-        var identityValueDataObject = new ElementDataObject();
+        var identityValueDataObject = new ElementDataObject(ElementType.SubmittedStep);
         identityValueDataObject.setInputValue(identityValue);
 
         // Add the idp data to the customer input

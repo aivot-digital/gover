@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class MultiCheckboxFieldOption {
+public class MultiCheckboxFieldOption implements Serializable {
     @Nullable
     private String value;
     @Nullable

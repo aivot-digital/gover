@@ -154,6 +154,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                 editable={props.editable}
                                 scope={props.scope}
                                 enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
+                                limitElementTypes={props.limitElementTypes}
                             />
                         </ElementTreeItemDropTarget>
                     ))

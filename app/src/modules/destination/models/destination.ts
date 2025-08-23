@@ -13,5 +13,7 @@ export interface Destination {
     apiAddress?: string;
     authorizationHeader?: string;
 
+    script?: string;
+
     maxAttachmentMegaBytes?: number;
 }

@@ -7,6 +7,9 @@ import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.exceptions.ConflictException;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
+import de.aivot.GoverBackend.javascript.models.JavascriptResult;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
@@ -19,6 +22,7 @@ import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentReposit
 import de.aivot.GoverBackend.mail.services.SubmissionMailService;
 import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.mail.MessagingException;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +46,7 @@ public class DestinationSubmitService {
     private final SubmissionAttachmentRepository submissionAttachmentRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderRepository paymentProviderRepository;
+    private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
     @Autowired
     public DestinationSubmitService(
@@ -50,14 +55,15 @@ public class DestinationSubmitService {
             PdfService pdfService,
             SubmissionAttachmentRepository submissionAttachmentRepository,
             PaymentTransactionRepository paymentTransactionRepository,
-            PaymentProviderRepository paymentProviderRepository
-    ) {
+            PaymentProviderRepository paymentProviderRepository,
+            JavascriptEngineFactoryService javascriptEngineFactoryService) {
         this.mailService = mailService;
         this.submissionStorageService = submissionStorageService;
         this.pdfService = pdfService;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderRepository = paymentProviderRepository;
+        this.javascriptEngineFactoryService = javascriptEngineFactoryService;
     }
 
     public void testDestinationAttachmentSize(Destination destination, MultipartFile[] files) {
@@ -97,6 +103,7 @@ public class DestinationSubmitService {
                     }
                 }
                 case HTTP -> sendHttp(destination, form, submission, attachments);
+                case Script -> performScript(destination, submission);
             };
         } catch (Exception e) {
             response = new DestinationResponse(false, "Die Übermittlung an das Ziel konnte nicht durchgeführt werden. Fehler: " + e.getMessage(), null, null);
@@ -258,6 +265,53 @@ public class DestinationSubmitService {
         }
 
         return new DestinationResponse(true, responseDto.getMessage(), responseDto.getFileNumber(), responseDto.attachments);
+    }
+
+    private DestinationResponse performScript(@Nonnull Destination destination,
+                                              @Nonnull Submission submission) {
+        var jsCode = new JavascriptCode()
+                .setCode(destination.getScript());
+
+        if (jsCode.isEmpty()) {
+            return new DestinationResponse(false, "Das Skript des Ziels ist leer", null, null);
+        }
+
+        JavascriptResult result;
+        var engine = javascriptEngineFactoryService.getEngine();
+        try {
+            result = engine
+                    .registerGlobalContextObject(submission.getCustomerInput())
+                    .evaluateCode(jsCode);
+        } catch (Exception e) {
+            return new DestinationResponse(false, "Das Skript konnte nicht ausgeführt werden. Fehler: " + e.getMessage(), null, null);
+        }
+
+        if (result == null || result.isNull()) {
+            return new DestinationResponse(false, "Das Skript hat kein Ergebnis zurückgegeben", null, null);
+        }
+
+        var resultMap = result.asMap();
+
+        try {
+            engine.close();
+        } catch (Exception e) {
+            return new DestinationResponse(false, "Das Skript konnte nicht ausgeführt werden. Fehler beim Schließen der Engine: " + e.getMessage(), null, null);
+        }
+
+        if (resultMap == null) {
+            return new DestinationResponse(false, "Das Skript hat kein gültiges Ergebnis zurückgegeben. Es muss ein Objekt zurückgeben.", null, null);
+        }
+
+        var ok = (Boolean) resultMap.getOrDefault("ok", false);
+        var message = (String) resultMap.getOrDefault("message", null);
+        var fileNumber = (String) resultMap.getOrDefault("fileNumber", null);
+
+        return new DestinationResponse(
+                ok,
+                message,
+                fileNumber,
+                null
+        );
     }
 
     public record DestinationResponse(

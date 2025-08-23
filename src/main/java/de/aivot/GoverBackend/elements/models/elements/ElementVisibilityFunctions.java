@@ -6,10 +6,11 @@ import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Objects;
 
-public class ElementVisibilityFunctions {
+public class ElementVisibilityFunctions implements Serializable {
     @Nullable
     private String requirements;
     @Nullable

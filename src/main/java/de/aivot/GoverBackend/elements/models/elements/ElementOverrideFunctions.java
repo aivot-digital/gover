@@ -5,10 +5,11 @@ import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Objects;
 
-public class ElementOverrideFunctions {
+public class ElementOverrideFunctions implements Serializable {
     @Nullable
     private String requirements;
     @Nullable

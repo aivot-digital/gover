@@ -27,7 +27,6 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

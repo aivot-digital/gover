@@ -6,6 +6,8 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.PaymentType;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
+import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -158,9 +160,15 @@ public class FormPaymentService {
             @Nonnull PaymentProduct product
     ) throws PaymentException {
         if (product.getUpfrontQuantityJavascript() != null && product.getUpfrontQuantityJavascript().isNotEmpty()) {
-            var res = javascriptEngine
-                    .registerGlobalContextObject(context)
-                    .evaluateCode(product.getUpfrontQuantityJavascript());
+            JavascriptResult res;
+            try {
+                res = javascriptEngine
+                        .registerGlobalContextObject(context)
+                        .registerElementObject(form.getRoot())
+                        .evaluateCode(product.getUpfrontQuantityJavascript());
+            } catch (JavascriptException e) {
+                throw new PaymentException("Upfront quantity calculation JavaScript failed with message " + e.getMessage(), product.getId(), form.getTitle());
+            }
 
             if (res == null) {
                 return 0L;

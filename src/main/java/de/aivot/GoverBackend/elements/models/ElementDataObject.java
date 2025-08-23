@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.elements.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.aivot.GoverBackend.core.converters.ElementDataObjectDeserializer;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import jakarta.annotation.Nonnull;
@@ -12,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+@JsonDeserialize(using = ElementDataObjectDeserializer.class)
 public class ElementDataObject implements Serializable {
     @JsonProperty("$type")
     private ElementType type;
@@ -29,6 +31,18 @@ public class ElementDataObject implements Serializable {
     private Object computedValue;
     @Nullable
     private List<String> computedErrors;
+
+    public ElementDataObject() {
+
+    }
+
+    public ElementDataObject(BaseElement element) {
+        this.type = element.getType();
+    }
+
+    public ElementDataObject(ElementType elementType) {
+        this.type = elementType;
+    }
 
     public ElementType getType() {
         return type;

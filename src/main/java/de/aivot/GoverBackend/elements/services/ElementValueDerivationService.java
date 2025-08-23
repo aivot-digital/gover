@@ -36,6 +36,7 @@ public class ElementValueDerivationService {
             if (val.getJavascriptCode() != null && val.getJavascriptCode().isNotEmpty()) {
                 return javascriptEngine
                         .registerGlobalContextObject(accumulator)
+                        .registerElementObject(currentElement)
                         .evaluateCode(val.getJavascriptCode())
                         .asObject();
             }

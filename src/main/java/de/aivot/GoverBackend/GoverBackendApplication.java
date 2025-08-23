@@ -9,6 +9,7 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
 @EnableJpaRepositories(basePackages = {
         "de.aivot.GoverBackend.asset.repositories",
         "de.aivot.GoverBackend.config.repositories",
+        "de.aivot.GoverBackend.dataObject.repositories",
         "de.aivot.GoverBackend.department.repositories",
         "de.aivot.GoverBackend.destination.repositories",
         "de.aivot.GoverBackend.form.repositories",

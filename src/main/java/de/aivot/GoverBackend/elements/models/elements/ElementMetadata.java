@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.elements.models.elements;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 
-public class ElementMetadata {
+public class ElementMetadata implements Serializable {
     private Map<String, String> identityMappings;
     private String userInfoIdentifier;
 

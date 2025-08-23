@@ -3,8 +3,10 @@ package de.aivot.GoverBackend.core.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -12,11 +14,11 @@ import java.util.Map;
 
 @Converter
 public class ElementDataConverter implements AttributeConverter<ElementData, String> {
+
+
     @Override
     public String convertToDatabaseColumn(ElementData baseElement) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        var mapper = getObjectMapper();
 
         try {
             return mapper.writeValueAsString(baseElement);
@@ -27,8 +29,7 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
 
     @Override
     public ElementData convertToEntityAttribute(String s) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
+        var mapper = getObjectMapper();
 
         try {
             return mapper.readValue(s, ElementData.class);
@@ -38,8 +39,7 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
     }
 
     public ElementData convertToEntityAttribute(Map<?, ?> map) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
+        var mapper = getObjectMapper();
 
         try {
             return mapper.convertValue(map, ElementData.class);
@@ -49,9 +49,6 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
     }
 
     public ElementData convertObjectToEntityAttribute(Object o) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-
         if (o instanceof Map<?, ?> map) {
             return convertToEntityAttribute(map);
         } else if (o instanceof String string) {
@@ -59,5 +56,16 @@ public class ElementDataConverter implements AttributeConverter<ElementData, Str
         } else {
             throw new IllegalArgumentException("Unsupported type for conversion: " + o.getClass().getName());
         }
+    }
+
+    private static ObjectMapper getObjectMapper() {
+        var goverDeserializers = new SimpleModule();
+        goverDeserializers
+                .addDeserializer(ElementDataObject.class, new ElementDataObjectDeserializer(ElementDataObject.class));
+
+        return new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .registerModule(goverDeserializers)
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 }

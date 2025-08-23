@@ -5,9 +5,11 @@ import {type SvgIconComponent} from '@mui/icons-material';
 export enum DestinationType {
     Mail = 'Mail',
     HTTP = 'HTTP',
+    Script = 'Script',
 }
 
 export const DestinationTypeIcons: Record<DestinationType, SvgIconComponent> = {
     [DestinationType.Mail]: EmailOutlinedIcon,
     [DestinationType.HTTP]: HttpOutlinedIcon,
+    [DestinationType.Script]: HttpOutlinedIcon, // Placeholder, replace with actual icon if available
 };

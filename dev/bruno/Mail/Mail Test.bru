@@ -1,0 +1,25 @@
+meta {
+  name: Mail Test
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{API_HOST}}/api/mail/test/
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{gover_jwt}}
+}
+
+body:json {
+  {
+    "targetMail": "finn.baetzel@aivot.de"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

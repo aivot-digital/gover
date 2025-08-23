@@ -45,7 +45,7 @@ public class Condition {
         if (referencedBaseElement instanceof BaseInputElement<?> referencedElement) {
             // Hole den Wert des Referenz-Elements. Dieser kann NULL sein.
             var rawValA = elementData
-                    .getOrDefault(referencedElement.getId(), new ElementDataObject())
+                    .getOrDefault(referencedElement.getId(), new ElementDataObject(referencedElement))
                     .getValue();
 
             Object rawValB = null;
@@ -62,7 +62,7 @@ public class Condition {
 
                     if (targetBaseElement instanceof BaseInputElement<?> targetElement) {
                         rawValB = elementData
-                                .getOrDefault(targetElement.getId(), new ElementDataObject())
+                                .getOrDefault(targetElement.getId(), new ElementDataObject(targetElement))
                                 .getValue();
                     } else {
                         return "Auswertung fehlgeschlagen. Ziel-Element ist kein Eingabe-Element.";

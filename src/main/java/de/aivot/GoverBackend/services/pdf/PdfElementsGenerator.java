@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.services.pdf;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
@@ -51,7 +50,7 @@ public class PdfElementsGenerator {
         }
 
         var dataObject = customerInput != null ? customerInput
-                .getOrDefault(currentElement.getId(), new ElementDataObject()) : null;
+                .getOrDefault(currentElement.getId(), new ElementDataObject(currentElement)) : null;
 
         // Check if the element was overridden. Check this only if customer input is present
         if (dataObject != null) {

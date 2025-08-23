@@ -39,6 +39,8 @@ public class Destination {
 
     private Integer maxAttachmentMegaBytes;
 
+    private String script;
+
     @PrePersist
     public void prePersist() {
         created = LocalDateTime.now();
@@ -138,6 +140,15 @@ public class Destination {
 
     public void setMaxAttachmentMegaBytes(Integer maxAttachmentMegaBytes) {
         this.maxAttachmentMegaBytes = maxAttachmentMegaBytes;
+    }
+
+    public String getScript() {
+        return script;
+    }
+
+    public Destination setScript(String script) {
+        this.script = script;
+        return this;
     }
 
     //endregion

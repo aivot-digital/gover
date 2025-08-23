@@ -3,9 +3,10 @@ package de.aivot.GoverBackend.elements.models.elements.form.input;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class TableFieldColumnDefinition {
+public class TableFieldColumnDefinition implements Serializable {
     @Nullable
     private String key;
     @Nullable

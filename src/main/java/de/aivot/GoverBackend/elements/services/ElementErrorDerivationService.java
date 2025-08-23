@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import jakarta.annotation.Nonnull;
@@ -49,7 +50,7 @@ public class ElementErrorDerivationService {
                                       @Nonnull ElementDataObject dataObject,
                                       @Nonnull BaseInputElement<?> currentInputElement,
                                       @Nonnull JavascriptEngine javascriptEngine,
-                                      @Nonnull NoCodeEvaluationService noCodeEvaluationService) {
+                                      @Nonnull NoCodeEvaluationService noCodeEvaluationService) throws JavascriptException {
         var value = dataObject
                 .getValue();
 
@@ -73,6 +74,7 @@ public class ElementErrorDerivationService {
         if (validation.getJavascriptCode() != null && validation.getJavascriptCode().isNotEmpty()) {
             return javascriptEngine
                     .registerGlobalContextObject(accumulator)
+                    .registerElementObject(currentInputElement)
                     .evaluateCode(validation.getJavascriptCode())
                     .asString();
         }

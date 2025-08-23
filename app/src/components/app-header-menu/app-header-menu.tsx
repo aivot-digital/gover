@@ -232,6 +232,16 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
 
                 {
                     props.mode === AppMode.Staff &&
+                    isUserAdmin &&
+                    <LinkMenuItem
+                        label="Datenobjekte"
+                        icon={BadgeOutlinedIcon}
+                        to="/data-objects"
+                    />
+                }
+
+                {
+                    props.mode === AppMode.Staff &&
                     <Divider />
                 }
 

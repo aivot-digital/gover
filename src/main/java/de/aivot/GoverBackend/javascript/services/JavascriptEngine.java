@@ -3,13 +3,12 @@ package de.aivot.GoverBackend.javascript.services;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.PolyglotAccess;
-import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
@@ -27,6 +26,7 @@ import java.util.*;
  */
 public class JavascriptEngine implements AutoCloseable {
     public static final String JS_CONTEXT_OBJECT_NAME = "ctx";
+    public static final String JS_ELEMENT_OBJECT_NAME = "element";
 
     private final Context graalContext;
     private final static String JS_ENGINE_NAME = "js";
@@ -83,18 +83,26 @@ public class JavascriptEngine implements AutoCloseable {
      * @param code the code to evaluate.
      * @return the result of the evaluation.
      */
-    public JavascriptResult evaluateCode(JavascriptCode code) {
-        if (code == null || code.isEmpty()) {
+    public JavascriptResult evaluateCode(JavascriptCode code) throws JavascriptException {
+        if (code == null || code.isEmpty() || code.getCode() == null) {
             return new JavascriptResult(Value.asValue(null));
         }
 
-        var value = graalContext
-                .eval(JS_ENGINE_NAME, code.getCode());
-        return new JavascriptResult(value);
+        try {
+            var value = graalContext
+                    .eval(JS_ENGINE_NAME, code.getCode());
+            return new JavascriptResult(value);
+        } catch (PolyglotException e) {
+            throw new JavascriptException(e);
+        }
     }
 
     public JavascriptEngine registerGlobalContextObject(Object object) {
         return registerGlobalObject(JS_CONTEXT_OBJECT_NAME, object);
+    }
+
+    public JavascriptEngine registerElementObject(BaseElement element) {
+        return registerGlobalObject(JS_ELEMENT_OBJECT_NAME, element);
     }
 
     /**
@@ -127,7 +135,7 @@ public class JavascriptEngine implements AutoCloseable {
      * @param map the map to convert.
      * @return the proxy object.
      */
-    private static ProxyObject mapToProxyObject(Map<?, ?> map) {
+    public static ProxyObject mapToProxyObject(Map<?, ?> map) {
         var mutableMap = new HashMap<String, Object>();
 
         for (var key : map.keySet()) {
@@ -163,7 +171,7 @@ public class JavascriptEngine implements AutoCloseable {
      * @param iterable the iterable to convert.
      * @return the proxy array.
      */
-    private static ProxyArray collectionToProxyArray(Collection<?> collection) {
+    public static ProxyArray collectionToProxyArray(Collection<?> collection) {
         var mutableList = new ArrayList<>();
 
         for (var value : collection) {

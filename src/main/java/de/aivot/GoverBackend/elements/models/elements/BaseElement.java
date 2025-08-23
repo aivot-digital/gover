@@ -19,6 +19,7 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -53,7 +54,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = Image.class, name = ElementType.ID_Image),
         @JsonSubTypes.Type(value = FileUploadField.class, name = ElementType.ID_FileUpload),
 })
-public abstract class BaseElement {
+public abstract class BaseElement implements Serializable {
     @Nonnull
     private ElementType type;
     @Nonnull

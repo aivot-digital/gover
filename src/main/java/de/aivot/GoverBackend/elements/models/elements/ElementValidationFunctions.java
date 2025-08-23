@@ -6,11 +6,12 @@ import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.models.lib.ValidationExpressionWrapper;
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-public class ElementValidationFunctions {
+public class ElementValidationFunctions implements Serializable {
     @Nullable
     private String requirements;
     @Nullable
