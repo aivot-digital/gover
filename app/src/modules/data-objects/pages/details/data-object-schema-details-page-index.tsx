@@ -1,4 +1,4 @@
-import {Box, Button} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
 import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -24,23 +24,30 @@ import {ElementType} from '../../../../data/element-type/element-type';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {RadioFieldComponent} from '../../../../components/radio-field/radio-field-component';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
+import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 
 export const _YupSchema = {
     key: yup.string()
         .trim()
         .min(3, 'Der Schlüssel des Datenobjektschemas muss mindestens 3 Zeichen lang sein.')
         .max(64, 'Der Schlüssel des Datenobjektschemas darf maximal 64 Zeichen lang sein.')
+        .matches(/^[a-zA-Z][a-zA-Z0-9_]{2,}$/, 'Der Schlüssel darf nur alphanumerische Zeichen und Unterstriche (_) enthalten und muss mit einem Buchstaben beginnen.')
         .required('Der Schlüssel des Datenobjektschemas ist ein Pflichtfeld.'),
     name: yup.string()
         .trim()
         .min(3, 'Der Name des Datenobjektschemas muss mindestens 3 Zeichen lang sein.')
-        .max(255, 'Der Name des Datenobjektschemas darf maximal 255 Zeichen lang sein.')
+        .max(96, 'Der Name des Datenobjektschemas darf maximal 255 Zeichen lang sein.')
         .required('Der Name des Datenobjektschemas ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
         .required('Die Beschreibung des Datenobjektschemas ist ein Pflichtfeld.'),
+    idGen: yup.string()
+        .trim()
+        .max(64, 'Die ID Formatvorlage darf maximal 64 Zeichen lang sein.')
+        .required('Die Angabe des ID Typs ist ein Pflichtfeld.'),
 };
 
 export function DataObjectSchemaDetailsPageIndex() {
@@ -48,7 +55,6 @@ export function DataObjectSchemaDetailsPageIndex() {
     const navigate = useNavigate();
     const user = useSelector(selectUser);
     const userIsAdmin = useMemo(() => isAdmin(user), [user]);
-    const showConfirm = useConfirm();
 
     const api = useApi();
 
@@ -56,10 +62,8 @@ export function DataObjectSchemaDetailsPageIndex() {
         item: originalDataObject,
         setItem,
         isNewItem,
-        additionalData,
         isBusy,
         setIsBusy,
-        setAdditionalData,
     } = useContext<GenericDetailsPageContextType<DataObjectSchema, void>>(GenericDetailsPageContext);
 
     const {
@@ -74,9 +78,11 @@ export function DataObjectSchemaDetailsPageIndex() {
 
     const changeBlocker = useChangeBlocker(originalDataObject, currentDataObject);
 
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [showConstraintDialog, setShowConstraintDialog] = useState(false);
-    const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
+    const {
+        confirmOptions: confirmDeleteOptions,
+        showConfirmDialog: showConfirmDeleteDialog,
+        hideConfirmDialog: hideConfirmDeleteDialog,
+    } = useConfirmDialog();
 
     if (currentDataObject == null) {
         return (
@@ -135,12 +141,45 @@ export function DataObjectSchemaDetailsPageIndex() {
         }
     };
 
-    const checkAndHandleDelete = async () => {
-
-    };
-
     const handleDelete = () => {
+        showConfirmDeleteDialog({
+            title: 'Datenobjektschema löschen',
+            state: {},
+            onRender: (state, updateState) => {
+                return (
+                    <Typography>
+                        Möchten Sie das Datenobjektschema wirklich löschen?
+                        Alle Datenobjekte, die diesem Schema zugeordnet sind, werden ebenfalls gelöscht.
+                        Dieser Vorgang kann nicht rückgängig gemacht werden.
+                    </Typography>
+                );
+            },
+            onConfirm: (state) => {
+                if (originalDataObject == null || isNewItem) {
+                    return;
+                }
 
+                setIsBusy(true);
+
+                new DataObjectSchemasApiService(api)
+                    .destroy(originalDataObject.key)
+                    .then(() => {
+                        reset(); // prevent change blocker by resetting unsaved changes
+                        navigate('/data-objects', {
+                            replace: true,
+                        });
+                        dispatch(showSuccessSnackbar('Das Datenobjektschema wurde erfolgreich gelöscht.'));
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Beim Löschen des Datenobjektschemas ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
+                        setIsBusy(false);
+                    });
+            },
+            onCancel: () => {
+                hideConfirmDeleteDialog();
+            },
+        });
     };
 
     return (
@@ -264,11 +303,10 @@ export function DataObjectSchemaDetailsPageIndex() {
                     </Button>
 
                     {
-                        currentDataObject != null &&
-                        isStringNotNullOrEmpty(currentDataObject.key) &&
+                        !isNewItem &&
                         <Button
-                            variant={'outlined'}
-                            onClick={checkAndHandleDelete}
+                            variant="outlined"
+                            onClick={handleDelete}
                             disabled={isBusy}
                             color="error"
                             sx={{
@@ -283,6 +321,10 @@ export function DataObjectSchemaDetailsPageIndex() {
             }
 
             {changeBlocker.dialog}
+
+            <ConfirmDialogV2
+                options={confirmDeleteOptions}
+            />
         </Box>
     );
 }
