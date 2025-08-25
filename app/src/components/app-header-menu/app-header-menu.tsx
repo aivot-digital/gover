@@ -30,6 +30,7 @@ import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {selectLoadedForm} from '../../slices/app-slice';
+import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 
 export function AppHeaderMenu(props: AppHeaderMenuProps) {
     const dispatch = useAppDispatch();
@@ -235,7 +236,7 @@ export function AppHeaderMenu(props: AppHeaderMenuProps) {
                     isUserAdmin &&
                     <LinkMenuItem
                         label="Datenobjekte"
-                        icon={BadgeOutlinedIcon}
+                        icon={DataArrayOutlinedIcon}
                         to="/data-objects"
                     />
                 }

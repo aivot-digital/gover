@@ -9,6 +9,8 @@ import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
@@ -17,6 +19,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +56,11 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
     }
 
     @HostAccess.Export
-    public ProxyObject getSchema(String schemaKey) {
+    public ProxyObject getSchema(@Nullable String schemaKey) {
+        if (schemaKey == null) {
+            return null;
+        }
+
         var dataObjectSchema = dataObjectSchemaService
                 .retrieve(schemaKey)
                 .orElse(null);
@@ -70,15 +77,24 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
     }
 
     @HostAccess.Export
-    public ProxyArray list(String dataObjectSchemaKey) {
-        var filter = DataObjectItemFilter
-                .create()
+    public ProxyArray list(@Nullable String dataObjectSchemaKey, @Nullable Map<String, Object> filter) {
+        if (dataObjectSchemaKey == null) {
+            return ProxyArray
+                    .fromList(List.of());
+        }
+
+        if (filter == null) {
+            filter = new HashMap<>();
+        }
+
+        var _filter = new ObjectMapper()
+                .convertValue(filter, DataObjectItemFilter.class)
                 .setSchemaKey(dataObjectSchemaKey);
 
         List<DataObjectItemEntity> page;
         try {
             page = dataObjectItemService
-                    .list(filter)
+                    .list(_filter)
                     .getContent();
         } catch (ResponseException e) {
             return ProxyArray
@@ -95,7 +111,15 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
     }
 
     @HostAccess.Export
-    public ProxyObject create(String schemaKey, Map<String, Object> valueMap) {
+    public ProxyObject create(@Nullable String schemaKey, @Nullable Map<String, Object> valueMap) {
+        if (schemaKey == null) {
+            return null;
+        }
+
+        if (valueMap == null) {
+            valueMap = new HashMap<>();
+        }
+
         var dataObjectSchema = dataObjectSchemaService
                 .retrieve(schemaKey)
                 .orElse(null);
@@ -121,7 +145,15 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
     }
 
     @HostAccess.Export
-    public ProxyObject retrieve(String schemaKey, String dataObjectItemId) {
+    public ProxyObject retrieve(@Nullable String schemaKey, @Nullable String dataObjectItemId) {
+        if (schemaKey == null) {
+            return null;
+        }
+
+        if (dataObjectItemId == null) {
+            return null;
+        }
+
         var id = new DataObjectItemEntityId(schemaKey, dataObjectItemId);
 
         DataObjectItemEntity item;
@@ -141,7 +173,48 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
                 .mapToProxyObject(getItemData(item));
     }
 
-    private static Map<String, Object> getItemData(DataObjectItemEntity entity) {
+    @HostAccess.Export
+    public ProxyObject update(@Nullable String schemaKey, @Nullable String itemId, @Nullable Map<String, Object> valueMap) {
+        if (schemaKey == null) {
+            return null;
+        }
+
+        if (itemId == null) {
+            return null;
+        }
+
+        if (valueMap == null) {
+            return null;
+        }
+
+        var dataObjectSchema = dataObjectSchemaService
+                .retrieve(schemaKey)
+                .orElse(null);
+
+        if (dataObjectSchema == null) {
+            return null;
+        }
+
+        var dataObjectItemId = new DataObjectItemEntityId(schemaKey, itemId);
+
+        var updatedEntity = new DataObjectItemEntity()
+                .setData(valueMap)
+                .setSchemaKey(schemaKey);
+
+        DataObjectItemEntity updatedItemEntity;
+        try {
+            updatedItemEntity = dataObjectItemService
+                    .update(dataObjectItemId, updatedEntity);
+        } catch (ResponseException e) {
+            return null;
+        }
+
+        return JavascriptEngine
+                .mapToProxyObject(getItemData(updatedItemEntity));
+    }
+
+    @Nonnull
+    private static Map<String, Object> getItemData(@Nonnull DataObjectItemEntity entity) {
         var data = entity.getData();
         data.put("$id", entity.getId());
         data.put("$created", entity.getCreated().format(DateTimeFormatter.ISO_DATE_TIME));

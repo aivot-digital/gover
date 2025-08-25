@@ -9,7 +9,6 @@ import {useEffect, useMemo, useState} from 'react';
 import {isAdmin} from '../../../../utils/is-admin';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
-import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {DataObjectSchema} from '../../models/data-object-schema';
@@ -21,7 +20,8 @@ import {GridColDef} from '@mui/x-data-grid';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {ElementToMuiDataGridType} from '../../../../data/element-type/element-to-mui-data-grid-type';
 import {DataObjectItem} from '../../models/data-object-item';
-import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
+import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 
 export function DataObjectItemListPage() {
     useAdminGuard();
@@ -59,7 +59,7 @@ export function DataObjectItemListPage() {
             {
                 field: 'icon',
                 headerName: '',
-                renderCell: () => <CellContentWrapper><PaletteOutlinedIcon /></CellContentWrapper>,
+                renderCell: () => <CellContentWrapper><CategoryOutlinedIcon /></CellContentWrapper>,
                 disableColumnMenu: true,
                 width: 24,
                 sortable: false,
@@ -106,13 +106,15 @@ export function DataObjectItemListPage() {
         >
             <GenericListPage<DataObjectItem>
                 header={{
-                    icon: <PaletteOutlinedIcon />,
+                    icon: <CategoryOutlinedIcon />,
                     title: dataObjectSchema.name,
                     actions: [
                         {
-                            icon: <PaletteOutlinedIcon />,
+                            icon: <DataArrayOutlinedIcon />,
                             tooltip: 'Datenobjektschema bearbeiten',
                             to: `/data-objects/${dataObjectSchema.key}`,
+                            variant: 'outlined',
+                            label: 'Datenobjektschema bearbeiten',
                         },
                         {
                             label: 'Neues Datenobjekt',
@@ -160,14 +162,14 @@ export function DataObjectItemListPage() {
                 rowActionsCount={2}
                 rowActions={(item: DataObjectItem) => [
                     {
-                        icon: <NorthWestOutlinedIcon />,
-                        to: `/data-objects/${item.schemaKey}`,
-                        tooltip: 'Datenobjektschema bearbeiten',
-                    },
-                    {
                         icon: <EditOutlined />,
                         to: `/data-objects/${item.schemaKey}/items/${item.id}`,
                         tooltip: 'Datenobjekte bearbeiten',
+                    },
+                    {
+                        icon: <DataArrayOutlinedIcon />,
+                        to: `/data-objects/${item.schemaKey}`,
+                        tooltip: 'Datenobjektschema bearbeiten',
                     },
                 ]}
                 defaultSortField="id"

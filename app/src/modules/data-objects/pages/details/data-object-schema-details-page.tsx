@@ -1,13 +1,19 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
-import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
+import {GenericDetailsPage, NEW_ID_INDICATOR} from '../../../../components/generic-details-page/generic-details-page';
+import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {DataObjectSchema} from '../../models/data-object-schema';
+import {useParams} from 'react-router-dom';
+import {useMemo} from 'react';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 
 export function DataObjectSchemaDetailsPage() {
     useAdminGuard();
+
+    const schemaKey = useParams().key;
+    const isNew = useMemo(() => schemaKey === NEW_ID_INDICATOR, [schemaKey]);
 
     return (
         <PageWrapper
@@ -18,7 +24,7 @@ export function DataObjectSchemaDetailsPage() {
             <GenericDetailsPage<DataObjectSchema, string, undefined>
                 idParam="key"
                 header={{
-                    icon: <PaletteOutlinedIcon />,
+                    icon: <DataArrayOutlinedIcon />,
                     title: 'Datenobjektschema bearbeiten',
                     helpDialog: {
                         title: 'Hilfe zu Datenobjektschemata',
@@ -35,16 +41,20 @@ export function DataObjectSchemaDetailsPage() {
                             </>
                         ),
                     },
+                    actions: isNew ? [] : [
+                        {
+                            label: 'Datenobjekte anzeigen',
+                            to: `/data-objects/${schemaKey}/items`,
+                            variant: 'outlined',
+                            icon: <CategoryOutlinedIcon />,
+                            tooltip: 'Zu den Datenobjekten dieses Schemas wechseln',
+                        },
+                    ],
                 }}
                 tabs={[
                     {
                         path: '/data-objects/:key',
                         label: 'Allgemeine Angaben',
-                    },
-                    {
-                        path: '/data-objects/:key/items',
-                        label: 'Datenobjekte',
-                        isDisabled: (item) => item?.key === '',
                     },
                 ]}
                 initializeItem={(api) => {

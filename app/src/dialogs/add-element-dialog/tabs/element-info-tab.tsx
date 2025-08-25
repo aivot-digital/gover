@@ -303,7 +303,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={'Option 2'}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     hint="Hinweis zur Einzelauswahl"
@@ -314,7 +314,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Verpflichtende Einzelauswahl mit Optionsfeldern"
                     value={'Option 3'}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     required
@@ -325,7 +325,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={undefined}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Einzelauswahl"

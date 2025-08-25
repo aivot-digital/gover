@@ -17,12 +17,11 @@ import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constra
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import {DataObjectSchema, ID_GEN_UUID} from '../../models/data-object-schema';
+import {DataObjectSchema, ID_GEN_CUSTOM, ID_GEN_SERIAL, ID_GEN_UUID} from '../../models/data-object-schema';
 import {ElementTreeTree} from '../../../../components/element-tree/element-tree-tree';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
-import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {RadioFieldComponent} from '../../../../components/radio-field/radio-field-component';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 
@@ -193,23 +192,23 @@ export function DataObjectSchemaDetailsPageIndex() {
             <RadioFieldComponent
                 label="ID Typ"
                 required
-                value={currentDataObject.idGen === ID_GEN_UUID ? 'UUID' : 'CUSTOM'}
+                value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
                 onChange={(val) => {
-                    if (val === 'UUID') {
-                        handleInputChange('idGen')(ID_GEN_UUID);
-                    } else {
-                        handleInputChange('idGen')('');
-                    }
+                    handleInputChange('idGen')(val ?? '');
                 }}
                 options={[
-                    {label: 'UUID', value: 'UUID'},
-                    {label: 'Formatvorlage', value: 'CUSTOM'},
+                    {label: 'UUID', subLabel: 'Eine automatisch generierte, eindeutige ID bestehend aus 36 Zeichen', value: ID_GEN_UUID},
+                    {label: 'Seriell', subLabel: 'Eine aufsteigende, positive, ganze Zahl', value: ID_GEN_SERIAL},
+                    {label: 'Selbstdefiniert', subLabel: 'Die ID muss beim Anlegen des Datenobjekt selbst definiert werden. Das Datenobjekt benötigt zwangsweise ein Feld mit der ID $id', value: ID_GEN_CUSTOM},
+                    {label: 'Formatvorlage', subLabel: 'Die ID wird automatisch aus einer Formatvorlage erzeugt. Diese Vorlage muss zwingen am Anfang oder Ende einen Platzhalter für eine aufsteigende Nummer führen', value: ''},
                 ]}
                 disabled={isBusy || !userIsAdmin || !isNewItem}
             />
 
             {
                 currentDataObject.idGen !== ID_GEN_UUID &&
+                currentDataObject.idGen !== ID_GEN_SERIAL &&
+                currentDataObject.idGen !== ID_GEN_CUSTOM &&
                 <TextFieldComponent
                     label="ID Formatvorlage"
                     required

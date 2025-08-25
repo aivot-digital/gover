@@ -1,7 +1,7 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {DataObjectSchema} from '../../models/data-object-schema';
@@ -11,6 +11,7 @@ import {useApi} from '../../../../hooks/use-api';
 import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loading-placeholder';
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import {DataObjectItem} from '../../models/data-object-item';
+import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 
 export function DataObjectItemDetailsPage() {
     useAdminGuard();
@@ -49,7 +50,7 @@ export function DataObjectItemDetailsPage() {
         >
             <GenericDetailsPage<DataObjectItem, string, void>
                 header={{
-                    icon: <PaletteOutlinedIcon />,
+                    icon: <CategoryOutlinedIcon />,
                     title: `Datenobjekt bearbeiten (${dataObjectSchema.name})`,
                     helpDialog: {
                         title: 'Hilfe zu Datenobjekten',
@@ -68,9 +69,11 @@ export function DataObjectItemDetailsPage() {
                     },
                     actions: [
                         {
-                            icon: <PaletteOutlinedIcon />,
+                            icon: <DataArrayOutlinedIcon />,
                             tooltip: 'Datenobjektschema bearbeiten',
                             to: `/data-objects/${dataObjectSchema.key}`,
+                            variant: 'outlined',
+                            label: 'Datenobjektschema bearbeiten',
                         },
                     ],
                 }}

@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,7 +21,6 @@ import java.util.regex.Pattern;
 public class DataObjectSchemaService implements EntityService<DataObjectSchemaEntity, String> {
     private final DataObjectSchemaRepository dataObjectRepository;
 
-    private static final String ID_GEN_PATTERN = "^(__UUID__|([a-zA-Z0-9\\-_\\.]|%Y|%M|%D|%I)+)$";
 
     @Autowired
     public DataObjectSchemaService(
@@ -32,10 +32,20 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
     @Nonnull
     @Override
     public DataObjectSchemaEntity create(@Nonnull DataObjectSchemaEntity entity) throws ResponseException {
-        var pattern = Pattern.compile(ID_GEN_PATTERN);
-        if (!pattern.matcher(entity.getIdGen()).matches()) {
-            throw ResponseException.badRequest("Invalid ID generation pattern: " + entity.getIdGen());
+        switch (entity.getIdGen()) {
+            case DataObjectItemService.ID_GEN_UUID:
+            case DataObjectItemService.ID_GEN_SERIAL:
+            case DataObjectItemService.ID_GEN_CUSTOM:
+                break;
+            default:
+                var startPatternPresent = DataObjectItemService.ID_GEN_INC_START_PATTERN.matcher(entity.getIdGen()).matches();
+                var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(entity.getIdGen()).matches();
+
+                if (!startPatternPresent && !endPatternPresent) {
+                    throw ResponseException.badRequest("Invalid ID generation pattern. It must contain an increment pattern at the start or the end.");
+                }
         }
+
         return dataObjectRepository.save(entity);
     }
 

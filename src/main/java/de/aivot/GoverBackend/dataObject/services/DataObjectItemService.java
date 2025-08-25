@@ -25,15 +25,22 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class DataObjectItemService implements EntityService<DataObjectItemEntity, DataObjectItemEntityId> {
     public static final String ID_GEN_UUID = "__UUID__";
+    public static final String ID_GEN_SERIAL = "__SERIAL__";
+    public static final String ID_GEN_CUSTOM = "__CUSTOM__";
 
     public static final String ID_GEN_PART_YEAR = "%Y";
     public static final String ID_GEN_PART_MONTH = "%M";
     public static final String ID_GEN_PART_DAY = "%D";
-    public static final String ID_GEN_PART_INC = "%I";
+
+    public static final String ID_GEN_INC_PATTERN = "%I[1-9]";
+    public static final String ID_GEN_FLUFF_PATTERN = "([a-zA-Z0-9_\\\\.-]|(%Y)|(%M)|(%D))+";
+    public static final Pattern ID_GEN_INC_START_PATTERN = Pattern.compile("^(" + ID_GEN_INC_PATTERN + ")" + ID_GEN_FLUFF_PATTERN);
+    public static final Pattern ID_GEN_INC_END_PATTERN = Pattern.compile(ID_GEN_FLUFF_PATTERN + "(" + ID_GEN_INC_PATTERN + ")$");
 
     private final DataObjectItemRepository dataObjectItemRepository;
     private final DataObjectSchemaRepository dataObjectSchemaRepository;
@@ -58,21 +65,64 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 .orElseThrow(ResponseException::badRequest);
 
         String id;
-        if (ID_GEN_UUID.equals(schema.getIdGen())) {
-            id = UUID.randomUUID().toString();
-        } else {
-            var now = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
-
-            var maxId = dataObjectItemRepository.getMaxIdBySchemaKey(entity.getSchemaKey(), schema.getIdGen().split("%I"));
-            if (maxId == null) {
-                maxId = 0;
+        switch (schema.getIdGen()) {
+            case ID_GEN_UUID -> {
+                id = UUID.randomUUID().toString();
             }
+            case ID_GEN_SERIAL -> {
+                var maxId = dataObjectItemRepository.getMaxIdBySchemaKey(entity.getSchemaKey());
+                if (maxId == null) {
+                    maxId = 0;
+                }
+                id = String.valueOf(maxId + 1);
+            }
+            case ID_GEN_CUSTOM -> {
+                id = entity
+                        .getData()
+                        .get("$id")
+                        .toString();
+            }
+            default -> {
+                var now = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
 
-            id = schema.getIdGen()
-                    .replace(ID_GEN_PART_YEAR, String.valueOf(now.getYear()))
-                    .replace(ID_GEN_PART_MONTH, String.format("%02d", now.getMonthValue()))
-                    .replace(ID_GEN_PART_DAY, String.format("%02d", now.getDayOfMonth()))
-                    .replace(ID_GEN_PART_INC, String.format("%02d", maxId + 1));
+                var startMatcher = ID_GEN_INC_START_PATTERN.matcher(schema.getIdGen());
+                var endMatcher = ID_GEN_INC_END_PATTERN.matcher(schema.getIdGen());
+
+                int padding;
+                if (startMatcher.matches()) {
+                    padding = Character
+                            .getNumericValue(startMatcher
+                                    .group(1)
+                                    .charAt(2));
+                } else if (endMatcher.matches()) {
+                    padding = Character
+                            .getNumericValue(endMatcher
+                                    .group(endMatcher.groupCount())
+                                    .charAt(2));
+                } else {
+                    throw ResponseException.badRequest("ID generation pattern must contain an increment part (%I{n}) at the start or end: " + schema.getIdGen());
+                }
+
+                var fluff = schema
+                        .getIdGen()
+                        .replace(ID_GEN_PART_YEAR, String.valueOf(now.getYear()))
+                        .replace(ID_GEN_PART_MONTH, String.format("%02d", now.getMonthValue()))
+                        .replace(ID_GEN_PART_DAY, String.format("%02d", now.getDayOfMonth()))
+                        .replaceFirst(ID_GEN_INC_PATTERN, "");
+
+                var currentMaxId = dataObjectItemRepository
+                        .getMaxFluffedIdBySchemaKey(fluff, entity.getSchemaKey());
+                if (currentMaxId == null) {
+                    currentMaxId = 0;
+                }
+
+                id = schema
+                        .getIdGen()
+                        .replace(ID_GEN_PART_YEAR, String.valueOf(now.getYear()))
+                        .replace(ID_GEN_PART_MONTH, String.format("%02d", now.getMonthValue()))
+                        .replace(ID_GEN_PART_DAY, String.format("%02d", now.getDayOfMonth()))
+                        .replaceFirst(ID_GEN_INC_PATTERN, String.format("%0" + padding + "d", currentMaxId + 1));
+            }
         }
 
         entity.setId(id);

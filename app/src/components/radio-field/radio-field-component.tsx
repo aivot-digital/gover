@@ -1,13 +1,13 @@
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@mui/material';
-import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
-import {useMemo} from "react";
+import {useMemo} from 'react';
 
 export interface RadioFieldComponentProps {
     label: string;
     value?: string;
     onChange: (val: string | undefined) => void;
-    options: Array<SelectFieldComponentOption | string>;
+    options: SelectFieldComponentOption[];
     error?: string;
     hint?: string;
     disabled?: boolean;
@@ -40,13 +40,13 @@ export function RadioFieldComponent({
             disabled={disabled}
         >
             <FormLabel
-                id={"label-" + uniqueId}
+                id={'label-' + uniqueId}
             >
                 {label} {required && ' *'}
             </FormLabel>
             <RadioGroup
-                aria-labelledby={"label-" + uniqueId}
-                name={"radio-group-" + uniqueId}
+                aria-labelledby={'label-' + uniqueId}
+                name={'radio-group-' + uniqueId}
                 value={value ?? ''}
                 onChange={event => {
                     if (isStringNullOrEmpty(event.target.value)) {
@@ -61,31 +61,39 @@ export function RadioFieldComponent({
                     !required &&
                     <FormControlLabel
                         value={''}
-                        control={<Radio/>}
+                        control={<Radio />}
                         label="Keine Auswahl"
                         disabled={disabled}
                         sx={{
                             fontStyle: 'italic',
-                            mr: displayInline ? 3 : undefined
+                            mr: displayInline ? 3 : undefined,
                         }}
                     />
                 }
                 {
                     (options ?? []).map(option => (
-                        <FormControlLabel
-                            key={typeof option === 'string' ? option : option.value}
-                            value={typeof option === 'string' ? option : option.value}
-                            control={<Radio/>}
-                            label={typeof option === 'string' ? option : option.label}
-                            disabled={disabled}
-                            sx={{
-                                ...(displayInline ? { mr: 3 } : {}),
-                                '& .MuiFormControlLabel-label': {
-                                    wordBreak: 'break-word',
-                                    whiteSpace: 'normal',
-                                },
-                            }}
-                        />
+                        <>
+                            <FormControlLabel
+                                key={option.value}
+                                value={option.value}
+                                control={<Radio />}
+                                label={option.label}
+                                disabled={disabled}
+                                sx={{
+                                    ...(displayInline ? {mr: 3} : {}),
+                                    '& .MuiFormControlLabel-label': {
+                                        wordBreak: 'break-word',
+                                        whiteSpace: 'normal',
+                                    },
+                                }}
+                            />
+                            {
+                                option.subLabel != null &&
+                                <FormHelperText>
+                                    {option.subLabel}
+                                </FormHelperText>
+                            }
+                        </>
                     ))
                 }
             </RadioGroup>
