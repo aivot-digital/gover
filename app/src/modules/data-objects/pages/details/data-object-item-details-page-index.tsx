@@ -1,4 +1,7 @@
-import {Box, Button} from '@mui/material';
+import * as yup from 'yup';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -10,32 +13,31 @@ import {isAdmin} from '../../../../utils/is-admin';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
-import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {useConfirm} from '../../../../providers/confirm-provider';
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
+import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
+import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const user = useSelector(selectUser);
     const userIsAdmin = useMemo(() => isAdmin(user), [user]);
-    const showConfirm = useConfirm();
 
     const dataObjectKey = useParams().schemaKey;
     const api = useApi();
 
-    const [dataObject, setDataObject] = useState<DataObjectSchema>();
+    const [dataObjectSchema, setDataObjectSchema] = useState<DataObjectSchema>();
+
     useEffect(() => {
         if (dataObjectKey == null) {
             return;
@@ -44,21 +46,38 @@ export function DataObjectItemDetailsPageIndex() {
         new DataObjectSchemasApiService(api)
             .retrieve(dataObjectKey)
             .then((dataObject) => {
-                setDataObject(dataObject);
+                setDataObjectSchema(dataObject);
             })
             .catch((error) => {
                 console.error('Error fetching data object:', error);
             });
     }, []);
 
+    const yupSchema = useMemo(() => {
+        if (dataObjectSchema == null) {
+            return yup
+                .object()
+                .required()
+                .shape({});
+        }
+
+        return yup
+            .object()
+            .required()
+            .shape({
+                data: yup
+                    .object()
+                    .required()
+                    .shape(goverSchemaToYup(dataObjectSchema.schema)),
+            });
+    }, [dataObjectSchema]);
+
     const {
         item: originalDataObjectItem,
         setItem,
         isNewItem,
-        additionalData,
         isBusy,
         setIsBusy,
-        setAdditionalData,
     } = useContext<GenericDetailsPageContextType<DataObjectItem, void>>(GenericDetailsPageContext);
 
     const {
@@ -69,22 +88,25 @@ export function DataObjectItemDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<DataObjectItem>(originalDataObjectItem, yup.object({}) as any);
+    } = useFormManager<DataObjectItem>(originalDataObjectItem, yupSchema as any);
 
-    const changeBlocker = useChangeBlocker(originalDataObjectItem, currentDataObjectItem);
+    const changeBlocker =
+        useChangeBlocker(originalDataObjectItem, currentDataObjectItem);
 
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [showConstraintDialog, setShowConstraintDialog] = useState(false);
-    const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
+    const {
+        confirmOptions: confirmDeleteOptions,
+        showConfirmDialog: showConfirmDeleteDialog,
+        hideConfirmDialog: hideConfirmDeleteDialog,
+    } = useConfirmDialog();
 
     const allElements = useMemo(() => {
-        if (dataObject == null) {
+        if (dataObjectSchema == null) {
             return [];
         }
-        return flattenElements(dataObject.schema);
-    }, [dataObject]);
+        return flattenElements(dataObjectSchema.schema);
+    }, [dataObjectSchema]);
 
-    if (dataObject == null || currentDataObjectItem == null) {
+    if (dataObjectSchema == null || currentDataObjectItem == null) {
         return (
             <GenericDetailsSkeleton />
         );
@@ -96,6 +118,15 @@ export function DataObjectItemDetailsPageIndex() {
         }
 
         if (isBusy) {
+            return;
+        }
+
+        const validationResult = validate();
+
+        console.log(validationResult, errors);
+
+        if (!validationResult) {
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
             return;
         }
 
@@ -141,12 +172,44 @@ export function DataObjectItemDetailsPageIndex() {
         }
     };
 
-    const checkAndHandleDelete = async () => {
-
-    };
-
     const handleDelete = () => {
+        showConfirmDeleteDialog({
+            title: 'Datenobjektschema löschen',
+            state: {},
+            onRender: (state, updateState) => {
+                return (
+                    <Typography>
+                        Möchten Sie das Datenobjekt wirklich löschen?
+                        Dieser Vorgang kann nicht rückgängig gemacht werden.
+                    </Typography>
+                );
+            },
+            onConfirm: (state) => {
+                if (originalDataObjectItem == null || isNewItem || dataObjectKey == null) {
+                    return;
+                }
 
+                setIsBusy(true);
+
+                new DataObjectItemsApiService(api, dataObjectKey)
+                    .destroy(originalDataObjectItem.id)
+                    .then(() => {
+                        reset(); // prevent change blocker by resetting unsaved changes
+                        navigate(`/data-objects/${dataObjectKey}/items/`, {
+                            replace: true,
+                        });
+                        dispatch(showSuccessSnackbar('Das Datenobjekt wurde erfolgreich gelöscht.'));
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        dispatch(showErrorSnackbar('Beim Löschen des Datenobjektes ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
+                        setIsBusy(false);
+                    });
+            },
+            onCancel: () => {
+                hideConfirmDeleteDialog();
+            },
+        });
     };
 
     return (
@@ -164,9 +227,9 @@ export function DataObjectItemDetailsPageIndex() {
             }
 
             <ViewDispatcherComponent
-                rootElement={dataObject.schema}
+                rootElement={dataObjectSchema.schema}
                 allElements={allElements}
-                element={dataObject.schema}
+                element={dataObjectSchema.schema}
                 isBusy={false}
                 isDeriving={false}
                 mode="viewer"
@@ -174,8 +237,6 @@ export function DataObjectItemDetailsPageIndex() {
                 onElementDataChange={handleInputChange('data')}
                 derivationTriggerIdQueue={[]}
             />
-
-            {changeBlocker.dialog}
 
             {
                 userIsAdmin &&
@@ -197,10 +258,10 @@ export function DataObjectItemDetailsPageIndex() {
                     </Button>
 
                     {
-                        isStringNotNullOrEmpty(currentDataObjectItem.id) &&
+                        !isNewItem &&
                         <Button
                             variant="outlined"
-                            onClick={checkAndHandleDelete}
+                            onClick={handleDelete}
                             disabled={isBusy}
                             color="error"
                             sx={{
@@ -213,6 +274,12 @@ export function DataObjectItemDetailsPageIndex() {
                     }
                 </Box>
             }
+
+            {changeBlocker.dialog}
+
+            <ConfirmDialogV2
+                options={confirmDeleteOptions}
+            />
         </Box>
     );
 }

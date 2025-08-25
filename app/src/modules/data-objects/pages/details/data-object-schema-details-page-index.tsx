@@ -99,6 +99,13 @@ export function DataObjectSchemaDetailsPageIndex() {
             return;
         }
 
+        const validationResult = validate();
+
+        if (!validationResult) {
+            dispatch(showErrorSnackbar("Bitte überprüfen Sie Ihre Eingaben."));
+            return;
+        }
+
         setIsBusy(true);
 
         if (isNewItem) {

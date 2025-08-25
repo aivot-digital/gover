@@ -116,7 +116,6 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             }
             return false;
         }
-
     };
 
     const reset = () => {
