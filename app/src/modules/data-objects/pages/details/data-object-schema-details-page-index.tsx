@@ -287,6 +287,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     ElementType.Select,
                     ElementType.Radio,
                     ElementType.MultiCheckbox,
+                    ElementType.Table,
                 ]}
             />
 

@@ -91,7 +91,23 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 container
                                 spacing={1}
                             >
-                                <Grid size={4}>
+                                <Grid size={3}>
+                                    <TextField
+                                        label="Schlüssel"
+                                        margin="normal"
+                                        value={column.key}
+                                        onChange={event => onChange({
+                                            key: event.target.value,
+                                        })}
+                                        onBlur={() => onChange({
+                                            key: (column.key ?? '').trim(),
+                                        })}
+                                        error={columnLabelErrors[index] != null}
+                                        helperText={columnLabelErrors[index]}
+                                        disabled={!props.editable}
+                                    />
+                                </Grid>
+                                <Grid size={3}>
                                     <TextField
                                         label="Titel"
                                         margin="normal"
@@ -107,7 +123,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         disabled={!props.editable}
                                     />
                                 </Grid>
-                                <Grid size={4}>
+                                <Grid size={3}>
                                     <TextField
                                         label="Platzhalter"
                                         margin="normal"
@@ -124,7 +140,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 </Grid>
                                 {
                                     column.datatype === 'number' &&
-                                    <Grid size={4}>
+                                    <Grid size={3}>
                                         <TextField
                                             label="Dezimalstellen"
                                             margin="normal"

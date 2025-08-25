@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -77,24 +78,33 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
     }
 
     @HostAccess.Export
-    public ProxyArray list(@Nullable String dataObjectSchemaKey, @Nullable Map<String, Object> filter) {
+    public ProxyArray list(@Nullable String dataObjectSchemaKey, @Nullable List<Map<String, Object>> fieldFilter) {
         if (dataObjectSchemaKey == null) {
             return ProxyArray
                     .fromList(List.of());
         }
 
-        if (filter == null) {
-            filter = new HashMap<>();
-        }
-
-        var _filter = new ObjectMapper()
-                .convertValue(filter, DataObjectItemFilter.class)
+        var filter = new DataObjectItemFilter()
                 .setSchemaKey(dataObjectSchemaKey);
+
+        if (fieldFilter != null) {
+            var fields = new LinkedList<DataObjectItemFilter.DataObjectFilterField>();
+
+            for (var fieldMap : fieldFilter) {
+                var field = new DataObjectItemFilter.DataObjectFilterField();
+                field.setPath((String) fieldMap.get("path"));
+                field.setOperator((String) fieldMap.get("operator"));
+                field.setOperator((String) fieldMap.get("value"));
+                fields.add(field);
+            }
+
+            filter.setDataFields(fields);
+        }
 
         List<DataObjectItemEntity> page;
         try {
             page = dataObjectItemService
-                    .list(_filter)
+                    .list(filter)
                     .getContent();
         } catch (ResponseException e) {
             return ProxyArray
