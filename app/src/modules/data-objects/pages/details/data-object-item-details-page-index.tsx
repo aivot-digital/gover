@@ -27,7 +27,7 @@ import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import Grid from '@mui/material/Grid';
-import formatDateTime from 'date-fns/format';
+import {format as formatDateTime} from 'date-fns/format';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
