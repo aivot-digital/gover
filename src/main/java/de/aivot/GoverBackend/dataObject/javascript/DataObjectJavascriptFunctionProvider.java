@@ -94,7 +94,7 @@ public class DataObjectJavascriptFunctionProvider implements JavascriptFunctionP
                 var field = new DataObjectItemFilter.DataObjectFilterField();
                 field.setPath((String) fieldMap.get("path"));
                 field.setOperator((String) fieldMap.get("operator"));
-                field.setOperator((String) fieldMap.get("value"));
+                field.setValue((String) fieldMap.get("value"));
                 fields.add(field);
             }
 

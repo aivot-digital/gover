@@ -4,4 +4,6 @@ export interface DataObjectItem {
     id: string;
     schemaKey: string;
     data: ElementData;
+    created: string;
+    updated: string;
 }

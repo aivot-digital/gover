@@ -26,6 +26,8 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
+import Grid from '@mui/material/Grid';
+import formatDateTime from 'date-fns/format';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -216,14 +218,57 @@ export function DataObjectItemDetailsPageIndex() {
         <Box>
             {
                 !isNewItem &&
-                <TextFieldComponent
-                    label="Eindeutiger Bezeichner"
-                    required
-                    value={currentDataObjectItem.id}
-                    onChange={handleInputChange('id')}
-                    disabled={true}
-                    hint="Dient dem Zugriff durch auf die Objekte dieses Datenobjektschemas. Der Schlüssel muss eindeutig sein und darf nur alphanumerische Zeichen und Unterstriche (_) enthalten. Der Schlüssel darf nicht mit einer Zahl beginnen. Der Schlüssel kann nicht geändert werden, nachdem das Datenobjektschema erstellt wurde."
-                />
+                <Grid
+                    container
+                    columnSpacing={2}
+                    sx={{
+                        mb: 2,
+                    }}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Eindeutiger Bezeichner"
+                            required
+                            value={currentDataObjectItem.id}
+                            onChange={handleInputChange('id')}
+                            disabled={true}
+                            hint="Dient dem Zugriff durch auf die Objekte dieses Datenobjektschemas. Der Schlüssel muss eindeutig sein und darf nur alphanumerische Zeichen und Unterstriche (_) enthalten. Der Schlüssel darf nicht mit einer Zahl beginnen. Der Schlüssel kann nicht geändert werden, nachdem das Datenobjektschema erstellt wurde."
+                        />
+                    </Grid>
+
+                    <Grid
+                        size={{
+                            xs: 12,
+                            md: 6,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Erstellt am"
+                            value={formatDateTime(currentDataObjectItem.created, 'dd.MM.yyyy HH:mm') + ' Uhr'}
+                            onChange={() => {}}
+                            disabled={true}
+                        />
+                    </Grid>
+
+
+                    <Grid
+                        size={{
+                            xs: 12,
+                            md: 6,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Geändert am"
+                            value={formatDateTime(currentDataObjectItem.updated, 'dd.MM.yyyy HH:mm') + ' Uhr'}
+                            onChange={() => {}}
+                            disabled={true}
+                        />
+                    </Grid>
+                </Grid>
             }
 
             <ViewDispatcherComponent
