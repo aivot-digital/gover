@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-XX-XX)
+
+### Bug Fixes
+* **Server:** Disable NGINX server tokens to prevent version disclosure.
+* **Server:** Consolidate Cache Control headers in NGINX configuration to avoid problems with caching proxies.
+
 ## [4.5.3](https://github.com/aivot-digital/gover/compare/v4.5.2...v4.5.3) (2025-08-16)
 
 ### Bug Fixes
