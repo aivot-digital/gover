@@ -8,5 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface PaymentProviderRepository extends JpaRepository<PaymentProviderEntity, String>, JpaSpecificationExecutor<PaymentProviderEntity> {
+import java.util.UUID;
+
+public interface PaymentProviderRepository extends JpaRepository<PaymentProviderEntity, UUID>, JpaSpecificationExecutor<PaymentProviderEntity> {
 }

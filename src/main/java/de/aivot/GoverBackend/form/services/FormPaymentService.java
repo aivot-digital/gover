@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.PaymentType;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
@@ -46,7 +46,7 @@ public class FormPaymentService {
     }
 
     public Optional<PaymentTransactionEntity> createTransaction(
-            @Nonnull Form form,
+            @Nonnull FormVersionWithDetailsEntity form,
             @Nonnull String submissionId,
             @Nonnull ElementData elementData
     ) throws PaymentException, ResponseException {
@@ -57,7 +57,7 @@ public class FormPaymentService {
         }
 
         var paymentProviderEntity = paymentProviderService
-                .retrieve(form.getPaymentProvider())
+                .retrieve(form.getPaymentProviderKey())
                 .orElseThrow(ResponseException::notFound);
 
         var redirectUrl = String
@@ -76,11 +76,11 @@ public class FormPaymentService {
     }
 
     public List<PaymentItem> createPaymentItems(
-            @Nonnull Form form,
+            @Nonnull FormVersionWithDetailsEntity form,
             @Nonnull ElementData elementData
     ) throws PaymentException {
         var derivationRequest = new ElementDerivationRequest()
-                .setElement(form.getRoot())
+                .setElement(form.getRootElement())
                 .setElementData(elementData)
                 .setOptions(
                         new ElementDerivationOptions()
@@ -98,7 +98,7 @@ public class FormPaymentService {
 
         List<PaymentItem> items = new LinkedList<>();
 
-        for (var product : form.getProducts()) {
+        for (var product : form.getPaymentProducts()) {
             if (StringUtils.isNullOrEmpty(product.getReference())) {
                 throw new PaymentException("Product %s of form %s has no reference", product.getId(), form.getTitle());
             }
@@ -155,7 +155,7 @@ public class FormPaymentService {
     @Nonnull
     private Long calculateProductQuantity(
             @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull Form form,
+            @Nonnull FormVersionWithDetailsEntity form,
             @Nonnull ElementData context,
             @Nonnull PaymentProduct product
     ) throws PaymentException {
@@ -164,7 +164,7 @@ public class FormPaymentService {
             try {
                 res = javascriptEngine
                         .registerGlobalContextObject(context)
-                        .registerElementObject(form.getRoot())
+                        .registerElementObject(form.getRootElement())
                         .evaluateCode(product.getUpfrontQuantityJavascript());
             } catch (JavascriptException e) {
                 throw new PaymentException("Upfront quantity calculation JavaScript failed with message " + e.getMessage(), product.getId(), form.getTitle());

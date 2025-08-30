@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.entities;
 
 import de.aivot.GoverBackend.models.lib.DiffItem;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -21,6 +22,10 @@ public class FormRevision {
 
     @NotNull
     private Integer formId;
+
+    @Nonnull
+    @Column(columnDefinition = "int2")
+    private Integer formVersion;
 
     @NotNull
     private String userId;

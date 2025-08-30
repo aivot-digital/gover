@@ -11,6 +11,9 @@ import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
@@ -97,12 +100,12 @@ public class PdfService {
         }
     }
 
-    public byte[] generatePrintableForm(Form form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        var allElements = ElementFlattenUtils.flattenElements(form.getRoot());
+    public byte[] generatePrintableForm(FormVersionWithDetailsEntity form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var allElements = ElementFlattenUtils.flattenElements(form.getRootElement());
 
         var dto = new HashMap<String, Object>();
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form.getRoot(),
+                form.getRootElement(),
                 null,
                 true
         ));
@@ -112,11 +115,11 @@ public class PdfService {
         return generatePdf(form, dto, FormPdfScope.Blank);
     }
 
-    public byte[] generateCustomerSummary(Form form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
+    public byte[] generateCustomerSummary(FormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
 
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form.getRoot(),
+                form.getRootElement(),
                 submission.getCustomerInput(),
                 scope != FormPdfScope.Staff
         ));
@@ -169,7 +172,7 @@ public class PdfService {
         return generatePdf(form, dto, scope);
     }
 
-    private byte[] generatePdf(Form form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+    private byte[] generatePdf(FormVersionWithDetailsEntity form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
         dto.put("base", createBaseContext(scope));
         dto.put("department",
                 departmentRepository
@@ -187,7 +190,7 @@ public class PdfService {
         return generateGotenbergPdf(form, dto);
     }
 
-    private byte[] generateGotenbergPdf(Form form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+    private byte[] generateGotenbergPdf(FormVersionWithDetailsEntity form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
         String template = loadContentTemplate(form, dto);
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
@@ -224,12 +227,12 @@ public class PdfService {
         return bytes;
     }
 
-    private String loadContentTemplate(Form form, Map<String, Object> dto) {
-        var template = form.getPdfBodyTemplateKey();
+    private String loadContentTemplate(FormVersionWithDetailsEntity form, Map<String, Object> dto) {
+        var template = form.getPdfTemplateKey();
 
         if (template != null) {
             try {
-                var res = loadTemplate(form.getPdfBodyTemplateKey(), dto);
+                var res = loadTemplate(form.getPdfTemplateKey().toString(), dto);
                 if (StringUtils.isNotNullOrEmpty(res)) {
                     return res;
                 }
@@ -265,7 +268,7 @@ public class PdfService {
         try {
             var assetKeyUUID = UUID.fromString(logoAssetKey);
             logoAssetName = assetRepository
-                    .findById(assetKeyUUID.toString())
+                    .findById(assetKeyUUID)
                     .map(AssetEntity::getFilename)
                     .orElse("");
         } catch (Exception e) {

@@ -7,6 +7,9 @@ import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.exceptions.ConflictException;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
@@ -89,7 +92,7 @@ public class DestinationSubmitService {
         }
     }
 
-    public void handleSubmit(Destination destination, Form form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
+    public void handleSubmit(Destination destination, FormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
         // Send to destination
         DestinationResponse response;
         try {

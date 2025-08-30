@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/payment-providers/")
@@ -97,7 +98,7 @@ public class PaymentProviderController {
     @GetMapping("{key}/")
     public PaymentProviderResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String key
+            @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
@@ -112,7 +113,7 @@ public class PaymentProviderController {
     @PutMapping("{key}/")
     public PaymentProviderResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String key,
+            @Nonnull @PathVariable UUID key,
             @Nonnull @RequestBody @Valid PaymentProviderRequestDTO requestDTO
     ) throws ResponseException {
         var user = UserService
@@ -170,7 +171,7 @@ public class PaymentProviderController {
     @DeleteMapping("{key}/")
     public void destroy(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String key
+            @PathVariable UUID key
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -191,7 +192,7 @@ public class PaymentProviderController {
     @PostMapping("{key}/test/")
     public PaymentProviderTestDataResponseDTO test(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String key,
+            @PathVariable UUID key,
             @RequestBody @Valid PaymentProviderTestDataRequestDTO requestDTO
     ) throws ResponseException {
         UserService

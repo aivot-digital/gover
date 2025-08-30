@@ -5,6 +5,8 @@ import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
@@ -59,7 +61,7 @@ public class SubmissionMailService {
         this.paymentProviderService = paymentProviderService;
     }
 
-    public void sendToDestination(Form form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
+    public void sendToDestination(FormVersionWithDetailsEntity form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generateCustomerSummary(form, submission, FormPdfScope.Staff);
@@ -161,7 +163,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendReceived(Form form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendReceived(FormEntity form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Integer departmentToNotify;
         if (form.getManagingDepartmentId() != null) {
             departmentToNotify = form.getManagingDepartmentId();

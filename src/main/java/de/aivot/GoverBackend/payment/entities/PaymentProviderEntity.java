@@ -6,13 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payment_providers")
 public class PaymentProviderEntity {
     @Id
-    @Column(length = 36)
-    private String key;
+    private UUID key;
 
     @NotNull
     @Column(length = 32)
@@ -39,11 +39,11 @@ public class PaymentProviderEntity {
     @Convert(converter = JsonObjectConverter.class)
     private Map<String, Object> config;
 
-    public String getKey() {
+    public UUID getKey() {
         return key;
     }
 
-    public void setKey(String key) {
+    public void setKey(UUID key) {
         this.key = key;
     }
 

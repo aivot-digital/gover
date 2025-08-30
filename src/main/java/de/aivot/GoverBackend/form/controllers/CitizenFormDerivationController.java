@@ -6,7 +6,11 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
+import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import jakarta.validation.Valid;
@@ -18,28 +22,31 @@ import java.util.List;
 
 @RestController
 public class CitizenFormDerivationController {
-    private final FormRepository formRepository;
     private final ElementDerivationService elementDerivationService;
+    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
-    public CitizenFormDerivationController(
-            FormRepository formRepository,
-            ElementDerivationService elementDerivationService) {
-        this.formRepository = formRepository;
+    public CitizenFormDerivationController(ElementDerivationService elementDerivationService,
+                                           FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.elementDerivationService = elementDerivationService;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
 
-    @PostMapping("/api/public/forms/{formId}/derive")
+    @PostMapping("/api/public/forms/{formId}/{formVersion}/derive")
     public ElementData derive(
             @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion,
             @Nonnull @Valid @RequestBody ElementData elementData,
             @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipErrorsFor") List<String> skipErrorsFor,
             @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
             @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipValuesFor") List<String> skipValuesFor,
             @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipOverridesFor") List<String> skipOverridesFor
     ) throws ResponseException {
-        var form = formRepository
-                .findById(formId)
+        var id = FormVersionWithDetailsEntityId
+                .of(formId, formVersion);
+
+        var form = formVersionWithDetailsRepository
+                .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
         var options = new ElementDerivationOptions()
@@ -49,7 +56,7 @@ public class CitizenFormDerivationController {
                 .setSkipVisibilitiesForElementIds(skipVisibilitiesFor);
 
         var request = new ElementDerivationRequest()
-                .setElement(form.getRoot())
+                .setElement(form.getRootElement())
                 .setElementData(elementData)
                 .setOptions(options);
 
@@ -62,8 +69,8 @@ public class CitizenFormDerivationController {
 
         derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);
 
-        if (options.notContainsSkipErrors(form.getRoot().getIntroductionStep().getId())) {
-            if (form.getIdentityRequired() && inputIdValue.isEmpty()) {
+        if (options.notContainsSkipErrors(form.getRootElement().getIntroductionStep().getId())) {
+            if (form.getIdentityVerificationRequired() && inputIdValue.isEmpty()) {
                 inputIdValue.setComputedErrors(List.of("Bitte melden Sie sich mit einem der Nutzerkonten an."));
             }
         }

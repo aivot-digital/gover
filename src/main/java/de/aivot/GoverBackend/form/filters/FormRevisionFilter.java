@@ -9,20 +9,11 @@ import javax.annotation.Nonnull;
 
 public class FormRevisionFilter implements Filter<FormRevision> {
     private Integer formId;
+    private Integer formVersion;
     private String userId;
 
     public static FormRevisionFilter create() {
         return new FormRevisionFilter();
-    }
-
-    public FormRevisionFilter setFormId(Integer formId) {
-        this.formId = formId;
-        return this;
-    }
-
-    public FormRevisionFilter setUserId(String userId) {
-        this.userId = userId;
-        return this;
     }
 
     @Nonnull
@@ -31,7 +22,35 @@ public class FormRevisionFilter implements Filter<FormRevision> {
         return SpecificationBuilder
                 .create(FormRevision.class)
                 .withEquals("formId", formId)
+                .withEquals("formVersion", formVersion)
                 .withEquals("userId", userId)
                 .build();
+    }
+
+    public Integer getFormId() {
+        return formId;
+    }
+
+    public FormRevisionFilter setFormId(Integer formId) {
+        this.formId = formId;
+        return this;
+    }
+
+    public Integer getFormVersion() {
+        return formVersion;
+    }
+
+    public FormRevisionFilter setFormVersion(Integer formVersion) {
+        this.formVersion = formVersion;
+        return this;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public FormRevisionFilter setUserId(String userId) {
+        this.userId = userId;
+        return this;
     }
 }

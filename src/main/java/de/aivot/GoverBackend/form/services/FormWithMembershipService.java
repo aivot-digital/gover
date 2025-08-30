@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.form.services;
 
-import de.aivot.GoverBackend.form.entities.FormWithMembership;
-import de.aivot.GoverBackend.form.entities.FormWithMembershipId;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntityId;
 import de.aivot.GoverBackend.form.repositories.FormWithMembershipRepository;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.ReadEntityService;
@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 
 @Service
-public class FormWithMembershipService implements ReadEntityService<FormWithMembership, FormWithMembershipId> {
+public class FormWithMembershipService implements ReadEntityService<FormVersionWithMembershipEntity, FormVersionWithMembershipEntityId> {
     private final FormWithMembershipRepository repository;
 
     @Autowired
@@ -28,33 +28,33 @@ public class FormWithMembershipService implements ReadEntityService<FormWithMemb
 
     @Nonnull
     @Override
-    public Page<FormWithMembership> performList(
+    public Page<FormVersionWithMembershipEntity> performList(
             @Nonnull Pageable pageable,
-            @Nullable Specification<FormWithMembership> specification,
-            @Nullable Filter<FormWithMembership> filter
+            @Nullable Specification<FormVersionWithMembershipEntity> specification,
+            @Nullable Filter<FormVersionWithMembershipEntity> filter
     ) {
         return repository.findAll(specification, pageable);
     }
 
     @Nonnull
     @Override
-    public Optional<FormWithMembership> retrieve(@Nonnull FormWithMembershipId id) {
+    public Optional<FormVersionWithMembershipEntity> retrieve(@Nonnull FormVersionWithMembershipEntityId id) {
         return repository.findById(id);
     }
 
     @Nonnull
     @Override
-    public Optional<FormWithMembership> retrieve(@Nonnull Specification<FormWithMembership> specification) {
+    public Optional<FormVersionWithMembershipEntity> retrieve(@Nonnull Specification<FormVersionWithMembershipEntity> specification) {
         return repository.findOne(specification);
     }
 
     @Override
-    public boolean exists(@Nonnull FormWithMembershipId id) {
+    public boolean exists(@Nonnull FormVersionWithMembershipEntityId id) {
         return repository.existsById(id);
     }
 
     @Override
-    public boolean exists(@Nonnull Specification<FormWithMembership> specification) {
+    public boolean exists(@Nonnull Specification<FormVersionWithMembershipEntity> specification) {
         return repository.exists(specification);
     }
 }

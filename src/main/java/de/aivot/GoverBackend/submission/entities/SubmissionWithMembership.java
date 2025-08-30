@@ -7,13 +7,16 @@ import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
+import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
+import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "submissions_with_memberships")
@@ -43,13 +46,13 @@ public class SubmissionWithMembership {
     @Id
     private Integer formId;
     private String formSlug;
-    private String formVersion;
+    @Column(columnDefinition = "int2")
+    private Integer formVersion;
     private String formTitle;
-    private FormStatus formStatus;
     private FormType formType;
     @Convert(converter = RootElementConverter.class)
     @Column(columnDefinition = "jsonb")
-    private RootElement formRoot;
+    private RootElement formRootElement;
     private Integer formDestinationId;
     private Integer formLegalSupportDepartmentId;
     private Integer formTechnicalSupportDepartmentId;
@@ -62,14 +65,23 @@ public class SubmissionWithMembership {
     private Integer formThemeId;
     private LocalDateTime formCreated;
     private LocalDateTime formUpdated;
+    @Column(columnDefinition = "int2")
     private Integer formCustomerAccessHours;
-    private Integer formSubmissionDeletionWeeks;
-    private String formPdfBodyTemplateKey;
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Collection<PaymentProduct> formProducts;
+    @Column(columnDefinition = "int2")
+    private Integer formSubmissionRetentionWeeks;
+    private UUID formPdfTemplateKey;
+    @Convert(converter = PaymentProductsConverter.class)
+    @Column(columnDefinition = "jsonb")
+    private Collection<PaymentProduct> formPaymentProducts;
     private String formPaymentPurpose;
     private String formPaymentDescription;
-    private String formPaymentProvider;
+    private UUID formPaymentProviderKey;
+    @Convert(converter = IdentityProviderLinksConverter.class)
+    @Column(columnDefinition = "jsonb")
+    private List<IdentityProviderLink> formIdentityProviders;
+    private Boolean formIdentityVerificationRequired;
+    private LocalDateTime formVersionPublished;
+    private LocalDateTime formVersionRevoked;
     @Id
     private String userId;
     private String userEmail;
@@ -277,11 +289,11 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public String getFormVersion() {
+    public Integer getFormVersion() {
         return formVersion;
     }
 
-    public SubmissionWithMembership setFormVersion(String formVersion) {
+    public SubmissionWithMembership setFormVersion(Integer formVersion) {
         this.formVersion = formVersion;
         return this;
     }
@@ -295,15 +307,6 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public FormStatus getFormStatus() {
-        return formStatus;
-    }
-
-    public SubmissionWithMembership setFormStatus(FormStatus formStatus) {
-        this.formStatus = formStatus;
-        return this;
-    }
-
     public FormType getFormType() {
         return formType;
     }
@@ -313,12 +316,12 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public RootElement getFormRoot() {
-        return formRoot;
+    public RootElement getFormRootElement() {
+        return formRootElement;
     }
 
-    public SubmissionWithMembership setFormRoot(RootElement formRoot) {
-        this.formRoot = formRoot;
+    public SubmissionWithMembership setFormRootElement(RootElement formRootElement) {
+        this.formRootElement = formRootElement;
         return this;
     }
 
@@ -439,30 +442,30 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public Integer getFormSubmissionDeletionWeeks() {
-        return formSubmissionDeletionWeeks;
+    public Integer getFormSubmissionRetentionWeeks() {
+        return formSubmissionRetentionWeeks;
     }
 
-    public SubmissionWithMembership setFormSubmissionDeletionWeeks(Integer formSubmissionDeletionWeeks) {
-        this.formSubmissionDeletionWeeks = formSubmissionDeletionWeeks;
+    public SubmissionWithMembership setFormSubmissionRetentionWeeks(Integer formSubmissionRetentionWeeks) {
+        this.formSubmissionRetentionWeeks = formSubmissionRetentionWeeks;
         return this;
     }
 
-    public String getFormPdfBodyTemplateKey() {
-        return formPdfBodyTemplateKey;
+    public UUID getFormPdfTemplateKey() {
+        return formPdfTemplateKey;
     }
 
-    public SubmissionWithMembership setFormPdfBodyTemplateKey(String formPdfBodyTemplateKey) {
-        this.formPdfBodyTemplateKey = formPdfBodyTemplateKey;
+    public SubmissionWithMembership setFormPdfTemplateKey(UUID formPdfTemplateKey) {
+        this.formPdfTemplateKey = formPdfTemplateKey;
         return this;
     }
 
-    public Collection<PaymentProduct> getFormProducts() {
-        return formProducts;
+    public Collection<PaymentProduct> getFormPaymentProducts() {
+        return formPaymentProducts;
     }
 
-    public SubmissionWithMembership setFormProducts(Collection<PaymentProduct> formProducts) {
-        this.formProducts = formProducts;
+    public SubmissionWithMembership setFormPaymentProducts(Collection<PaymentProduct> formProducts) {
+        this.formPaymentProducts = formProducts;
         return this;
     }
 
@@ -484,12 +487,48 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public String getFormPaymentProvider() {
-        return formPaymentProvider;
+    public UUID getFormPaymentProviderKey() {
+        return formPaymentProviderKey;
     }
 
-    public SubmissionWithMembership setFormPaymentProvider(String formPaymentProvider) {
-        this.formPaymentProvider = formPaymentProvider;
+    public SubmissionWithMembership setFormPaymentProviderKey(UUID formPaymentProviderKey) {
+        this.formPaymentProviderKey = formPaymentProviderKey;
+        return this;
+    }
+
+    public List<IdentityProviderLink> getFormIdentityProviders() {
+        return formIdentityProviders;
+    }
+
+    public SubmissionWithMembership setFormIdentityProviders(List<IdentityProviderLink> formIdentityProviders) {
+        this.formIdentityProviders = formIdentityProviders;
+        return this;
+    }
+
+    public Boolean getFormIdentityVerificationRequired() {
+        return formIdentityVerificationRequired;
+    }
+
+    public SubmissionWithMembership setFormIdentityVerificationRequired(Boolean formIdentityVerificationRequired) {
+        this.formIdentityVerificationRequired = formIdentityVerificationRequired;
+        return this;
+    }
+
+    public LocalDateTime getFormVersionPublished() {
+        return formVersionPublished;
+    }
+
+    public SubmissionWithMembership setFormVersionPublished(LocalDateTime formVersionPublished) {
+        this.formVersionPublished = formVersionPublished;
+        return this;
+    }
+
+    public LocalDateTime getFormVersionRevoked() {
+        return formVersionRevoked;
+    }
+
+    public SubmissionWithMembership setFormVersionRevoked(LocalDateTime formVersionRevoked) {
+        this.formVersionRevoked = formVersionRevoked;
         return this;
     }
 

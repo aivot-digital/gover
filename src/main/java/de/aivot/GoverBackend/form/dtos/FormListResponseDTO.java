@@ -1,18 +1,19 @@
 package de.aivot.GoverBackend.form.dtos;
 
 import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.entities.FormWithMembership;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public record FormListResponseDTO(
         Integer id,
         String slug,
-        String version,
+        Integer version,
         String title,
         FormStatus status,
         FormType type,
@@ -22,7 +23,7 @@ public record FormListResponseDTO(
         Integer themeId,
         LocalDateTime created,
         LocalDateTime updated,
-        String paymentProvider,
+        UUID paymentProvider,
         Boolean identityRequired,
         List<IdentityProviderLink> identityProviders
 ) {
@@ -30,7 +31,7 @@ public record FormListResponseDTO(
         return new FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
-                form.getVersion(),
+                1, // TODO
                 form.getTitle(),
                 form.getStatus(),
                 form.getType(),
@@ -46,23 +47,23 @@ public record FormListResponseDTO(
         );
     }
 
-    public static FormListResponseDTO fromEntity(FormWithMembership form) {
+    public static FormListResponseDTO fromEntity(FormVersionWithMembershipEntity form) {
         return new FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
-                form.getVersion(),
+                form.getPublishedVersion(),
                 form.getTitle(),
-                form.getStatus(),
-                form.getType(),
+                FormStatus.Published, // TODO
+                FormType.Public, // TODO
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
-                form.getThemeId(),
+                1,
                 form.getCreated(),
                 form.getUpdated(),
-                form.getPaymentProvider(),
-                form.getIdentityRequired(),
-                form.getIdentityProviders()
+                UUID.randomUUID(),
+                false,
+                null
         );
     }
 }

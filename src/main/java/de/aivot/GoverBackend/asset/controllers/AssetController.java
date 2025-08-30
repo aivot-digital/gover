@@ -102,7 +102,7 @@ public class AssetController {
         }
 
         var asset = new AssetEntity();
-        asset.setKey(UUID.randomUUID().toString());
+        asset.setKey(UUID.randomUUID());
         asset.setFilename(filename);
         asset.setCreated(LocalDateTime.now());
         asset.setUploaderId(user.getId());
@@ -128,7 +128,7 @@ public class AssetController {
     @GetMapping("{assetId}/")
     public AssetResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String assetId
+            @Nonnull @PathVariable UUID assetId
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
@@ -143,7 +143,7 @@ public class AssetController {
     @PutMapping("{assetId}/")
     public AssetResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String assetId,
+            @Nonnull @PathVariable UUID assetId,
             @Nonnull @RequestBody @Valid AssetRequestDTO requestDTO
     ) throws ResponseException {
         var user = UserService
@@ -166,7 +166,7 @@ public class AssetController {
     @DeleteMapping("{assetId}/")
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String assetId
+            @Nonnull @PathVariable UUID assetId
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)

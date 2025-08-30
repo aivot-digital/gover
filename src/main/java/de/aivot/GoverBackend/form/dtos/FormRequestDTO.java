@@ -16,6 +16,7 @@ import org.hibernate.validator.constraints.Length;
 import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 public record FormRequestDTO(
         @NotNull(message = "slug cannot be null")
@@ -70,7 +71,7 @@ public record FormRequestDTO(
         String paymentDescription,
 
         @Length(max = 36, message = "uuid must be 36 characters long")
-        String paymentProvider,
+        UUID paymentProvider,
 
         @NotNull(message = "identityRequired cannot be null")
         Boolean identityRequired,

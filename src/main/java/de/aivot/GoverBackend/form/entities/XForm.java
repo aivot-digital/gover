@@ -1,133 +1,49 @@
 package de.aivot.GoverBackend.form.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.core.converters.RootElementConverter;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
-import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import org.json.JSONPropertyIgnore;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
-@Entity
-@Table(name = "forms", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"slug", "version"})
-})
-public class Form implements Cloneable {
-    @Id
-    @Column(name = "id", columnDefinition = "serial")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "applications_id_seq")
-    @SequenceGenerator(name = "applications_id_seq", allocationSize = 1)
+
+public class XForm implements Cloneable {
     private Integer id;
-
-    @NotNull
-    @Column(length = 255)
-    @NotBlank(message = "Slug cannot be blank")
     private String slug;
-
-    @NotNull
-    @Column(length = 11)
-    @NotBlank(message = "Version cannot be blank")
     private String version;
-
-    @NotNull
-    @Column(length = 96)
-    @NotBlank(message = "Title cannot be blank")
     private String title;
-
-    @NotNull
-    @ColumnDefault("0")
     private FormStatus status;
-
-    @NotNull
-    @ColumnDefault("0")
     private FormType type;
-
-    @NotNull
-    @Convert(converter = RootElementConverter.class)
-    @Column(columnDefinition = "jsonb")
     private RootElement root;
-
     private Integer destinationId;
-
     private Integer legalSupportDepartmentId;
-
     private Integer technicalSupportDepartmentId;
-
     private Integer imprintDepartmentId;
-
     private Integer privacyDepartmentId;
-
     private Integer accessibilityDepartmentId;
-
-    @NotNull
     private Integer developingDepartmentId;
-
     private Integer managingDepartmentId;
-
     private Integer responsibleDepartmentId;
-
     private Integer themeId;
-
-    @NotNull
     private LocalDateTime created;
-
-    @NotNull
     private LocalDateTime updated;
-
     private Integer customerAccessHours;
-
     private Integer submissionDeletionWeeks;
-
-    @Column(length = 36)
     private String pdfBodyTemplateKey;
-
-    @JdbcTypeCode(SqlTypes.JSON)
     private Collection<PaymentProduct> products;
-
-    @Column(length = 27)
     private String paymentPurpose;
-
-    @Column(length = 250)
     private String paymentDescription;
-
-    @Column(length = 36)
-    private String paymentProvider;
-
-    @Column(columnDefinition = "boolean")
+    private UUID paymentProvider;
     private Boolean identityRequired = false;
-
-    @Column(columnDefinition = "jsonb")
-    @Convert(converter = IdentityProviderLinksConverter.class)
     private List<IdentityProviderLink> identityProviders = new LinkedList<>();
-
-    // region Signales
-
-    @PrePersist
-    public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updated = LocalDateTime.now();
-    }
-
-    // endregion
-
 
     // region Utils
 
@@ -176,48 +92,53 @@ public class Form implements Cloneable {
         return id;
     }
 
-    public void setId(Integer id) {
+    public XForm setId(Integer id) {
         this.id = id;
+        return this;
     }
 
     public String getSlug() {
         return slug;
     }
 
-    public void setSlug(String slug) {
+    public XForm setSlug(String slug) {
         this.slug = slug;
+        return this;
     }
 
     public String getVersion() {
         return version;
     }
 
-    public void setVersion(String version) {
+    public XForm setVersion(String version) {
         this.version = version;
+        return this;
     }
 
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
+    public XForm setTitle(String title) {
         this.title = title;
+        return this;
     }
 
-    public FormStatus getStatus() {
+    public XFormStatus getStatus() {
         return status;
     }
 
-    public void setStatus(FormStatus status) {
+    public XForm setStatus(FormStatus status) {
         this.status = status;
+        return this;
     }
 
-    public FormType getType() {
+    public XFormType getType() {
         return type;
     }
 
-    public Form setType(FormType type) {
-        this.type = type != null ? type : FormType.Public;
+    public XForm setType(FormType type) {
+        this.type = type;
         return this;
     }
 
@@ -225,167 +146,187 @@ public class Form implements Cloneable {
         return root;
     }
 
-    public void setRoot(RootElement root) {
+    public XForm setRoot(RootElement root) {
         this.root = root;
+        return this;
     }
 
     public Integer getDestinationId() {
         return destinationId;
     }
 
-    public void setDestinationId(Integer destinationId) {
+    public XForm setDestinationId(Integer destinationId) {
         this.destinationId = destinationId;
+        return this;
     }
 
     public Integer getLegalSupportDepartmentId() {
         return legalSupportDepartmentId;
     }
 
-    public void setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
+    public XForm setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
         this.legalSupportDepartmentId = legalSupportDepartmentId;
+        return this;
     }
 
     public Integer getTechnicalSupportDepartmentId() {
         return technicalSupportDepartmentId;
     }
 
-    public void setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
+    public XForm setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
         this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        return this;
     }
 
     public Integer getImprintDepartmentId() {
         return imprintDepartmentId;
     }
 
-    public void setImprintDepartmentId(Integer imprintDepartmentId) {
+    public XForm setImprintDepartmentId(Integer imprintDepartmentId) {
         this.imprintDepartmentId = imprintDepartmentId;
+        return this;
     }
 
     public Integer getPrivacyDepartmentId() {
         return privacyDepartmentId;
     }
 
-    public void setPrivacyDepartmentId(Integer privacyDepartmentId) {
+    public XForm setPrivacyDepartmentId(Integer privacyDepartmentId) {
         this.privacyDepartmentId = privacyDepartmentId;
+        return this;
     }
 
     public Integer getAccessibilityDepartmentId() {
         return accessibilityDepartmentId;
     }
 
-    public void setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
+    public XForm setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
         this.accessibilityDepartmentId = accessibilityDepartmentId;
+        return this;
     }
 
     public Integer getDevelopingDepartmentId() {
         return developingDepartmentId;
     }
 
-    public void setDevelopingDepartmentId(Integer developingDepartmentId) {
+    public XForm setDevelopingDepartmentId(Integer developingDepartmentId) {
         this.developingDepartmentId = developingDepartmentId;
+        return this;
     }
 
     public Integer getManagingDepartmentId() {
         return managingDepartmentId;
     }
 
-    public void setManagingDepartmentId(Integer managingDepartmentId) {
+    public XForm setManagingDepartmentId(Integer managingDepartmentId) {
         this.managingDepartmentId = managingDepartmentId;
+        return this;
     }
 
     public Integer getResponsibleDepartmentId() {
         return responsibleDepartmentId;
     }
 
-    public void setResponsibleDepartmentId(Integer responsibleDepartmentId) {
+    public XForm setResponsibleDepartmentId(Integer responsibleDepartmentId) {
         this.responsibleDepartmentId = responsibleDepartmentId;
+        return this;
     }
 
     public Integer getThemeId() {
         return themeId;
     }
 
-    public void setThemeId(Integer themeId) {
+    public XForm setThemeId(Integer themeId) {
         this.themeId = themeId;
+        return this;
     }
 
     public LocalDateTime getCreated() {
         return created;
     }
 
-    public void setCreated(LocalDateTime created) {
+    public XForm setCreated(LocalDateTime created) {
         this.created = created;
+        return this;
     }
 
     public LocalDateTime getUpdated() {
         return updated;
     }
 
-    public void setUpdated(LocalDateTime updated) {
+    public XForm setUpdated(LocalDateTime updated) {
         this.updated = updated;
+        return this;
     }
 
     public Integer getCustomerAccessHours() {
         return customerAccessHours;
     }
 
-    public void setCustomerAccessHours(Integer customerAccessHours) {
+    public XForm setCustomerAccessHours(Integer customerAccessHours) {
         this.customerAccessHours = customerAccessHours;
+        return this;
     }
 
     public Integer getSubmissionDeletionWeeks() {
         return submissionDeletionWeeks;
     }
 
-    public void setSubmissionDeletionWeeks(Integer submissionDeletionWeeks) {
+    public XForm setSubmissionDeletionWeeks(Integer submissionDeletionWeeks) {
         this.submissionDeletionWeeks = submissionDeletionWeeks;
+        return this;
     }
 
     public String getPdfBodyTemplateKey() {
         return pdfBodyTemplateKey;
     }
 
-    public void setPdfBodyTemplateKey(String pdfBodyTemplateKey) {
+    public XForm setPdfBodyTemplateKey(String pdfBodyTemplateKey) {
         this.pdfBodyTemplateKey = pdfBodyTemplateKey;
-    }
-
-    public String getPaymentPurpose() {
-        return paymentPurpose;
-    }
-
-    public void setPaymentPurpose(String paymentPurpose) {
-        this.paymentPurpose = paymentPurpose;
+        return this;
     }
 
     public Collection<PaymentProduct> getProducts() {
         return products;
     }
 
-    public void setProducts(Collection<PaymentProduct> products) {
+    public XForm setProducts(Collection<PaymentProduct> products) {
         this.products = products;
+        return this;
     }
 
-    public String getPaymentProvider() {
-        return paymentProvider;
+    public String getPaymentPurpose() {
+        return paymentPurpose;
     }
 
-    public void setPaymentProvider(String paymentProvider) {
-        this.paymentProvider = paymentProvider;
+    public XForm setPaymentPurpose(String paymentPurpose) {
+        this.paymentPurpose = paymentPurpose;
+        return this;
     }
 
     public String getPaymentDescription() {
         return paymentDescription;
     }
 
-    public void setPaymentDescription(String paymentDescription) {
+    public XForm setPaymentDescription(String paymentDescription) {
         this.paymentDescription = paymentDescription;
+        return this;
+    }
+
+    public UUID getPaymentProvider() {
+        return paymentProvider;
+    }
+
+    public XForm setPaymentProvider(UUID paymentProvider) {
+        this.paymentProvider = paymentProvider;
+        return this;
     }
 
     public Boolean getIdentityRequired() {
         return identityRequired;
     }
 
-    public Form setIdentityRequired(Boolean identityRequired) {
+    public XForm setIdentityRequired(Boolean identityRequired) {
         this.identityRequired = identityRequired;
         return this;
     }
@@ -394,56 +335,9 @@ public class Form implements Cloneable {
         return identityProviders;
     }
 
-    public Form setIdentityProviders(List<IdentityProviderLink> identityProviders) {
+    public XForm setIdentityProviders(List<IdentityProviderLink> identityProviders) {
         this.identityProviders = identityProviders;
         return this;
-    }
-
-    // TODO: Improve to real clone
-
-    /**
-     * Shallow clone of the form.
-     *
-     * @return A shallow clone of the form.
-     */
-    @Override
-    public Form clone() {
-        try {
-            Form clone = (Form) super.clone();
-
-            clone.id = id;
-            clone.slug = slug;
-            clone.version = version;
-            clone.title = title;
-            clone.status = status;
-            clone.type = type;
-            clone.root = root;
-            clone.destinationId = destinationId;
-            clone.legalSupportDepartmentId = legalSupportDepartmentId;
-            clone.technicalSupportDepartmentId = technicalSupportDepartmentId;
-            clone.imprintDepartmentId = imprintDepartmentId;
-            clone.privacyDepartmentId = privacyDepartmentId;
-            clone.accessibilityDepartmentId = accessibilityDepartmentId;
-            clone.developingDepartmentId = developingDepartmentId;
-            clone.managingDepartmentId = managingDepartmentId;
-            clone.responsibleDepartmentId = responsibleDepartmentId;
-            clone.themeId = themeId;
-            clone.created = created;
-            clone.updated = updated;
-            clone.customerAccessHours = customerAccessHours;
-            clone.submissionDeletionWeeks = submissionDeletionWeeks;
-            clone.pdfBodyTemplateKey = pdfBodyTemplateKey;
-            clone.products = products;
-            clone.paymentPurpose = paymentPurpose;
-            clone.paymentDescription = paymentDescription;
-            clone.paymentProvider = paymentProvider;
-            clone.identityRequired = identityRequired;
-            clone.identityProviders = identityProviders;
-
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
     }
 
     // endregion

@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.form.dtos;
 
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.entities.FormWithMembership;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 public record FormDetailsResponseDTO(
         Integer id,
@@ -38,7 +39,7 @@ public record FormDetailsResponseDTO(
         Collection<PaymentProduct> products,
         String paymentPurpose,
         String paymentDescription,
-        String paymentProvider,
+        UUID paymentProvider,
         Boolean identityRequired,
         List<IdentityProviderLink> identityProviders
 ) {
@@ -75,36 +76,36 @@ public record FormDetailsResponseDTO(
         );
     }
 
-    public static FormDetailsResponseDTO fromEntity(FormWithMembership form) {
+    public static FormDetailsResponseDTO fromEntity(FormVersionWithMembershipEntity form) {
         return new FormDetailsResponseDTO(
                 form.getId(),
                 form.getSlug(),
-                form.getVersion(),
+                null, // TODO form.getVersion(),
                 form.getTitle(),
-                form.getStatus(),
-                form.getType(),
-                form.getRoot(),
-                form.getDestinationId(),
-                form.getLegalSupportDepartmentId(),
-                form.getTechnicalSupportDepartmentId(),
-                form.getImprintDepartmentId(),
-                form.getPrivacyDepartmentId(),
-                form.getAccessibilityDepartmentId(),
+                null, // TODO form.getStatus(),
+                null, // TODO form.getType(),
+                null, // TODO form.getRoot(),
+                null, // TODO form.getDestinationId(),
+                null, // TODO form.getLegalSupportDepartmentId(),
+                null, // TODO form.getTechnicalSupportDepartmentId(),
+                null, // TODO form.getImprintDepartmentId(),
+                null, // TODO form.getPrivacyDepartmentId(),
+                null, // TODO form.getAccessibilityDepartmentId(),
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
-                form.getThemeId(),
+                null, // TODO form.getThemeId(),
                 form.getCreated(),
                 form.getUpdated(),
-                form.getCustomerAccessHours(),
-                form.getSubmissionDeletionWeeks(),
-                form.getPdfBodyTemplateKey(),
-                form.getProducts(),
-                form.getPaymentPurpose(),
-                form.getPaymentDescription(),
-                form.getPaymentProvider(),
-                form.getIdentityRequired(),
-                form.getIdentityProviders()
+                null, // TODO form.getCustomerAccessHours(),
+                null, // TODO form.getSubmissionDeletionWeeks(),
+                null, // TODO form.getPdfBodyTemplateKey(),
+                null, // TODO form.getProducts(),
+                null, // TODO form.getPaymentPurpose(),
+                null, // TODO form.getPaymentDescription(),
+                null, // TODO form.getPaymentProvider(),
+                null, // TODO form.getIdentityRequired(),
+                null // TODO form.getIdentityProviders()
         );
     }
 }

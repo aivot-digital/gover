@@ -1,15 +1,16 @@
 package de.aivot.GoverBackend.form.filters;
 
 import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.entities.FormWithMembership;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.annotation.Nonnull;
+import java.util.UUID;
 
-public class FormWithMembershipFilter implements Filter<FormWithMembership> {
+public class FormWithMembershipFilter implements Filter<FormVersionWithMembershipEntity> {
     private Integer id;
     private String title;
     private String slug;
@@ -27,7 +28,7 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
     private Integer responsibleDepartmentId;
     private Integer themeId;
     private String pdfBodyTemplateKey;
-    private String paymentProvider;
+    private UUID paymentProvider;
     private String userId;
     private Boolean isDeveloper;
     private Boolean isManager;
@@ -41,9 +42,9 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
 
     @Nonnull
     @Override
-    public Specification<FormWithMembership> build() {
+    public Specification<FormVersionWithMembershipEntity> build() {
         return SpecificationBuilder
-                .create(FormWithMembership.class)
+                .create(FormVersionWithMembershipEntity.class)
                 .withEquals("id", id)
                 .withContains("title", title)
                 .withEquals("slug", slug)
@@ -249,11 +250,11 @@ public class FormWithMembershipFilter implements Filter<FormWithMembership> {
         return this;
     }
 
-    public String getPaymentProvider() {
+    public UUID getPaymentProvider() {
         return paymentProvider;
     }
 
-    public FormWithMembershipFilter setPaymentProvider(String paymentProvider) {
+    public FormWithMembershipFilter setPaymentProvider(UUID paymentProvider) {
         this.paymentProvider = paymentProvider;
         return this;
     }

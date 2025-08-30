@@ -2,14 +2,14 @@ package de.aivot.GoverBackend.form.entities;
 
 import java.util.Objects;
 
-public class FormWithMembershipId {
+public class FormVersionWithMembershipEntityId {
     private Integer id;
     private String userId;
 
-    public FormWithMembershipId() {
+    public FormVersionWithMembershipEntityId() {
     }
 
-    public FormWithMembershipId(Integer id, String userId) {
+    public FormVersionWithMembershipEntityId(Integer id, String userId) {
         this.id = id;
         this.userId = userId;
     }
@@ -18,7 +18,7 @@ public class FormWithMembershipId {
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
 
-        FormWithMembershipId that = (FormWithMembershipId) object;
+        FormVersionWithMembershipEntityId that = (FormVersionWithMembershipEntityId) object;
         return Objects.equals(id, that.id) && Objects.equals(userId, that.userId);
     }
 
@@ -33,7 +33,7 @@ public class FormWithMembershipId {
         return id;
     }
 
-    public FormWithMembershipId setId(Integer id) {
+    public FormVersionWithMembershipEntityId setId(Integer id) {
         this.id = id;
         return this;
     }
@@ -42,7 +42,7 @@ public class FormWithMembershipId {
         return userId;
     }
 
-    public FormWithMembershipId setUserId(String userId) {
+    public FormVersionWithMembershipEntityId setUserId(String userId) {
         this.userId = userId;
         return this;
     }

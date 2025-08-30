@@ -37,6 +37,7 @@ import java.net.http.HttpResponse;
 import java.security.KeyStore;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinition {
@@ -113,7 +114,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
                 .stream()
                 .filter(secret -> "application/x-pkcs12".equals(secret.getContentType()))
                 .map(secret -> new RadioFieldOption()
-                        .setValue(secret.getKey())
+                        .setValue(secret.getKey().toString())
                         .setLabel(secret.getFilename())
                 )
                 .toList();
@@ -358,8 +359,9 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
             throw new PaymentException("Certificate asset key for payment provider %s (%s) is not specified", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
+        var key = UUID.fromString(paymentProviderClientCertificateAssetKey);
         var paymentProviderClientCertAsset = assetRepository
-                .findById(paymentProviderClientCertificateAssetKey)
+                .findById(key)
                 .orElseThrow(() -> new PaymentException("Certificate for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
         byte[] paymentProviderClientCertBytes;

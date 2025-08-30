@@ -4,10 +4,11 @@ import de.aivot.GoverBackend.asset.entities.AssetEntity;
 
 import javax.annotation.Nonnull;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record AssetResponseDTO(
         @Nonnull
-        String key,
+        UUID key,
         @Nonnull
         String filename,
         @Nonnull
