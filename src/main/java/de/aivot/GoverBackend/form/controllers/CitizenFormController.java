@@ -2,18 +2,21 @@ package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCitizenListResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
-import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
+import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
 import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
@@ -25,6 +28,8 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.models.PaymentItem;
 import de.aivot.GoverBackend.payment.services.PaymentProviderService;
 import de.aivot.GoverBackend.user.services.UserService;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -35,10 +40,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -50,7 +54,7 @@ public class CitizenFormController {
     private final IdentityProviderService identityProviderService;
     private final IdentityCacheRepository identityCacheRepository;
     private final FormVersionWithDetailsService formVersionWithDetailsService;
-    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
+    private final ElementDerivationService elementDerivationService;
 
     @Autowired
     public CitizenFormController(FormPaymentService paymentService,
@@ -58,55 +62,31 @@ public class CitizenFormController {
                                  DestinationService destinationService,
                                  IdentityProviderService identityProviderService,
                                  IdentityCacheRepository identityCacheRepository,
-                                 FormVersionWithDetailsService formVersionWithDetailsService,
-                                 FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
+                                 FormVersionWithDetailsService formVersionWithDetailsService, ElementDerivationService elementDerivationService) {
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
         this.destinationService = destinationService;
         this.identityProviderService = identityProviderService;
         this.identityCacheRepository = identityCacheRepository;
         this.formVersionWithDetailsService = formVersionWithDetailsService;
-        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @GetMapping("")
-    public Page<FormCitizenListResponseDTO> list(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid FormVersionWithDetailsFilter filter
-    ) throws ResponseException {
-        return formVersionWithDetailsRepository
-                .findAllByPublishedIsNotNullAndRevokedIsNull(pageable, filter.build())
+    public Page<FormCitizenListResponseDTO> list(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                 @Nonnull @PageableDefault Pageable pageable,
+                                                 @Nonnull @Valid FormVersionWithDetailsFilter filter) throws ResponseException {
+        return formVersionWithDetailsService
+                .findAllByIsCurrentlyPublishedVersionIsTrue(pageable, filter.build())
                 .map(FormCitizenListResponseDTO::fromEntity);
     }
 
     @GetMapping("{slug}/")
-    public FormCitizenDetailsResponseDTO retrieve(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String slug,
-            @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId,
-            @Nullable @RequestParam(value = "version", required = false) Integer version
-    ) throws ResponseException {
-        var user = UserService
-                .fromJWT(jwt)
-                .orElse(null);
-
-        FormVersionWithDetailsEntity formVersion;
-        if (user == null) {
-            formVersion = formVersionWithDetailsService
-                    .findLatestForSlugAndStatus(slug, FormStatus.Published)
-                    .orElseThrow(ResponseException::notFound);
-        } else {
-            if (version != null) {
-                formVersion = formVersionWithDetailsService
-                        .findVersionForSlugAndVersion(slug, version)
-                        .orElseThrow(ResponseException::notFound);
-            } else {
-                formVersion = formVersionWithDetailsService
-                        .findLatestForSlug(slug)
-                        .orElseThrow(ResponseException::notFound);
-            }
-        }
+    public FormCitizenDetailsResponseDTO retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                  @Nonnull @PathVariable String slug,
+                                                  @Nullable @RequestParam(value = "version", required = false) Integer version,
+                                                  @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId) throws ResponseException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
 
         var identityCache = identityId == null ? Optional.empty() : identityCacheRepository
                 .findById(identityId);
@@ -121,27 +101,22 @@ public class CitizenFormController {
                 .fromEntity(formVersion, obfuscateSteps);
     }
 
-    @GetMapping("{formId}/{formVersion}/max-file-size/")
-    public MaxFileSizeDto getMaxFileSize(
-            @PathVariable Integer formId,
-            @PathVariable Integer formVersion
-    ) throws ResponseException {
-        var id = FormVersionWithDetailsEntityId
-                .of(formId, formVersion);
 
-        var form = formVersionWithDetailsRepository
-                .findById(id)
-                .orElseThrow(ResponseException::notFound);
+    @GetMapping("{slug}/max-file-size/")
+    public MaxFileSizeDto getMaxFileSize(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                         @Nonnull @PathVariable String slug,
+                                         @Nullable @RequestParam(value = "version", required = false) Integer version) throws ResponseException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
 
         MaxFileSizeDto maxFileSizeDto = new MaxFileSizeDto();
         maxFileSizeDto.setMaxFileSize(100);
 
-        if (form.getDestinationId() == null) {
+        if (formVersion.getDestinationId() == null) {
             return maxFileSizeDto;
         }
 
         var destination = destinationService
-                .retrieve(form.getDestinationId());
+                .retrieve(formVersion.getDestinationId());
 
         if (destination.isEmpty()) {
             return maxFileSizeDto;
@@ -154,25 +129,19 @@ public class CitizenFormController {
         return maxFileSizeDto;
     }
 
-    @PostMapping("{formId}/{formVersion}/costs/")
-    public FormCostCalculationResponseDTO calculateCosts(
-            @PathVariable Integer formId,
-            @PathVariable Integer formVersion,
-            @RequestBody ElementData customerData
-    ) throws PaymentException, ResponseException {
-        var id = FormVersionWithDetailsEntityId
-                .of(formId, formVersion);
+    @PostMapping("{slug}/costs/")
+    public FormCostCalculationResponseDTO calculateCosts(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                         @Nonnull @PathVariable String slug,
+                                                         @Nullable @RequestParam(value = "version", required = false) Integer version,
+                                                         @Nonnull @RequestBody ElementData customerData) throws PaymentException, ResponseException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
 
-        var form = formVersionWithDetailsRepository
-                .findById(id)
-                .orElseThrow(ResponseException::notFound);
-
-        if (form.getPaymentProviderKey() == null) {
+        if (formVersion.getPaymentProviderKey() == null) {
             return new FormCostCalculationResponseDTO(null, null, null);
         }
 
         var paymentProvider = paymentProviderService
-                .retrieve(form.getPaymentProviderKey());
+                .retrieve(formVersion.getPaymentProviderKey());
 
         if (paymentProvider.isEmpty()) {
             return new FormCostCalculationResponseDTO(null, null, null);
@@ -186,7 +155,7 @@ public class CitizenFormController {
         }
 
         var paymentItems = paymentService
-                .createPaymentItems(form, customerData);
+                .createPaymentItems(formVersion, customerData);
 
         var costs = paymentItems
                 .stream()
@@ -196,19 +165,14 @@ public class CitizenFormController {
         return new FormCostCalculationResponseDTO(costs, paymentItems, paymentProviderDefinition.get().getProviderName());
     }
 
-    @GetMapping("{formId}/{formVersion}/identity-providers/")
-    public Page<IdentityDetailsDTO> getIdentityProviders(
-            @PathVariable Integer formId,
-            @PathVariable Integer formVersion
+    @GetMapping("{slug}/identity-providers/")
+    public Page<IdentityDetailsDTO> getIdentityProviders(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                         @Nonnull @PathVariable String slug,
+                                                         @Nullable @RequestParam(value = "version", required = false) Integer version
     ) throws ResponseException {
-        var id = FormVersionWithDetailsEntityId
-                .of(formId, formVersion);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
 
-        var form = formVersionWithDetailsRepository
-                .findById(id)
-                .orElseThrow(ResponseException::notFound);
-
-        var identityProviderKeys = form
+        var identityProviderKeys = formVersion
                 .getIdentityProviders()
                 .stream()
                 .map(IdentityProviderLink::getIdentityProviderKey)
@@ -230,5 +194,71 @@ public class CitizenFormController {
 
         return identityProviders
                 .map(IdentityDetailsDTO::from);
+    }
+
+    @PostMapping("{slug}/derive")
+    public ElementData derive(@Nullable @AuthenticationPrincipal Jwt jwt,
+                              @Nonnull @PathVariable String slug,
+                              @Nullable @RequestParam(value = "version", required = false) Integer version,
+                              @Nonnull @Valid @RequestBody ElementData elementData,
+                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipErrorsFor") List<String> skipErrorsFor,
+                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
+                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipValuesFor") List<String> skipValuesFor,
+                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+
+        var options = new ElementDerivationOptions()
+                .setSkipValuesForElementIds(skipValuesFor)
+                .setSkipOverridesForElementIds(skipOverridesFor)
+                .setSkipErrorsForElementIds(skipErrorsFor)
+                .setSkipVisibilitiesForElementIds(skipVisibilitiesFor);
+
+        var request = new ElementDerivationRequest()
+                .setElement(formVersion.getRootElement())
+                .setElementData(elementData)
+                .setOptions(options);
+
+        var derivedElementData = elementDerivationService
+                .derive(request);
+
+        var inputIdValue = elementData
+                .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject(ElementType.SubmittedStep))
+                .setComputedErrors(null); // Clear any previous computed errors
+
+        derivedElementData.put(IdentityValueKey.IdCustomerInputKey, inputIdValue);
+
+        if (options.notContainsSkipErrors(formVersion.getRootElement().getIntroductionStep().getId())) {
+            if (formVersion.getIdentityVerificationRequired() && inputIdValue.isEmpty()) {
+                inputIdValue.setComputedErrors(List.of("Bitte melden Sie sich mit einem der Nutzerkonten an."));
+            }
+        }
+
+        return derivedElementData;
+    }
+
+    private FormVersionWithDetailsEntity getFormVersionWithDetailsEntity(@Nonnull String slug,
+                                                                         @Nullable Integer version,
+                                                                         @Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+        var user = UserService
+                .fromJWT(jwt)
+                .orElse(null);
+
+        FormVersionWithDetailsEntity formVersion;
+        if (user == null) {
+            formVersion = formVersionWithDetailsService
+                    .findBySlugAndIsCurrentlyPublishedVersionIsTrue(slug)
+                    .orElseThrow(ResponseException::notFound);
+        } else {
+            if (version != null) {
+                formVersion = formVersionWithDetailsService
+                        .findBySlugAndVersion(slug, version)
+                        .orElseThrow(ResponseException::notFound);
+            } else {
+                formVersion = formVersionWithDetailsService
+                        .findBySlugAndIsCurrentlyPublishedVersionIsTrue(slug)
+                        .orElseThrow(ResponseException::notFound);
+            }
+        }
+        return formVersion;
     }
 }
