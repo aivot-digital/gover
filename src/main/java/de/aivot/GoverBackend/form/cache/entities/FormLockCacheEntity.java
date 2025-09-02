@@ -6,7 +6,7 @@ import org.springframework.data.redis.core.RedisHash;
 import java.io.Serializable;
 
 @RedisHash(value = "FormLock", timeToLive = 60 * 5) // Expire after 5 Minutes
-public class FormLock implements Serializable {
+public class FormLockCacheEntity implements Serializable {
     @Id
     private Integer formId;
     private String userId;
@@ -15,7 +15,7 @@ public class FormLock implements Serializable {
         return formId;
     }
 
-    public FormLock setFormId(Integer formId) {
+    public FormLockCacheEntity setFormId(Integer formId) {
         this.formId = formId;
         return this;
     }
@@ -24,7 +24,7 @@ public class FormLock implements Serializable {
         return userId;
     }
 
-    public FormLock setUserId(String userId) {
+    public FormLockCacheEntity setUserId(String userId) {
         this.userId = userId;
         return this;
     }

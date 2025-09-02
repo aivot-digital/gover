@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.form.entities;
 
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.department.entities.DepartmentEntity;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
@@ -168,6 +167,35 @@ public class FormVersionEntity {
         this.updated = updated;
         this.published = published;
         this.revoked = revoked;
+    }
+
+    public static FormVersionEntity from(FormVersionWithDetailsEntity formVersionWithDetailsEntity) {
+        return new FormVersionEntity(
+                formVersionWithDetailsEntity.getId(),
+                formVersionWithDetailsEntity.getVersion(),
+                formVersionWithDetailsEntity.getType(),
+                formVersionWithDetailsEntity.getLegalSupportDepartmentId(),
+                formVersionWithDetailsEntity.getTechnicalSupportDepartmentId(),
+                formVersionWithDetailsEntity.getImprintDepartmentId(),
+                formVersionWithDetailsEntity.getPrivacyDepartmentId(),
+                formVersionWithDetailsEntity.getAccessibilityDepartmentId(),
+                formVersionWithDetailsEntity.getDestinationId(),
+                formVersionWithDetailsEntity.getCustomerAccessHours(),
+                formVersionWithDetailsEntity.getSubmissionRetentionWeeks(),
+                formVersionWithDetailsEntity.getThemeId(),
+                formVersionWithDetailsEntity.getPdfTemplateKey(),
+                formVersionWithDetailsEntity.getPaymentProviderKey(),
+                formVersionWithDetailsEntity.getPaymentPurpose(),
+                formVersionWithDetailsEntity.getPaymentDescription(),
+                formVersionWithDetailsEntity.getPaymentProducts(),
+                formVersionWithDetailsEntity.getIdentityProviders(),
+                formVersionWithDetailsEntity.getIdentityVerificationRequired(),
+                formVersionWithDetailsEntity.getRootElement(),
+                formVersionWithDetailsEntity.getCreated(),
+                formVersionWithDetailsEntity.getUpdated(),
+                formVersionWithDetailsEntity.getPublished(),
+                formVersionWithDetailsEntity.getRevoked()
+        );
     }
 
     // endregion

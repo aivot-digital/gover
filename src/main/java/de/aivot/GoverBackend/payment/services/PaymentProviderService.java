@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.payment.services;
 
 import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -29,6 +31,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final FormVersionRepository formVersionRepository;
 
     @Autowired
     public PaymentProviderService(
@@ -36,12 +39,13 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
             FormRepository formRepository,
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentTransactionService paymentTransactionService,
-            PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
+            PaymentProviderDefinitionsService paymentProviderDefinitionsService, FormVersionRepository formVersionRepository) {
         this.formRepository = formRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.formVersionRepository = formVersionRepository;
     }
 
     @Nonnull
@@ -136,11 +140,11 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     public void performDelete(
             @Nonnull PaymentProviderEntity entity
     ) throws ResponseException {
-        var formSpec = new FormFilter()
-                .setPaymentProvider(entity.getKey())
+        var formSpec = new FormVersionFilter()
+                .setPaymentProviderKey(entity.getKey())
                 .build();
 
-        if (formRepository.exists(formSpec)) {
+        if (formVersionRepository.exists(formSpec)) {
             throw ResponseException.conflict(
                     "Der Zahlungsanbieter %s (%s) wird noch in Formularen verwendet",
                     entity.getName(),

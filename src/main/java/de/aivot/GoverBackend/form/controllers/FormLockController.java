@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.enums.EntityLockState;
-import de.aivot.GoverBackend.form.filters.FormWithMembershipFilter;
+import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.services.FormLockService;
 import de.aivot.GoverBackend.form.services.FormWithMembershipService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -36,7 +36,7 @@ public class FormLockController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var formAccessSpec = FormWithMembershipFilter
+        var formAccessSpec = FormVersionWithMembershipFilter
                 .create()
                 .setUserId(user.getId())
                 .setId(formId)

@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/public/identity/")
@@ -39,7 +40,7 @@ public class IdentityController {
 
     @GetMapping("{key}/start/")
     public void start(
-            @Nonnull @PathVariable String key,
+            @Nonnull @PathVariable UUID key,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ADDITIONAL_SCOPES, required = false) List<String> additionalScopes,
             @Nonnull HttpServletRequest request,
@@ -59,7 +60,7 @@ public class IdentityController {
 
     @GetMapping("{key}/callback/")
     public void callback(
-            @Nonnull @PathVariable String key,
+            @Nonnull @PathVariable UUID key,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_STATE) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
@@ -110,7 +111,7 @@ public class IdentityController {
 
     @Nonnull
     private URI createCallbackURI(
-            @Nonnull String key
+            @Nonnull UUID key
     ) {
         var callbackUrl = goverConfig
                 .createUrl("/api/public/identity/" + key + "/callback/");

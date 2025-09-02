@@ -1,8 +1,17 @@
 package de.aivot.GoverBackend.form.entities;
 
+import de.aivot.GoverBackend.core.converters.RootElementConverter;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.form.enums.FormType;
+import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
+import de.aivot.GoverBackend.models.payment.PaymentProduct;
+import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "form_versions_with_memberships")
@@ -11,17 +20,51 @@ public class FormVersionWithMembershipEntity {
     @Id
     private Integer id;
     private String slug;
-    private String title;
+    private String internalTitle;
     private String publicTitle;
     private Integer developingDepartmentId;
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
-    private LocalDateTime created;
-    private LocalDateTime updated;
     @Column(columnDefinition = "int2")
     private Integer publishedVersion;
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
+    private Integer formId;
+    @Id
+    @Column(columnDefinition = "int2")
+    private Integer version;
+    private FormType type;
+    private Integer legalSupportDepartmentId;
+    private Integer technicalSupportDepartmentId;
+    private Integer imprintDepartmentId;
+    private Integer privacyDepartmentId;
+    private Integer accessibilityDepartmentId;
+    private Integer destinationId;
+    private Integer themeId;
+    private UUID pdfTemplateKey;
+    private UUID paymentProviderKey;
+    private String paymentPurpose;
+    private String paymentDescription;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = PaymentProductsConverter.class)
+    private List<PaymentProduct> paymentProducts;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = IdentityProviderLinksConverter.class)
+    private List<IdentityProviderLink> identityProviders;
+    private Boolean identityVerificationRequired;
+    @Column(columnDefinition = "int2")
+    private Integer customerAccessHours;
+    @Column(columnDefinition = "int2")
+    private Integer submissionRetentionWeeks;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = RootElementConverter.class)
+    private RootElement rootElement;
+    private LocalDateTime created;
+    private LocalDateTime updated;
+    private LocalDateTime published;
+    private LocalDateTime revoked;
+    private Boolean isCurrentlyPublishedVersion;
+    private Boolean isCurrentlyDraftedVersion;
     @Id
     private String userId;
     private String userEmail;
@@ -35,6 +78,8 @@ public class FormVersionWithMembershipEntity {
     private Boolean userIsDeveloper;
     private Boolean userIsManager;
     private Boolean userIsResponsible;
+
+    // Getters and Setters
 
     public Integer getId() {
         return id;
@@ -54,12 +99,12 @@ public class FormVersionWithMembershipEntity {
         return this;
     }
 
-    public String getTitle() {
-        return title;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public FormVersionWithMembershipEntity setTitle(String title) {
-        this.title = title;
+    public FormVersionWithMembershipEntity setInternalTitle(String title) {
+        this.internalTitle = title;
         return this;
     }
 
@@ -99,6 +144,204 @@ public class FormVersionWithMembershipEntity {
         return this;
     }
 
+    public Integer getPublishedVersion() {
+        return publishedVersion;
+    }
+
+    public FormVersionWithMembershipEntity setPublishedVersion(Integer publishedVersion) {
+        this.publishedVersion = publishedVersion;
+        return this;
+    }
+
+    public Integer getDraftedVersion() {
+        return draftedVersion;
+    }
+
+    public FormVersionWithMembershipEntity setDraftedVersion(Integer draftedVersion) {
+        this.draftedVersion = draftedVersion;
+        return this;
+    }
+
+    public Integer getFormId() {
+        return formId;
+    }
+
+    public FormVersionWithMembershipEntity setFormId(Integer formId) {
+        this.formId = formId;
+        return this;
+    }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public FormVersionWithMembershipEntity setVersion(Integer version) {
+        this.version = version;
+        return this;
+    }
+
+    public FormType getType() {
+        return type;
+    }
+
+    public FormVersionWithMembershipEntity setType(FormType type) {
+        this.type = type;
+        return this;
+    }
+
+    public Integer getLegalSupportDepartmentId() {
+        return legalSupportDepartmentId;
+    }
+
+    public FormVersionWithMembershipEntity setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
+        return this;
+    }
+
+    public Integer getTechnicalSupportDepartmentId() {
+        return technicalSupportDepartmentId;
+    }
+
+    public FormVersionWithMembershipEntity setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        return this;
+    }
+
+    public Integer getImprintDepartmentId() {
+        return imprintDepartmentId;
+    }
+
+    public FormVersionWithMembershipEntity setImprintDepartmentId(Integer imprintDepartmentId) {
+        this.imprintDepartmentId = imprintDepartmentId;
+        return this;
+    }
+
+    public Integer getPrivacyDepartmentId() {
+        return privacyDepartmentId;
+    }
+
+    public FormVersionWithMembershipEntity setPrivacyDepartmentId(Integer privacyDepartmentId) {
+        this.privacyDepartmentId = privacyDepartmentId;
+        return this;
+    }
+
+    public Integer getAccessibilityDepartmentId() {
+        return accessibilityDepartmentId;
+    }
+
+    public FormVersionWithMembershipEntity setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
+        return this;
+    }
+
+    public Integer getDestinationId() {
+        return destinationId;
+    }
+
+    public FormVersionWithMembershipEntity setDestinationId(Integer destinationId) {
+        this.destinationId = destinationId;
+        return this;
+    }
+
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public FormVersionWithMembershipEntity setThemeId(Integer themeId) {
+        this.themeId = themeId;
+        return this;
+    }
+
+    public UUID getPdfTemplateKey() {
+        return pdfTemplateKey;
+    }
+
+    public FormVersionWithMembershipEntity setPdfTemplateKey(UUID pdfTemplateKey) {
+        this.pdfTemplateKey = pdfTemplateKey;
+        return this;
+    }
+
+    public UUID getPaymentProviderKey() {
+        return paymentProviderKey;
+    }
+
+    public FormVersionWithMembershipEntity setPaymentProviderKey(UUID paymentProviderKey) {
+        this.paymentProviderKey = paymentProviderKey;
+        return this;
+    }
+
+    public String getPaymentPurpose() {
+        return paymentPurpose;
+    }
+
+    public FormVersionWithMembershipEntity setPaymentPurpose(String paymentPurpose) {
+        this.paymentPurpose = paymentPurpose;
+        return this;
+    }
+
+    public String getPaymentDescription() {
+        return paymentDescription;
+    }
+
+    public FormVersionWithMembershipEntity setPaymentDescription(String paymentDescription) {
+        this.paymentDescription = paymentDescription;
+        return this;
+    }
+
+    public List<PaymentProduct> getPaymentProducts() {
+        return paymentProducts;
+    }
+
+    public FormVersionWithMembershipEntity setPaymentProducts(List<PaymentProduct> paymentProducts) {
+        this.paymentProducts = paymentProducts;
+        return this;
+    }
+
+    public List<IdentityProviderLink> getIdentityProviders() {
+        return identityProviders;
+    }
+
+    public FormVersionWithMembershipEntity setIdentityProviders(List<IdentityProviderLink> identityProviders) {
+        this.identityProviders = identityProviders;
+        return this;
+    }
+
+    public Boolean getIdentityVerificationRequired() {
+        return identityVerificationRequired;
+    }
+
+    public FormVersionWithMembershipEntity setIdentityVerificationRequired(Boolean identityVerificationRequired) {
+        this.identityVerificationRequired = identityVerificationRequired;
+        return this;
+    }
+
+    public Integer getCustomerAccessHours() {
+        return customerAccessHours;
+    }
+
+    public FormVersionWithMembershipEntity setCustomerAccessHours(Integer customerAccessHours) {
+        this.customerAccessHours = customerAccessHours;
+        return this;
+    }
+
+    public Integer getSubmissionRetentionWeeks() {
+        return submissionRetentionWeeks;
+    }
+
+    public FormVersionWithMembershipEntity setSubmissionRetentionWeeks(Integer submissionRetentionWeeks) {
+        this.submissionRetentionWeeks = submissionRetentionWeeks;
+        return this;
+    }
+
+    public RootElement getRootElement() {
+        return rootElement;
+    }
+
+    public FormVersionWithMembershipEntity setRootElement(RootElement rootElement) {
+        this.rootElement = rootElement;
+        return this;
+    }
+
     public LocalDateTime getCreated() {
         return created;
     }
@@ -117,21 +360,39 @@ public class FormVersionWithMembershipEntity {
         return this;
     }
 
-    public Integer getPublishedVersion() {
-        return publishedVersion;
+    public LocalDateTime getPublished() {
+        return published;
     }
 
-    public FormVersionWithMembershipEntity setPublishedVersion(Integer publishedVersion) {
-        this.publishedVersion = publishedVersion;
+    public FormVersionWithMembershipEntity setPublished(LocalDateTime published) {
+        this.published = published;
         return this;
     }
 
-    public Integer getDraftedVersion() {
-        return draftedVersion;
+    public LocalDateTime getRevoked() {
+        return revoked;
     }
 
-    public FormVersionWithMembershipEntity setDraftedVersion(Integer draftedVersion) {
-        this.draftedVersion = draftedVersion;
+    public FormVersionWithMembershipEntity setRevoked(LocalDateTime revoked) {
+        this.revoked = revoked;
+        return this;
+    }
+
+    public Boolean getIsCurrentlyPublishedVersion() {
+        return isCurrentlyPublishedVersion;
+    }
+
+    public FormVersionWithMembershipEntity setIsCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
+        isCurrentlyPublishedVersion = currentlyPublishedVersion;
+        return this;
+    }
+
+    public Boolean getIsCurrentlyDraftedVersion() {
+        return isCurrentlyDraftedVersion;
+    }
+
+    public FormVersionWithMembershipEntity setIsCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
+        isCurrentlyDraftedVersion = currentlyDraftedVersion;
         return this;
     }
 
@@ -242,4 +503,6 @@ public class FormVersionWithMembershipEntity {
         this.userIsResponsible = userIsResponsible;
         return this;
     }
+
+    // endregion
 }

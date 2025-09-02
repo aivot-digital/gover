@@ -100,25 +100,25 @@ public class FormPaymentService {
 
         for (var product : form.getPaymentProducts()) {
             if (StringUtils.isNullOrEmpty(product.getReference())) {
-                throw new PaymentException("Product %s of form %s has no reference", product.getId(), form.getTitle());
+                throw new PaymentException("Product %s of form %s has no reference", product.getId(), form.getInternalTitle());
             }
 
             if (StringUtils.isNullOrEmpty(product.getDescription())) {
-                throw new PaymentException("Product %s of form %s has no description", product.getId(), form.getTitle());
+                throw new PaymentException("Product %s of form %s has no description", product.getId(), form.getInternalTitle());
             }
 
             if (product.getTaxRate() == null) {
-                throw new PaymentException("Product %s of form %s has no tax rate", product.getId(), form.getTitle());
+                throw new PaymentException("Product %s of form %s has no tax rate", product.getId(), form.getInternalTitle());
             }
 
             if (product.getNetPrice() == null) {
-                throw new PaymentException("Product %s of form %s has no net price", product.getId(), form.getTitle());
+                throw new PaymentException("Product %s of form %s has no net price", product.getId(), form.getInternalTitle());
             }
 
             long quantity = switch (product.getType()) {
                 case PaymentType.UpfrontFixed -> {
                     if (product.getUpfrontFixedQuantity() == null) {
-                        throw new PaymentException("Product %s of form %s has no fixed upfront quantity", product.getId(), form.getTitle());
+                        throw new PaymentException("Product %s of form %s has no fixed upfront quantity", product.getId(), form.getInternalTitle());
                     }
                     yield product.getUpfrontFixedQuantity();
                 }
@@ -146,7 +146,7 @@ public class FormPaymentService {
             javascriptEngine
                     .close();
         } catch (Exception e) {
-            throw new PaymentException(e, "Error closing form derivation context for form %s", form.getTitle());
+            throw new PaymentException(e, "Error closing form derivation context for form %s", form.getInternalTitle());
         }
 
         return items;
@@ -167,7 +167,7 @@ public class FormPaymentService {
                         .registerElementObject(form.getRootElement())
                         .evaluateCode(product.getUpfrontQuantityJavascript());
             } catch (JavascriptException e) {
-                throw new PaymentException("Upfront quantity calculation JavaScript failed with message " + e.getMessage(), product.getId(), form.getTitle());
+                throw new PaymentException("Upfront quantity calculation JavaScript failed with message " + e.getMessage(), product.getId(), form.getInternalTitle());
             }
 
             if (res == null) {
@@ -176,12 +176,12 @@ public class FormPaymentService {
 
             var value = res.asNumber();
             if (value == null) {
-                throw new PaymentException("Upfront quantity calculation JavaScript for product %s of form %s produced no value", product.getId(), form.getTitle());
+                throw new PaymentException("Upfront quantity calculation JavaScript for product %s of form %s produced no value", product.getId(), form.getInternalTitle());
             }
 
             return value.longValue();
         }
 
-        throw new PaymentException("Product %s of form %s has no upfront quantity code", product.getId(), form.getTitle());
+        throw new PaymentException("Product %s of form %s has no upfront quantity code", product.getId(), form.getInternalTitle());
     }
 }

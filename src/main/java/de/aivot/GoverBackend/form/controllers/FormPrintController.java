@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.exceptions.ConflictException;
-import de.aivot.GoverBackend.exceptions.NotFoundException;
 import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.services.PdfService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,26 +23,25 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
 @RestController
-@RequestMapping("/api/forms/{formId}/print/")
+@RequestMapping("/api/forms/{formId}/{formVersion}/print/")
 public class FormPrintController {
     private final PdfService pdfService;
-    private final FormService formService;
+    private final FormVersionWithDetailsService formVersionWithDetailsService;
 
     @Autowired
-    public FormPrintController(
-            PdfService pdfService,
-            FormService formService
-    ) {
+    public FormPrintController(PdfService pdfService,
+                               FormVersionWithDetailsService formVersionWithDetailsService) {
         this.pdfService = pdfService;
-        this.formService = formService;
+        this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
 
     @GetMapping("")
     public ResponseEntity<Resource> print(
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
-        var form = formService
-                .retrieve(formId)
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
         byte[] bytes;

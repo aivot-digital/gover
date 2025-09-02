@@ -11,12 +11,12 @@ import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.mail.services.SubmissionMailService;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
-import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
 import de.aivot.GoverBackend.services.DestinationSubmitService;
@@ -31,7 +31,6 @@ import de.aivot.GoverBackend.submission.services.SubmissionAttachmentService;
 import de.aivot.GoverBackend.submission.services.SubmissionService;
 import de.aivot.GoverBackend.submission.services.SubmissionWithMembershipService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
-import de.aivot.GoverBackend.user.repositories.UserRepository;
 import de.aivot.GoverBackend.user.services.UserService;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
@@ -67,6 +66,7 @@ public class SubmissionController {
     private final UserService userService;
     private final FormPaymentService formPaymentService;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final FormVersionWithDetailsService formVersionWithDetailsService;
 
     @Autowired
     public SubmissionController(
@@ -83,8 +83,8 @@ public class SubmissionController {
             PaymentTransactionService paymentTransactionService,
             UserService userService,
             FormPaymentService formPaymentService,
-            PaymentTransactionRepository paymentTransactionRepository
-    ) {
+            PaymentTransactionRepository paymentTransactionRepository,
+            FormVersionWithDetailsService formVersionWithDetailsService) {
         this.auditService = auditService.createScopedAuditService(SubmissionController.class);
         this.submissionService = submissionService;
         this.submissionWithMembershipService = submissionWithMembershipService;
@@ -99,6 +99,7 @@ public class SubmissionController {
         this.userService = userService;
         this.formPaymentService = formPaymentService;
         this.paymentTransactionRepository = paymentTransactionRepository;
+        this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
 
     @GetMapping("")
@@ -157,8 +158,8 @@ public class SubmissionController {
         var previousAssigneeId = submission
                 .getAssigneeId();
 
-        var form = formService
-                .retrieve(submission.getFormId())
+        var form = formVersionWithDetailsService
+                .retrieve(submission.getFormId(), submission.getFormVersion())
                 .orElseThrow(ResponseException::notFound);
 
         var updatedSubmission = submissionService
@@ -226,8 +227,8 @@ public class SubmissionController {
             throw ResponseException.conflict("Für den Antrag ist keine Schnittstelle hinterlegt.");
         }
 
-        var form = formService
-                .retrieve(submission.getFormId())
+        var form = formVersionWithDetailsService
+                .retrieve(submission.getFormId(), submission.getFormVersion())
                 .orElseThrow(ResponseException::notFound);
 
         var attachmentsFilter = SubmissionAttachmentFilter
@@ -306,8 +307,8 @@ public class SubmissionController {
             submission.setStatus(SubmissionStatus.OpenForManualWork);
             submissionRepository.save(submission);
         } else {
-            var form = formService
-                    .retrieve(submission.getFormId())
+            var form = formVersionWithDetailsService
+                    .retrieve(submission.getFormId(), submission.getFormVersion())
                     .orElseThrow(() -> new RuntimeException("Form not found"));
 
             var attachmentFilter = SubmissionAttachmentFilter
@@ -381,8 +382,8 @@ public class SubmissionController {
             throw ResponseException.conflict("Die Zahlung ist noch nicht fehlgeschlagen.");
         }
 
-        var form = formService
-                .retrieve(submission.getFormId())
+        var form = formVersionWithDetailsService
+                .retrieve(submission.getFormId(), submission.getFormVersion())
                 .orElseThrow(() -> ResponseException.conflict("Das Formular konnte nicht gefunden werden."));
 
         PaymentTransactionEntity newTranscation;
@@ -395,7 +396,7 @@ public class SubmissionController {
         }
 
         if (newTranscation == null) {
-            throw ResponseException.conflict("Für das Formular " + form.getTitle() + " ergibt sich keine Zahlungsanforderung mehr. Dies kann passieren, wenn die Zahlungsmethode im Formular geändert wurde.");
+            throw ResponseException.conflict("Für das Formular " + form.getInternalTitle() + " ergibt sich keine Zahlungsanforderung mehr. Dies kann passieren, wenn die Zahlungsmethode im Formular geändert wurde.");
         }
 
         submission.setPaymentTransactionKey(newTranscation.getKey());

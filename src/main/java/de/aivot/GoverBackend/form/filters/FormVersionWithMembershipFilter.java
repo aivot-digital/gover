@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.filters;
 
-import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
@@ -9,7 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import javax.annotation.Nonnull;
 import java.util.UUID;
 
-public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetailsEntity> {
+public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMembershipEntity> {
     private Integer id;
     private String slug;
     private String title;
@@ -37,16 +37,20 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
     private Boolean isRevoked;
     private Boolean isCurrentlyPublishedVersion;
     private Boolean isCurrentlyDraftedVersion;
+    private String userId;
+    private Boolean isDeveloper;
+    private Boolean isManager;
+    private Boolean isResponsible;
 
-    public static FormVersionWithDetailsFilter create() {
-        return new FormVersionWithDetailsFilter();
+    public static FormVersionWithMembershipFilter create() {
+        return new FormVersionWithMembershipFilter();
     }
 
     @Nonnull
     @Override
-    public Specification<FormVersionWithDetailsEntity> build() {
+    public Specification<FormVersionWithMembershipEntity> build() {
         var builder = SpecificationBuilder
-                .create(FormVersionWithDetailsEntity.class)
+                .create(FormVersionWithMembershipEntity.class)
                 .withEquals("id", id)
                 .withContains("slug", slug)
                 .withContains("title", title)
@@ -71,7 +75,11 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
                 .withEquals("identityVerificationRequired", identityVerificationRequired)
                 .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey.toString())
                 .withEquals("isCurrentlyPublishedVersion", isCurrentlyPublishedVersion)
-                .withEquals("isCurrentlyDraftedVersion", isCurrentlyDraftedVersion);
+                .withEquals("isCurrentlyDraftedVersion", isCurrentlyDraftedVersion)
+                .withEquals("userId", userId)
+                .withEquals("userIsDeveloper", isDeveloper)
+                .withEquals("userIsManager", isManager)
+                .withEquals("userIsResponsible", isResponsible);
 
         if (isPublished != null && isPublished) {
             builder = builder
@@ -86,11 +94,36 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return builder.build();
     }
 
+    public FormVersionWithDetailsFilter asFormVersionWithDetailsFilter() {
+        return FormVersionWithDetailsFilter
+                .create()
+                .setId(id)
+                .setSlug(slug)
+                .setTitle(title)
+                .setPublicTitle(publicTitle)
+                .setDevelopingDepartmentId(developingDepartmentId)
+                .setManagingDepartmentId(managingDepartmentId)
+                .setResponsibleDepartmentId(responsibleDepartmentId)
+                .setPublishedVersion(publishedVersion)
+                .setDraftedVersion(draftedVersion)
+                .setFormId(formId)
+                .setVersion(version)
+                .setType(type)
+                .setLegalSupportDepartmentId(legalSupportDepartmentId)
+                .setTechnicalSupportDepartmentId(technicalSupportDepartmentId)
+                .setImprintDepartmentId(imprintDepartmentId)
+                .setPrivacyDepartmentId(privacyDepartmentId)
+                .setAccessibilityDepartmentId(accessibilityDepartmentId)
+                .setDestinationId(destinationId)
+                .setThemeId(themeId)
+                .setPdfTemplateKey(pdfTemplateKey);
+    }
+
     public Integer getId() {
         return id;
     }
 
-    public FormVersionWithDetailsFilter setId(Integer id) {
+    public FormVersionWithMembershipFilter setId(Integer id) {
         this.id = id;
         return this;
     }
@@ -99,7 +132,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return slug;
     }
 
-    public FormVersionWithDetailsFilter setSlug(String slug) {
+    public FormVersionWithMembershipFilter setSlug(String slug) {
         this.slug = slug;
         return this;
     }
@@ -108,7 +141,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return title;
     }
 
-    public FormVersionWithDetailsFilter setTitle(String title) {
+    public FormVersionWithMembershipFilter setTitle(String title) {
         this.title = title;
         return this;
     }
@@ -117,7 +150,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return publicTitle;
     }
 
-    public FormVersionWithDetailsFilter setPublicTitle(String publicTitle) {
+    public FormVersionWithMembershipFilter setPublicTitle(String publicTitle) {
         this.publicTitle = publicTitle;
         return this;
     }
@@ -126,7 +159,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return developingDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setDevelopingDepartmentId(Integer developingDepartmentId) {
+    public FormVersionWithMembershipFilter setDevelopingDepartmentId(Integer developingDepartmentId) {
         this.developingDepartmentId = developingDepartmentId;
         return this;
     }
@@ -135,7 +168,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return managingDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setManagingDepartmentId(Integer managingDepartmentId) {
+    public FormVersionWithMembershipFilter setManagingDepartmentId(Integer managingDepartmentId) {
         this.managingDepartmentId = managingDepartmentId;
         return this;
     }
@@ -144,7 +177,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return responsibleDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setResponsibleDepartmentId(Integer responsibleDepartmentId) {
+    public FormVersionWithMembershipFilter setResponsibleDepartmentId(Integer responsibleDepartmentId) {
         this.responsibleDepartmentId = responsibleDepartmentId;
         return this;
     }
@@ -153,7 +186,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return publishedVersion;
     }
 
-    public FormVersionWithDetailsFilter setPublishedVersion(Integer publishedVersion) {
+    public FormVersionWithMembershipFilter setPublishedVersion(Integer publishedVersion) {
         this.publishedVersion = publishedVersion;
         return this;
     }
@@ -162,7 +195,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return draftedVersion;
     }
 
-    public FormVersionWithDetailsFilter setDraftedVersion(Integer draftedVersion) {
+    public FormVersionWithMembershipFilter setDraftedVersion(Integer draftedVersion) {
         this.draftedVersion = draftedVersion;
         return this;
     }
@@ -171,7 +204,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return formId;
     }
 
-    public FormVersionWithDetailsFilter setFormId(Integer formId) {
+    public FormVersionWithMembershipFilter setFormId(Integer formId) {
         this.formId = formId;
         return this;
     }
@@ -180,7 +213,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return version;
     }
 
-    public FormVersionWithDetailsFilter setVersion(Integer version) {
+    public FormVersionWithMembershipFilter setVersion(Integer version) {
         this.version = version;
         return this;
     }
@@ -189,7 +222,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return type;
     }
 
-    public FormVersionWithDetailsFilter setType(FormType type) {
+    public FormVersionWithMembershipFilter setType(FormType type) {
         this.type = type;
         return this;
     }
@@ -198,7 +231,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return legalSupportDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
+    public FormVersionWithMembershipFilter setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
         this.legalSupportDepartmentId = legalSupportDepartmentId;
         return this;
     }
@@ -207,7 +240,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return technicalSupportDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
+    public FormVersionWithMembershipFilter setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
         this.technicalSupportDepartmentId = technicalSupportDepartmentId;
         return this;
     }
@@ -216,7 +249,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return imprintDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setImprintDepartmentId(Integer imprintDepartmentId) {
+    public FormVersionWithMembershipFilter setImprintDepartmentId(Integer imprintDepartmentId) {
         this.imprintDepartmentId = imprintDepartmentId;
         return this;
     }
@@ -225,7 +258,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return privacyDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setPrivacyDepartmentId(Integer privacyDepartmentId) {
+    public FormVersionWithMembershipFilter setPrivacyDepartmentId(Integer privacyDepartmentId) {
         this.privacyDepartmentId = privacyDepartmentId;
         return this;
     }
@@ -234,7 +267,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return accessibilityDepartmentId;
     }
 
-    public FormVersionWithDetailsFilter setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
+    public FormVersionWithMembershipFilter setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
         this.accessibilityDepartmentId = accessibilityDepartmentId;
         return this;
     }
@@ -243,7 +276,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return destinationId;
     }
 
-    public FormVersionWithDetailsFilter setDestinationId(Integer destinationId) {
+    public FormVersionWithMembershipFilter setDestinationId(Integer destinationId) {
         this.destinationId = destinationId;
         return this;
     }
@@ -252,7 +285,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return themeId;
     }
 
-    public FormVersionWithDetailsFilter setThemeId(Integer themeId) {
+    public FormVersionWithMembershipFilter setThemeId(Integer themeId) {
         this.themeId = themeId;
         return this;
     }
@@ -261,7 +294,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return pdfTemplateKey;
     }
 
-    public FormVersionWithDetailsFilter setPdfTemplateKey(UUID pdfTemplateKey) {
+    public FormVersionWithMembershipFilter setPdfTemplateKey(UUID pdfTemplateKey) {
         this.pdfTemplateKey = pdfTemplateKey;
         return this;
     }
@@ -270,7 +303,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return paymentProviderKey;
     }
 
-    public FormVersionWithDetailsFilter setPaymentProviderKey(UUID paymentProviderKey) {
+    public FormVersionWithMembershipFilter setPaymentProviderKey(UUID paymentProviderKey) {
         this.paymentProviderKey = paymentProviderKey;
         return this;
     }
@@ -279,7 +312,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return identityVerificationRequired;
     }
 
-    public FormVersionWithDetailsFilter setIdentityVerificationRequired(Boolean identityVerificationRequired) {
+    public FormVersionWithMembershipFilter setIdentityVerificationRequired(Boolean identityVerificationRequired) {
         this.identityVerificationRequired = identityVerificationRequired;
         return this;
     }
@@ -288,7 +321,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return identityProviderKey;
     }
 
-    public FormVersionWithDetailsFilter setIdentityProviderKey(UUID identityProviderKey) {
+    public FormVersionWithMembershipFilter setIdentityProviderKey(UUID identityProviderKey) {
         this.identityProviderKey = identityProviderKey;
         return this;
     }
@@ -297,7 +330,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return isPublished;
     }
 
-    public FormVersionWithDetailsFilter setPublished(Boolean published) {
+    public FormVersionWithMembershipFilter setPublished(Boolean published) {
         isPublished = published;
         return this;
     }
@@ -306,7 +339,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return isRevoked;
     }
 
-    public FormVersionWithDetailsFilter setRevoked(Boolean revoked) {
+    public FormVersionWithMembershipFilter setRevoked(Boolean revoked) {
         isRevoked = revoked;
         return this;
     }
@@ -315,7 +348,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return isCurrentlyPublishedVersion;
     }
 
-    public FormVersionWithDetailsFilter setCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
+    public FormVersionWithMembershipFilter setCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
         isCurrentlyPublishedVersion = currentlyPublishedVersion;
         return this;
     }
@@ -324,8 +357,44 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return isCurrentlyDraftedVersion;
     }
 
-    public FormVersionWithDetailsFilter setCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
+    public FormVersionWithMembershipFilter setCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
         isCurrentlyDraftedVersion = currentlyDraftedVersion;
+        return this;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public FormVersionWithMembershipFilter setUserId(String userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    public Boolean getDeveloper() {
+        return isDeveloper;
+    }
+
+    public FormVersionWithMembershipFilter setDeveloper(Boolean developer) {
+        isDeveloper = developer;
+        return this;
+    }
+
+    public Boolean getManager() {
+        return isManager;
+    }
+
+    public FormVersionWithMembershipFilter setManager(Boolean manager) {
+        isManager = manager;
+        return this;
+    }
+
+    public Boolean getResponsible() {
+        return isResponsible;
+    }
+
+    public FormVersionWithMembershipFilter setResponsible(Boolean responsible) {
+        isResponsible = responsible;
         return this;
     }
 }

@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntityId;
-import de.aivot.GoverBackend.form.repositories.FormWithMembershipRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionWithMembershipRepository;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.ReadEntityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +17,11 @@ import java.util.Optional;
 
 @Service
 public class FormWithMembershipService implements ReadEntityService<FormVersionWithMembershipEntity, FormVersionWithMembershipEntityId> {
-    private final FormWithMembershipRepository repository;
+    private final FormVersionWithMembershipRepository repository;
 
     @Autowired
     public FormWithMembershipService(
-            FormWithMembershipRepository repository
+            FormVersionWithMembershipRepository repository
     ) {
         this.repository = repository;
     }

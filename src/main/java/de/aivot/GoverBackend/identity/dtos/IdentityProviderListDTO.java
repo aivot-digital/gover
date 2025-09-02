@@ -6,9 +6,10 @@ import de.aivot.GoverBackend.identity.models.IdentityAttributeMapping;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.UUID;
 
 public record IdentityProviderListDTO(
-        @Nonnull String key,
+        @Nonnull UUID key,
         @Nonnull String metadataIdentifier,
         @Nonnull IdentityProviderType type,
         @Nonnull String name,

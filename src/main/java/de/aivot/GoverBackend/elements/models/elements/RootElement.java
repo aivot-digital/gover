@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Objects;
 
 public class RootElement extends BaseElement implements ElementWithChildren<StepElement> {
-    private String headline;
     private String tabTitle;
     private List<StepElement> children;
 
@@ -38,7 +37,6 @@ public class RootElement extends BaseElement implements ElementWithChildren<Step
 
         RootElement that = (RootElement) o;
 
-        if (!Objects.equals(headline, that.headline)) return false;
         if (!Objects.equals(tabTitle, that.tabTitle)) return false;
         if (!Objects.equals(children, that.children)) return false;
         if (!Objects.equals(expiring, that.expiring)) return false;
@@ -54,7 +52,6 @@ public class RootElement extends BaseElement implements ElementWithChildren<Step
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (headline != null ? headline.hashCode() : 0);
         result = 31 * result + (tabTitle != null ? tabTitle.hashCode() : 0);
         result = 31 * result + (children != null ? children.hashCode() : 0);
         result = 31 * result + (expiring != null ? expiring.hashCode() : 0);
@@ -73,15 +70,6 @@ public class RootElement extends BaseElement implements ElementWithChildren<Step
     }
 
     // region Getters & Setters
-
-    public String getHeadline() {
-        return headline;
-    }
-
-    public RootElement setHeadline(String headline) {
-        this.headline = headline;
-        return this;
-    }
 
     public String getTabTitle() {
         return tabTitle;

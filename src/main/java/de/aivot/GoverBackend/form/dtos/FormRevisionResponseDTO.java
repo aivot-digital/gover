@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.form.entities.FormRevision;
+import de.aivot.GoverBackend.form.entities.FormRevisionEntity;
 import de.aivot.GoverBackend.models.lib.DiffItem;
 
 import java.math.BigInteger;
@@ -14,13 +14,13 @@ public record FormRevisionResponseDTO(
         LocalDateTime timestamp,
         Collection<DiffItem> diff
 ) {
-    public static FormRevisionResponseDTO fromEntity(FormRevision formRevision) {
+    public static FormRevisionResponseDTO fromEntity(FormRevisionEntity formRevisionEntity) {
         return new FormRevisionResponseDTO(
-                formRevision.getId(),
-                formRevision.getFormId(),
-                formRevision.getUserId(),
-                formRevision.getTimestamp(),
-                formRevision.getDiff()
+                formRevisionEntity.getId(),
+                formRevisionEntity.getFormId(),
+                formRevisionEntity.getUserId(),
+                formRevisionEntity.getTimestamp(),
+                formRevisionEntity.getDiff()
         );
     }
 }

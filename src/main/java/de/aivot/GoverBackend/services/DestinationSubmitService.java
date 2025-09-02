@@ -3,27 +3,22 @@ package de.aivot.GoverBackend.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.exceptions.ConflictException;
-import de.aivot.GoverBackend.destination.entities.Destination;
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.entities.FormEntity;
-import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.mail.services.SubmissionMailService;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import de.aivot.GoverBackend.payment.services.PaymentProviderService;
-import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
 import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
+import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
-import de.aivot.GoverBackend.mail.services.SubmissionMailService;
-import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.mail.MessagingException;
@@ -148,7 +143,7 @@ public class DestinationSubmitService {
         }
     }
 
-    private DestinationResponse sendHttp(Destination destination, Form form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
+    private DestinationResponse sendHttp(Destination destination, FormVersionWithDetailsEntity form, Submission submission, Collection<SubmissionAttachment> attachments) throws ResponseException {
         URL url;
         try {
             url = new URL(destination.getApiAddress());

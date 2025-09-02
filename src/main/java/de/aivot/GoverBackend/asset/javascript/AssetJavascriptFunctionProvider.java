@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Base64;
+import java.util.UUID;
 
 @Component
 public class AssetJavascriptFunctionProvider implements JavascriptFunctionProvider {
@@ -44,7 +45,7 @@ public class AssetJavascriptFunctionProvider implements JavascriptFunctionProvid
     @HostAccess.Export
     public byte[] getBytes(String assetKey) throws IOException {
         var assetObj = assetService
-                .retrieve(assetKey)
+                .retrieve(parseUUID(assetKey))
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + assetKey));
 
         byte[] assetBytes;
@@ -73,13 +74,21 @@ public class AssetJavascriptFunctionProvider implements JavascriptFunctionProvid
     @HostAccess.Export
     public String getDownloadUrl(String assetKey) throws IOException {
         var assetObj = assetService
-                .retrieve(assetKey)
+                .retrieve(parseUUID(assetKey))
                 .orElseThrow(() -> new IllegalArgumentException("Asset not found: " + assetKey));
 
         try {
             return assetStorageService.getAssetDownloadUrl(assetObj);
         } catch (ResponseException e) {
             throw new IOException(e);
+        }
+    }
+
+    private UUID parseUUID(String assetKey) {
+        try {
+            return UUID.fromString(assetKey);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid asset key: " + assetKey);
         }
     }
 }

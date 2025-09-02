@@ -111,6 +111,11 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         return repository.save(cleanedEntity);
     }
 
+    public Optional<FormVersionEntity> retrieve(@Nonnull Integer formId, @Nonnull Integer formVersion) {
+        var id = new FormVersionEntityId(formId, formVersion);
+        return repository.findById(id);
+    }
+
     @Nonnull
     @Override
     public Optional<FormVersionEntity> retrieve(@Nonnull FormVersionEntityId id) {
@@ -161,32 +166,6 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                 .setRootElement(cleanedEntity.getRootElement());
 
         return repository.save(updatedExistingEntity);
-    }
-
-    @Nonnull
-    public FormVersionEntity publish(@Nonnull FormVersionEntity existingForm) throws ResponseException {
-        var allChecklistItemsDone = getFormPublishChecklist(existingForm)
-                .stream()
-                .allMatch(FormPublishChecklistItem::getDone);
-
-        if (!allChecklistItemsDone) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da nicht alle Voraussetzungen erfüllt sind");
-        }
-
-        existingForm.setPublished(LocalDateTime.now());
-
-        return repository.save(existingForm);
-    }
-
-    @Nonnull
-    public FormVersionEntity revoke(@Nonnull FormVersionEntity existingForm) throws ResponseException {
-        if (existingForm.getPublished() == null) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Das Formular ist nicht veröffentlicht und kann nicht zurückgezogen werden");
-        }
-
-        existingForm.setRevoked(LocalDateTime.now());
-
-        return repository.save(existingForm);
     }
 
     @Override
@@ -285,128 +264,5 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
 
         // Otherwise reset the value to null
         setter.accept(null);
-    }
-
-    @Nonnull
-    public List<FormPublishChecklistItem> getFormPublishChecklist(@Nonnull FormVersionEntity existingForm) {
-        var checklist = new LinkedList<FormPublishChecklistItem>();
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Öffentlicher Titel & Überschrift hinterlegt")
-                        .setDone(StringUtils.isNotNullOrEmpty(existingForm.getRootElement().getHeadline()))
-        );
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Fachlicher Support eingerichtet")
-                        .setDone(existingForm.getLegalSupportDepartmentId() != null)
-        );
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Technischer Support eingerichtet")
-                        .setDone(existingForm.getTechnicalSupportDepartmentId() != null)
-        );
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Impressum eingerichtet")
-                        .setDone(existingForm.getImprintDepartmentId() != null)
-        );
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Datenschutzerklärung eingerichtet")
-                        .setDone(existingForm.getPrivacyDepartmentId() != null)
-        );
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Barrierefreiheitserklärung eingerichtet")
-                        .setDone(existingForm.getAccessibilityDepartmentId() != null)
-        );
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Löschfrist für Anträge festgelegt")
-                        .setDone(existingForm.getSubmissionRetentionWeeks() != null && existingForm.getSubmissionRetentionWeeks() >= 0)
-        );
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Zugriffszeit für Bürger:innen festgelegt")
-                        .setDone(existingForm.getCustomerAccessHours() != null && existingForm.getCustomerAccessHours() >= 0)
-        );
-
-        if (existingForm.getPaymentProviderKey() != null) {
-            var paymentProviderSpec = SpecificationBuilder
-                    .create(PaymentProviderEntity.class)
-                    .withEquals("key", existingForm.getPaymentProviderKey())
-                    .withEquals("isTestProvider", false)
-                    .build();
-
-            checklist.add(
-                    FormPublishChecklistItem
-                            .create()
-                            .setLabel("Nutzt ausschließlich einen produktiven Zahlungsdienstleister")
-                            .setDone(paymentProviderRepository.exists(paymentProviderSpec))
-            );
-        }
-
-        if (existingForm.getIdentityProviders() != null && !existingForm.getIdentityProviders().isEmpty()) {
-
-
-            var allLinkedIDPsProductive = existingForm
-                    .getIdentityProviders()
-                    .stream()
-                    .allMatch(idp -> {
-                        if (idp.getIdentityProviderKey() == null) {
-                            return false;
-                        }
-
-                        var identityProviderSpec = SpecificationBuilder
-                                .create(IdentityProviderEntity.class)
-                                .withEquals("key", idp.getIdentityProviderKey())
-                                .withEquals("isTestProvider", false)
-                                .withEquals("isEnabled", true)
-                                .build();
-
-                        return identityProviderRepository.exists(identityProviderSpec);
-                    });
-
-            checklist.add(
-                    FormPublishChecklistItem
-                            .create()
-                            .setLabel("Beinhaltet ausschließlich produktive Nutzerkontenanbieter")
-                            .setDone(allLinkedIDPsProductive)
-            );
-        }
-
-        if (existingForm.getIdentityVerificationRequired() && (existingForm.getIdentityProviders() == null || existingForm.getIdentityProviders().isEmpty())) {
-            checklist.add(
-                    FormPublishChecklistItem
-                            .create()
-                            .setLabel("Beinhaltet benötigte Nutzerkontenanbieter")
-                            .setDone(false)
-            );
-        }
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Alle Elemente des Formulars geprüft")
-                        .setDone(ElementApprovalService.isApproved(existingForm.getRootElement()))
-        );
-
-        return checklist;
     }
 }

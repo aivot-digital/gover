@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.form.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.core.converters.RootElementConverter;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
+import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
+import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -15,11 +17,11 @@ import java.util.UUID;
 @Entity
 @Table(name = "form_version_with_details")
 @IdClass(FormVersionWithDetailsEntityId.class)
-public class FormVersionWithDetailsEntity {
+public class FormVersionWithDetailsEntity implements Cloneable {
     @Id
     private Integer id;
     private String slug;
-    private String title;
+    private String internalTitle;
     private String publicTitle;
     private Integer developingDepartmentId;
     private Integer managingDepartmentId;
@@ -32,26 +34,31 @@ public class FormVersionWithDetailsEntity {
     @Id
     @Column(columnDefinition = "int2")
     private Integer version;
-    private FormType formType;
-    private FormStatus formStatus;
+    private FormType type;
     private Integer legalSupportDepartmentId;
     private Integer technicalSupportDepartmentId;
     private Integer imprintDepartmentId;
     private Integer privacyDepartmentId;
     private Integer accessibilityDepartmentId;
     private Integer destinationId;
-    @Column(columnDefinition = "int2")
-    private Integer customerAccessHours;
-    @Column(columnDefinition = "int2")
-    private Integer submissionRetentionWeeks;
     private Integer themeId;
     private UUID pdfTemplateKey;
     private UUID paymentProviderKey;
     private String paymentPurpose;
     private String paymentDescription;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = PaymentProductsConverter.class)
     private List<PaymentProduct> paymentProducts;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = IdentityProviderLinksConverter.class)
     private List<IdentityProviderLink> identityProviders;
     private Boolean identityVerificationRequired;
+    @Column(columnDefinition = "int2")
+    private Integer customerAccessHours;
+    @Column(columnDefinition = "int2")
+    private Integer submissionRetentionWeeks;
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = RootElementConverter.class)
     private RootElement rootElement;
     private LocalDateTime created;
     private LocalDateTime updated;
@@ -59,6 +66,170 @@ public class FormVersionWithDetailsEntity {
     private LocalDateTime revoked;
     private Boolean isCurrentlyPublishedVersion;
     private Boolean isCurrentlyDraftedVersion;
+
+    // region constructors
+
+    // Default constructor is required by JPA
+    public FormVersionWithDetailsEntity() {
+    }
+
+    // Full constructor
+    public FormVersionWithDetailsEntity(Integer id,
+                                        String slug,
+                                        String internalTitle,
+                                        String publicTitle,
+                                        Integer developingDepartmentId,
+                                        Integer managingDepartmentId,
+                                        Integer responsibleDepartmentId,
+                                        Integer publishedVersion,
+                                        Integer draftedVersion,
+                                        Integer formId,
+                                        Integer version,
+                                        FormType type,
+                                        Integer legalSupportDepartmentId,
+                                        Integer technicalSupportDepartmentId,
+                                        Integer imprintDepartmentId,
+                                        Integer privacyDepartmentId,
+                                        Integer accessibilityDepartmentId,
+                                        Integer destinationId,
+                                        Integer themeId,
+                                        UUID pdfTemplateKey,
+                                        UUID paymentProviderKey,
+                                        String paymentPurpose,
+                                        String paymentDescription,
+                                        List<PaymentProduct> paymentProducts,
+                                        List<IdentityProviderLink> identityProviders,
+                                        Boolean identityVerificationRequired,
+                                        Integer customerAccessHours,
+                                        Integer submissionRetentionWeeks,
+                                        RootElement rootElement,
+                                        LocalDateTime created,
+                                        LocalDateTime updated,
+                                        LocalDateTime published,
+                                        LocalDateTime revoked,
+                                        Boolean isCurrentlyPublishedVersion,
+                                        Boolean isCurrentlyDraftedVersion) {
+        this.id = id;
+        this.slug = slug;
+        this.internalTitle = internalTitle;
+        this.publicTitle = publicTitle;
+        this.developingDepartmentId = developingDepartmentId;
+        this.managingDepartmentId = managingDepartmentId;
+        this.responsibleDepartmentId = responsibleDepartmentId;
+        this.publishedVersion = publishedVersion;
+        this.draftedVersion = draftedVersion;
+        this.formId = formId;
+        this.version = version;
+        this.type = type;
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        this.imprintDepartmentId = imprintDepartmentId;
+        this.privacyDepartmentId = privacyDepartmentId;
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
+        this.destinationId = destinationId;
+        this.themeId = themeId;
+        this.pdfTemplateKey = pdfTemplateKey;
+        this.paymentProviderKey = paymentProviderKey;
+        this.paymentPurpose = paymentPurpose;
+        this.paymentDescription = paymentDescription;
+        this.paymentProducts = paymentProducts;
+        this.identityProviders = identityProviders;
+        this.identityVerificationRequired = identityVerificationRequired;
+        this.customerAccessHours = customerAccessHours;
+        this.submissionRetentionWeeks = submissionRetentionWeeks;
+        this.rootElement = rootElement;
+        this.created = created;
+        this.updated = updated;
+        this.published = published;
+        this.revoked = revoked;
+        this.isCurrentlyPublishedVersion = isCurrentlyPublishedVersion;
+        this.isCurrentlyDraftedVersion = isCurrentlyDraftedVersion;
+    }
+
+    public static FormVersionWithDetailsEntity of(FormEntity form, FormVersionEntity version) {
+        return new FormVersionWithDetailsEntity(
+                version.getFormId(),
+                form.getSlug(),
+                form.getInternalTitle(),
+                form.getPublicTitle(),
+                form.getDevelopingDepartmentId(),
+                form.getManagingDepartmentId(),
+                form.getResponsibleDepartmentId(),
+                form.getPublishedVersion(),
+                form.getDraftedVersion(),
+                version.getFormId(),
+                version.getVersion(),
+                version.getType(),
+                version.getLegalSupportDepartmentId(),
+                version.getTechnicalSupportDepartmentId(),
+                version.getImprintDepartmentId(),
+                version.getPrivacyDepartmentId(),
+                version.getAccessibilityDepartmentId(),
+                version.getDestinationId(),
+                version.getThemeId(),
+                version.getPdfTemplateKey(),
+                version.getPaymentProviderKey(),
+                version.getPaymentPurpose(),
+                version.getPaymentDescription(),
+                version.getPaymentProducts(),
+                version.getIdentityProviders(),
+                version.getIdentityVerificationRequired(),
+                version.getCustomerAccessHours(),
+                version.getSubmissionRetentionWeeks(),
+                version.getRootElement(),
+                version.getCreated(),
+                version.getUpdated(),
+                version.getPublished(),
+                version.getRevoked(),
+                form.getPublishedVersion() != null && form.getPublishedVersion().equals(version.getVersion()) && version.getRevoked() == null,
+                form.getDraftedVersion() != null && form.getDraftedVersion().equals(version.getVersion())
+        );
+    }
+
+    public FormEntity toFormEntity() {
+        return new FormEntity(
+                id,
+                slug,
+                internalTitle,
+                publicTitle,
+                developingDepartmentId,
+                managingDepartmentId,
+                responsibleDepartmentId,
+                created,
+                updated,
+                publishedVersion,
+                draftedVersion
+        );
+    }
+
+    public FormVersionEntity toVersionEntity() {
+        return new FormVersionEntity(
+                formId,
+                version,
+                type,
+                legalSupportDepartmentId,
+                technicalSupportDepartmentId,
+                imprintDepartmentId,
+                privacyDepartmentId,
+                accessibilityDepartmentId,
+                destinationId,
+                customerAccessHours,
+                submissionRetentionWeeks,
+                themeId,
+                pdfTemplateKey,
+                paymentProviderKey,
+                paymentPurpose,
+                paymentDescription,
+                paymentProducts,
+                identityProviders,
+                identityVerificationRequired,
+                rootElement,
+                created,
+                updated,
+                published,
+                revoked
+        );
+    }
 
     @JsonIgnore
     public Integer getRelevantDepartmentId() {
@@ -91,12 +262,12 @@ public class FormVersionWithDetailsEntity {
         return this;
     }
 
-    public String getTitle() {
-        return title;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public FormVersionWithDetailsEntity setTitle(String title) {
-        this.title = title;
+    public FormVersionWithDetailsEntity setInternalTitle(String title) {
+        this.internalTitle = title;
         return this;
     }
 
@@ -172,21 +343,12 @@ public class FormVersionWithDetailsEntity {
         return this;
     }
 
-    public FormType getFormType() {
-        return formType;
+    public FormType getType() {
+        return type;
     }
 
-    public FormVersionWithDetailsEntity setFormType(FormType formType) {
-        this.formType = formType;
-        return this;
-    }
-
-    public FormStatus getFormStatus() {
-        return formStatus;
-    }
-
-    public FormVersionWithDetailsEntity setFormStatus(FormStatus formStatus) {
-        this.formStatus = formStatus;
+    public FormVersionWithDetailsEntity setType(FormType formType) {
+        this.type = formType;
         return this;
     }
 
@@ -241,24 +403,6 @@ public class FormVersionWithDetailsEntity {
 
     public FormVersionWithDetailsEntity setDestinationId(Integer destinationId) {
         this.destinationId = destinationId;
-        return this;
-    }
-
-    public Integer getCustomerAccessHours() {
-        return customerAccessHours;
-    }
-
-    public FormVersionWithDetailsEntity setCustomerAccessHours(Integer customerAccessHours) {
-        this.customerAccessHours = customerAccessHours;
-        return this;
-    }
-
-    public Integer getSubmissionRetentionWeeks() {
-        return submissionRetentionWeeks;
-    }
-
-    public FormVersionWithDetailsEntity setSubmissionRetentionWeeks(Integer submissionRetentionWeeks) {
-        this.submissionRetentionWeeks = submissionRetentionWeeks;
         return this;
     }
 
@@ -334,6 +478,24 @@ public class FormVersionWithDetailsEntity {
         return this;
     }
 
+    public Integer getCustomerAccessHours() {
+        return customerAccessHours;
+    }
+
+    public FormVersionWithDetailsEntity setCustomerAccessHours(Integer customerAccessHours) {
+        this.customerAccessHours = customerAccessHours;
+        return this;
+    }
+
+    public Integer getSubmissionRetentionWeeks() {
+        return submissionRetentionWeeks;
+    }
+
+    public FormVersionWithDetailsEntity setSubmissionRetentionWeeks(Integer submissionRetentionWeeks) {
+        this.submissionRetentionWeeks = submissionRetentionWeeks;
+        return this;
+    }
+
     public RootElement getRootElement() {
         return rootElement;
     }
@@ -379,22 +541,69 @@ public class FormVersionWithDetailsEntity {
         return this;
     }
 
-    public Boolean getCurrentlyPublishedVersion() {
+    public Boolean getIsCurrentlyPublishedVersion() {
         return isCurrentlyPublishedVersion;
     }
 
-    public FormVersionWithDetailsEntity setCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
+    public FormVersionWithDetailsEntity setIsCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
         isCurrentlyPublishedVersion = currentlyPublishedVersion;
         return this;
     }
 
-    public Boolean getCurrentlyDraftedVersion() {
+    public Boolean getIsCurrentlyDraftedVersion() {
         return isCurrentlyDraftedVersion;
     }
 
-    public FormVersionWithDetailsEntity setCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
+    public FormVersionWithDetailsEntity setIsCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
         isCurrentlyDraftedVersion = currentlyDraftedVersion;
         return this;
+    }
+
+    @Override
+    public FormVersionWithDetailsEntity clone() {
+        try {
+            var clone = (FormVersionWithDetailsEntity) super.clone();
+
+            clone.id = this.id;
+            clone.slug = this.slug;
+            clone.internalTitle = this.internalTitle;
+            clone.publicTitle = this.publicTitle;
+            clone.developingDepartmentId = this.developingDepartmentId;
+            clone.managingDepartmentId = this.managingDepartmentId;
+            clone.responsibleDepartmentId = this.responsibleDepartmentId;
+            clone.publishedVersion = this.publishedVersion;
+            clone.draftedVersion = this.draftedVersion;
+            clone.formId = this.formId;
+            clone.version = this.version;
+            clone.type = this.type;
+            clone.legalSupportDepartmentId = this.legalSupportDepartmentId;
+            clone.technicalSupportDepartmentId = this.technicalSupportDepartmentId;
+            clone.imprintDepartmentId = this.imprintDepartmentId;
+            clone.privacyDepartmentId = this.privacyDepartmentId;
+            clone.accessibilityDepartmentId = this.accessibilityDepartmentId;
+            clone.destinationId = this.destinationId;
+            clone.themeId = this.themeId;
+            clone.pdfTemplateKey = this.pdfTemplateKey;
+            clone.paymentProviderKey = this.paymentProviderKey;
+            clone.paymentPurpose = this.paymentPurpose;
+            clone.paymentDescription = this.paymentDescription;
+            clone.paymentProducts = this.paymentProducts;
+            clone.identityProviders = this.identityProviders;
+            clone.identityVerificationRequired = this.identityVerificationRequired;
+            clone.customerAccessHours = this.customerAccessHours;
+            clone.submissionRetentionWeeks = this.submissionRetentionWeeks;
+            clone.rootElement = this.rootElement;
+            clone.created = this.created;
+            clone.updated = this.updated;
+            clone.published = this.published;
+            clone.revoked = this.revoked;
+            clone.isCurrentlyPublishedVersion = this.isCurrentlyPublishedVersion;
+            clone.isCurrentlyDraftedVersion = this.isCurrentlyDraftedVersion;
+
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 
     // endregion

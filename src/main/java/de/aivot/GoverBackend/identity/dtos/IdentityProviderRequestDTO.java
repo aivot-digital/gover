@@ -65,7 +65,7 @@ public record IdentityProviderRequestDTO(
     @Nonnull
     public IdentityProviderEntity toEntity() {
         return new IdentityProviderEntity()
-                .setKey("")
+                .setKey(null)
                 .setType(IdentityProviderType.Custom)
                 .setName(name)
                 .setDescription(description)

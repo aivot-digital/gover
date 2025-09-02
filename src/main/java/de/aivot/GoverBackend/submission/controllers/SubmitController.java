@@ -18,9 +18,10 @@ import de.aivot.GoverBackend.exceptions.BadRequestException;
 import de.aivot.GoverBackend.exceptions.ConflictException;
 import de.aivot.GoverBackend.exceptions.NotAcceptableException;
 import de.aivot.GoverBackend.exceptions.UserFriendlyResponseStatusException;
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.enums.FormStatus;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
@@ -95,6 +96,7 @@ public class SubmitController {
     private final IdentityCacheRepository identityCacheRepository;
     private final AltchaService altchaService;
     private final ElementDerivationService elementDerivationService;
+    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
     public SubmitController(
@@ -115,7 +117,7 @@ public class SubmitController {
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentProviderRepository paymentProviderRepository,
             IdentityCacheRepository identityCacheRepository,
-            AltchaService altchaService, ElementDerivationService elementDerivationService) {
+            AltchaService altchaService, ElementDerivationService elementDerivationService, FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.formRepository = formRepository;
         this.submissionRepository = submissionRepository;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
@@ -135,19 +137,21 @@ public class SubmitController {
         this.identityCacheRepository = identityCacheRepository;
         this.altchaService = altchaService;
         this.elementDerivationService = elementDerivationService;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
 
-    @PostMapping("/api/public/submit/{applicationId}/")
+    @PostMapping("/api/public/submit/{formId}/{formVersion}/")
     public Submission submit(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer applicationId,
+            @PathVariable Integer formId,
+            @PathVariable Integer formVersion,
             @RequestParam(value = "inputs", required = true) String inputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         // Fetch form
-        var form = formRepository
-                .findById(applicationId)
+        var form = formVersionWithDetailsRepository
+                .findById(FormVersionWithDetailsEntityId.of(formId, formVersion))
                 .orElseThrow(ResponseException::notFound);
 
         Destination destination = null;
@@ -158,7 +162,7 @@ public class SubmitController {
         }
 
         // Test form published or user authenticated
-        if (form.getStatus() != FormStatus.Published && (jwt == null)) {
+        if (!form.getIsCurrentlyPublishedVersion() && (jwt == null)) {
             throw ResponseException.forbidden();
         }
 
@@ -177,7 +181,7 @@ public class SubmitController {
         // Verify captcha if present
         try {
             var rawCaptchaValue = elementData
-                    .get(form.getRoot().getSubmitStep().getId())
+                    .get(form.getRootElement().getSubmitStep().getId())
                     .getValue();
 
             var formattedCaptchaValue = SubmitStepElement
@@ -212,7 +216,7 @@ public class SubmitController {
         // Validate customer input
         var verifiedElementData = elementDerivationService
                 .derive(new ElementDerivationRequest()
-                        .setElement(form.getRoot())
+                        .setElement(form.getRootElement())
                         .setElementData(elementData)
                         .setOptions(new ElementDerivationOptions())
                 );
@@ -240,7 +244,7 @@ public class SubmitController {
         submission.setUpdated(LocalDateTime.now());
         submission.setAssigneeId(null);
         submission.setCustomerInput(verifiedElementData);
-        submission.setIsTestSubmission(form.getStatus() != FormStatus.Published || jwt != null);
+        submission.setIsTestSubmission(jwt != null);
         submission.setCopySent(false);
         submission.setCopyTries(0);
         submission.setDestinationId(destination != null ? destination.getId() : null);
@@ -286,7 +290,7 @@ public class SubmitController {
 
         Optional<PaymentTransactionEntity> paymentRequest = Optional.empty();
         // If a payment provider is set, create a transaction
-        if (form.getPaymentProvider() != null) {
+        if (form.getPaymentProviderKey() != null) {
             try {
                 paymentRequest = paymentService
                         .createTransaction(form, submissionId, verifiedElementData);
@@ -344,8 +348,8 @@ public class SubmitController {
         return submissionCopy;
     }
 
-    private void hydrateCustomerInputWithIdpData(Form form, Optional<IdentityCacheEntity> optionalIdp, ElementData customerInput) throws ResponseException {
-        if (form.getIdentityRequired() && optionalIdp.isEmpty()) {
+    private void hydrateCustomerInputWithIdpData(FormVersionWithDetailsEntity form, Optional<IdentityCacheEntity> optionalIdp, ElementData customerInput) throws ResponseException {
+        if (form.getIdentityVerificationRequired() && optionalIdp.isEmpty()) {
             throw ResponseException.badRequest("Ein Identitätsnachweis ist erforderlich, um den Antrag einzureichen.");
         }
 
@@ -356,7 +360,7 @@ public class SubmitController {
         var identityCacheEntity = optionalIdp.get();
 
         var flatElements = ElementFlattenUtils
-                .flattenElements(form.getRoot());
+                .flattenElements(form.getRootElement());
 
         for (var element : flatElements) {
             var metadata = element.getMetadata();
@@ -396,7 +400,7 @@ public class SubmitController {
         // Create the identity value
         var identityValue = new IdentityData(
                 identityCacheEntity.getId(),
-                identityCacheEntity.getProviderKey(),
+                UUID.fromString(identityCacheEntity.getProviderKey()),
                 identityCacheEntity.getMetadataIdentifier(),
                 identityCacheEntity.getIdentityData()
         );
@@ -500,8 +504,8 @@ public class SubmitController {
             throw new UserFriendlyResponseStatusException(HttpStatus.FORBIDDEN, "Die Zugriffsfrist für den Antrag ist abgelaufen. Bitte wenden Sie sich an die zuständige Dienststelle. Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: " + uuid);
         }
 
-        var form = formRepository
-                .findById(submission.getFormId())
+        var form = formVersionWithDetailsRepository
+                .findById(FormVersionWithDetailsEntityId.of(submission.getFormId(), submission.getFormVersion()))
                 .orElseThrow(() -> new UserFriendlyResponseStatusException(HttpStatus.NOT_FOUND, "Das Formular mit der ID " + submission.getFormId() + " konnte nicht gefunden werden."));
 
         // Get the path to the generated pdf
@@ -534,8 +538,8 @@ public class SubmitController {
     }
 
     private boolean testSubmissionExpired(Submission submission) {
-        var form = formRepository
-                .findById(submission.getFormId());
+        var form = formVersionWithDetailsRepository
+                .findById(FormVersionWithDetailsEntityId.of(submission.getFormId(), submission.getFormVersion()));
 
         return form.map(submission::hasExternalAccessExpired).orElse(true);
     }

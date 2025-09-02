@@ -1,0 +1,25 @@
+meta {
+  name: API Access
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{IDP_HOST}}/realms/staff/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  client_id: asdjoi938d10ihw9gw109h13d39g713f0h1f39g12d09jd189
+  client_secret: 94KmGBuDkNVO3tbeIwKoNn4Fa8wDWjQD
+  grant_type: client_credentials
+}
+
+vars:post-response {
+  gover_jwt: res.body.access_token
+}
+
+settings {
+  encodeUrl: true
+}

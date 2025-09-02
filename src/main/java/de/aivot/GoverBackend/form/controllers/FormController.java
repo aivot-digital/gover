@@ -8,18 +8,18 @@ import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.enums.UserRole;
-import de.aivot.GoverBackend.exceptions.*;
-import de.aivot.GoverBackend.form.cache.entities.FormLock;
+import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
+import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
 import de.aivot.GoverBackend.form.dtos.FormDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormListResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormRequestDTO;
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.filters.FormWithMembershipFilter;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
-import de.aivot.GoverBackend.form.services.FormLockService;
-import de.aivot.GoverBackend.form.services.FormRevisionService;
-import de.aivot.GoverBackend.form.services.FormService;
-import de.aivot.GoverBackend.form.services.FormWithMembershipService;
+import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.mail.services.FormMailService;
@@ -53,18 +53,20 @@ public class FormController {
     private final DepartmentMembershipService departmentMembershipService;
     private final FormLockService formLockService;
     private final FormRevisionService formRevisionService;
+    private final FormVersionWithDetailsService formVersionWithDetailsService;
+    private final FormVersionService formVersionService;
 
     @Autowired
-    public FormController(
-            AuditService auditService,
-            FormMailService formMailService,
-            ExceptionMailService exceptionMailService,
-            FormService formService,
-            FormWithMembershipService formWithMembershipService,
-            DepartmentMembershipService departmentMembershipService,
-            FormLockService formLockService,
-            FormRevisionService formRevisionService
-    ) {
+    public FormController(AuditService auditService,
+                          FormMailService formMailService,
+                          ExceptionMailService exceptionMailService,
+                          FormService formService,
+                          FormWithMembershipService formWithMembershipService,
+                          DepartmentMembershipService departmentMembershipService,
+                          FormLockService formLockService,
+                          FormRevisionService formRevisionService,
+                          FormVersionWithDetailsService formVersionWithDetailsService,
+                          FormVersionService formVersionService) {
         this.auditService = auditService.createScopedAuditService(FormController.class);
 
         this.formMailService = formMailService;
@@ -74,34 +76,42 @@ public class FormController {
         this.departmentMembershipService = departmentMembershipService;
         this.formLockService = formLockService;
         this.formRevisionService = formRevisionService;
+        this.formVersionWithDetailsService = formVersionWithDetailsService;
+        this.formVersionService = formVersionService;
     }
 
     @GetMapping("")
     public Page<FormListResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @Valid FormWithMembershipFilter filter
+            @Nonnull @Valid FormVersionWithMembershipFilter filter
     ) throws ResponseException {
         // Check if the user is a staff user
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (filter.getUserId() != null) {
-            return formWithMembershipService
-                    .list(pageable, filter)
-                    .map(FormListResponseDTO::fromEntity);
-        } else {
-            if (user.getGlobalAdmin()) {
-                return formService
-                        .list(pageable, filter.asFormFilter())
-                        .map(FormListResponseDTO::fromEntity);
-            } else {
-                filter.setUserId(user.getId());
+        // Check if the user is a global admin
+        if (user.getGlobalAdmin()) {
+            // Check if a user id is provided in the filter to show only forms the given user has access to
+            if (filter.getUserId() != null) {
                 return formWithMembershipService
                         .list(pageable, filter)
                         .map(FormListResponseDTO::fromEntity);
             }
+            // If not, show all forms. Use the form service to prevent duplicates
+            else {
+                return formVersionWithDetailsService
+                        .list(pageable, filter.asFormVersionWithDetailsFilter())
+                        .map(FormListResponseDTO::fromEntity);
+            }
+        }
+        // If the user is not a global admin, limit the forms to those in departments the user is a member of
+        else {
+            filter.setUserId(user.getId());
+            return formWithMembershipService
+                    .list(pageable, filter)
+                    .map(FormListResponseDTO::fromEntity);
         }
     }
 
@@ -128,20 +138,33 @@ public class FormController {
             if (departmentMembershipService.checkUserNotInDepartment(user, requestDTO.developingDepartmentId())) {
                 throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
             }
-
             // TODO: Check user role
         }
 
-        // Create the form based on the request DTO
-        var createdForm = formService.create(requestDTO.toEntity());
-
-        // Log the form creation
-        auditService.logAction(user, AuditAction.Create, Form.class, Map.of(
-                "formId", createdForm.getId(),
-                "formSlug", createdForm.getSlug(),
-                "formVersion", createdForm.getVersion(),
-                "developingDepartmentId", createdForm.getDevelopingDepartmentId()
+        // create the form
+        var createdFormEntity = formService
+                .create(requestDTO.toFormEntity());
+        auditService.logAction(user, AuditAction.Create, FormEntity.class, Map.of(
+                "id", createdFormEntity.getId(),
+                "slug", createdFormEntity.getSlug(),
+                "title", createdFormEntity.getInternalTitle(),
+                "developingDepartmentId", createdFormEntity.getDevelopingDepartmentId()
         ));
+
+        // create the initial version
+        var createdVersionEntity = formVersionService
+                .create(
+                        requestDTO
+                                .toFormVersionEntity()
+                                .setFormId(createdFormEntity.getId())
+                );
+        auditService.logAction(user, AuditAction.Create, FormVersionEntity.class, Map.of(
+                "formId", createdVersionEntity.getFormId(),
+                "version", createdVersionEntity.getVersion()
+        ));
+
+        var createdForm = FormVersionWithDetailsEntity
+                .of(createdFormEntity, createdVersionEntity);
 
         // Send a message about the form creation to the department
         try {
@@ -171,10 +194,11 @@ public class FormController {
      * @param formId The id of the form.
      * @return The form as a DTO.
      */
-    @GetMapping("{formId}/")
+    @GetMapping("{formId}/{formVersion}/")
     public FormDetailsResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         // Check if the user is a staff user
         var user = UserService
@@ -182,9 +206,10 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Create a form filter
-        var formSpec = FormWithMembershipFilter
+        var formSpec = FormVersionWithMembershipFilter
                 .create()
                 .setId(formId)
+                .setVersion(formVersion)
                 .setUserId(user.getId())
                 .build();
 
@@ -206,10 +231,11 @@ public class FormController {
      * @param requestDTO The form request DTO containing the form data.
      * @return The form as a DTO.
      */
-    @PutMapping("{formId}/")
+    @PutMapping("{formId}/{formVersion}/")
     public FormDetailsResponseDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion,
             @Nonnull @Valid @RequestBody FormRequestDTO requestDTO
     ) throws ResponseException {
         // Extract staff user
@@ -230,14 +256,14 @@ public class FormController {
         checkFormLock(formId, user);
 
         // Fetch the existing form
-        var existingForm = formService
-                .retrieve(formId)
+        var existingForm = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
         // Create a lock for the form
         try {
             formLockService
-                    .create(new FormLock()
+                    .create(new FormLockCacheEntity()
                             .setFormId(formId)
                             .setUserId(user.getId()));
         } catch (ResponseException e) {
@@ -253,45 +279,56 @@ public class FormController {
 
         // Convert the request DTO to an entity
         var formToUpdate = requestDTO
-                .toEntity();
+                .toFormEntity();
+        var versionToUpdate = requestDTO
+                .toFormVersionEntity();
 
         // Recalculate referenced IDs for all elements in the form
         ElementStreamUtils
-                .applyAction(formToUpdate.getRoot(), BaseElement::recalculateReferencedIds);
+                .applyAction(versionToUpdate.getRootElement(), BaseElement::recalculateReferencedIds);
 
         // Update the form
         var updatedForm = formService
                 .update(formId, formToUpdate);
+        var updatedVersion = formVersionService
+                .update(FormVersionEntityId.of(formId, formVersion), versionToUpdate);
 
         // Log the form update
-        auditService.logAction(user, AuditAction.Update, Form.class, Map.of(
+        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
                 "formId", updatedForm.getId(),
                 "formSlug", updatedForm.getSlug(),
-                "formVersion", updatedForm.getVersion(),
                 "developingDepartmentId", updatedForm.getDevelopingDepartmentId()
         ));
+        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+                "formId", updatedVersion.getFormId(),
+                "formVersion", updatedVersion.getVersion()
+        ));
+
+        var form = FormVersionWithDetailsEntity.of(updatedForm, updatedVersion);
 
         // Create a revision for the form
-        formRevisionService.create(user, updatedForm, existingForm);
+        formRevisionService.create(user, form, existingForm);
 
         // Return the form as a DTO
-        return FormDetailsResponseDTO.fromEntity(updatedForm);
+        return FormDetailsResponseDTO.fromEntity(form);
     }
 
-    @GetMapping("{formId}/check-publish/")
+    @GetMapping("{formId}/{formVersion}/check-publish/")
     public List<FormPublishChecklistItem> checkPublish(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var form = formService
-                .retrieve(formId)
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
-        return formService.getFormPublishChecklist(form);
+        return formVersionWithDetailsService
+                .getFormPublishChecklist(form);
     }
 
     /**
@@ -303,10 +340,11 @@ public class FormController {
      * @param formId The id of the form.
      * @return The form as a DTO.
      */
-    @PutMapping("{formId}/publish/")
+    @PutMapping("{formId}/{formVersion}/publish/")
     public FormDetailsResponseDTO publish(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         // Extract staff user
         var user = UserService
@@ -314,8 +352,8 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Retrieve the form by its id
-        var form = formService
-                .retrieve(formId)
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in and is allowed to publish the form
@@ -343,14 +381,14 @@ public class FormController {
                 .clone();
 
         // Publish the form
-        var publishedForm = formService
+        var publishedForm = formVersionWithDetailsService
                 .publish(form);
 
         // Log the form publication
         auditService.logAction(
                 user,
                 AuditAction.Update,
-                Form.class,
+                FormVersionEntity.class,
                 Map.of(
                         "formId", form.getId(),
                         "formSlug", form.getSlug(),
@@ -389,10 +427,11 @@ public class FormController {
      * @param formId The id of the form.
      * @return The form as a DTO.
      */
-    @PutMapping("{formId}/revoke/")
+    @PutMapping("{formId}/{formVersion}/revoke/")
     public FormDetailsResponseDTO revoke(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         // Extract staff user
         var user = UserService
@@ -400,8 +439,8 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Retrieve the form by its id
-        var form = formService
-                .retrieve(formId)
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
@@ -421,14 +460,14 @@ public class FormController {
                 .clone();
 
         // Revoke the form
-        var revokedForm = formService
+        var revokedForm = formVersionWithDetailsService
                 .revoke(form);
 
         // Log the form revocation
         auditService.logAction(
                 user,
                 AuditAction.Update,
-                Form.class,
+                FormVersionEntity.class,
                 Map.of(
                         "formId", form.getId(),
                         "formSlug", form.getSlug(),
@@ -465,10 +504,11 @@ public class FormController {
      * @param jwt    The authentication object.
      * @param formId The id of the form.
      */
-    @DeleteMapping("{formId}/")
+    @DeleteMapping("{formId}/{formVersion}/")
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
         // Extract staff user
         var user = UserService
@@ -476,8 +516,8 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Retrieve the form by its id
-        var form = formService
-                .retrieve(formId)
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
@@ -498,12 +538,12 @@ public class FormController {
         auditService.logAction(
                 user,
                 AuditAction.Delete,
-                Form.class,
+                FormVersionEntity.class,
                 Map.of(
-                        "formId", deletedForm.getId(),
-                        "formSlug", deletedForm.getSlug(),
-                        "formVersion", deletedForm.getVersion(),
-                        "developingDepartmentId", deletedForm.getDevelopingDepartmentId()
+                        "formId", form.getId(),
+                        "formSlug", form.getSlug(),
+                        "formVersion", form.getVersion(),
+                        "developingDepartmentId", form.getDevelopingDepartmentId()
                 )
         );
 

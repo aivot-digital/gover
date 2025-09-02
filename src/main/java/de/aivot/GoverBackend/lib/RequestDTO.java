@@ -1,5 +1,5 @@
 package de.aivot.GoverBackend.lib;
 
-public interface ReqeustDTO<T> {
+public interface RequestDTO<T> {
     T toEntity();
 }

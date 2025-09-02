@@ -6,21 +6,24 @@ import jakarta.annotation.Nonnull;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.UUID;
 
 public record IdentityData(
         @Nonnull
         String identityId,
         @Nonnull
-        String providerKey,
+        UUID providerKey,
         @Nonnull
         String metadataIdentifier,
         @Nonnull
         Map<String, String> attributes
 ) implements Serializable {
     public static IdentityData from(@Nonnull String identityId, @Nonnull IdentityCacheEntity entity) {
+        var uuid = UUID.fromString(entity.getProviderKey());
+
         return new IdentityData(
                 identityId,
-                entity.getProviderKey(),
+                uuid,
                 entity.getMetadataIdentifier(),
                 entity.getIdentityData()
         );

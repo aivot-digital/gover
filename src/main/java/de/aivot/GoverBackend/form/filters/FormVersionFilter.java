@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.filters;
 
 import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.lib.models.Filter;
@@ -10,7 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import javax.annotation.Nonnull;
 import java.util.UUID;
 
-public class FormVersionFilter implements Filter<FormEntity> {
+public class FormVersionFilter implements Filter<FormVersionEntity> {
     private Integer formId;
     private Integer version;
     private FormType type;
@@ -34,9 +35,9 @@ public class FormVersionFilter implements Filter<FormEntity> {
 
     @Nonnull
     @Override
-    public Specification<FormEntity> build() {
+    public Specification<FormVersionEntity> build() {
         var builder = SpecificationBuilder
-                .create(FormEntity.class)
+                .create(FormVersionEntity.class)
                 .withEquals("formId", formId)
                 .withEquals("version", version)
                 .withEquals("type", type)

@@ -1,9 +1,8 @@
 package de.aivot.GoverBackend.form.dtos;
 
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
@@ -16,9 +15,8 @@ import java.util.UUID;
 public record FormDetailsResponseDTO(
         Integer id,
         String slug,
-        String version,
+        Integer version,
         String title,
-        FormStatus status,
         FormType type,
         RootElement root,
         Integer destinationId,
@@ -35,7 +33,7 @@ public record FormDetailsResponseDTO(
         LocalDateTime updated,
         Integer customerAccessHours,
         Integer submissionDeletionWeeks,
-        String pdfBodyTemplateKey,
+        UUID pdfBodyTemplateKey,
         Collection<PaymentProduct> products,
         String paymentPurpose,
         String paymentDescription,
@@ -43,15 +41,14 @@ public record FormDetailsResponseDTO(
         Boolean identityRequired,
         List<IdentityProviderLink> identityProviders
 ) {
-    public static FormDetailsResponseDTO fromEntity(Form form) {
+    public static FormDetailsResponseDTO fromEntity(FormVersionWithDetailsEntity form) {
         return new FormDetailsResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getVersion(),
-                form.getTitle(),
-                form.getStatus(),
+                form.getInternalTitle(),
                 form.getType(),
-                form.getRoot(),
+                form.getRootElement(),
                 form.getDestinationId(),
                 form.getLegalSupportDepartmentId(),
                 form.getTechnicalSupportDepartmentId(),
@@ -65,13 +62,13 @@ public record FormDetailsResponseDTO(
                 form.getCreated(),
                 form.getUpdated(),
                 form.getCustomerAccessHours(),
-                form.getSubmissionDeletionWeeks(),
-                form.getPdfBodyTemplateKey(),
-                form.getProducts(),
+                form.getSubmissionRetentionWeeks(),
+                form.getPdfTemplateKey(),
+                form.getPaymentProducts(),
                 form.getPaymentPurpose(),
                 form.getPaymentDescription(),
-                form.getPaymentProvider(),
-                form.getIdentityRequired(),
+                form.getPaymentProviderKey(),
+                form.getIdentityVerificationRequired(),
                 form.getIdentityProviders()
         );
     }
@@ -80,32 +77,31 @@ public record FormDetailsResponseDTO(
         return new FormDetailsResponseDTO(
                 form.getId(),
                 form.getSlug(),
-                null, // TODO form.getVersion(),
-                form.getTitle(),
-                null, // TODO form.getStatus(),
-                null, // TODO form.getType(),
-                null, // TODO form.getRoot(),
-                null, // TODO form.getDestinationId(),
-                null, // TODO form.getLegalSupportDepartmentId(),
-                null, // TODO form.getTechnicalSupportDepartmentId(),
-                null, // TODO form.getImprintDepartmentId(),
-                null, // TODO form.getPrivacyDepartmentId(),
-                null, // TODO form.getAccessibilityDepartmentId(),
+                form.getVersion(),
+                form.getInternalTitle(),
+                form.getType(),
+                form.getRootElement(),
+                form.getDestinationId(),
+                form.getLegalSupportDepartmentId(),
+                form.getTechnicalSupportDepartmentId(),
+                form.getImprintDepartmentId(),
+                form.getPrivacyDepartmentId(),
+                form.getAccessibilityDepartmentId(),
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
-                null, // TODO form.getThemeId(),
+                form.getThemeId(),
                 form.getCreated(),
                 form.getUpdated(),
-                null, // TODO form.getCustomerAccessHours(),
-                null, // TODO form.getSubmissionDeletionWeeks(),
-                null, // TODO form.getPdfBodyTemplateKey(),
-                null, // TODO form.getProducts(),
-                null, // TODO form.getPaymentPurpose(),
-                null, // TODO form.getPaymentDescription(),
-                null, // TODO form.getPaymentProvider(),
-                null, // TODO form.getIdentityRequired(),
-                null // TODO form.getIdentityProviders()
+                form.getCustomerAccessHours(),
+                form.getSubmissionRetentionWeeks(),
+                form.getPdfTemplateKey(),
+                form.getPaymentProducts(),
+                form.getPaymentPurpose(),
+                form.getPaymentDescription(),
+                form.getPaymentProviderKey(),
+                form.getIdentityVerificationRequired(),
+                form.getIdentityProviders()
         );
     }
 }

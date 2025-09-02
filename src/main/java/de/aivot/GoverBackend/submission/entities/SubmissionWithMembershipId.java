@@ -5,14 +5,16 @@ import java.util.Objects;
 public class SubmissionWithMembershipId {
     private String id;
     private Integer formId;
+    private Integer formVersion;
     private String userId;
 
     public SubmissionWithMembershipId() {
     }
 
-    public SubmissionWithMembershipId(String id, Integer formId, String userId) {
+    public SubmissionWithMembershipId(String id, Integer formId, Integer formVersion, String userId) {
         this.id = id;
         this.formId = formId;
+        this.formVersion = formVersion;
         this.userId = userId;
     }
 
@@ -21,13 +23,14 @@ public class SubmissionWithMembershipId {
         if (object == null || getClass() != object.getClass()) return false;
 
         SubmissionWithMembershipId that = (SubmissionWithMembershipId) object;
-        return Objects.equals(id, that.id) && Objects.equals(formId, that.formId) && Objects.equals(userId, that.userId);
+        return Objects.equals(id, that.id) && Objects.equals(formId, that.formId) && Objects.equals(formVersion, that.formVersion) && Objects.equals(userId, that.userId);
     }
 
     @Override
     public int hashCode() {
         int result = Objects.hashCode(id);
         result = 31 * result + Objects.hashCode(formId);
+        result = 31 * result + Objects.hashCode(formVersion);
         result = 31 * result + Objects.hashCode(userId);
         return result;
     }
@@ -47,6 +50,15 @@ public class SubmissionWithMembershipId {
 
     public SubmissionWithMembershipId setFormId(Integer formId) {
         this.formId = formId;
+        return this;
+    }
+
+    public Integer getFormVersion() {
+        return formVersion;
+    }
+
+    public SubmissionWithMembershipId setFormVersion(Integer formVersion) {
+        this.formVersion = formVersion;
         return this;
     }
 

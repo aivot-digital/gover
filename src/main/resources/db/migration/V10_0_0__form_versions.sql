@@ -171,6 +171,9 @@ alter table forms
 update forms as fms
 set public_title = fms.root ->> 'headline';
 
+alter table forms
+    rename column title to internal_title;
+
 -- create a column with the current published and draft version for forms
 alter table forms
     add column published_version smallint null,
@@ -219,7 +222,7 @@ alter table forms
 create view form_version_with_details as
 select fms.id,
        fms.slug,
-       fms.title,
+       fms.internal_title,
        fms.public_title,
        fms.developing_department_id,
        fms.managing_department_id,
@@ -275,7 +278,7 @@ create view submissions_with_memberships as
 select subs.*,
 
        fms.slug                            as form_slug,
-       fms.title                           as form_title,
+       fms.internal_title                  as form_internal_title,
        fms.public_title                    as form_public_title,
        fms.developing_department_id        as form_developing_department_id,
        fms.managing_department_id          as form_managing_department_id,
@@ -323,82 +326,10 @@ from submissions as subs
          inner join form_versions_with_memberships as fms
                     on subs.form_id = fms.id and subs.form_version = fms.version;
 
--- start legacy slugs
+-- create table for form slug history
 
 create table form_slug_history
 (
     slug    varchar(255) primary key,
     form_id int not null references forms (id) on delete cascade
 );
-
-create function handle_form_slug_update()
-    returns trigger
-    language plpgsql
-as
-$$
-begin
-    if old.slug <> new.slug then
-        if exists(select 1 from form_slug_history where slug = new.slug and form_id = new.form_id) then
-            delete from form_slug_history where slug = new.slug and form_id = new.form_id;
-            insert into form_slug_history (slug, form_id) values (old.slug, old.id);
-            return new;
-        end if;
-
-        if exists(select 1 from form_slug_history where slug = new.slug and form_id <> new.form_id) then
-            raise exception 'Slug % already exists in slug history for another form', new.slug;
-        end if;
-
-        insert into form_slug_history (slug, form_id) values (old.slug, old.id);
-    end if;
-
-    return new;
-end
-$$;
-
-create trigger on_form_slug_update
-    after update
-    on forms
-    for each row
-execute function handle_form_slug_update();
-
--- create triggers for settings revoked and published timestamps in form_versions
-
-create function handle_form_version_update()
-    returns trigger
-    language plpgsql
-as
-$$
-begin
-    if old.published_version is null and new.published_version is not null then
-        update form_versions
-        set published = now()
-        where form_id = new.id
-          and version = new.published_version;
-    end if;
-
-    if old.published_version is not null and new.published_version is null then
-        update form_versions
-        set revoked = now()
-        where form_id = new.id
-          and version = old.published_version;
-    end if;
-
-    if old.published_version is distinct from new.published_version then
-        update form_versions
-        set revoked = now()
-        where form_id = new.id
-          and version = old.published_version;
-
-        update form_versions
-        set published = now()
-        where form_id = new.id
-          and version = new.published_version;
-    end if;
-end
-$$;
-
-create trigger on_form_version_update
-    after update
-    on forms
-    for each row
-execute function handle_form_version_update();

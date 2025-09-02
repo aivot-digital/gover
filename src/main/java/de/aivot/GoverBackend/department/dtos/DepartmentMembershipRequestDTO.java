@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.department.dtos;
 
 import de.aivot.GoverBackend.department.entities.DepartmentMembershipEntity;
 import de.aivot.GoverBackend.enums.UserRole;
-import de.aivot.GoverBackend.lib.ReqeustDTO;
+import de.aivot.GoverBackend.lib.RequestDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
@@ -23,7 +23,7 @@ public record DepartmentMembershipRequestDTO(
         @Nonnull
         @NotNull(message = "Role cannot be null")
         UserRole role
-) implements ReqeustDTO<DepartmentMembershipEntity> {
+) implements RequestDTO<DepartmentMembershipEntity> {
     @Override
     public DepartmentMembershipEntity toEntity() {
         var membership = new DepartmentMembershipEntity();

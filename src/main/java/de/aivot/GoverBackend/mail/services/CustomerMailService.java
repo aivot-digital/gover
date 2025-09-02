@@ -1,15 +1,16 @@
 package de.aivot.GoverBackend.mail.services;
 
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
+import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
-import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
-import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
-import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
-import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.services.PdfService;
+import de.aivot.GoverBackend.submission.entities.Submission;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -26,25 +27,26 @@ import java.util.Optional;
 public class CustomerMailService {
     private final MailService mailService;
     private final DepartmentRepository departmentRepository;
-    private final FormRepository formRepository;
     private final PdfService pdfService;
+    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
-    public CustomerMailService(
-            MailService mailService,
-            DepartmentRepository departmentRepository,
-            FormRepository formRepository,
-            PdfService pdfService
-    ) {
+    public CustomerMailService(MailService mailService,
+                               DepartmentRepository departmentRepository,
+                               PdfService pdfService,
+                               FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.mailService = mailService;
         this.departmentRepository = departmentRepository;
-        this.formRepository = formRepository;
         this.pdfService = pdfService;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
 
     public void sendSubmissionCopy(String to, Submission submission) throws MessagingException, IOException, ResponseException {
-        Form form = formRepository
-                .findById(submission.getFormId())
+        var id = FormVersionWithDetailsEntityId
+                .of(submission.getFormId(), submission.getFormVersion());
+
+        FormVersionWithDetailsEntity form = formVersionWithDetailsRepository
+                .findById(id)
                 .orElseThrow(() -> new RuntimeException("No form " + submission.getFormId() + " found for submission " + submission.getId()));
 
         DepartmentEntity department;
@@ -62,7 +64,7 @@ public class CustomerMailService {
                     .orElseThrow(() -> new RuntimeException("No developing department " + form.getDevelopingDepartmentId() + " found for form " + form.getId()));
         }
 
-        String title = "Ihre eingereichten Daten für das Formular \"" + form.getApplicationTitle() + "\"";
+        String title = "Ihre eingereichten Daten für das Formular \"" + form.getPublicTitle() + "\"";
 
         var context = new HashMap<String, Object>();
         context.put("title", title);

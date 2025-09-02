@@ -45,6 +45,34 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST controller for citizen-facing form operations.
+ * <p>
+ * Provides public API endpoints for listing, retrieving, and interacting with published forms.
+ * Handles cost calculation, file size limits, identity provider listing, and element data derivation.
+ * <p>
+ * Endpoints:
+ * <ul>
+ *   <li>List published forms</li>
+ *   <li>Retrieve form details</li>
+ *   <li>Get max file size for attachments</li>
+ *   <li>Calculate submission costs</li>
+ *   <li>List enabled identity providers</li>
+ *   <li>Derive computed element data</li>
+ * </ul>
+ * <p>
+ * Security:
+ * <ul>
+ *   <li>Supports JWT authentication for user context</li>
+ *   <li>Handles both authenticated and unauthenticated access</li>
+ * </ul>
+ * <p>
+ * Error Handling:
+ * <ul>
+ *   <li>Throws ResponseException for not found/invalid requests</li>
+ *   <li>Throws PaymentException for payment errors</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/public/forms/")
 public class CitizenFormController {
@@ -72,6 +100,15 @@ public class CitizenFormController {
         this.elementDerivationService = elementDerivationService;
     }
 
+    /**
+     * Lists all published forms available to citizens.
+     *
+     * @param jwt JWT token for authentication (optional).
+     * @param pageable Pagination and sorting information.
+     * @param filter Filter criteria for forms.
+     * @return Page of FormCitizenListResponseDTO representing published forms.
+     * @throws ResponseException if an error occurs during retrieval.
+     */
     @GetMapping("")
     public Page<FormCitizenListResponseDTO> list(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                  @Nonnull @PageableDefault Pageable pageable,
@@ -81,6 +118,16 @@ public class CitizenFormController {
                 .map(FormCitizenListResponseDTO::fromEntity);
     }
 
+    /**
+     * Retrieves details of a specific published form version for citizens.
+     *
+     * @param jwt JWT token for authentication (optional).
+     * @param slug Unique identifier for the form.
+     * @param version Optional version number of the form.
+     * @param identityId Optional identity cache ID for user context.
+     * @return FormCitizenDetailsResponseDTO containing form details.
+     * @throws ResponseException if the form is not found or invalid.
+     */
     @GetMapping("{slug}/")
     public FormCitizenDetailsResponseDTO retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                   @Nonnull @PathVariable String slug,
@@ -92,7 +139,7 @@ public class CitizenFormController {
                 .findById(identityId);
 
         var obfuscateSteps = (
-                formVersion.getFormType() == FormType.Internal &&
+                formVersion.getType() == FormType.Internal &&
                 formVersion.getIdentityVerificationRequired() &&
                 identityCache.isEmpty()
         );
@@ -101,7 +148,15 @@ public class CitizenFormController {
                 .fromEntity(formVersion, obfuscateSteps);
     }
 
-
+    /**
+     * Gets the maximum allowed file size for attachments for a specific form version.
+     *
+     * @param jwt JWT token for authentication (optional).
+     * @param slug Unique identifier for the form.
+     * @param version Optional version number of the form.
+     * @return MaxFileSizeDto containing the maximum file size in megabytes.
+     * @throws ResponseException if the form is not found or invalid.
+     */
     @GetMapping("{slug}/max-file-size/")
     public MaxFileSizeDto getMaxFileSize(@Nullable @AuthenticationPrincipal Jwt jwt,
                                          @Nonnull @PathVariable String slug,
@@ -129,6 +184,17 @@ public class CitizenFormController {
         return maxFileSizeDto;
     }
 
+    /**
+     * Calculates the total costs for a form submission based on user input data.
+     *
+     * @param jwt JWT token for authentication (optional).
+     * @param slug Unique identifier for the form.
+     * @param version Optional version number of the form.
+     * @param customerData User-provided data for cost calculation.
+     * @return FormCostCalculationResponseDTO containing cost details and payment items.
+     * @throws PaymentException if payment calculation fails.
+     * @throws ResponseException if the form is not found or invalid.
+     */
     @PostMapping("{slug}/costs/")
     public FormCostCalculationResponseDTO calculateCosts(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                          @Nonnull @PathVariable String slug,
@@ -165,6 +231,15 @@ public class CitizenFormController {
         return new FormCostCalculationResponseDTO(costs, paymentItems, paymentProviderDefinition.get().getProviderName());
     }
 
+    /**
+     * Lists enabled identity providers for a specific form version.
+     *
+     * @param jwt JWT token for authentication (optional).
+     * @param slug Unique identifier for the form.
+     * @param version Optional version number of the form.
+     * @return Page of IdentityDetailsDTO representing enabled identity providers.
+     * @throws ResponseException if the form is not found or invalid.
+     */
     @GetMapping("{slug}/identity-providers/")
     public Page<IdentityDetailsDTO> getIdentityProviders(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                          @Nonnull @PathVariable String slug,
@@ -196,6 +271,20 @@ public class CitizenFormController {
                 .map(IdentityDetailsDTO::from);
     }
 
+    /**
+     * Derives computed element data for a form, including error and visibility handling.
+     *
+     * @param jwt JWT token for authentication (optional).
+     * @param slug Unique identifier for the form.
+     * @param version Optional version number of the form.
+     * @param elementData User-provided element data for derivation.
+     * @param skipErrorsFor List of element IDs to skip error calculation for.
+     * @param skipVisibilitiesFor List of element IDs to skip visibility calculation for.
+     * @param skipValuesFor List of element IDs to skip value calculation for.
+     * @param skipOverridesFor List of element IDs to skip override calculation for.
+     * @return Derived ElementData with computed values, errors, and visibilities.
+     * @throws ResponseException if the form is not found or invalid.
+     */
     @PostMapping("{slug}/derive")
     public ElementData derive(@Nullable @AuthenticationPrincipal Jwt jwt,
                               @Nonnull @PathVariable String slug,
@@ -236,6 +325,15 @@ public class CitizenFormController {
         return derivedElementData;
     }
 
+    /**
+     * Retrieves the form version entity for a given slug and version, considering authentication context.
+     *
+     * @param slug Unique identifier for the form.
+     * @param version Optional version number of the form.
+     * @param jwt JWT token for authentication (optional).
+     * @return FormVersionWithDetailsEntity for the requested form and version.
+     * @throws ResponseException if the form is not found or invalid.
+     */
     private FormVersionWithDetailsEntity getFormVersionWithDetailsEntity(@Nonnull String slug,
                                                                          @Nullable Integer version,
                                                                          @Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {

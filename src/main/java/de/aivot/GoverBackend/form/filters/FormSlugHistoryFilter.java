@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.form.filters;
 
-import de.aivot.GoverBackend.form.entities.FormRevision;
+import de.aivot.GoverBackend.form.entities.FormSlugHistoryEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.annotation.Nonnull;
 
-public class FormSlugHistoryFilter implements Filter<FormRevision> {
+public class FormSlugHistoryFilter implements Filter<FormSlugHistoryEntity> {
     private String slug;
     private Integer formId;
 
@@ -17,9 +17,9 @@ public class FormSlugHistoryFilter implements Filter<FormRevision> {
 
     @Nonnull
     @Override
-    public Specification<FormRevision> build() {
+    public Specification<FormSlugHistoryEntity> build() {
         return SpecificationBuilder
-                .create(FormRevision.class)
+                .create(FormSlugHistoryEntity.class)
                 .withEquals("slug", slug)
                 .withEquals("formId", formId)
                 .build();

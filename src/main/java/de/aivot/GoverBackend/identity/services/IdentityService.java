@@ -81,7 +81,7 @@ public class IdentityService {
      */
     @Nonnull
     public URI createRedirectURL(
-            @Nullable String providerKey,
+            @Nullable UUID providerKey,
             @Nonnull URI callbackBaseUrl,
             @Nullable String origin,
             @Nullable List<String> additionalScopes
@@ -129,7 +129,7 @@ public class IdentityService {
      */
     @Nonnull
     public String handleCallback(
-            @Nullable String providerKey,
+            @Nullable UUID providerKey,
             @Nullable String authorizationCode,
             @Nonnull URI callbackBaseUrl,
             @Nonnull String origin
@@ -162,7 +162,7 @@ public class IdentityService {
                 .setId(UUID.randomUUID().toString())
                 .setIdentityData(userInfo)
                 .setMetadataIdentifier(provider.getMetadataIdentifier())
-                .setProviderKey(provider.getKey());
+                .setProviderKey(provider.getKey().toString());
 
         identityEntity = identityCacheRepository
                 .save(identityEntity);
@@ -244,7 +244,7 @@ public class IdentityService {
      * @throws ResponseException If the provider key is missing, the provider does not exist, or the provider is not enabled.
      */
     @Nonnull
-    private IdentityProviderEntity getIdentityProviderEntity(@Nullable String providerKey) throws ResponseException {
+    private IdentityProviderEntity getIdentityProviderEntity(@Nullable UUID providerKey) throws ResponseException {
         // Check if the provider key is null
         if (providerKey == null) {
             throw ResponseException

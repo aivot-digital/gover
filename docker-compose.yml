@@ -108,6 +108,7 @@ services:
       QUARKUS_HTTP_LIMITS_MAX_FORM_ATTRIBUTE_SIZE: "10M"
     networks:
       - keycloak
+      - keycloak_config_network
       - common
     labels:
       - "traefik.http.routers.keycloak.rule=Host(`{{ HOSTNAME }}`) && PathPrefix(`/idp`)" # Setzen Sie die Regel für den Reverse-Proxy Traefik. Passen Sie den Hostnamen unbedingt an.
@@ -115,6 +116,13 @@ services:
       - "traefik.http.routers.keycloak.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
       - "traefik.http.routers.keycloak.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
 
+  keycloak_sidecar:
+    image: ""
+    restart: on-failure
+    depends_on:
+      - keycloak
+    networks:
+      - keycloak_config_network
 
   gover:
     image: ghcr.io/aivot-digital/gover:4.5.3

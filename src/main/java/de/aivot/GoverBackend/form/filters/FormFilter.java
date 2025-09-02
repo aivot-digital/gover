@@ -7,10 +7,11 @@ import org.springframework.data.jpa.domain.Specification;
 
 import javax.annotation.Nonnull;
 
-public class XFormFilter implements Filter<FormEntity> {
+public class FormFilter implements Filter<FormEntity> {
     private Integer id;
     private String slug;
     private String title;
+    private String publicTitle;
     private Integer developingDepartmentId;
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
@@ -29,7 +30,7 @@ public class XFormFilter implements Filter<FormEntity> {
                 .withEquals("id", id)
                 .withContains("slug", slug)
                 .withContains("title", title)
-                .withContains("publicTitle", title)
+                .withContains("publicTitle", publicTitle)
                 .withEquals("developingDepartmentId", developingDepartmentId)
                 .withEquals("managingDepartmentId", managingDepartmentId)
                 .withEquals("responsibleDepartmentId", responsibleDepartmentId)
@@ -62,6 +63,15 @@ public class XFormFilter implements Filter<FormEntity> {
 
     public FormFilter setTitle(String title) {
         this.title = title;
+        return this;
+    }
+
+    public String getPublicTitle() {
+        return publicTitle;
+    }
+
+    public FormFilter setPublicTitle(String publicTitle) {
+        this.publicTitle = publicTitle;
         return this;
     }
 

@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadField
 import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
@@ -35,7 +35,7 @@ public class DestinationDataFormatter {
     private final Map<String, Object> data;
     private static final String destinationSkipKey = "#";
 
-    private final Form form;
+    private final FormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;
     private final PaymentProviderEntity paymentProvider;
@@ -44,7 +44,7 @@ public class DestinationDataFormatter {
 
     private DestinationDataFormatter(
             @Nonnull
-            Form form,
+            FormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -67,7 +67,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
-            Form form,
+            FormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -86,7 +86,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter create(
             @Nonnull
-            Form form,
+            FormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -132,10 +132,10 @@ public class DestinationDataFormatter {
 
     private void createFormData() {
         insertValue("form.id", form.getId());
-        insertValue("form.name", form.getTitle());
+        insertValue("form.name", form.getInternalTitle());
         insertValue("form.slug", form.getSlug());
         insertValue("form.version", form.getVersion());
-        insertValue("form.headline", form.getFormTitle());
+        insertValue("form.headline", form.getPublicTitle());
         insertValue("form.managing_department_id", form.getManagingDepartmentId());
         insertValue("form.responsible_department_id", form.getResponsibleDepartmentId());
         insertValue("form.developing_department_id", form.getDevelopingDepartmentId());
@@ -178,7 +178,7 @@ public class DestinationDataFormatter {
 
     private void createCustomerData() {
         Map<String, Object> customerData = new HashMap<>();
-        extractDataFromElement(customerData, form.getRoot(), null);
+        extractDataFromElement(customerData, form.getRootElement(), null);
         data.put("data", customerData);
     }
 

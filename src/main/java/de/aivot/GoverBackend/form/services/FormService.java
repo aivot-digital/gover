@@ -2,9 +2,8 @@ package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
-import de.aivot.GoverBackend.form.entities.Form;
 import de.aivot.GoverBackend.form.entities.FormEntity;
-import de.aivot.GoverBackend.form.enums.FormStatus;
+import de.aivot.GoverBackend.form.entities.FormSlugHistoryEntity;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormSlugHistoryRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -78,12 +77,21 @@ public class FormService implements EntityService<FormEntity, Integer> {
         var cleanedForm = cleanForm(existingForm, updatedForm);
 
         existingForm.setSlug(updatedForm.getSlug());
-        existingForm.setTitle(cleanedForm.getTitle());
+        existingForm.setInternalTitle(cleanedForm.getInternalTitle());
         existingForm.setPublicTitle(cleanedForm.getPublicTitle());
 
         existingForm.setDevelopingDepartmentId(cleanedForm.getDevelopingDepartmentId());
         existingForm.setManagingDepartmentId(cleanedForm.getManagingDepartmentId());
         existingForm.setResponsibleDepartmentId(cleanedForm.getResponsibleDepartmentId());
+
+        if (formSlugHistoryRepository.existsById(existingForm.getSlug())) {
+            formSlugHistoryRepository.deleteById(existingForm.getSlug());
+        } else {
+            var historyEntry = new FormSlugHistoryEntity();
+            historyEntry.setSlug(existingForm.getSlug());
+            historyEntry.setFormId(existingForm.getId());
+            formSlugHistoryRepository.save(historyEntry);
+        }
 
         return repository.save(existingForm);
     }
@@ -153,7 +161,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
             if (repository.existsBySlugAndIdIsNot(updated.getSlug(), prev.getId())) {
                 throw new ResponseException(HttpStatus.CONFLICT, "Es existiert bereits ein Formular mit dieser URL");
             }
-            if (formSlugHistoryRepository.existsBySlugAndFormIdIsNot(updated.getSlug(),  prev.getId())) {
+            if (formSlugHistoryRepository.existsBySlugAndFormIdIsNot(updated.getSlug(), prev.getId())) {
                 throw new ResponseException(HttpStatus.CONFLICT, "Es existiert bereits ein Formular, dass diese URL zuvor verwendet hat");
             }
         }

@@ -5,7 +5,11 @@ import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.filters.FormVersionFilter;
+import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormRevisionService;
 import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -41,6 +45,8 @@ public class PaymentProviderController {
     private final PaymentProviderTestService paymentProviderTestService;
     private final FormRepository formRepository;
     private final FormRevisionService formRevisionService;
+    private final FormVersionRepository formVersionRepository;
+    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
     public PaymentProviderController(
@@ -48,12 +54,14 @@ public class PaymentProviderController {
             PaymentProviderService paymentProviderService,
             PaymentProviderTestService paymentProviderTestService,
             FormRepository formRepository,
-            FormRevisionService formRevisionService) {
+            FormRevisionService formRevisionService, FormVersionRepository formVersionRepository, FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.auditService = auditService.createScopedAuditService(PaymentProviderController.class);
         this.paymentProviderService = paymentProviderService;
         this.paymentProviderTestService = paymentProviderTestService;
         this.formRepository = formRepository;
         this.formRevisionService = formRevisionService;
+        this.formVersionRepository = formVersionRepository;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
 
     @GetMapping("")
@@ -127,27 +135,27 @@ public class PaymentProviderController {
                 .orElseThrow(ResponseException::notFound);
 
         if (existing.getIsEnabled() && !requestDTO.isEnabled()) {
-            var filterAllPublishedForms = FormFilter
+            var filterAllPublishedForms = FormVersionWithDetailsFilter
                     .create()
-                    .setPaymentProvider(key)
-                    .setStatus(FormStatus.Published)
+                    .setPaymentProviderKey(key)
+                    .setPublished(true)
                     .build();
 
-            if (formRepository.exists(filterAllPublishedForms)) {
+            if (formVersionWithDetailsRepository.exists(filterAllPublishedForms)) {
                 throw ResponseException.conflict(
                         "Der Zahlungsanbieter kann nicht deaktiviert werden, da er noch in einem oder mehreren Formularen verwendet wird."
                 );
             } else {
-                var filterAllRelatedForms = FormFilter
+                var filterAllRelatedForms = FormVersionWithDetailsFilter
                         .create()
-                        .setPaymentProvider(key)
+                        .setPaymentProviderKey(key)
                         .build();
 
-                for (var form : formRepository.findAll(filterAllRelatedForms)) {
+                for (var form : formVersionWithDetailsRepository.findAll(filterAllRelatedForms)) {
                     var formClone = form.clone();
 
-                    form.setPaymentProvider(null);
-                    formRepository.save(form);
+                    form.setPaymentProviderKey(null);
+                    formVersionRepository.save(form.toVersionEntity());
 
                     formRevisionService
                             .create(user, form, formClone);

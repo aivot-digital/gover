@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.form.filters;
 
-import de.aivot.GoverBackend.form.entities.FormRevision;
+import de.aivot.GoverBackend.form.entities.FormRevisionEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.annotation.Nonnull;
 
-public class FormRevisionFilter implements Filter<FormRevision> {
+public class FormRevisionFilter implements Filter<FormRevisionEntity> {
     private Integer formId;
     private Integer formVersion;
     private String userId;
@@ -18,9 +18,9 @@ public class FormRevisionFilter implements Filter<FormRevision> {
 
     @Nonnull
     @Override
-    public Specification<FormRevision> build() {
+    public Specification<FormRevisionEntity> build() {
         return SpecificationBuilder
-                .create(FormRevision.class)
+                .create(FormRevisionEntity.class)
                 .withEquals("formId", formId)
                 .withEquals("formVersion", formVersion)
                 .withEquals("userId", userId)

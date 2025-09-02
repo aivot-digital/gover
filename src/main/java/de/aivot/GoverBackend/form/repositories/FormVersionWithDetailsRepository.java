@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.form.repositories;
 
+import de.aivot.GoverBackend.core.repositories.ReadOnlyRepository;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.enums.FormStatus;
@@ -11,34 +12,17 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Optional;
 
-public interface FormVersionWithDetailsRepository extends JpaRepository<FormVersionWithDetailsEntity, FormVersionWithDetailsEntityId>, JpaSpecificationExecutor<FormVersionWithDetailsEntity> {
-    Page<FormVersionWithDetailsEntity> findAllByPublishedIsNotNullAndRevokedIsNull(Pageable pageable, Specification<FormVersionWithDetailsEntity> specification);
+public interface FormVersionWithDetailsRepository extends ReadOnlyRepository<FormVersionWithDetailsEntity, FormVersionWithDetailsEntityId>, JpaSpecificationExecutor<FormVersionWithDetailsEntity> {
+    @Nonnull
+    Page<FormVersionWithDetailsEntity> findAllByIsCurrentlyPublishedVersionIsTrue(@Nullable Pageable pageable, @Nullable Specification<FormVersionWithDetailsEntity> specification);
 
-    @Query(value = """
-            SELECT *
-            FROM form_version_with_details
-            WHERE slug = :slug
-            ORDER BY version DESC
-            LIMIT 1
-            """, nativeQuery = true)
-    Optional<FormVersionWithDetailsEntity> findLatestForSlug(@Param("slug") String slug);
+    @Nonnull
+    Optional<FormVersionWithDetailsEntity> findBySlugAndIsCurrentlyPublishedVersionIsTrue(@Nonnull String slug);
 
-    @Query(value = """
-            SELECT *
-            FROM form_version_with_details
-            WHERE slug = :slug and state = :status
-            ORDER BY version DESC
-            LIMIT 1
-            """, nativeQuery = true)
-    Optional<FormVersionWithDetailsEntity> findLatestForSlugAndStatus(@Param("slug") String slug, @Param("status") FormStatus status);
-
-    @Query(value = """
-            SELECT *
-            FROM form_version_with_details
-            WHERE slug = :slug and version = :version
-            LIMIT 1
-            """, nativeQuery = true)
-    Optional<FormVersionWithDetailsEntity> findVersionForSlugAndVersion(@Param("slug") String slug, @Param("version") Integer version);
+    @Nonnull
+    Optional<FormVersionWithDetailsEntity> findBySlugAndVersion(@Nonnull String slug, @Nonnull Integer version);
 }
