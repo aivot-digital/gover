@@ -232,7 +232,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     }
 
     if (application != null &&
-        !isStringNullOrEmpty(application?.root.expiring)) {
+        !isStringNullOrEmpty(application?.rootElement.expiring)) {
         sections.push(
             <Box key="deadline">
                 <Typography
@@ -247,7 +247,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     variant="body2"
                     sx={{mt: 1}}
                 >
-                    {application.root.expiring}
+                    {application.rootElement.expiring}
                 </Typography>
             </Box>,
         );
@@ -299,7 +299,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     (props.element.eligiblePersons ?? []).length > 0 ||
                     (props.element.supportingDocuments ?? []).length > 0 ||
                     (props.element.documentsToAttach ?? []).length > 0 ||
-                    !isStringNullOrEmpty(application?.root.expiring) ||
+                    !isStringNullOrEmpty(application?.rootElement.expiring) ||
                     !isStringNullOrEmpty(props.element.expectedCosts)
                 ) &&
                 <FadingPaper>
@@ -347,7 +347,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             </Typography>
 
             {
-                application?.root.privacyText != null &&
+                application?.rootElement.privacyText != null &&
                 <Box
                     sx={{
                         maxWidth: '600px',
@@ -355,7 +355,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     }}
                 >
                     <FormattedTextWithDialogTags
-                        text={application.root.privacyText}
+                        text={application.rootElement.privacyText}
                     />
                 </Box>
             }

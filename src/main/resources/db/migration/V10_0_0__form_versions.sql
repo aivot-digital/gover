@@ -15,6 +15,7 @@ create table form_versions
 (
     form_id                         int references forms (id) on delete cascade,
     version                         smallint     not null default 1,
+    status                          smallint     not null default 0,
     type                            smallint     not null default 0,
     legal_support_department_id     int          null references departments (id) on delete set null,
     technical_support_department_id int          null references departments (id) on delete set null,
@@ -59,6 +60,7 @@ set new_version = (select version_order
 -- move data from forms to form_versions
 insert into form_versions (form_id,
                            version,
+                           status,
                            type,
                            legal_support_department_id,
                            technical_support_department_id,
@@ -83,6 +85,11 @@ insert into form_versions (form_id,
                            revoked)
 select (select id from forms as _fms where _fms.slug = fms.slug and _fms.new_version = 1) as form_id,
        new_version,
+       case
+           when status = 2 then 1
+           when status = 3 then 2
+           else 0
+           end                                                                            as status,
        type,
        legal_support_department_id,
        technical_support_department_id,
@@ -104,11 +111,11 @@ select (select id from forms as _fms where _fms.slug = fms.slug and _fms.new_ver
        created,
        now(),
        case
-           when status = 2 then created
+           when status = 2 then updated
            else null
            end                                                                            as published,
        case
-           when status = 3 then created
+           when status = 3 then updated
            else null
            end                                                                            as revoked
 from forms as fms;
@@ -183,13 +190,13 @@ update forms as fms
 set published_version = (select version
                          from form_versions as vers
                          where vers.form_id = fms.id
-                           and vers.published is not null
+                           and vers.status = 1
                          order by vers.published desc
                          limit 1),
     drafted_version   = (select version
                          from form_versions as vers
                          where vers.form_id = fms.id
-                           and vers.published is null
+                           and status = 0
                          order by vers.created desc
                          limit 1);
 
@@ -229,13 +236,37 @@ select fms.id,
        fms.responsible_department_id,
        fms.published_version,
        fms.drafted_version,
-       vers.*,
-       vers.version = fms.published_version as is_currently_published_version,
-       vers.version = fms.drafted_version   as is_currently_drafted_version
+       vers.*
 from form_versions vers
          inner join forms as fms on fms.id = vers.form_id;
 
--- create table with user form permissions
+-- create table with user form version permissions
+create view form_with_memberships as
+select fms.*,
+
+       usrs.id                                                     as user_id,
+       usrs.email                                                  as user_email,
+       usrs.first_name                                             as user_first_name,
+       usrs.last_name                                              as user_last_name,
+       usrs.full_name                                              as user_full_name,
+       usrs.enabled                                                as user_enabled,
+       usrs.verified                                               as user_verified,
+       usrs.global_admin                                           as user_global_admin,
+       usrs.deleted_in_idp                                         as user_deleted_in_idp,
+
+       bool_or(mems.department_id = fms.developing_department_id)  as user_is_developer,
+       bool_or(mems.department_id = fms.managing_department_id)    as user_is_manager,
+       bool_or(mems.department_id = fms.responsible_department_id) as user_is_responsible
+from forms as fms
+         inner join department_memberships as mems
+                    on fms.developing_department_id = mems.department_id
+                        or fms.managing_department_id = mems.department_id
+                        or fms.responsible_department_id = mems.department_id
+         inner join users as usrs
+                    on usrs.id = mems.user_id
+group by fms.id, usrs.id;
+
+-- create table with user form version permissions
 create view user_form_version_permissions as
 select fms.id                                                      as form_id,
        fms.version                                                 as form_version,
@@ -287,6 +318,7 @@ select subs.*,
        fms.updated                         as form_updated,
        fms.published_version               as form_published_version,
        fms.drafted_version                 as form_drafted_version,
+       fms.status                          as form_status,
        fms.type                            as form_type,
        fms.legal_support_department_id     as form_legal_support_department_id,
        fms.technical_support_department_id as form_technical_support_department_id,
@@ -307,8 +339,6 @@ select subs.*,
        fms.root_element                    as form_root_element,
        fms.published                       as form_version_published,
        fms.revoked                         as form_version_revoked,
-       fms.is_currently_published_version  as form_is_currently_published_version,
-       fms.is_currently_drafted_version    as form_is_currently_drafted_version,
 
        fms.user_id,
        fms.user_email,
@@ -333,3 +363,75 @@ create table form_slug_history
     slug    varchar(255) primary key,
     form_id int not null references forms (id) on delete cascade
 );
+
+-- create a function to update the drafted version in the forms table
+create function handle_form_version_insert_or_update() returns trigger
+    language plpgsql as
+$$
+begin
+    if new.status = 0 then
+        -- if a new draft is created all other drafts are revoked and the drafted version column for the parent form is updated
+
+        update form_versions
+        set status  = 2,
+            revoked = now()
+        where form_id = new.form_id
+          and status = 0
+          and version <> new.version;
+
+        update forms
+        set drafted_version = new.version
+        where id = new.form_id;
+    end if;
+
+    if new.status = 1 then
+        -- if a new version is published all other published versions are revoked and the published and drafted version column for the parent form is updated
+
+        update form_versions
+        set published = now()
+        where form_id = new.form_id
+          and version = new.version;
+
+        update form_versions
+        set revoked = now()
+        where form_id = new.form_id
+          and status = 1
+          and version <> new.version;
+
+        update forms
+        set published_version = new.version,
+            drafted_version   = null
+        where id = new.form_id
+          and drafted_version = new.version;
+    end if;
+
+    if new.status = 2 then
+        -- if a version is revoked the revoked timestamp is set and if it was the published version the published version column in the parent form is cleared
+
+        update form_versions
+        set revoked = now()
+        where form_id = new.form_id
+          and version = new.version;
+
+        update forms
+        set published_version = null
+        where id = new.form_id
+          and published_version = new.version;
+    end if;
+
+    return new;
+end;
+$$;
+
+create trigger on_form_version_insert
+    after insert
+    on form_versions
+    for each row
+execute function handle_form_version_insert_or_update();
+
+create trigger on_form_version_update
+    after update
+    on form_versions
+    for each row
+    when (old.status is distinct from new.status)
+execute function handle_form_version_insert_or_update();

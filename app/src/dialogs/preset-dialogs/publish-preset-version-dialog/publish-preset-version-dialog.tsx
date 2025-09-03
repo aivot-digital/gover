@@ -50,7 +50,7 @@ export function PublishPresetVersionDialog(props: DialogProps & PublishPresetVer
                 storeKey,
                 preset.storeId,
                 {
-                    gover_root: presetVersion.root,
+                    gover_root: presetVersion.rootElement,
                     version: presetVersion.version,
                     changes,
                 },

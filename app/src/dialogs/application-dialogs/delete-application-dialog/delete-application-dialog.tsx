@@ -88,7 +88,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                     ((submissions?.length ?? 0) > 0 || props.application?.status === 2) &&
                     <>
                         <DialogContentText>
-                            Bitte klären Sie die folgenden Punkte, bevor Sie das Formular <strong>{props.application?.title}</strong> löschen können:
+                            Bitte klären Sie die folgenden Punkte, bevor Sie das Formular <strong>{props.application?.internalTitle}</strong> löschen können:
                         </DialogContentText>
                         <List dense>
                             {
@@ -124,7 +124,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                     <>
                         <DialogContentText>
                             Sind Sie sicher, dass Sie das
-                            Formular <strong>{props.application?.title}</strong> wirklich
+                            Formular <strong>{props.application?.internalTitle}</strong> wirklich
                             löschen wollen? Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
                             Es werden alle Anträge, die für diese Formularversion eingegangen sind, gelöscht.
                         </DialogContentText>
@@ -137,7 +137,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                         >
                             Bitte geben Sie den folgenden Text ein, um die Aktion zu bestätigen:
                             <Typography component="pre" variant="body2" sx={{ fontFamily: "monospace", fontSize: 14, fontWeight: "bold", backgroundColor: "#f0f0f0", py: .5, px: 1, borderRadius: 2, mt: 1 }}>
-                                {props.application?.title}
+                                {props.application?.internalTitle}
                             </Typography>
                         </DialogContentText>
 
@@ -153,7 +153,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
             <DialogActions>
                 <Button
                     onClick={handleDelete}
-                    disabled={isBusy || formTitle !== props.application?.title}
+                    disabled={isBusy || formTitle !== props.application?.internalTitle}
                     color="error"
                     variant="contained"
                     startIcon={<DeleteOutlinedIcon />}

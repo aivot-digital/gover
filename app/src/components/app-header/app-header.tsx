@@ -28,7 +28,7 @@ export function AppHeader({mode, onDeleteFormData}: AppHeaderProps) {
 
     const appTitleLine1 = 'Online-Antrags-Management';
     const appTitleLine2 = name;
-    const formTitle = (app?.root.headline ?? '');
+    const formTitle = (app?.rootElement.headline ?? '');
 
     const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         setMenuAnchorEl(event.currentTarget);

@@ -13,6 +13,7 @@ import java.util.Objects;
 public class FormEntity {
     @Id
     @Nonnull
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Nonnull

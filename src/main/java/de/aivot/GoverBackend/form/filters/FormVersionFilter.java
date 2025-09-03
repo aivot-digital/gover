@@ -14,6 +14,7 @@ import java.util.UUID;
 public class FormVersionFilter implements Filter<FormVersionEntity> {
     private Integer formId;
     private Integer version;
+    private FormStatus status;
     private FormType type;
     private Integer legalSupportDepartmentId;
     private Integer technicalSupportDepartmentId;
@@ -26,8 +27,6 @@ public class FormVersionFilter implements Filter<FormVersionEntity> {
     private UUID paymentProviderKey;
     private Boolean identityVerificationRequired;
     private UUID identityProviderKey;
-    private Boolean isPublished;
-    private Boolean isRevoked;
 
     public static FormVersionFilter create() {
         return new FormVersionFilter();
@@ -36,10 +35,11 @@ public class FormVersionFilter implements Filter<FormVersionEntity> {
     @Nonnull
     @Override
     public Specification<FormVersionEntity> build() {
-        var builder = SpecificationBuilder
+        return SpecificationBuilder
                 .create(FormVersionEntity.class)
                 .withEquals("formId", formId)
                 .withEquals("version", version)
+                .withEquals("status", status)
                 .withEquals("type", type)
                 .withEquals("legalSupportDepartmentId", legalSupportDepartmentId)
                 .withEquals("technicalSupportDepartmentId", technicalSupportDepartmentId)
@@ -51,19 +51,8 @@ public class FormVersionFilter implements Filter<FormVersionEntity> {
                 .withEquals("pdfTemplateKey", pdfTemplateKey)
                 .withEquals("paymentProviderKey", paymentProviderKey)
                 .withEquals("identityVerificationRequired", identityVerificationRequired)
-                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey.toString());
-
-        if (isPublished != null && isPublished) {
-            builder = builder
-                    .withNotNull("published");
-        }
-
-        if (isRevoked != null && isRevoked) {
-            builder = builder
-                    .withNotNull("revoked");
-        }
-
-        return builder.build();
+                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey.toString())
+                .build();
     }
 
     public Integer getFormId() {
@@ -192,21 +181,12 @@ public class FormVersionFilter implements Filter<FormVersionEntity> {
         return this;
     }
 
-    public Boolean getPublished() {
-        return isPublished;
+    public FormStatus getStatus() {
+        return status;
     }
 
-    public FormVersionFilter setPublished(Boolean published) {
-        isPublished = published;
-        return this;
-    }
-
-    public Boolean getRevoked() {
-        return isRevoked;
-    }
-
-    public FormVersionFilter setRevoked(Boolean revoked) {
-        isRevoked = revoked;
+    public FormVersionFilter setStatus(FormStatus status) {
+        this.status = status;
         return this;
     }
 }

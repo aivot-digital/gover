@@ -95,12 +95,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         lg: 6
                     }}>
                     <TextFieldComponent
-                        value={props.entity?.title}
+                        value={props.entity?.internalTitle}
                         label="Interner Titel des Formulars"
                         hint="Dieser Titel wird intern in Gover verwendet und ist nicht öffentlich sichtbar."
                         onChange={(val) => {
                             props.onPatchEntity({
-                                title: val,
+                                internalTitle: val,
                             });
                         }}
                         minCharacters={1}
@@ -108,9 +108,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         disabled={!props.editable}
                         required={true}
                         error={
-                            !props.entity?.title || props.entity.title.length < 1
+                            !props.entity?.internalTitle || props.entity.internalTitle.length < 1
                                 ? "Der Titel muss mindestens 1 Zeichen lang sein."
-                                : props.entity.title.length > 96
+                                : props.entity.internalTitle.length > 96
                                     ? "Der Titel darf maximal 96 Zeichen lang sein."
                                     : undefined
                         }
@@ -370,10 +370,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     >
                         <SelectFieldComponent
                             label="PDF-Vorlage"
-                            value={props.entity?.pdfBodyTemplateKey ?? undefined}
+                            value={props.entity?.pdfTemplateKey ?? undefined}
                             onChange={(val) => {
                                 props.onPatchEntity({
-                                    pdfBodyTemplateKey: val,
+                                    pdfTemplateKey: val,
                                 });
                             }}
                             options={templateOptions}

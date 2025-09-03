@@ -22,7 +22,7 @@ export class PresetVersionApiService extends CrudApiService<
         return {
             preset: '',
             version: '',
-            root: generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
+            rootElement: generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
             publishedAt: null,
             publishedStoreAt: null,
             created: new Date().toISOString(),

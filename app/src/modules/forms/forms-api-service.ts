@@ -1,15 +1,12 @@
 import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
 import {Form} from '../../models/entities/form';
-import {ApplicationStatus} from '../../data/application-status';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {ElementType} from '../../data/element-type/element-type';
-import {RootElement} from '../../models/elements/root-element';
 import {ApiOptions} from '../../services/api-service';
 import {Page} from '../../models/dtos/page';
 import {FormRevision} from '../../models/entities/form-revision';
 import {CustomerInput} from '../../models/customer-input';
-import {FormState} from '../../models/dtos/form-state';
 import {FormCostCalculationResponseDTO} from './dtos/form-cost-calculation-response-dto';
 import {FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {EntityLockDto} from '../../models/dtos/entity-lock-dto';
@@ -17,100 +14,122 @@ import {SubmissionListResponseDTO} from '../submissions/dtos/submission-list-res
 import {FormCitizenListResponseDTO} from './dtos/form-citizen-list-response-dto';
 import {FormPublishChecklistItem} from './dtos/form-publish-checklist-item';
 import {FormType} from './enums/form-type';
-import {ElementApprovalStatus} from '../elements/enums/ElementApprovalStatus';
 import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
 import {IdentityIdHeader} from '../identity/constants/identity-id-header';
 import {ElementData} from '../../models/element-data';
-import {createApiPath} from '../../utils/url-path-utils';
-import {IdentityCustomerInputKey} from '../identity/constants/identity-customer-input-key';
+import {IdentityProviderLink} from '../identity/models/identity-provider-link';
+import {string} from 'yup';
+import {FormListResponseDTO} from './dtos/form-list-response-dto';
+import {FormDetailsResponseDTO} from './dtos/form-details-response-dto';
+import {FormCitizenDetailsResponseDTO} from './dtos/form-citizen-details-response-dto';
+import {FormRequestDTO} from './dtos/form-request-dto';
+import {PaymentProduct} from '../../models/payment/payment-product';
+import {RootElement} from '../../models/elements/root-element';
 
 interface FormFilters {
     id: number;
-    title: string;
     slug: string;
-    version: string;
-    status: string;
+    internalTitle: string;
+    publicTitle: string;
+    developingDepartmentId: number;
+    managingDepartmentId: number;
+    responsibleDepartmentId: number;
+    publishedVersion: number;
+    draftedVersion: number;
+    formId: number;
+    version: number;
     type: FormType;
-    destinationId: number;
     legalSupportDepartmentId: number;
     technicalSupportDepartmentId: number;
     imprintDepartmentId: number;
     privacyDepartmentId: number;
     accessibilityDepartmentId: number;
-    developingDepartmentId: number;
-    managingDepartmentId: number;
-    responsibleDepartmentId: number;
+    destinationId: number;
     themeId: number;
-    pdfBodyTemplateKey: string;
-    paymentProvider: string;
+    pdfTemplateKey: string;
+    paymentProviderKey: string;
+    identityVerificationRequired: boolean;
+    identityProviderKey: string;
+    isPublished: boolean;
+    isRevoked: boolean;
+    isCurrentlyPublishedVersion: boolean;
+    isCurrentlyDraftedVersion: boolean;
     userId: string;
     isDeveloper: boolean;
     isManager: boolean;
     isResponsible: boolean;
-    identityRequired: boolean;
-    identityProviderKey: string;
 }
 
 export type DerivationSkipIdentifier = string[] | ['ALL'];
 
-export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListResponseDTO, Form, Form, number, FormFilters> {
+export type FormIdentifier = {
+    id: number;
+    version: number;
+}
+
+export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResponseDTO, FormCitizenListResponseDTO, FormDetailsResponseDTO, FormCitizenDetailsResponseDTO, FormIdentifier, FormFilters> {
     public constructor(api: Api) {
         super(api, 'forms/');
     }
 
-    public initialize(): Form {
+    public buildPath(id: FormIdentifier): string {
+        return `${this.path}${id.id}/${id.version}/`;
+    }
+
+    public initialize(): FormDetailsResponseDTO {
         return FormsApiService.initialize();
     }
 
-    public static initialize(): Form {
+    public static initialize(): FormDetailsResponseDTO {
         return {
             id: 0,
             slug: '',
-            version: '',
-            title: '',
-            status: ApplicationStatus.Drafted,
+            version: 0,
+            internalTitle: '',
+            publicTitle: '',
             type: FormType.Public,
-            root: generateElementWithDefaultValues(ElementType.Root) as RootElement,
-
+            rootElement: generateElementWithDefaultValues(ElementType.Root) as RootElement,
             destinationId: null,
-            legalSupportDepartmentId: null,
+            legalSupportDepartmentId:  null,
             technicalSupportDepartmentId: null,
             imprintDepartmentId: null,
             privacyDepartmentId: null,
-            accessibilityDepartmentId: null,
+            accessibilityDepartmentId:  null,
             developingDepartmentId: 0,
             managingDepartmentId: null,
             responsibleDepartmentId: null,
             themeId: null,
-
-            created: '',
-            updated: '',
-
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
             customerAccessHours: 4,
-            submissionDeletionWeeks: 4,
-
-            pdfBodyTemplateKey: null,
-
-            products: undefined,
-            paymentPurpose: undefined,
-            paymentDescription: undefined,
-            paymentProvider: undefined,
-
-            identityRequired: false,
+            submissionRetentionWeeks: 4,
+            pdfTemplateKey: null,
+            paymentProducts: [],
+            paymentPurpose: '',
+            paymentDescription: '',
+            paymentProviderKey: null,
+            identityVerificationRequired: false,
             identityProviders: [],
+            publishedVersion: null,
+            draftedVersion: null,
+            formId: 0,
+            published: null,
+            revoked: null,
+            isCurrentlyDraftedVersion: true,
+            isCurrentlyPublishedVersion: false,
         };
     }
 
-    public async listRevisions(formId: number, options?: ApiOptions): Promise<Page<FormRevision>> {
+    public async listRevisions(formId: FormIdentifier, options?: ApiOptions): Promise<Page<FormRevision>> {
         return await this.api.get<Page<FormRevision>>(`forms/${formId}/revisions/`, options);
     }
 
     // TODO: Remove usage of useFormsApi().rollbackRevision and use this instead
-    public async rollbackRevision(formId: number, revisionId: number, options?: ApiOptions): Promise<Form> {
+    public async rollbackRevision(formId: FormIdentifier, revisionId: number, options?: ApiOptions): Promise<Form> {
         return await this.api.get<Form>(`forms/${formId}/revisions/rollback/${revisionId}/`, options);
     }
 
-    public async determineFormState(formId: number, customerInput: CustomerInput, filter: {
+    public async determineFormState(formId: FormIdentifier, customerInput: CustomerInput, filter: {
         skipErrorsFor: DerivationSkipIdentifier,
         skipVisibilitiesFor: DerivationSkipIdentifier,
         skipValuesFor: DerivationSkipIdentifier,
@@ -119,15 +138,11 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return await this.api.post<ElementData>(`public/forms/${formId}/derive`, customerInput, {queryParams: filter});
     }
 
-    public async calculateCosts(formId: number, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {
+    public async calculateCosts(formId: FormIdentifier, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {
         return await this.api.post<FormCostCalculationResponseDTO>(`public/forms/${formId}/costs/`, customerInput);
     }
 
-    public async determineApprovals(formId: number): Promise<Record<string, ElementApprovalStatus>> {
-        return await this.api.get<Record<string, ElementApprovalStatus>>(`public/forms/${formId}/approvals/`);
-    }
-
-    public async submit(id: number, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
+    public async submit(id: FormIdentifier, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
         const data = new FormData();
         data.set('inputs', JSON.stringify(userInput));
 
@@ -178,9 +193,8 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         return await this.api.getPublic<{ maxFileSize: number }>(`forms/${id}/max-file-size/`);
     }
 
-    public static async getIdentityProviders(id: number): Promise<Page<IdentityProviderInfo>> {
-        const res = await fetch(createApiPath(`/api/public/forms/${id}/identity-providers/`));
-        return await res.json();
+    public async getIdentityProviders(slug: string, version?: number | undefined): Promise<Page<IdentityProviderInfo>> {
+        return await this.api.getPublic(`forms/${slug}/identity-providers/?${version != null ? `version=${version}` : ''}`);
     }
 
     public retrieveBySlugAndVersion(slug: string, version: string | undefined, identityId: string | undefined) {
@@ -195,18 +209,26 @@ export class FormsApiService extends CrudApiService<Form, Form, FormCitizenListR
         if (version == null) {
             return this.api.getPublic<Form>(`forms/${slug}/`, apiOptions);
         }
-        return this.api.getPublic<Form>(`forms/${slug}/${version}/`, apiOptions);
+        return this.api.getPublic<Form>(`forms/${slug}/?version=${version}`, apiOptions);
     }
 
-    public publish(id: number): Promise<Form> {
-        return this.api.put<Form>(`forms/${id}/publish/`, {});
+    public newVersion({id, version}: FormIdentifier): Promise<FormDetailsResponseDTO> {
+        return this.api.put<FormDetailsResponseDTO>(`forms/${id}/${version}/as-new-version/`, {});
     }
 
-    public revoke(id: number): Promise<Form> {
-        return this.api.put<Form>(`forms/${id}/revoke/`, {});
+    public publish({id, version}: FormIdentifier): Promise<Form> {
+        return this.api.put<Form>(`forms/${id}/${version}/publish/`, {});
     }
 
-    public checkPublish(id: number): Promise<FormPublishChecklistItem[]> {
-        return this.api.get<FormPublishChecklistItem[]>(`forms/${id}/check-publish/`);
+    public revoke({id, version}: FormIdentifier): Promise<Form> {
+        return this.api.put<Form>(`forms/${id}/${version}/revoke/`, {});
+    }
+
+    public checkPublish({id, version}: FormIdentifier): Promise<FormPublishChecklistItem[]> {
+        return this.api.get<FormPublishChecklistItem[]>(`forms/${id}/${version}/check-publish/`);
+    }
+
+    public checkSlugExists(slug: string): Promise<boolean> {
+        return this.api.get<boolean>(`form-slugs/${slug}/`);
     }
 }

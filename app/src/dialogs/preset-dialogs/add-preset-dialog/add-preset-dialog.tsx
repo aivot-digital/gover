@@ -105,7 +105,7 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
                     const createdVersion = await presetVersionsApiService.create({
                         preset: createdPreset.key,
                         version: preset.currentVersion,
-                        root: root ?? generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
+                        rootElement: root ?? generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
                         publishedAt: null,
                         publishedStoreAt: null,
                         created: new Date().toISOString(),

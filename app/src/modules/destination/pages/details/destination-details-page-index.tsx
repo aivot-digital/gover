@@ -210,7 +210,7 @@ export function DestinationDetailsPageIndex() {
             if (uniqueForms.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = uniqueForms.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.title,
+                    label: f.internalTitle,
                     to: `/forms/${f.id}`,
                 }));
 

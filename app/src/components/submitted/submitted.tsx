@@ -55,7 +55,7 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 export function Submitted(props: SubmittedProps) {
     const api = useApi();
     const application = useSelector(selectLoadedForm);
-    const submitStep = application?.root.submitStep;
+    const submitStep = application?.rootElement.submitStep;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
@@ -324,8 +324,8 @@ export function Submitted(props: SubmittedProps) {
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={application?.root.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={application?.root.introductionStep?.initiativeName ?? undefined}
+                    logoLink={application?.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={application?.rootElement.introductionStep?.initiativeName ?? undefined}
                 />
             }
             {

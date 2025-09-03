@@ -2,13 +2,13 @@ package de.aivot.GoverBackend.form.entities;
 
 public class FormVersionWithMembershipEntityId {
     private Integer id;
-    private String version;
+    private Integer version;
     private String userId;
 
     public FormVersionWithMembershipEntityId() {
     }
 
-    public FormVersionWithMembershipEntityId(Integer id, String version, String userId) {
+    public FormVersionWithMembershipEntityId(Integer id, Integer version, String userId) {
         this.id = id;
         this.version = version;
         this.userId = userId;
@@ -23,11 +23,11 @@ public class FormVersionWithMembershipEntityId {
         return this;
     }
 
-    public String getVersion() {
+    public Integer getVersion() {
         return version;
     }
 
-    public FormVersionWithMembershipEntityId setVersion(String version) {
+    public FormVersionWithMembershipEntityId setVersion(Integer version) {
         this.version = version;
         return this;
     }

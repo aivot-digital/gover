@@ -193,8 +193,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 !isStringNullOrEmpty(props.element.textPreSubmit) &&
                 <Preamble
                     text={props.element.textPreSubmit}
-                    logoLink={form.root.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={form.root.introductionStep?.initiativeName ?? undefined}
+                    logoLink={form.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={form.rootElement.introductionStep?.initiativeName ?? undefined}
                 />
             }
 

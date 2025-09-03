@@ -61,6 +61,7 @@ public class FormRevisionService {
 
         var formRevision = new FormRevisionEntity();
         formRevision.setFormId(createdForm.getId());
+        formRevision.setFormVersion(createdForm.getVersion());
         formRevision.setUserId(user.getId());
         formRevision.setTimestamp(LocalDateTime.now());
         formRevision.setDiff(List.of(diff));
@@ -88,6 +89,7 @@ public class FormRevisionService {
 
         var formRevision = new FormRevisionEntity();
         formRevision.setFormId(existingForm.getId());
+        formRevision.setFormVersion(existingForm.getVersion());
         formRevision.setUserId(user.getId());
         formRevision.setTimestamp(LocalDateTime.now());
         formRevision.setDiff(changes);

@@ -90,7 +90,7 @@ public class SpecificationBuilder<T> {
         return with(new SpecificationBuilderIsNotNull<>(field));
     }
 
-    public SpecificationBuilder<T> withJsonArrayElementFieldEquals(@Nonnull String field, @Nonnull String elementField, @Nonnull String value) {
+    public SpecificationBuilder<T> withJsonArrayElementFieldEquals(@Nonnull String field, @Nonnull String elementField, @Nullable String value) {
         if (StringUtils.isNullOrEmpty(value)) {
             return this;
         }

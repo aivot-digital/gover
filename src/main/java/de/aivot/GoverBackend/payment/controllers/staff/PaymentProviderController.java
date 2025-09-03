@@ -138,7 +138,7 @@ public class PaymentProviderController {
             var filterAllPublishedForms = FormVersionWithDetailsFilter
                     .create()
                     .setPaymentProviderKey(key)
-                    .setPublished(true)
+                    .setStatus(FormStatus.Published)
                     .build();
 
             if (formVersionWithDetailsRepository.exists(filterAllPublishedForms)) {

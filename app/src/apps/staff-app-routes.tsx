@@ -44,13 +44,15 @@ export const staffAppRoutes: Record<string, Route> = {
         path: '/',
         element: <ModuleSelectPage />,
     },
-
+/*
     applicationList: {
         path: '/forms',
         element: <FormListPage />,
     },
+
+ */
     applicationEdit: {
-        path: '/forms/:id',
+        path: '/forms/:id/:version',
         element: <FormEditPage />,
     },
 

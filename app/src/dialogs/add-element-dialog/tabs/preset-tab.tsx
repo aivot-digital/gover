@@ -45,7 +45,7 @@ export function PresetTab(props: BaseTabProps) {
         presetVersionApiService.retrieve(preset.currentPublishedVersion)
             .then((presetVersion) => {
                 props.onAddElement(cloneElement({
-                    ...presetVersion.root,
+                    ...presetVersion.rootElement,
                     name: preset.title,
                 }, true));
             })

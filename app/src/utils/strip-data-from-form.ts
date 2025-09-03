@@ -1,19 +1,19 @@
-import {Form} from '../models/entities/form';
-import {ApplicationStatus} from '../data/application-status';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {isRootElement} from '../models/elements/root-element';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {LegacySystemIdpKeys} from '../data/legacy-system-idp-key';
+import {FormDetailsResponseDTO} from '../modules/forms/dtos/form-details-response-dto';
 
-export function stripDataFromForm(form: Form): Form {
+export function stripDataFromForm(form: FormDetailsResponseDTO): FormDetailsResponseDTO {
     const strippedForm = {...form};
 
     strippedForm.id = 0;
 
     // Clear application
     strippedForm.destinationId = null;
-    strippedForm.status = ApplicationStatus.Drafted;
+    strippedForm.published = null;
+    strippedForm.revoked = null;
 
     strippedForm.developingDepartmentId = 0;
 
@@ -25,12 +25,12 @@ export function stripDataFromForm(form: Form): Form {
     strippedForm.legalSupportDepartmentId = null;
     strippedForm.technicalSupportDepartmentId = null;
 
-    strippedForm.pdfBodyTemplateKey = null;
+    strippedForm.pdfTemplateKey = null;
 
-    strippedForm.paymentProvider = undefined;
+    strippedForm.paymentProviderKey = null;
 
-    strippedForm.products = [
-        ...(strippedForm.products ?? []),
+    strippedForm.paymentProducts = [
+        ...(strippedForm.paymentProducts ?? []),
     ].map(prd => ({
         ...prd,
         bookingData: [],
@@ -38,10 +38,10 @@ export function stripDataFromForm(form: Form): Form {
 
     strippedForm.themeId = null;
 
-    strippedForm.identityRequired = false;
+    strippedForm.identityVerificationRequired = false;
     strippedForm.identityProviders = [];
 
-    strippedForm.root = recursivelyApply(strippedForm.root, (element) => {
+    strippedForm.rootElement = recursivelyApply(strippedForm.rootElement, (element) => {
         stripTestProtocol(element);
 
         if (isAnyInputElement(element)) {

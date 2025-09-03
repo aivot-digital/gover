@@ -50,8 +50,8 @@ const appSlice = createSlice({
                 state.futureLoadedForm = [];
             }
             state.loadedForm = action.payload;
-            state.allElements = flattenElements(state.loadedForm.root);
-            state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.root, [], false);
+            state.allElements = flattenElements(state.loadedForm.rootElement);
+            state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.rootElement, [], false);
         },
 
         undoLoadedForm: (state, _: PayloadAction<void>) => {
@@ -59,8 +59,8 @@ const appSlice = createSlice({
                 state.futureLoadedForm.push(state.loadedForm);
                 state.loadedForm = state.pastLoadedForm.pop();
                 if (state.loadedForm != null) {
-                    state.allElements = flattenElements(state.loadedForm.root);
-                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.root, [], false);
+                    state.allElements = flattenElements(state.loadedForm.rootElement);
+                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.rootElement, [], false);
                 } else {
                     state.allElements = undefined;
                     state.allElementsWithParents = undefined;
@@ -73,8 +73,8 @@ const appSlice = createSlice({
                 state.pastLoadedForm.push(state.loadedForm);
                 state.loadedForm = state.futureLoadedForm.pop();
                 if (state.loadedForm != null) {
-                    state.allElements = flattenElements(state.loadedForm.root);
-                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.root, [], false);
+                    state.allElements = flattenElements(state.loadedForm.rootElement);
+                    state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.rootElement, [], false);
                 } else {
                     state.allElements = undefined;
                     state.allElementsWithParents = undefined;

@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, {useMemo, useState} from 'react';
 import {Box, Button, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
 import styles from './application-list-item.module.scss';
 import {format, isToday, parseISO} from 'date-fns';
-import {ApplicationStatus, ApplicationStatusNames} from '../../data/application-status';
 import {Link} from 'react-router-dom';
 import DriveFileRenameOutlineOutlinedIcon from '@mui/icons-material/DriveFileRenameOutlineOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
@@ -25,10 +24,9 @@ import {downloadQrCode} from '../../utils/download-qrcode';
 import {ExportApplicationDialog} from '../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
 import {createCustomerPath} from '../../utils/url-path-utils';
 
-
 export function ApplicationListItem(props: ApplicationListItemProps) {
     const {
-        application,
+        form,
         memberships,
     } = props;
 
@@ -112,7 +110,7 @@ export function ApplicationListItem(props: ApplicationListItemProps) {
         }
     };
 
-    const versionLink = createCustomerPath(`${props.application.id}/${props.application.version}`);
+    const versionLink = createCustomerPath(props.application.slug);
 
     return (
         <Box className={styles.listItem}>
@@ -135,17 +133,31 @@ export function ApplicationListItem(props: ApplicationListItemProps) {
                     variant="h5"
                     sx={{mb: 0.5}}
                 >
-                    {props.application.title}
-
-                    <Typography
-                        variant="caption"
-                        sx={{ml: 1}}
-                    >
-                        {props.application.version}
-                    </Typography>
+                    {props.application.internalTitle}
                 </Typography>
 
                 <Typography
+                    variant="body2"
+                    sx={{
+                        mt: -0.75,
+                        fontSize: '0.875rem',
+                        lineHeight: '1.5rem',
+                    }}
+                    color={'text.secondary'}
+                >
+                    {
+                        props.application.publishedVersion != null ?
+                            <span>Veröffentlicht: Version {props.application.publishedVersion}</span> :
+                            <span>Noch nicht veröffentlicht</span>
+                    }
+                    {
+                        props.application.draftedVersion != null &&
+                        <span> &bull; In Bearbeitung: Version {props.application.draftedVersion}</span>
+                    }
+                </Typography>
+
+                <Typography
+                    variant="body2"
                     sx={{
                         mt: -0.75,
                         fontSize: '0.875rem',
@@ -166,8 +178,7 @@ export function ApplicationListItem(props: ApplicationListItemProps) {
                     }}
                     color={'text.secondary'}
                 >
-                    {ApplicationStatusNames[props.application.status ?? ApplicationStatus.Drafted]} • Zuletzt
-                    bearbeitet: {isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} Uhr
+                    Zuletzt bearbeitet: {isToday(lastUpdate) ? 'Heute' : format(lastUpdate, 'dd.MM.yyyy')} – {format(lastUpdate, 'HH:mm')} Uhr
                 </Typography>
             </Box>
             <Box className={styles.listItemActions}>
@@ -179,7 +190,8 @@ export function ApplicationListItem(props: ApplicationListItemProps) {
                             }}
                         />}
                         component={Link}
-                        to={`/forms/${props.application.id}`}
+                        to={`/forms/${props.application.id}/${props.application.draftedVersion}`}
+                        disabled={props.application.draftedVersion == null}
                     >
                         Bearbeiten
                     </Button>
@@ -193,6 +205,7 @@ export function ApplicationListItem(props: ApplicationListItemProps) {
                             }}
                         />}
                         onClick={handleNewVersion}
+                        disabled={props.application.draftedVersion != null}
                     >
                         Neue Version
                     </Button>
@@ -262,7 +275,7 @@ export function ApplicationListItem(props: ApplicationListItemProps) {
 
                         <MenuItem
                             onClick={async () => {
-                                await handleDownloadQrCode(versionLink, `qr-code-${props.application.slug}-${(props.application.version).replace(/\./g, '-')}.png`);
+                                await handleDownloadQrCode(versionLink, `qr-code-${props.application.slug}.png`);
                                 handleCloseOptions();
                             }}
                         >

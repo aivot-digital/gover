@@ -461,6 +461,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                         loadingOverlay: LoadingOverlay,
                         noRowsOverlay: NoRowsOverlay,
                     }}
+                    getRowHeight={props.dynamicRowHeight ? () => 'auto' : undefined}
                 />
             </Box>
 

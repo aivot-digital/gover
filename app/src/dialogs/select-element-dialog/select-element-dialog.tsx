@@ -23,7 +23,7 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
         if (form == null) {
             return [];
         }
-        return flattenElementsWithParents(form.root, [])
+        return flattenElementsWithParents(form.rootElement, [])
             .filter(({element}) => isAnyInputElement(element))
             .map(({element, parents}) => ({
                 $: element,

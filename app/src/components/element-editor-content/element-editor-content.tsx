@@ -139,7 +139,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.references:
             return (
                 <ReferencesTab
-                    rootElement={props.entity.root}
+                    rootElement={props.entity.rootElement}
                     element={props.element}
                 />
             );

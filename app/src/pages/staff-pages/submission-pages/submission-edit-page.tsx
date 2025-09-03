@@ -296,7 +296,7 @@ export function SubmissionEditPage() {
 
     let title = 'Antrag';
     if (form != null) {
-        title += ` - ${form.title} - ${form.version}`;
+        title += ` - ${form.internalTitle} - ${form.version}`;
         if (isStringNotNullOrEmpty(submission?.fileNumber)) {
             title += ` - ${submission?.fileNumber ?? ''}`;
         }

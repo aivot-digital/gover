@@ -98,11 +98,11 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         step: StepElement,
         elements: AnyElement[],
     }[] = useMemo(() => {
-        if (form == null || form.root == null || form.root.children == null) {
+        if (form == null || form.rootElement == null || form.rootElement.children == null) {
             return [];
         }
 
-        return form.root.children
+        return form.rootElement.children
             .map((s) => {
                 const stepElements = flattenElements(s, true)
                     .filter(canPrefillElement);

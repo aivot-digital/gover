@@ -3,25 +3,21 @@ package de.aivot.GoverBackend.form.services;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
-import de.aivot.GoverBackend.elements.services.ElementApprovalService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
-import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
-import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
-import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
-import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -30,12 +26,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -143,6 +136,10 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     public FormVersionEntity performUpdate(@Nonnull FormVersionEntityId id,
                                            @Nonnull FormVersionEntity entity,
                                            @Nonnull FormVersionEntity existingEntity) throws ResponseException {
+        if (existingEntity.getStatus() != FormStatus.Drafted) {
+            throw ResponseException.badRequest("Veröffentlichte oder zurückgezogene Formularversionen können nicht mehr bearbeitet werden");
+        }
+
         var cleanedEntity = cleanRelatedData(existingEntity, entity);
 
         var updatedExistingEntity = existingEntity
@@ -170,7 +167,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
 
     @Override
     public void performDelete(@Nonnull FormVersionEntity entity) throws ResponseException {
-        if (entity.getPublished() != null && entity.getRevoked() == null) {
+        if (entity.getStatus() == FormStatus.Published) {
             throw ResponseException.conflict("Veröffentlichte Formularversionen können nicht gelöscht werden");
         }
 

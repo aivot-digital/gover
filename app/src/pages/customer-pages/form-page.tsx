@@ -110,20 +110,20 @@ export function FormPage() {
             <LoadingPlaceholder />
         );
     } else {
-        const allElements = flattenElements(form.root);
+        const allElements = flattenElements(form.rootElement);
 
         return (
             <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
-                        title={form.root.tabTitle ?? form.root.headline ?? ''}
+                        title={form.rootElement.tabTitle ?? form.rootElement.headline ?? ''}
                         titlePrefix={provider}
                     />
 
                     <ViewDispatcherComponent
-                        rootElement={form.root}
+                        rootElement={form.rootElement}
                         allElements={allElements}
-                        element={form.root}
+                        element={form.rootElement}
                         isBusy={false}
                         isDeriving={false}
                         mode="viewer"

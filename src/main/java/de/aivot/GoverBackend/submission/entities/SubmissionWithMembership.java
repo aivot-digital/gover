@@ -66,6 +66,7 @@ public class SubmissionWithMembership {
     @Column(columnDefinition = "int2")
     private Integer formDraftedVersion;
 
+    private FormStatus formStatus;
     private FormType formType;
 
     private Integer formLegalSupportDepartmentId;
@@ -103,9 +104,6 @@ public class SubmissionWithMembership {
 
     private LocalDateTime formVersionPublished;
     private LocalDateTime formVersionRevoked;
-
-    private Boolean formIsCurrentlyPublishedVersion;
-    private Boolean formIsCurrentlyDraftedVersion;
 
     @Id
     private String userId;
@@ -404,6 +402,15 @@ public class SubmissionWithMembership {
         return this;
     }
 
+    public FormStatus getFormStatus() {
+        return formStatus;
+    }
+
+    public SubmissionWithMembership setFormStatus(FormStatus formStatus) {
+        this.formStatus = formStatus;
+        return this;
+    }
+
     public FormType getFormType() {
         return formType;
     }
@@ -584,15 +591,6 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public Boolean getFormIsCurrentlyPublishedVersion() {
-        return formIsCurrentlyPublishedVersion;
-    }
-
-    public SubmissionWithMembership setFormIsCurrentlyPublishedVersion(Boolean formIsCurrentlyPublishedVersion) {
-        this.formIsCurrentlyPublishedVersion = formIsCurrentlyPublishedVersion;
-        return this;
-    }
-
     public String getUserId() {
         return userId;
     }
@@ -698,15 +696,6 @@ public class SubmissionWithMembership {
 
     public SubmissionWithMembership setUserIsResponsible(Boolean userIsResponsible) {
         this.userIsResponsible = userIsResponsible;
-        return this;
-    }
-
-    public Boolean getFormIsCurrentlyDraftedVersion() {
-        return formIsCurrentlyDraftedVersion;
-    }
-
-    public SubmissionWithMembership setFormIsCurrentlyDraftedVersion(Boolean formIsCurrentlyDraftedVersion) {
-        this.formIsCurrentlyDraftedVersion = formIsCurrentlyDraftedVersion;
         return this;
     }
 }

@@ -31,7 +31,7 @@ const typeMap: Record<ElementType, string> = {
 
 export function formToTypeDefinition(form: Form): string {
     const lines = ['interface Data {'];
-    for (const element of flattenElements(form.root)) {
+    for (const element of flattenElements(form.rootElement)) {
         if (isAnyInputElement(element)) {
             lines.push(`    ${element.id}: undefined | null | ${typeMap[element.type]};`);
         }

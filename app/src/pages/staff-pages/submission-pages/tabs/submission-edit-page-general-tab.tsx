@@ -90,7 +90,7 @@ function createGeneralRows(form: Form, submission: SubmissionDetailsResponseDTO,
                     display="flex"
                     alignItems="center"
                 >
-                    <span>{form.title} - Version {form.version}</span>
+                    <span>{form.internalTitle} - Version {form.version}</span>
 
                     <IconButton
                         component={Link}

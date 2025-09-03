@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormSlugHistoryEntity;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormSlugHistoryRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -172,10 +173,10 @@ public class FormService implements EntityService<FormEntity, Integer> {
     @Override
     public void performDelete(@Nonnull FormEntity form) throws ResponseException {
         var publishedFormVersionsExist = formVersionRepository
-                .existsByFormIdAndPublishedIsNotNullAndRevokedIsNull(form.getId());
+                .existsByFormIdAndStatus(form.getId(), FormStatus.Published);
 
         if (publishedFormVersionsExist) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Veröffentlichte Formulare können nicht gelöscht werden");
+            throw new ResponseException(HttpStatus.CONFLICT, "Formulare mit einer veröffentlichten Version können nicht gelöscht werden");
         }
 
         var submissionSpec = SpecificationBuilder

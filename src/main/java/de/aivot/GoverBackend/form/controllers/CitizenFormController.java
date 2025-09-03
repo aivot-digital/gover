@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCitizenListResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
@@ -103,9 +104,9 @@ public class CitizenFormController {
     /**
      * Lists all published forms available to citizens.
      *
-     * @param jwt JWT token for authentication (optional).
+     * @param jwt      JWT token for authentication (optional).
      * @param pageable Pagination and sorting information.
-     * @param filter Filter criteria for forms.
+     * @param filter   Filter criteria for forms.
      * @return Page of FormCitizenListResponseDTO representing published forms.
      * @throws ResponseException if an error occurs during retrieval.
      */
@@ -114,16 +115,16 @@ public class CitizenFormController {
                                                  @Nonnull @PageableDefault Pageable pageable,
                                                  @Nonnull @Valid FormVersionWithDetailsFilter filter) throws ResponseException {
         return formVersionWithDetailsService
-                .findAllByIsCurrentlyPublishedVersionIsTrue(pageable, filter.build())
+                .list(pageable, filter.setStatus(FormStatus.Published))
                 .map(FormCitizenListResponseDTO::fromEntity);
     }
 
     /**
      * Retrieves details of a specific published form version for citizens.
      *
-     * @param jwt JWT token for authentication (optional).
-     * @param slug Unique identifier for the form.
-     * @param version Optional version number of the form.
+     * @param jwt        JWT token for authentication (optional).
+     * @param slug       Unique identifier for the form.
+     * @param version    Optional version number of the form.
      * @param identityId Optional identity cache ID for user context.
      * @return FormCitizenDetailsResponseDTO containing form details.
      * @throws ResponseException if the form is not found or invalid.
@@ -151,8 +152,8 @@ public class CitizenFormController {
     /**
      * Gets the maximum allowed file size for attachments for a specific form version.
      *
-     * @param jwt JWT token for authentication (optional).
-     * @param slug Unique identifier for the form.
+     * @param jwt     JWT token for authentication (optional).
+     * @param slug    Unique identifier for the form.
      * @param version Optional version number of the form.
      * @return MaxFileSizeDto containing the maximum file size in megabytes.
      * @throws ResponseException if the form is not found or invalid.
@@ -187,12 +188,12 @@ public class CitizenFormController {
     /**
      * Calculates the total costs for a form submission based on user input data.
      *
-     * @param jwt JWT token for authentication (optional).
-     * @param slug Unique identifier for the form.
-     * @param version Optional version number of the form.
+     * @param jwt          JWT token for authentication (optional).
+     * @param slug         Unique identifier for the form.
+     * @param version      Optional version number of the form.
      * @param customerData User-provided data for cost calculation.
      * @return FormCostCalculationResponseDTO containing cost details and payment items.
-     * @throws PaymentException if payment calculation fails.
+     * @throws PaymentException  if payment calculation fails.
      * @throws ResponseException if the form is not found or invalid.
      */
     @PostMapping("{slug}/costs/")
@@ -234,8 +235,8 @@ public class CitizenFormController {
     /**
      * Lists enabled identity providers for a specific form version.
      *
-     * @param jwt JWT token for authentication (optional).
-     * @param slug Unique identifier for the form.
+     * @param jwt     JWT token for authentication (optional).
+     * @param slug    Unique identifier for the form.
      * @param version Optional version number of the form.
      * @return Page of IdentityDetailsDTO representing enabled identity providers.
      * @throws ResponseException if the form is not found or invalid.
@@ -274,14 +275,14 @@ public class CitizenFormController {
     /**
      * Derives computed element data for a form, including error and visibility handling.
      *
-     * @param jwt JWT token for authentication (optional).
-     * @param slug Unique identifier for the form.
-     * @param version Optional version number of the form.
-     * @param elementData User-provided element data for derivation.
-     * @param skipErrorsFor List of element IDs to skip error calculation for.
+     * @param jwt                 JWT token for authentication (optional).
+     * @param slug                Unique identifier for the form.
+     * @param version             Optional version number of the form.
+     * @param elementData         User-provided element data for derivation.
+     * @param skipErrorsFor       List of element IDs to skip error calculation for.
      * @param skipVisibilitiesFor List of element IDs to skip visibility calculation for.
-     * @param skipValuesFor List of element IDs to skip value calculation for.
-     * @param skipOverridesFor List of element IDs to skip override calculation for.
+     * @param skipValuesFor       List of element IDs to skip value calculation for.
+     * @param skipOverridesFor    List of element IDs to skip override calculation for.
      * @return Derived ElementData with computed values, errors, and visibilities.
      * @throws ResponseException if the form is not found or invalid.
      */
@@ -328,9 +329,9 @@ public class CitizenFormController {
     /**
      * Retrieves the form version entity for a given slug and version, considering authentication context.
      *
-     * @param slug Unique identifier for the form.
+     * @param slug    Unique identifier for the form.
      * @param version Optional version number of the form.
-     * @param jwt JWT token for authentication (optional).
+     * @param jwt     JWT token for authentication (optional).
      * @return FormVersionWithDetailsEntity for the requested form and version.
      * @throws ResponseException if the form is not found or invalid.
      */
@@ -344,7 +345,10 @@ public class CitizenFormController {
         FormVersionWithDetailsEntity formVersion;
         if (user == null) {
             formVersion = formVersionWithDetailsService
-                    .findBySlugAndIsCurrentlyPublishedVersionIsTrue(slug)
+                    .retrieve(FormVersionWithDetailsFilter
+                            .create()
+                            .setSlug(slug)
+                            .setStatus(FormStatus.Published))
                     .orElseThrow(ResponseException::notFound);
         } else {
             if (version != null) {
@@ -353,7 +357,10 @@ public class CitizenFormController {
                         .orElseThrow(ResponseException::notFound);
             } else {
                 formVersion = formVersionWithDetailsService
-                        .findBySlugAndIsCurrentlyPublishedVersionIsTrue(slug)
+                        .retrieve(FormVersionWithDetailsFilter
+                                .create()
+                                .setSlug(slug)
+                                .setStatus(FormStatus.Published))
                         .orElseThrow(ResponseException::notFound);
             }
         }

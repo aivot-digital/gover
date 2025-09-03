@@ -229,7 +229,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
                 <DialogContent tabIndex={0}>
                     {
                         form?.root != null &&
-                        <FormMetrics root={form.root} />
+                        <FormMetrics root={form.rootElement} />
                     }
                 </DialogContent>
             </Dialog>

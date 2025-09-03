@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.form.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
@@ -34,6 +35,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
     @Id
     @Column(columnDefinition = "int2")
     private Integer version;
+    private FormStatus status;
     private FormType type;
     private Integer legalSupportDepartmentId;
     private Integer technicalSupportDepartmentId;
@@ -64,8 +66,6 @@ public class FormVersionWithDetailsEntity implements Cloneable {
     private LocalDateTime updated;
     private LocalDateTime published;
     private LocalDateTime revoked;
-    private Boolean isCurrentlyPublishedVersion;
-    private Boolean isCurrentlyDraftedVersion;
 
     // region constructors
 
@@ -85,6 +85,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
                                         Integer draftedVersion,
                                         Integer formId,
                                         Integer version,
+                                        FormStatus status,
                                         FormType type,
                                         Integer legalSupportDepartmentId,
                                         Integer technicalSupportDepartmentId,
@@ -106,9 +107,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
                                         LocalDateTime created,
                                         LocalDateTime updated,
                                         LocalDateTime published,
-                                        LocalDateTime revoked,
-                                        Boolean isCurrentlyPublishedVersion,
-                                        Boolean isCurrentlyDraftedVersion) {
+                                        LocalDateTime revoked) {
         this.id = id;
         this.slug = slug;
         this.internalTitle = internalTitle;
@@ -120,6 +119,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
         this.draftedVersion = draftedVersion;
         this.formId = formId;
         this.version = version;
+        this.status = status;
         this.type = type;
         this.legalSupportDepartmentId = legalSupportDepartmentId;
         this.technicalSupportDepartmentId = technicalSupportDepartmentId;
@@ -142,8 +142,6 @@ public class FormVersionWithDetailsEntity implements Cloneable {
         this.updated = updated;
         this.published = published;
         this.revoked = revoked;
-        this.isCurrentlyPublishedVersion = isCurrentlyPublishedVersion;
-        this.isCurrentlyDraftedVersion = isCurrentlyDraftedVersion;
     }
 
     public static FormVersionWithDetailsEntity of(FormEntity form, FormVersionEntity version) {
@@ -159,6 +157,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
                 form.getDraftedVersion(),
                 version.getFormId(),
                 version.getVersion(),
+                version.getStatus(),
                 version.getType(),
                 version.getLegalSupportDepartmentId(),
                 version.getTechnicalSupportDepartmentId(),
@@ -180,9 +179,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
                 version.getCreated(),
                 version.getUpdated(),
                 version.getPublished(),
-                version.getRevoked(),
-                form.getPublishedVersion() != null && form.getPublishedVersion().equals(version.getVersion()) && version.getRevoked() == null,
-                form.getDraftedVersion() != null && form.getDraftedVersion().equals(version.getVersion())
+                version.getRevoked()
         );
     }
 
@@ -206,6 +203,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
         return new FormVersionEntity(
                 formId,
                 version,
+                status,
                 type,
                 legalSupportDepartmentId,
                 technicalSupportDepartmentId,
@@ -340,6 +338,15 @@ public class FormVersionWithDetailsEntity implements Cloneable {
 
     public FormVersionWithDetailsEntity setVersion(Integer version) {
         this.version = version;
+        return this;
+    }
+
+    public FormStatus getStatus() {
+        return status;
+    }
+
+    public FormVersionWithDetailsEntity setStatus(FormStatus status) {
+        this.status = status;
         return this;
     }
 
@@ -541,24 +548,6 @@ public class FormVersionWithDetailsEntity implements Cloneable {
         return this;
     }
 
-    public Boolean getIsCurrentlyPublishedVersion() {
-        return isCurrentlyPublishedVersion;
-    }
-
-    public FormVersionWithDetailsEntity setIsCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
-        isCurrentlyPublishedVersion = currentlyPublishedVersion;
-        return this;
-    }
-
-    public Boolean getIsCurrentlyDraftedVersion() {
-        return isCurrentlyDraftedVersion;
-    }
-
-    public FormVersionWithDetailsEntity setIsCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
-        isCurrentlyDraftedVersion = currentlyDraftedVersion;
-        return this;
-    }
-
     @Override
     public FormVersionWithDetailsEntity clone() {
         try {
@@ -575,6 +564,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
             clone.draftedVersion = this.draftedVersion;
             clone.formId = this.formId;
             clone.version = this.version;
+            clone.status = this.status;
             clone.type = this.type;
             clone.legalSupportDepartmentId = this.legalSupportDepartmentId;
             clone.technicalSupportDepartmentId = this.technicalSupportDepartmentId;
@@ -597,8 +587,6 @@ public class FormVersionWithDetailsEntity implements Cloneable {
             clone.updated = this.updated;
             clone.published = this.published;
             clone.revoked = this.revoked;
-            clone.isCurrentlyPublishedVersion = this.isCurrentlyPublishedVersion;
-            clone.isCurrentlyDraftedVersion = this.isCurrentlyDraftedVersion;
 
             return clone;
         } catch (CloneNotSupportedException e) {

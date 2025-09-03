@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.form.entities;
 
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
@@ -33,6 +34,7 @@ public class FormVersionWithMembershipEntity {
     @Id
     @Column(columnDefinition = "int2")
     private Integer version;
+    private FormStatus status;
     private FormType type;
     private Integer legalSupportDepartmentId;
     private Integer technicalSupportDepartmentId;
@@ -63,8 +65,6 @@ public class FormVersionWithMembershipEntity {
     private LocalDateTime updated;
     private LocalDateTime published;
     private LocalDateTime revoked;
-    private Boolean isCurrentlyPublishedVersion;
-    private Boolean isCurrentlyDraftedVersion;
     @Id
     private String userId;
     private String userEmail;
@@ -177,6 +177,15 @@ public class FormVersionWithMembershipEntity {
 
     public FormVersionWithMembershipEntity setVersion(Integer version) {
         this.version = version;
+        return this;
+    }
+
+    public FormStatus getStatus() {
+        return status;
+    }
+
+    public FormVersionWithMembershipEntity setStatus(FormStatus status) {
+        this.status = status;
         return this;
     }
 
@@ -375,24 +384,6 @@ public class FormVersionWithMembershipEntity {
 
     public FormVersionWithMembershipEntity setRevoked(LocalDateTime revoked) {
         this.revoked = revoked;
-        return this;
-    }
-
-    public Boolean getIsCurrentlyPublishedVersion() {
-        return isCurrentlyPublishedVersion;
-    }
-
-    public FormVersionWithMembershipEntity setIsCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
-        isCurrentlyPublishedVersion = currentlyPublishedVersion;
-        return this;
-    }
-
-    public Boolean getIsCurrentlyDraftedVersion() {
-        return isCurrentlyDraftedVersion;
-    }
-
-    public FormVersionWithMembershipEntity setIsCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
-        isCurrentlyDraftedVersion = currentlyDraftedVersion;
         return this;
     }
 

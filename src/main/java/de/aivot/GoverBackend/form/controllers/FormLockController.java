@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.form.controllers;
 import de.aivot.GoverBackend.enums.EntityLockState;
 import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.services.FormLockService;
-import de.aivot.GoverBackend.form.services.FormWithMembershipService;
+import de.aivot.GoverBackend.form.services.FormVersionWithMembershipService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.dtos.EntityLockDto;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -16,15 +16,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/forms/{formId}/lock/")
 public class FormLockController {
     private final FormLockService formLockService;
-    private final FormWithMembershipService formWithMembershipService;
+    private final FormVersionWithMembershipService formVersionWithMembershipService;
 
     @Autowired
     public FormLockController(
             FormLockService formLockService,
-            FormWithMembershipService formWithMembershipService
+            FormVersionWithMembershipService formVersionWithMembershipService
     ) {
         this.formLockService = formLockService;
-        this.formWithMembershipService = formWithMembershipService;
+        this.formVersionWithMembershipService = formVersionWithMembershipService;
     }
 
     @GetMapping("")
@@ -42,7 +42,7 @@ public class FormLockController {
                 .setId(formId)
                 .build();
 
-        if (!formWithMembershipService.exists(formAccessSpec)) {
+        if (!formVersionWithMembershipService.exists(formAccessSpec)) {
             throw ResponseException.notFound("Das Formular existiert nicht oder Sie haben keinen Zugriff darauf.");
         }
 

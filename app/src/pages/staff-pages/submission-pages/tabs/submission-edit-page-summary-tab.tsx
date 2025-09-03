@@ -16,7 +16,7 @@ export function SubmissionEditPageSummaryTab(props: SubmissionEditPageSummaryTab
 
     return (
         <SummaryDispatcherComponent
-            element={form.root}
+            element={form.rootElement}
             allowStepNavigation={false}
             showTechnical={true}
             elementData={submission.customerInput}

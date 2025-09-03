@@ -1,0 +1,72 @@
+import {IdentityProviderLink} from '../../identity/models/identity-provider-link';
+import {PaymentProduct} from '../../../models/payment/payment-product';
+import {FormType} from '../enums/form-type';
+import {RootElement} from '../../../models/elements/root-element';
+import {FormRequestDTO} from './form-request-dto';
+
+export interface FormDetailsResponseDTO {
+    id: number;
+    slug: string;
+    internalTitle: string;
+    publicTitle: string;
+    developingDepartmentId: number;
+    managingDepartmentId: number | null;
+    responsibleDepartmentId: number | null;
+    publishedVersion: number | null;
+    draftedVersion: number | null;
+    formId: number;
+    version: number;
+    type: FormType;
+    legalSupportDepartmentId: number | null;
+    technicalSupportDepartmentId: number | null;
+    imprintDepartmentId: number | null;
+    privacyDepartmentId: number | null;
+    accessibilityDepartmentId: number | null;
+    destinationId: number | null;
+    themeId: number | null;
+    pdfTemplateKey: string | null; // UUID as string
+    paymentProviderKey: string | null; // UUID as string
+    paymentPurpose: string | null;
+    paymentDescription: string | null;
+    paymentProducts: PaymentProduct[];
+    identityProviders: IdentityProviderLink[];
+    identityVerificationRequired: boolean;
+    customerAccessHours: number | null;
+    submissionRetentionWeeks: number | null;
+    rootElement: RootElement;
+    created: string | null; // ISO date string
+    updated: string | null; // ISO date string
+    published: string | null; // ISO date string
+    revoked: string | null; // ISO date string
+    isCurrentlyPublishedVersion: boolean;
+    isCurrentlyDraftedVersion: boolean;
+}
+
+export function asFormRequestDTO(form: FormDetailsResponseDTO): FormRequestDTO {
+    return {
+        slug: form.slug,
+        internalTitle: form.internalTitle,
+        publicTitle: form.publicTitle,
+        developingDepartmentId: form.developingDepartmentId,
+        managingDepartmentId: form.managingDepartmentId,
+        responsibleDepartmentId: form.responsibleDepartmentId,
+        type: form.type,
+        legalSupportDepartmentId: form.legalSupportDepartmentId,
+        technicalSupportDepartmentId: form.technicalSupportDepartmentId,
+        imprintDepartmentId: form.imprintDepartmentId,
+        privacyDepartmentId: form.privacyDepartmentId,
+        accessibilityDepartmentId: form.accessibilityDepartmentId,
+        destinationId: form.destinationId,
+        themeId: form.themeId,
+        pdfTemplateKey: form.pdfTemplateKey,
+        paymentProviderKey: form.paymentProviderKey,
+        paymentPurpose: form.paymentPurpose,
+        paymentDescription: form.paymentDescription,
+        paymentProducts: form.paymentProducts,
+        identityVerificationRequired: form.identityVerificationRequired,
+        identityProviders: form.identityProviders,
+        customerAccessHours: form.customerAccessHours,
+        submissionRetentionWeeks: form.submissionRetentionWeeks,
+        rootElement: form.rootElement,
+    };
+}

@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.filters;
 
 import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
@@ -12,7 +13,7 @@ import java.util.UUID;
 public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMembershipEntity> {
     private Integer id;
     private String slug;
-    private String title;
+    private String internalTitle;
     private String publicTitle;
     private Integer developingDepartmentId;
     private Integer managingDepartmentId;
@@ -21,6 +22,7 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
     private Integer draftedVersion;
     private Integer formId;
     private Integer version;
+    private FormStatus status;
     private FormType type;
     private Integer legalSupportDepartmentId;
     private Integer technicalSupportDepartmentId;
@@ -53,7 +55,7 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
                 .create(FormVersionWithMembershipEntity.class)
                 .withEquals("id", id)
                 .withContains("slug", slug)
-                .withContains("title", title)
+                .withContains("internalTitle", internalTitle)
                 .withContains("publicTitle", publicTitle)
                 .withEquals("developingDepartmentId", developingDepartmentId)
                 .withEquals("managingDepartmentId", managingDepartmentId)
@@ -62,6 +64,7 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
                 .withEquals("draftedVersion", draftedVersion)
                 .withEquals("formId", formId)
                 .withEquals("version", version)
+                .withEquals("status", status)
                 .withEquals("type", type)
                 .withEquals("legalSupportDepartmentId", legalSupportDepartmentId)
                 .withEquals("technicalSupportDepartmentId", technicalSupportDepartmentId)
@@ -73,7 +76,7 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
                 .withEquals("pdfTemplateKey", pdfTemplateKey)
                 .withEquals("paymentProviderKey", paymentProviderKey)
                 .withEquals("identityVerificationRequired", identityVerificationRequired)
-                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey.toString())
+                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey != null ? identityProviderKey.toString() : null)
                 .withEquals("isCurrentlyPublishedVersion", isCurrentlyPublishedVersion)
                 .withEquals("isCurrentlyDraftedVersion", isCurrentlyDraftedVersion)
                 .withEquals("userId", userId)
@@ -99,7 +102,7 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
                 .create()
                 .setId(id)
                 .setSlug(slug)
-                .setTitle(title)
+                .setInternalTitle(internalTitle)
                 .setPublicTitle(publicTitle)
                 .setDevelopingDepartmentId(developingDepartmentId)
                 .setManagingDepartmentId(managingDepartmentId)
@@ -117,6 +120,38 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
                 .setDestinationId(destinationId)
                 .setThemeId(themeId)
                 .setPdfTemplateKey(pdfTemplateKey);
+    }
+
+    public FormFilter asFormFilter() {
+        return FormFilter
+                .create()
+                .setId(id)
+                .setSlug(slug)
+                .setInternalTitle(internalTitle)
+                .setPublicTitle(publicTitle)
+                .setDevelopingDepartmentId(developingDepartmentId)
+                .setManagingDepartmentId(managingDepartmentId)
+                .setResponsibleDepartmentId(responsibleDepartmentId)
+                .setPublishedVersion(publishedVersion)
+                .setDraftedVersion(draftedVersion);
+    }
+
+    public FormWithMembershipFilter asFormWithMembershipFilter() {
+        return FormWithMembershipFilter
+                .create()
+                .setId(id)
+                .setSlug(slug)
+                .setInternalTitle(internalTitle)
+                .setPublicTitle(publicTitle)
+                .setDevelopingDepartmentId(developingDepartmentId)
+                .setManagingDepartmentId(managingDepartmentId)
+                .setResponsibleDepartmentId(responsibleDepartmentId)
+                .setPublishedVersion(publishedVersion)
+                .setDraftedVersion(draftedVersion)
+                .setUserId(userId)
+                .setIsDeveloper(isDeveloper)
+                .setIsManager(isManager)
+                .setIsResponsible(isResponsible);
     }
 
     public Integer getId() {
@@ -137,12 +172,12 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
         return this;
     }
 
-    public String getTitle() {
-        return title;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public FormVersionWithMembershipFilter setTitle(String title) {
-        this.title = title;
+    public FormVersionWithMembershipFilter setInternalTitle(String internalTitle) {
+        this.internalTitle = internalTitle;
         return this;
     }
 
@@ -326,38 +361,38 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
         return this;
     }
 
-    public Boolean getPublished() {
+    public Boolean getIsPublished() {
         return isPublished;
     }
 
-    public FormVersionWithMembershipFilter setPublished(Boolean published) {
+    public FormVersionWithMembershipFilter setIsPublished(Boolean published) {
         isPublished = published;
         return this;
     }
 
-    public Boolean getRevoked() {
+    public Boolean getIsRevoked() {
         return isRevoked;
     }
 
-    public FormVersionWithMembershipFilter setRevoked(Boolean revoked) {
+    public FormVersionWithMembershipFilter setIsRevoked(Boolean revoked) {
         isRevoked = revoked;
         return this;
     }
 
-    public Boolean getCurrentlyPublishedVersion() {
+    public Boolean getIsCurrentlyPublishedVersion() {
         return isCurrentlyPublishedVersion;
     }
 
-    public FormVersionWithMembershipFilter setCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
+    public FormVersionWithMembershipFilter setIsCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
         isCurrentlyPublishedVersion = currentlyPublishedVersion;
         return this;
     }
 
-    public Boolean getCurrentlyDraftedVersion() {
+    public Boolean getIsCurrentlyDraftedVersion() {
         return isCurrentlyDraftedVersion;
     }
 
-    public FormVersionWithMembershipFilter setCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
+    public FormVersionWithMembershipFilter setIsCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
         isCurrentlyDraftedVersion = currentlyDraftedVersion;
         return this;
     }
@@ -371,30 +406,39 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
         return this;
     }
 
-    public Boolean getDeveloper() {
+    public Boolean getIsDeveloper() {
         return isDeveloper;
     }
 
-    public FormVersionWithMembershipFilter setDeveloper(Boolean developer) {
+    public FormVersionWithMembershipFilter setIsDeveloper(Boolean developer) {
         isDeveloper = developer;
         return this;
     }
 
-    public Boolean getManager() {
+    public Boolean getIsManager() {
         return isManager;
     }
 
-    public FormVersionWithMembershipFilter setManager(Boolean manager) {
+    public FormVersionWithMembershipFilter setIsManager(Boolean manager) {
         isManager = manager;
         return this;
     }
 
-    public Boolean getResponsible() {
+    public Boolean getIsResponsible() {
         return isResponsible;
     }
 
-    public FormVersionWithMembershipFilter setResponsible(Boolean responsible) {
+    public FormVersionWithMembershipFilter setIsResponsible(Boolean responsible) {
         isResponsible = responsible;
+        return this;
+    }
+
+    public FormStatus getStatus() {
+        return status;
+    }
+
+    public FormVersionWithMembershipFilter setStatus(FormStatus status) {
+        this.status = status;
         return this;
     }
 }

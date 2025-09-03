@@ -84,7 +84,7 @@ async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | u
         if (isDeletedElementReference(e)) {
             return `Gelöschtes Element (Index: ${e.id})`;
         } else if (isForm(e)) {
-            return e.title;
+            return e.internalTitle;
         } else {
             return generateComponentTitle(e);
         }

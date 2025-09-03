@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.form.filters;
 
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
@@ -12,7 +13,7 @@ import java.util.UUID;
 public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetailsEntity> {
     private Integer id;
     private String slug;
-    private String title;
+    private String internalTitle;
     private String publicTitle;
     private Integer developingDepartmentId;
     private Integer managingDepartmentId;
@@ -21,6 +22,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
     private Integer draftedVersion;
     private Integer formId;
     private Integer version;
+    private FormStatus status;
     private FormType type;
     private Integer legalSupportDepartmentId;
     private Integer technicalSupportDepartmentId;
@@ -33,10 +35,6 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
     private UUID paymentProviderKey;
     private Boolean identityVerificationRequired;
     private UUID identityProviderKey;
-    private Boolean isPublished;
-    private Boolean isRevoked;
-    private Boolean isCurrentlyPublishedVersion;
-    private Boolean isCurrentlyDraftedVersion;
 
     public static FormVersionWithDetailsFilter create() {
         return new FormVersionWithDetailsFilter();
@@ -45,11 +43,11 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
     @Nonnull
     @Override
     public Specification<FormVersionWithDetailsEntity> build() {
-        var builder = SpecificationBuilder
+        return SpecificationBuilder
                 .create(FormVersionWithDetailsEntity.class)
                 .withEquals("id", id)
                 .withContains("slug", slug)
-                .withContains("title", title)
+                .withContains("internalTitle", internalTitle)
                 .withContains("publicTitle", publicTitle)
                 .withEquals("developingDepartmentId", developingDepartmentId)
                 .withEquals("managingDepartmentId", managingDepartmentId)
@@ -58,6 +56,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
                 .withEquals("draftedVersion", draftedVersion)
                 .withEquals("formId", formId)
                 .withEquals("version", version)
+                .withEquals("status", status)
                 .withEquals("type", type)
                 .withEquals("legalSupportDepartmentId", legalSupportDepartmentId)
                 .withEquals("technicalSupportDepartmentId", technicalSupportDepartmentId)
@@ -70,20 +69,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
                 .withEquals("paymentProviderKey", paymentProviderKey)
                 .withEquals("identityVerificationRequired", identityVerificationRequired)
                 .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey.toString())
-                .withEquals("isCurrentlyPublishedVersion", isCurrentlyPublishedVersion)
-                .withEquals("isCurrentlyDraftedVersion", isCurrentlyDraftedVersion);
-
-        if (isPublished != null && isPublished) {
-            builder = builder
-                    .withNotNull("published");
-        }
-
-        if (isRevoked != null && isRevoked) {
-            builder = builder
-                    .withNotNull("revoked");
-        }
-
-        return builder.build();
+                .build();
     }
 
     public Integer getId() {
@@ -104,12 +90,12 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return this;
     }
 
-    public String getTitle() {
-        return title;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public FormVersionWithDetailsFilter setTitle(String title) {
-        this.title = title;
+    public FormVersionWithDetailsFilter setInternalTitle(String internalTitle) {
+        this.internalTitle = internalTitle;
         return this;
     }
 
@@ -293,39 +279,12 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return this;
     }
 
-    public Boolean getPublished() {
-        return isPublished;
+    public FormStatus getStatus() {
+        return status;
     }
 
-    public FormVersionWithDetailsFilter setPublished(Boolean published) {
-        isPublished = published;
-        return this;
-    }
-
-    public Boolean getRevoked() {
-        return isRevoked;
-    }
-
-    public FormVersionWithDetailsFilter setRevoked(Boolean revoked) {
-        isRevoked = revoked;
-        return this;
-    }
-
-    public Boolean getCurrentlyPublishedVersion() {
-        return isCurrentlyPublishedVersion;
-    }
-
-    public FormVersionWithDetailsFilter setCurrentlyPublishedVersion(Boolean currentlyPublishedVersion) {
-        isCurrentlyPublishedVersion = currentlyPublishedVersion;
-        return this;
-    }
-
-    public Boolean getCurrentlyDraftedVersion() {
-        return isCurrentlyDraftedVersion;
-    }
-
-    public FormVersionWithDetailsFilter setCurrentlyDraftedVersion(Boolean currentlyDraftedVersion) {
-        isCurrentlyDraftedVersion = currentlyDraftedVersion;
+    public FormVersionWithDetailsFilter setStatus(FormStatus status) {
+        this.status = status;
         return this;
     }
 }

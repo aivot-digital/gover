@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.form.entities;
 
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
@@ -30,6 +31,11 @@ public class FormVersionEntity {
     @Nonnull
     @Column(columnDefinition = "int2")
     private Integer version;
+
+    @Nonnull
+    @ColumnDefault("0")
+    @Column(columnDefinition = "int2")
+    private FormStatus status = FormStatus.Drafted;
 
     @Nonnull
     @ColumnDefault("0")
@@ -121,6 +127,7 @@ public class FormVersionEntity {
 
     public FormVersionEntity(@Nonnull Integer formId,
                              @Nonnull Integer version,
+                             @Nonnull FormStatus status,
                              @Nonnull FormType type,
                              @Nullable Integer legalSupportDepartmentId,
                              @Nullable Integer technicalSupportDepartmentId,
@@ -145,6 +152,7 @@ public class FormVersionEntity {
                              @Nullable LocalDateTime revoked) {
         this.formId = formId;
         this.version = version;
+        this.status = status;
         this.type = type;
         this.legalSupportDepartmentId = legalSupportDepartmentId;
         this.technicalSupportDepartmentId = technicalSupportDepartmentId;
@@ -173,6 +181,7 @@ public class FormVersionEntity {
         return new FormVersionEntity(
                 formVersionWithDetailsEntity.getId(),
                 formVersionWithDetailsEntity.getVersion(),
+                formVersionWithDetailsEntity.getStatus(),
                 formVersionWithDetailsEntity.getType(),
                 formVersionWithDetailsEntity.getLegalSupportDepartmentId(),
                 formVersionWithDetailsEntity.getTechnicalSupportDepartmentId(),
@@ -222,13 +231,14 @@ public class FormVersionEntity {
         if (object == null || getClass() != object.getClass()) return false;
 
         FormVersionEntity that = (FormVersionEntity) object;
-        return formId.equals(that.formId) && version.equals(that.version) && type == that.type && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) && Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) && Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && Objects.equals(paymentProducts, that.paymentProducts) && Objects.equals(identityProviders, that.identityProviders) && Objects.equals(identityVerificationRequired, that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
+        return formId.equals(that.formId) && version.equals(that.version)&& status == that.status && type == that.type && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) && Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) && Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && Objects.equals(paymentProducts, that.paymentProducts) && Objects.equals(identityProviders, that.identityProviders) && Objects.equals(identityVerificationRequired, that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
     }
 
     @Override
     public int hashCode() {
         int result = formId.hashCode();
         result = 31 * result + version.hashCode();
+        result = 31 * result + status.hashCode();
         result = 31 * result + type.hashCode();
         result = 31 * result + Objects.hashCode(legalSupportDepartmentId);
         result = 31 * result + Objects.hashCode(technicalSupportDepartmentId);
@@ -276,6 +286,16 @@ public class FormVersionEntity {
 
     public FormVersionEntity setVersion(@Nonnull Integer version) {
         this.version = version;
+        return this;
+    }
+
+    @Nonnull
+    public FormStatus getStatus() {
+        return status;
+    }
+
+    public FormVersionEntity setStatus(@Nonnull FormStatus status) {
+        this.status = status;
         return this;
     }
 

@@ -184,7 +184,7 @@ const columns: Array<GridColDef<Submission>> = [
         headerName: 'Formular',
         type: 'string',
         flex: 1,
-        valueGetter: (value, row) => row.form?.title,
+        valueGetter: (value, row) => row.form?.internalTitle,
     },
     {
         field: 'form.version',

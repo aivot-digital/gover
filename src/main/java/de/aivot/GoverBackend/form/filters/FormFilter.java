@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 public class FormFilter implements Filter<FormEntity> {
     private Integer id;
     private String slug;
-    private String title;
+    private String internalTitle;
     private String publicTitle;
     private Integer developingDepartmentId;
     private Integer managingDepartmentId;
@@ -29,7 +29,7 @@ public class FormFilter implements Filter<FormEntity> {
                 .create(FormEntity.class)
                 .withEquals("id", id)
                 .withContains("slug", slug)
-                .withContains("title", title)
+                .withContains("internalTitle", internalTitle)
                 .withContains("publicTitle", publicTitle)
                 .withEquals("developingDepartmentId", developingDepartmentId)
                 .withEquals("managingDepartmentId", managingDepartmentId)
@@ -57,12 +57,12 @@ public class FormFilter implements Filter<FormEntity> {
         return this;
     }
 
-    public String getTitle() {
-        return title;
+    public String getInternalTitle() {
+        return internalTitle;
     }
 
-    public FormFilter setTitle(String title) {
-        this.title = title;
+    public FormFilter setInternalTitle(String internalTitle) {
+        this.internalTitle = internalTitle;
         return this;
     }
 

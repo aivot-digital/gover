@@ -56,6 +56,7 @@ import {IdentityProviderInfo} from '../../../modules/identity/models/identity-pr
 import {setIdentityId} from '../../../slices/identity-slice';
 import {ElementData} from '../../../models/element-data';
 import {IdentityCustomerInputKey} from '../../../modules/identity/constants/identity-customer-input-key';
+import {asFormRequestDTO, FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
 
 export const DialogSearchParam = 'dialog';
 
@@ -67,7 +68,34 @@ export function FormEditPage() {
 
     const {
         id: formIdStr,
+        version: formVersionStr,
     } = useParams();
+
+    const formId = useMemo(() => {
+        if (formIdStr == null) {
+            return undefined;
+        }
+
+        const id = parseInt(formIdStr);
+        if (isNaN(id)) {
+            return undefined;
+        }
+
+        return id;
+    }, [formIdStr]);
+
+    const formVersion = useMemo(() => {
+        if (formVersionStr == null) {
+            return undefined;
+        }
+
+        const version = parseInt(formVersionStr);
+        if (isNaN(version)) {
+            return undefined;
+        }
+
+        return version;
+    }, [formVersionStr]);
 
     const dispatch = useAppDispatch();
     const api = useApi();
@@ -110,9 +138,7 @@ export function FormEditPage() {
     // Cleanup lock state on unload
     useEffect(() => {
         function handleCleanup() {
-            // Use the formId here and not the loaded form to prevent the cleanup function being triggered on each form change
-            const formId = parseInt(formIdStr ?? '');
-            if (isNaN(formId)) {
+            if (formId == null) {
                 return;
             }
 
@@ -141,10 +167,12 @@ export function FormEditPage() {
         dispatch(setCurrentStep(0));
         dispatch(setIdentityId(undefined));
         setFailedToLoad(false);
-        if (formIdStr != null) {
-            const id = parseInt(formIdStr);
+        if (formId != null && formVersion != null) {
             new FormsApiService(api)
-                .retrieve(id)
+                .retrieve({
+                    id: formId,
+                    version: formVersion,
+                })
                 .then((app) => {
                     CustomerInputService.cleanCustomerInput(app);
                     dispatch(updateLoadedForm(app));
@@ -153,9 +181,9 @@ export function FormEditPage() {
                     console.error(err);
                     setFailedToLoad(true);
                 });
-            fetchLockState(id);
+            fetchLockState(formId);
         }
-    }, [formIdStr, dispatch]);
+    }, [formId, formVersion, dispatch]);
 
     useEffect(() => {
         if (loadedForm?.themeId != null) {
@@ -170,8 +198,8 @@ export function FormEditPage() {
         }
 
         if (loadedForm != null) {
-            FormsApiService
-                .getIdentityProviders(loadedForm.id)
+            new FormsApiService(api)
+                .getIdentityProviders(loadedForm.slug, loadedForm.version)
                 .then(res => setIdentityProviderInfos(res.content));
         }
     }, [loadedForm]);
@@ -188,7 +216,10 @@ export function FormEditPage() {
             main: () => {
                 return new FormsApiService(api)
                     .determineFormState(
-                        loadedForm.id,
+                        {
+                            id: loadedForm.id,
+                            version: loadedForm.version,
+                        },
                         elementData,
                         {
                             skipErrorsFor: [],
@@ -240,14 +271,24 @@ export function FormEditPage() {
     }
 
     const handleUndo = () => {
+        if (formId == null || formVersion == null) {
+            return;
+        }
+
         dispatch(undoLoadedForm());
         dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
-            .update(loadedForm!.id, pastLoadedForm[pastLoadedForm.length - 1])
+            .update({
+                id: formId,
+                version: formVersion,
+            }, pastLoadedForm[pastLoadedForm.length - 1])
             .then((loadedForm) => {
                 new FormsApiService(api)
                     .determineFormState(
-                        loadedForm.id,
+                        {
+                            id: loadedForm.id,
+                            version: loadedForm.version,
+                        },
                         elementData,
                         {
                             skipErrorsFor: ['ALL'],
@@ -270,14 +311,24 @@ export function FormEditPage() {
     };
 
     const handleRedo = () => {
+        if (formId == null || formVersion == null) {
+            return;
+        }
+
         dispatch(redoLoadedForm());
         dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
-            .update(loadedForm!.id, futureLoadedForm[futureLoadedForm.length - 1])
+            .update({
+                id: formId,
+                version: formVersion,
+            }, futureLoadedForm[futureLoadedForm.length - 1])
             .then((loadedForm) => {
                 new FormsApiService(api)
                     .determineFormState(
-                        loadedForm.id,
+                        {
+                            id: loadedForm.id,
+                            version: loadedForm.version,
+                        },
                         elementData,
                         {
                             skipErrorsFor: ['ALL'],
@@ -323,11 +374,11 @@ export function FormEditPage() {
     } else if (loadedForm == null) {
         return <LoadingPlaceholder />;
     } else {
-        const allElements = flattenElements(loadedForm.root);
+        const allElements = flattenElements(loadedForm.rootElement);
 
         const isEditable = (
-            loadedForm.status !== ApplicationStatus.Published &&
-            loadedForm.status !== ApplicationStatus.Revoked &&
+            loadedForm.published != null &&
+            loadedForm.revoked != null &&
             (memberships ?? []).some((mem) => mem.departmentId === loadedForm.developingDepartmentId) &&
             (lockState == null || lockState.state === EntityLockState.Free || lockState.state === EntityLockState.LockedSelf)
         );
@@ -362,8 +413,11 @@ export function FormEditPage() {
                     try {
                         const updatedForm = await apiService
                             .update(
-                                updatedAppModel.id,
-                                updatedAppModel as Form,
+                                {
+                                    id: loadedForm.id,
+                                    version: loadedForm.version,
+                                },
+                                asFormRequestDTO(updatedAppModel),
                             );
                         dispatch(updateLoadedForm(updatedForm));
                     } catch (err: any) {
@@ -383,7 +437,10 @@ export function FormEditPage() {
                     try {
                         const newState = await apiService
                             .determineFormState(
-                                updatedAppModel.id,
+                                {
+                                    id: loadedForm.id,
+                                    version: loadedForm.version,
+                                },
                                 elementData,
                                 {
                                     skipErrorsFor: ['ALL'],
@@ -407,10 +464,10 @@ export function FormEditPage() {
         return (
             <ThemeProvider theme={_theme}>
                 <MetaElement
-                    title={`Editor - ${loadedForm.title} - ${loadedForm.version}`}
+                    title={`Editor - ${loadedForm.internalTitle} - ${loadedForm.version}`}
                 />
                 <AppToolbar
-                    title={`${loadedForm.title} - ${loadedForm.version}`}
+                    title={`${loadedForm.internalTitle} - ${loadedForm.version}`}
                     updateToolbarHeight={updateToolbarHeight}
                     actions={[
                         {
@@ -511,9 +568,9 @@ export function FormEditPage() {
                         ref={scrollContainerRef}
                         size={hideComponentTree ? 12 : 8}>
                         <ViewDispatcherComponent
-                            rootElement={loadedForm.root}
+                            rootElement={loadedForm.rootElement}
                             allElements={allElements}
-                            element={loadedForm.root}
+                            element={loadedForm.rootElement}
                             scrollContainerRef={scrollContainerRef}
                             isBusy={false}
                             isDeriving={false}
@@ -534,7 +591,7 @@ export function FormEditPage() {
                 />
 
                 <DeveloperTools
-                    rootElement={loadedForm.root}
+                    rootElement={loadedForm.rootElement}
                     elementData={elementData}
                 />
                 <HelpDialog

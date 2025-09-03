@@ -1,13 +1,13 @@
 import {Box, Container, Paper, Typography} from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {AppFooter} from '../../../components/app-footer/app-footer';
 import {Introductory} from '../../../components/introductory/introductory';
-import {AddApplicationDialog} from '../../../dialogs/application-dialogs/add-application-dialog/add-application-dialog';
+import {AddFormDialog} from '../../../dialogs/application-dialogs/add-form-dialog/add-form-dialog';
 import {ImportApplicationDialog} from '../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
 import {MetaElement} from '../../../components/meta-element/meta-element';
-import {Form, FormListProjection} from '../../../models/entities/form';
+import {Form} from '../../../models/entities/form';
 import {AppHeader} from '../../../components/app-header/app-header';
 import {AppMode} from '../../../data/app-mode';
 import {ListHeader} from '../../../components/list-header/list-header';
@@ -16,43 +16,18 @@ import {EmptySearchDataListPlaceholder} from '../../../components/empty-search-d
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
-import {type ListApplicationGroup} from '../../../models/lib/list-application-group';
-import {compareVersions} from '../../../utils/version-utils';
-import {ApplicationListItemGroup} from '../../../components/application-list-item-group/application-list-item-group';
 import {selectMemberships, selectUser} from '../../../slices/user-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {DeleteApplicationDialog} from '../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 import {ProviderLinksGrid} from '../../../modules/provider-links/components/provider-links-grid';
-import {ApplicationStatus} from '../../../data/application-status';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import {useApi} from '../../../hooks/use-api';
 import {hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {FormsApiService} from '../../../modules/forms/forms-api-service';
-
-function groupApplications(applications: FormListProjection[]): ListApplicationGroup[] {
-    const appMap = new Map<string, FormListProjection[]>();
-
-    for (const app of applications) {
-        if (appMap.has(app.slug)) {
-            appMap.get(app.slug)!.push(app);
-        } else {
-            appMap.set(app.slug, [
-                app,
-            ]);
-        }
-    }
-
-    return Array
-        .from(appMap)
-        .map(([_, value]) => ({
-            slug: value[0].slug,
-            applications: value.sort((a1, a2) => compareVersions(a1.version, a2.version)),
-        }))
-        .sort((g1, g2) => g1.applications[0].title.localeCompare(g2.applications[0].title, 'de', { sensitivity: 'base' }));
-
-}
+import {ApplicationListItem} from '../../../components/application-list-item/application-list-item';
+import {FormListResponseDTO} from '../../../modules/forms/dtos/form-list-response-dto';
 
 export function FormListPage() {
     const dispatch = useAppDispatch();
@@ -60,7 +35,7 @@ export function FormListPage() {
 
     const api = useApi();
 
-    const [forms, setForms] = useState<FormListProjection[]>();
+    const [forms, setForms] = useState<FormListResponseDTO[]>();
     const [search, setSearch] = useState<string>('');
 
     const [showAddApplicationDialog, setShowAddApplicationDialog] = useState(false);
@@ -69,7 +44,7 @@ export function FormListPage() {
     const [applicationToClone, setApplicationToClone] = useState<Form>();
     const [applicationToImport, setApplicationToImport] = useState<Form>();
     const [applicationToUpgrade, setApplicationToUpgrade] = useState<Form>();
-    const [applicationToDelete, setApplicationToDelete] = useState<FormListProjection>();
+    const [applicationToDelete, setApplicationToDelete] = useState<FormListResponseDTO>();
 
     const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
@@ -77,9 +52,10 @@ export function FormListPage() {
 
     useEffect(() => {
         new FormsApiService(api)
-            .list(0, 999, 'title', 'ASC', {
+            .list(0, 999, 'internalTitle', 'ASC', {
                 userId: user?.id,
                 isDeveloper: true,
+                isCurrentlyPublishedVersion: true,
             })
             .then(forms => setForms(forms.content))
             .catch((err) => {
@@ -87,11 +63,11 @@ export function FormListPage() {
             });
     }, []);
 
-    const handleAdd = (application: Form, navigateToEditAfterwards: boolean): void => {
+    const handleAdd = (form: Form, navigateToEditAfterwards: boolean): void => {
         if (forms != null) {
             dispatch(showLoadingOverlay('Formular wird gespeichert'));
             new FormsApiService(api)
-                .create(application)
+                .create(form)
                 .then((createdApplication) => {
                     if (navigateToEditAfterwards) {
                         navigate(`/forms/${createdApplication.id}`);
@@ -116,27 +92,18 @@ export function FormListPage() {
         }
     };
 
-    const handleApplicationClone = (appToClone: FormListProjection): void => {
-        new FormsApiService(api)
-            .retrieve(appToClone.id)
-            .then((app) => {
-                setApplicationToClone({
-                    ...app,
-                    id: 0,
-                    status: ApplicationStatus.Drafted,
-                });
-            });
+    const handleApplicationClone = (formToClone: FormListResponseDTO): void => {
+        // TODO: Implement this
     };
 
-    const handleApplicationNewVersion = (appToClone: FormListProjection): void => {
+    const handleFormNewVersion = (formToBaseNewVersionOn: FormListResponseDTO): void => {
         new FormsApiService(api)
-            .retrieve(appToClone.id)
-            .then((app) => {
-                setApplicationToUpgrade({
-                    ...app,
-                    id: 0,
-                    status: ApplicationStatus.Drafted,
-                });
+            .newVersion({
+                id: formToBaseNewVersionOn.id,
+                version: formToBaseNewVersionOn.draftedVersion ?? formToBaseNewVersionOn.publishedVersion,
+            })
+            .then((newFormVersion) => {
+                navigate(`/forms/${newFormVersion.id}/${newFormVersion.version}`);
             });
     };
 
@@ -148,11 +115,10 @@ export function FormListPage() {
 
     const filteredApplications = forms
         .filter((app) => app
-            .title
+            .internalTitle
             .toLowerCase()
             .includes(search.toLowerCase()),
         );
-    const groupedApplications = groupApplications(filteredApplications);
 
     return (
         <>
@@ -162,7 +128,8 @@ export function FormListPage() {
 
             <AppHeader
                 mode={AppMode.Staff}
-                onDeleteFormData={() => {}}
+                onDeleteFormData={() => {
+                }}
             />
 
             <Introductory
@@ -263,17 +230,17 @@ export function FormListPage() {
                                     />
                                 }
                                 {
-                                    groupedApplications.length > 0 &&
+                                    filteredApplications.length > 0 &&
                                     <Box>
                                         {
-                                            groupedApplications
-                                                .map((group) => (
-                                                    <ApplicationListItemGroup
-                                                        key={group.slug}
-                                                        group={group}
+                                            filteredApplications
+                                                .map((form) => (
+                                                    <ApplicationListItem
+                                                        key={form.id}
+                                                        form={form}
                                                         onClone={handleApplicationClone}
                                                         onDelete={setApplicationToDelete}
-                                                        onNewVersion={handleApplicationNewVersion}
+                                                        onNewVersion={handleFormNewVersion}
                                                         memberships={memberships}
                                                         user={user}
                                                     />
@@ -291,7 +258,7 @@ export function FormListPage() {
 
             <AppFooter mode={AppMode.Staff} />
 
-            <AddApplicationDialog
+            <AddFormDialog
                 mode={showAddApplicationDialog ? 'new' : (applicationToUpgrade != null ? 'new-version' : (applicationToClone != null ? 'clone' : 'import'))}
                 existingApplications={forms}
                 applicationToBaseOn={applicationToUpgrade ?? applicationToClone ?? applicationToImport}

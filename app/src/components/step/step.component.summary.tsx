@@ -30,7 +30,7 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
     const application = useAppSelector(selectLoadedForm);
 
     // FIXME: This is no a good solution.
-    const index = application?.root.children?.findIndex(step => step.id === model.id);
+    const index = application?.rootElement.children?.findIndex(step => step.id === model.id);
 
     const handleNavigateToStep = () => {
         if (index != null) {

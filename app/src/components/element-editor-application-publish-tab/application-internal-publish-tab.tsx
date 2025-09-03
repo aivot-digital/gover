@@ -34,7 +34,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
     const [isPublished, setIsPublished] = useState(props.entity.status === ApplicationStatus.Published);
     const [isRevoked, setIsRevoked] = useState(props.entity.status === ApplicationStatus.Revoked);
-    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.identityRequired);
+    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.identityVerificationRequired);
     const [isInternal, setIsInternal] = useState(props.entity.type === FormType.Internal);
 
     useEffect(() => {

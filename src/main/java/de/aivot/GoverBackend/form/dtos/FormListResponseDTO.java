@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.form.dtos;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
+import de.aivot.GoverBackend.form.entities.FormWithMembershipEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -14,7 +15,7 @@ public record FormListResponseDTO(
         @Nonnull
         String slug,
         @Nonnull
-        String title,
+        String internalTitle,
         @Nonnull
         String publicTitle,
         @Nonnull
@@ -77,6 +78,22 @@ public record FormListResponseDTO(
                 form.getUpdated(),
                 form.getPublishedVersion(),
                 form.getDraftedVersion()
+        );
+    }
+
+    public static FormListResponseDTO fromEntity(FormWithMembershipEntity formWithMembershipEntity) {
+        return new FormListResponseDTO(
+                formWithMembershipEntity.getId(),
+                formWithMembershipEntity.getSlug(),
+                formWithMembershipEntity.getInternalTitle(),
+                formWithMembershipEntity.getPublicTitle(),
+                formWithMembershipEntity.getDevelopingDepartmentId(),
+                formWithMembershipEntity.getManagingDepartmentId(),
+                formWithMembershipEntity.getResponsibleDepartmentId(),
+                formWithMembershipEntity.getCreated(),
+                formWithMembershipEntity.getUpdated(),
+                formWithMembershipEntity.getPublishedVersion(),
+                formWithMembershipEntity.getDraftedVersion()
         );
     }
 }

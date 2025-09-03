@@ -28,7 +28,7 @@ export class CustomerInputService {
     }
 
     public static storeCustomerInput(application: Application, state: ElementData): void {
-        const stateCopy = cleanElementData(application.root, state);
+        const stateCopy = cleanElementData(application.rootElement, state);
         delete stateCopy[IdentityCustomerInputKey];
         StorageService.storeObject_unsafe(this.getKey(application, DATA_KEY), stateCopy, StorageScope.Local);
         StorageService.storeString_unsafe(this.getKey(application, DATE_KEY), new Date().toISOString(), StorageScope.Local);

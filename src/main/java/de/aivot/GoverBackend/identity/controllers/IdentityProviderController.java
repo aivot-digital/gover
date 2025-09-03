@@ -153,7 +153,7 @@ public class IdentityProviderController {
         var formFilter = FormVersionWithDetailsFilter
                 .create()
                 .setIdentityProviderKey(key)
-                .setPublished(true);
+                .setStatus(FormStatus.Published);
 
         if (!requestDTO.isEnabled() && formVersionWithDetailsRepository.exists(formFilter.build())) {
             throw ResponseException.conflict(
@@ -223,7 +223,7 @@ public class IdentityProviderController {
 
         var formFilter = new FormVersionWithDetailsFilter()
                 .setIdentityProviderKey(key)
-                .setPublished(true);
+                .setStatus(FormStatus.Published);
 
         if (formVersionWithDetailsRepository.exists(formFilter.build())) {
             throw ResponseException.conflict(

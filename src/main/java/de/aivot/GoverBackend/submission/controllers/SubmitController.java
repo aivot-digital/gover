@@ -20,6 +20,7 @@ import de.aivot.GoverBackend.exceptions.NotAcceptableException;
 import de.aivot.GoverBackend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
@@ -162,7 +163,7 @@ public class SubmitController {
         }
 
         // Test form published or user authenticated
-        if (!form.getIsCurrentlyPublishedVersion() && (jwt == null)) {
+        if (form.getStatus() != FormStatus.Published && jwt == null) {
             throw ResponseException.forbidden();
         }
 

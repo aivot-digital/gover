@@ -3,48 +3,14 @@ import {ApplicationStatus} from '../../data/application-status';
 import {PaymentProduct} from '../payment/payment-product';
 import {FormType} from '../../modules/forms/enums/form-type';
 import {IdentityProviderLink} from '../../modules/identity/models/identity-provider-link';
+import {FormDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
 
 
-export interface Form {
-    id: number;
-    slug: string;
-    version: string;
-    title: string;
-    status: ApplicationStatus;
-    type: FormType;
-    root: RootElement;
+export type Form = FormDetailsResponseDTO;
 
-    destinationId: number | null;
-    legalSupportDepartmentId: number | null;
-    technicalSupportDepartmentId: number | null;
-    imprintDepartmentId: number | null;
-    privacyDepartmentId: number | null;
-    accessibilityDepartmentId: number | null;
-    developingDepartmentId: number;
-    managingDepartmentId: number | null;
-    responsibleDepartmentId: number | null;
-    themeId: number | null;
-
-    created: string;
-    updated: string;
-
-    customerAccessHours: number;
-    submissionDeletionWeeks: number;
-
-    pdfBodyTemplateKey?: string | null;
-
-    products?: PaymentProduct[];
-    paymentPurpose?: string;
-    paymentDescription?: string;
-    paymentProvider?: string;
-
-    identityRequired: boolean;
-    identityProviders: IdentityProviderLink[];
-}
-
-export type FormListProjection = Omit<Form, 'root'>;
-export type FormListProjectionPublic = Omit<FormListProjection, 'status' | 'destinationId' | 'created' | 'customerAccessHours' | 'submissionDeletionWeeks' | 'totalSubmissions' | 'openSubmissions' | 'inProgressSubmissions' | 'bundIdLevel' | 'bayernIdLevel' | 'shIdLevel' | 'mukLevel'>;
-export type FormPublicProjection = Omit<Form, 'pdfBodyTemplateKey' | 'paymentEndpointId' | 'paymentOriginatorId' | 'paymentPurpose' | 'products' | 'paymentDescription'>;
+export type FormListProjection = Omit<Form, 'rootElement'>;
+export type FormListProjectionPublic = Omit<FormListProjection, 'status' | 'destinationId' | 'created' | 'customerAccessHours' | 'submissionRetentionWeeks' | 'totalSubmissions' | 'openSubmissions' | 'inProgressSubmissions' | 'bundIdLevel' | 'bayernIdLevel' | 'shIdLevel' | 'mukLevel'>;
+export type FormPublicProjection = Omit<Form, 'pdfTemplateKey' | 'paymentEndpointId' | 'paymentOriginatorId' | 'paymentPurpose' | 'paymentProducts' | 'paymentDescription'>;
 
 export function isForm(obj: any): obj is Form {
     return obj != null && 'slug' in obj;

@@ -41,6 +41,8 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
 
     onFullWidthChange?: (isFullWidth: boolean) => void;
     onBusyChange?: (isBusy: boolean) => void;
+
+    dynamicRowHeight?: boolean;
 }
 
 export type SortOrder = 'ASC' | 'DESC';

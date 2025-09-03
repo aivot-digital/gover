@@ -32,7 +32,7 @@ export function ApplicationListItemPublic(props: ApplicationListItemDisplayProps
                     component={'h4'}
                     variant="h6"
                 >
-                    {props.form.title.replace(/\n/g, ' ')}
+                    {props.form.publicTitle.replace(/\n/g, ' ')}
                 </Typography>
                 <Typography
                     variant="body2"
@@ -44,7 +44,7 @@ export function ApplicationListItemPublic(props: ApplicationListItemDisplayProps
                         color: 'text.secondary',
                     }}
                 >
-                    Stand vom: {format(parseISO(props.form.updated), 'dd.MM.yyyy')} • Version: {props.form.version}
+                    Stand vom: {format(parseISO(props.form.updated), 'dd.MM.yyyy')} • Version: {props.form.publishedVersion}
                 </Typography>
             </Box>
             <Box className={styles.listItemActions}>
@@ -56,7 +56,7 @@ export function ApplicationListItemPublic(props: ApplicationListItemDisplayProps
                         component={Link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        to={`/${props.form.slug}/${props.form.version}`}
+                        to={`/${props.form.slug}`}
                     >
                         Formular öffnen
                     </Button>

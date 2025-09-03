@@ -15,6 +15,7 @@ import {prefillIdentityData} from '../../../../utils/prefill-elements';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {FormPublicProjection} from '../../../../models/entities/form';
+import {Api, useApi} from '../../../../hooks/use-api';
 
 interface IdentityButtonGroupProps {
     rootElement: AnyElement;
@@ -38,6 +39,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     } = props;
 
     const dispatch = useAppDispatch();
+    const api = useApi();
 
     const value: IdentityData | undefined | null = elementData[IdentityCustomerInputKey]?.inputValue ?? undefined;
     const error: string[] | null | undefined = elementData[IdentityCustomerInputKey]?.computedErrors ?? undefined;
@@ -45,7 +47,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     const [identityLinks, setIdentityLinks] = useState<CombinedIdentityProviderLink[]>();
 
     useEffect(() => {
-        getIdentityProviderLinks(form)
+        getIdentityProviderLinks(api, form)
             .then(setIdentityLinks)
             .catch((err) => {
                 console.error('Error fetching identity providers:', err);
@@ -65,7 +67,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
             }}
         >
             {
-                form.identityRequired ?
+                form.identityVerificationRequired ?
                     <>
                         <Typography
                             component="h4"
@@ -150,8 +152,9 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     );
 }
 
-async function getIdentityProviderLinks(form: FormPublicProjection) {
-    const idps = await FormsApiService.getIdentityProviders(form.id);
+async function getIdentityProviderLinks(api: Api, form: FormPublicProjection) {
+    const idps = await new FormsApiService(api)
+        .getIdentityProviders(form.slug, form.version);
 
     const identityLinks: CombinedIdentityProviderLink[] = [];
 

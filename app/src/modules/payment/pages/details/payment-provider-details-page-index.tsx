@@ -204,7 +204,7 @@ export function PaymentProviderDetailsPageIndex() {
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = relatedForms.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.title,
+                    label: f.internalTitle,
                     to: `/forms/${f.id}`,
                 }));
 

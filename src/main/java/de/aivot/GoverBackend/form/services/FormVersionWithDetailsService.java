@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.services.ElementApprovalService;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -90,16 +91,6 @@ public class FormVersionWithDetailsService implements ReadEntityService<FormVers
     }
 
     @Nonnull
-    public Page<FormVersionWithDetailsEntity> findAllByIsCurrentlyPublishedVersionIsTrue(@Nullable Pageable pageable, @Nullable Specification<FormVersionWithDetailsEntity> spec) {
-        return repository.findAllByIsCurrentlyPublishedVersionIsTrue(pageable, spec);
-    }
-
-    @Nonnull
-    public Optional<FormVersionWithDetailsEntity> findBySlugAndIsCurrentlyPublishedVersionIsTrue(@Nonnull String slug) {
-        return repository.findBySlugAndIsCurrentlyPublishedVersionIsTrue(slug);
-    }
-
-    @Nonnull
     public Optional<FormVersionWithDetailsEntity> findBySlugAndVersion(@Nonnull String slug, @Nonnull Integer version) {
         return repository.findBySlugAndVersion(slug, version);
     }
@@ -114,25 +105,20 @@ public class FormVersionWithDetailsService implements ReadEntityService<FormVers
             throw new ResponseException(HttpStatus.CONFLICT, "Das Formular kann nicht veröffentlicht werden, da nicht alle Voraussetzungen erfüllt sind");
         }
 
-        var formToPublish = formRepository
-                .findById(form.getId())
-                .orElseThrow(ResponseException::notFound);
-
         var versionToPublishId = FormVersionEntityId
                 .of(form.getId(), form.getVersion());
 
         var versionToPublish = formVersionRepository
                 .findById(versionToPublishId)
+                .orElseThrow(ResponseException::notFound)
+                .setStatus(FormStatus.Published);
+
+        var publishedVersion = formVersionRepository
+                .save(versionToPublish);
+
+        return repository
+                .findById(FormVersionWithDetailsEntityId.of(publishedVersion.getFormId(), publishedVersion.getVersion()))
                 .orElseThrow(ResponseException::notFound);
-
-        versionToPublish.setPublished(LocalDateTime.now());
-        var publishedVersion = formVersionRepository.save(versionToPublish);
-
-        formToPublish.setPublishedVersion(form.getVersion());
-        var publishedForm = formRepository.save(formToPublish);
-
-        return FormVersionWithDetailsEntity
-                .of(publishedForm, publishedVersion);
     }
 
     @Nonnull
@@ -141,26 +127,20 @@ public class FormVersionWithDetailsService implements ReadEntityService<FormVers
             throw new ResponseException(HttpStatus.CONFLICT, "Das Formular ist nicht veröffentlicht und kann nicht zurückgezogen werden");
         }
 
-        var formToRevoke = formRepository
-                .findById(form.getId())
-                .orElseThrow(ResponseException::notFound);
-
         var versionToRevokeId = FormVersionEntityId
                 .of(form.getId(), form.getVersion());
 
         var versionToRevoke = formVersionRepository
                 .findById(versionToRevokeId)
+                .orElseThrow(ResponseException::notFound)
+                .setStatus(FormStatus.Revoked);
+
+        var revokedVersion = formVersionRepository
+                .save(versionToRevoke);
+
+        return repository
+                .findById(FormVersionWithDetailsEntityId.of(revokedVersion.getFormId(), revokedVersion.getVersion()))
                 .orElseThrow(ResponseException::notFound);
-
-        versionToRevoke.setRevoked(LocalDateTime.now());
-        var revokedVersion = formVersionRepository.save(versionToRevoke);
-
-        formToRevoke.setPublishedVersion(null);
-        var revokedForm = formRepository.save(formToRevoke);
-
-
-        return FormVersionWithDetailsEntity
-                .of(revokedForm, revokedVersion);
     }
 
     public List<FormPublishChecklistItem> getFormPublishChecklist(FormVersionWithDetailsEntity form) {
@@ -238,8 +218,6 @@ public class FormVersionWithDetailsService implements ReadEntityService<FormVers
         }
 
         if (form.getIdentityProviders() != null && !form.getIdentityProviders().isEmpty()) {
-
-
             var allLinkedIDPsProductive = form
                     .getIdentityProviders()
                     .stream()

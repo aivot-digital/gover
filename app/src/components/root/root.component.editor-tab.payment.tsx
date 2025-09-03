@@ -447,7 +447,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                             ]}
                             typeHints={[{
                                 name: 'ctx',
-                                content: createLowCodeContextType(props.form.root),
+                                content: createLowCodeContextType(props.form.rootElement),
                             }]}
                             onChange={val => {
                                 props.onPatch({
@@ -505,15 +505,15 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
     }, [api]);
 
     const handleProductPatch = (index: number, patch: Partial<PaymentProduct>) => {
-        if (props.entity.products != null) {
-            const products = [...props.entity.products];
+        if (props.entity.paymentProducts != null) {
+            const products = [...props.entity.paymentProducts];
             products[index] = {
                 ...products[index],
                 ...patch,
             };
             props.onPatchEntity({
                 ...props.entity,
-                products,
+                paymentProducts: products,
             });
         }
     };
@@ -675,8 +675,8 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                                 onClick={() => {
                                     props.onPatchEntity({
                                         ...props.entity,
-                                        products: [
-                                            ...(props.entity.products ?? []),
+                                        paymentProducts: [
+                                            ...(props.entity.paymentProducts ?? []),
                                             {
                                                 id: uuid4(),
                                                 reference: '',
@@ -699,27 +699,27 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
 
                     <Box>
                         {
-                            (props.entity.products == null ||
-                                props.entity.products.length === 0) &&
+                            (props.entity.paymentProducts == null ||
+                                props.entity.paymentProducts.length === 0) &&
                             <AlertComponent color="info">
                                 Es sind noch keine Zahlungspositionen konfiguriert.
                                 Fügen Sie mindestens eine Zahlungsposition hinzu.
                             </AlertComponent>
                         }
                         {
-                            props.entity.products != null &&
-                            props.entity.products.map((product, index) => (
+                            props.entity.paymentProducts != null &&
+                            props.entity.paymentProducts.map((product, index) => (
                                 <PaymentPositionItem
                                     key={index}
                                     index={index}
                                     product={product}
                                     form={props.entity}
                                     onDelete={() => {
-                                        const products = [...(props.entity.products ?? [])];
+                                        const products = [...(props.entity.paymentProducts ?? [])];
                                         products.splice(index, 1);
                                         props.onPatchEntity({
                                             ...props.entity,
-                                            products,
+                                            paymentProducts: products,
                                         });
                                     }}
                                     onPatch={patch => {

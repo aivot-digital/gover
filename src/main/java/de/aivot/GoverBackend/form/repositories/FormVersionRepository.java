@@ -16,5 +16,5 @@ public interface FormVersionRepository extends JpaRepository<FormVersionEntity, 
             """, nativeQuery = true)
     Optional<Integer> maxVersionForFormId(@Param("formId") Integer formId);
 
-    boolean existsByFormIdAndPublishedIsNotNullAndRevokedIsNull(Integer formId);
+    boolean existsByFormIdAndStatus(Integer id, FormStatus formStatus);
 }

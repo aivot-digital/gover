@@ -58,7 +58,7 @@ export function PublishPresetDialog(props: DialogProps & PublishPresetDialogProp
             GoverStoreService.publishModule(
                 storeKey,
                 {
-                    gover_root: cleanBeforeStoreUpload(presetVersion.root),
+                    gover_root: cleanBeforeStoreUpload(presetVersion.rootElement),
                     version: presetVersion.version,
                     title: preset.title,
                     description,

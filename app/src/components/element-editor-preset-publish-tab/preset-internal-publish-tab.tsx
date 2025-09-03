@@ -29,7 +29,7 @@ export function PresetInternalPublishTab(props: TabProps<GroupLayout, PresetVers
     const handlePublish = (): void => {
         presetVersionApiService.update(props.entity.version, {
             ...props.entity,
-            root: props.element,
+            rootElement: props.element,
             publishedAt: new Date().toISOString(),
         })
             .then((res) => {

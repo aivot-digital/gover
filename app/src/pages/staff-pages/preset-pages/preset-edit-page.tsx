@@ -188,7 +188,7 @@ export function PresetEditPage() {
         const newPresetVersion: PresetVersion = {
             preset: preset.key,
             version: newVersion,
-            root: presetVersion ? presetVersion.root : generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
+            rootElement: presetVersion ? presetVersion.rootElement : generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
             publishedAt: null,
             publishedStoreAt: null,
             created: new Date().toISOString(),
@@ -359,7 +359,7 @@ export function PresetEditPage() {
         return <LoadingPlaceholder />;
     }
 
-    const allElements = flattenElements(presetVersion.root);
+    const allElements = flattenElements(presetVersion.rootElement);
 
     return (
         <>
@@ -431,9 +431,9 @@ export function PresetEditPage() {
                     size={8}>
                     <Container>
                         <ViewDispatcherComponent
-                            rootElement={presetVersion.root}
+                            rootElement={presetVersion.rootElement}
                             allElements={allElements}
-                            element={presetVersion.root}
+                            element={presetVersion.rootElement}
                             isBusy={isBusy}
                             isDeriving={isDeriving}
                             elementData={elementData}

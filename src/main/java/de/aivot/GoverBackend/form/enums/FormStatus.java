@@ -3,15 +3,11 @@ package de.aivot.GoverBackend.form.enums;
 import com.fasterxml.jackson.annotation.JsonValue;
 import de.aivot.GoverBackend.lib.models.Identifiable;
 
-/**
- * @deprecated
- */
-@Deprecated
+
 public enum FormStatus implements Identifiable<Integer> {
     Drafted(0),
-    InReview(1),
-    Published(2),
-    Revoked(3);
+    Published(1),
+    Revoked(2);
 
     private final Integer key;
 

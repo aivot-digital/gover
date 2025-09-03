@@ -19,6 +19,7 @@ import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
@@ -49,35 +50,38 @@ public class FormController {
     private final FormMailService formMailService;
     private final ExceptionMailService exceptionMailService;
     private final FormService formService;
-    private final FormWithMembershipService formWithMembershipService;
+    private final FormVersionWithMembershipService formVersionWithMembershipService;
     private final DepartmentMembershipService departmentMembershipService;
     private final FormLockService formLockService;
     private final FormRevisionService formRevisionService;
     private final FormVersionWithDetailsService formVersionWithDetailsService;
     private final FormVersionService formVersionService;
+    private final FormWithMembershipService formWithMembershipService;
 
     @Autowired
     public FormController(AuditService auditService,
                           FormMailService formMailService,
                           ExceptionMailService exceptionMailService,
                           FormService formService,
-                          FormWithMembershipService formWithMembershipService,
+                          FormVersionWithMembershipService formVersionWithMembershipService,
                           DepartmentMembershipService departmentMembershipService,
                           FormLockService formLockService,
                           FormRevisionService formRevisionService,
                           FormVersionWithDetailsService formVersionWithDetailsService,
-                          FormVersionService formVersionService) {
+                          FormVersionService formVersionService,
+                          FormWithMembershipService formWithMembershipService) {
         this.auditService = auditService.createScopedAuditService(FormController.class);
 
         this.formMailService = formMailService;
         this.exceptionMailService = exceptionMailService;
         this.formService = formService;
-        this.formWithMembershipService = formWithMembershipService;
+        this.formVersionWithMembershipService = formVersionWithMembershipService;
         this.departmentMembershipService = departmentMembershipService;
         this.formLockService = formLockService;
         this.formRevisionService = formRevisionService;
         this.formVersionWithDetailsService = formVersionWithDetailsService;
         this.formVersionService = formVersionService;
+        this.formWithMembershipService = formWithMembershipService;
     }
 
     @GetMapping("")
@@ -96,13 +100,13 @@ public class FormController {
             // Check if a user id is provided in the filter to show only forms the given user has access to
             if (filter.getUserId() != null) {
                 return formWithMembershipService
-                        .list(pageable, filter)
+                        .list(pageable, filter.asFormWithMembershipFilter())
                         .map(FormListResponseDTO::fromEntity);
             }
             // If not, show all forms. Use the form service to prevent duplicates
             else {
-                return formVersionWithDetailsService
-                        .list(pageable, filter.asFormVersionWithDetailsFilter())
+                return formService
+                        .list(pageable, filter.asFormFilter())
                         .map(FormListResponseDTO::fromEntity);
             }
         }
@@ -110,7 +114,7 @@ public class FormController {
         else {
             filter.setUserId(user.getId());
             return formWithMembershipService
-                    .list(pageable, filter)
+                    .list(pageable, filter.asFormWithMembershipFilter())
                     .map(FormListResponseDTO::fromEntity);
         }
     }
@@ -214,7 +218,7 @@ public class FormController {
                 .build();
 
         // Retrieve the form by its id
-        return formWithMembershipService
+        return formVersionWithMembershipService
                 .retrieve(formSpec)
                 .map(FormDetailsResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
@@ -248,7 +252,6 @@ public class FormController {
             if (departmentMembershipService.checkUserNotInDepartment(user, requestDTO.developingDepartmentId())) {
                 throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
             }
-
             // TODO: Check user role
         }
 
@@ -311,6 +314,71 @@ public class FormController {
 
         // Return the form as a DTO
         return FormDetailsResponseDTO.fromEntity(form);
+    }
+
+    @PutMapping("{formId}/{formVersion}/as-new-version/")
+    public FormDetailsResponseDTO newVersion(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
+    ) throws ResponseException {
+        // Extract staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
+                .orElseThrow(ResponseException::notFound);
+
+        // Check if the user has access to the department the form resides in
+        if (!user.getGlobalAdmin()) {
+            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
+                throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
+            }
+            // TODO: Check user role
+        }
+
+        if (form.getDraftedVersion() != null) {
+            throw ResponseException.conflict("Es existiert bereits eine Entwurfs-Version des Formulars.");
+        }
+
+        var newVersion = new FormVersionEntity(
+                formId,
+                null,
+                form.getStatus(),
+                form.getType(),
+                form.getLegalSupportDepartmentId(),
+                form.getTechnicalSupportDepartmentId(),
+                form.getImprintDepartmentId(),
+                form.getPrivacyDepartmentId(),
+                form.getAccessibilityDepartmentId(),
+                form.getDestinationId(),
+                form.getCustomerAccessHours(),
+                form.getSubmissionRetentionWeeks(),
+                form.getThemeId(),
+                form.getPdfTemplateKey(),
+                form.getPaymentProviderKey(),
+                form.getPaymentPurpose(),
+                form.getPaymentDescription(),
+                form.getPaymentProducts(),
+                form.getIdentityProviders(),
+                form.getIdentityVerificationRequired(),
+                form.getRootElement(),
+                null,
+                null,
+                null,
+                null
+        );
+
+        var createdVersion = formVersionService
+                .create(newVersion);
+
+        var updatedForm = formService
+                .update(form.getId(), form.toFormEntity().setDraftedVersion(createdVersion.getVersion()));
+
+        return FormDetailsResponseDTO
+                .fromEntity(FormVersionWithDetailsEntity.of(updatedForm, createdVersion));
     }
 
     @GetMapping("{formId}/{formVersion}/check-publish/")

@@ -35,6 +35,7 @@ import {AuthDataAccessToken} from '../models/dtos/auth-data';
 import {StorageKey} from '../data/storage-key';
 import * as Sentry from "@sentry/react";
 import {dataObjectsRoutes} from '../modules/data-objects/data-objects-routes';
+import {formsRoutes} from '../modules/forms/forms-routes';
 
 // Must be called after Sentry.init() as per Sentry docs; Wrapped regardless of Sentry being active, safe to call even without Sentry.init()
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
@@ -51,6 +52,7 @@ const router = sentryCreateBrowserRouter(
                     .keys(staffAppRoutes)
                     .map((key) => staffAppRoutes[key]),
                 ...departmentsRoutes,
+                ...formsRoutes,
                 ...identityRoutes,
                 ...providerLinksRoutes,
                 ...secretsRoutes,

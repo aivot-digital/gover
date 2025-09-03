@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.core.converters.RootElementConverter;
 import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
@@ -47,7 +48,7 @@ public record FormRequestDTO(
         Integer responsibleDepartmentId,
 
         @Nonnull
-        @NotNull(message = "Der Status darf nicht null sein")
+        @NotNull(message = "Der Typ darf nicht null sein")
         FormType type,
 
         @Nullable
@@ -128,6 +129,7 @@ public record FormRequestDTO(
         return new FormVersionEntity(
                 null,
                 null,
+                FormStatus.Drafted,
                 type,
                 legalSupportDepartmentId,
                 technicalSupportDepartmentId,

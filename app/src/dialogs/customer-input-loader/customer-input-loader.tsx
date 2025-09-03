@@ -31,6 +31,7 @@ import {Page} from '../../models/dtos/page';
 import {prefillIdentityData} from '../../utils/prefill-elements';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {ElementType} from '../../data/element-type/element-type';
+import {Api, useApi} from '../../hooks/use-api';
 
 interface LoadUserInputDialogProps {
     form: Form;
@@ -55,6 +56,8 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
         isBusy,
     } = props;
 
+    const api = useApi();
+
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [localStorageData, setLocalStorageData] = useState<LocalStorageData | null | undefined>(undefined);
@@ -64,7 +67,7 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     useEffect(() => {
         initializeLocalStorageData(form, setLocalStorageData);
         initializeUrlPrefillData(form, setUrlPrefillData, searchParams);
-        initializeIdentityData(form, setIdentityData, searchParams)
+        initializeIdentityData(api, form, setIdentityData, searchParams)
             .catch((err) => {
                 console.error('Error initializing identity data:', err);
                 setIdentityData('Fehler beim Laden der Authentifizierungsdaten. Bitte versuchen Sie es erneut.');
@@ -105,7 +108,7 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
         console.log('Handling insert of URL prefill data:', urlPrefillData);
 
         if (urlPrefillData != null) {
-            const allElements = flattenElements(form.root, true);
+            const allElements = flattenElements(form.rootElement, true);
 
             const cleanedPrefillData: ElementData = {};
 
@@ -135,10 +138,10 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
             let prefilledData: ElementData;
             if (localStorageData != null) {
                 console.log('Merging local storage data with identity data');
-                prefilledData = prefillIdentityData(form.root, localStorageData.data, identityData.identity);
+                prefilledData = prefillIdentityData(form.rootElement, localStorageData.data, identityData.identity);
             } else {
                 console.log('Prefilling identity data into form');
-                prefilledData = prefillIdentityData(form.root, {}, identityData.identity);
+                prefilledData = prefillIdentityData(form.rootElement, {}, identityData.identity);
             }
 
             prefilledData[IdentityCustomerInputKey] = {
@@ -355,7 +358,7 @@ function initializeUrlPrefillData(
         return;
     }
 
-    const allElements = flattenElements(form.root, true);
+    const allElements = flattenElements(form.rootElement, true);
 
     const cleanedPrefillData: Record<string, any> = {};
 
@@ -374,6 +377,7 @@ function initializeUrlPrefillData(
 }
 
 async function initializeIdentityData(
+    api: Api,
     form: Form,
     setIdentityData: (data: IdentityPreloadedData | string | null) => void,
     searchParams: URLSearchParams,
@@ -408,8 +412,8 @@ async function initializeIdentityData(
 
     let providerResults: Page<IdentityProviderInfo>;
     try {
-        providerResults = await FormsApiService
-            .getIdentityProviders(form.id);
+        providerResults = await new FormsApiService(api)
+            .getIdentityProviders(form.slug, form.version);
     } catch (err) {
         console.error('Error fetching identity providers:', err);
         setIdentityData('Beim Abruf der Authentifizierungsanbieter ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
