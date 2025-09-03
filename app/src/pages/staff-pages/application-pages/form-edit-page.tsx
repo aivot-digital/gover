@@ -46,7 +46,6 @@ import {ThemesApiService} from '../../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../../modules/forms/forms-api-service';
 import {enqueueSnackbar} from 'notistack';
 import {FormRevisionsDialog} from '../../../modules/forms/dialogs/form-revisions-dialog';
-import {Form} from '../../../models/entities/form';
 import {ElementTreeEntity} from '../../../components/element-tree/element-tree-entity';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
@@ -54,7 +53,6 @@ import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {setIdentityId} from '../../../slices/identity-slice';
 import {ElementData} from '../../../models/element-data';
-import {IdentityCustomerInputKey} from '../../../modules/identity/constants/identity-customer-input-key';
 import {asFormRequestDTO, FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 
@@ -377,8 +375,7 @@ export function FormEditPage() {
         const allElements = flattenElements(loadedForm.rootElement);
 
         const isEditable = (
-            loadedForm.published != null &&
-            loadedForm.revoked != null &&
+            loadedForm.status == FormStatus.Drafted &&
             (memberships ?? []).some((mem) => mem.departmentId === loadedForm.developingDepartmentId) &&
             (lockState == null || lockState.state === EntityLockState.Free || lockState.state === EntityLockState.LockedSelf)
         );
@@ -464,10 +461,10 @@ export function FormEditPage() {
         return (
             <ThemeProvider theme={_theme}>
                 <MetaElement
-                    title={`Editor - ${loadedForm.internalTitle} - ${loadedForm.version}`}
+                    title={`Editor - ${loadedForm.internalTitle} — Version ${loadedForm.version}`}
                 />
                 <AppToolbar
-                    title={`${loadedForm.internalTitle} - ${loadedForm.version}`}
+                    title={`${loadedForm.internalTitle} — Version ${loadedForm.version}`}
                     updateToolbarHeight={updateToolbarHeight}
                     actions={[
                         {
@@ -549,7 +546,8 @@ export function FormEditPage() {
                                 borderRight: '1px solid #E0E7E0',
                                 position: 'relative',
                             }}
-                            size={4}>
+                            size={4}
+                        >
                             <ElementTree
                                 entity={loadedForm}
                                 onPatch={handlePatch}
@@ -566,7 +564,8 @@ export function FormEditPage() {
                             overflowY: 'scroll',
                         }}
                         ref={scrollContainerRef}
-                        size={hideComponentTree ? 12 : 8}>
+                        size={hideComponentTree ? 12 : 8}
+                    >
                         <ViewDispatcherComponent
                             rootElement={loadedForm.rootElement}
                             allElements={allElements}
