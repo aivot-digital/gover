@@ -16,6 +16,9 @@ import type {DialogProps} from '@mui/material/esm/Dialog';
 import {FormsApiService} from '../forms-api-service';
 import {AlertComponent} from '../../../components/alert/alert-component';
 import {FormRequestDTO} from '../dtos/form-request-dto';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 
 const FormSchema = yup.object({
     developingDepartmentId: yup
@@ -45,7 +48,7 @@ const FormSchema = yup.object({
 export interface AddFormDialogProps extends DialogProps {
     basis: FormDetailsResponseDTO;
     onClose: () => void;
-    onSave: (form: FormDetailsResponseDTO, navigateToEditAfterwards: boolean) => void;
+    onSave: (form: FormDetailsResponseDTO) => void;
 }
 
 export function AddFormDialog(props: AddFormDialogProps) {
@@ -57,6 +60,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
     } = props;
 
     const api = useApi();
+    const dispatch = useAppDispatch();
 
     const user = useAppSelector(selectUser);
 
@@ -73,7 +77,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
     const {
         slug: currentItemSlug,
-    } = currentItem;
+    } = currentItem as FormDetailsResponseDTO;
 
     const hasErrors = useMemo(() => {
         return Object.keys(errors).length > 0 &&
@@ -109,7 +113,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
             });
     }, [currentItemSlug]);
 
-    const handleSave = async (navigateToEditAfterwards: boolean): void => {
+    const handleSave = async (): Promise<void> => {
         if (currentItem == null) {
             return;
         }
@@ -157,16 +161,23 @@ export function AddFormDialog(props: AddFormDialogProps) {
             rootElement: currentItem.rootElement,
         };
 
-        const createdForm = await formsApi
-            .create(newForm);
+        dispatch(showLoadingOverlay('Neues Formular wird erstellt…'));
 
-        onSave(createdForm, navigateToEditAfterwards);
-
-        setIsCreating(false);
-        handleClose();
+        try {
+            const createdForm = await formsApi
+                .create(newForm);
+            onSave(createdForm);
+            handleClose(null, 'saveSuccess' as any);
+        } catch (err) {
+            console.error(err);
+            dispatch(showErrorSnackbar('Das Formular konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
+        } finally {
+            dispatch(hideLoadingOverlay());
+            setIsCreating(false);
+        }
     };
 
-    const handleClose = (_, reason): void => {
+    const handleClose = (_: any, reason: string): void => {
         if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
             return;
         }
@@ -331,24 +342,10 @@ export function AddFormDialog(props: AddFormDialogProps) {
             <DialogActions>
                 <Button
                     variant="contained"
-                    onClick={() => {
-                        handleSave(true);
-                    }}
+                    onClick={handleSave}
                     disabled={hasErrors || isCreating}
                 >
                     Anlegen und Bearbeiten
-                </Button>
-                <Button
-                    variant="outlined"
-                    onClick={() => {
-                        handleSave(false);
-                    }}
-                    sx={{
-                        ml: 1,
-                    }}
-                    disabled={hasErrors || isCreating}
-                >
-                    Nur Anlegen
                 </Button>
                 <div style={{flexGrow: 2}} />
                 <Button

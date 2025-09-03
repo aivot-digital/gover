@@ -2,9 +2,10 @@ package de.aivot.GoverBackend.models.lib;
 
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class TestProtocol {
+public class TestProtocol implements Serializable {
     @Nullable
     private String userId;
     @Nullable

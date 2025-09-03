@@ -1,0 +1,244 @@
+import {useEffect, useMemo, useState} from 'react';
+import {useApi} from '../../../hooks/use-api';
+import {FormsApiService} from '../forms-api-service';
+import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {Box, Dialog, DialogContent, Divider, IconButton, ListItem, ListItemAvatar, ListItemText, Menu, MenuItem, Skeleton, Typography} from '@mui/material';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import List from '@mui/material/List';
+import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {Page} from '../../../models/dtos/page';
+import {FormStatus, FormStatusColors, FormStatusIcons, FormStatusLabels} from '../enums/form-status';
+import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
+import Chip from '@mui/material/Chip';
+import {format} from 'date-fns/format';
+import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
+import {Link} from 'react-router-dom';
+
+interface FormVersionsDialogProps {
+    formId: number;
+    onClose: () => void;
+    onNewDraft: (basis: FormDetailsResponseDTO) => void;
+}
+
+export function FormVersionsDialog(props: FormVersionsDialogProps) {
+    const {
+        formId,
+        onClose,
+        onNewDraft,
+    } = props;
+
+    const api = useApi();
+    const dispatch = useAppDispatch();
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [versions, setVersions] = useState<FormDetailsResponseDTO[]>([]);
+    const [moreMenu, setMoreMenu] = useState<{
+        anchorEl: HTMLElement;
+        item: FormDetailsResponseDTO;
+    } | undefined>();
+
+    useEffect(() => {
+        setIsLoading(true);
+
+        const formsApi = new FormsApiService(api);
+        withAsyncWrapper<void, Page<FormDetailsResponseDTO>>({
+            desiredMinRuntime: 500,
+            main: () => formsApi.listVersions(
+                0,
+                999,
+                'version',
+                'DESC',
+                {
+                    formId: formId,
+                },
+            ),
+        })
+            .then(forms => {
+                setVersions(forms.content);
+            })
+            .catch(error => {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Versionen'));
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
+    }, [formId]);
+
+    return (
+        <>
+            <Dialog
+                open={true}
+                onClose={onClose}
+                fullWidth={true}
+            >
+                <DialogTitleWithClose onClose={onClose}>
+                    Versionen dieses Formulars
+                </DialogTitleWithClose>
+                <DialogContent>
+                    {
+                        isLoading &&
+                        <>
+                            <Skeleton
+                                height={128}
+                                width="100%"
+                            />
+                            <Divider />
+                            <Skeleton
+                                height={128}
+                                width="100%"
+                            />
+                            <Divider />
+                            <Skeleton
+                                height={128}
+                                width="100%"
+                            />
+                        </>
+                    }
+                    {
+                        !isLoading &&
+                        <List>
+                            {
+                                versions.map(ver => (
+                                    <VersionListItem
+                                        key={ver.version}
+                                        item={ver}
+                                        onMoreClick={(target, item) => {
+                                            setMoreMenu({
+                                                anchorEl: target,
+                                                item: item,
+                                            });
+                                        }}
+                                    />
+                                ))
+                            }
+                        </List>
+                    }
+                </DialogContent>
+            </Dialog>
+
+            <Menu
+                anchorEl={moreMenu?.anchorEl}
+                open={moreMenu != null}
+                onClose={() => setMoreMenu(undefined)}
+            >
+                <MenuItem
+                    component={Link}
+                    to={`/forms/${moreMenu?.item.id}/${moreMenu?.item.version}`}
+                >
+                    {
+                        moreMenu?.item.status === FormStatus.Drafted ? 'Bearbeiten' : 'Anzeigen'
+                    }
+                </MenuItem>
+
+                <MenuItem onClick={() => {
+                    if (moreMenu == null) {
+                        return;
+                    }
+                    onNewDraft(moreMenu.item);
+                    setMoreMenu(undefined);
+                }}>
+                    Als entwurf verwenden
+                </MenuItem>
+
+                {
+                    moreMenu?.item.status === FormStatus.Revoked &&
+                    <>
+                        <Divider />
+                        <MenuItem onClick={() => {}}>
+                            Version löschen
+                        </MenuItem>
+                    </>
+                }
+            </Menu>
+        </>
+    );
+}
+
+interface VersionListItemProps {
+    item: FormDetailsResponseDTO;
+    onMoreClick: (target: HTMLButtonElement, item: FormDetailsResponseDTO) => void;
+}
+
+function VersionListItem(props: VersionListItemProps) {
+    const {
+        item,
+        onMoreClick,
+    } = props;
+
+    const {
+        version,
+        status,
+        updated,
+        published,
+        revoked,
+    } = item;
+
+    const subtext = useMemo(() => {
+        const _format = (val: string | null | undefined) => {
+            const fallback = updated != null ? new Date(updated) : new Date();
+            return format(val ?? fallback, 'dd.MM.yyyy HH:mm') + ' Uhr';
+        };
+
+        switch (status) {
+            case FormStatus.Drafted:
+                return `Zuletzt bearbeitet: ${_format(updated)}`;
+            case FormStatus.Published:
+                return `Veröffentlicht: ${_format(published)}`;
+            case FormStatus.Revoked:
+                return `Formular zurückgezogen: ${_format(revoked)}`;
+            default:
+                return '';
+        }
+    }, [status, updated, revoked, published]);
+
+    return (
+        <ListItem
+            secondaryAction={
+                <IconButton
+                    edge="end"
+                    onClick={(event) => {
+                        onMoreClick(event.currentTarget, item);
+                    }}
+                >
+                    <MoreVertOutlinedIcon />
+                </IconButton>
+            }
+        >
+            <ListItemAvatar>
+                {FormStatusIcons[status]}
+            </ListItemAvatar>
+            <ListItemText
+                primary={
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'baseline',
+                        }}
+                    >
+                        <Typography
+                            variant="h5"
+                            component="span"
+                        >
+                            Version {version}
+                        </Typography>
+
+                        <Chip
+                            variant="outlined"
+                            label={FormStatusLabels[status]}
+                            color={FormStatusColors[status]}
+                            icon={FormStatusIcons[status]}
+                            size="small"
+                            sx={{
+                                ml: 'auto',
+                                mb: 0.5,
+                            }}
+                        />
+                    </Box>
+                }
+                secondary={subtext}
+            />
+        </ListItem>
+    );
+}

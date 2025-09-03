@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ElementType;
 import jakarta.annotation.Nullable;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
@@ -67,7 +68,7 @@ public class GroupLayout extends BaseFormElement implements ElementWithChildren<
 
     // region Subclasses
 
-    public static class GroupLayoutStoreLink {
+    public static class GroupLayoutStoreLink implements Serializable {
         @Nullable
         private String storeId;
         @Nullable

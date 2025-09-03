@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.services.PdfService;
@@ -22,12 +21,24 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Controller for generating and serving printable PDF versions of forms.
+ * <p>
+ * This controller provides an endpoint to retrieve a PDF representation of a form version.
+ * It uses {@link PdfService} to generate the PDF and {@link FormVersionWithDetailsService} to retrieve form details.
+ */
 @RestController
 @RequestMapping("/api/forms/{formId}/{formVersion}/print/")
 public class FormPrintController {
     private final PdfService pdfService;
     private final FormVersionWithDetailsService formVersionWithDetailsService;
 
+    /**
+     * Constructs a new FormPrintController with required services.
+     *
+     * @param pdfService                    Service for generating PDFs from form data.
+     * @param formVersionWithDetailsService Service for retrieving form version details.
+     */
     @Autowired
     public FormPrintController(PdfService pdfService,
                                FormVersionWithDetailsService formVersionWithDetailsService) {
@@ -35,6 +46,14 @@ public class FormPrintController {
         this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
 
+    /**
+     * Generates and returns a printable PDF for the specified form and version.
+     *
+     * @param formId      The ID of the form to print.
+     * @param formVersion The version of the form to print.
+     * @return ResponseEntity containing the PDF as a resource.
+     * @throws ResponseException If the form is not found or PDF generation fails.
+     */
     @GetMapping("")
     public ResponseEntity<Resource> print(
             @Nonnull @PathVariable Integer formId,

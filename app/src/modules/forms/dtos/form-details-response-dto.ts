@@ -3,6 +3,7 @@ import {PaymentProduct} from '../../../models/payment/payment-product';
 import {FormType} from '../enums/form-type';
 import {RootElement} from '../../../models/elements/root-element';
 import {FormRequestDTO} from './form-request-dto';
+import {FormStatus} from '../enums/form-status';
 
 export interface FormDetailsResponseDTO {
     id: number;
@@ -16,6 +17,7 @@ export interface FormDetailsResponseDTO {
     draftedVersion: number | null;
     formId: number;
     version: number;
+    status: FormStatus;
     type: FormType;
     legalSupportDepartmentId: number | null;
     technicalSupportDepartmentId: number | null;
@@ -38,8 +40,6 @@ export interface FormDetailsResponseDTO {
     updated: string | null; // ISO date string
     published: string | null; // ISO date string
     revoked: string | null; // ISO date string
-    isCurrentlyPublishedVersion: boolean;
-    isCurrentlyDraftedVersion: boolean;
 }
 
 export function asFormRequestDTO(form: FormDetailsResponseDTO): FormRequestDTO {

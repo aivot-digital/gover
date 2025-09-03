@@ -17,14 +17,13 @@ import {FormType} from './enums/form-type';
 import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
 import {IdentityIdHeader} from '../identity/constants/identity-id-header';
 import {ElementData} from '../../models/element-data';
-import {IdentityProviderLink} from '../identity/models/identity-provider-link';
-import {string} from 'yup';
 import {FormListResponseDTO} from './dtos/form-list-response-dto';
 import {FormDetailsResponseDTO} from './dtos/form-details-response-dto';
 import {FormCitizenDetailsResponseDTO} from './dtos/form-citizen-details-response-dto';
 import {FormRequestDTO} from './dtos/form-request-dto';
-import {PaymentProduct} from '../../models/payment/payment-product';
 import {RootElement} from '../../models/elements/root-element';
+import {SortOrder} from '../../components/generic-list/generic-list-props';
+import {FormStatus} from './enums/form-status';
 
 interface FormFilters {
     id: number;
@@ -87,14 +86,15 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
             version: 0,
             internalTitle: '',
             publicTitle: '',
+            status: FormStatus.Drafted,
             type: FormType.Public,
             rootElement: generateElementWithDefaultValues(ElementType.Root) as RootElement,
             destinationId: null,
-            legalSupportDepartmentId:  null,
+            legalSupportDepartmentId: null,
             technicalSupportDepartmentId: null,
             imprintDepartmentId: null,
             privacyDepartmentId: null,
-            accessibilityDepartmentId:  null,
+            accessibilityDepartmentId: null,
             developingDepartmentId: 0,
             managingDepartmentId: null,
             responsibleDepartmentId: null,
@@ -115,13 +115,28 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
             formId: 0,
             published: null,
             revoked: null,
-            isCurrentlyDraftedVersion: true,
-            isCurrentlyPublishedVersion: false,
         };
     }
 
     public async listRevisions(formId: FormIdentifier, options?: ApiOptions): Promise<Page<FormRevision>> {
         return await this.api.get<Page<FormRevision>>(`forms/${formId}/revisions/`, options);
+    }
+
+    public async listVersions(
+        page: number,
+        limit: number,
+        sort?: keyof FormDetailsResponseDTO,
+        order?: SortOrder,
+        filters?: Partial<FormFilters>,
+    ): Promise<Page<FormDetailsResponseDTO>> {
+        return await this.api.get<Page<FormDetailsResponseDTO>>(`form-versions/`, {
+            queryParams: {
+                page: page,
+                size: limit,
+                sort: sort != null && order != null ? `${sort},${order}` : undefined,
+                ...filters,
+            },
+        });
     }
 
     // TODO: Remove usage of useFormsApi().rollbackRevision and use this instead
@@ -164,8 +179,8 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
             requestOptions: {
                 headers: {
                     [IdentityIdHeader]: identityId ?? undefined,
-                }
-            }
+                },
+            },
         } : undefined);
     }
 

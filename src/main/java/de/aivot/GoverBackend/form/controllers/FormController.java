@@ -17,9 +17,9 @@ import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
-import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.form.services.*;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
@@ -166,6 +166,9 @@ public class FormController {
                 "formId", createdVersionEntity.getFormId(),
                 "version", createdVersionEntity.getVersion()
         ));
+
+        createdFormEntity
+                .setDraftedVersion(createdVersionEntity.getVersion());
 
         var createdForm = FormVersionWithDetailsEntity
                 .of(createdFormEntity, createdVersionEntity);
@@ -346,7 +349,7 @@ public class FormController {
         var newVersion = new FormVersionEntity(
                 formId,
                 null,
-                form.getStatus(),
+                FormStatus.Drafted,
                 form.getType(),
                 form.getLegalSupportDepartmentId(),
                 form.getTechnicalSupportDepartmentId(),
@@ -374,11 +377,10 @@ public class FormController {
         var createdVersion = formVersionService
                 .create(newVersion);
 
-        var updatedForm = formService
-                .update(form.getId(), form.toFormEntity().setDraftedVersion(createdVersion.getVersion()));
-
-        return FormDetailsResponseDTO
-                .fromEntity(FormVersionWithDetailsEntity.of(updatedForm, createdVersion));
+        return formVersionWithDetailsService
+                .retrieve(formId, createdVersion.getVersion())
+                .map(FormDetailsResponseDTO::fromEntity)
+                .orElseThrow(() -> ResponseException.internalServerError("Fehler beim Laden der neuen Formular-Version."));
     }
 
     @GetMapping("{formId}/{formVersion}/check-publish/")

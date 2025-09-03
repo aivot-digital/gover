@@ -393,7 +393,8 @@ begin
           and version = new.version;
 
         update form_versions
-        set revoked = now()
+        set revoked = now(),
+            status = 2
         where form_id = new.form_id
           and status = 1
           and version <> new.version;
@@ -409,7 +410,8 @@ begin
         -- if a version is revoked the revoked timestamp is set and if it was the published version the published version column in the parent form is cleared
 
         update form_versions
-        set revoked = now()
+        set revoked = now(),
+            status = 2
         where form_id = new.form_id
           and version = new.version;
 
