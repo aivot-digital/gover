@@ -13,6 +13,8 @@
 * **Frontend:** Replace JSX.Element type with ReactNode in the frontend codebase.
 * **System:** Replaced Puppet PDF generator with a new generator based on Gotenberg, which supports more engines and is easier to maintain.
 * **System:** Reworked the data structure for holding and processing form data.
+* **System:** Reworked form versioning system for ease of use.
+* **System:** Added data object management to the backend and app.
 * **Build-System:** Pre-Release builds are now published to a separate 'gover-next' package.
 
 ## [4.5.3](https://github.com/aivot-digital/gover/compare/v4.5.2...v4.5.3) (2025-08-16)
