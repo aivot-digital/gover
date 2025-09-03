@@ -9,6 +9,7 @@ import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import ProductionQuantityLimitsOutlinedIcon from '@mui/icons-material/ProductionQuantityLimitsOutlined';
 import SyncProblemOutlinedIcon from '@mui/icons-material/SyncProblemOutlined';
 import {SubmissionListResponseDTO} from '../modules/submissions/dtos/submission-list-response-dto';
+import {SubmissionWithMembershipResponseDTO} from '../modules/submissions/dtos/submission-with-membership-response-dto';
 
 export interface SubmissionState {
     color: 'info' | 'error' | 'inherit' | 'success' | 'warning';
@@ -16,7 +17,7 @@ export interface SubmissionState {
     icon: OverridableComponent<SvgIconTypeMap>;
 }
 
-export function createSubmissionState(submission: SubmissionListResponseDTO): SubmissionState {
+export function createSubmissionState(submission: SubmissionListResponseDTO | SubmissionWithMembershipResponseDTO): SubmissionState {
     return {
         color: determineColor(submission),
         label: determineLabel(submission),
@@ -24,7 +25,7 @@ export function createSubmissionState(submission: SubmissionListResponseDTO): Su
     };
 }
 
-export function determineLabel(sub: SubmissionListResponseDTO): string {
+export function determineLabel(sub: SubmissionListResponseDTO | SubmissionWithMembershipResponseDTO): string {
     switch (sub.status) {
         case SubmissionStatus.OpenForManualWork:
             return 'Bereit zur Bearbeitung';
@@ -43,7 +44,7 @@ export function determineLabel(sub: SubmissionListResponseDTO): string {
     }
 }
 
-function determineIcon(sub: SubmissionListResponseDTO): OverridableComponent<SvgIconTypeMap> {
+function determineIcon(sub: SubmissionListResponseDTO | SubmissionWithMembershipResponseDTO): OverridableComponent<SvgIconTypeMap> {
     switch (sub.status) {
         case SubmissionStatus.OpenForManualWork:
             return AssignmentLateOutlinedIcon;
@@ -65,7 +66,7 @@ function determineIcon(sub: SubmissionListResponseDTO): OverridableComponent<Svg
     }
 }
 
-function determineColor(sub: SubmissionListResponseDTO): 'info' | 'error' | 'inherit' | 'success' | 'warning' {
+function determineColor(sub: SubmissionListResponseDTO | SubmissionWithMembershipResponseDTO): 'info' | 'error' | 'inherit' | 'success' | 'warning' {
     switch (sub.status) {
         case SubmissionStatus.OpenForManualWork:
             return 'info';

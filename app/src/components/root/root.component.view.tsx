@@ -265,7 +265,10 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
                 submitResponse = await formsApiService
-                    .submit(form.id, elementData, identityId);
+                    .submit({
+                        id: form.id,
+                        version: form.version,
+                    }, elementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
                     switch (error.status) {
@@ -392,7 +395,10 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             const derivationResult = await withAsyncWrapper({
                 desiredMinRuntime: 600,
                 main: () => new FormsApiService(api).determineFormState(
-                    form.id,
+                    {
+                        id: form.id,
+                        version: form.version,
+                    },
                     elementData,
                     {
                         skipErrorsFor: options.forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
@@ -483,13 +489,20 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     // Calculates the price for the current form and customer input.
     // Returns false, if the price could not be calculated.
     const calculatePrice = (): Promise<boolean> => {
+        if (form == null) {
+            return Promise.resolve(false);
+        }
+
         return withAsyncWrapper<undefined, boolean>({
             desiredMinRuntime: checkTimeoutMinMs,
             runtimeCallback: setIsLoading,
             main: async () => {
                 try {
                     const calculatedCosts = await new FormsApiService(api)
-                        .calculateCosts(form!.id, elementData);
+                        .calculateCosts({
+                            id: form.id,
+                            version: form.version,
+                        }, elementData);
                     onElementDataChange({
                         ...elementData,
                         [SubmitPaymentDataKey]: {

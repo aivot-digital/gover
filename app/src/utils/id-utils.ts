@@ -69,12 +69,10 @@ export function generateElementIdForType(type: ElementType): string {
 }
 
 function generateElementId(prefix: string): string {
-    //@ts-expect-error Something is wrong with the types of the ShortUniqueId library
     const _uid = uid.rnd(10);
     return prefix + '_' + _uid;
 }
 
 export function generateId(length: number = 10) {
-    //@ts-expect-error Something is wrong with the types of the ShortUniqueId library
     return uid.rnd(length);
 }

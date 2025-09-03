@@ -42,6 +42,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../../slices/loading-overlay-slice';
 import {useNavigate} from 'react-router-dom';
 import HistoryIcon from '@mui/icons-material/History';
+import {FormStatusChip} from '../../../components/form-status-chip';
 
 export function FormsListPage() {
     const dispatch = useAppDispatch();
@@ -135,7 +136,7 @@ export function FormsListPage() {
                     >
                         {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
                     </Box>
-                )
+                ),
             },
             {
                 field: 'publishedVersion',
@@ -151,22 +152,18 @@ export function FormsListPage() {
                         }}
                     >
                         {params.row.draftedVersion != null &&
-                            <Chip
-                                icon={FormStatusIcons[FormStatus.Drafted]}
-                                label="In Bearbeitung"
+                            <FormStatusChip
+                                status={FormStatus.Drafted}
+                                size="small"
                                 variant="outlined"
-                                color={FormStatusColors[FormStatus.Drafted]}
-                                size={'small'}
                             />
                         }
 
                         {params.row.publishedVersion != null &&
-                            <Chip
-                                icon={FormStatusIcons[FormStatus.Published]}
-                                label="Veröffentlicht"
+                            <FormStatusChip
+                                status={FormStatus.Published}
+                                size="small"
                                 variant="outlined"
-                                color={FormStatusColors[FormStatus.Published]}
-                                size={'small'}
                             />
                         }
                     </Box>

@@ -19,7 +19,6 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
         showTechnical,
         allowStepNavigation,
         elementData,
-        isBusy,
     } = props;
 
     const {
@@ -95,7 +94,6 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
                             showTechnical={showTechnical}
                             allowStepNavigation={allowStepNavigation}
                             elementData={elementData}
-                            isBusy={isBusy}
                         />
                     ))
             }

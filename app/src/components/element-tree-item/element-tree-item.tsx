@@ -26,8 +26,8 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
     const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
 
     const [expanded, setExpanded] = useState(false);
-    const [showEditor, toggleShowEditor] = useReducer<(f: boolean) => boolean>((p) => !p, false);
-    const [showAddDialog, toggleShowAddDialog] = useReducer<(f: boolean) => boolean>((p) => !p, false);
+    const [showEditor, toggleShowEditor] = useReducer((p) => !p, false);
+    const [showAddDialog, toggleShowAddDialog] = useReducer((p) => !p, false);
 
     const isLayoutElement = isAnyElementWithChildren(props.element);
     const isNotStoreModule = !(props.element.type === ElementType.Container && props.element.storeLink != null);
@@ -104,7 +104,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
 
     return (
         <Box
-            ref={props.editable && props.disableDrag !== true ? drag : undefined}
+            ref={props.editable && props.disableDrag !== true ? (drag as any) : undefined}
             sx={{
                 opacity: isDragging ? 0 : 1,
             }}

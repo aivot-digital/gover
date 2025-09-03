@@ -1,7 +1,7 @@
-import {FormListProjection} from '../../../models/entities/form';
+import {FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
 
 export interface DeleteApplicationDialogProps {
-    application?: FormListProjection;
+    form?: FormDetailsResponseDTO;
     onDelete: () => void;
     onCancel: () => void;
 }

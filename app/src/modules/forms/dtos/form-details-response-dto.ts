@@ -4,6 +4,7 @@ import {FormType} from '../enums/form-type';
 import {RootElement} from '../../../models/elements/root-element';
 import {FormRequestDTO} from './form-request-dto';
 import {FormStatus} from '../enums/form-status';
+import {FormCitizenDetailsResponseDTO} from './form-citizen-details-response-dto';
 
 export interface FormDetailsResponseDTO {
     id: number;
@@ -68,5 +69,44 @@ export function asFormRequestDTO(form: FormDetailsResponseDTO): FormRequestDTO {
         customerAccessHours: form.customerAccessHours,
         submissionRetentionWeeks: form.submissionRetentionWeeks,
         rootElement: form.rootElement,
+    };
+}
+
+export function formCitizenDetailsResponseDTO(form: FormCitizenDetailsResponseDTO): FormDetailsResponseDTO {
+    return {
+        id: form.id,
+        slug: form.slug,
+        internalTitle: form.title,
+        publicTitle: form.title,
+        developingDepartmentId: form.developingDepartmentId,
+        managingDepartmentId: form.managingDepartmentId ?? null,
+        responsibleDepartmentId: form.responsibleDepartmentId ?? null,
+        publishedVersion: form.version,
+        draftedVersion: null,
+        formId: form.id,
+        version: form.version,
+        status: FormStatus.Published,
+        type: FormType.Public,
+        legalSupportDepartmentId: form.legalSupportDepartmentId ?? null,
+        technicalSupportDepartmentId: form.technicalSupportDepartmentId ?? null,
+        imprintDepartmentId: form.imprintDepartmentId ?? null,
+        privacyDepartmentId: form.privacyDepartmentId ?? null,
+        accessibilityDepartmentId: form.accessibilityDepartmentId ?? null,
+        destinationId: null,
+        themeId: form.themeId,
+        pdfTemplateKey: null,
+        paymentProviderKey: null,
+        paymentPurpose: null,
+        paymentDescription: null,
+        paymentProducts: [],
+        identityProviders: form.identityProviders,
+        identityVerificationRequired: form.identityRequired,
+        customerAccessHours: null,
+        submissionRetentionWeeks: null,
+        rootElement: form.root,
+        created: null,
+        updated: null,
+        published: null,
+        revoked: null,
     };
 }

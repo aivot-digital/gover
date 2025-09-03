@@ -17,6 +17,8 @@ export class DataObjectItemsApiService extends CrudApiService<DataObjectItem, Da
             id: '',
             schemaKey: '',
             data: {},
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
         };
     }
 }

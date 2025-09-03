@@ -158,7 +158,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
         [ConditionOperator.MonthsInPast]: 'Bitte Anzahl Monate eingeben.',
         [ConditionOperator.MonthsInFuture]: 'Bitte Anzahl Monate eingeben.',
         [ConditionOperator.DaysInPast]: 'Bitte Anzahl Tage eingeben.',
-        [ConditionOperator.DaysInPast]: 'Bitte Anzahl Tage eingeben.',
+        [ConditionOperator.DaysInFuture]: 'Bitte Anzahl Tage eingeben.',
     },
     [ElementType.Headline]: null,
     [ElementType.MultiCheckbox]: null,

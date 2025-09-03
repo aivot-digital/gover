@@ -1,17 +1,17 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {type RootState} from '../store';
-import {type Form as Application, FormPublicProjection} from '../models/entities/form';
 import {AnyElement} from '../models/elements/any-element';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../utils/flatten-elements';
+import {FormDetailsResponseDTO} from '../modules/forms/dtos/form-details-response-dto';
 
 
 const initialState: {
     // Future states of the loaded form. These get created when changes are undone
-    futureLoadedForm: Array<Application | FormPublicProjection>,
+    futureLoadedForm: Array<FormDetailsResponseDTO>,
     // The form that has been loaded
-    loadedForm?: Application | FormPublicProjection;
+    loadedForm?: FormDetailsResponseDTO;
     // Past states of the loaded form. These get created when changes are done
-    pastLoadedForm: Array<Application | FormPublicProjection>,
+    pastLoadedForm: Array<FormDetailsResponseDTO>,
 
     // A list of all elements in the form
     allElements?: AnyElement[];
@@ -20,14 +20,9 @@ const initialState: {
 
     // ID of the dialog to show
     showDialog?: string;
-
-    // Whether the customer input has been loaded from the local storage
-    hasLoadedSavedCustomerInput: boolean;
 } = {
     futureLoadedForm: [],
     pastLoadedForm: [],
-
-    hasLoadedSavedCustomerInput: false,
 };
 
 const appSlice = createSlice({
@@ -41,10 +36,9 @@ const appSlice = createSlice({
             state.futureLoadedForm = [];
             state.pastLoadedForm = [];
             state.showDialog = undefined;
-            state.hasLoadedSavedCustomerInput = false;
         },
 
-        updateLoadedForm: (state, action: PayloadAction<Application | FormPublicProjection>) => {
+        updateLoadedForm: (state, action: PayloadAction<FormDetailsResponseDTO>) => {
             if (state.loadedForm != null) {
                 state.pastLoadedForm.push(state.loadedForm);
                 state.futureLoadedForm = [];
@@ -90,10 +84,6 @@ const appSlice = createSlice({
         showDialog: (state, action: PayloadAction<string | undefined>) => {
             state.showDialog = action.payload;
         },
-
-        flagLoadedSavedCustomerInput: (state, action: PayloadAction<void>) => {
-            state.hasLoadedSavedCustomerInput = true;
-        },
     },
 });
 
@@ -104,13 +94,11 @@ export const {
     redoLoadedForm,
     clearLoadedFormHistory,
     showDialog,
-    flagLoadedSavedCustomerInput,
 } = appSlice.actions;
 
 export const selectLoadedForm = (state: RootState) => state.app.loadedForm;
 export const selectPastLoadedForm = (state: RootState) => state.app.pastLoadedForm;
 export const selectFutureLoadedForm = (state: RootState) => state.app.futureLoadedForm;
-export const selectHasLoadedSavedCustomerInput = (state: RootState) => state.app.hasLoadedSavedCustomerInput;
 export const selectAllElements = (state: RootState) => state.app.allElements;
 
 export const appReducer = appSlice.reducer;

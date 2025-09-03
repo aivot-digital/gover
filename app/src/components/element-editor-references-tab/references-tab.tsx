@@ -1,15 +1,15 @@
-import {Box} from '@mui/material';
 import React, {useMemo} from 'react';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
+import CallMadeIcon from '@mui/icons-material/CallMade';
+import CallReceivedIcon from '@mui/icons-material/CallReceived';
+import {DataGrid, GridColDef} from '@mui/x-data-grid';
 import {type AnyElement} from '../../models/elements/any-element';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {flattenElements} from '../../utils/flatten-elements';
-import Typography from '@mui/material/Typography';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {generateComponentTitle} from '../../utils/generate-component-title';
-import CallMadeIcon from '@mui/icons-material/CallMade';
-import CallReceivedIcon from '@mui/icons-material/CallReceived';
-import {DataGrid, GridColumns} from '@mui/x-data-grid';
-import Chip from '@mui/material/Chip';
 import {getElementIcon} from '../../data/element-type/element-icons';
 
 interface ReferencesTabProps {
@@ -22,9 +22,9 @@ const SourceLabels: Record<SourceType, string> = {
     'override': 'Dynamische Struktur',
     'validation': 'Validierung',
     'value': 'Dynamischer Wert',
-}
+};
 
-const columns: GridColumns = [
+const columns: GridColDef[] = [
     {
         field: 'type',
         headerName: 'Referenztyp',

@@ -1,21 +1,17 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Box, Typography} from '@mui/material';
 import {IdentityCustomerInputKey} from '../../constants/identity-customer-input-key';
 import {IdentityProviderLink} from '../../models/identity-provider-link';
 import {IdentityProviderInfo} from '../../models/identity-provider-info';
 import {FormsApiService} from '../../../forms/forms-api-service';
 import {IdentityButton} from '../identity-button/identity-button';
-import {useSearchParams} from 'react-router-dom';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {IdentityData} from '../../models/identity-data';
 import {ElementData} from '../../../../models/element-data';
-import {CustomerInputService} from '../../../../services/customer-input-service';
-import {prefillIdentityData} from '../../../../utils/prefill-elements';
-import {ElementType} from '../../../../data/element-type/element-type';
 import {AnyElement} from '../../../../models/elements/any-element';
-import {FormPublicProjection} from '../../../../models/entities/form';
 import {Api, useApi} from '../../../../hooks/use-api';
+import {FormDetailsResponseDTO} from '../../../forms/dtos/form-details-response-dto';
 
 interface IdentityButtonGroupProps {
     rootElement: AnyElement;
@@ -23,7 +19,7 @@ interface IdentityButtonGroupProps {
     isDeriving: boolean;
     elementData: ElementData;
     onElementDataChange: (elementData: ElementData) => void;
-    form: FormPublicProjection;
+    form: FormDetailsResponseDTO;
 }
 
 export interface CombinedIdentityProviderLink {
@@ -152,7 +148,7 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     );
 }
 
-async function getIdentityProviderLinks(api: Api, form: FormPublicProjection) {
+async function getIdentityProviderLinks(api: Api, form: FormDetailsResponseDTO) {
     const idps = await new FormsApiService(api)
         .getIdentityProviders(form.slug, form.version);
 

@@ -22,6 +22,7 @@ import BugReportIcon from '@mui/icons-material/BugReport';
 import DrawIcon from '@mui/icons-material/Draw';
 import {ExportApplicationDialog} from '../application-dialogs/export-application-dialog/export-application-dialog';
 import {PrefillFormDialog} from '../prefill-form-dialog/prefill-form-dialog';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
 
 const switches: Array<{
     label: string;
@@ -50,7 +51,7 @@ const switches: Array<{
 ];
 
 export function AdminToolsDialog(props: AdminToolsDialogProps) {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const api = useApi();
 
     const form = useAppSelector(selectLoadedForm);
@@ -228,7 +229,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
                 </DialogTitleWithClose>
                 <DialogContent tabIndex={0}>
                     {
-                        form?.root != null &&
+                        form?.rootElement != null &&
                         <FormMetrics root={form.rootElement} />
                     }
                 </DialogContent>

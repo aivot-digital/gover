@@ -236,7 +236,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                                     icon: <QrCode2OutlinedIcon />,
                                     tooltip: 'QR-Code herunterladen',
                                     onClick: async () => {
-                                        await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.slug ?? ''}-${(props.entity?.version ?? '').replace(/\./g, '-')}.png`);
+                                        await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.slug ?? ''}-${(props.entity?.version ?? '')}.png`);
                                     },
                                 },
                             ]

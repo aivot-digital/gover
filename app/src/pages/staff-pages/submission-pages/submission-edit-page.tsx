@@ -92,7 +92,10 @@ export function SubmissionEditPage() {
 
         setLoadingFlag('form');
         new FormsApiService(api)
-            .retrieve(submission.formId)
+            .retrieve({
+                id: submission.formId,
+                version: submission.formVersion,
+            })
             .then((res) => {
                 setForm(res);
             })

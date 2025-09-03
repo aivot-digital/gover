@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useApi} from '../../../hooks/use-api';
 import {FormsApiService} from '../forms-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -8,12 +8,12 @@ import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/
 import List from '@mui/material/List';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {Page} from '../../../models/dtos/page';
-import {FormStatus, FormStatusColors, FormStatusIcons, FormStatusLabels} from '../enums/form-status';
+import {FormStatus, FormStatusIcons} from '../enums/form-status';
 import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
-import Chip from '@mui/material/Chip';
 import {format} from 'date-fns/format';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import {Link} from 'react-router-dom';
+import {FormStatusChip} from '../components/form-status-chip';
 
 interface FormVersionsDialogProps {
     formId: number;
@@ -132,13 +132,15 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     }
                 </MenuItem>
 
-                <MenuItem onClick={() => {
-                    if (moreMenu == null) {
-                        return;
-                    }
-                    onNewDraft(moreMenu.item);
-                    setMoreMenu(undefined);
-                }}>
+                <MenuItem
+                    onClick={() => {
+                        if (moreMenu == null) {
+                            return;
+                        }
+                        onNewDraft(moreMenu.item);
+                        setMoreMenu(undefined);
+                    }}
+                >
                     Als entwurf verwenden
                 </MenuItem>
 
@@ -146,7 +148,10 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     moreMenu?.item.status === FormStatus.Revoked &&
                     <>
                         <Divider />
-                        <MenuItem onClick={() => {}}>
+                        <MenuItem
+                            onClick={() => {
+                            }}
+                        >
                             Version löschen
                         </MenuItem>
                     </>
@@ -220,20 +225,17 @@ function VersionListItem(props: VersionListItemProps) {
                         <Typography
                             variant="h5"
                             component="span"
+                            sx={{
+                                mr: 'auto',
+                            }}
                         >
                             Version {version}
                         </Typography>
 
-                        <Chip
-                            variant="outlined"
-                            label={FormStatusLabels[status]}
-                            color={FormStatusColors[status]}
-                            icon={FormStatusIcons[status]}
+                        <FormStatusChip
+                            status={status}
                             size="small"
-                            sx={{
-                                ml: 'auto',
-                                mb: 0.5,
-                            }}
+                            variant="outlined"
                         />
                     </Box>
                 }

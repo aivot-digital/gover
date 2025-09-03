@@ -5,6 +5,7 @@ import {ElementData} from '../../../models/element-data';
 export interface SubmissionDetailsResponseDTO {
     id: string;
     formId: number;
+    formVersion: number;
     created: string;
     updated: string;
     archived: string;

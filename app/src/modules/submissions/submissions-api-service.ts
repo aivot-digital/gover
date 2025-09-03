@@ -7,6 +7,7 @@ import {SubmissionStatusResponseDTO} from './dtos/submission-status-response-dto
 import {SubmissionStatus} from './enums/submission-status';
 import {Page} from '../../models/dtos/page';
 import {SubmissionAttachmentResponseDTO} from './dtos/submission-attachment-response-dto';
+import {SubmissionWithMembershipResponseDTO} from './dtos/submission-with-membership-response-dto';
 
 interface SubmissionFilters {
     formId: number;
@@ -19,7 +20,7 @@ interface SubmissionFilters {
     notPending: boolean;
 }
 
-export class SubmissionsApiService extends CrudApiService<SubmissionRequestDTO, SubmissionListResponseDTO, SubmissionListResponseDTO, SubmissionDetailsResponseDTO, SubmissionDetailsResponseDTO, string, SubmissionFilters> {
+export class SubmissionsApiService extends CrudApiService<SubmissionRequestDTO, SubmissionWithMembershipResponseDTO, SubmissionListResponseDTO, SubmissionDetailsResponseDTO, SubmissionDetailsResponseDTO, string, SubmissionFilters> {
     public constructor(api: Api) {
         super(api, 'submissions/');
     }
@@ -37,6 +38,7 @@ export class SubmissionsApiService extends CrudApiService<SubmissionRequestDTO, 
             destinationTimestamp: '',
             fileNumber: '',
             formId: 0,
+            formVersion: 0,
             id: '',
             isTestSubmission: false,
             paymentTransactionKey: '',

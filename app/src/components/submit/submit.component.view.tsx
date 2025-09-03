@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
@@ -51,7 +51,10 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         }
 
         new FormsApiService(api)
-            .calculateCosts(form.id, elementData)
+            .calculateCosts({
+                id: form.id,
+                version: form.version,
+            }, elementData)
             .then((data) => {
                 setCosts(data);
             });

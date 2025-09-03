@@ -29,7 +29,6 @@ import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccess
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import LaunchOutlinedIcon from '@mui/icons-material/LaunchOutlined';
 import {type Theme} from '../../../modules/themes/models/theme';
-import {ApplicationStatus} from '../../../data/application-status';
 import {selectMemberships, selectUser} from '../../../slices/user-slice';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useApi} from '../../../hooks/use-api';
@@ -57,6 +56,7 @@ import {setIdentityId} from '../../../slices/identity-slice';
 import {ElementData} from '../../../models/element-data';
 import {IdentityCustomerInputKey} from '../../../modules/identity/constants/identity-customer-input-key';
 import {asFormRequestDTO, FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
+import {FormStatus} from '../../../modules/forms/enums/form-status';
 
 export const DialogSearchParam = 'dialog';
 
@@ -417,7 +417,7 @@ export function FormEditPage() {
                                     id: loadedForm.id,
                                     version: loadedForm.version,
                                 },
-                                asFormRequestDTO(updatedAppModel),
+                                asFormRequestDTO(updatedAppModel as FormDetailsResponseDTO),
                             );
                         dispatch(updateLoadedForm(updatedForm));
                     } catch (err: any) {
@@ -475,14 +475,14 @@ export function FormEditPage() {
                             icon: <UndoIcon />,
                             onClick: handleUndo,
                             disabled: !hasPastLoadedForm,
-                            visible: loadedForm.status === ApplicationStatus.Drafted || loadedForm.status === ApplicationStatus.InReview,
+                            visible: loadedForm.status === FormStatus.Drafted,
                         },
                         {
                             tooltip: 'Änderung wiederherstellen',
                             icon: <RedoIcon />,
                             onClick: handleRedo,
                             disabled: !hasFutureLoadedForm,
-                            visible: loadedForm.status === ApplicationStatus.Drafted || loadedForm.status === ApplicationStatus.InReview,
+                            visible: loadedForm.status === FormStatus.Drafted,
                         },
                         'separator',
                         {

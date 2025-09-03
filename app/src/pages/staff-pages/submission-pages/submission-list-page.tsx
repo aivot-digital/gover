@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {Box, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Switch, Typography, useTheme} from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {format, parseISO} from 'date-fns';
@@ -29,22 +29,20 @@ import {ProviderLinksGrid} from '../../../modules/provider-links/components/prov
 import {AppFooter} from '../../../components/app-footer/app-footer';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
-import {FormListProjection} from '../../../models/entities/form';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import {createSubmissionState} from '../../../utils/submission-state';
 import {DestinationsApiService} from '../../../modules/destination/destinations-api-service';
 import {FormsApiService} from '../../../modules/forms/forms-api-service';
-import {SubmissionListResponseDTO} from '../../../modules/submissions/dtos/submission-list-response-dto';
 import {SubmissionsApiService} from '../../../modules/submissions/submissions-api-service';
-import {SettingsSuggestOutlined} from "@mui/icons-material";
+import {SettingsSuggestOutlined} from '@mui/icons-material';
 import {UsersApiService} from '../../../modules/users/users-api-service';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
+import {SubmissionWithMembershipResponseDTO} from '../../../modules/submissions/dtos/submission-with-membership-response-dto';
 
-type Submission = SubmissionListResponseDTO & {
+type Submission = SubmissionWithMembershipResponseDTO & {
     assignee: User | undefined;
     destination: Destination | undefined;
-    form: FormListProjection | undefined;
 };
 
 async function fetchSubmissions(api: Api, user: User, includePaymentPending: boolean | undefined, includeArchived: boolean | undefined, includeTest: boolean | undefined, onlyAssigned: boolean | undefined): Promise<Submission[]> {
@@ -60,7 +58,6 @@ async function fetchSubmissions(api: Api, user: User, includePaymentPending: boo
 
     const destinationIds: Set<number> = new Set(submissions.map(sub => sub.destinationId).filter(id => id != null) as number[]);
     const assigneeIds: Set<string> = new Set(submissions.map(sub => sub.assigneeId).filter(id => id != null) as string[]);
-    const formIds: Set<number> = new Set(submissions.map(sub => sub.formId));
 
     const destinationCalls = new DestinationsApiService(api)
         .list(0, 999, undefined, undefined, {})
@@ -80,7 +77,6 @@ async function fetchSubmissions(api: Api, user: User, includePaymentPending: boo
         ...sub,
         destination: destinations.find(dest => dest.id === sub.destinationId),
         assignee: sub.assigneeId != null ? (assignees.find(assignee => assignee.id === sub.assigneeId) ?? new UsersApiService(api).initialize()) : undefined,
-        form: forms.content.find(form => form.id === sub.formId),
     }));
 }
 
@@ -145,7 +141,7 @@ const columns: Array<GridColDef<Submission>> = [
         headerName: 'Mitarbeiter:in',
         renderCell: (params) => (
             <CellContentWrapper>
-            {
+                {
                     params.row.destinationId != null &&
                     <DataObjectOutlinedIcon
                         sx={{marginRight: '0.5em'}}
@@ -184,14 +180,14 @@ const columns: Array<GridColDef<Submission>> = [
         headerName: 'Formular',
         type: 'string',
         flex: 1,
-        valueGetter: (value, row) => row.form?.internalTitle,
+        valueGetter: (value, row) => row.formInternalTitle,
     },
     {
         field: 'form.version',
         headerName: 'Version',
         type: 'string',
         flex: 1,
-        valueGetter: (value, row) => row.form?.version,
+        valueGetter: (value, row) => row.formVersion,
     },
 ];
 
@@ -264,7 +260,8 @@ export function SubmissionListPage() {
 
             <AppHeader
                 mode={AppMode.Staff}
-                onDeleteFormData={() => {}}
+                onDeleteFormData={() => {
+                }}
             />
 
             <Introductory

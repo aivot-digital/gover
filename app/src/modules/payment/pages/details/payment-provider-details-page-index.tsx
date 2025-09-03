@@ -199,7 +199,7 @@ export function PaymentProviderDetailsPageIndex() {
         setIsBusy(true);
         try {
             const formsApi = new FormsApiService(api);
-            const relatedForms = await formsApi.list(0, 999, undefined, undefined, {paymentProvider: paymentProvider.key});
+            const relatedForms = await formsApi.list(0, 999, undefined, undefined, {paymentProviderKey: paymentProvider.key});
 
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
@@ -435,16 +435,16 @@ export function PaymentProviderDetailsPageIndex() {
                         item != null &&
                         item.isEnabled &&
                         <Tooltip title="Zum Löschen muss der Zahlungsdienstleister zuerst deaktiviert und gespeichert werden.">
-                                <Box sx={{ml: 'auto'}}>
-                                    <Button
-                                        variant="outlined"
-                                        disabled={true}
-                                        color="error"
-                                        startIcon={<DeleteOutlinedIcon />}
-                                    >
-                                        Löschen
-                                    </Button>
-                                </Box>
+                            <Box sx={{ml: 'auto'}}>
+                                <Button
+                                    variant="outlined"
+                                    disabled={true}
+                                    color="error"
+                                    startIcon={<DeleteOutlinedIcon />}
+                                >
+                                    Löschen
+                                </Button>
+                            </Box>
                         </Tooltip>
                     }
                 </Box>
@@ -469,7 +469,8 @@ export function PaymentProviderDetailsPageIndex() {
                         mt: 2,
                     }}
                 >
-                    <strong>Hinweis:</strong> Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
+                    <strong>Hinweis:</strong>
+                    Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
                     Eine Liste mit ausstehenden Transaktionen können Sie im Reiter <strong>Transaktionen</strong> einsehen.
                 </Typography>
             </ConfirmDialog>

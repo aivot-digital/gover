@@ -1,30 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {Box, Button, Card, Dialog, DialogContent, DialogContentText, Grid, Skeleton, Typography} from '@mui/material';
-import { User } from '../../users/models/user';
+import {User} from '../../users/models/user';
 import {DiffItem} from '../../../models/entities/form-revision';
-import { Form, isForm } from '../../../models/entities/form';
-import { AnyElement } from '../../../models/elements/any-element';
-import { DeletedElementReference, isDeletedElementReference, resolveElementPath } from '../../../utils/resolve-element-path';
+import {Form, isForm} from '../../../models/entities/form';
+import {AnyElement} from '../../../models/elements/any-element';
+import {DeletedElementReference, isDeletedElementReference, resolveElementPath} from '../../../utils/resolve-element-path';
 import {Api, useApi} from '../../../hooks/use-api';
-import { Page } from '../../../models/dtos/page';
-import { FormsApiService } from '../forms-api-service';
+import {Page} from '../../../models/dtos/page';
+import {FormsApiService} from '../forms-api-service';
 import {UsersApiService} from '../../users/users-api-service';
-import { generateComponentTitle } from '../../../utils/generate-component-title';
-import { parseISO } from 'date-fns/parseISO';
+import {generateComponentTitle} from '../../../utils/generate-component-title';
+import {parseISO} from 'date-fns/parseISO';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {clearLoadedFormHistory, selectLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
-import {hideLoadingOverlay, showLoadingOverlay } from '../../../slices/loading-overlay-slice';
+import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
-import {showErrorSnackbar, showSuccessSnackbar } from '../../../slices/snackbar-slice';
-import { delayPromise } from '../../../utils/with-delay';
-import { DialogTitleWithClose } from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {delayPromise} from '../../../utils/with-delay';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {getFullName} from '../../../models/entities/user';
-import { format } from 'date-fns/format';
-import {ApplicationStatus} from '../../../data/application-status';
+import {format} from 'date-fns/format';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
-import {RestoreOutlined} from "@mui/icons-material";
-import {ExpandableCodeBlock} from "../../../components/expandable-code-block/expandable-code-block";
+import {RestoreOutlined} from '@mui/icons-material';
+import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
+import {FormStatus} from '../enums/form-status';
 
 
 export interface FormRevisionsDialogProps {
@@ -51,7 +51,10 @@ interface RevisionDiff extends DiffItem {
 async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | undefined): Promise<Page<Revision>> {
     const formsApiService = new FormsApiService(api);
 
-    const revisionsPage = await formsApiService.listRevisions(form.id, {
+    const revisionsPage = await formsApiService.listRevisions({
+        id: form.id,
+        version: form.version,
+    }, {
         queryParams: {
             limit: 10,
             page: lastPage == null ? 0 : (lastPage.number + 1),
@@ -143,7 +146,10 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
 
         dispatch(showLoadingOverlay('Änderung wird rückgängig gemacht…'));
         new FormsApiService(api)
-            .rollbackRevision(form.id, id)
+            .rollbackRevision({
+                id: form.id,
+                version: form.version,
+            }, id)
             .then(form => {
                 dispatch(showSuccessSnackbar('Änderung rückgängig gemacht.'));
                 dispatch(updateLoadedForm(form));
@@ -207,7 +213,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                 open={props.open}
                 onClose={props.onClose}
                 fullWidth
-                maxWidth={"xl"}
+                maxWidth={'xl'}
             >
 
                 <DialogTitleWithClose
@@ -220,7 +226,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                     }
                     {
                         form != null &&
-                        `Historie für das Formular „${form.title}“`
+                        `Historie für das Formular „${form.internalTitle}“`
                     }
                 </DialogTitleWithClose>
 
@@ -280,7 +286,10 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                                     marginBottom: 0.5,
                                                 }}
                                             >
-                                                Änderung{rev.diffs != null && rev.diffs.length > 1 ? 'en' : ''} von {getFullName(rev.user)} <Typography component={'span'} sx={{color: 'text.secondary'}}>(am {format(rev.timestamp, 'dd.MM.yyyy')} um {format(rev.timestamp, 'HH:mm:ss')} Uhr)</Typography>
+                                                Änderung{rev.diffs != null && rev.diffs.length > 1 ? 'en' : ''} von {getFullName(rev.user)} <Typography
+                                                component={'span'}
+                                                sx={{color: 'text.secondary'}}
+                                            >(am {format(rev.timestamp, 'dd.MM.yyyy')} um {format(rev.timestamp, 'HH:mm:ss')} Uhr)</Typography>
                                             </Typography>
                                         </Box>
 
@@ -295,7 +304,8 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
 
                                                     {diff.field &&
                                                         <Typography>
-                                                            Geändertes Attribut: {diff.path}{diff.path && " → "}<b>{diff.field}</b>
+                                                            Geändertes Attribut: {diff.path}{diff.path && ' → '}
+                                                            <b>{diff.field}</b>
                                                         </Typography>
                                                     }
 
@@ -308,8 +318,9 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                                         <Grid
                                                             size={{
                                                                 xs: 12,
-                                                                md: 6
-                                                            }}>
+                                                                md: 6,
+                                                            }}
+                                                        >
                                                             <Typography
                                                                 variant="caption"
                                                                 sx={{
@@ -325,8 +336,9 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                                         <Grid
                                                             size={{
                                                                 xs: 12,
-                                                                md: 6
-                                                            }}>
+                                                                md: 6,
+                                                            }}
+                                                        >
                                                             <Typography
                                                                 variant="caption"
                                                                 sx={{
@@ -346,8 +358,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                         {
                                             (currentRevisionsPage?.last !== true ||
                                                 index < revisions.length - 1) &&
-                                            (form?.status === ApplicationStatus.Drafted ||
-                                                form?.status === ApplicationStatus.InReview) &&
+                                            (form?.status === FormStatus.Drafted) &&
                                             <Box
                                                 sx={{
                                                     display: 'flex',
@@ -360,7 +371,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                                     }}
                                                     size="small"
                                                     onClick={() => setHandleRollback(() => () => performRollback(rev.id))}
-                                                    startIcon={<RestoreOutlined/>}
+                                                    startIcon={<RestoreOutlined />}
                                                 >
                                                     Diese Änderung{rev.diffs != null && rev.diffs.length > 1 ? 'en' : ''} rückgängig machen
                                                 </Button>
@@ -418,7 +429,9 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                         mt: 2,
                     }}
                 >
-                    <b>Wichtig:</b> Beim Rückgängigmachen wird geprüft, ob bestimmte Attribute noch gültig oder verfügbar sind. Sollte dies nicht der Fall sein, werden diese entfernt und müssen anschließend neu gesetzt werden. Betroffen sein können insbesondere: Formular-IDs, Schnittstellen, Statusangaben, Fachbereiche, rechtliche Hinweise, Support-Informationen, PDF-Vorlagen, Farbschemata, Zahlungsdetails sowie Testprotokolle.
+                    <b>Wichtig:</b>
+                    Beim Rückgängigmachen wird geprüft, ob bestimmte Attribute noch gültig oder verfügbar sind. Sollte dies nicht der Fall sein, werden diese entfernt und müssen anschließend neu gesetzt werden. Betroffen sein können
+                    insbesondere: Formular-IDs, Schnittstellen, Statusangaben, Fachbereiche, rechtliche Hinweise, Support-Informationen, PDF-Vorlagen, Farbschemata, Zahlungsdetails sowie Testprotokolle.
                 </DialogContentText>
             </ConfirmDialog>
         </>

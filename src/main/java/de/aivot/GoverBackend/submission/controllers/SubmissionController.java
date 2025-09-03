@@ -23,6 +23,7 @@ import de.aivot.GoverBackend.services.DestinationSubmitService;
 import de.aivot.GoverBackend.submission.dtos.SubmissionDetailsResponseDTO;
 import de.aivot.GoverBackend.submission.dtos.SubmissionListResponseDTO;
 import de.aivot.GoverBackend.submission.dtos.SubmissionRequestDTO;
+import de.aivot.GoverBackend.submission.dtos.SubmissionWithMembershipResponseDTO;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.filters.SubmissionAttachmentFilter;
 import de.aivot.GoverBackend.submission.filters.SubmissionWithMembershipFilter;
@@ -103,7 +104,7 @@ public class SubmissionController {
     }
 
     @GetMapping("")
-    public Page<SubmissionListResponseDTO> list(
+    public Page<SubmissionWithMembershipResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid SubmissionWithMembershipFilter filter
@@ -116,7 +117,7 @@ public class SubmissionController {
 
         return submissionWithMembershipService
                 .list(pageable, filter)
-                .map(SubmissionListResponseDTO::fromEntity);
+                .map(SubmissionWithMembershipResponseDTO::from);
     }
 
     @GetMapping("{id}/")
