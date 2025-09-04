@@ -1,11 +1,15 @@
 package de.aivot.GoverBackend.secrets.entities;
 
 import de.aivot.GoverBackend.secrets.properties.SecretConfigurationProperties;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * This class represents a secret entity in the database.
@@ -20,8 +24,8 @@ import java.util.Objects;
 @Table(name = "secrets")
 public class SecretEntity {
     @Id
-    @Column(length = 36, columnDefinition = "uuid")
-    private String key;
+    @Column(columnDefinition = "uuid")
+    private UUID key;
 
     @Column(length = 64)
     @NotNull(message = "Name cannot be null")
@@ -100,11 +104,11 @@ public class SecretEntity {
         this.salt = salt;
     }
 
-    public String getKey() {
+    public UUID getKey() {
         return key;
     }
 
-    public void setKey(String key) {
+    public void setKey(UUID key) {
         this.key = key;
     }
 }

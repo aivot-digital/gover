@@ -39,6 +39,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class girocheckoutPaymentProviderDefinition implements PaymentProviderDefinition {
@@ -110,7 +111,7 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
                 .list()
                 .stream()
                 .map(secret -> new RadioFieldOption()
-                        .setValue(secret.getKey())
+                        .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
                 .toList();
@@ -269,8 +270,15 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
             throw new PaymentMissingDataException("Project password", paymentProviderEntity);
         }
 
+        UUID passwordSecretFieldKey;
+        try {
+            passwordSecretFieldKey = UUID.fromString(passwordSecretField);
+        } catch (IllegalArgumentException e) {
+            throw new PaymentMissingDataException("Project password", paymentProviderEntity);
+        }
+
         var passwordSecretEntity = secretService
-                .retrieve(passwordSecretField)
+                .retrieve(passwordSecretFieldKey)
                 .orElseThrow(() -> new PaymentMissingDataException("Project password entity", paymentProviderEntity));
 
         String passwordSecret = null;

@@ -132,7 +132,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
                 .list()
                 .stream()
                 .map(secret -> new RadioFieldOption()
-                        .setValue(secret.getKey())
+                        .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
                 .toList();
@@ -333,9 +333,16 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
             @Nonnull PaymentProviderEntity paymentProviderEntity,
             @Nonnull Map<String, Object> config
     ) throws PaymentException {
-        var paymentProviderPasswordSecretKey = (String) config.get(CERTIFICATE_PASSWORD_FIELD);
-        if (StringUtils.isNullOrEmpty(paymentProviderPasswordSecretKey)) {
+        var paymentProviderPasswordSecretKeyStr = (String) config.get(CERTIFICATE_PASSWORD_FIELD);
+        if (StringUtils.isNullOrEmpty(paymentProviderPasswordSecretKeyStr)) {
             throw new PaymentException("Certificate password field is missing for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
+        }
+
+        UUID paymentProviderPasswordSecretKey;
+        try {
+            paymentProviderPasswordSecretKey = UUID.fromString(paymentProviderPasswordSecretKeyStr);
+        } catch (IllegalArgumentException e) {
+            throw new PaymentException("Certificate password field is not a valid UUID for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
         var paymentProviderClientCertPassSecret = secretService

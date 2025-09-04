@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.nocode.services;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
@@ -34,9 +35,9 @@ class NoCodeEvaluationServiceTest {
         assertEquals(NoCodeDataType.Boolean, res.getDataType());
         assertEquals(true, res.getValue());
 
-        context.putInputValue("a", true);
-        context.putInputValue("b", false);
-        context.putInputValue("c", true);
+        context.putInputValue("a", ElementType.Checkbox,true);
+        context.putInputValue("b", ElementType.Checkbox, false);
+        context.putInputValue("c", ElementType.Checkbox, true);
 
         var result = evalService.evaluate(
                 new NoCodeExpression(

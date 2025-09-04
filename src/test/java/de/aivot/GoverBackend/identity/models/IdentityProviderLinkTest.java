@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.identity.models;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -10,16 +11,18 @@ class IdentityProviderLinkTest {
 
     @Test
     void testEquals() {
+        UUID commonKey = UUID.randomUUID();
+
         IdentityProviderLink link1 = new IdentityProviderLink()
-                .setIdentityProviderKey("provider1")
+                .setIdentityProviderKey(commonKey)
                 .setAdditionalScopes(List.of("scope1", "scope2"));
 
         IdentityProviderLink link2 = new IdentityProviderLink()
-                .setIdentityProviderKey("provider1")
+                .setIdentityProviderKey(commonKey)
                 .setAdditionalScopes(List.of("scope1", "scope2"));
 
         IdentityProviderLink link3 = new IdentityProviderLink()
-                .setIdentityProviderKey("provider2")
+                .setIdentityProviderKey(UUID.randomUUID())
                 .setAdditionalScopes(List.of("scope3"));
 
         IdentityProviderLink link4 = new IdentityProviderLink()
@@ -35,16 +38,18 @@ class IdentityProviderLinkTest {
 
     @Test
     void testHashCode() {
+        UUID commonKey = UUID.randomUUID();
+
         IdentityProviderLink link1 = new IdentityProviderLink()
-                .setIdentityProviderKey("provider1")
+                .setIdentityProviderKey(commonKey)
                 .setAdditionalScopes(List.of("scope1", "scope2"));
 
         IdentityProviderLink link2 = new IdentityProviderLink()
-                .setIdentityProviderKey("provider1")
+                .setIdentityProviderKey(commonKey)
                 .setAdditionalScopes(List.of("scope1", "scope2"));
 
         IdentityProviderLink link3 = new IdentityProviderLink()
-                .setIdentityProviderKey("provider2")
+                .setIdentityProviderKey(UUID.randomUUID())
                 .setAdditionalScopes(List.of("scope3"));
 
         IdentityProviderLink link4 = new IdentityProviderLink()

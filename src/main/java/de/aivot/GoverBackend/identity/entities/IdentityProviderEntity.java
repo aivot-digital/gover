@@ -55,8 +55,8 @@ public class IdentityProviderEntity {
     private String description;
 
     @Nullable
-    @Column(length = 36, columnDefinition = "uuid")
-    private String iconAssetKey;
+    @Column(columnDefinition = "uuid")
+    private UUID iconAssetKey;
 
     @Nonnull
     @Column(length = 255)
@@ -79,8 +79,8 @@ public class IdentityProviderEntity {
     private String clientId;
 
     @Nullable
-    @Column(length = 36, columnDefinition = "uuid")
-    private String clientSecretKey;
+    @Column(columnDefinition = "uuid")
+    private UUID clientSecretKey;
 
     @Column(columnDefinition = "jsonb")
     @Convert(converter = IdentityAttributesConverter.class)
@@ -189,11 +189,11 @@ public class IdentityProviderEntity {
     }
 
     @Nullable
-    public String getIconAssetKey() {
+    public UUID getIconAssetKey() {
         return iconAssetKey;
     }
 
-    public IdentityProviderEntity setIconAssetKey(@Nullable String iconAssetKey) {
+    public IdentityProviderEntity setIconAssetKey(@Nullable UUID iconAssetKey) {
         this.iconAssetKey = iconAssetKey;
         return this;
     }
@@ -249,11 +249,11 @@ public class IdentityProviderEntity {
     }
 
     @Nullable
-    public String getClientSecretKey() {
+    public UUID getClientSecretKey() {
         return clientSecretKey;
     }
 
-    public IdentityProviderEntity setClientSecretKey(@Nullable String clientSecretKey) {
+    public IdentityProviderEntity setClientSecretKey(@Nullable UUID clientSecretKey) {
         this.clientSecretKey = clientSecretKey;
         return this;
     }

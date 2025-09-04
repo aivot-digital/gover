@@ -15,7 +15,7 @@ public record IdentityDetailsDTO(
         @Nonnull
         String name,
         @Nullable
-        String iconAssetKey,
+        UUID iconAssetKey,
         @Nonnull
         String metadataIdentifier
 ) {

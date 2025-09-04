@@ -365,7 +365,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     // region Helpers
 
     private void cleanClientSecretKey(@Nonnull IdentityProviderEntity updatedEntity) {
-        if (StringUtils.isNullOrEmpty(updatedEntity.getClientSecretKey())) {
+        if (updatedEntity.getClientSecretKey() == null) {
             updatedEntity.setClientSecretKey(null);
         } else {
             Optional<SecretEntity> secretEntity;
@@ -383,15 +383,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     }
 
     private void cleanIconAssetKey(@Nonnull IdentityProviderEntity updatedEntity) {
-        if (StringUtils.isNullOrEmpty(updatedEntity.getIconAssetKey())) {
-            updatedEntity.setIconAssetKey(null);
-            return;
-        }
-
-        UUID uuid;
-        try {
-            uuid = UUID.fromString(updatedEntity.getIconAssetKey());
-        } catch (IllegalArgumentException e) {
+        if (updatedEntity.getIconAssetKey() == null) {
             updatedEntity.setIconAssetKey(null);
             return;
         }
@@ -399,7 +391,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
         Optional<AssetEntity> assetEntity;
         try {
             assetEntity = assetRepository
-                    .findById(uuid);
+                    .findById(updatedEntity.getIconAssetKey());
         } catch (Exception e) {
             updatedEntity.setIconAssetKey(null);
             return;

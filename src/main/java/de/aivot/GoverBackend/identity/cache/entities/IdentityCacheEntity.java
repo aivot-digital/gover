@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.UUID;
 
 @RedisHash(value = "CacheIdentity", timeToLive = 60 * 60 *4) // Expire after 4 hours
 public class IdentityCacheEntity implements Serializable {
@@ -32,6 +33,10 @@ public class IdentityCacheEntity implements Serializable {
     public IdentityCacheEntity setProviderKey(String providerKey) {
         this.providerKey = providerKey;
         return this;
+    }
+
+    public IdentityCacheEntity setProviderKey(UUID providerKey) {
+        return this.setProviderKey(providerKey.toString());
     }
 
     public String getMetadataIdentifier() {

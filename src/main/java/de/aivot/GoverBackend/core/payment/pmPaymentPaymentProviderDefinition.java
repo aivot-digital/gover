@@ -31,6 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefinition {
@@ -108,7 +109,7 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
                 .list()
                 .stream()
                 .map(secret -> new RadioFieldOption()
-                        .setValue(secret.getKey())
+                        .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
                 .toList();
@@ -368,8 +369,17 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         return endpointID;
     }
 
-    @Nonnull
     private String getDecryptedClientSecret(@Nonnull String clientSecretKey) throws PaymentException {
+        try {
+            var uuid = UUID.fromString(clientSecretKey);
+            return getDecryptedClientSecret(uuid);
+        } catch (IllegalArgumentException e) {
+            throw new PaymentException(e, "Client secret key %s is not a valid UUID", clientSecretKey);
+        }
+    }
+
+    @Nonnull
+    private String getDecryptedClientSecret(@Nonnull UUID clientSecretKey) throws PaymentException {
         var paymentProviderClientSecretEntity = secretService
                 .retrieve(clientSecretKey)
                 .orElseThrow(() -> new PaymentException("Client secret %s not found", clientSecretKey));

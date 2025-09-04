@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * This controller is responsible for handling requests to the secrets API.
@@ -107,7 +108,7 @@ public class SecretController {
     @GetMapping("{key}/")
     public SecretEntityResponseDTO retrieve(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String key
+            @PathVariable UUID key
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
@@ -135,7 +136,7 @@ public class SecretController {
     @PutMapping("{key}/")
     public SecretEntityResponseDTO update(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String key,
+            @PathVariable UUID key,
             @RequestBody @Valid SecretEntityRequestDTO secretDTO
     ) throws ResponseException {
         var user = UserService
@@ -158,7 +159,7 @@ public class SecretController {
     @DeleteMapping("{key}/")
     public void delete(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable String key
+            @PathVariable UUID key
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)

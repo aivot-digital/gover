@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.enums.ElementType;
 import jakarta.annotation.Nullable;
 import net.minidev.json.annotate.JsonIgnore;
 
@@ -26,6 +27,29 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
         super(elementData);
     }
 
+    public static ElementData of(Object... keyValuePairs) {
+        var elementData = new ElementData();
+
+        if (keyValuePairs.length % 2 != 0) {
+            throw new IllegalArgumentException("Key-value pairs must be in pairs.");
+        }
+
+        for (int i = 0; i < keyValuePairs.length; i += 2) {
+            var key = keyValuePairs[i];
+            var value = keyValuePairs[i + 1];
+
+            if (!(key instanceof String)) {
+                throw new IllegalArgumentException("Keys must be of type String.");
+            }
+
+            var dataObject = new ElementDataObject();
+            dataObject.setInputValue(value);
+            elementData.put((String) key, dataObject);
+        }
+
+        return elementData;
+    }
+
     public ElementDataObject put(String key, ElementDataObject dataObject) {
         super.put(key, dataObject);
         return dataObject;
@@ -40,6 +64,12 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
             var elementDataObject = new ElementDataObject(element);
             elementDataObject.setInputValue(value);
             return put(element.getId(), elementDataObject);
+    }
+
+    public ElementDataObject putInputValue(String id, ElementType type, Object value) {
+        var elementDataObject = new ElementDataObject(type);
+        elementDataObject.setInputValue(value);
+        return put(id, elementDataObject);
     }
 
     @JsonIgnore

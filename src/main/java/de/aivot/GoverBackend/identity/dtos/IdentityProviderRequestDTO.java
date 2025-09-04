@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.UUID;
 
 public record IdentityProviderRequestDTO(
         @Nonnull
@@ -25,7 +26,7 @@ public record IdentityProviderRequestDTO(
         @Size(min = 1, max = 255, message = "Die Beschreibung des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
         String description,
         @Nullable
-        String iconAssetKey,
+        UUID iconAssetKey,
         @Nonnull
         @NotNull(message = "Der Autorisierungsendpunkt des Nutzerkontenanbieters ist erforderlich.")
         @Size(min = 1, max = 255, message = "Der Autorisierungsendpunkt des Nutzerkontenanbieters muss zwischen 1 und 255 Zeichen lang sein.")
@@ -45,7 +46,7 @@ public record IdentityProviderRequestDTO(
         @Size(min = 1, max = 128, message = "Die Client-ID des Nutzerkontenanbieters muss zwischen 1 und 32 Zeichen lang sein.")
         String clientId,
         @Nullable
-        String clientSecretKey,
+        UUID clientSecretKey,
         @Nonnull
         @NotNull(message = "Die Attribute des Nutzerkontenanbieters sind erforderlich.")
         List<IdentityAttributeMapping> attributes,

@@ -39,7 +39,7 @@ import java.util.UUID;
  * The service is used by the {@link de.aivot.GoverBackend.secrets.controllers.SecretController} to handle API requests related to secrets.
  */
 @Service
-public class SecretService implements EntityService<SecretEntity, String> {
+public class SecretService implements EntityService<SecretEntity, UUID> {
     private final SecretConfigurationProperties secretConfigurationProperties;
     private final SecretRepository secretRepository;
 
@@ -76,7 +76,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     public SecretEntity create(@Nonnull SecretEntity newEntity) throws ResponseException {
         var secretEntity = new SecretEntity();
 
-        secretEntity.setKey(UUID.randomUUID().toString());
+        secretEntity.setKey(UUID.randomUUID());
         secretEntity.setName(newEntity.getName());
         secretEntity.setDescription(newEntity.getDescription());
         secretEntity.setSalt(createRandomSalt());
@@ -106,7 +106,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     @Nonnull
     @Override
     public Optional<SecretEntity> retrieve(
-            @Nonnull String id
+            @Nonnull UUID id
     ) {
         return secretRepository
                 .findById(id);
@@ -120,7 +120,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     }
 
     @Override
-    public boolean exists(@Nonnull String id) {
+    public boolean exists(@Nonnull UUID id) {
         return secretRepository.existsById(id);
     }
 
@@ -151,7 +151,7 @@ public class SecretService implements EntityService<SecretEntity, String> {
     @Nonnull
     @Override
     public SecretEntity performUpdate(
-            @Nonnull String id,
+            @Nonnull UUID id,
             @Nonnull SecretEntity updatedEntity,
             @Nonnull SecretEntity originalEntity
     ) throws ResponseException {
