@@ -144,17 +144,26 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         return await this.api.get<Form>(`forms/${formId}/revisions/rollback/${revisionId}/`, options);
     }
 
-    public async determineFormState(formId: FormIdentifier, customerInput: CustomerInput, filter: {
+    public async determineFormState(slug: string, version: number, customerInput: CustomerInput, filter: {
         skipErrorsFor: DerivationSkipIdentifier,
         skipVisibilitiesFor: DerivationSkipIdentifier,
         skipValuesFor: DerivationSkipIdentifier,
         skipOverridesFor: DerivationSkipIdentifier,
     }): Promise<ElementData> {
-        return await this.api.post<ElementData>(`public/forms/${formId}/derive`, customerInput, {queryParams: filter});
+        return await this.api.post<ElementData>(
+            `public/forms/${slug}/derive`,
+            customerInput,
+            {
+                queryParams: {
+                    ...filter,
+                    version: version,
+                }
+            },
+        );
     }
 
-    public async calculateCosts(formId: FormIdentifier, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {
-        return await this.api.post<FormCostCalculationResponseDTO>(`public/forms/${formId}/costs/`, customerInput);
+    public async calculateCosts(slug: string, version: number, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {
+        return await this.api.post<FormCostCalculationResponseDTO>(`public/forms/${slug}/costs/`, customerInput, {queryParams: {version: version}});
     }
 
     public async submit(id: FormIdentifier, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {

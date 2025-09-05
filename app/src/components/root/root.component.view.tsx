@@ -395,10 +395,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             const derivationResult = await withAsyncWrapper({
                 desiredMinRuntime: 600,
                 main: () => new FormsApiService(api).determineFormState(
-                    {
-                        id: form.id,
-                        version: form.version,
-                    },
+                    form.slug,
+                    form.version,
                     elementData,
                     {
                         skipErrorsFor: options.forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
@@ -499,10 +497,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             main: async () => {
                 try {
                     const calculatedCosts = await new FormsApiService(api)
-                        .calculateCosts({
-                            id: form.id,
-                            version: form.version,
-                        }, elementData);
+                        .calculateCosts(form.slug, form.version, elementData);
                     onElementDataChange({
                         ...elementData,
                         [SubmitPaymentDataKey]: {

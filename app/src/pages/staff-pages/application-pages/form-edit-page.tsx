@@ -214,10 +214,8 @@ export function FormEditPage() {
             main: () => {
                 return new FormsApiService(api)
                     .determineFormState(
-                        {
-                            id: loadedForm.id,
-                            version: loadedForm.version,
-                        },
+                        loadedForm.slug,
+                        loadedForm.version,
                         elementData,
                         {
                             skipErrorsFor: [],
@@ -283,10 +281,8 @@ export function FormEditPage() {
             .then((loadedForm) => {
                 new FormsApiService(api)
                     .determineFormState(
-                        {
-                            id: loadedForm.id,
-                            version: loadedForm.version,
-                        },
+                        loadedForm.slug,
+                        loadedForm.version,
                         elementData,
                         {
                             skipErrorsFor: ['ALL'],
@@ -323,10 +319,8 @@ export function FormEditPage() {
             .then((loadedForm) => {
                 new FormsApiService(api)
                     .determineFormState(
-                        {
-                            id: loadedForm.id,
-                            version: loadedForm.version,
-                        },
+                        loadedForm.slug,
+                        loadedForm.version,
                         elementData,
                         {
                             skipErrorsFor: ['ALL'],
@@ -434,10 +428,8 @@ export function FormEditPage() {
                     try {
                         const newState = await apiService
                             .determineFormState(
-                                {
-                                    id: loadedForm.id,
-                                    version: loadedForm.version,
-                                },
+                                loadedForm.slug,
+                                loadedForm.version,
                                 elementData,
                                 {
                                     skipErrorsFor: ['ALL'],

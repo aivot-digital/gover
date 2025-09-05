@@ -51,10 +51,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         }
 
         new FormsApiService(api)
-            .calculateCosts({
-                id: form.id,
-                version: form.version,
-            }, elementData)
+            .calculateCosts(form.slug, form.version, elementData)
             .then((data) => {
                 setCosts(data);
             });
