@@ -55,6 +55,8 @@ import {setIdentityId} from '../../../slices/identity-slice';
 import {ElementData} from '../../../models/element-data';
 import {asFormRequestDTO, FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
 import {FormStatus} from '../../../modules/forms/enums/form-status';
+import {selectSystemConfigValue} from '../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../data/system-config-keys';
 
 export const DialogSearchParam = 'dialog';
 
@@ -110,7 +112,7 @@ export function FormEditPage() {
     } = useAppSelector((state: RootState) => state.adminSettings);
 
     const loadedForm = useAppSelector(selectLoadedForm);
-    //const customerInput = useAppSelector((state) => state.app.inputs);
+    const systemThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const pastLoadedForm = useAppSelector(selectPastLoadedForm);
     const hasPastLoadedForm = useMemo(() => pastLoadedForm.length > 0, [pastLoadedForm]);
@@ -184,23 +186,40 @@ export function FormEditPage() {
     }, [formId, formVersion, dispatch]);
 
     useEffect(() => {
-        if (loadedForm?.themeId != null) {
+        if (loadedForm == null) {
+            return;
+        }
+
+        if (loadedForm.themeId != null) {
             new ThemesApiService(api)
                 .retrieve(loadedForm.themeId)
                 .then(setTheme)
                 .catch((err) => {
                     console.error(err);
                 });
-        } else {
-            setTheme(undefined);
+            return;
         }
 
-        if (loadedForm != null) {
-            new FormsApiService(api)
-                .getIdentityProviders(loadedForm.slug, loadedForm.version)
-                .then(res => setIdentityProviderInfos(res.content));
+        if (systemThemeId != null) {
+            new ThemesApiService(api)
+                .retrieve(parseInt(systemThemeId))
+                .then(setTheme)
+                .catch((err) => {
+                    console.error(err);
+                });
         }
+    }, [loadedForm, systemThemeId]);
+
+    useEffect(() => {
+        if (loadedForm == null) {
+            return;
+        }
+
+        new FormsApiService(api)
+            .getIdentityProviders(loadedForm.slug, loadedForm.version)
+            .then(res => setIdentityProviderInfos(res.content));
     }, [loadedForm]);
+
 
     useDidUpdateEffect(() => {
         if (loadedForm == null) {

@@ -41,6 +41,7 @@ export function FormPage() {
 
     const dispatch = useAppDispatch();
     const form = useAppSelector(selectLoadedForm);
+    const systemThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
     const [failedToLoad, setFailedToLoad] = useState(false);
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -81,7 +82,7 @@ export function FormPage() {
     }, [slug, api, identityId]);
 
     useEffect(() => {
-        if (form?.themeId != null) {
+        if (form != null && form.themeId != null) {
             new ThemesApiService(api)
                 .retrievePublic(form.themeId)
                 .then(setTheme)
@@ -89,7 +90,16 @@ export function FormPage() {
                     console.error(err);
                 });
         }
-    }, [form]);
+
+        if (systemThemeId != null) {
+            new ThemesApiService(api)
+                .retrieve(parseInt(systemThemeId))
+                .then(setTheme)
+                .catch((err) => {
+                    console.error(err);
+                });
+        }
+    }, [form, systemThemeId]);
 
     const _theme = useMemo(() => {
         return createAppTheme(theme, baseTheme);
