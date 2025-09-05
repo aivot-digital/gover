@@ -3,10 +3,9 @@ import {DateFieldComponentModelMode, type DateFieldElement} from '../models/elem
 import {type SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
-import {HtmlAutofillAttributeOptions} from "../data/html-autofill-attribute-options";
-import {getAutofillOptionsForElementType} from "../data/element-type/element-autofill-options";
-import {ElementType} from "../data/element-type/element-type";
-import {Autocomplete, Box, Grid, TextField, Typography} from '@mui/material';
+import {Grid} from '@mui/material';
+import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
+import React from 'react';
 
 const modes: SelectFieldComponentOption[] = [
     {
@@ -37,8 +36,9 @@ export const DateFieldEditor: BaseEditor<DateFieldElement, ElementTreeEntity> = 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Datums-Format"
                         value={element.mode ?? DateFieldComponentModelMode.Day}
@@ -55,49 +55,18 @@ export const DateFieldEditor: BaseEditor<DateFieldElement, ElementTreeEntity> = 
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
-                    <Autocomplete
-                        id="autocomplete-select"
-                        value={HtmlAutofillAttributeOptions.find(item => item.value === element.autocomplete) ?? null}
-                        onChange={(event, val) => {
+                        lg: 6,
+                    }}
+                >
+                    <AutocompleteSelect
+                        type={element.type}
+                        value={element.autocomplete}
+                        onChange={(val) => {
                             onPatch({
-                                autocomplete: val?.value,
+                                autocomplete: val,
                             });
                         }}
-                        options={getAutofillOptionsForElementType(ElementType.Date)}
-                        autoHighlight
-                        getOptionLabel={(option) => option.label + ' (' + option.value + ')'}
-                        renderOption={(props, option) => (
-                            <Box component="li" sx={{display: 'block!important'}} {...props}>
-                                <Typography
-                                    component={'div'}
-                                    variant="body1"
-                                >
-                                    <b>{option.label}</b> ({option.value})
-                                </Typography>
-                                <Typography
-                                    component={'div'}
-                                    variant="caption"
-                                    color="textSecondary"
-                                    sx={{maxWidth: 740, my: 0}}
-                                >
-                                    {option.description}
-                                </Typography>
-                            </Box>
-                        )}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Automatisches Ausfüllen durch den Browser (Autocomplete)"
-                                inputProps={{
-                                    ...params.inputProps,
-                                    autoComplete: 'new-password', // disable autocomplete and autofill
-                                }}
-                                helperText={"Legen Sie fest, welches Datenfeld der Browser zur Autovervollständigung vorschlagen soll (z. B. Name, E-Mail). Vorschläge sind browserabhängig."}
-                            />
-                        )}
-                        disabled={!editable}
+                        editable={editable}
                     />
                 </Grid>
             </Grid>

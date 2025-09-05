@@ -1,17 +1,9 @@
 import React from 'react';
 import {type BaseEditorProps} from './base-editor';
-import {
-    type SelectFieldElement,
-    type SelectFieldElementOption,
-} from '../models/elements/form/input/select-field-element';
-import {StringListInput} from '../components/string-list-input/string-list-input';
+import {type SelectFieldElement, type SelectFieldElementOption} from '../models/elements/form/input/select-field-element';
 import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {OptionListInput} from '../components/option-list-input/option-list-input';
-import {isStringArray} from '../utils/is-string-array';
-import {HtmlAutofillAttributeOptions} from '../data/html-autofill-attribute-options';
-import {getAutofillOptionsForElementType} from '../data/element-type/element-autofill-options';
-import {ElementType} from '../data/element-type/element-type';
-import {Autocomplete, Box, TextField, Typography} from '@mui/material';
+import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 
 export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, ElementTreeEntity>) {
     const options = props.element.options ?? [];
@@ -35,52 +27,16 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
                 variant="outlined"
             />
 
-            <Autocomplete
-                id="autocomplete-select"
-                value={HtmlAutofillAttributeOptions.find(item => item.value === props.element.autocomplete) ?? null}
-                onChange={(event, val) => {
+            <AutocompleteSelect
+                type={props.element.type}
+                value={props.element.autocomplete}
+                onChange={(val) => {
                     props.onPatch({
-                        autocomplete: val?.value,
+                        autocomplete: val,
                     });
                 }}
-                options={getAutofillOptionsForElementType(ElementType.Select)}
-                autoHighlight
-                getOptionLabel={(option) => option.label + ' (' + option.value + ')'}
-                renderOption={(props, option) => (
-                    <Box
-                        component="li"
-                        sx={{display: 'block!important'}} {...props}>
-                        <Typography
-                            component={'div'}
-                            variant="body1"
-                        >
-                            <b>{option.label}</b>
-                            ({option.value})
-                        </Typography>
-                        <Typography
-                            component={'div'}
-                            variant="caption"
-                            color="textSecondary"
-                            sx={{maxWidth: 740, my: 0}}
-                        >
-                            {option.description}
-                        </Typography>
-                    </Box>
-                )}
-                renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        label="Automatisches Ausfüllen durch den Browser (Autocomplete)"
-                        inputProps={{
-                            ...params.inputProps,
-                            autoComplete: 'new-password', // disable autocomplete and autofill
-                        }}
-                        helperText={'Legen Sie fest, welches Datenfeld der Browser zur Autovervollständigung vorschlagen soll (z. B. Name, E-Mail). Vorschläge sind browserabhängig.'}
-                    />
-                )}
-                disabled={!props.editable}
+                editable={props.editable}
             />
-
         </>
     );
 }
