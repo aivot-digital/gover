@@ -1,6 +1,9 @@
 import {HtmlAutofillAttributeOptions} from '../../data/html-autofill-attribute-options';
 import {getAutofillOptionsForElementType} from '../../data/element-type/element-autofill-options';
-import {Autocomplete, Box, TextField, Typography} from '@mui/material/esm';
+import Autocomplete from '@mui/material/Autocomplete';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import React, {useMemo} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 
