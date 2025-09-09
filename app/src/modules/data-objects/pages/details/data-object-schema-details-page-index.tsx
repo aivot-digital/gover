@@ -288,6 +288,8 @@ export function DataObjectSchemaDetailsPageIndex() {
                     ElementType.Radio,
                     ElementType.MultiCheckbox,
                     ElementType.Table,
+                    ElementType.Date,
+                    ElementType.Time,
                 ]}
             />
 
