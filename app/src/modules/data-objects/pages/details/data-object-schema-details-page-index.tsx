@@ -1,10 +1,9 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
+import React, {useContext, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
 import {isAdmin} from '../../../../utils/is-admin';
@@ -13,10 +12,8 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {useConfirm} from '../../../../providers/confirm-provider';
 import {DataObjectSchema, ID_GEN_CUSTOM, ID_GEN_SERIAL, ID_GEN_UUID} from '../../models/data-object-schema';
 import {ElementTreeTree} from '../../../../components/element-tree/element-tree-tree';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
@@ -102,7 +99,7 @@ export function DataObjectSchemaDetailsPageIndex() {
         const validationResult = validate();
 
         if (!validationResult) {
-            dispatch(showErrorSnackbar("Bitte überprüfen Sie Ihre Eingaben."));
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
             return;
         }
 
