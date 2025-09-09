@@ -7,9 +7,10 @@ import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ConditionOperator;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Condition {
+public class Condition implements Serializable {
     private ConditionOperator operator;
     private String reference;
     private String target;

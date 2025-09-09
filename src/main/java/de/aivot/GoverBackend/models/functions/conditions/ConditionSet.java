@@ -7,9 +7,10 @@ import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
 import de.aivot.GoverBackend.utils.MapUtils;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class ConditionSet {
+public class ConditionSet implements Serializable {
     private ConditionSetOperator operator;
     private Collection<Condition> conditions;
     private Collection<ConditionSet> conditionsSets;
