@@ -240,6 +240,7 @@ public class SubmitController {
 
         submission.setId(submissionId);
         submission.setFormId(form.getId());
+        submission.setFormVersion(form.getVersion());
         submission.setStatus(SubmissionStatus.Pending);
         submission.setCreated(LocalDateTime.now());
         submission.setUpdated(LocalDateTime.now());

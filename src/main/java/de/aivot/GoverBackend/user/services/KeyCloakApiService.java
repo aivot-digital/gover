@@ -32,6 +32,8 @@ import java.util.Optional;
 
 @Component
 public class KeyCloakApiService {
+    private final static Duration TIMEOUT = Duration.ofSeconds(5);
+
     private final KeyCloakOIDCConfig keyCloakOIDCConfig;
     private final KeyCloakIdConfig keyCloakIdConfig;
 
@@ -157,7 +159,7 @@ public class KeyCloakApiService {
 
         var request = HttpRequest
                 .newBuilder(uri)
-                .timeout(Duration.ofSeconds(1))
+                .timeout(TIMEOUT)
                 .headers("Content-Type", "application/json")
                 .headers("Authorization", "Bearer " + accessToken)
                 .GET()
@@ -165,7 +167,7 @@ public class KeyCloakApiService {
 
         var clientBuilder = HttpClient
                 .newBuilder()
-                .connectTimeout(Duration.ofSeconds(1));
+                .connectTimeout(TIMEOUT);
 
         try (var client = clientBuilder.build()) {
             return client
@@ -195,14 +197,19 @@ public class KeyCloakApiService {
         // Build the request for fetching the access token
         var request = HttpRequest
                 .newBuilder(uri)
-                .timeout(Duration.ofSeconds(1))
+                .timeout(TIMEOUT)
                 .headers("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
 
+        // Create the http client builder
+        var clientBuilder = HttpClient
+                .newBuilder()
+                .connectTimeout(TIMEOUT);
+
         // Send the request and get the response
         HttpResponse<String> response;
-        try (var client = HttpClient.newHttpClient()) {
+        try (var client = clientBuilder.build()) {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         }
 
@@ -233,7 +240,7 @@ public class KeyCloakApiService {
         // Build the request for fetching the public key
         var request = HttpRequest
                 .newBuilder(uri)
-                .timeout(Duration.ofSeconds(1))
+                .timeout(TIMEOUT)
                 .headers("Content-Type", "application/json")
                 .GET()
                 .build();
@@ -241,7 +248,7 @@ public class KeyCloakApiService {
         // Create the http client builder
         var clientBuilder = HttpClient
                 .newBuilder()
-                .connectTimeout(Duration.ofSeconds(1));
+                .connectTimeout(TIMEOUT);
 
         // Send the request and get the response
         HttpResponse<String> response;

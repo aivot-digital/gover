@@ -190,7 +190,7 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
             }
         }
 
-        return await this.api.postFormData<SubmissionListResponseDTO>(`public/submit/${id}/`, data, identityId != null ? {
+        return await this.api.postFormData<SubmissionListResponseDTO>(`public/submit/${id.id}/${id.version}/`, data, identityId != null ? {
             requestOptions: {
                 headers: {
                     [IdentityIdHeader]: identityId ?? undefined,
