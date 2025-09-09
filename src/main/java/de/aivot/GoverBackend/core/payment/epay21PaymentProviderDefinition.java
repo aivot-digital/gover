@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.core.payment;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
@@ -161,10 +162,15 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         var paymentTransactionUrl = (String) config.get("paymentTransactionUrl").getValue();
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = new ObjectMapper()
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
-        // Set dummy requestor as ePay21 requires this field to be set
-        paymentRequest.setRequestor(new XBezahldiensteRequestor());
+        paymentRequest.setRequestor(null);
+        for (var item : paymentRequest.getItems()) {
+            if (item.getBookingData().isEmpty()) {
+                item.setBookingData(null);
+            }
+        }
 
         String body;
         try {
