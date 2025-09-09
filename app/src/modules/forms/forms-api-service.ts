@@ -231,9 +231,9 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         } : undefined;
 
         if (version == null) {
-            return this.api.getPublic<Form>(`forms/${slug}/`, apiOptions);
+            return this.api.getPublic<FormCitizenDetailsResponseDTO>(`forms/${slug}/`, apiOptions);
         }
-        return this.api.getPublic<Form>(`forms/${slug}/?version=${version}`, apiOptions);
+        return this.api.getPublic<FormCitizenDetailsResponseDTO>(`forms/${slug}/?version=${version}`, apiOptions);
     }
 
     public newVersion({id, version}: FormIdentifier): Promise<FormDetailsResponseDTO> {

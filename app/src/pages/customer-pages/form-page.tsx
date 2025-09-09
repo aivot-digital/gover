@@ -24,6 +24,7 @@ import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
 import {ElementData} from '../../models/element-data';
 import {CustomerInputService} from '../../services/customer-input-service';
+import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
 
 export const DialogSearchParam = 'dialog';
 
@@ -73,7 +74,8 @@ export function FormPage() {
         new FormsApiService(api)
             .retrieveBySlugAndVersion(slug, version, identityId)
             .then((application) => {
-                dispatch(updateLoadedForm(application));
+                const form = formCitizenDetailsResponseDTO(application);
+                dispatch(updateLoadedForm(form));
             })
             .catch(err => {
                 console.error(err);
@@ -93,7 +95,7 @@ export function FormPage() {
 
         if (systemThemeId != null) {
             new ThemesApiService(api)
-                .retrieve(parseInt(systemThemeId))
+                .retrievePublic(parseInt(systemThemeId))
                 .then(setTheme)
                 .catch((err) => {
                     console.error(err);
