@@ -1,13 +1,6 @@
 export interface FormCitizenListResponseDTO {
-    id: number;
     slug: string;
-    internalTitle: string;
-    publicTitle: string;
-    developingDepartmentId: number;
-    managingDepartmentId: number;
-    responsibleDepartmentId: number;
-    created: string;
+    version: number;
+    title: string;
     updated: string;
-    publishedVersion: number;
-    draftedVersion: number;
 }

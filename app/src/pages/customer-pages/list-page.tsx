@@ -93,7 +93,7 @@ export function ListPage() {
         return <LoadingPlaceholder />;
     } else {
         const filteredApplications = applications.filter((app) => app
-            .publicTitle
+            .title
             .toLowerCase()
             .includes(search.toLowerCase()),
         );

@@ -32,7 +32,7 @@ export function PublicFormListItem(props: PublicFormListItemProps) {
                     component={'h4'}
                     variant="h6"
                 >
-                    {props.form.publicTitle.replace(/\n/g, ' ')}
+                    {props.form.title.replace(/\n/g, ' ')}
                 </Typography>
                 <Typography
                     variant="body2"
@@ -44,7 +44,7 @@ export function PublicFormListItem(props: PublicFormListItemProps) {
                         color: 'text.secondary',
                     }}
                 >
-                    Stand vom: {format(parseISO(props.form.updated), 'dd.MM.yyyy')} • Version: {props.form.publishedVersion}
+                    Stand vom: {format(parseISO(props.form.updated), 'dd.MM.yyyy')} • Version: {props.form.version}
                 </Typography>
             </Box>
             <Box className={styles.listItemActions}>
