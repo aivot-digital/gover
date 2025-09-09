@@ -118,8 +118,8 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         };
     }
 
-    public async listRevisions(formId: FormIdentifier, options?: ApiOptions): Promise<Page<FormRevision>> {
-        return await this.api.get<Page<FormRevision>>(`forms/${formId}/revisions/`, options);
+    public async listRevisions(id: FormIdentifier, options?: ApiOptions): Promise<Page<FormRevision>> {
+        return await this.api.get<Page<FormRevision>>(`forms/${id.id}/${id.version}/revisions/`, options);
     }
 
     public async listVersions(
@@ -141,7 +141,7 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
 
     // TODO: Remove usage of useFormsApi().rollbackRevision and use this instead
     public async rollbackRevision(formId: FormIdentifier, revisionId: number, options?: ApiOptions): Promise<Form> {
-        return await this.api.get<Form>(`forms/${formId}/revisions/rollback/${revisionId}/`, options);
+        return await this.api.get<Form>(`forms/${formId.id}/${formId.version}/revisions/rollback/${revisionId}/`, options);
     }
 
     public async determineFormState(slug: string, version: number, customerInput: CustomerInput, filter: {
