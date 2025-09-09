@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.payment.dtos;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 
 import javax.annotation.Nonnull;
-import java.util.Map;
 import java.util.UUID;
 
 public record PaymentProviderResponseDTO(
@@ -20,7 +20,7 @@ public record PaymentProviderResponseDTO(
         @Nonnull
         Boolean isEnabled,
         @Nonnull
-        Map<String, Object> config
+        ElementData config
 ) {
     @Nonnull
     public static PaymentProviderResponseDTO fromEntity(

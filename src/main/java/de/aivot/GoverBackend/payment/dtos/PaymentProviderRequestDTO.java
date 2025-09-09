@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.payment.dtos;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,7 +37,7 @@ public record PaymentProviderRequestDTO(
 
         @Nonnull
         @NotNull(message = "Config is required")
-        Map<String, Object> config
+        ElementData config
 ) {
     public PaymentProviderEntity toEntity() {
         var entity = new PaymentProviderEntity();

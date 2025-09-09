@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.core.payment.models.GiroPayCallbackResponse;
 import de.aivot.GoverBackend.core.payment.models.GiroPayPaymentRequest;
 import de.aivot.GoverBackend.core.payment.models.GiroPaymentStartResponse;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
@@ -130,15 +131,15 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
     @Override
     public XBezahldienstePaymentTransaction initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config,
+            @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
-        var merchantId = (String) config.get(MERCHANT_ID_FIELD);
+        var merchantId = (String) config.get(MERCHANT_ID_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(merchantId)) {
             throw new PaymentMissingDataException("Merchant ID", paymentProviderEntity);
         }
 
-        var projectId = (String) config.get(PROJECT_ID_FIELD);
+        var projectId = (String) config.get(PROJECT_ID_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(projectId)) {
             throw new PaymentMissingDataException("Project ID", paymentProviderEntity);
         }
@@ -211,7 +212,7 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config,
+            @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentRequest
     ) throws PaymentException {
         // No implementation for checkPaymentStatus because GiroCheckout has no API for this
@@ -222,7 +223,7 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config,
+            @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
@@ -263,9 +264,9 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
     @Nonnull
     private String getPasswordSecret(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config
+            @Nonnull ElementData config
     ) throws PaymentMissingDataException {
-        var passwordSecretField = (String) config.get(PROJECT_PASSWORD_FIELD);
+        var passwordSecretField = (String) config.get(PROJECT_PASSWORD_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(passwordSecretField)) {
             throw new PaymentMissingDataException("Project password", paymentProviderEntity);
         }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectField;
@@ -164,7 +165,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     @Override
     public XBezahldienstePaymentTransaction initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config,
+            @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
@@ -233,7 +234,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config,
+            @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentTransaction transaction
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
@@ -288,7 +289,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config,
+            @Nonnull ElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentRequest,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
@@ -298,9 +299,9 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     @Nonnull
     private String getOriginatorID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config
+            @Nonnull ElementData config
     ) throws PaymentException {
-        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD);
+        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -310,9 +311,9 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     @Nonnull
     private String getEndpointID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config
+            @Nonnull ElementData config
     ) throws PaymentException {
-        var endpointID = (String) config.get(ENDPOINT_ID_FIELD);
+        var endpointID = (String) config.get(ENDPOINT_ID_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(endpointID)) {
             throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -320,8 +321,8 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     }
 
     @Nonnull
-    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity, @Nonnull Map<String, Object> config) throws PaymentException {
-        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD);
+    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity, @Nonnull ElementData config) throws PaymentException {
+        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
             throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -331,9 +332,9 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
     @Nonnull
     private SSLContext getSslContext(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull Map<String, Object> config
+            @Nonnull ElementData config
     ) throws PaymentException {
-        var paymentProviderPasswordSecretKeyStr = (String) config.get(CERTIFICATE_PASSWORD_FIELD);
+        var paymentProviderPasswordSecretKeyStr = (String) config.get(CERTIFICATE_PASSWORD_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(paymentProviderPasswordSecretKeyStr)) {
             throw new PaymentException("Certificate password field is missing for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -361,7 +362,7 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
             throw new PaymentException("Certificate password for payment provider %s (%s) is empty", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
-        var paymentProviderClientCertificateAssetKey = (String) config.get(CERTIFICATE_FIELD);
+        var paymentProviderClientCertificateAssetKey = (String) config.get(CERTIFICATE_FIELD).getValue();
         if (StringUtils.isNullOrEmpty(paymentProviderClientCertificateAssetKey)) {
             throw new PaymentException("Certificate asset key for payment provider %s (%s) is not specified", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
