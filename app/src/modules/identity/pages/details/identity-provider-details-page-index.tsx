@@ -359,7 +359,7 @@ export function IdentityProviderDetailsPageIndex() {
 
         try {
             const relatedForms = await new FormsApiService(api)
-                .listAll({
+                .listAllVersions({
                     identityProviderKey: identityProvider.key,
                 });
 

@@ -199,7 +199,9 @@ export function PaymentProviderDetailsPageIndex() {
         setIsBusy(true);
         try {
             const formsApi = new FormsApiService(api);
-            const relatedForms = await formsApi.list(0, 999, undefined, undefined, {paymentProviderKey: paymentProvider.key});
+            const relatedForms = await formsApi.listAllVersions({
+                paymentProviderKey: paymentProvider.key,
+            });
 
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;

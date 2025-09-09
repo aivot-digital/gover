@@ -122,6 +122,12 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         return await this.api.get<Page<FormRevision>>(`forms/${id.id}/${id.version}/revisions/`, options);
     }
 
+    public async listAllVersions(
+        filters?: Partial<FormFilters>,
+    ) {
+        return await this.listVersions(0, 999, undefined, undefined, filters);
+    }
+
     public async listVersions(
         page: number,
         limit: number,

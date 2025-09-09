@@ -205,7 +205,7 @@ export function DestinationDetailsPageIndex() {
         setIsBusy(true);
         try {
             const uniqueForms = await new FormsApiService(api)
-                .list(0, 999, undefined, undefined, {destinationId: destination.id});
+                .listAllVersions({destinationId: destination.id});
 
             if (uniqueForms.content.length > 0) {
                 const maxVisibleLinks = 5;

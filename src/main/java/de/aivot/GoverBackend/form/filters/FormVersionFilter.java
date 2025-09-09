@@ -51,7 +51,7 @@ public class FormVersionFilter implements Filter<FormVersionEntity> {
                 .withEquals("pdfTemplateKey", pdfTemplateKey)
                 .withEquals("paymentProviderKey", paymentProviderKey)
                 .withEquals("identityVerificationRequired", identityVerificationRequired)
-                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey.toString())
+                .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", identityProviderKey != null ? identityProviderKey.toString() : null)
                 .build();
     }
 
