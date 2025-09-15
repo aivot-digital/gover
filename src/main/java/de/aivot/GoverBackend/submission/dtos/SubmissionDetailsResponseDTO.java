@@ -6,11 +6,11 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionWithMembership;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 public record SubmissionDetailsResponseDTO(
         String id,
         Integer formId,
+        Integer formVersion,
         LocalDateTime created,
         LocalDateTime updated,
         LocalDateTime archived,
@@ -32,6 +32,7 @@ public record SubmissionDetailsResponseDTO(
         return new SubmissionDetailsResponseDTO(
                 submission.getId(),
                 submission.getFormId(),
+                submission.getFormVersion(),
                 submission.getCreated(),
                 submission.getUpdated(),
                 submission.getArchived(),
@@ -55,6 +56,7 @@ public record SubmissionDetailsResponseDTO(
         return new SubmissionDetailsResponseDTO(
                 submission.getId(),
                 submission.getFormId(),
+                submission.getFormVersion(),
                 submission.getCreated(),
                 submission.getUpdated(),
                 submission.getArchived(),
