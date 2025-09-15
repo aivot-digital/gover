@@ -1,18 +1,27 @@
-import React, {ReactNode} from 'react';
-import {type Theme as MuiTheme, ThemeProvider} from '@mui/material';
+import React, {PropsWithChildren, useMemo} from 'react';
+import {CssBaseline, Theme, ThemeProvider} from '@mui/material';
 import {SnackbarProvider} from './snackbar-provider';
 import {PromptProvider} from './prompt-provider';
 import {ConfirmProvider} from './confirm-provider';
 import {Provider as TextBalanceProvider} from 'react-wrap-balancer';
+import {useAppSelector} from '../hooks/use-app-selector';
+//import {selectTheme} from '../slices/shell-slice';
+import {BaseTheme} from '../theming/base-theme';
+import {createAppTheme} from '../theming/themes';
 
-interface AppProviderProps {
-    children: ReactNode;
-    theme: MuiTheme;
-}
+export function AppProvider({children, theme: __theme}: PropsWithChildren<{theme?: Theme}>) {
+    const themeObject = null;// useAppSelector(selectTheme);
 
-export function AppProvider({children, theme}: AppProviderProps) {
+    const theme = useMemo(() => {
+        if (themeObject == null) {
+            return BaseTheme;
+        }
+        return BaseTheme; //createAppTheme(themeObject, BaseTheme);
+    }, [themeObject]);
+
     return (
         <ThemeProvider theme={theme}>
+            <CssBaseline />
             <TextBalanceProvider>
                 <SnackbarProvider>
                     <PromptProvider>

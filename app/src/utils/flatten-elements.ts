@@ -27,7 +27,7 @@ export interface ElementWithParents {
 }
 
 export function flattenElementsWithParents(elem: AnyElement, parents: AnyElement[], skipReplicatingChildren?: boolean): ElementWithParents[] {
-    const res = [
+    const res: ElementWithParents[] = [
         {
             element: elem,
             parents,

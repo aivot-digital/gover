@@ -18,8 +18,6 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
 import {format} from 'date-fns';
 import {downloadObjectFile} from '../../utils/download-utils';
-import type {CustomerInput} from '../../models/customer-input';
-import {isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {LogLevel, selectLogLevel, selectLogs, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
 import {DragHandleOutlined} from '@mui/icons-material';
@@ -63,12 +61,14 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
 interface DeveloperToolsProps {
     rootElement: AnyElement;
     elementData: ElementData;
+    onElementDataChange: (data: ElementData) => void;
 }
 
 export function DeveloperTools(props: DeveloperToolsProps) {
     const {
         rootElement,
         elementData,
+        onElementDataChange,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -208,7 +208,7 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                         rootElement={rootElement}
                         elementData={elementData}
                         onLoadElementData={loadedData => {
-                            console.log(loadedData); // TODO
+                            onElementDataChange(loadedData);
                         }}
                     />
                 </TabContent>

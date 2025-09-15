@@ -12,19 +12,23 @@ import {
     useNavigationType,
     createRoutesFromChildren,
     matchRoutes,
-} from "react-router";import {createRoot} from 'react-dom/client';
+} from 'react-router';
+import {createRoot} from 'react-dom/client';
 import {StaffApp} from './apps/staff-app';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
+//import {StaffShellRouter} from './shells/staff/staff-shell-router';
 
 const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);
 root.render(
-    <ThemeProvider theme={BaseTheme}>
-        <CssBaseline />
-        <StoreProvide store={store}>
-            <StaffApp />
-        </StoreProvide>
-    </ThemeProvider>,
+    localStorage.getItem('new-shell') != null ?
+        /*<StaffShellRouter /> */ <div/> :
+        <ThemeProvider theme={BaseTheme}>
+            <CssBaseline />
+            <StoreProvide store={store}>
+                <StaffApp />
+            </StoreProvide>
+        </ThemeProvider>,
 );
 
 if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {

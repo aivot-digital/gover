@@ -1,7 +1,7 @@
 Hallo,
 
 Ihnen wurde ein Antrag in Gover zugewiesen.
-Antrag auf: [(${form.title})] - Version [(${form.version})]
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Aktenzeichen: [(${submission.fileNumber})]
 Zuständige Mitarbeiter:in: [(${user.getFullName})]
 Zugewiesen durch: [(${triggeringUser.getFullName})]

@@ -45,7 +45,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
 
     const hasValueFunction = useMemo(() => {
         return (
-            isStringNotNullOrEmpty(value.javascriptCode?.code) ||
+            value.javascriptCode?.code != null ||
             value.expression != null
         );
     }, [value]);

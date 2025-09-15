@@ -14,8 +14,8 @@ import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -31,9 +31,11 @@ public class SubmissionWithMembership {
     private LocalDateTime archived;
     private String fileNumber;
     private Integer destinationId;
+
     @Column(columnDefinition = "jsonb")
     @Convert(converter = ElementDataConverter.class)
     private ElementData customerInput;
+
     private Boolean destinationSuccess;
     private Boolean isTestSubmission;
     private Boolean copySent;
@@ -41,14 +43,17 @@ public class SubmissionWithMembership {
     private Integer reviewScore;
     private String destinationResult;
     private LocalDateTime destinationTimestamp;
+
     @Column(columnDefinition = "int4")
     private SubmissionStatus status;
+
     private LocalDateTime updated;
     private String paymentTransactionKey;
 
     @Id
     @Column(columnDefinition = "int2")
     private Integer formVersion;
+
     private String formSlug;
 
     private String formInternalTitle;
@@ -63,6 +68,7 @@ public class SubmissionWithMembership {
 
     @Column(columnDefinition = "int2")
     private Integer formPublishedVersion;
+
     @Column(columnDefinition = "int2")
     private Integer formDraftedVersion;
 
@@ -77,6 +83,7 @@ public class SubmissionWithMembership {
 
     @Column(columnDefinition = "int2")
     private Integer formCustomerAccessHours;
+
     @Column(columnDefinition = "int2")
     private Integer formSubmissionRetentionWeeks;
 
@@ -87,13 +94,15 @@ public class SubmissionWithMembership {
     private UUID formPaymentProviderKey;
     private String formPaymentPurpose;
     private String formPaymentDescription;
+
     @Convert(converter = PaymentProductsConverter.class)
     @Column(columnDefinition = "jsonb")
-    private Collection<PaymentProduct> formPaymentProducts;
+    private List<PaymentProduct> formPaymentProducts;
 
     @Convert(converter = IdentityProviderLinksConverter.class)
     @Column(columnDefinition = "jsonb")
     private List<IdentityProviderLink> formIdentityProviders;
+
     private Boolean formIdentityVerificationRequired;
 
     private Integer formDestinationId;
@@ -139,6 +148,81 @@ public class SubmissionWithMembership {
                 .setCopyTries(copyTries)
                 .setReviewScore(reviewScore)
                 .setPaymentTransactionKey(paymentTransactionKey);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == null || getClass() != object.getClass()) return false;
+
+        SubmissionWithMembership that = (SubmissionWithMembership) object;
+        return Objects.equals(id, that.id) && Objects.equals(formId, that.formId) && Objects.equals(created, that.created) && Objects.equals(assigneeId, that.assigneeId) && Objects.equals(archived, that.archived) && Objects.equals(fileNumber, that.fileNumber) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerInput, that.customerInput) && Objects.equals(destinationSuccess, that.destinationSuccess) && Objects.equals(isTestSubmission, that.isTestSubmission) && Objects.equals(copySent, that.copySent) && Objects.equals(copyTries, that.copyTries) && Objects.equals(reviewScore, that.reviewScore) && Objects.equals(destinationResult, that.destinationResult) && Objects.equals(destinationTimestamp, that.destinationTimestamp) && status == that.status && Objects.equals(updated, that.updated) && Objects.equals(paymentTransactionKey, that.paymentTransactionKey) && Objects.equals(formVersion, that.formVersion) && Objects.equals(formSlug, that.formSlug) && Objects.equals(formInternalTitle, that.formInternalTitle) && Objects.equals(formPublicTitle, that.formPublicTitle) && Objects.equals(formDevelopingDepartmentId, that.formDevelopingDepartmentId) && Objects.equals(formManagingDepartmentId, that.formManagingDepartmentId) && Objects.equals(formResponsibleDepartmentId, that.formResponsibleDepartmentId) && Objects.equals(formCreated, that.formCreated) && Objects.equals(formUpdated, that.formUpdated) && Objects.equals(formPublishedVersion, that.formPublishedVersion) && Objects.equals(formDraftedVersion, that.formDraftedVersion) && formStatus == that.formStatus && formType == that.formType && Objects.equals(formLegalSupportDepartmentId, that.formLegalSupportDepartmentId) && Objects.equals(formTechnicalSupportDepartmentId, that.formTechnicalSupportDepartmentId) && Objects.equals(formImprintDepartmentId, that.formImprintDepartmentId) && Objects.equals(formPrivacyDepartmentId, that.formPrivacyDepartmentId) && Objects.equals(formAccessibilityDepartmentId, that.formAccessibilityDepartmentId) && Objects.equals(formCustomerAccessHours, that.formCustomerAccessHours) && Objects.equals(formSubmissionRetentionWeeks, that.formSubmissionRetentionWeeks) && Objects.equals(formThemeId, that.formThemeId) && Objects.equals(formPdfTemplateKey, that.formPdfTemplateKey) && Objects.equals(formPaymentProviderKey, that.formPaymentProviderKey) && Objects.equals(formPaymentPurpose, that.formPaymentPurpose) && Objects.equals(formPaymentDescription, that.formPaymentDescription) && Objects.equals(formPaymentProducts, that.formPaymentProducts) && Objects.equals(formIdentityProviders, that.formIdentityProviders) && Objects.equals(formIdentityVerificationRequired, that.formIdentityVerificationRequired) && Objects.equals(formDestinationId, that.formDestinationId) && Objects.equals(formRootElement, that.formRootElement) && Objects.equals(formVersionPublished, that.formVersionPublished) && Objects.equals(formVersionRevoked, that.formVersionRevoked) && Objects.equals(userId, that.userId) && Objects.equals(userEmail, that.userEmail) && Objects.equals(userFirstName, that.userFirstName) && Objects.equals(userLastName, that.userLastName) && Objects.equals(userFullName, that.userFullName) && Objects.equals(userEnabled, that.userEnabled) && Objects.equals(userVerified, that.userVerified) && Objects.equals(userGlobalAdmin, that.userGlobalAdmin) && Objects.equals(userDeletedInIdp, that.userDeletedInIdp) && Objects.equals(userIsDeveloper, that.userIsDeveloper) && Objects.equals(userIsManager, that.userIsManager) && Objects.equals(userIsResponsible, that.userIsResponsible);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(id);
+        result = 31 * result + Objects.hashCode(formId);
+        result = 31 * result + Objects.hashCode(created);
+        result = 31 * result + Objects.hashCode(assigneeId);
+        result = 31 * result + Objects.hashCode(archived);
+        result = 31 * result + Objects.hashCode(fileNumber);
+        result = 31 * result + Objects.hashCode(destinationId);
+        result = 31 * result + Objects.hashCode(customerInput);
+        result = 31 * result + Objects.hashCode(destinationSuccess);
+        result = 31 * result + Objects.hashCode(isTestSubmission);
+        result = 31 * result + Objects.hashCode(copySent);
+        result = 31 * result + Objects.hashCode(copyTries);
+        result = 31 * result + Objects.hashCode(reviewScore);
+        result = 31 * result + Objects.hashCode(destinationResult);
+        result = 31 * result + Objects.hashCode(destinationTimestamp);
+        result = 31 * result + Objects.hashCode(status);
+        result = 31 * result + Objects.hashCode(updated);
+        result = 31 * result + Objects.hashCode(paymentTransactionKey);
+        result = 31 * result + Objects.hashCode(formVersion);
+        result = 31 * result + Objects.hashCode(formSlug);
+        result = 31 * result + Objects.hashCode(formInternalTitle);
+        result = 31 * result + Objects.hashCode(formPublicTitle);
+        result = 31 * result + Objects.hashCode(formDevelopingDepartmentId);
+        result = 31 * result + Objects.hashCode(formManagingDepartmentId);
+        result = 31 * result + Objects.hashCode(formResponsibleDepartmentId);
+        result = 31 * result + Objects.hashCode(formCreated);
+        result = 31 * result + Objects.hashCode(formUpdated);
+        result = 31 * result + Objects.hashCode(formPublishedVersion);
+        result = 31 * result + Objects.hashCode(formDraftedVersion);
+        result = 31 * result + Objects.hashCode(formStatus);
+        result = 31 * result + Objects.hashCode(formType);
+        result = 31 * result + Objects.hashCode(formLegalSupportDepartmentId);
+        result = 31 * result + Objects.hashCode(formTechnicalSupportDepartmentId);
+        result = 31 * result + Objects.hashCode(formImprintDepartmentId);
+        result = 31 * result + Objects.hashCode(formPrivacyDepartmentId);
+        result = 31 * result + Objects.hashCode(formAccessibilityDepartmentId);
+        result = 31 * result + Objects.hashCode(formCustomerAccessHours);
+        result = 31 * result + Objects.hashCode(formSubmissionRetentionWeeks);
+        result = 31 * result + Objects.hashCode(formThemeId);
+        result = 31 * result + Objects.hashCode(formPdfTemplateKey);
+        result = 31 * result + Objects.hashCode(formPaymentProviderKey);
+        result = 31 * result + Objects.hashCode(formPaymentPurpose);
+        result = 31 * result + Objects.hashCode(formPaymentDescription);
+        result = 31 * result + Objects.hashCode(formPaymentProducts);
+        result = 31 * result + Objects.hashCode(formIdentityProviders);
+        result = 31 * result + Objects.hashCode(formIdentityVerificationRequired);
+        result = 31 * result + Objects.hashCode(formDestinationId);
+        result = 31 * result + Objects.hashCode(formRootElement);
+        result = 31 * result + Objects.hashCode(formVersionPublished);
+        result = 31 * result + Objects.hashCode(formVersionRevoked);
+        result = 31 * result + Objects.hashCode(userId);
+        result = 31 * result + Objects.hashCode(userEmail);
+        result = 31 * result + Objects.hashCode(userFirstName);
+        result = 31 * result + Objects.hashCode(userLastName);
+        result = 31 * result + Objects.hashCode(userFullName);
+        result = 31 * result + Objects.hashCode(userEnabled);
+        result = 31 * result + Objects.hashCode(userVerified);
+        result = 31 * result + Objects.hashCode(userGlobalAdmin);
+        result = 31 * result + Objects.hashCode(userDeletedInIdp);
+        result = 31 * result + Objects.hashCode(userIsDeveloper);
+        result = 31 * result + Objects.hashCode(userIsManager);
+        result = 31 * result + Objects.hashCode(userIsResponsible);
+        return result;
     }
 
     public String getId() {
@@ -528,11 +612,11 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public Collection<PaymentProduct> getFormPaymentProducts() {
+    public List<PaymentProduct> getFormPaymentProducts() {
         return formPaymentProducts;
     }
 
-    public SubmissionWithMembership setFormPaymentProducts(Collection<PaymentProduct> formPaymentProducts) {
+    public SubmissionWithMembership setFormPaymentProducts(List<PaymentProduct> formPaymentProducts) {
         this.formPaymentProducts = formPaymentProducts;
         return this;
     }

@@ -40,7 +40,7 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
     }, [_override]);
 
     const hasOverrideFunction = useMemo(() => {
-        return isStringNotNullOrEmpty(override.javascriptCode?.code);
+        return override.javascriptCode?.code != null;
     }, [override]);
 
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);

@@ -1,7 +1,7 @@
 Hallo,
 
 ein Antrag wurde in Gover abgeschlossen.
-Antrag auf: [(${form.title})] - Version [(${form.version})]
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Aktenzeichen: [(${fileNumber})]
 [# th:if="${assignee != null}"]Zuständige Mitarbeiter:in: [(${assignee.getFullName})][/]
 Abgeschlossen durch: [(${triggeringUser.getFullName})]

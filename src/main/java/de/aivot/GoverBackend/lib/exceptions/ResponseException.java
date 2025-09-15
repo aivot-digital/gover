@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.lib.exceptions;
 
+import de.aivot.GoverBackend.elements.models.ElementData;
 import org.springframework.http.HttpStatus;
 
 import javax.annotation.Nonnull;
@@ -11,7 +12,7 @@ public class ResponseException extends Exception {
     @Nonnull
     private final String title;
     @Nullable
-    private final String details;
+    private final Object details;
 
     // region Constructors
 
@@ -48,6 +49,17 @@ public class ResponseException extends Exception {
     public ResponseException(
             @Nonnull HttpStatus status,
             @Nonnull String title,
+            @Nonnull ElementData elementData
+    ) {
+        super(title);
+        this.status = status;
+        this.title = title;
+        this.details = elementData;
+    }
+
+    public ResponseException(
+            @Nonnull HttpStatus status,
+            @Nonnull String title,
             @Nonnull Throwable cause
     ) {
         super(title, cause);
@@ -72,6 +84,14 @@ public class ResponseException extends Exception {
 
     public static ResponseException badRequest() {
         return ResponseException.badRequest("Die Anfrage ist fehlerhaft.");
+    }
+
+    public static ResponseException badRequest(ElementData elementData) {
+        return new ResponseException(
+                HttpStatus.BAD_REQUEST,
+                "Bei der Auswertung der Eingabedaten wurden Fehler gefunden.",
+                elementData
+        );
     }
 
     public static ResponseException badRequest(String message) {
@@ -169,7 +189,7 @@ public class ResponseException extends Exception {
     }
 
     @Nullable
-    public String getDetails() {
+    public Object getDetails() {
         return details;
     }
 

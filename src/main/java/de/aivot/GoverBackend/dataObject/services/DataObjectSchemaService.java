@@ -6,7 +6,6 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.MetricsProperties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 @Service
 public class DataObjectSchemaService implements EntityService<DataObjectSchemaEntity, String> {
@@ -32,19 +30,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
     @Nonnull
     @Override
     public DataObjectSchemaEntity create(@Nonnull DataObjectSchemaEntity entity) throws ResponseException {
-        switch (entity.getIdGen()) {
-            case DataObjectItemService.ID_GEN_UUID:
-            case DataObjectItemService.ID_GEN_SERIAL:
-            case DataObjectItemService.ID_GEN_CUSTOM:
-                break;
-            default:
-                var startPatternPresent = DataObjectItemService.ID_GEN_INC_START_PATTERN.matcher(entity.getIdGen()).matches();
-                var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(entity.getIdGen()).matches();
-
-                if (!startPatternPresent && !endPatternPresent) {
-                    throw ResponseException.badRequest("Invalid ID generation pattern. It must contain an increment pattern at the start or the end.");
-                }
-        }
+        validateSchemaConfig(entity);
 
         return dataObjectRepository.save(entity);
     }
@@ -66,6 +52,9 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setSchema(entity.getSchema());
+
+        validateSchemaConfig(existingEntity);
+
         return dataObjectRepository.save(existingEntity);
     }
 
@@ -89,5 +78,33 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
     @Override
     public boolean exists(@Nonnull Specification<DataObjectSchemaEntity> specification) {
         return dataObjectRepository.exists(specification);
+    }
+
+    private void validateSchemaConfig(@Nonnull DataObjectSchemaEntity entity) throws ResponseException {
+        switch (entity.getIdGen()) {
+            case DataObjectItemService.ID_GEN_UUID:
+            case DataObjectItemService.ID_GEN_SERIAL:
+                break;
+            case DataObjectItemService.ID_GEN_CUSTOM:
+                var children = entity
+                        .getSchema()
+                        .getChildren();
+                if (children == null || children.isEmpty()) {
+                    throw ResponseException.badRequest("Custom ID generation requires a schema with at least one child.");
+                }
+                var idChildExists = children
+                        .stream()
+                        .anyMatch(c -> c.getId().equals("id"));
+                if (!idChildExists) {
+                    throw ResponseException.badRequest("Custom ID generation requires a '$id' field in the schema.");
+                }
+            default:
+                var startPatternPresent = DataObjectItemService.ID_GEN_INC_START_PATTERN.matcher(entity.getIdGen()).matches();
+                var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(entity.getIdGen()).matches();
+
+                if (!startPatternPresent && !endPatternPresent) {
+                    throw ResponseException.badRequest("Invalid ID generation pattern. It must contain an increment pattern at the start or the end.");
+                }
+        }
     }
 }

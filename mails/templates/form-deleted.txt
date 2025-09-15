@@ -1,7 +1,7 @@
 Hallo,
 
 es wurde ein bestehendes Formular in Gover gelöscht.
-Formular: [(${form.title})] (Hinweis der Redaktion: Interner Formularname)
+Formular: [(${form.internalTitle})] (Hinweis der Redaktion: Interner Formularname)
 Version: [(${form.version})]
 Entwickelnder Fachbereich: [(${developingDepartment != null ? developingDepartment.name : '—'})]
 [(${responsibleDepartment != null ? 'Zuständiger Fachbereich: ' + responsibleDepartment.name : ''})]

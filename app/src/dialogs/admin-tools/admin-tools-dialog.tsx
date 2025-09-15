@@ -65,7 +65,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
     const downloadPdfFile = (form: Form) => {
         dispatch(showLoadingOverlay('Vordruck wird generiert'));
         api
-            .getBlob(`forms/${form.id}/print/`)
+            .getBlob(`forms/${form.id}/${form.version}/print/`)
             .then((blob) => {
                 downloadBlobFile(`vordruck - ${form.slug} - ${form.version}.pdf`, blob);
                 dispatch(hideLoadingOverlayWithTimeout(1000));

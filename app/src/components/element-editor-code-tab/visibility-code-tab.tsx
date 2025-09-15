@@ -45,7 +45,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
 
     const hasVisibilityFunction = useMemo(() => {
         return (
-            isStringNotNullOrEmpty(visibility.javascriptCode?.code) ||
+            visibility.javascriptCode?.code != null ||
             visibility.conditionSet != null ||
             visibility.expression != null
         );

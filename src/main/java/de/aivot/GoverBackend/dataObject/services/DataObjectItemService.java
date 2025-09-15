@@ -77,10 +77,16 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 id = String.valueOf(maxId + 1);
             }
             case ID_GEN_CUSTOM -> {
-                id = entity
+                var _id = entity
                         .getData()
-                        .get("$id")
-                        .toString();
+                        .get("$id");
+
+                if (_id == null) {
+                    throw ResponseException
+                            .badRequest("Custom ID generation requires an '$id' field in the data");
+                }
+
+                id = String.valueOf(_id);
             }
             default -> {
                 var now = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
@@ -167,7 +173,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
     @Nonnull
     private Map<String, Object> deriveDataObjectItemData(@Nonnull DataObjectItemEntity entity,
-                                                         @Nonnull DataObjectSchemaEntity schema) {
+                                                         @Nonnull DataObjectSchemaEntity schema) throws ResponseException {
         var entityElementData = ElementData
                 .fromValueMap(schema.getSchema(), entity.getData());
         var edo = new ElementDerivationOptions();
@@ -176,6 +182,12 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 .setElementData(entityElementData)
                 .setOptions(edo);
         var derivedData = elementDerivationService.derive(edr);
+
+        if (derivedData.hasAnyError()) {
+            throw ResponseException
+                    .badRequest("Datenobjekt fehlerhaft");
+        }
+
         return ElementData.toValueMap(schema.getSchema(), derivedData);
     }
 

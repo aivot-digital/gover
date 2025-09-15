@@ -1,6 +1,19 @@
 #!/bin/sh
 
-cat > /app/app-config.js <<EOF
+echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
+
+if [ "$1" = "serve" ]; then
+  echo "Waiting for IDP to be available…"
+
+  until curl --output /dev/null --silent --head --fail "https://${HOSTNAME}/idp/realms/staff/"; do
+      sleep 5
+  done
+
+  echo "IDP is available, starting api…"
+
+  java -jar /app/gover.jar
+else
+  cat > /app/app-config.js <<EOF
 window.AppConfig = {
     oidc: {
         realm: '$GOVER_KEYCLOAK_OIDC_REALM',
@@ -16,13 +29,9 @@ window.AppConfig = {
 };
 EOF
 
-cp /app/app-config.js /app/www/app-config.js
-cp /app/app-config.js /app/www/staff/app-config.js
+  cp /app/app-config.js /app/www/app-config.js
+  cp /app/app-config.js /app/www/staff/app-config.js
 
-if [ "$1" = "serve" ]; then
-    echo "Starting server…"
-    java -jar /app/gover.jar
-else
-  echo "Starting frontend…"
+  echo "Starting app…"
   nginx -g "daemon off;"
 fi

@@ -51,7 +51,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
 
     const hasValidationFunction = useMemo(() => {
         return (
-            isStringNotNullOrEmpty(validation.javascriptCode?.code) ||
+            validation.javascriptCode?.code != null ||
             validation.conditionSet != null ||
             validation.expression != null
         );

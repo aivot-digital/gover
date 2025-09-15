@@ -45,7 +45,7 @@ import {ElementData} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
-import {flattenElements} from '../../utils/flatten-elements';
+import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
 import {Form} from '../../models/entities/form';
@@ -53,6 +53,7 @@ import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {IdentityData} from '../../modules/identity/models/identity-data';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
+import type {AnyElement} from '../../models/elements/any-element';
 
 type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
@@ -271,13 +272,17 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     }, elementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
-                    switch (error.status) {
-                        case 406:
-                            dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. In den von Ihnen hochgeladenen Dokumenten wurde Schadsoftware erkannt.'));
-                            break;
-                        default:
-                            dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
-                            break;
+                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && error.details.details != null && typeof error.details.details === 'object') {
+                        onElementDataChange(error.details.details as ElementData, []);
+                    } else {
+                        switch (error.status) {
+                            case 406:
+                                dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. In den von Ihnen hochgeladenen Dokumenten wurde Schadsoftware erkannt.'));
+                                break;
+                            default:
+                                dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
+                                break;
+                        }
                     }
                 } else {
                     dispatch(showErrorSnackbar('Der Antrag konnte nicht korrekt übertragen werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
@@ -531,13 +536,20 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
         onElementDataChange(elementData, []);
 
-        const allElementsToConsider = [
-            ...flattenElements(currentStepElement),
-            ...children,
+        const flatCurrentElements = flattenElementsWithParents(currentStepElement, [], false);
+        const flatChildren = children.map((e, i) => ({
+            element: e,
+            parents: [element],
+            index: i,
+        }));
+
+        const allElementsToConsider: ElementWithParents[] = [
+            ...flatCurrentElements,
+            ...flatChildren,
         ].filter(e => {
-            return e.visibility != null ||
-                e.override != null ||
-                (isAnyInputElement(e) && e.value != null);
+            return e.element.visibility != null ||
+                e.element.override != null ||
+                (isAnyInputElement(e.element) && e.element.value != null);
         });
 
         const relevantTriggeringElementIds = triggeringElementIds

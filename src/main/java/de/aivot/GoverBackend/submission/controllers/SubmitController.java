@@ -179,28 +179,36 @@ public class SubmitController {
             );
         }
 
+        var submitStepElementData = elementData
+                .getOrDefault(
+                        form.getRootElement().getSubmitStep().getId(),
+                        new ElementDataObject(ElementType.SubmitStep)
+                );
+
         // Verify captcha if present
         try {
-            var rawCaptchaValue = elementData
-                    .get(form.getRootElement().getSubmitStep().getId())
-                    .getValue();
+
+            var rawCaptchaValue = submitStepElementData.getValue();
 
             var formattedCaptchaValue = SubmitStepElement
                     ._formatValue(rawCaptchaValue);
 
             var payloadNode = formattedCaptchaValue != null ? formattedCaptchaValue.get("payload") : null;
             if (payloadNode == null) {
-                throw new Exception("Bitte bestätigen Sie, dass Sie ein Mensch sind.");
+                submitStepElementData.setComputedErrors(List.of("Bitte bestätigen Sie, dass Sie ein Mensch sind."));
+                throw ResponseException.badRequest(elementData);
             }
 
             var payload = payloadNode.toString();
             var captchaVerificationStatus = altchaService.verify(payload);
 
             if (!captchaVerificationStatus) {
-                throw new Exception("Captcha-Verifizierung fehlgeschlagen.");
+                submitStepElementData.setComputedErrors(List.of("Captcha-Verifizierung fehlgeschlagen."));
+                throw ResponseException.badRequest(elementData);
             }
         } catch (Exception e) {
-            throw ResponseException.badRequest("Verifizierung des Captcha fehlgeschlagen.");
+            submitStepElementData.setComputedErrors(List.of("Verifizierung des Captcha fehlgeschlagen."));
+            throw ResponseException.badRequest(elementData);
         }
 
         var optionalIdp = extractIdp(identityId);
@@ -223,7 +231,7 @@ public class SubmitController {
                 );
 
         if (verifiedElementData.hasAnyError()) {
-            throw ResponseException.badRequest("Validierung fehlgeschlagen"); // TODO: Extend error message
+            throw ResponseException.badRequest(verifiedElementData);
         }
 
         // Copy the identity value to the verified element data

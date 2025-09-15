@@ -7,6 +7,7 @@ import {type BaseViewProps} from '../views/base-view';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
 import {type ElementData, type ElementDataObject} from '../models/element-data';
 import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
+import {ElementType} from '../data/element-type/element-type';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;

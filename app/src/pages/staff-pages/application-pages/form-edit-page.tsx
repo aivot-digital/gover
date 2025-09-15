@@ -190,7 +190,7 @@ export function FormEditPage() {
             return;
         }
 
-        if (loadedForm.themeId != null) {
+        if (loadedForm.themeId != null && !isNaN(loadedForm.themeId)) {
             new ThemesApiService(api)
                 .retrieve(loadedForm.themeId)
                 .then(setTheme)
@@ -200,7 +200,7 @@ export function FormEditPage() {
             return;
         }
 
-        if (systemThemeId != null) {
+        if (systemThemeId != null && !isNaN(parseInt(systemThemeId))) {
             new ThemesApiService(api)
                 .retrieve(parseInt(systemThemeId))
                 .then(setTheme)
@@ -603,6 +603,7 @@ export function FormEditPage() {
                 <DeveloperTools
                     rootElement={loadedForm.rootElement}
                     elementData={elementData}
+                    onElementDataChange={setElementData}
                 />
                 <HelpDialog
                     onHide={() => dispatch(showDialog(undefined))}
