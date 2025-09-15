@@ -3,9 +3,9 @@
 echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
 
 if [ "$1" = "serve" ]; then
-  echo "Waiting for IDP to be available…"
+  echo "Waiting for IDP to be available at ${HOSTNAME}/idp/realms/staff…"
 
-  until curl --output /dev/null --silent --head --fail "https://${HOSTNAME}/idp/realms/staff/"; do
+  until curl --output /dev/null --silent --head --fail "${HOSTNAME}/idp/realms/staff/"; do
       sleep 5
   done
 
