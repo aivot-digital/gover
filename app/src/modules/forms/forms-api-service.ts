@@ -219,8 +219,8 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         return await this.api.destroy<void>(`forms/${id}/lock/`);
     }
 
-    public async getMaxFileSize(id: number) {
-        return await this.api.getPublic<{ maxFileSize: number }>(`forms/${id}/max-file-size/`);
+    public async getMaxFileSize(slug: string, version?: number | undefined) {
+        return await this.api.getPublic<{ maxFileSize: number }>(`forms/${slug}/max-file-size/?${version != null ? `version=${version}` : ''}`);
     }
 
     public async getIdentityProviders(slug: string, version?: number | undefined): Promise<Page<IdentityProviderInfo>> {

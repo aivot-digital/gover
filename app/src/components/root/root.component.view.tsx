@@ -832,7 +832,7 @@ async function determineUploadSizeError(element: RootElement, elementData: Eleme
     }
 
     const {maxFileSize} = await new FormsApiService(api)
-        .getMaxFileSize(form.id);
+        .getMaxFileSize(form.slug, form.version);
 
     const maxFileSizeBytes = maxFileSize * 1000 * 1000;
 
