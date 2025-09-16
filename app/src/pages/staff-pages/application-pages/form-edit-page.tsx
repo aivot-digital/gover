@@ -190,6 +190,10 @@ export function FormEditPage() {
             return;
         }
 
+        if (loadedForm.themeId === theme?.id) {
+            return;
+        }
+
         if (loadedForm.themeId != null && !isNaN(loadedForm.themeId)) {
             new ThemesApiService(api)
                 .retrieve(loadedForm.themeId)
@@ -197,6 +201,10 @@ export function FormEditPage() {
                 .catch((err) => {
                     console.error(err);
                 });
+            return;
+        }
+
+        if (parseInt(systemThemeId) === theme?.id) {
             return;
         }
 
@@ -212,6 +220,10 @@ export function FormEditPage() {
 
     useEffect(() => {
         if (loadedForm == null) {
+            return;
+        }
+
+        if (identityProviderInfos != null) {
             return;
         }
 
@@ -445,6 +457,7 @@ export function FormEditPage() {
                     }
 
                     try {
+                        console.log('Determening Form State');
                         const newState = await apiService
                             .determineFormState(
                                 loadedForm.slug,
