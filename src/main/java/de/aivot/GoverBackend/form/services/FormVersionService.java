@@ -16,7 +16,10 @@ import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.submission.entities.Submission;
+import de.aivot.GoverBackend.submission.filters.SubmissionFilter;
+import de.aivot.GoverBackend.submission.filters.SubmissionWithMembershipFilter;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
+import de.aivot.GoverBackend.submission.repositories.SubmissionWithMembershipRepository;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
@@ -45,6 +48,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private final IdentityProviderRepository identityProviderRepository;
     private final FormRepository formRepository;
     private final SubmissionRepository submissionRepository;
+    private final SubmissionWithMembershipRepository submissionWithMembershipRepository;
 
     @Autowired
     public FormVersionService(FormVersionRepository repository,
@@ -55,7 +59,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                               PaymentProviderRepository paymentProviderRepository,
                               IdentityProviderRepository identityProviderRepository,
                               FormRepository formRepository,
-                              SubmissionRepository submissionRepository) {
+                              SubmissionRepository submissionRepository, SubmissionWithMembershipRepository submissionWithMembershipRepository) {
         this.repository = repository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
@@ -65,6 +69,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         this.identityProviderRepository = identityProviderRepository;
         this.formRepository = formRepository;
         this.submissionRepository = submissionRepository;
+        this.submissionWithMembershipRepository = submissionWithMembershipRepository;
     }
 
     @Nonnull
@@ -171,15 +176,15 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
             throw ResponseException.conflict("Veröffentlichte Formularversionen können nicht gelöscht werden");
         }
 
-        var submissionSpec = SpecificationBuilder
-                .create(Submission.class)
-                .withEquals("formId", entity.getFormId())
-                .withEquals("version", entity.getVersion())
-                .withNotEquals("status", SubmissionStatus.Archived)
-                .withEquals("isTestSubmission", false)
+        var submissionSpec = SubmissionWithMembershipFilter
+                .create()
+                .setFormId(entity.getFormId())
+                .setFormVersion(entity.getVersion())
+                .setStatus(SubmissionStatus.Archived)
+                .setNotTestSubmission(true)
                 .build();
 
-        var hasOpenSubmissions = submissionRepository
+        var hasOpenSubmissions = submissionWithMembershipRepository
                 .exists(submissionSpec);
 
         if (hasOpenSubmissions) {

@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.mail.services;
 
 import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
+import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
@@ -64,6 +65,13 @@ public class FormMailService {
         send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormRevoked);
     }
 
+    public void sendDeleted(UserEntity triggeringUser, FormEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        Set<Integer> departmentsToNotify = new HashSet<>();
+        departmentsToNotify.add(form.getDevelopingDepartmentId());
+        var title = "Ein bestehendes Formular wurde gelöscht";
+        send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormDeleted);
+    }
+
     public void sendDeleted(UserEntity triggeringUser, FormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Set<Integer> departmentsToNotify = new HashSet<>();
         departmentsToNotify.add(form.getDevelopingDepartmentId());
@@ -91,7 +99,42 @@ public class FormMailService {
         );
     }
 
+    private void send(UserEntity triggeringUser, String title, Set<Integer> departmentIds, FormEntity form, MailTemplate template) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+        var context = new HashMap<String, Object>();
+        context.put("title", title);
+        context.put("triggeringUser", triggeringUser);
+        context.put("form", form);
+
+        addDepartmentsToContext(form, context);
+
+        var userIdsToIgnore = new HashSet<String>();
+        userIdsToIgnore.add(triggeringUser.getId());
+
+        mailService.sendMailToDepartmentsById(
+                departmentIds,
+                "[Gover] " + title,
+                template,
+                context,
+                userIdsToIgnore
+        );
+    }
+
     private void addDepartmentsToContext(FormVersionWithDetailsEntity form, Map<String, Object> context) {
+        if (form.getDevelopingDepartmentId() != null) {
+            departmentService.retrieve(form.getDevelopingDepartmentId())
+                    .ifPresent(dept -> context.put("developingDepartment", dept));
+        }
+        if (form.getResponsibleDepartmentId() != null) {
+            departmentService.retrieve(form.getResponsibleDepartmentId())
+                    .ifPresent(dept -> context.put("responsibleDepartment", dept));
+        }
+        if (form.getManagingDepartmentId() != null) {
+            departmentService.retrieve(form.getManagingDepartmentId())
+                    .ifPresent(dept -> context.put("managingDepartment", dept));
+        }
+    }
+
+    private void addDepartmentsToContext(FormEntity form, Map<String, Object> context) {
         if (form.getDevelopingDepartmentId() != null) {
             departmentService.retrieve(form.getDevelopingDepartmentId())
                     .ifPresent(dept -> context.put("developingDepartment", dept));

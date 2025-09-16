@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {useApi} from '../../../hooks/use-api';
 import {FormsApiService} from '../forms-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {Box, Dialog, DialogContent, Divider, IconButton, ListItem, ListItemAvatar, ListItemText, Menu, MenuItem, Skeleton, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import List from '@mui/material/List';
@@ -69,6 +69,27 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                 setIsLoading(false);
             });
     }, [formId]);
+
+    const handleFormDelete = (id: number, version: number) => {
+        const originalVersions = [...versions];
+
+        const versionsWithoutDeleted = versions.filter(v => !(v.id === id && v.version === version));
+        setVersions(versionsWithoutDeleted);
+
+        new FormsApiService(api)
+            .destroy({
+                id: id,
+                version: version,
+            })
+            .then(() => {
+                dispatch(showSuccessSnackbar('Formular-Version wurde gelöscht'));
+            })
+            .catch((error) => {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Löschen der Formular-Version'));
+                setVersions(originalVersions);
+            });
+    };
 
     return (
         <>
@@ -160,18 +181,20 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     Version exportieren
                 </MenuItem>
 
-                {
-                    moreMenu?.item.status === FormStatus.Revoked &&
-                    <>
-                        <Divider />
-                        <MenuItem
-                            onClick={() => {
-                            }}
-                        >
-                            Version löschen
-                        </MenuItem>
-                    </>
-                }
+                <Divider />
+
+                <MenuItem
+                    disabled={moreMenu?.item.status !== FormStatus.Revoked}
+                    onClick={() => {
+                        if (moreMenu == null) {
+                            return;
+                        }
+                        handleFormDelete(moreMenu.item.id, moreMenu.item.version);
+                        setMoreMenu(undefined);
+                    }}
+                >
+                    Version löschen
+                </MenuItem>
             </Menu>
 
             <ExportApplicationDialog

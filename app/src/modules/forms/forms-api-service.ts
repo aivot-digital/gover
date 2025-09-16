@@ -118,6 +118,10 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         };
     }
 
+    public async destroyAll(formId: number): Promise<void> {
+        return await this.api.destroy(`forms/${formId}/`);
+    }
+
     public async listRevisions(id: FormIdentifier, options?: ApiOptions): Promise<Page<FormRevision>> {
         return await this.api.get<Page<FormRevision>>(`forms/${id.id}/${id.version}/revisions/`, options);
     }

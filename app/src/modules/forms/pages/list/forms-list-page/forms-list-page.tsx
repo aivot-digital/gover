@@ -6,7 +6,6 @@ import {EditOutlined} from '@mui/icons-material';
 import {FormListResponseDTO} from '../../../dtos/form-list-response-dto';
 import {FormsApiService} from '../../../forms-api-service';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import React, {useEffect, useMemo, useState} from 'react';
@@ -35,14 +34,14 @@ import {DepartmentsApiService} from '../../../../departments/departments-api-ser
 import {CellContentWrapper} from '../../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
 import {format} from 'date-fns/format';
-import Chip from '@mui/material/Chip';
 import {GridColDef} from '@mui/x-data-grid';
-import {FormStatus, FormStatusColors, FormStatusIcons} from '../../../enums/form-status';
+import {FormStatus} from '../../../enums/form-status';
 import UploadIcon from '@mui/icons-material/Upload';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../../slices/loading-overlay-slice';
 import {useNavigate} from 'react-router-dom';
 import HistoryIcon from '@mui/icons-material/History';
 import {FormStatusChip} from '../../../components/form-status-chip';
+import {DeleteApplicationDialog} from '../../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 
 export function FormsListPage() {
     const dispatch = useAppDispatch();
@@ -57,6 +56,8 @@ export function FormsListPage() {
     const [showFormVersionsDialogFor, setShowFormVersionsDialogFor] = useState<FormListResponseDTO | undefined>();
 
     const [departments, setDepartments] = useState<DepartmentResponseDTO[]>([]);
+
+    const [formToDelete, setFormToDelete] = useState<FormListResponseDTO>();
 
     const [rowMenu, setRowMenu] = useState<{
         target: HTMLElement;
@@ -223,6 +224,23 @@ export function FormsListPage() {
         setNewForm(formToClone);
 
         setRowMenu(undefined);
+    };
+
+    const handleDeleteForm = async (formId: number) => {
+        dispatch(showLoadingOverlay('Lösche Formular'));
+
+        new FormsApiService(api)
+            .destroyAll(formId)
+            .then(() => {
+                window.location.reload();
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Fehler beim Löschen des Formulars'));
+            })
+            .finally(() => {
+                dispatch(hideLoadingOverlay());
+            });
     };
 
     const handleFormLinkCopy = async () => {
@@ -421,40 +439,39 @@ export function FormsListPage() {
                     </ListItemText>
                 </MenuItem>
 
-                {
-                    (
-                        rowMenu?.form.draftedVersion != null ||
-                        rowMenu?.form.publishedVersion != null
-                    ) &&
-                    <MenuItem
-                        onClick={() => {
-                            setShowExportFormDialog(true);
-                        }}
-                    >
-                        <ListItemIcon>
-                            <ImportExportOutlinedIcon />
-                        </ListItemIcon>
-                        <ListItemText>
-                            Formular exportieren
-                        </ListItemText>
-                    </MenuItem>
-                }
+                <MenuItem
+                    onClick={() => {
+                        setShowExportFormDialog(true);
+                    }}
+                    disabled={(
+                        rowMenu?.form.draftedVersion == null &&
+                        rowMenu?.form.publishedVersion == null
+                    )}
+                >
+                    <ListItemIcon>
+                        <ImportExportOutlinedIcon />
+                    </ListItemIcon>
+                    <ListItemText>
+                        Formular exportieren
+                    </ListItemText>
+                </MenuItem>
 
-                {
-                    /* TODO: Check isDeveloper */ false &&
-                    <MenuItem
-                        onClick={() => {
-                            // TODO: Handle delete
-                        }}
-                    >
-                        <ListItemIcon>
-                            <DeleteForeverOutlinedIcon />
-                        </ListItemIcon>
-                        <ListItemText>
-                            Formular löschen
-                        </ListItemText>
-                    </MenuItem>
-                }
+                <MenuItem
+                    onClick={() => {
+                        if (rowMenu?.form != null) {
+                            setFormToDelete(rowMenu?.form);
+                        }
+                        setRowMenu(undefined);
+                    }}
+                    disabled={rowMenu?.form.publishedVersion != null}
+                >
+                    <ListItemIcon>
+                        <DeleteForeverOutlinedIcon />
+                    </ListItemIcon>
+                    <ListItemText>
+                        Formular löschen
+                    </ListItemText>
+                </MenuItem>
             </Menu>
 
             {
@@ -509,6 +526,20 @@ export function FormsListPage() {
                     }}
                 />
             }
+
+            <DeleteApplicationDialog
+                form={formToDelete}
+                onDelete={() => {
+                    if (formToDelete == null) {
+                        return;
+                    }
+
+                    handleDeleteForm(formToDelete.id);
+                }}
+                onCancel={() => {
+                    setFormToDelete(undefined);
+                }}
+            />
         </>
     );
 }

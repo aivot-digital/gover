@@ -566,6 +566,55 @@ public class FormController {
         return FormDetailsResponseDTO.fromEntity(revokedForm);
     }
 
+    @DeleteMapping("{formId}/")
+    public void deleteAll(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId
+    ) throws ResponseException {
+        // Extract staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Retrieve the form by its id
+        var form = formService
+                .retrieve(formId)
+                .orElseThrow(ResponseException::notFound);
+
+        // Check if the user has access to the department the form resides in
+        if (!user.getGlobalAdmin()) {
+            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
+                throw ResponseException.forbidden("User does not have access to the department.");
+            }
+
+            // TODO: Check user role
+        }
+
+        // Check if the form is locked by another user
+        checkFormLock(formId, user);
+
+        // Delete the form
+        var deletedForm = formService.delete(formId);
+
+        auditService.logAction(
+                user,
+                AuditAction.Delete,
+                FormEntity.class,
+                Map.of(
+                        "formId", form.getId(),
+                        "formSlug", form.getSlug(),
+                        "developingDepartmentId", form.getDevelopingDepartmentId()
+                )
+        );
+
+        try {
+            formMailService.sendDeleted(user, form);
+        } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
+            auditService.logException("Failed to send message about form deletion", e);
+            exceptionMailService.send(e);
+        }
+    }
+
     /**
      * Delete a form by its id.
      * Forms can only be deleted by users who are members of the department the form resides in.
@@ -603,7 +652,8 @@ public class FormController {
         checkFormLock(formId, user);
 
         // Delete the form
-        var deletedForm = formService.delete(formId);
+        var formVersionId = FormVersionEntityId.of(formId, formVersion);
+        var deletedForm = formVersionService.delete(formVersionId);
 
         auditService.logAction(
                 user,
@@ -612,7 +662,7 @@ public class FormController {
                 Map.of(
                         "formId", form.getId(),
                         "formSlug", form.getSlug(),
-                        "formVersion", form.getVersion(),
+                        "formVersion", deletedForm.getVersion(),
                         "developingDepartmentId", form.getDevelopingDepartmentId()
                 )
         );

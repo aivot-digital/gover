@@ -55,29 +55,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
     }, [props.form]);
 
     const handleDelete = (): void => {
-        if (props.form == null) {
-            return;
-        }
-
-        setIsBusy(true);
-
-        new FormsApiService(api)
-            .destroy({
-                id: props.form.id,
-                version: props.form.version,
-            })
-            .then(() => {
-                setFormTitle(undefined);
-                setSubmissions(undefined);
-                props.onDelete();
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Formular konnte nicht gelöscht werden.'));
-            })
-            .finally(() => {
-                setIsBusy(false);
-            });
+        props.onDelete();
     };
 
     return (
@@ -89,7 +67,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
             </DialogTitle>
             <DialogContent tabIndex={0}>
                 {
-                    ((submissions?.length ?? 0) > 0 || props.form?.status === 2) &&
+                    ((submissions?.length ?? 0) > 0 || props.form?.publishedVersion != null) &&
                     <>
                         <DialogContentText>
                             Bitte klären Sie die folgenden Punkte, bevor Sie das Formular <strong>{props.form?.internalTitle}</strong> löschen können:
@@ -108,7 +86,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                                 </ListItem>
                             }
                             {
-                                props.form?.status === 2 &&
+                                props.form?.publishedVersion != null &&
                                 <ListItem sx={{alignItems: 'start', color: 'text.secondary'}}>
                                     <ListItemIcon sx={{paddingTop: .4, minWidth: 40}}>
                                         <DescriptionOutlinedIcon />
@@ -124,7 +102,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                 }
 
                 {
-                    submissions?.length === 0 && props.form?.status !== 2 &&
+                    submissions?.length === 0 && props.form?.publishedVersion == null &&
                     <>
                         <DialogContentText>
                             Sind Sie sicher, dass Sie das
