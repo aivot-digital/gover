@@ -430,45 +430,51 @@ public class ElementDerivationService {
 
         var isVisible = isParentVisible && computedVisibility;
 
-        if (isVisible && currentElement instanceof BaseInputElement<?> baseInputElement) {
-            if (options.containsSkipValues(baseInputElement.getId())) {
-                dataObject.setComputedValue(inputDataObject.getComputedValue());
-            } else {
-                try {
-                    var computedValue = valueDerivationService
-                            .derive(rootElement,
-                                    accumulator,
-                                    dataObject,
-                                    baseInputElement,
-                                    javascriptEngine,
-                                    noCodeEvaluationService);
-                    var formattedComputedValue = baseInputElement
-                            .formatValue(computedValue);
-                    dataObject
-                            .setComputedValue(formattedComputedValue);
-                } catch (DerivationException e) {
-                    dataObject.addComputedError(e.getMessage());
-                }
-            }
-
-            if (options.containsSkipErrors(baseInputElement.getId())) {
-                dataObject.setComputedErrors(inputDataObject.getComputedErrors());
-            } else {
-                try {
-                    var computedErrors = errorDerivationService
-                            .derive(rootElement,
-                                    accumulator,
-                                    dataObject,
-                                    baseInputElement,
-                                    javascriptEngine,
-                                    noCodeEvaluationService);
-                    if (computedErrors != null) {
+        if (currentElement instanceof BaseInputElement<?> baseInputElement) {
+            if (isVisible) {
+                if (options.containsSkipValues(baseInputElement.getId())) {
+                    dataObject.setComputedValue(inputDataObject.getComputedValue());
+                } else {
+                    try {
+                        var computedValue = valueDerivationService
+                                .derive(rootElement,
+                                        accumulator,
+                                        dataObject,
+                                        baseInputElement,
+                                        javascriptEngine,
+                                        noCodeEvaluationService);
+                        var formattedComputedValue = baseInputElement
+                                .formatValue(computedValue);
                         dataObject
-                                .addComputedError(computedErrors);
+                                .setComputedValue(formattedComputedValue);
+                    } catch (DerivationException e) {
+                        dataObject.addComputedError(e.getMessage());
                     }
-                } catch (DerivationException e) {
-                    dataObject.addComputedError(e.getMessage());
                 }
+
+                if (options.containsSkipErrors(baseInputElement.getId())) {
+                    dataObject.setComputedErrors(inputDataObject.getComputedErrors());
+                } else {
+                    try {
+                        var computedErrors = errorDerivationService
+                                .derive(rootElement,
+                                        accumulator,
+                                        dataObject,
+                                        baseInputElement,
+                                        javascriptEngine,
+                                        noCodeEvaluationService);
+                        if (computedErrors != null) {
+                            dataObject
+                                    .addComputedError(computedErrors);
+                        }
+                    } catch (DerivationException e) {
+                        dataObject.addComputedError(e.getMessage());
+                    }
+                }
+            } else {
+                dataObject.setInputValue(null);
+                dataObject.setComputedValue(null);
+                dataObject.setIsDirty(false);
             }
         }
 
