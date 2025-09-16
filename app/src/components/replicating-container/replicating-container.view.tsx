@@ -102,7 +102,6 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     {element.hint}
                 </FormHelperText>
             }
-            {derivationTriggerIdQueue}
             {
                 value?.map((val: ElementData, valueIndex: number) => derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? ( /* TODO: Fix skeletons */
                     // Skeleton
