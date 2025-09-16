@@ -1,16 +1,22 @@
 package de.aivot.GoverBackend.elements.models;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 public class ElementDerivationOptions {
     public static final String ALL_ELEMENTS = "ALL";
 
+    @Nonnull
     private List<String> skipErrorsForElementIds = new LinkedList<>();
+    @Nonnull
     private List<String> skipVisibilitiesForElementIds = new LinkedList<>();
+    @Nonnull
     private List<String> skipOverridesForElementIds = new LinkedList<>();
+    @Nonnull
     private List<String> skipValuesForElementIds = new LinkedList<>();
 
     // region copy
@@ -94,39 +100,43 @@ public class ElementDerivationOptions {
 
     // endregion
 
+    @Nonnull
     public List<String> getSkipErrorsForElementIds() {
         return skipErrorsForElementIds;
     }
 
-    public ElementDerivationOptions setSkipErrorsForElementIds(List<String> skipErrorsForElementIds) {
-        this.skipErrorsForElementIds = skipErrorsForElementIds;
+    public ElementDerivationOptions setSkipErrorsForElementIds(@Nullable List<String> skipErrorsForElementIds) {
+        this.skipErrorsForElementIds = Objects.requireNonNullElseGet(skipErrorsForElementIds, LinkedList::new);
         return this;
     }
 
+    @Nonnull
     public List<String> getSkipVisibilitiesForElementIds() {
         return skipVisibilitiesForElementIds;
     }
 
-    public ElementDerivationOptions setSkipVisibilitiesForElementIds(List<String> skipVisibilitiesForElementIds) {
-        this.skipVisibilitiesForElementIds = skipVisibilitiesForElementIds;
+    public ElementDerivationOptions setSkipVisibilitiesForElementIds(@Nullable List<String> skipVisibilitiesForElementIds) {
+        this.skipVisibilitiesForElementIds = Objects.requireNonNullElseGet(skipVisibilitiesForElementIds, LinkedList::new);
         return this;
     }
 
+    @Nonnull
     public List<String> getSkipOverridesForElementIds() {
         return skipOverridesForElementIds;
     }
 
-    public ElementDerivationOptions setSkipOverridesForElementIds(List<String> skipOverridesForElementIds) {
-        this.skipOverridesForElementIds = skipOverridesForElementIds;
+    public ElementDerivationOptions setSkipOverridesForElementIds(@Nullable List<String> skipOverridesForElementIds) {
+        this.skipOverridesForElementIds = Objects.requireNonNullElseGet(skipOverridesForElementIds, LinkedList::new);
         return this;
     }
 
+    @Nonnull
     public List<String> getSkipValuesForElementIds() {
         return skipValuesForElementIds;
     }
 
-    public ElementDerivationOptions setSkipValuesForElementIds(List<String> skipValuesForElementIds) {
-        this.skipValuesForElementIds = skipValuesForElementIds;
+    public ElementDerivationOptions setSkipValuesForElementIds(@Nullable List<String> skipValuesForElementIds) {
+        this.skipValuesForElementIds = Objects.requireNonNullElseGet(skipValuesForElementIds, LinkedList::new);
         return this;
     }
 }

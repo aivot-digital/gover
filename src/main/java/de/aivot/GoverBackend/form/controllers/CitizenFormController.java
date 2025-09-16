@@ -291,10 +291,10 @@ public class CitizenFormController {
                               @Nonnull @PathVariable String slug,
                               @Nullable @RequestParam(value = "version", required = false) Integer version,
                               @Nonnull @Valid @RequestBody ElementData elementData,
-                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipErrorsFor") List<String> skipErrorsFor,
-                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
-                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipValuesFor") List<String> skipValuesFor,
-                              @Nonnull @RequestParam(defaultValue = ElementDerivationOptions.ALL_ELEMENTS, value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
+                              @Nullable @RequestParam(value = "skipErrorsFor") List<String> skipErrorsFor,
+                              @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
+                              @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
+                              @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
         var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
 
         var options = new ElementDerivationOptions()
