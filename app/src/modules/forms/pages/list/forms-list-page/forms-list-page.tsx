@@ -336,7 +336,7 @@ export function FormsListPage() {
                             },
                             tooltip: 'Neue Version anlegen',
                             visible: item.draftedVersion == null,
-                            disabled: item.publishedVersion == null,
+                            disabled: item.publishedVersion == null && item.draftedVersion != null,
                         },
                         {
                             icon: <HistoryIcon />,
@@ -421,18 +421,24 @@ export function FormsListPage() {
                     </ListItemText>
                 </MenuItem>
 
-                <MenuItem
-                    onClick={() => {
-                        setShowExportFormDialog(true);
-                    }}
-                >
-                    <ListItemIcon>
-                        <ImportExportOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Formular exportieren
-                    </ListItemText>
-                </MenuItem>
+                {
+                    (
+                        rowMenu?.form.draftedVersion != null ||
+                        rowMenu?.form.publishedVersion != null
+                    ) &&
+                    <MenuItem
+                        onClick={() => {
+                            setShowExportFormDialog(true);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <ImportExportOutlinedIcon />
+                        </ListItemIcon>
+                        <ListItemText>
+                            Formular exportieren
+                        </ListItemText>
+                    </MenuItem>
+                }
 
                 {
                     /* TODO: Check isDeveloper */ false &&
@@ -464,7 +470,6 @@ export function FormsListPage() {
                     basis={newForm}
                 />
             }
-
 
             <ExportApplicationDialog
                 open={showExportFormDialog}

@@ -14,6 +14,8 @@ import {format} from 'date-fns/format';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import {Link} from 'react-router-dom';
 import {FormStatusChip} from '../components/form-status-chip';
+import {ExportApplicationDialog} from '../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
+import {downloadConfigFile} from '../../../utils/download-utils';
 
 interface FormVersionsDialogProps {
     formId: number;
@@ -37,6 +39,8 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
         anchorEl: HTMLElement;
         item: FormDetailsResponseDTO;
     } | undefined>();
+
+    const [versionToExport, setVersionToExport] = useState<FormDetailsResponseDTO | null>(null);
 
     useEffect(() => {
         setIsLoading(true);
@@ -141,7 +145,19 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                         setMoreMenu(undefined);
                     }}
                 >
-                    Als entwurf verwenden
+                    Als Entwurf verwenden
+                </MenuItem>
+
+                <MenuItem
+                    onClick={() => {
+                        if (moreMenu == null) {
+                            return;
+                        }
+                        setVersionToExport(moreMenu.item);
+                        setMoreMenu(undefined);
+                    }}
+                >
+                    Version exportieren
                 </MenuItem>
 
                 {
@@ -157,6 +173,19 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     </>
                 }
             </Menu>
+
+            <ExportApplicationDialog
+                open={versionToExport != null}
+                onCancel={() => {
+                    setVersionToExport(null);
+                }}
+                onExport={() => {
+                    if (versionToExport != null) {
+                        downloadConfigFile(versionToExport);
+                    }
+                    setVersionToExport(null);
+                }}
+            />
         </>
     );
 }
