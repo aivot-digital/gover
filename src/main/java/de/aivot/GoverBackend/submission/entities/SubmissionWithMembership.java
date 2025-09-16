@@ -132,6 +132,7 @@ public class SubmissionWithMembership {
         return new Submission()
                 .setId(id)
                 .setFormId(formId)
+                .setFormVersion(formVersion)
                 .setCreated(created)
                 .setUpdated(updated)
                 .setStatus(status)
