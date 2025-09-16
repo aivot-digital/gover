@@ -33,6 +33,7 @@ const columns: GridColDef[] = [
             const {type} = params.row;
             return (
                 <Chip
+                    size="small"
                     icon={type === 'outgoing' ? <CallMadeIcon fontSize="small" /> : <CallReceivedIcon fontSize="small" />}
                     label={type === 'outgoing' ? 'Ausgehend' : 'Eingehend'}
                 />
@@ -48,6 +49,11 @@ const columns: GridColDef[] = [
             return (
                 <Typography
                     variant="body2"
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        height: '100%',
+                    }}
                 >
                     {SourceLabels[source as SourceType]}
                 </Typography>
@@ -68,6 +74,7 @@ const columns: GridColDef[] = [
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1,
+                        height: '100%',
                     }}
                 >
                     <Icon fontSize="small" />
