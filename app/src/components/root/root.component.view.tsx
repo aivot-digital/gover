@@ -41,13 +41,13 @@ import {StepElement} from '../../models/elements/steps/step-element';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
-import {ElementData} from '../../models/element-data';
+import {ElementData, newElementDataObject} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
-import {mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
+import {mapElementData, mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
 import {Form} from '../../models/entities/form';
 import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
@@ -314,6 +314,21 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         else {
             dispatch(nextStep());
         }
+    };
+
+    const handlePreviousStep = () => {
+        const clearedErrors = mapElementData(element, elementData, (el, data) => {
+            if (data != null) {
+                return {
+                    ...data,
+                    computedErrors: null,
+                };
+            } else {
+                return newElementDataObject(el.type);
+            }
+        });
+        dispatch(previousStep());
+        onElementDataChange(clearedErrors, []);
     };
 
     const determineFormState = async (options: {
@@ -653,9 +668,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                             isFirstStep={index === 0}
                                             isLastStep={index === allVisibleSteps.length - 1}
                                             onNext={handleNextStep}
-                                            onPrevious={() => {
-                                                dispatch(previousStep());
-                                            }}
+                                            onPrevious={handlePreviousStep}
                                             active={currentStep === index}
                                             navDirection={upcomingStepDirection}
                                             stepRefs={stepRefs}

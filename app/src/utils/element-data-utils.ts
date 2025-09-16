@@ -246,6 +246,33 @@ export function mapElementData(
 
     const val = resolveValue(currentElement, newElementData);
 
+    if (isRootElement(currentElement)) {
+        if (currentElement.introductionStep != null) {
+            const childMappedData = mapElementData(currentElement.introductionStep, newElementData, callback);
+            newElementData = {
+                ...newElementData,
+                ...childMappedData,
+            };
+        }
+
+        if (currentElement.summaryStep != null) {
+            const childMappedData = mapElementData(currentElement.summaryStep, newElementData, callback);
+            newElementData = {
+                ...newElementData,
+                ...childMappedData,
+            };
+        }
+
+        if (currentElement.submitStep != null) {
+            const childMappedData = mapElementData(currentElement.submitStep, newElementData, callback);
+            newElementData = {
+                ...newElementData,
+                ...childMappedData,
+            };
+        }
+    }
+
+
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(val)) {
             const mapped = val.map((childData) => {
