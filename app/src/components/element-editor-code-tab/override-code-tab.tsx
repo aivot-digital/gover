@@ -16,7 +16,7 @@ const exampleOverrideCode = `(function(){
     // Hier kann der Code eingefügt werden, um die Struktur des Elements zu überschreiben.
     // Die Funktion muss eine gültige Elementstruktur zurückgeben.
     return {
-        ...ctx.element,
+        ...element,
     };
 })();`;
 
