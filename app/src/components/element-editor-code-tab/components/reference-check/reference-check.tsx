@@ -10,20 +10,6 @@ import {generateComponentTitle} from '../../../../utils/generate-component-title
 import {getElementIcon} from '../../../../data/element-type/element-icons';
 import {Hint} from '../../../hint/hint';
 
-const JavascriptEngine = {
-    JS_CONTEXT_OBJECT_NAME: 'ctx',
-};
-
-const BaseElementDerivationContext = {
-    INPUT_VALUES_JS_CONTEXT_OBJECT_NAME: 'inputValues',
-    COMPUTED_VALUES_JS_CONTEXT_OBJECT_NAME: 'computedValues',
-    VALUES_JS_CONTEXT_OBJECT_NAME: 'values',
-    VISIBILITIES_JS_CONTEXT_OBJECT_NAME: 'visibilities',
-    ERRORS_JS_CONTEXT_OBJECT_NAME: 'errors',
-    OVERRIDES_JS_CONTEXT_OBJECT_NAME: 'overrides',
-};
-
-
 interface ReferenceCheckProps {
     element: AnyElement;
     lowCodeOld: (string | undefined)[];
@@ -166,7 +152,7 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
 function determineReferencedElements(
     element: AnyElement,
     allElements: AnyElement[] | undefined,
-    lowCodeOld: (string | undefined)[],
+    lowCodeOld: (string | undefined)[], // TODO: Remove legacy low code
     lowCode: (string | undefined)[],
     noCodeOld: (ConditionSet | undefined)[],
     noCode: (NoCodeExpression | null | undefined)[],
@@ -179,10 +165,6 @@ function determineReferencedElements(
     }
 
     let referencedIds: string[] = [];
-
-    if (lowCodeOld.some(c => isStringNotNullOrEmpty(c))) {
-        referencedIds = getLowCodeOldReferencedIds(lowCodeOld.filter(isStringNotNullOrEmpty).join('\n'));
-    }
 
     if (lowCode.some(c => isStringNotNullOrEmpty(c))) {
         referencedIds = getLowCodeReferencedIds(lowCode.join('\n'));
@@ -235,53 +217,26 @@ function determineReferencedElements(
     return referencedElements;
 }
 
-function getLowCodeOldReferencedIds(code: string): string[] {
-    if (!code || code.trim() === '') {
-        return [];
-    }
-
-    const referencedIds = new Set<string>();
-
-    const explicitReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
-    const implicitReferencePattern = /data\.([a-zA-Z0-9_-]+)/g;
-
-    let match: RegExpExecArray | null;
-
-    // Match explicit references
-    while ((match = explicitReferencePattern.exec(code)) !== null) {
-        referencedIds.add(match[1]);
-    }
-
-    // Match implicit references
-    while ((match = implicitReferencePattern.exec(code)) !== null) {
-        referencedIds.add(match[1]);
-    }
-
-    return Array.from(referencedIds);
-}
-
 function getLowCodeReferencedIds(code: string): string[] {
     if (!code || code.trim() === '') {
         return [];
     }
 
-    const expliciteReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
-
-    const implicitRegex = `${JavascriptEngine.JS_CONTEXT_OBJECT_NAME}\\.([a-zA-Z0-9_-]+)`;
-    const implicitReferencePattern = new RegExp(implicitRegex, 'g');
+    const explicitReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
+    const implicitRegexPattern = /ctx\.([a-zA-Z0-9_-]+)/g;
 
     const ids = new Set<string>();
 
     let match: RegExpExecArray | null;
 
     // Match explicit references
-    while ((match = expliciteReferencePattern.exec(code)) !== null) {
+    while ((match = explicitReferencePattern.exec(code)) !== null) {
         ids.add(match[1]);
     }
 
     // Match implicit references
-    while ((match = implicitReferencePattern.exec(code)) !== null) {
-        ids.add(match[2]);
+    while ((match = implicitRegexPattern.exec(code)) !== null) {
+        ids.add(match[1]);
     }
 
     return Array.from(ids);
