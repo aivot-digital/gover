@@ -9,6 +9,7 @@ import {authReducer} from './slices/auth-slice';
 import {loadingOverlayReducer} from './slices/loading-overlay-slice';
 import {loggingReducer} from './slices/logging-slice';
 import {identityReducer} from './slices/identity-slice';
+import {shellReducer} from './slices/shell-slice';
 
 export const store = configureStore({
     reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
         user: userReducer,
         systemConfig: systemConfigReducer,
         stepper: stepperReducer,
+        shell: shellReducer,
         snackbar: snackbarReducer,
         loadingOverlay: loadingOverlayReducer,
         logging: loggingReducer,

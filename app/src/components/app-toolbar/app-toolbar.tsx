@@ -53,7 +53,7 @@ export function AppToolbar(props: AppToolbarProps) {
 
     return (
         <>
-            <AppBar position="fixed">
+            <AppBar position="sticky">
                 <Toolbar color="primary">
                     <Tooltip title="Zur Startseite">
                         <IconButton

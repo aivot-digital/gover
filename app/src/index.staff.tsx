@@ -16,13 +16,14 @@ import {
 import {createRoot} from 'react-dom/client';
 import {StaffApp} from './apps/staff-app';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
-//import {StaffShellRouter} from './shells/staff/staff-shell-router';
+import {StaffShellRouter} from './shells/staff/staff-shell-router';
+import {isNewShellActive} from './shells/staff/is-new-shell-active';
 
 const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);
 root.render(
-    localStorage.getItem('new-shell') != null ?
-        /*<StaffShellRouter /> */ <div/> :
+    isNewShellActive() ?
+        <StaffShellRouter /> :
         <ThemeProvider theme={BaseTheme}>
             <CssBaseline />
             <StoreProvide store={store}>

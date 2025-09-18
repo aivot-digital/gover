@@ -38,4 +38,5 @@ export interface ActionsProps {
     sx?: SxProps;
     isBusy?: boolean;
     dense?: boolean;
+    direction?: 'row' | 'row-reverse' | 'column' | 'column-reverse';
 }

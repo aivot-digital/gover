@@ -9,31 +9,34 @@ export function Actions(props: ActionsProps) {
             sx={{
                 ...props.sx,
                 display: 'flex',
+                flexDirection: props.direction ?? 'row',
                 alignItems: 'center',
-                height: '100%',
+                height: props.direction ==  null || props.direction === 'row' || props.direction === 'row-reverse' ? '100%' : undefined,
+                width: props.direction === 'column' || props.direction === 'column-reverse' ? '100%' : undefined,
+                gap: props.dense ? 1 : 2,
             }}
         >
             {
                 props.actions != null &&
                 props.actions
-                    .map((action, index) => dispatchToolbarAction(action, index, props.isBusy ?? false, props.dense ??  false))
+                    .map((action, index) => dispatchToolbarAction(action, index, props.isBusy ?? false, index === 0, index === (props.actions?.length ?? 0) - 1))
             }
         </Box>
     );
 }
 
-function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, dense: boolean) {
+function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, isFirst: boolean, isLast: boolean) {
     // Check if this action is a separator and render a simple separator div
     if (action === 'separator') {
         return (
             <Box
                 key={action + index}
                 sx={{
-                    ml: dense ? 1 : 2,
                     width: '1px',
                     height: '2em',
                     backgroundColor: 'black',
                     opacity: '.15',
+                    m: 0,
                 }}
             />
         );
@@ -61,10 +64,10 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
             <Button
                 size="small"
                 color="primary"
-                variant={action.variant}
                 sx={{
-                    ml: dense ? 0.5 : 1,
+                    m: 0,
                 }}
+                variant={action.variant}
                 onClick={onClick}
                 component={component}
                 href={href}
@@ -82,7 +85,7 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
                 size="small"
                 color="primary"
                 sx={{
-                    ml: dense ? 0.5 : 1,
+                    m: 0,
                 }}
                 onClick={onClick}
                 component={component}
@@ -90,6 +93,7 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, d
                 to={to}
                 target={target}
                 disabled={shouldDisable}
+                edge={isFirst ? 'start' : isLast ? 'end' : false}
             >
                 {action.icon}
             </IconButton>
