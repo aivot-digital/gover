@@ -914,7 +914,7 @@
                                         />
                                         <div
                                                 style="font-size: 0.85rem; margin-top: 0.25rem; margin-bottom: 0.25rem;"
-                                                th:unless="${child.element.caption.isEmpty()}"
+                                                th:unless="${child.element.caption == null || child.element.caption.isEmpty()}"
                                                 th:text="${child.element.caption}"
                                         >
                                             Caption des Bildes
