@@ -14,6 +14,7 @@ public enum MailTemplate implements Identifiable<String> {
 
     FormAdded("form-added", FormNotificationAddedFormUserConfigDefinition.KEY),
     FormDeleted("form-deleted", FormNotificationDeletedFormUserConfigDefinition.KEY),
+    FormDeletedAll("form-deleted-all", FormNotificationDeletedFormUserConfigDefinition.KEY),
     FormPublished("form-published", FormNotificationPublishedFormUserConfigDefinition.KEY),
     FormRevoked("form-revoked", FormNotificationRevokedFormUserConfigDefinition.KEY),
 

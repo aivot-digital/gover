@@ -69,7 +69,7 @@ public class FormMailService {
         Set<Integer> departmentsToNotify = new HashSet<>();
         departmentsToNotify.add(form.getDevelopingDepartmentId());
         var title = "Ein bestehendes Formular wurde gelöscht";
-        send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormDeleted);
+        send(triggeringUser, title, departmentsToNotify, form, MailTemplate.FormDeletedAll);
     }
 
     public void sendDeleted(UserEntity triggeringUser, FormVersionWithDetailsEntity form) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
