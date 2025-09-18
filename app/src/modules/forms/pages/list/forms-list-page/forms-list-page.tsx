@@ -181,13 +181,22 @@ export function FormsListPage() {
             });
     }, [api]);
 
-    const handleNewFormDraft = (formId: number, formVersion: number) => {
+    const handleNewFormDraft = (formId: number, formVersion: number | undefined | null) => {
         dispatch(showLoadingOverlay('Neuer Entwurf wird erstellt…'));
-        new FormsApiService(api)
-            .newVersion({
-                id: formId,
-                version: formVersion,
-            })
+
+        let prom: Promise<FormDetailsResponseDTO>;
+        if (formVersion == null) {
+            prom = new FormsApiService(api)
+                .latestAsNewVersion(formId);
+        } else {
+            prom = new FormsApiService(api)
+                .versionAsNewVersion({
+                    id: formId,
+                    version: formVersion,
+                });
+        }
+
+        prom
             .then((createdDraft) => {
                 navigate(`/forms/${formId}/${createdDraft.draftedVersion}`);
             })
@@ -395,6 +404,10 @@ export function FormsListPage() {
             >
                 <MenuItem
                     onClick={handleFormClone}
+                    disabled={(
+                        rowMenu?.form.draftedVersion == null &&
+                        rowMenu?.form.publishedVersion == null
+                    )}
                 >
                     <ListItemIcon>
                         <FileCopyOutlinedIcon />
@@ -408,6 +421,10 @@ export function FormsListPage() {
                     component="a"
                     href={createCustomerPath(rowMenu?.form.slug ?? '')}
                     target="_blank"
+                    disabled={(
+                        rowMenu?.form.draftedVersion == null &&
+                        rowMenu?.form.publishedVersion == null
+                    )}
                 >
                     <ListItemIcon>
                         <OpenInNewOutlinedIcon />
@@ -419,6 +436,10 @@ export function FormsListPage() {
 
                 <MenuItem
                     onClick={handleFormLinkCopy}
+                    disabled={(
+                        rowMenu?.form.draftedVersion == null &&
+                        rowMenu?.form.publishedVersion == null
+                    )}
                 >
                     <ListItemIcon>
                         <ContentPasteOutlinedIcon />
@@ -430,6 +451,10 @@ export function FormsListPage() {
 
                 <MenuItem
                     onClick={handleDownloadQrCode}
+                    disabled={(
+                        rowMenu?.form.draftedVersion == null &&
+                        rowMenu?.form.publishedVersion == null
+                    )}
                 >
                     <ListItemIcon>
                         <QrCode2OutlinedIcon />

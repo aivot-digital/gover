@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.filters.DepartmentMembershipFilter;
 import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.enums.UserRole;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
@@ -18,6 +19,8 @@ import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
+import de.aivot.GoverBackend.form.enums.FormType;
+import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.services.*;
@@ -39,6 +42,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -319,8 +323,101 @@ public class FormController {
         return FormDetailsResponseDTO.fromEntity(form);
     }
 
+    @PutMapping("{formId}/latest/as-new-version/")
+    public FormDetailsResponseDTO latestVersionAsNewVersion(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId
+    ) throws ResponseException {
+        // Extract staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var form = formService
+                .retrieve(formId)
+                .orElseThrow(ResponseException::notFound);
+
+        var latestVersion = formVersionService
+                .getLatestVersion(formId)
+                .orElse(new FormVersionEntity(
+                        form.getId(),
+                        0,
+                        FormStatus.Drafted,
+                        FormType.Public,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        new RootElement(),
+                        LocalDateTime.now(),
+                        LocalDateTime.now(),
+                        null,
+                        null
+                ));
+
+        // Check if the user has access to the department the form resides in
+        if (!user.getGlobalAdmin()) {
+            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
+                throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
+            }
+            // TODO: Check user role
+        }
+
+        if (form.getDraftedVersion() != null) {
+            throw ResponseException.conflict("Es existiert bereits eine Entwurfs-Version des Formulars.");
+        }
+
+        var newVersion = new FormVersionEntity(
+                formId,
+                null,
+                FormStatus.Drafted,
+                latestVersion.getType(),
+                latestVersion.getLegalSupportDepartmentId(),
+                latestVersion.getTechnicalSupportDepartmentId(),
+                latestVersion.getImprintDepartmentId(),
+                latestVersion.getPrivacyDepartmentId(),
+                latestVersion.getAccessibilityDepartmentId(),
+                latestVersion.getDestinationId(),
+                latestVersion.getCustomerAccessHours(),
+                latestVersion.getSubmissionRetentionWeeks(),
+                latestVersion.getThemeId(),
+                latestVersion.getPdfTemplateKey(),
+                latestVersion.getPaymentProviderKey(),
+                latestVersion.getPaymentPurpose(),
+                latestVersion.getPaymentDescription(),
+                latestVersion.getPaymentProducts(),
+                latestVersion.getIdentityProviders(),
+                latestVersion.getIdentityVerificationRequired(),
+                latestVersion.getRootElement(),
+                null,
+                null,
+                null,
+                null
+        );
+
+        var createdVersion = formVersionService
+                .create(newVersion);
+
+        return formVersionWithDetailsService
+                .retrieve(formId, createdVersion.getVersion())
+                .map(FormDetailsResponseDTO::fromEntity)
+                .orElseThrow(() -> ResponseException.internalServerError("Fehler beim Laden der neuen Formular-Version."));
+    }
+
     @PutMapping("{formId}/{formVersion}/as-new-version/")
-    public FormDetailsResponseDTO newVersion(
+    public FormDetailsResponseDTO existingVersionAsNewVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
             @Nonnull @PathVariable Integer formVersion

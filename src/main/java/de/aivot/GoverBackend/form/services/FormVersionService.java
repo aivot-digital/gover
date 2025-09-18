@@ -136,6 +136,19 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         return repository.exists(specification);
     }
 
+    public Optional<FormVersionEntity> getLatestVersion(@Nonnull Integer formId) {
+        var maxVersion = repository
+                .maxVersionForFormId(formId)
+                .orElse(0);
+
+        if (maxVersion == 0) {
+            return Optional.empty();
+        }
+
+        var id = new FormVersionEntityId(formId, maxVersion);
+        return repository.findById(id);
+    }
+
     @Nonnull
     @Override
     public FormVersionEntity performUpdate(@Nonnull FormVersionEntityId id,
