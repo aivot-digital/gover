@@ -167,6 +167,16 @@ export function FormsListPage() {
                                 variant="outlined"
                             />
                         }
+
+                        {
+                            params.row.draftedVersion == null &&
+                            params.row.publishedVersion == null &&
+                            <FormStatusChip
+                                status={FormStatus.Revoked}
+                                size="small"
+                                variant="outlined"
+                            />
+                        }
                     </Box>
                 ),
             },
