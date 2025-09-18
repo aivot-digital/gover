@@ -12,13 +12,12 @@ import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
-import {GridColDef, GridRenderCellParams} from '@mui/x-data-grid';
-import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
+import {GridColDef} from '@mui/x-data-grid';
 import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {useNavigate} from 'react-router-dom';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 
-const _columns: Array<GridColDef<Preset>> = [
+const columns: Array<GridColDef<Preset>> = [
     {
         field: 'icon',
         headerName: '',
@@ -62,18 +61,6 @@ export function PresetListPage() {
     const navigateTo = (preset: Preset): void => {
         navigate(`/presets/edit/${preset.key}/${preset.draftedVersion}`);
     };
-
-    const columns = storeKey != null && isStringNotNullOrEmpty(storeKey) ?
-        [
-            ..._columns,
-            {
-                field: 'currentStoreVersion',
-                headerName: 'Store-Version',
-                renderCell: (params: GridRenderCellParams<any, Preset>) => params.row.currentStoreVersion ?? 'Nicht im Store verfügbar',
-                flex: 1,
-            },
-        ] :
-        _columns;
 
     return (
         <PageWrapper
