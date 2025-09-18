@@ -103,8 +103,8 @@ services:
       - keycloak_database
     command: [ 'start-dev', '--http-port=8080' ]
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HTTP_ENABLED: true
       KC_HOSTNAME: http://localhost:8888/idp
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: false
