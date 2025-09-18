@@ -6,13 +6,16 @@ import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 public class RootElement extends BaseElement implements ElementWithChildren<StepElement> {
     private String tabTitle;
-    private List<StepElement> children;
+    private List<StepElement> children = new LinkedList<>();
 
     private String expiring;
 
@@ -80,13 +83,21 @@ public class RootElement extends BaseElement implements ElementWithChildren<Step
         return this;
     }
 
+    @Nonnull
     @Override
     public List<StepElement> getChildren() {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         return children;
     }
 
+    @Nonnull
     @Override
-    public RootElement setChildren(List<StepElement> children) {
+    public RootElement setChildren(@Nullable List<StepElement> children) {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         this.children = children;
         return this;
     }

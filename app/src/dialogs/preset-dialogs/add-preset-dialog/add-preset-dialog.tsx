@@ -20,12 +20,10 @@ function createEmptyPreset(): Preset {
     return {
         key: '',
         title: '',
-        currentVersion: '',
-        currentStoreVersion: null,
-        currentPublishedVersion: null,
+        publishedVersion: null,
+        draftedVersion: null,
         updated: new Date().toISOString(),
         created: new Date().toISOString(),
-        storeId: '',
     };
 }
 
@@ -37,21 +35,6 @@ function validate(preset: Preset): Errors | null {
         errors = {
             ...(errors ?? {}),
             title: 'Bitte geben Sie einen Titel mit mindestens 3 und weniger als 190 Zeichen ein',
-        };
-    }
-
-    if (preset.currentVersion == null || preset.currentVersion.length < 5 || preset.currentVersion.length > 11) {
-        errors = {
-            ...(errors ?? {}),
-            currentVersion: 'Bitte geben Sie einen Version mit mindestens 5 weniger als 12 Zeichen ein',
-        };
-    }
-
-    const versionRegex = /^[0-9]+(\.[0-9]+){2}$/;
-    if (!versionRegex.test(preset.currentVersion)) {
-        errors = {
-            ...(errors ?? {}),
-            currentVersion: 'Bitte geben Sie eine gültige Version nach dem Schema X.Y.Z ein',
         };
     }
 
@@ -98,27 +81,10 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
         } else {
             const presetsApiService = new PresetsApiService(api);
 
-            presetsApiService.create(preset)
-                .then(async (createdPreset) => {
-                    const presetVersionsApiService = new PresetVersionApiService(api, createdPreset.key);
-
-                    const createdVersion = await presetVersionsApiService.create({
-                        preset: createdPreset.key,
-                        version: preset.currentVersion,
-                        rootElement: root ?? generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
-                        publishedAt: null,
-                        publishedStoreAt: null,
-                        created: new Date().toISOString(),
-                        updated: new Date().toISOString(),
-                    });
-                    createdPreset.currentVersion = createdVersion.version;
-                    return {
-                        preset: createdPreset,
-                        version: createdVersion,
-                    };
-                })
-                .then(({preset, version}) => {
-                    onAdded(preset, version);
+            presetsApiService
+                .create(preset)
+                .then((preset) => {
+                    onAdded(preset);
                     handleClose();
                 })
                 .catch((err) => {
@@ -177,36 +143,6 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
                     error={errors.title}
                     maxCharacters={190}
                     minCharacters={3}
-                />
-
-                <Typography
-                    variant="body2"
-                    sx={{
-                        mt: 4,
-                        mb: 2,
-                    }}
-                >
-                    Vergeben Sie die Version der Vorlage. Unter dieser wird die Vorlage verfügbar
-                    sein. Achten Sie darauf, dass Sie dem Schema der semantischen Versionierung folgen.
-                    Die Version besteht aus drei Zahlen, die jeweils durch einen Punkt getrennt werden. Die erste Zahl
-                    gibt die Hauptversion (Major) an und sollte nur bei tiefgreifenden Änderungen erhöht werden. Die
-                    zweite Zahl gibt die Nebenversion (Minor) an und sollte bei kleineren Änderungen erhöht werden. Die
-                    dritte Zahl gibt die Fehlerkorrekturen (Fix) an und sollte nur bei solchen erhöht werden.
-                </Typography>
-
-                <TextFieldComponent
-                    label="Version der Vorlage"
-                    placeholder="1.0.0"
-                    value={preset.currentVersion}
-                    onChange={(val) => {
-                        handlePatch({
-                            currentVersion: val,
-                        });
-                    }}
-                    required
-                    error={errors.currentVersion}
-                    maxCharacters={11}
-                    minCharacters={5}
                 />
 
                 <Alert

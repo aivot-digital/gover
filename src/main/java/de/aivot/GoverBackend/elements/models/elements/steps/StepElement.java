@@ -4,8 +4,10 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ElementType;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,7 +17,7 @@ public class StepElement extends BaseElement implements ElementWithChildren<Base
     @Nullable
     private String icon;
     @Nullable
-    private List<BaseFormElement> children;
+    private List<BaseFormElement> children = new LinkedList<>();
 
     public StepElement() {
         super(ElementType.Step);
@@ -66,13 +68,20 @@ public class StepElement extends BaseElement implements ElementWithChildren<Base
     }
 
     @Override
-    @Nullable
+    @Nonnull
     public List<BaseFormElement> getChildren() {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         return children;
     }
 
+    @Nonnull
     @Override
     public StepElement setChildren(@Nullable List<BaseFormElement> children) {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         this.children = children;
         return this;
     }

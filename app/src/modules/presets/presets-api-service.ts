@@ -7,9 +7,7 @@ import {ElementData} from '../../models/element-data';
 
 interface PresetFilter {
     title: string;
-    exactTitle: string;
-    publishedInternally: boolean;
-    publishedToStore: boolean;
+    published: boolean;
 }
 
 export class PresetsApiService extends CrudApiService<Preset, Preset, Preset, Preset, Preset, string, PresetFilter> {
@@ -21,16 +19,14 @@ export class PresetsApiService extends CrudApiService<Preset, Preset, Preset, Pr
         return {
             key: '',
             title: '',
-            storeId: '',
-            currentVersion: '',
-            currentStoreVersion: '',
-            currentPublishedVersion: '',
+            draftedVersion: null,
+            publishedVersion: null,
             created: '',
             updated: '',
         };
     }
 
-    public async determinePresetState(presetKey: string, presetVersion: string, elementData: ElementData, args: {
+    public async determinePresetState(presetKey: string, presetVersion: number, elementData: ElementData, args: {
         disableVisibilities: boolean,
         disableValidation: boolean,
     }): Promise<ElementData> {

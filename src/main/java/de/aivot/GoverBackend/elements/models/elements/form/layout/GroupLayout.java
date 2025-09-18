@@ -3,15 +3,17 @@ package de.aivot.GoverBackend.elements.models.elements.form.layout;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ElementType;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 public class GroupLayout extends BaseFormElement implements ElementWithChildren<BaseFormElement> {
-    @Nullable
-    private List<BaseFormElement> children;
+    @Nonnull
+    private List<BaseFormElement> children = new LinkedList<>();
     @Nullable
     private GroupLayoutStoreLink storeLink;
 
@@ -42,14 +44,21 @@ public class GroupLayout extends BaseFormElement implements ElementWithChildren<
 
     // region Getters & Setters
 
+    @Nonnull
     @Override
-    @Nullable
     public List<BaseFormElement> getChildren() {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         return children;
     }
 
+    @Nonnull
     @Override
     public GroupLayout setChildren(@Nullable List<BaseFormElement> children) {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         this.children = children;
         return this;
     }

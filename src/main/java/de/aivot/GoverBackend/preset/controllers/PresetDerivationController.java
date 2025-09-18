@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.preset.entities.PresetVersionEntityId;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 // TODO: Move to dedicated preset module
 @RestController
@@ -30,11 +32,11 @@ public class PresetDerivationController {
         this.presetVersionRepository = presetVersionRepository;
         this.elementDerivationService = elementDerivationService;
     }
-    
+
     @PostMapping("/api/presets/{presetKey}/{presetVersion}/derive")
     public ElementData derive(
-            @PathVariable String presetKey,
-            @PathVariable String presetVersion,
+            @PathVariable UUID presetKey,
+            @PathVariable Integer presetVersion,
             @Valid @RequestBody ElementData elementData,
             @RequestParam(value = "disableVisibilities") Optional<Boolean> disableVisibilities,
             @RequestParam(value = "disableValidation") Optional<Boolean> disableValidation
@@ -43,12 +45,14 @@ public class PresetDerivationController {
                 .findById(presetKey)
                 .orElseThrow(ResponseException::notFound);
 
+        var id = new PresetVersionEntityId(presetKey, presetVersion);
+
         var presetVersionObject = presetVersionRepository
-                .getByPresetAndVersion(preset.getKey(), presetVersion)
+                .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
         var request = new ElementDerivationRequest()
-                .setElement(presetVersionObject.getRoot())
+                .setElement(presetVersionObject.getRootElement())
                 .setElementData(elementData)
                 .setOptions(
                         new ElementDerivationOptions()

@@ -1,13 +1,17 @@
 package de.aivot.GoverBackend.elements.models.elements;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public interface ElementWithChildren<T extends BaseElement> {
+    @Nonnull
     List<T> getChildren();
-    ElementWithChildren<T> setChildren(List<T> children);
+    @Nonnull
+    ElementWithChildren<T> setChildren(@Nullable List<T> children);
 
     default Optional<? extends BaseElement> findChild(@Nonnull String childId) {
         var matchingDirectChild = getChildren()

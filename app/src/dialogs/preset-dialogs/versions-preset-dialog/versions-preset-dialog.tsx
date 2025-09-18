@@ -2,13 +2,14 @@ import {type VersionsPresetDialogProps} from './versions-preset-dialog-props';
 import {type DialogProps} from '@mui/material/Dialog';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {Dialog, DialogContent, List, ListItem, ListItemButton, ListItemText} from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {type PresetVersion} from '../../../models/entities/preset-version';
 import {Link} from 'react-router-dom';
 import {format, parseISO} from 'date-fns';
 import {determinePresetVersionDescriptor} from '../../../utils/determine-preset-version-descriptor';
-import {useApi} from "../../../hooks/use-api";
-import {PresetVersionApiService} from "../../../modules/presets/preset-version-api-service";
+import {useApi} from '../../../hooks/use-api';
+import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
+import {FormStatus} from '../../../modules/forms/enums/form-status';
 
 export function VersionsPresetDialog(props: DialogProps & VersionsPresetDialogProps) {
     const api = useApi();
@@ -25,7 +26,8 @@ export function VersionsPresetDialog(props: DialogProps & VersionsPresetDialogPr
     useEffect(() => {
         const presetVersionApiService = new PresetVersionApiService(api, preset.key);
 
-        presetVersionApiService.list(0, 999)
+        presetVersionApiService
+            .listAllOrdered('version', 'DESC')
             .then(page => setVersions(page.content))
             .catch(() => setVersions([]));
     }, [preset, passThroughProps.open]);
@@ -46,8 +48,8 @@ export function VersionsPresetDialog(props: DialogProps & VersionsPresetDialogPr
                 <List>
                     {
                         versions.map((version) => {
-                            const statusLabel = version.publishedAt != null ? 'Veröffentlicht am' : 'Zuletzt bearbeitet';
-                            const timestamp = parseISO(version.publishedAt ?? version.updated);
+                            const statusLabel = version.status == FormStatus.Published ? 'Veröffentlicht am' : 'Zuletzt bearbeitet';
+                            const timestamp = parseISO(version.published ?? version.updated);
 
                             return (
                                 <ListItem

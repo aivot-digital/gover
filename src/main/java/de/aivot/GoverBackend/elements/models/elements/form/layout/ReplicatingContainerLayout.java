@@ -27,8 +27,8 @@ public class ReplicatingContainerLayout extends BaseInputElement<List<ElementDat
     private String addLabel;
     @Nullable
     private String removeLabel;
-    @Nullable
-    private List<BaseFormElement> children;
+    @Nonnull
+    private List<BaseFormElement> children = new LinkedList<>();
 
     public ReplicatingContainerLayout() {
         super(ElementType.ReplicatingContainer);
@@ -229,13 +229,20 @@ public class ReplicatingContainerLayout extends BaseInputElement<List<ElementDat
     }
 
     @Override
-    @Nullable
+    @Nonnull
     public List<BaseFormElement> getChildren() {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         return children;
     }
 
+    @Nonnull
     @Override
     public ReplicatingContainerLayout setChildren(@Nullable List<BaseFormElement> children) {
+        if (children == null) {
+            children = new LinkedList<>();
+        }
         this.children = children;
         return this;
     }

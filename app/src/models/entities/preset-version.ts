@@ -1,11 +1,13 @@
 import {type GroupLayout} from '../elements/form/layout/group-layout';
+import {FormStatus} from '../../modules/forms/enums/form-status';
 
 export interface PresetVersion {
-    preset: string;
-    version: string;
+    presetKey: string;
+    version: number;
     rootElement: GroupLayout;
-    publishedAt: string | null;
-    publishedStoreAt: string | null;
+    status: FormStatus;
+    published: string | null | undefined;
+    revoked: string | null | undefined;
     created: string;
     updated: string;
 }

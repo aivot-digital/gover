@@ -32,7 +32,7 @@ const _columns: Array<GridColDef<Preset>> = [
         headerName: 'Titel',
         renderCell: (params) => (
             <CellLink
-                to={`/presets/edit/${params.id}/${params.row.currentVersion}`}
+                to={`/presets/edit/${params.id}/${params.row.draftedVersion}`}
                 title={`Vorlage bearbeiten`}
             >
                 {String(params.value)}
@@ -41,14 +41,13 @@ const _columns: Array<GridColDef<Preset>> = [
         flex: 1,
     },
     {
-        field: 'currentVersion',
+        field: 'draftedVersion',
         headerName: 'Arbeits-Version',
         flex: 1,
     },
     {
-        field: 'currentPublishedVersion',
+        field: 'publishedVersion',
         headerName: 'Veröffentlichte Version',
-        renderCell: (params) => params.row.currentPublishedVersion ?? 'Unveröffentlicht',
         flex: 1,
     },
 ];
@@ -61,7 +60,7 @@ export function PresetListPage() {
     const [showAddPresetDialog, setShowAddPresetDialog] = useState(false);
 
     const navigateTo = (preset: Preset): void => {
-        navigate(`/presets/edit/${preset.key}/${preset.currentVersion}`);
+        navigate(`/presets/edit/${preset.key}/${preset.draftedVersion}`);
     };
 
     const columns = storeKey != null && isStringNotNullOrEmpty(storeKey) ?
@@ -134,7 +133,7 @@ export function PresetListPage() {
                 rowActions={(item: Preset) => [
                     {
                         icon: <EditOutlined />,
-                        to: `/presets/edit/${item.key}/${item.currentVersion}`,
+                        to: `/presets/edit/${item.key}/${item.draftedVersion}`,
                         tooltip: 'Vorlage bearbeiten',
                     },
                 ]}

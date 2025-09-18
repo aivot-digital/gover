@@ -23,6 +23,7 @@ import {filterItems} from "../../../utils/filter-items";
 import {TextFieldComponent} from "../../../components/text-field/text-field-component";
 import {PresetsApiService} from "../../../modules/presets/presets-api-service";
 import {PresetVersionApiService} from "../../../modules/presets/preset-version-api-service";
+import {FormStatus} from '../../../modules/forms/enums/form-status';
 
 export function PresetTab(props: BaseTabProps) {
     const api = useApi();
@@ -32,17 +33,22 @@ export function PresetTab(props: BaseTabProps) {
     const presetsApiService = new PresetsApiService(api);
 
     useEffect(() => {
-        presetsApiService.listAll({ publishedInternally: true })
+        presetsApiService.listAll({
+            published: true,
+        })
             .then(page => setPresets(page.content))
             .catch(() => setPresets([]));
     }, [props.parentType, setPresets]);
 
     const addPresetElement = (preset: Preset): void => {
-        if (!preset.currentPublishedVersion) return;
+        if (preset.publishedVersion == null) {
+            return;
+        }
 
         const presetVersionApiService = new PresetVersionApiService(api, preset.key);
 
-        presetVersionApiService.retrieve(preset.currentPublishedVersion)
+        presetVersionApiService
+            .retrieve(preset.publishedVersion)
             .then((presetVersion) => {
                 props.onAddElement(cloneElement({
                     ...presetVersion.rootElement,
@@ -114,7 +120,7 @@ export function PresetTab(props: BaseTabProps) {
                                             </ListItemIcon>
                                             <ListItemText
                                                 primary={preset.title}
-                                                secondary={`Aktuelle Version ${preset.currentPublishedVersion ?? ''}`}
+                                                secondary={`Aktuelle Version ${preset.publishedVersion ?? ''}`}
                                             />
                                         </ListItemButton>
                                     </ListItem>

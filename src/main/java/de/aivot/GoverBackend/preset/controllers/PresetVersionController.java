@@ -3,11 +3,15 @@ package de.aivot.GoverBackend.preset.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.preset.entities.Preset;
-import de.aivot.GoverBackend.preset.entities.PresetVersion;
+import de.aivot.GoverBackend.preset.entities.PresetEntity;
+import de.aivot.GoverBackend.preset.entities.PresetVersionEntity;
+import de.aivot.GoverBackend.preset.entities.PresetVersionEntityId;
+import de.aivot.GoverBackend.preset.filters.PresetVersionFilter;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
+import de.aivot.GoverBackend.preset.repositories.PresetVersionWithDetailsRepository;
 import de.aivot.GoverBackend.user.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/presets/{presetKey}/versions/")
@@ -28,58 +33,58 @@ public class PresetVersionController {
     private final PresetRepository repository;
     private final PresetVersionRepository versionRepository;
     private final ScopedAuditService auditService;
+    private final PresetVersionWithDetailsRepository presetVersionWithDetailsRepository;
 
     @Autowired
     public PresetVersionController(
             PresetRepository repository,
             PresetVersionRepository versionRepository,
-            AuditService auditService
-    ) {
+            AuditService auditService,
+            PresetVersionWithDetailsRepository presetVersionWithDetailsRepository) {
         this.repository = repository;
         this.versionRepository = versionRepository;
         this.auditService = auditService.createScopedAuditService(PresetController.class);
-
+        this.presetVersionWithDetailsRepository = presetVersionWithDetailsRepository;
     }
 
     /**
      * List all versions of a preset.
      *
-     * @param jwt      The JWT of the user.
-     * @param pageable The pagination information.
+     * @param jwt       The JWT of the user.
+     * @param pageable  The pagination information.
      * @param presetKey The key of the preset.
      * @return The page of versions.
      */
     @GetMapping("")
-    public Page<PresetVersion> list(
+    public Page<PresetVersionEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @PathVariable String presetKey
+            @Nonnull @Valid PresetVersionFilter filter,
+            @Nonnull @PathVariable UUID presetKey
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var preset = repository
-                .findById(presetKey)
-                .orElseThrow(ResponseException::badRequest);
+        filter.setPresetKey(presetKey);
 
-        return versionRepository
-                .findAllByPreset(preset.getKey(), pageable);
+        return presetVersionWithDetailsRepository
+                .findAll(filter.build(), pageable);
     }
 
     /**
      * Create a new version of a preset.
      *
-     * @param jwt       The JWT of the user.
-     * @param presetKey The key of the preset.
+     * @param jwt        The JWT of the user.
+     * @param presetKey  The key of the preset.
      * @param newVersion The new version.
      * @return The new version.
      */
     @PostMapping("")
-    public PresetVersion createVersion(
+    public PresetVersionEntity createVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String presetKey,
-            @Valid @RequestBody PresetVersion newVersion
+            @Nonnull @PathVariable UUID presetKey,
+            @Valid @RequestBody PresetVersionEntity newVersion
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -89,25 +94,26 @@ public class PresetVersionController {
                 .findById(presetKey)
                 .orElseThrow(ResponseException::badRequest);
 
-        boolean exists = versionRepository
-                .existsByPresetAndVersion(
-                        preset.getKey(),
-                        newVersion.getVersion()
-                );
-        if (exists) {
-            throw ResponseException.conflict("Diese Vorlagen-Version existiert bereits.");
-        }
+        var newVersionNumber = versionRepository
+                .maxVersionForPresetKey(preset.getKey())
+                .orElse(0) + 1;
 
-        var savedVersion = versionRepository.save(newVersion);
+        newVersion.setPresetKey(presetKey);
+        newVersion.setVersion(newVersionNumber);
+        newVersion.setStatus(FormStatus.Drafted);
+        newVersion.setCreated(null);
+        newVersion.setUpdated(null);
+        newVersion.setPublished(null);
+        newVersion.setRevoked(null);
 
-        preset.setCurrentVersion(savedVersion.getVersion());
-        repository.save(preset);
+        var savedVersion = versionRepository
+                .save(newVersion);
 
         auditService
                 .logAction(
                         user,
                         AuditAction.Create,
-                        PresetVersion.class,
+                        PresetVersionEntity.class,
                         Map.of(
                                 "id", preset.getKey(),
                                 "title", preset.getTitle(),
@@ -121,40 +127,42 @@ public class PresetVersionController {
     /**
      * Retrieve a version of a preset.
      *
-     * @param presetKey     The key of the preset.
-     * @param version The version.
+     * @param presetKey The key of the preset.
+     * @param version   The version.
      * @return The version.
      */
     @GetMapping("{version}/")
-    public PresetVersion retrieveVersion(
+    public PresetVersionEntity retrieveVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String presetKey,
-            @Nonnull @PathVariable String version
+            @Nonnull @PathVariable UUID presetKey,
+            @Nonnull @PathVariable Integer version
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
+        var id = new PresetVersionEntityId(presetKey, version);
+
         return versionRepository
-                .getByPresetAndVersion(presetKey, version)
+                .findById(id)
                 .orElseThrow(ResponseException::notFound);
     }
 
     /**
      * Update a version of a preset.
      *
-     * @param jwt       The JWT of the user.
-     * @param presetKey The key of the preset.
-     * @param version   The version.
+     * @param jwt           The JWT of the user.
+     * @param presetKey     The key of the preset.
+     * @param version       The version.
      * @param updatedPreset The updated version.
      * @return The updated version.
      */
     @PutMapping("{version}/")
-    public PresetVersion updateVersion(
+    public PresetVersionEntity updateVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String presetKey,
-            @Nonnull @PathVariable String version,
-            @Valid @RequestBody PresetVersion updatedPreset
+            @Nonnull @PathVariable UUID presetKey,
+            @Nonnull @PathVariable Integer version,
+            @Valid @RequestBody PresetVersionEntity updatedPreset
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -164,33 +172,23 @@ public class PresetVersionController {
                 .findById(presetKey)
                 .orElseThrow(ResponseException::badRequest);
 
+        var id = new PresetVersionEntityId(presetKey, version);
+
         var presetVersion = versionRepository
-                .getByPresetAndVersion(presetKey, version)
+                .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (presetVersion.getPublishedAt() == null && presetVersion.getPublishedStoreAt() == null) {
-            presetVersion.setRoot(updatedPreset.getRoot());
+        if (presetVersion.getStatus() != FormStatus.Drafted) {
+            throw ResponseException.conflict("Veröffentlichte Versionen können nicht bearbeitet werden.");
         }
 
-        if (presetVersion.getPublishedAt() == null && updatedPreset.getPublishedAt() != null) {
-            presetVersion.setPublishedAt(updatedPreset.getPublishedAt());
-
-            preset.setCurrentPublishedVersion(presetVersion.getVersion());
-            repository.save(preset);
-        }
-
-        if (presetVersion.getPublishedStoreAt() == null && updatedPreset.getPublishedStoreAt() != null) {
-            presetVersion.setPublishedStoreAt(updatedPreset.getPublishedStoreAt());
-
-            preset.setCurrentStoreVersion(presetVersion.getVersion());
-            repository.save(preset);
-        }
+        presetVersion.setRootElement(updatedPreset.getRootElement());
 
         auditService
                 .logAction(
                         user,
                         AuditAction.Update,
-                        PresetVersion.class,
+                        PresetVersionEntity.class,
                         Map.of(
                                 "id", preset.getKey(),
                                 "title", preset.getTitle(),
@@ -211,8 +209,8 @@ public class PresetVersionController {
     @DeleteMapping("{version}/")
     public void destroyVersion(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String presetKey,
-            @Nonnull @PathVariable String version,
+            @Nonnull @PathVariable UUID presetKey,
+            @Nonnull @PathVariable Integer version,
             Pageable pageable) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -222,35 +220,99 @@ public class PresetVersionController {
                 .findById(presetKey)
                 .orElseThrow(ResponseException::notFound);
 
+        var id = new PresetVersionEntityId(presetKey, version);
+
         var presetVersion = versionRepository
-                .getByPresetAndVersion(presetKey, version)
+                .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (presetVersion.getPublishedAt() != null || presetVersion.getPublishedStoreAt() != null) {
+        if (presetVersion.getStatus() == FormStatus.Published) {
             throw ResponseException.conflict("Veröffentlichte Versionen können nicht gelöscht werden.");
         }
 
         versionRepository.delete(presetVersion);
 
-        var otherVersions = versionRepository.findAllByPreset(presetKey, pageable);
-
-        if (otherVersions.isEmpty()) {
-            repository.delete(preset);
-        } else {
-            var otherVersion = otherVersions.iterator().next();
-            preset.setCurrentVersion(otherVersion.getVersion());
-            repository.save(preset);
-        }
-
         auditService.logAction(
                 user,
                 AuditAction.Delete,
-                Preset.class,
+                PresetEntity.class,
                 Map.of(
                         "key", preset.getKey(),
                         "title", preset.getTitle(),
                         "version", presetVersion.getVersion()
                 )
         );
+    }
+
+    @PutMapping("{version}/publish/")
+    public PresetVersionEntity publishVersion(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable UUID presetKey,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var id = new PresetVersionEntityId(presetKey, version);
+
+        var presetVersion = versionRepository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
+
+        if (presetVersion.getStatus() == FormStatus.Published) {
+            throw ResponseException.conflict("Die Version ist bereits veröffentlicht.");
+        }
+
+        presetVersion.setStatus(FormStatus.Published);
+
+        auditService.logAction(
+                user,
+                AuditAction.Update,
+                PresetVersionEntity.class,
+                Map.of(
+                        "key", presetVersion.getPresetKey(),
+                        "version", presetVersion.getVersion(),
+                        "status", presetVersion.getStatus().toString()
+                )
+        );
+
+        return versionRepository.save(presetVersion);
+    }
+
+    @PutMapping("{version}/revoke/")
+    public PresetVersionEntity revokeVersion(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable UUID presetKey,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var id = new PresetVersionEntityId(presetKey, version);
+
+        var presetVersion = versionRepository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
+
+        if (presetVersion.getStatus() == FormStatus.Revoked) {
+            throw ResponseException.conflict("Die Version ist bereits widerrufen.");
+        }
+
+        presetVersion.setStatus(FormStatus.Revoked);
+
+        auditService.logAction(
+                user,
+                AuditAction.Update,
+                PresetVersionEntity.class,
+                Map.of(
+                        "key", presetVersion.getPresetKey(),
+                        "version", presetVersion.getVersion(),
+                        "status", presetVersion.getStatus().toString()
+                )
+        );
+
+        return versionRepository.save(presetVersion);
     }
 }

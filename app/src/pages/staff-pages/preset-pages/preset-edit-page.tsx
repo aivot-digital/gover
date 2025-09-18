@@ -25,17 +25,18 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
-import {usePrompt} from '../../../providers/prompt-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
 import {ElementData} from '../../../models/element-data';
+import {FormStatus} from '../../../modules/forms/enums/form-status';
+import {useConfirm} from '../../../providers/confirm-provider';
 
 export function PresetEditPage() {
     const api = useApi();
     const dispatch = useAppDispatch();
-    const showPrompt = usePrompt();
+    const showConfirm = useConfirm();
 
     const [isBusy, setIsBusy] = useState(false);
     const [isDeriving, setIsDeriving] = useState(false);
@@ -43,8 +44,16 @@ export function PresetEditPage() {
     const navigate = useNavigate();
     const {
         key: presetKey,
-        version: versionNumber,
+        version: versionNumberStr,
     } = useParams();
+
+    const versionNumber = useMemo(() => {
+        if (versionNumberStr == null) {
+            return 0;
+        }
+        const v = parseInt(versionNumberStr);
+        return isNaN(v) ? 0 : v;
+    }, [versionNumberStr]);
 
     const [preset, setPreset] = useState<Preset>();
     const [presetVersion, setPresetVersion] = useState<PresetVersion>();
@@ -168,35 +177,45 @@ export function PresetEditPage() {
     };
 
     const handleAddNewVersion = async () => {
-        if (!preset) return;
+        if (!preset) {
+            return;
+        }
 
-        const newVersion = await showPrompt({
+        const conf = await showConfirm({
             title: 'Neue Version anlegen',
-            message: 'Bitte geben Sie eine Versionsnummer für die neue Vorlagen-Version ein:',
-            inputLabel: 'Versionsnummer',
-            inputPlaceholder: versionNumber ?? '1.0.0',
-            confirmButtonText: 'Erstellen',
-            cancelButtonText: 'Abbrechen',
-            defaultValue: versionNumber ?? '1.0.0',
+            children: (
+                <Typography>
+                    Möchten Sie wirklich eine neue Version der Vorlage {preset.title} anlegen?
+                </Typography>
+            ),
+            confirmButtonText: 'Ja, neue Version anlegen',
+            isDestructive: false,
         });
 
-        if (!newVersion) return;
+        if (!conf) {
+            return;
+        }
+
         const presetVersionApiService = new PresetVersionApiService(api, preset.key);
 
         const newPresetVersion: PresetVersion = {
-            preset: preset.key,
-            version: newVersion,
+            presetKey: preset.key,
+            version: 0,
+            status: FormStatus.Drafted,
             rootElement: presetVersion ? presetVersion.rootElement : generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
-            publishedAt: null,
-            publishedStoreAt: null,
             created: new Date().toISOString(),
             updated: new Date().toISOString(),
+            published: null,
+            revoked: null,
         };
 
         presetVersionApiService.create(newPresetVersion)
             .then((createdVersion) => {
                 if (!presetVersion) {
-                    setPreset({...preset, currentVersion: createdVersion.version});
+                    setPreset({
+                        ...preset,
+                        draftedVersion: createdVersion.version,
+                    });
                     setPresetVersion(createdVersion);
                     setNetworkError(undefined);
                 } else {
@@ -386,7 +405,7 @@ export function PresetEditPage() {
                         onClick: handleValidate,
                         disabled: isBusy,
                     },
-                ].concat(presetVersion.publishedAt == null ? [
+                ].concat(presetVersion.status != FormStatus.Published ? [
                     {
                         icon: <DeleteForeverOutlinedIcon />,
                         tooltip: 'Version der Vorlage löschen',
@@ -411,11 +430,12 @@ export function PresetEditPage() {
                         borderRight: '1px solid #E0E7E0',
                         position: 'relative',
                     }}
-                    size={4}>
+                    size={4}
+                >
                     <ElementTree
                         entity={presetVersion}
                         onPatch={handlePatch}
-                        editable={presetVersion.publishedAt == null && presetVersion.publishedStoreAt == null}
+                        editable={presetVersion.status == FormStatus.Drafted}
                         scope="preset"
                         enabledIdentityProviderInfos={identityProviders}
                     />
@@ -426,7 +446,8 @@ export function PresetEditPage() {
                         height: 'calc(100vh - ' + toolbarHeight + 'px)',
                         overflowY: 'scroll',
                     }}
-                    size={8}>
+                    size={8}
+                >
                     <Container>
                         <ViewDispatcherComponent
                             rootElement={presetVersion.rootElement}
