@@ -9,7 +9,6 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import AccountCircleFilled from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircleFilled';
-import {SystemApiService} from '../../../modules/system/system-api-service';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectMaximizeDrawer, setMaximizeDrawer, setShowSearchDialog} from '../../../slices/shell-slice';
 import KeyboardTabRtl from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-tab-rtl/KeyboardTabRtl';
@@ -19,8 +18,7 @@ import {ShellUserMenu} from './shell-user-menu';
 import {Link, useLocation} from 'react-router-dom';
 import ChevronForward from '@aivot/mui-material-symbols-400-outlined/dist/chevron-forward/ChevronForward';
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-arrow-down/KeyboardArrowDown';
-import {Gover} from '../../../components/logos/gover';
-import {Paper} from '@mui/material';
+import {createTheme, Paper, ThemeProvider, useTheme} from '@mui/material';
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
 import Notifications from '@aivot/mui-material-symbols-400-outlined/dist/notifications/Notifications';
@@ -163,6 +161,7 @@ const DrawerGroups: DrawerGroup[] = [
 ];
 
 export function ShellDrawer() {
+    const baseTheme = useTheme();
     const dispatch = useAppDispatch();
     const maximizeDrawer = useAppSelector(selectMaximizeDrawer);
 
@@ -176,8 +175,26 @@ export function ShellDrawer() {
         dispatch(setShowSearchDialog(true));
     };
 
+    const drawerTheme = useMemo(() => {
+        console.log(baseTheme);
+        return createTheme({
+            ...baseTheme,
+            palette: {
+                primary: baseTheme.palette.primary,
+                secondary: baseTheme.palette.secondary,
+                error: baseTheme.palette.error,
+                warning: baseTheme.palette.warning,
+                info: baseTheme.palette.info,
+                success: baseTheme.palette.success,
+                mode: 'dark',
+            },
+        });
+    }, [baseTheme]);
+
+    console.log(drawerTheme.palette.background);
+
     return (
-        <>
+        <ThemeProvider theme={drawerTheme}>
             <Box
                 sx={{
                     display: 'block',
@@ -191,7 +208,9 @@ export function ShellDrawer() {
                         overflowY: 'auto',
                         px: 1,
                         py: 0.5,
+                        borderRadius: 0,
                     }}
+                    elevation={1}
                 >
                     <Box
                         sx={{
@@ -286,7 +305,7 @@ export function ShellDrawer() {
                     setUserMenuAnchorEl(null);
                 }}
             />
-        </>
+        </ThemeProvider>
     );
 }
 

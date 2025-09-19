@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {BaseApiService} from '../../../services/base-api-service';
 import {Page} from '../../../models/dtos/page';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
@@ -18,6 +18,8 @@ import {DepartmentResponseDTO} from '../../departments/dtos/department-response-
 import {ThemesApiService} from '../../themes/themes-api-service';
 import {SecretsApiService} from '../../secrets/secrets-api-service';
 import {DepartmentsApiService} from '../../departments/departments-api-service';
+import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 interface ConfigCategory {
     title: string;
@@ -71,7 +73,7 @@ export function SystemConfigs() {
                     allThemes: themes.content,
                     allSecrets: secrets.content,
                     allDepartments: departments.content,
-                })
+                });
             })
             .finally(() => {
                 dispatch(setLoadingMessage(undefined));
@@ -101,7 +103,14 @@ export function SystemConfigs() {
     return (
         <PageWrapper
             title="Weitere Systemeinstellungen"
+            background={true}
+            toolbarActions={[]}
         >
+            <GenericPageHeader
+                title="Sonstige Einstellungen"
+                icon={ModuleIcons.configs}
+            />
+
             {
                 (
                     systemConfigs == null ||
@@ -141,7 +150,6 @@ export function SystemConfigs() {
                     </Collapse>
                 ))
             }
-
         </PageWrapper>
     );
 }
