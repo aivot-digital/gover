@@ -176,7 +176,6 @@ export function ShellDrawer() {
     };
 
     const drawerTheme = useMemo(() => {
-        console.log(baseTheme);
         return createTheme({
             ...baseTheme,
             palette: {
@@ -191,8 +190,6 @@ export function ShellDrawer() {
         });
     }, [baseTheme]);
 
-    console.log(drawerTheme.palette.background);
-
     return (
         <ThemeProvider theme={drawerTheme}>
             <Box
@@ -206,8 +203,8 @@ export function ShellDrawer() {
                         flexDirection: 'column',
                         height: '100vh',
                         overflowY: 'auto',
-                        px: 1,
                         py: 0.5,
+                        px: 1.5,
                         borderRadius: 0,
                     }}
                     elevation={1}
@@ -217,6 +214,7 @@ export function ShellDrawer() {
                             display: 'flex',
                             flexDirection: 'row',
                             mb: 2,
+                            px: 1.5,
                         }}
                     >
                         {
@@ -248,7 +246,12 @@ export function ShellDrawer() {
                         />
                     </Box>
 
-                    <Box>
+                    <Box
+                        sx={{
+                            mb: 2,
+                            px: 1.5,
+                        }}
+                    >
                         {
                             maximizeDrawer &&
                             <Button
@@ -256,6 +259,12 @@ export function ShellDrawer() {
                                 variant="outlined"
                                 fullWidth={true}
                                 onClick={handleToggleSearchDialog}
+                                color="inherit"
+                                sx={{
+                                    justifyContent: 'flex-start',
+                                    textAlign: 'left',
+                                    background: 'rgba(255, 255, 255, 0.125)',
+                                }}
                             >
                                 Suche
                             </Button>
@@ -351,7 +360,11 @@ function DrawerGroup(props: DrawerGroupProps) {
             {
                 maximizeDrawer &&
                 group.title != null &&
-                <Typography>
+                <Typography
+                    sx={{
+                        px: 2,
+                    }}
+                >
                     {group.title}
                 </Typography>
             }
@@ -372,6 +385,7 @@ function DrawerGroup(props: DrawerGroupProps) {
                             item={item}
                             key={item.label}
                             showChildren={maximizeDrawer}
+                            showIcon={true}
                         />
                     ))
                 }
@@ -383,9 +397,10 @@ function DrawerGroup(props: DrawerGroupProps) {
 interface DrawerListItemProps {
     item: DrawerItem;
     showChildren: boolean;
+    showIcon: boolean;
 }
 
-function DrawerListItem({item, showChildren}: DrawerListItemProps) {
+function DrawerListItem({item, showChildren, showIcon}: DrawerListItemProps) {
     const {
         to,
         children,
@@ -437,11 +452,17 @@ function DrawerListItem({item, showChildren}: DrawerListItemProps) {
                 <ListItemButton
                     component={Link}
                     to={to}
-                    selected={isActive}
+                    sx={{
+                        borderRadius: 1,
+                        bgcolor: isActive ? 'secondary.main' : undefined,
+                    }}
                 >
-                    <ListItemIcon>
-                        {item.icon}
-                    </ListItemIcon>
+                    {
+                        showIcon &&
+                        <ListItemIcon>
+                            {item.icon}
+                        </ListItemIcon>
+                    }
                     {
                         showChildren &&
                         <ListItemText
@@ -454,18 +475,25 @@ function DrawerListItem({item, showChildren}: DrawerListItemProps) {
     } else if (children != null) {
         return (
             <>
-                <ListItem>
+                <ListItem
+                    dense={true}
+                    disableGutters={true}
+                >
                     <ListItemButton
                         onClick={() => {
                             setExpanded(!expanded);
                         }}
-                        selected={isActive}
-                        dense={true}
-                        disableGutters={true}
+                        sx={{
+                            borderRadius: 1,
+                            bgcolor: isActive ? 'secondary.main' : undefined,
+                        }}
                     >
-                        <ListItemIcon>
-                            {item.icon}
-                        </ListItemIcon>
+                        {
+                            showIcon &&
+                            <ListItemIcon>
+                                {item.icon}
+                            </ListItemIcon>
+                        }
                         {
                             showChildren &&
                             <ListItemText
@@ -497,6 +525,7 @@ function DrawerListItem({item, showChildren}: DrawerListItemProps) {
                                         item={child}
                                         key={child.label}
                                         showChildren={showChildren}
+                                        showIcon={false}
                                     />
                                 ))
                             }
