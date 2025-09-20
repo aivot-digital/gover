@@ -23,7 +23,8 @@ public class ElementValueDerivationService {
             @Nonnull ElementDataObject dataObject,
             @Nonnull BaseInputElement<?> currentElement,
             @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull NoCodeEvaluationService noCodeEvaluationService
+            @Nonnull NoCodeEvaluationService noCodeEvaluationService,
+            @Nonnull ElementDerivationLogger derivationLogger
     ) throws DerivationException {
         var val = currentElement.getValue();
 
@@ -34,11 +35,14 @@ public class ElementValueDerivationService {
         try {
             // Determine if the value computation should be done with javascript code
             if (val.getJavascriptCode() != null && val.getJavascriptCode().isNotEmpty()) {
-                return javascriptEngine
+                var res = javascriptEngine
                         .registerGlobalContextObject(accumulator)
                         .registerElementObject(currentElement)
-                        .evaluateCode(val.getJavascriptCode())
-                        .asObject();
+                        .evaluateCode(val.getJavascriptCode());
+
+                derivationLogger.log(currentElement, res);
+
+                return res.asObject();
             }
 
             // Determine if the value computation should be done with a value expression

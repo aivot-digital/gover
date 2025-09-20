@@ -23,9 +23,10 @@ import {LogLevelIcon} from '../log-level-icon/log-level-icon';
 import {DragHandleOutlined} from '@mui/icons-material';
 import {ElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
-import {ElementDataDebugger} from './element-data-debugger/element-data-debugger';
+import {ElementDataDebugger} from './tabs/element-data-debugger';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {cleanElementData} from '../../utils/element-data-utils';
+import {LogView} from './tabs/log-view';
 
 interface TabContentProps {
     selectedTab: number;
@@ -251,35 +252,7 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                         },
                     ]}
                 >
-                    <TableContainer>
-                        <Table>
-                            <TableBody>
-                                {
-                                    logs.slice().reverse().map((log, index) => (
-                                        <TableRow
-                                            key={log.timestamp.toString() + index}
-                                        >
-                                            <TableCell>
-                                                <LogLevelIcon
-                                                    level={log.type}
-                                                    active={true}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                {format(log.timestamp, 'HH:mm:ss')}
-                                            </TableCell>
-                                            <TableCell>
-                                                {log.source}
-                                            </TableCell>
-                                            <TableCell>
-                                                {log.message}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                }
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    <LogView />
                 </TabContent>
             </Box>
         </Box>

@@ -17,7 +17,7 @@ public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEnt
                         FROM
                             search_items
                         WHERE
-                            label IS NOT NULL AND label <> ''
+                            label IS NOT NULL AND label <> '' AND similarity(label, :search) > 0.1
                         ORDER BY
                             sim DESC;
                     """, nativeQuery = true

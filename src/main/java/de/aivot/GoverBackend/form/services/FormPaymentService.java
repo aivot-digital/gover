@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.form.services;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.PaymentType;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
@@ -90,8 +91,9 @@ public class FormPaymentService {
                                 .setSkipVisibilitiesForElementIds(List.of())
                 );
 
+        var dummyLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
-                .derive(derivationRequest);
+                .derive(derivationRequest, dummyLogger);
 
         var javascriptEngine = javascriptEngineFactoryService
                 .getEngine();

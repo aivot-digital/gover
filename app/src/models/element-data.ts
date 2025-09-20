@@ -27,6 +27,19 @@ export function newElementDataObject(type: ElementType): ElementDataObject {
 
 export type ElementData = Partial<Record<string, ElementDataObject>>;
 
+export interface ElementDerivationLogItem {
+    timestamp: string;
+    level: 'Debug' | 'Error';
+    elementId: string;
+    message: string;
+    details: Record<string, any>;
+}
+
+export interface ElementDerivationResponse {
+    elementData: ElementData;
+    logItems: ElementDerivationLogItem[];
+}
+
 export function hasElementDataSomeInput(elementData: ElementData | null | undefined): boolean {
     if (elementData == null) {
         return false;

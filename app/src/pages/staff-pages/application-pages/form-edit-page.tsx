@@ -52,11 +52,12 @@ import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {setIdentityId} from '../../../slices/identity-slice';
-import {ElementData} from '../../../models/element-data';
+import {ElementData, ElementDerivationResponse} from '../../../models/element-data';
 import {asFormRequestDTO, FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
+import {addDerivationLogItems} from '../../../slices/logging-slice';
 
 export const DialogSearchParam = 'dialog';
 
@@ -240,7 +241,7 @@ export function FormEditPage() {
 
         dispatch(showLoadingOverlay('Sichtbarkeiten berechnen'));
 
-        withAsyncWrapper<any, ElementData>({
+        withAsyncWrapper<any, ElementDerivationResponse>({
             desiredMinRuntime: 600,
             main: () => {
                 return new FormsApiService(api)
@@ -258,7 +259,8 @@ export function FormEditPage() {
             },
         })
             .then((newState) => {
-                setElementData(newState);
+                setElementData(newState.elementData);
+                dispatch(addDerivationLogItems(newState.logItems))
             })
             .finally(() => {
                 dispatch(hideLoadingOverlay());
@@ -323,7 +325,8 @@ export function FormEditPage() {
                         },
                     )
                     .then((state) => {
-                        setElementData(state);
+                        setElementData(state.elementData);
+                        dispatch(addDerivationLogItems(state.logItems));
                     });
             })
             .catch((err) => {
@@ -361,7 +364,8 @@ export function FormEditPage() {
                         },
                     )
                     .then((state) => {
-                        setElementData(state);
+                        setElementData(state.elementData);
+                        dispatch(addDerivationLogItems(state.logItems));
                     });
             })
             .catch((err) => {
@@ -470,7 +474,8 @@ export function FormEditPage() {
                                     skipOverridesFor: [],
                                 },
                             );
-                        setElementData(newState);
+                        setElementData(newState.elementData);
+                        dispatch(addDerivationLogItems(newState.logItems));
                     } catch (err: any) {
                         console.error(err);
                         dispatch(showErrorSnackbar('Die Formularzustände konnten nicht berechnet werden.'));

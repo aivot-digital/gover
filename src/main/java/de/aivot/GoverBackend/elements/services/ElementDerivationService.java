@@ -47,7 +47,8 @@ public class ElementDerivationService {
         this.noCodeEvaluationService = noCodeEvaluationService;
     }
 
-    public ElementData derive(@Nonnull ElementDerivationRequest request) {
+    public ElementData derive(@Nonnull ElementDerivationRequest request,
+                              @Nonnull ElementDerivationLogger logger) {
         var javascriptEngine = javascriptEngineFactoryService
                 .getEngine();
 
@@ -60,7 +61,8 @@ public class ElementDerivationService {
                 outputElementData,
                 request.getElement(),
                 request.getOptions(),
-                true
+                true,
+                logger
         );
 
         try {
@@ -79,7 +81,8 @@ public class ElementDerivationService {
             @Nonnull ElementData outputContextElementData,
             @Nonnull BaseElement currentlyDerivedElement,
             @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible
+            @Nonnull Boolean isParentVisible,
+            @Nonnull ElementDerivationLogger logger
     ) {
         switch (currentlyDerivedElement) {
             case RootElement element:
@@ -89,7 +92,8 @@ public class ElementDerivationService {
                         outputContextElementData,
                         element,
                         options,
-                        isParentVisible);
+                        isParentVisible,
+                        logger);
                 break;
 
             case StepElement element:
@@ -99,7 +103,8 @@ public class ElementDerivationService {
                         outputContextElementData,
                         element,
                         options,
-                        isParentVisible);
+                        isParentVisible,
+                        logger);
                 break;
 
             case GroupLayout element:
@@ -109,7 +114,8 @@ public class ElementDerivationService {
                         outputContextElementData,
                         element,
                         options,
-                        isParentVisible);
+                        isParentVisible,
+                        logger);
                 break;
 
             case ReplicatingContainerLayout element:
@@ -119,7 +125,8 @@ public class ElementDerivationService {
                         outputContextElementData,
                         element,
                         options,
-                        isParentVisible);
+                        isParentVisible,
+                        logger);
                 break;
 
             case BaseElement element:
@@ -128,7 +135,8 @@ public class ElementDerivationService {
                         inputContextElementData,
                         element,
                         options,
-                        isParentVisible);
+                        isParentVisible,
+                        logger);
 
                 inputContextElementData.put(element, elementDataObject);
                 outputContextElementData.put(element, elementDataObject);
@@ -143,14 +151,16 @@ public class ElementDerivationService {
             @Nonnull ElementData outputContextElementData,
             @Nonnull RootElement currentRootElement,
             @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible
+            @Nonnull Boolean isParentVisible,
+            @Nonnull ElementDerivationLogger logger
     ) {
         var dataObject = deriveElement(javascriptEngine,
                 rootElement,
                 inputContextElementData,
                 currentRootElement,
                 options,
-                isParentVisible);
+                isParentVisible,
+                logger);
         inputContextElementData.put(rootElement, dataObject);
         outputContextElementData.put(rootElement, dataObject);
 
@@ -164,7 +174,8 @@ public class ElementDerivationService {
                     inputContextElementData,
                     currentRootElement.getIntroductionStep(),
                     optionsForChildren,
-                    isVisible);
+                    isVisible,
+                    logger);
             inputContextElementData.put(currentRootElement.getIntroductionStep(), cDo);
             outputContextElementData.put(currentRootElement.getIntroductionStep(), cDo);
         }
@@ -175,7 +186,8 @@ public class ElementDerivationService {
                     inputContextElementData,
                     currentRootElement.getSummaryStep(),
                     optionsForChildren,
-                    isVisible);
+                    isVisible,
+                    logger);
             inputContextElementData.put(currentRootElement.getSummaryStep(), cDo);
             outputContextElementData.put(currentRootElement.getSummaryStep(), cDo);
         }
@@ -186,7 +198,8 @@ public class ElementDerivationService {
                     inputContextElementData,
                     currentRootElement.getSubmitStep(),
                     optionsForChildren,
-                    isVisible);
+                    isVisible,
+                    logger);
             inputContextElementData.put(currentRootElement.getSubmitStep(), cDo);
             outputContextElementData.put(currentRootElement.getSubmitStep(), cDo);
         }
@@ -198,7 +211,8 @@ public class ElementDerivationService {
                     outputContextElementData,
                     step,
                     optionsForChildren,
-                    isVisible);
+                    isVisible,
+                    logger);
         }
     }
 
@@ -209,14 +223,16 @@ public class ElementDerivationService {
             @Nonnull ElementData outputContextElementData,
             @Nonnull StepElement _stepElement,
             @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible
+            @Nonnull Boolean isParentVisible,
+            @Nonnull ElementDerivationLogger logger
     ) {
         var dataObject = deriveElement(javascriptEngine,
                 rootElement,
                 inputContextElementData,
                 _stepElement,
                 options,
-                isParentVisible);
+                isParentVisible,
+                logger);
         inputContextElementData.put(_stepElement, dataObject);
         outputContextElementData.put(_stepElement, dataObject);
 
@@ -235,7 +251,8 @@ public class ElementDerivationService {
                         outputContextElementData,
                         child,
                         optionsForChildren,
-                        isVisible);
+                        isVisible,
+                        logger);
             }
         }
     }
@@ -247,14 +264,16 @@ public class ElementDerivationService {
             @Nonnull ElementData outputContextElementData,
             @Nonnull GroupLayout _groupLayout,
             @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible
+            @Nonnull Boolean isParentVisible,
+            @Nonnull ElementDerivationLogger logger
     ) {
         var dataObject = deriveElement(javascriptEngine,
                 rootElement,
                 inputContextElementData,
                 _groupLayout,
                 options,
-                isParentVisible);
+                isParentVisible,
+                logger);
         inputContextElementData.put(_groupLayout, dataObject);
         outputContextElementData.put(_groupLayout, dataObject);
 
@@ -273,7 +292,8 @@ public class ElementDerivationService {
                         outputContextElementData,
                         child,
                         optionsForChildren,
-                        isVisible);
+                        isVisible,
+                        logger);
             }
         }
     }
@@ -285,14 +305,16 @@ public class ElementDerivationService {
             @Nonnull ElementData outputContextElementData,
             @Nonnull ReplicatingContainerLayout _replicatingContainerLayout,
             @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible
+            @Nonnull Boolean isParentVisible,
+            @Nonnull ElementDerivationLogger logger
     ) {
         var dataObject = deriveElement(javascriptEngine,
                 rootElement,
                 inputContextElementData,
                 _replicatingContainerLayout,
                 options,
-                isParentVisible);
+                isParentVisible,
+                logger);
         inputContextElementData.put(_replicatingContainerLayout, dataObject);
         outputContextElementData.put(_replicatingContainerLayout, dataObject);
 
@@ -328,7 +350,8 @@ public class ElementDerivationService {
                                 childOutputContextElementData,
                                 child,
                                 optionsForChildren,
-                                isVisible);
+                                isVisible,
+                                logger);
                     }
 
                     resValue.add(childOutputContextElementData);
@@ -351,7 +374,8 @@ public class ElementDerivationService {
             @Nonnull ElementData accumulator,
             @Nonnull BaseElement _currentElement,
             @Nonnull ElementDerivationOptions options,
-            @Nonnull Boolean isParentVisible
+            @Nonnull Boolean isParentVisible,
+            @Nonnull ElementDerivationLogger logger
     ) {
         // Get or create the data object for the current element
         var inputDataObject = accumulator
@@ -384,8 +408,10 @@ public class ElementDerivationService {
                                 dataObject,
                                 _currentElement,
                                 javascriptEngine,
-                                noCodeEvaluationService);
+                                noCodeEvaluationService,
+                                logger);
             } catch (DerivationException e) {
+                logger.error(e);
                 dataObject.addComputedError(e.getMessage());
             }
         }
@@ -414,15 +440,15 @@ public class ElementDerivationService {
         } else {
             try {
                 computedVisibility = visibilityDerivationService
-                        .derive(
-                                rootElement,
+                        .derive(rootElement,
                                 accumulator,
                                 currentElement,
                                 isParentVisible,
                                 javascriptEngine,
-                                noCodeEvaluationService
-                        );
+                                noCodeEvaluationService,
+                                logger);
             } catch (DerivationException e) {
+                logger.error(e);
                 dataObject.addComputedError(e.getMessage());
             }
         }
@@ -442,12 +468,14 @@ public class ElementDerivationService {
                                         dataObject,
                                         baseInputElement,
                                         javascriptEngine,
-                                        noCodeEvaluationService);
+                                        noCodeEvaluationService,
+                                        logger);
                         var formattedComputedValue = baseInputElement
                                 .formatValue(computedValue);
                         dataObject
                                 .setComputedValue(formattedComputedValue);
                     } catch (DerivationException e) {
+                        logger.error(e);
                         dataObject.addComputedError(e.getMessage());
                     }
                 }
@@ -462,12 +490,14 @@ public class ElementDerivationService {
                                         dataObject,
                                         baseInputElement,
                                         javascriptEngine,
-                                        noCodeEvaluationService);
+                                        noCodeEvaluationService,
+                                        logger);
                         if (computedErrors != null) {
                             dataObject
                                     .addComputedError(computedErrors);
                         }
                     } catch (DerivationException e) {
+                        logger.error(e);
                         dataObject.addComputedError(e.getMessage());
                     }
                 }

@@ -1,8 +1,10 @@
 package de.aivot.GoverBackend.preset.controllers;
 
+import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.preset.entities.PresetVersionEntityId;
@@ -34,7 +36,7 @@ public class PresetDerivationController {
     }
 
     @PostMapping("/api/presets/{presetKey}/{presetVersion}/derive")
-    public ElementData derive(
+    public ElementDerivationResponse derive(
             @PathVariable UUID presetKey,
             @PathVariable Integer presetVersion,
             @Valid @RequestBody ElementData elementData,
@@ -62,7 +64,11 @@ public class PresetDerivationController {
                                 .setSkipOverridesForElementIds(List.of())
                 );
 
-        return elementDerivationService
-                .derive(request);
+        var logger = new ElementDerivationLogger();
+        var derivedElementData = elementDerivationService
+                .derive(request, logger);
+
+        return ElementDerivationResponse
+                .from(derivedElementData, logger, true);
     }
 }

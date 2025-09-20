@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.dataObject.repositories.DataObjectSchemaRepository;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
@@ -181,11 +182,12 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 .setElement(schema.getSchema())
                 .setElementData(entityElementData)
                 .setOptions(edo);
-        var derivedData = elementDerivationService.derive(edr);
+        var dummyLogger = new ElementDerivationLogger();
+        var derivedData = elementDerivationService.derive(edr, dummyLogger);
 
         if (derivedData.hasAnyError()) {
             throw ResponseException
-                    .badRequest("Datenobjekt fehlerhaft");
+                    .badRequest(derivedData);
         }
 
         return ElementData.toValueMap(schema.getSchema(), derivedData);

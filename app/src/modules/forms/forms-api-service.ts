@@ -16,7 +16,7 @@ import {FormPublishChecklistItem} from './dtos/form-publish-checklist-item';
 import {FormType} from './enums/form-type';
 import {IdentityProviderInfo} from '../identity/models/identity-provider-info';
 import {IdentityIdHeader} from '../identity/constants/identity-id-header';
-import {ElementData} from '../../models/element-data';
+import {ElementData, ElementDerivationResponse} from '../../models/element-data';
 import {FormListResponseDTO} from './dtos/form-list-response-dto';
 import {FormDetailsResponseDTO} from './dtos/form-details-response-dto';
 import {FormCitizenDetailsResponseDTO} from './dtos/form-citizen-details-response-dto';
@@ -159,8 +159,8 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         skipVisibilitiesFor: DerivationSkipIdentifier,
         skipValuesFor: DerivationSkipIdentifier,
         skipOverridesFor: DerivationSkipIdentifier,
-    }): Promise<ElementData> {
-        return await this.api.post<ElementData>(
+    }): Promise<ElementDerivationResponse> {
+        return await this.api.post<ElementDerivationResponse>(
             `public/forms/${slug}/derive`,
             customerInput,
             {

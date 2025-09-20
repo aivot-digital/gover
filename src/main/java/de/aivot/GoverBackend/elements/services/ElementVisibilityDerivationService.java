@@ -23,7 +23,8 @@ public class ElementVisibilityDerivationService {
             @Nonnull BaseElement baseElement,
             @Nonnull Boolean isParentVisible,
             @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull NoCodeEvaluationService noCodeEvaluationService
+            @Nonnull NoCodeEvaluationService noCodeEvaluationService,
+            @Nonnull ElementDerivationLogger derivationLogger
     ) throws DerivationException {
         // If the parent is not visible, the element itself is not visible
         if (!isParentVisible) {
@@ -36,7 +37,8 @@ public class ElementVisibilityDerivationService {
                     elementData,
                     baseElement,
                     javascriptEngine,
-                    noCodeEvaluationService
+                    noCodeEvaluationService,
+                    derivationLogger
             );
         } catch (Exception e) {
             logger
@@ -54,7 +56,8 @@ public class ElementVisibilityDerivationService {
             @Nonnull ElementData elementData,
             @Nonnull BaseElement baseElement,
             @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull NoCodeEvaluationService noCodeEvaluationService
+            @Nonnull NoCodeEvaluationService noCodeEvaluationService,
+            @Nonnull ElementDerivationLogger derivationLogger
     ) throws Exception {
         var vis = baseElement.getVisibility();
 
@@ -67,9 +70,13 @@ public class ElementVisibilityDerivationService {
             var res = javascriptEngine
                     .registerGlobalContextObject(elementData)
                     .registerElementObject(baseElement)
-                    .evaluateCode(vis.getJavascriptCode())
-                    .asBoolean();
-            return res == null || res;
+                    .evaluateCode(vis.getJavascriptCode());
+
+            derivationLogger.log(baseElement, res);
+
+            var bl = res.asBoolean();
+
+            return bl == null || bl;
         }
 
         // Determine if visibility calculation should be done with a no code expression

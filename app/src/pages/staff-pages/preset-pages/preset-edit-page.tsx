@@ -29,9 +29,10 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-ov
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
-import {ElementData} from '../../../models/element-data';
+import {ElementData, ElementDerivationResponse} from '../../../models/element-data';
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {useConfirm} from '../../../providers/confirm-provider';
+import {addDerivationLogItems} from '../../../slices/logging-slice';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -140,8 +141,9 @@ export function PresetEditPage() {
                 disableVisibilities: false,
                 disableValidation: true,
             })
-            .then((presetState) => {
-                setElementData(presetState);
+            .then(({elementData, logItems}) => {
+                setElementData(elementData);
+                dispatch(addDerivationLogItems(logItems));
             })
             .catch(err => {
                 console.error(err);
@@ -257,8 +259,9 @@ export function PresetEditPage() {
                         disableValidation: true,
                     });
             })
-            .then((presetState) => {
-                setElementData(presetState);
+            .then(({elementData, logItems}) => {
+                setElementData(elementData);
+                dispatch(addDerivationLogItems(logItems));
             })
             .catch((err) => {
                 console.error(err);
@@ -286,11 +289,13 @@ export function PresetEditPage() {
                 disableValidation: false,
                 disableVisibilities: false,
             })
-            .then((presetState) => {
-                setElementData(presetState);
+            .then(({elementData, logItems}) => {
+                setElementData(elementData);
+
+                dispatch(addDerivationLogItems(logItems));
 
                 // errors always contains 3 base errors from the form (can change if form will extend in the future)
-                if (presetState.errors && Object.keys(presetState.errors).length <= 3) {
+                if (elementData.errors && Object.keys(elementData.errors).length <= 3) {
                     dispatch(showSuccessSnackbar('Bei der Validierung sind keine Fehler aufgetreten.'));
                 }
             })
@@ -317,7 +322,7 @@ export function PresetEditPage() {
         setIsDeriving(true);
         dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
 
-        withAsyncWrapper<void, ElementData>({
+        withAsyncWrapper<void, ElementDerivationResponse>({
             desiredMinRuntime: 600,
             main: async () => {
                 return await presetsApiService.determinePresetState(
@@ -330,8 +335,9 @@ export function PresetEditPage() {
                     },
                 );
             },
-        }).then((presetState) => {
-            setElementData(presetState);
+        }).then(({elementData, logItems}) => {
+            setElementData(elementData);
+            dispatch(addDerivationLogItems(logItems));
         }).catch((err) => {
             console.error(err);
             dispatch(showErrorSnackbar('Fehler beim Berechnen des Formularzustands'));

@@ -122,7 +122,7 @@ public class ResponseException extends Exception {
         return ResponseException.notFound("Die angeforderte Ressource wurde nicht gefunden.");
     }
 
-    public static ResponseException notFound(String message, Object ... args) {
+    public static ResponseException notFound(String message, Object... args) {
         return new ResponseException(HttpStatus.NOT_FOUND, String.format(message, args));
     }
 
@@ -130,7 +130,7 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.NOT_FOUND, message);
     }
 
-    public static ResponseException conflict(String message, Object ... args) {
+    public static ResponseException conflict(String message, Object... args) {
         return ResponseException.conflict(String.format(message, args));
     }
 
@@ -158,11 +158,11 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, message, details);
     }
 
-    public static ResponseException internalServerError(String message, Object ... args) {
+    public static ResponseException internalServerError(String message, Object... args) {
         return ResponseException.internalServerError(String.format(message, args));
     }
 
-    public static ResponseException internalServerError(Throwable cause, String message, Object ... args) {
+    public static ResponseException internalServerError(Throwable cause, String message, Object... args) {
         return ResponseException.internalServerError(String.format(message, args), cause);
     }
 

@@ -1,10 +1,12 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.destination.services.DestinationService;
+import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
@@ -287,14 +289,14 @@ public class CitizenFormController {
      * @throws ResponseException if the form is not found or invalid.
      */
     @PostMapping("{slug}/derive")
-    public ElementData derive(@Nullable @AuthenticationPrincipal Jwt jwt,
-                              @Nonnull @PathVariable String slug,
-                              @Nullable @RequestParam(value = "version", required = false) Integer version,
-                              @Nonnull @Valid @RequestBody ElementData elementData,
-                              @Nullable @RequestParam(value = "skipErrorsFor") List<String> skipErrorsFor,
-                              @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
-                              @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
-                              @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
+    public ElementDerivationResponse derive(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                            @Nonnull @PathVariable String slug,
+                                            @Nullable @RequestParam(value = "version", required = false) Integer version,
+                                            @Nonnull @Valid @RequestBody ElementData elementData,
+                                            @Nullable @RequestParam(value = "skipErrorsFor") List<String> skipErrorsFor,
+                                            @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
+                                            @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
+                                            @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
         var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
 
         var options = new ElementDerivationOptions()
@@ -308,8 +310,9 @@ public class CitizenFormController {
                 .setElementData(elementData)
                 .setOptions(options);
 
+        var derivationLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
-                .derive(request);
+                .derive(request, derivationLogger);
 
         var inputIdValue = elementData
                 .getOrDefault(IdentityValueKey.IdCustomerInputKey, new ElementDataObject(ElementType.SubmittedStep))
@@ -323,7 +326,8 @@ public class CitizenFormController {
             }
         }
 
-        return derivedElementData;
+        return ElementDerivationResponse
+                .from(elementData, derivationLogger, jwt != null);
     }
 
     /**

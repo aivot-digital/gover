@@ -54,6 +54,7 @@ import {IdentityCustomerInputKey} from '../../modules/identity/constants/identit
 import {IdentityData} from '../../modules/identity/models/identity-data';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
 import type {AnyElement} from '../../models/elements/any-element';
+import {addDerivationLogItems} from '../../slices/logging-slice';
 
 type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
@@ -438,8 +439,10 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 console.log('Derivation result:', derivationResult);
                 console.log('Element data buffer:', elementDataBufferRef.current);
 
+                dispatch(addDerivationLogItems(derivationResult.logItems))
+
                 const mergedElementData = mergeDerivedElementDataWithLocal(
-                    derivationResult,
+                    derivationResult.elementData,
                     elementDataBufferRef.current,
                     element,
                     {
@@ -450,12 +453,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 onElementDataChange(mergedElementData, []);
             } else {
                 console.log('Setting derived element data directly');
-                onElementDataChange(derivationResult, []);
+                onElementDataChange(derivationResult.elementData, []);
             }
 
             console.groupEnd();
 
-            return collectErrors(currentStepElement, derivationResult).length === 0 || adminSettings.disableValidation;
+            return collectErrors(currentStepElement, derivationResult.elementData).length === 0 || adminSettings.disableValidation;
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Dynamische Funktionen konnten nicht ausgewertet werden.'));

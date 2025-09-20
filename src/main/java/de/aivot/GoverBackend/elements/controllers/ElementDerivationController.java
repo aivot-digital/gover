@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.elements.controllers;
 
+import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -26,7 +28,7 @@ public class ElementDerivationController {
     }
 
     @PostMapping("derive/")
-    public ElementData derive(
+    public ElementDerivationResponse derive(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @RequestBody @Valid ElementDerivationRequest request
     ) throws ResponseException {
@@ -34,7 +36,11 @@ public class ElementDerivationController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        return elementDerivationService
-                .derive(request);
+        var derivationLogger = new ElementDerivationLogger();
+        var derivedElementData = elementDerivationService
+                .derive(request, derivationLogger);
+
+        return ElementDerivationResponse
+                .from(derivedElementData, derivationLogger, true);
     }
 }

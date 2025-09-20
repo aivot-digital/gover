@@ -7,11 +7,13 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.utils.ElementResolver;
+import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -24,7 +26,8 @@ public class ElementOverrideDerivationService {
             @Nonnull ElementDataObject dataObject,
             @Nonnull BaseElement currentElement,
             @Nonnull JavascriptEngine javascriptEngine,
-            @Nonnull NoCodeEvaluationService noCodeEvaluationService
+            @Nonnull NoCodeEvaluationService noCodeEvaluationService,
+            @Nonnull ElementDerivationLogger derivationLogger
     ) throws DerivationException {
         var override = currentElement.getOverride();
 
@@ -44,6 +47,9 @@ public class ElementOverrideDerivationService {
                 if (res.isNull()) {
                     return null;
                 }
+
+                // Log result output
+                derivationLogger.log(currentElement, res);
 
                 // Check if the result is a map, which indicates a valid override
                 var resObject = res.asMap();
