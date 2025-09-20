@@ -1,4 +1,4 @@
-import {Action, ActionsProps} from './actions-props';
+import {Action, ActionColor, ActionsProps} from './actions-props';
 import {Box, Button, IconButton, Tooltip} from '@mui/material';
 import React from 'react';
 import {Link} from 'react-router-dom';
@@ -11,7 +11,7 @@ export function Actions(props: ActionsProps) {
                 display: 'flex',
                 flexDirection: props.direction ?? 'row',
                 alignItems: 'center',
-                height: props.direction ==  null || props.direction === 'row' || props.direction === 'row-reverse' ? '100%' : undefined,
+                height: props.direction == null || props.direction === 'row' || props.direction === 'row-reverse' ? '100%' : undefined,
                 width: props.direction === 'column' || props.direction === 'column-reverse' ? '100%' : undefined,
                 gap: props.dense ? 1 : 2,
             }}
@@ -19,14 +19,41 @@ export function Actions(props: ActionsProps) {
             {
                 props.actions != null &&
                 props.actions
-                    .map((action, index) => dispatchToolbarAction(action, index, props.isBusy ?? false, index === 0, index === (props.actions?.length ?? 0) - 1))
+                    .map((action, index) => (
+                        <ToolbarActionDispatcher
+                            key={action === 'separator' ? index : (action.label ?? action.tooltip ?? index)}
+                            action={action}
+                            color={props.color ?? 'primary'}
+                            index={index}
+                            isBusy={props.isBusy ?? false}
+                            isFirst={index === 0}
+                            isLast={index === ((props.actions?.length ?? 0) - 1)}
+                        />
+                    ))
             }
         </Box>
     );
 }
 
-function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, isFirst: boolean, isLast: boolean) {
-    // Check if this action is a separator and render a simple separator div
+interface ToolbarActionDispatcherProps {
+    action: Action;
+    color: ActionColor;
+    index: number;
+    isBusy: boolean;
+    isFirst: boolean;
+    isLast: boolean;
+}
+
+function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
+    const {
+        action,
+        color,
+        index,
+        isBusy,
+        isFirst,
+        isLast,
+    } = props;
+
     if (action === 'separator') {
         return (
             <Box
@@ -63,7 +90,7 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, i
         element = (
             <Button
                 size="small"
-                color="primary"
+                color={color}
                 sx={{
                     m: 0,
                 }}
@@ -83,7 +110,7 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, i
         element = (
             <IconButton
                 size="small"
-                color="primary"
+                color={color}
                 sx={{
                     m: 0,
                 }}
@@ -102,7 +129,11 @@ function dispatchToolbarAction(action: Action, index: number, isBusy: boolean, i
 
     if (action.tooltip) {
         return (
-            <Tooltip key={index} title={action.tooltip} arrow>
+            <Tooltip
+                key={index}
+                title={action.tooltip}
+                arrow
+            >
                 <span>{element}</span>
             </Tooltip>
         );

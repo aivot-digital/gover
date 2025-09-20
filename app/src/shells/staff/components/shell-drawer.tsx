@@ -1,4 +1,4 @@
-import React, {Fragment, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -34,7 +34,7 @@ interface DrawerGroup {
 }
 
 interface DrawerItem {
-    icon: React.ReactNode;
+    icon: ReactNode;
     label: string;
     to?: string;
     children?: DrawerItem[];
@@ -226,6 +226,7 @@ export function ShellDrawer() {
                             sx={{
                                 ml: 'auto',
                             }}
+                            color="inherit"
                             dense={true}
                             actions={[
                                 {
@@ -338,6 +339,7 @@ function DrawerGroup(props: DrawerGroupProps) {
                     height: 'auto',
                     mt: 4,
                 }}
+                color="inherit"
                 actions={group.items.map((item) => item.children == null ? ({
                     icon: item.icon,
                     tooltip: item.label,
