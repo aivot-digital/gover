@@ -72,6 +72,8 @@ public class SubmissionWithMembership {
     @Column(columnDefinition = "int2")
     private Integer formDraftedVersion;
 
+    private Integer formVersionCount;
+
     private FormStatus formStatus;
     private FormType formType;
 
@@ -151,12 +153,13 @@ public class SubmissionWithMembership {
                 .setPaymentTransactionKey(paymentTransactionKey);
     }
 
+
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
 
         SubmissionWithMembership that = (SubmissionWithMembership) object;
-        return Objects.equals(id, that.id) && Objects.equals(formId, that.formId) && Objects.equals(created, that.created) && Objects.equals(assigneeId, that.assigneeId) && Objects.equals(archived, that.archived) && Objects.equals(fileNumber, that.fileNumber) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerInput, that.customerInput) && Objects.equals(destinationSuccess, that.destinationSuccess) && Objects.equals(isTestSubmission, that.isTestSubmission) && Objects.equals(copySent, that.copySent) && Objects.equals(copyTries, that.copyTries) && Objects.equals(reviewScore, that.reviewScore) && Objects.equals(destinationResult, that.destinationResult) && Objects.equals(destinationTimestamp, that.destinationTimestamp) && status == that.status && Objects.equals(updated, that.updated) && Objects.equals(paymentTransactionKey, that.paymentTransactionKey) && Objects.equals(formVersion, that.formVersion) && Objects.equals(formSlug, that.formSlug) && Objects.equals(formInternalTitle, that.formInternalTitle) && Objects.equals(formPublicTitle, that.formPublicTitle) && Objects.equals(formDevelopingDepartmentId, that.formDevelopingDepartmentId) && Objects.equals(formManagingDepartmentId, that.formManagingDepartmentId) && Objects.equals(formResponsibleDepartmentId, that.formResponsibleDepartmentId) && Objects.equals(formCreated, that.formCreated) && Objects.equals(formUpdated, that.formUpdated) && Objects.equals(formPublishedVersion, that.formPublishedVersion) && Objects.equals(formDraftedVersion, that.formDraftedVersion) && formStatus == that.formStatus && formType == that.formType && Objects.equals(formLegalSupportDepartmentId, that.formLegalSupportDepartmentId) && Objects.equals(formTechnicalSupportDepartmentId, that.formTechnicalSupportDepartmentId) && Objects.equals(formImprintDepartmentId, that.formImprintDepartmentId) && Objects.equals(formPrivacyDepartmentId, that.formPrivacyDepartmentId) && Objects.equals(formAccessibilityDepartmentId, that.formAccessibilityDepartmentId) && Objects.equals(formCustomerAccessHours, that.formCustomerAccessHours) && Objects.equals(formSubmissionRetentionWeeks, that.formSubmissionRetentionWeeks) && Objects.equals(formThemeId, that.formThemeId) && Objects.equals(formPdfTemplateKey, that.formPdfTemplateKey) && Objects.equals(formPaymentProviderKey, that.formPaymentProviderKey) && Objects.equals(formPaymentPurpose, that.formPaymentPurpose) && Objects.equals(formPaymentDescription, that.formPaymentDescription) && Objects.equals(formPaymentProducts, that.formPaymentProducts) && Objects.equals(formIdentityProviders, that.formIdentityProviders) && Objects.equals(formIdentityVerificationRequired, that.formIdentityVerificationRequired) && Objects.equals(formDestinationId, that.formDestinationId) && Objects.equals(formRootElement, that.formRootElement) && Objects.equals(formVersionPublished, that.formVersionPublished) && Objects.equals(formVersionRevoked, that.formVersionRevoked) && Objects.equals(userId, that.userId) && Objects.equals(userEmail, that.userEmail) && Objects.equals(userFirstName, that.userFirstName) && Objects.equals(userLastName, that.userLastName) && Objects.equals(userFullName, that.userFullName) && Objects.equals(userEnabled, that.userEnabled) && Objects.equals(userVerified, that.userVerified) && Objects.equals(userGlobalAdmin, that.userGlobalAdmin) && Objects.equals(userDeletedInIdp, that.userDeletedInIdp) && Objects.equals(userIsDeveloper, that.userIsDeveloper) && Objects.equals(userIsManager, that.userIsManager) && Objects.equals(userIsResponsible, that.userIsResponsible);
+        return Objects.equals(id, that.id) && Objects.equals(formId, that.formId) && Objects.equals(created, that.created) && Objects.equals(assigneeId, that.assigneeId) && Objects.equals(archived, that.archived) && Objects.equals(fileNumber, that.fileNumber) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerInput, that.customerInput) && Objects.equals(destinationSuccess, that.destinationSuccess) && Objects.equals(isTestSubmission, that.isTestSubmission) && Objects.equals(copySent, that.copySent) && Objects.equals(copyTries, that.copyTries) && Objects.equals(reviewScore, that.reviewScore) && Objects.equals(destinationResult, that.destinationResult) && Objects.equals(destinationTimestamp, that.destinationTimestamp) && status == that.status && Objects.equals(updated, that.updated) && Objects.equals(paymentTransactionKey, that.paymentTransactionKey) && Objects.equals(formVersion, that.formVersion) && Objects.equals(formSlug, that.formSlug) && Objects.equals(formInternalTitle, that.formInternalTitle) && Objects.equals(formPublicTitle, that.formPublicTitle) && Objects.equals(formDevelopingDepartmentId, that.formDevelopingDepartmentId) && Objects.equals(formManagingDepartmentId, that.formManagingDepartmentId) && Objects.equals(formResponsibleDepartmentId, that.formResponsibleDepartmentId) && Objects.equals(formCreated, that.formCreated) && Objects.equals(formUpdated, that.formUpdated) && Objects.equals(formPublishedVersion, that.formPublishedVersion) && Objects.equals(formDraftedVersion, that.formDraftedVersion) && Objects.equals(formVersionCount, that.formVersionCount) && formStatus == that.formStatus && formType == that.formType && Objects.equals(formLegalSupportDepartmentId, that.formLegalSupportDepartmentId) && Objects.equals(formTechnicalSupportDepartmentId, that.formTechnicalSupportDepartmentId) && Objects.equals(formImprintDepartmentId, that.formImprintDepartmentId) && Objects.equals(formPrivacyDepartmentId, that.formPrivacyDepartmentId) && Objects.equals(formAccessibilityDepartmentId, that.formAccessibilityDepartmentId) && Objects.equals(formCustomerAccessHours, that.formCustomerAccessHours) && Objects.equals(formSubmissionRetentionWeeks, that.formSubmissionRetentionWeeks) && Objects.equals(formThemeId, that.formThemeId) && Objects.equals(formPdfTemplateKey, that.formPdfTemplateKey) && Objects.equals(formPaymentProviderKey, that.formPaymentProviderKey) && Objects.equals(formPaymentPurpose, that.formPaymentPurpose) && Objects.equals(formPaymentDescription, that.formPaymentDescription) && Objects.equals(formPaymentProducts, that.formPaymentProducts) && Objects.equals(formIdentityProviders, that.formIdentityProviders) && Objects.equals(formIdentityVerificationRequired, that.formIdentityVerificationRequired) && Objects.equals(formDestinationId, that.formDestinationId) && Objects.equals(formRootElement, that.formRootElement) && Objects.equals(formVersionPublished, that.formVersionPublished) && Objects.equals(formVersionRevoked, that.formVersionRevoked) && Objects.equals(userId, that.userId) && Objects.equals(userEmail, that.userEmail) && Objects.equals(userFirstName, that.userFirstName) && Objects.equals(userLastName, that.userLastName) && Objects.equals(userFullName, that.userFullName) && Objects.equals(userEnabled, that.userEnabled) && Objects.equals(userVerified, that.userVerified) && Objects.equals(userGlobalAdmin, that.userGlobalAdmin) && Objects.equals(userDeletedInIdp, that.userDeletedInIdp) && Objects.equals(userIsDeveloper, that.userIsDeveloper) && Objects.equals(userIsManager, that.userIsManager) && Objects.equals(userIsResponsible, that.userIsResponsible);
     }
 
     @Override
@@ -190,6 +193,7 @@ public class SubmissionWithMembership {
         result = 31 * result + Objects.hashCode(formUpdated);
         result = 31 * result + Objects.hashCode(formPublishedVersion);
         result = 31 * result + Objects.hashCode(formDraftedVersion);
+        result = 31 * result + Objects.hashCode(formVersionCount);
         result = 31 * result + Objects.hashCode(formStatus);
         result = 31 * result + Objects.hashCode(formType);
         result = 31 * result + Objects.hashCode(formLegalSupportDepartmentId);
@@ -781,6 +785,15 @@ public class SubmissionWithMembership {
 
     public SubmissionWithMembership setUserIsResponsible(Boolean userIsResponsible) {
         this.userIsResponsible = userIsResponsible;
+        return this;
+    }
+
+    public Integer getFormVersionCount() {
+        return formVersionCount;
+    }
+
+    public SubmissionWithMembership setFormVersionCount(Integer formVersionCount) {
+        this.formVersionCount = formVersionCount;
         return this;
     }
 }
