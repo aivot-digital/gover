@@ -32,6 +32,9 @@ public class PresetEntity {
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
 
+    @Nonnull
+    private Integer versionCount;
+
     @Nullable
     private LocalDateTime created;
 
@@ -97,6 +100,16 @@ public class PresetEntity {
 
     public PresetEntity setUpdated(@Nullable LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getVersionCount() {
+        return versionCount;
+    }
+
+    public PresetEntity setVersionCount(@Nonnull Integer versionCount) {
+        this.versionCount = versionCount;
         return this;
     }
 

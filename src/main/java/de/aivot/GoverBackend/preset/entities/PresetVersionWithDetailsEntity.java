@@ -33,6 +33,9 @@ public class PresetVersionWithDetailsEntity {
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
 
+    @Nonnull
+    private Integer versionCount;
+
     @Id
     @Nonnull
     @Column(columnDefinition = "uuid")
@@ -70,7 +73,7 @@ public class PresetVersionWithDetailsEntity {
         if (object == null || getClass() != object.getClass()) return false;
 
         PresetVersionWithDetailsEntity that = (PresetVersionWithDetailsEntity) object;
-        return key.equals(that.key) && title.equals(that.title) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && presetKey.equals(that.presetKey) && version.equals(that.version) && rootElement.equals(that.rootElement) && status == that.status && Objects.equals(created, that.created) && Objects.equals(updated, that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
+        return key.equals(that.key) && title.equals(that.title) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount) && presetKey.equals(that.presetKey) && version.equals(that.version) && rootElement.equals(that.rootElement) && status == that.status && Objects.equals(created, that.created) && Objects.equals(updated, that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
     }
 
     @Override
@@ -79,6 +82,7 @@ public class PresetVersionWithDetailsEntity {
         result = 31 * result + title.hashCode();
         result = 31 * result + Objects.hashCode(publishedVersion);
         result = 31 * result + Objects.hashCode(draftedVersion);
+        result = 31 * result + versionCount.hashCode();
         result = 31 * result + presetKey.hashCode();
         result = 31 * result + version.hashCode();
         result = 31 * result + rootElement.hashCode();
@@ -212,6 +216,16 @@ public class PresetVersionWithDetailsEntity {
 
     public PresetVersionWithDetailsEntity setRevoked(@Nullable LocalDateTime revoked) {
         this.revoked = revoked;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getVersionCount() {
+        return versionCount;
+    }
+
+    public PresetVersionWithDetailsEntity setVersionCount(@Nonnull Integer versionCount) {
+        this.versionCount = versionCount;
         return this;
     }
 

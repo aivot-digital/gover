@@ -30,6 +30,7 @@ public class FormVersionWithMembershipEntity {
     private Integer publishedVersion;
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
+    private Integer versionCount;
     private Integer formId;
     @Id
     @Column(columnDefinition = "int2")
@@ -492,6 +493,15 @@ public class FormVersionWithMembershipEntity {
 
     public FormVersionWithMembershipEntity setUserIsResponsible(Boolean userIsResponsible) {
         this.userIsResponsible = userIsResponsible;
+        return this;
+    }
+
+    public Integer getVersionCount() {
+        return versionCount;
+    }
+
+    public FormVersionWithMembershipEntity setVersionCount(Integer versionCount) {
+        this.versionCount = versionCount;
         return this;
     }
 

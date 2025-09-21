@@ -22,6 +22,7 @@ public class FormWithMembershipEntity {
     private Integer publishedVersion;
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
+    private Integer versionCount;
     @Id
     private String userId;
     private String userEmail;
@@ -242,6 +243,15 @@ public class FormWithMembershipEntity {
 
     public FormWithMembershipEntity setUpdated(LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    public Integer getVersionCount() {
+        return versionCount;
+    }
+
+    public FormWithMembershipEntity setVersionCount(Integer versionCount) {
+        this.versionCount = versionCount;
         return this;
     }
 
