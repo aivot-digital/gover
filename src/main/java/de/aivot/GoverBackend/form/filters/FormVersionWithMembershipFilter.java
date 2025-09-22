@@ -37,6 +37,7 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
     private UUID identityProviderKey;
     private Boolean isPublished;
     private Boolean isRevoked;
+    private Boolean isDrafted;
     private Boolean isCurrentlyPublishedVersion;
     private Boolean isCurrentlyDraftedVersion;
     private String userId;
@@ -133,7 +134,10 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
                 .setManagingDepartmentId(managingDepartmentId)
                 .setResponsibleDepartmentId(responsibleDepartmentId)
                 .setPublishedVersion(publishedVersion)
-                .setDraftedVersion(draftedVersion);
+                .setDraftedVersion(draftedVersion)
+                .setIsPublished(isPublished)
+                .setIsDrafted(isDrafted)
+                .setIsRevoked(isRevoked);
     }
 
     public FormWithMembershipFilter asFormWithMembershipFilter() {
@@ -151,7 +155,10 @@ public class FormVersionWithMembershipFilter implements Filter<FormVersionWithMe
                 .setUserId(userId)
                 .setIsDeveloper(isDeveloper)
                 .setIsManager(isManager)
-                .setIsResponsible(isResponsible);
+                .setIsResponsible(isResponsible)
+                .setIsDrafted(isDrafted)
+                .setIsPublished(isPublished)
+                .setIsRevoked(isRevoked);
     }
 
     public Integer getId() {

@@ -1,1 +1,0 @@
-export {FormsListPage} from './forms-list-page';

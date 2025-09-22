@@ -21,6 +21,9 @@ public class FormWithMembershipFilter implements Filter<FormWithMembershipEntity
     private Boolean isDeveloper;
     private Boolean isManager;
     private Boolean isResponsible;
+    private Boolean isDrafted;
+    private Boolean isPublished;
+    private Boolean isRevoked;
 
     public static FormWithMembershipFilter create() {
         return new FormWithMembershipFilter();
@@ -44,6 +47,19 @@ public class FormWithMembershipFilter implements Filter<FormWithMembershipEntity
                 .withEquals("userIsDeveloper", isDeveloper)
                 .withEquals("userIsManager", isManager)
                 .withEquals("userIsResponsible", isResponsible);
+
+        if (Boolean.TRUE.equals(isDrafted)) {
+            builder.withNotNull("draftedVersion");
+        }
+
+        if (Boolean.TRUE.equals(isPublished)) {
+            builder.withNotNull("publishedVersion");
+        }
+
+        if (Boolean.TRUE.equals(isRevoked)) {
+            builder.withNull("draftedVersion");
+            builder.withNull("publishedVersion");
+        }
 
         return builder.build();
     }
@@ -164,4 +180,34 @@ public class FormWithMembershipFilter implements Filter<FormWithMembershipEntity
         isResponsible = responsible;
         return this;
     }
+
+    public Boolean getIsDrafted() {
+        return isDrafted;
+    }
+
+    public FormWithMembershipFilter setIsDrafted(Boolean drafted) {
+        isDrafted = drafted;
+        return this;
+    }
+
+    public Boolean getIsPublished() {
+        return isPublished;
+    }
+
+    public FormWithMembershipFilter setIsPublished(Boolean published) {
+        isPublished = published;
+        return this;
+    }
+
+    public Boolean getIsRevoked() {
+        return isRevoked;
+    }
+
+    public FormWithMembershipFilter setIsRevoked(Boolean revoked) {
+        isRevoked = revoked;
+        return this;
+    }
+
+
+
 }

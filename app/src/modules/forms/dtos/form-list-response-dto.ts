@@ -10,4 +10,5 @@ export interface FormListResponseDTO {
     updated: string;
     publishedVersion: number;
     draftedVersion: number;
+    versionCount: number;
 }
