@@ -21,9 +21,7 @@ self.MonacoEnvironment = {
 };
 
 loader.config({monaco});
-loader.init().then((rs) => {
-    console.log('Monaco Editor loaded', rs);
-});
+loader.init();
 
 export function CodeEditor(props: CodeEditorProps & ActionsProps) {
     const {
