@@ -35,7 +35,7 @@ export function LogView() {
                                     {log.source}
                                 </TableCell>
                                 <TableCell>
-                                    {log.message}
+                                    <pre>{log.message}</pre>
                                 </TableCell>
                             </TableRow>
                         ))

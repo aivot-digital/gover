@@ -41,6 +41,7 @@ public class QueryEvaluationController {
         }
     }
 
+    /*
     @PostMapping("evaluate/")
     public Object evaluate(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -53,4 +54,5 @@ public class QueryEvaluationController {
             throw ResponseException.badRequest(e.getMessage(), e);
         }
     }
+     */
 }

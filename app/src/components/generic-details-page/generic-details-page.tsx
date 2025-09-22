@@ -9,6 +9,8 @@ import {ApiError} from '../../models/api-error';
 import NotFoundIllustration from './resource-not-found-illustration.svg?react';
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {addEntityHistoryItem} from '../../slices/entity-history-slice';
 
 export const DEFAULT_ID_PARAM = 'id';
 export const NEW_ID_INDICATOR = 'new';
@@ -45,6 +47,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const navigate = useNavigate();
     const location = useLocation();
     const [notFound, setNotFound] = useState(false);
+    const dispatch = useAppDispatch();
 
     const ID_PARAM = props.idParam ?? DEFAULT_ID_PARAM;
     const id = useMemo(() => {
@@ -95,6 +98,16 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         }
         return props.header.title ?? 'Resource bearbeiten'; // use static title as fallback, if defined
     }, [item, id, notFound]);
+
+    useEffect(() => {
+        if (id === NEW_ID_INDICATOR) {
+            return;
+        }
+        dispatch(addEntityHistoryItem({
+            link: location.pathname,
+            title: headerTitle,
+        }));
+    }, [id, item, headerTitle]);
 
     return (
         <>

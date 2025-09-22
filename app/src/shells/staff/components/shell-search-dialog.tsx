@@ -16,10 +16,12 @@ import {Loader} from '../../../components/loader/loader';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../utils/string-utils';
 import Chip from '@mui/material/Chip';
 import {SearchInput} from '../../../components/search-input-2/search-input';
+import {selectEntityHistory} from '../../../slices/entity-history-slice';
 
 export function ShellSearchDialog() {
     const dispatch = useAppDispatch();
     const show = useAppSelector(selectShowSearchDialog);
+    const entityHistory = useAppSelector(selectEntityHistory);
 
     const [search, setSearch] = useState('');
     const [isBusy, setIsBusy] = useState(false);
@@ -93,6 +95,7 @@ export function ShellSearchDialog() {
                                     </ListItemIcon>
                                     <ListItemText
                                         primary={item.label}
+                                        secondary={item.originTable === 'data_object_items' ? `Hinweis: Das Datenobjekt beinhaltet den Wert „${search}“` : null}
                                     />
                                     <Chip
                                         size="small"
@@ -124,6 +127,40 @@ export function ShellSearchDialog() {
 
                     {
                         isStringNullOrEmpty(search) &&
+                        entityHistory.length > 0 &&
+                        <>
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    mt: 2,
+                                }}
+                            >
+                                Kürzlich angesehene Objekte
+                            </Typography>
+                            <List>
+                                {entityHistory.map(item => (
+                                    <ListItem
+                                        key={item.link}
+                                        component={Link}
+                                        to={item.link}
+                                        onClick={handleClose}
+                                        dense={true}
+                                        sx={{
+                                            borderBottom: '1px solid #eee',
+                                        }}
+                                    >
+                                        <ListItemText
+                                            primary={item.title}
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </>
+                    }
+
+                    {
+                        isStringNullOrEmpty(search) &&
+                        entityHistory.length === 0 &&
                         <Typography
                             variant="body1"
                             sx={{

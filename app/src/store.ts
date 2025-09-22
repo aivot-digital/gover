@@ -10,10 +10,12 @@ import {loadingOverlayReducer} from './slices/loading-overlay-slice';
 import {loggingReducer} from './slices/logging-slice';
 import {identityReducer} from './slices/identity-slice';
 import {shellReducer} from './slices/shell-slice';
+import {entityHistoryReducer} from './slices/entity-history-slice';
 
 export const store = configureStore({
     reducer: {
         auth: authReducer,
+        entityHistory: entityHistoryReducer,
         identity: identityReducer,
         adminSettings: adminSettingsReducer,
         app: appReducer,
