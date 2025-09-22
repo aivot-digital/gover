@@ -47,7 +47,6 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private final PaymentProviderRepository paymentProviderRepository;
     private final IdentityProviderRepository identityProviderRepository;
     private final FormRepository formRepository;
-    private final SubmissionRepository submissionRepository;
     private final SubmissionWithMembershipRepository submissionWithMembershipRepository;
 
     @Autowired
@@ -59,7 +58,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                               PaymentProviderRepository paymentProviderRepository,
                               IdentityProviderRepository identityProviderRepository,
                               FormRepository formRepository,
-                              SubmissionRepository submissionRepository, SubmissionWithMembershipRepository submissionWithMembershipRepository) {
+                              SubmissionWithMembershipRepository submissionWithMembershipRepository) {
         this.repository = repository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
@@ -68,7 +67,6 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         this.paymentProviderRepository = paymentProviderRepository;
         this.identityProviderRepository = identityProviderRepository;
         this.formRepository = formRepository;
-        this.submissionRepository = submissionRepository;
         this.submissionWithMembershipRepository = submissionWithMembershipRepository;
     }
 
@@ -105,6 +103,10 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         var cleanedEntity = cleanRelatedData(null, entity);
 
         cleanedEntity.setVersion(currentMaxVersion + 1);
+        cleanedEntity.setCreated(null);
+        cleanedEntity.setUpdated(null);
+        cleanedEntity.setPublished(null);
+        cleanedEntity.setRevoked(null);
 
         return repository.save(cleanedEntity);
     }
