@@ -2,8 +2,8 @@ import {useEffect, useState} from 'react';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import {getLocalStorageJwt} from '../../../services/base-api-service';
 import FrameReload from '@aivot/mui-material-symbols-400-outlined/dist/frame-reload/FrameReload';
+import {AuthService} from '../../../services/auth-service';
 
 const expirationThresholdSeconds = 2 * 60; // 2 minutes
 
@@ -11,22 +11,27 @@ export function ShellSessionEndWarnPopup() {
     const [secondsUntilExpiration, setSecondsUntilExpiration] = useState<number>(0);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            const jwt = getLocalStorageJwt();
+        const auth = new AuthService();
 
-            if (jwt == null) {
+        const interval = setInterval(() => {
+            const expirationTimestamp = auth.getExpirationTimestamp();
+
+            if (expirationTimestamp == null) {
                 setSecondsUntilExpiration(0);
                 return;
             }
 
-            const expiresAt = jwt.access.expires;
             const now = Math.floor(Date.now() / 1000);
-            const secondsLeft = expiresAt - now;
+            const secondsLeft = expirationTimestamp - now;
             setSecondsUntilExpiration(secondsLeft);
         });
 
         return () => clearInterval(interval);
     }, []);
+
+    const handleReloadAuth = () => {
+
+    };
 
     if (secondsUntilExpiration <= 0 || secondsUntilExpiration > expirationThresholdSeconds) {
         return null;
@@ -35,10 +40,14 @@ export function ShellSessionEndWarnPopup() {
     return (
         <Paper>
             <Typography>
-                Ihre Sitzung läuft ab in ${} Minuten.
+                Ihre Sitzung läuft ab in {secondsUntilExpiration} Sekunden ab.
             </Typography>
 
-            <IconButton>
+            <IconButton
+                onClick={() => {
+
+                }}
+            >
                 <FrameReload />
             </IconButton>
         </Paper>

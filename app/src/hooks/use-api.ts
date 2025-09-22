@@ -7,10 +7,11 @@ import {isApiError} from '../models/api-error';
 import {ApiOptions, ApiService} from '../services/api-service';
 import {Api} from '@mui/icons-material';
 import {createApiPath} from '../utils/url-path-utils';
-import {BaseApiService, getLocalStorageJwt, RequestOptions} from '../services/base-api-service';
+import {BaseApiService, RequestOptions} from '../services/base-api-service';
 import {string} from 'yup';
 import {options} from 'vite-plugin-checker/dist/checkers/eslint/options';
 import {isNewShellActive} from '../shells/staff/is-new-shell-active';
+import {AuthService} from '../services/auth-service';
 
 export interface Api {
     isAuthenticated: boolean;
@@ -146,10 +147,11 @@ export function useApi(): Api {
 }
 
 function baseApiServiceAsApi(): Api {
+    const auth = new AuthService();
     const api = new BaseApiService();
 
     return {
-        isAuthenticated: getLocalStorageJwt() != null,
+        isAuthenticated: auth.isAuthenticated(),
         get: async <T>(url: string, options?: ApiOptions): Promise<T> => {
             return await api
                 .get<T>(createApiPath(`/api/${url}`), apiOptionsToRequestOptions(options));

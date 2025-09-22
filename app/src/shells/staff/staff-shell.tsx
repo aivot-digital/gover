@@ -1,6 +1,4 @@
 import {ReactNode, useEffect} from 'react';
-import {AuthDataDto} from '../../models/dtos/auth-data-dto';
-import {getUrlWithoutQuery} from '../../utils/location-utils';
 import {User} from '../../modules/users/models/user';
 import {DepartmentMembership} from '../../modules/departments/models/department-membership';
 import {Page} from '../../models/dtos/page';
@@ -18,10 +16,11 @@ import {ShellDrawer} from './components/shell-drawer';
 import {ShellProgress} from './components/shell-progress';
 import {ShellSearchDialog} from './components/shell-search-dialog';
 import {ShellSnackbarContainer} from './components/shell-snackbar-container';
-import {BaseApiService, getLocalStorageJwt, storeLocalStorageJwt} from '../../services/base-api-service';
+import {BaseApiService} from '../../services/base-api-service';
 import {Outlet} from 'react-router-dom';
 import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popup';
 import {ShellLoader} from './components/shell-loader';
+import {AuthService} from '../../services/auth-service';
 
 interface StaffShellProps {
     children?: ReactNode;
@@ -118,11 +117,10 @@ async function authenticateWithOidcCode(): Promise<{
     memberships: DepartmentMembership[];
     configs: SystemConfigResponseDto[];
 } | undefined> {
+    const authService = new AuthService();
     const apiService = new BaseApiService();
 
-    let jwt = getLocalStorageJwt();
-
-    if (jwt == null) {
+    if (!authService.isAuthenticated()) {
         const searchParams = new URLSearchParams(window.location.search);
         const iss = searchParams.get('iss');
         const code = searchParams.get('code');
@@ -131,28 +129,8 @@ async function authenticateWithOidcCode(): Promise<{
             return undefined;
         }
 
-        const payload = new URLSearchParams({
-            grant_type: 'authorization_code',
-            client_id: AppConfig.oidc.client,
-            code: code,
-            redirect_uri: getUrlWithoutQuery(),
-        });
-
-        const authData = await apiService
-            .postFormUrlEncodedUnauthenticated<AuthDataDto>(iss + '/protocol/openid-connect/token', payload);
-
-        jwt = {
-            access: {
-                token: authData.access_token,
-                expires: (Date.now() + (authData.expires_in * 1000)) - 60000,
-            },
-            refresh: {
-                token: authData.refresh_token,
-                expires: (Date.now() + (authData.refresh_expires_in * 1000)) - 60000,
-            },
-        };
-
-        storeLocalStorageJwt(jwt);
+        await authService
+            .authenticate(code);
 
         window.location.search = '';
     }

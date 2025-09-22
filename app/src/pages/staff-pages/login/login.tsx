@@ -3,8 +3,7 @@ import React from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {Logo} from '../../../components/logo/logo';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
-import {getUrlWithoutQuery} from "../../../utils/location-utils";
-import {createOidcPath} from '../../../utils/create-oidc-path';
+import {AuthService} from '../../../services/auth-service';
 
 export function Login() {
     return (
@@ -74,12 +73,7 @@ export function Login() {
                             />
                         }
                         sx={{mt: 4}}
-                        href={createOidcPath(`/realms/staff/protocol/openid-connect/auth?${new URLSearchParams({
-                            client_id: 'app',
-                            redirect_uri: getUrlWithoutQuery(),
-                            response_type: 'code',
-                            scope: 'openid profile email',
-                        }).toString()}`)}
+                        href={new AuthService().getLoginUrl()}
                     >
                         Zur Anmeldung über IDP
                     </Button>

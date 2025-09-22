@@ -5,10 +5,10 @@ import {selectUser, setMemberships, setUser} from '../../../slices/user-slice';
 import {Divider} from '@mui/material';
 import {useMemo} from 'react';
 import {getFullName} from '../../../models/entities/user';
-import {resetLocalStorageJwt} from '../../../services/base-api-service';
 import {Link, useNavigate} from 'react-router-dom';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {setStatus, ShellStatus} from '../../../slices/shell-slice';
+import {AuthService} from '../../../services/auth-service';
 
 interface ShellUserMenuProps {
     anchorEl: null | HTMLElement;
@@ -45,7 +45,7 @@ export function ShellUserMenu(props: ShellUserMenuProps) {
             <Divider />
             <MenuItem
                 onClick={() => {
-                    resetLocalStorageJwt();
+                    new AuthService().logout();
                     dispatch(setUser(undefined));
                     dispatch(setMemberships([]));
                     dispatch(setStatus(ShellStatus.Login));
