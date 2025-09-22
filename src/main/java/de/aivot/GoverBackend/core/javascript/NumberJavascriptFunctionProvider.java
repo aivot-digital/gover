@@ -14,7 +14,7 @@ public class NumberJavascriptFunctionProvider implements JavascriptFunctionProvi
 
     @Override
     public String getLabel() {
-        return "zahlenangaben";
+        return "Zahlenangaben";
     }
 
     @Override
