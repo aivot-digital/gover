@@ -465,7 +465,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     paginationMode="server"
                     paginationModel={paginationModel}
                     onPaginationModelChange={handlePaginationModelChange}
-                    pageSizeOptions={[2, 12, 24, 48, 96]}
+                    pageSizeOptions={[12, 24, 48, 96]}
                     loading={isBusy}
                     rowCount={rowCount}
                     isRowSelectable={() => false}

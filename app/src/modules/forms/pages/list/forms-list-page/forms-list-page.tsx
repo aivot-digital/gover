@@ -26,7 +26,6 @@ import {AddFormDialog} from '../../../dialogs/add-form-dialog';
 import {ExportApplicationDialog} from '../../../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
 import {downloadConfigFile} from '../../../../../utils/download-utils';
 import {useApi} from '../../../../../hooks/use-api';
-import {FormsListPageHelp} from './forms-list-page-help';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {FormVersionsDialog} from '../../../dialogs/form-versions-dialog';
 import {DepartmentResponseDTO} from '../../../../departments/dtos/department-response-dto';
@@ -42,6 +41,8 @@ import {useNavigate} from 'react-router-dom';
 import HistoryIcon from '@mui/icons-material/History';
 import {FormStatusChip} from '../../../components/form-status-chip';
 import {DeleteApplicationDialog} from '../../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
+import {FormsListPageHelp} from './components/forms-list-page-help';
+import {FormStatusChipGroup, getFormStatus} from '../../../components/form-status-chip-group';
 
 export function FormsListPage() {
     const dispatch = useAppDispatch();
@@ -78,52 +79,64 @@ export function FormsListPage() {
                 field: 'internalTitle',
                 headerName: 'Formular',
                 flex: 2,
-                renderCell: (params) => (
-                    <Box
-                        sx={{
-                            py: 2,
-                        }}
-                    >
-                        <Typography
-                            variant="h5"
-                            sx={{mb: 0.5}}
-                        >
-                            {params.row.internalTitle}
-                        </Typography>
+                renderCell: (params) => {
+                    const {
+                        isDrafted,
+                        isPublished,
+                        isRevoked,
+                    } = getFormStatus(params.row);
 
-                        <Typography
-                            variant="body2"
+                    return (
+                        <Box
                             sx={{
-                                mt: -0.75,
-                                fontSize: '0.875rem',
-                                lineHeight: '1.5rem',
+                                py: 2,
                             }}
-                            color={'text.secondary'}
                         >
-                            {
-                                params.row.publishedVersion != null ?
-                                    <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
-                                    <span>Noch nicht veröffentlicht</span>
-                            }
-                            {
-                                params.row.draftedVersion != null &&
-                                <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
-                            }
-                        </Typography>
+                            <Typography
+                                variant="h5"
+                                sx={{mb: 0.5}}
+                            >
+                                {params.row.internalTitle}
+                            </Typography>
 
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                mt: -0.75,
-                                fontSize: '0.875rem',
-                                lineHeight: '1.5rem',
-                            }}
-                            color={'text.secondary'}
-                        >
-                            Entwickelt durch: {departments.find(dep => dep.id === params.row.developingDepartmentId)?.name}
-                        </Typography>
-                    </Box>
-                ),
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mt: -0.75,
+                                    fontSize: '0.875rem',
+                                    lineHeight: '1.5rem',
+                                }}
+                                color={'text.secondary'}
+                            >
+                                {
+                                    isPublished ?
+                                        <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
+                                        <span>Noch nicht veröffentlicht</span>
+                                }
+                                {
+                                    isDrafted &&
+                                    <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
+                                }
+                                {
+                                    isRevoked &&
+                                    <span> &bull; Zurückgezogen</span>
+                                }
+                            </Typography>
+
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mt: -0.75,
+                                    fontSize: '0.875rem',
+                                    lineHeight: '1.5rem',
+                                }}
+                                color={'text.secondary'}
+                            >
+                                Entwickelt durch: {departments.find(dep => dep.id === params.row.developingDepartmentId)?.name}
+                            </Typography>
+                        </Box>
+                    );
+                },
             },
             {
                 field: 'updated',
@@ -143,41 +156,7 @@ export function FormsListPage() {
                 field: 'publishedVersion',
                 headerName: 'Status',
                 renderCell: (params) => (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            gap: 2,
-                            py: 2,
-                        }}
-                    >
-                        {params.row.draftedVersion != null &&
-                            <FormStatusChip
-                                status={FormStatus.Drafted}
-                                size="small"
-                                variant="outlined"
-                            />
-                        }
-
-                        {params.row.publishedVersion != null &&
-                            <FormStatusChip
-                                status={FormStatus.Published}
-                                size="small"
-                                variant="outlined"
-                            />
-                        }
-
-                        {
-                            params.row.draftedVersion == null &&
-                            params.row.publishedVersion == null &&
-                            <FormStatusChip
-                                status={FormStatus.Revoked}
-                                size="small"
-                                variant="outlined"
-                            />
-                        }
-                    </Box>
+                    <FormStatusChipGroup form={params.row} />
                 ),
             },
         ];
@@ -316,6 +295,25 @@ export function FormsListPage() {
             >
                 <GenericListPage<FormListResponseDTO>
                     dynamicRowHeight={true}
+                    filters={[
+                        {
+                            label: 'Alle Formulare',
+                            value: 'all',
+                        },
+                        {
+                            label: 'Entwürfe',
+                            value: 'drafted',
+                        },
+                        {
+                            label: 'Veröffentlicht',
+                            value: 'published',
+                        },
+                        {
+                            label: 'Zurückgezogen',
+                            value: 'revoked',
+                        },
+                    ]}
+                    defaultFilter="all"
                     header={{
                         icon: <DescriptionOutlinedIcon />,
                         title: 'Formulare',
@@ -352,6 +350,9 @@ export function FormsListPage() {
                                 internalTitle: options.search,
                                 isDeveloper: true,
                                 userId: user?.id,
+                                isPublished: options.filter === 'published',
+                                isDrafted: options.filter === 'drafted',
+                                isRevoked: options.filter === 'revoked',
                             });
                     }}
                     columnDefinitions={columns}

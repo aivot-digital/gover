@@ -65,9 +65,14 @@ public class FormService implements EntityService<FormEntity, Integer> {
     @Nonnull
     @Override
     public FormEntity create(@Nonnull FormEntity entity) throws ResponseException {
-        entity.setId(null);
-
         var cleanedEntity = cleanForm(null, entity);
+
+        cleanedEntity.setId(null);
+        cleanedEntity.setVersionCount(0);
+        cleanedEntity.setDraftedVersion(null);
+        cleanedEntity.setPublishedVersion(null);
+        cleanedEntity.setCreated(null);
+        cleanedEntity.setUpdated(null);
 
         return repository.save(cleanedEntity);
     }

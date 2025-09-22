@@ -51,6 +51,7 @@ interface FormFilters {
     identityProviderKey: string;
     isPublished: boolean;
     isRevoked: boolean;
+    isDrafted: boolean;
     isCurrentlyPublishedVersion: boolean;
     isCurrentlyDraftedVersion: boolean;
     userId: string;
@@ -112,6 +113,7 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
             identityProviders: [],
             publishedVersion: null,
             draftedVersion: null,
+            versionCount: 0,
             formId: 0,
             published: null,
             revoked: null,

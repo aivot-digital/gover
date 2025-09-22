@@ -16,6 +16,7 @@ export interface FormDetailsResponseDTO {
     responsibleDepartmentId: number | null;
     publishedVersion: number | null;
     draftedVersion: number | null;
+    versionCount: number;
     formId: number;
     version: number;
     status: FormStatus;
@@ -83,6 +84,7 @@ export function formCitizenDetailsResponseDTO(form: FormCitizenDetailsResponseDT
         responsibleDepartmentId: form.responsibleDepartmentId ?? null,
         publishedVersion: form.version,
         draftedVersion: null,
+        versionCount: 0,
         formId: form.id,
         version: form.version,
         status: FormStatus.Published,
