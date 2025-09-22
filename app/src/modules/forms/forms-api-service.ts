@@ -167,7 +167,7 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
                 queryParams: {
                     ...filter,
                     version: version,
-                }
+                },
             },
         );
     }
@@ -180,18 +180,39 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         const data = new FormData();
         data.set('inputs', JSON.stringify(userInput));
 
-        const fileSets = Object
-            .keys(userInput)
-            .filter((key) => {
-                const val = userInput[key];
-                return Array.isArray(val) && val.length > 0 && val[0].uri != null;
-            }).map((key) => userInput[key]) as unknown as FileUploadElementItem[][];
 
-        for (const fileSet of fileSets) {
-            for (const file of fileSet) {
-                const blob = await fetch(file.uri).then((r) => r.blob());
-                data.append('files', blob, file.name);
+        const files: FileUploadElementItem[] = [];
+
+        function processElementData(ed: ElementData) {
+            for (const key of Object.keys(ed)) {
+                const dataObject = ed[key];
+                if (dataObject == null) {
+                    return;
+                }
+
+                if (dataObject.$type === ElementType.FileUpload) {
+                    const input: FileUploadElementItem[] | any = dataObject.inputValue ?? [];
+                    if (Array.isArray(input)) {
+                        files.push(...input);
+                    }
+                }
+
+                if (dataObject.$type === ElementType.ReplicatingContainer) {
+                    const items: ElementData[] = dataObject.inputValue ?? [];
+                    if (Array.isArray(items)) {
+                        for (const item of items) {
+                            processElementData(item);
+                        }
+                    }
+                }
             }
+        }
+
+        processElementData(userInput);
+
+        for (const file of files) {
+            const blob = await fetch(file.uri).then((r) => r.blob());
+            data.append('files', blob, file.name);
         }
 
         return await this.api.postFormData<SubmissionListResponseDTO>(`public/submit/${id.id}/${id.version}/`, data, identityId != null ? {

@@ -33,10 +33,14 @@ type InternalLinkAction = ActionBase & {
 // All available actions
 export type Action = ActionSeparator | ClickAction | LinkAction | InternalLinkAction;
 
+export type ActionColor = 'primary' | 'secondary' | 'inherit' | 'error' | 'info' | 'success' | 'warning';
+export type ActionDirection = 'row' | 'row-reverse' | 'column' | 'column-reverse';
+
 export interface ActionsProps {
     actions: Action[];
     sx?: SxProps;
     isBusy?: boolean;
     dense?: boolean;
-    direction?: 'row' | 'row-reverse' | 'column' | 'column-reverse';
+    color?: ActionColor;
+    direction?: ActionDirection;
 }

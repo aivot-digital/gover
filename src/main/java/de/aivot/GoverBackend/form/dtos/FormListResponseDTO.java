@@ -31,7 +31,9 @@ public record FormListResponseDTO(
         @Nullable
         Integer publishedVersion,
         @Nullable
-        Integer draftedVersion
+        Integer draftedVersion,
+        @Nonnull
+        Integer versionCount
 ) {
     public static FormListResponseDTO fromEntity(FormEntity form) {
         return new FormListResponseDTO(
@@ -45,7 +47,8 @@ public record FormListResponseDTO(
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
-                form.getDraftedVersion()
+                form.getDraftedVersion(),
+                form.getVersionCount()
         );
     }
 
@@ -61,7 +64,8 @@ public record FormListResponseDTO(
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
-                form.getDraftedVersion()
+                form.getDraftedVersion(),
+                form.getVersionCount()
         );
     }
 
@@ -77,7 +81,8 @@ public record FormListResponseDTO(
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
-                form.getDraftedVersion()
+                form.getDraftedVersion(),
+                form.getVersionCount()
         );
     }
 
@@ -93,7 +98,8 @@ public record FormListResponseDTO(
                 formWithMembershipEntity.getCreated(),
                 formWithMembershipEntity.getUpdated(),
                 formWithMembershipEntity.getPublishedVersion(),
-                formWithMembershipEntity.getDraftedVersion()
+                formWithMembershipEntity.getDraftedVersion(),
+                formWithMembershipEntity.getVersionCount()
         );
     }
 }

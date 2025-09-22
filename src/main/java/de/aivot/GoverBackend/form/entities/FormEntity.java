@@ -51,6 +51,9 @@ public class FormEntity {
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
 
+    @Nonnull
+    private Integer versionCount;
+
     // region constructors
 
     // Empty constructor for JPA
@@ -68,7 +71,8 @@ public class FormEntity {
                       @Nonnull LocalDateTime created,
                       @Nonnull LocalDateTime updated,
                       @Nullable Integer publishedVersion,
-                      @Nullable Integer draftedVersion) {
+                      @Nullable Integer draftedVersion,
+                      @Nonnull Integer versionCount) {
         this.id = id;
         this.slug = slug;
         this.internalTitle = internalTitle;
@@ -80,6 +84,7 @@ public class FormEntity {
         this.updated = updated;
         this.publishedVersion = publishedVersion;
         this.draftedVersion = draftedVersion;
+        this.versionCount = versionCount;
     }
 
     public static FormEntity from(FormVersionWithDetailsEntity formVersionWithDetailsEntity) {
@@ -94,7 +99,8 @@ public class FormEntity {
                 formVersionWithDetailsEntity.getCreated(),
                 formVersionWithDetailsEntity.getUpdated(),
                 formVersionWithDetailsEntity.getPublishedVersion(),
-                formVersionWithDetailsEntity.getDraftedVersion()
+                formVersionWithDetailsEntity.getDraftedVersion(),
+                formVersionWithDetailsEntity.getVersionCount()
         );
     }
 
@@ -122,7 +128,7 @@ public class FormEntity {
         if (object == null || getClass() != object.getClass()) return false;
 
         FormEntity that = (FormEntity) object;
-        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && publicTitle.equals(that.publicTitle) && developingDepartmentId.equals(that.developingDepartmentId) && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion);
+        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && publicTitle.equals(that.publicTitle) && developingDepartmentId.equals(that.developingDepartmentId) && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount);
     }
 
     @Override
@@ -138,8 +144,10 @@ public class FormEntity {
         result = 31 * result + updated.hashCode();
         result = 31 * result + Objects.hashCode(publishedVersion);
         result = 31 * result + Objects.hashCode(draftedVersion);
+        result = 31 * result + versionCount.hashCode();
         return result;
     }
+
 
     // endregion
 
@@ -264,6 +272,16 @@ public class FormEntity {
         } else {
             return developingDepartmentId;
         }
+    }
+
+    @Nonnull
+    public Integer getVersionCount() {
+        return versionCount;
+    }
+
+    public FormEntity setVersionCount(@Nonnull Integer versionCount) {
+        this.versionCount = versionCount;
+        return this;
     }
 
     // endregion

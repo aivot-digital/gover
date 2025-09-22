@@ -31,6 +31,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
     private Integer publishedVersion;
     @Column(columnDefinition = "int2")
     private Integer draftedVersion;
+    private Integer versionCount;
     private Integer formId;
     @Id
     @Column(columnDefinition = "int2")
@@ -83,6 +84,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
                                         Integer responsibleDepartmentId,
                                         Integer publishedVersion,
                                         Integer draftedVersion,
+                                        Integer versionCount,
                                         Integer formId,
                                         Integer version,
                                         FormStatus status,
@@ -117,6 +119,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
         this.responsibleDepartmentId = responsibleDepartmentId;
         this.publishedVersion = publishedVersion;
         this.draftedVersion = draftedVersion;
+        this.versionCount = versionCount;
         this.formId = formId;
         this.version = version;
         this.status = status;
@@ -155,6 +158,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
                 form.getResponsibleDepartmentId(),
                 form.getPublishedVersion(),
                 form.getDraftedVersion(),
+                form.getVersionCount(),
                 version.getFormId(),
                 version.getVersion(),
                 version.getStatus(),
@@ -195,7 +199,8 @@ public class FormVersionWithDetailsEntity implements Cloneable {
                 created,
                 updated,
                 publishedVersion,
-                draftedVersion
+                draftedVersion,
+                versionCount
         );
     }
 
@@ -562,6 +567,7 @@ public class FormVersionWithDetailsEntity implements Cloneable {
             clone.responsibleDepartmentId = this.responsibleDepartmentId;
             clone.publishedVersion = this.publishedVersion;
             clone.draftedVersion = this.draftedVersion;
+            clone.versionCount = this.versionCount;
             clone.formId = this.formId;
             clone.version = this.version;
             clone.status = this.status;
@@ -592,6 +598,15 @@ public class FormVersionWithDetailsEntity implements Cloneable {
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }
+    }
+
+    public Integer getVersionCount() {
+        return versionCount;
+    }
+
+    public FormVersionWithDetailsEntity setVersionCount(Integer versionCount) {
+        this.versionCount = versionCount;
+        return this;
     }
 
     // endregion

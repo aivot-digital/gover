@@ -45,7 +45,7 @@ import {ElementData, newElementDataObject} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
-import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../utils/flatten-elements';
+import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {mapElementData, mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
 import {Form} from '../../models/entities/form';
