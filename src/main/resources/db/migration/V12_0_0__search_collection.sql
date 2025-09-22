@@ -6,6 +6,10 @@ CREATE INDEX idx_data_object_items_id_full_text
     ON data_object_items
         USING GIN (to_tsvector('german', id::text));
 
+CREATE INDEX idx_data_object_items_data_full_text
+    ON data_object_items
+        USING GIN (to_tsvector('german', data::text));
+
 CREATE INDEX idx_data_object_schemas_name_full_text
     ON data_object_schemas
         USING GIN (to_tsvector('german', name));
@@ -60,7 +64,7 @@ UNION ALL
 SELECT text 'data_object_items'  AS origin_table,
        id                        AS label,
        schema_key || ',' || id   AS id,
-       to_tsvector('german', id) AS searchable_element
+       to_tsvector('german', id) || to_tsvector('german', data) AS searchable_element
 FROM data_object_items
 UNION ALL
 SELECT text 'data_object_schemas'  AS origin_table,
