@@ -1,4 +1,4 @@
-import {Action, ActionColor, ActionsProps} from './actions-props';
+import {Action, ActionColor, ActionDirection, ActionsProps, ActionTooltipPlacement} from './actions-props';
 import {Box, Button, IconButton, Tooltip} from '@mui/material';
 import React from 'react';
 import {Link} from 'react-router-dom';
@@ -28,6 +28,7 @@ export function Actions(props: ActionsProps) {
                             isBusy={props.isBusy ?? false}
                             isFirst={index === 0}
                             isLast={index === ((props.actions?.length ?? 0) - 1)}
+                            tooltipPlacement={props.tooltipPlacement ?? 'bottom'}
                         />
                     ))
             }
@@ -42,6 +43,7 @@ interface ToolbarActionDispatcherProps {
     isBusy: boolean;
     isFirst: boolean;
     isLast: boolean;
+    tooltipPlacement: ActionTooltipPlacement;
 }
 
 function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
@@ -52,6 +54,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
         isBusy,
         isFirst,
         isLast,
+        tooltipPlacement,
     } = props;
 
     if (action === 'separator') {
@@ -133,8 +136,11 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
                 key={index}
                 title={action.tooltip}
                 arrow
+                placement={tooltipPlacement}
             >
-                <span>{element}</span>
+                <span>
+                    {element}
+                </span>
             </Tooltip>
         );
     }

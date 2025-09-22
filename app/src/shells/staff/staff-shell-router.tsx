@@ -20,12 +20,8 @@ import {accountRoutes} from '../../modules/users/account-routes';
 import {presetsRoutes} from '../../modules/presets/presets-routes';
 import {submissionsRoutes} from '../../modules/submissions/submissions-routes';
 import {themesRoutes} from '../../modules/themes/themes-routes';
-import {ApplicationSettings} from '../../pages/staff-pages/settings/components/application-settings/application-settings';
-import {SmtpTest} from '../../pages/staff-pages/settings/components/smtp-test/smtp-test';
-import {SystemInformation} from '../../pages/staff-pages/settings/components/system-information/system-information';
-import {SystemConfigs} from '../../modules/configs/pages/system-configs';
-import {PageWrapper} from '../../components/page-wrapper/page-wrapper';
 import {Dashboard} from '../../modules/dashboard/dashboard';
+import {configsRoutes} from '../../modules/configs/configs-routes';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -47,6 +43,7 @@ const router = sentryCreateBrowserRouter(
                 },
 
                 ...assetsRoutes,
+                ...configsRoutes,
                 ...dataObjectsRoutes,
                 ...departmentsRoutes,
                 ...destinationRoutes,
@@ -60,29 +57,6 @@ const router = sentryCreateBrowserRouter(
                 ...themesRoutes,
                 ...usersRoutes,
                 ...accountRoutes,
-
-                {
-                    path: '/settings/app',
-                    element: <PageWrapper title="Anwendungseinstellungen">
-                        <ApplicationSettings />
-                    </PageWrapper>,
-                },
-                {
-                    path: '/settings/smtp',
-                    element: <PageWrapper title="SMTP-Test">
-                        <SmtpTest />
-                    </PageWrapper>,
-                },
-                {
-                    path: '/settings/status',
-                    element: <PageWrapper title="Systeminformationen">
-                        <SystemInformation />
-                    </PageWrapper>,
-                },
-                {
-                    path: '/settings/misc',
-                    element: <SystemConfigs />,
-                },
             ],
         },
     ],

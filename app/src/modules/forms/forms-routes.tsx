@@ -1,7 +1,7 @@
 import {RouteObject} from 'react-router-dom';
-import {FormEditPage} from '../../pages/staff-pages/application-pages/form-edit-page';
 import React from 'react';
 import {FormsListPage} from './pages/list/forms-list-page/forms-list-page';
+import {FormDetailsPage} from './pages/details/form-details-page';
 
 export const formsRoutes: RouteObject[] = [
     {
@@ -10,6 +10,6 @@ export const formsRoutes: RouteObject[] = [
     },
     {
         path: '/forms/:id/:version',
-        element: <FormEditPage />,
+        element: <FormDetailsPage />,
     },
 ];

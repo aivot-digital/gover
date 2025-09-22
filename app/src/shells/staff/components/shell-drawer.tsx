@@ -1,7 +1,6 @@
 import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -149,11 +148,6 @@ const DrawerGroups: DrawerGroup[] = [
                         label: 'Systemstatus',
                         to: '/settings/status',
                     },
-                    {
-                        icon: <SettingsEthernet />,
-                        label: 'Sonstige Einstellungen',
-                        to: '/settings/misc',
-                    },
                 ],
             },
         ],
@@ -206,6 +200,7 @@ export function ShellDrawer() {
                         py: 0.5,
                         px: 1.5,
                         borderRadius: 0,
+                        width: maximizeDrawer ? '18rem' : '4rem',
                     }}
                     elevation={1}
                 >
@@ -244,6 +239,7 @@ export function ShellDrawer() {
                                 },
                             ]}
                             direction={maximizeDrawer ? 'row' : 'column'}
+                            tooltipPlacement={maximizeDrawer ? 'bottom' : 'right'}
                         />
                     </Box>
 
@@ -254,29 +250,31 @@ export function ShellDrawer() {
                         }}
                     >
                         {
-                            maximizeDrawer &&
-                            <Button
-                                startIcon={<SearchFilled />}
-                                variant="outlined"
-                                fullWidth={true}
-                                onClick={handleToggleSearchDialog}
-                                color="inherit"
-                                sx={{
-                                    justifyContent: 'flex-start',
-                                    textAlign: 'left',
-                                    background: 'rgba(255, 255, 255, 0.125)',
-                                }}
-                            >
-                                Suche
-                            </Button>
-                        }
-                        {
-                            !maximizeDrawer &&
-                            <IconButton
-                                onClick={handleToggleSearchDialog}
-                            >
-                                <SearchFilled />
-                            </IconButton>
+                            maximizeDrawer ?
+                                <Button
+                                    startIcon={<SearchFilled />}
+                                    variant="outlined"
+                                    fullWidth={true}
+                                    onClick={handleToggleSearchDialog}
+                                    color="inherit"
+                                    sx={{
+                                        justifyContent: 'flex-start',
+                                        textAlign: 'left',
+                                        background: 'rgba(255, 255, 255, 0.125)',
+                                    }}
+                                >
+                                    Suche
+                                </Button> :
+                                <Actions
+                                    color="inherit"
+                                    direction="column"
+                                    actions={[{
+                                        icon: <SearchFilled />,
+                                        tooltip: 'Suche',
+                                        onClick: handleToggleSearchDialog,
+                                    }]}
+                                    tooltipPlacement="right"
+                                />
                         }
                     </Box>
 
@@ -292,20 +290,21 @@ export function ShellDrawer() {
                         }
                     </Box>
 
-                    <Box
+                    <Actions
                         sx={{
+                            flex: 0,
                             display: 'flex',
-                            justifyContent: 'flex-end',
+                            justifyContent: 'right',
                         }}
-                    >
-                        <IconButton onClick={handleToggleDrawer}>
-                            {
-                                maximizeDrawer ?
-                                    <KeyboardTabRtl /> :
-                                    <Start />
-                            }
-                        </IconButton>
-                    </Box>
+                        color="inherit"
+                        direction={maximizeDrawer ? 'row' : 'column'}
+                        actions={[{
+                            tooltip: maximizeDrawer ? 'Minimieren' : 'Maximieren',
+                            icon: maximizeDrawer ? <KeyboardTabRtl /> : <Start />,
+                            onClick: handleToggleDrawer,
+                        }]}
+                        tooltipPlacement={maximizeDrawer ? 'top' : 'right'}
+                    />
                 </Paper>
             </Box>
 
@@ -353,6 +352,7 @@ function DrawerGroup(props: DrawerGroupProps) {
                 }))}
                 dense={true}
                 direction="column"
+                tooltipPlacement="right"
             />
         );
     }

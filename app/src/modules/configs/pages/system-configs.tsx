@@ -20,6 +20,7 @@ import {SecretsApiService} from '../../secrets/secrets-api-service';
 import {DepartmentsApiService} from '../../departments/departments-api-service';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import {Paper} from '@mui/material';
 
 interface ConfigCategory {
     title: string;
@@ -120,36 +121,44 @@ export function SystemConfigs() {
                     <LoadingPlaceholder />
                 )
             }
-            {
-                systemConfigs != null &&
-                categories != null &&
-                additionalData != null &&
-                categories.map(({title, definitions}) => (
-                    <Collapse
-                        key={title}
-                        label={title}
-                        openTooltip="Einstellungen anzeigen"
-                        closeTooltip="Einstellungen verbergen"
-                    >
-                        {
-                            definitions.map((def) => (
-                                <ConfigDispatcher
-                                    key={def.key}
-                                    definition={def}
-                                    value={systemConfigs[def.key]}
-                                    onChange={(val) => {
-                                        setSystemConfigs({
-                                            ...systemConfigs,
-                                            [def.key]: val,
-                                        });
-                                    }}
-                                    additionalData={additionalData}
-                                />
-                            ))
-                        }
-                    </Collapse>
-                ))
-            }
+
+            <Paper
+                sx={{
+                    marginTop: 3.5,
+                    padding: 2,
+                }}
+            >
+                {
+                    systemConfigs != null &&
+                    categories != null &&
+                    additionalData != null &&
+                    categories.map(({title, definitions}) => (
+                        <Collapse
+                            key={title}
+                            label={title}
+                            openTooltip="Einstellungen anzeigen"
+                            closeTooltip="Einstellungen verbergen"
+                        >
+                            {
+                                definitions.map((def) => (
+                                    <ConfigDispatcher
+                                        key={def.key}
+                                        definition={def}
+                                        value={systemConfigs[def.key]}
+                                        onChange={(val) => {
+                                            setSystemConfigs({
+                                                ...systemConfigs,
+                                                [def.key]: val,
+                                            });
+                                        }}
+                                        additionalData={additionalData}
+                                    />
+                                ))
+                            }
+                        </Collapse>
+                    ))
+                }
+            </Paper>
         </PageWrapper>
     );
 }

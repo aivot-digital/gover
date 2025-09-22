@@ -35,6 +35,7 @@ export type Action = ActionSeparator | ClickAction | LinkAction | InternalLinkAc
 
 export type ActionColor = 'primary' | 'secondary' | 'inherit' | 'error' | 'info' | 'success' | 'warning';
 export type ActionDirection = 'row' | 'row-reverse' | 'column' | 'column-reverse';
+export type ActionTooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
 export interface ActionsProps {
     actions: Action[];
@@ -43,4 +44,5 @@ export interface ActionsProps {
     dense?: boolean;
     color?: ActionColor;
     direction?: ActionDirection;
+    tooltipPlacement?: ActionTooltipPlacement;
 }
