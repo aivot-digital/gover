@@ -36,12 +36,17 @@ const loggingSlice = createSlice({
     initialState: initialState,
     reducers: {
         addDerivationLogItems: (state, action: PayloadAction<ElementDerivationLogItem[]>) => {
-            state.entries = action.payload.map((item) => ({
+            const newEntries = action.payload.map((item) => ({
                 type: item.level === 'Debug' ? LogLevel.Debug : LogLevel.Error,
                 source: item.elementId,
                 message: item.message,
-                timestamp: new Date(item.timestamp).getTime() / 1000,
+                timestamp: new Date(item.timestamp).getTime(),
             }));
+
+            state.entries = [
+                ...state.entries,
+                ...newEntries,
+            ];
         },
         setLogLevel: (state, action: PayloadAction<LogLevel>) => {
             state.logLevel = action.payload;
