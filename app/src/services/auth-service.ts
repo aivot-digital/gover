@@ -130,6 +130,29 @@ export class AuthService {
     }
 
     /**
+     * Refresh the stored JWT if it is close to expiration.
+     * If the refresh fails, the stored JWT is cleared.
+     *
+     * @param signal Optional AbortSignal to cancel the request.
+     */
+    public async refresh(signal?: AbortSignal): Promise<void> {
+        const storedJwt = this.getLocalStorageJWT();
+        if (storedJwt == null) {
+            return;
+        }
+
+        const oidcJwt = await this.refreshJWT(storedJwt, signal);
+        if (oidcJwt == null) {
+            this.setLocalStorageJWT(null);
+            return;
+        }
+
+        const newJwt = this.buildJwtFromOidc(oidcJwt);
+
+        this.setLocalStorageJWT(newJwt);
+    }
+
+    /**
      * Fetch a new JWT using the authorization code.
      *
      * @param authorizationCode The authorization code received from the OIDC provider.

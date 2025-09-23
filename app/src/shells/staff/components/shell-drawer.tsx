@@ -24,7 +24,6 @@ import Notifications from '@aivot/mui-material-symbols-400-outlined/dist/notific
 import {Logo} from '../../../components/logo/logo';
 import ForwardToInbox from '@aivot/mui-material-symbols-400-outlined/dist/forward-to-inbox/ForwardToInbox';
 import PageInfo from '@aivot/mui-material-symbols-400-outlined/dist/page-info/PageInfo';
-import SettingsEthernet from '@aivot/mui-material-symbols-400-outlined/dist/settings-ethernet/SettingsEthernet';
 import Start from '@aivot/mui-material-symbols-400-outlined/dist/start/Start';
 
 interface DrawerGroup {
@@ -380,7 +379,12 @@ function DrawerGroup(props: DrawerGroupProps) {
                 />
             }
 
-            <List dense={true}>
+            <List
+                dense={true}
+                sx={{
+                    my: 0,
+                }}
+            >
                 {
                     group.items.map((item, itemIndex) => (
                         <DrawerListItem
@@ -515,24 +519,25 @@ function DrawerListItem({item, showChildren, showIcon}: DrawerListItemProps) {
                 {
                     showChildren &&
                     expanded &&
-                    <Box
+                    <List
+                        dense={true}
                         sx={{
+                            py: 0,
+                            my: 0,
                             pl: 2,
                         }}
                     >
-                        <List dense={true}>
-                            {
-                                children.map((child) => (
-                                    <DrawerListItem
-                                        item={child}
-                                        key={child.label}
-                                        showChildren={showChildren}
-                                        showIcon={false}
-                                    />
-                                ))
-                            }
-                        </List>
-                    </Box>
+                        {
+                            children.map((child) => (
+                                <DrawerListItem
+                                    item={child}
+                                    key={child.label}
+                                    showChildren={showChildren}
+                                    showIcon={false}
+                                />
+                            ))
+                        }
+                    </List>
                 }
             </>
         );
