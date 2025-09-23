@@ -4,12 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.KeyCloakIdConfig;
 import de.aivot.GoverBackend.models.config.KeyCloakOIDCConfig;
 import de.aivot.GoverBackend.user.models.KeycloakRoleMapping;
 import de.aivot.GoverBackend.user.models.KeycloakRoleMappings;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,28 +20,23 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Component
 public class KeyCloakApiService {
+    private final static Logger logger = LoggerFactory.getLogger(KeyCloakApiService.class);
+
     private final static Duration TIMEOUT = Duration.ofSeconds(5);
 
     private final KeyCloakOIDCConfig keyCloakOIDCConfig;
-    private final KeyCloakIdConfig keyCloakIdConfig;
 
     @Autowired
-    public KeyCloakApiService(KeyCloakOIDCConfig keyCloakOIDCConfig, KeyCloakIdConfig keyCloakIdConfig) {
+    public KeyCloakApiService(KeyCloakOIDCConfig keyCloakOIDCConfig) {
         this.keyCloakOIDCConfig = keyCloakOIDCConfig;
-        this.keyCloakIdConfig = keyCloakIdConfig;
     }
 
     public Optional<KeycloakUser> getUser(String userId) throws ResponseException {
@@ -48,6 +44,9 @@ public class KeyCloakApiService {
         try {
             response = get("/users/" + userId);
         } catch (URISyntaxException | IOException | InterruptedException e) {
+            if (e instanceof HttpTimeoutException) {
+                throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Mitarbeiter:in im IDP.", e);
+            }
             throw ResponseException.internalServerError("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", e);
         }
 
@@ -81,6 +80,9 @@ public class KeyCloakApiService {
         try {
             response = get("/users?max=1000");
         } catch (URISyntaxException | IOException | InterruptedException e) {
+            if (e instanceof HttpTimeoutException) {
+                throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Mitarbeiter:innen im IDP.", e);
+            }
             throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", e);
         }
 
@@ -111,6 +113,9 @@ public class KeyCloakApiService {
         try {
             response = get("/users/" + userId + "/role-mappings");
         } catch (URISyntaxException | IOException | InterruptedException e) {
+            if (e instanceof HttpTimeoutException) {
+                throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Rollen für die Mitarbeiter:in im IDP.", e);
+            }
             throw ResponseException.internalServerError("Liste der Rollen für die Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", e);
         }
 
@@ -170,8 +175,11 @@ public class KeyCloakApiService {
                 .connectTimeout(TIMEOUT);
 
         try (var client = clientBuilder.build()) {
-            return client
+            logger.info("Starting GET request to Keycloak API at {}", uri);
+            var res = client
                     .send(request, HttpResponse.BodyHandlers.ofString());
+            logger.info("GET request to Keycloak API at {} finished with status code {}", uri, res.statusCode());
+            return res;
         }
     }
 
@@ -210,7 +218,9 @@ public class KeyCloakApiService {
         // Send the request and get the response
         HttpResponse<String> response;
         try (var client = clientBuilder.build()) {
+            logger.info("Starting POST request to Keycloak Token Endpoint at {}", uri);
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.info("POST request to Keycloak Token Endpoint at {} finished with status code {}", uri, response.statusCode());
         }
 
         // Check if the request was successful
@@ -221,54 +231,5 @@ public class KeyCloakApiService {
         // Parse the response and extract the access token
         return new JSONObject(response.body())
                 .getString("access_token");
-    }
-
-    /**
-     * Retrieve the public key from the keycloak server
-     *
-     * @return the public key
-     * @throws URISyntaxException       if the uri is invalid
-     * @throws IOException              if the request fails
-     * @throws InterruptedException     if the request is interrupted
-     * @throws NoSuchAlgorithmException if the algorithm for the public rsa key is invalid
-     * @throws InvalidKeySpecException  if the key is invalid
-     */
-    public RSAPublicKey getCustomerRealmPublicKey() throws URISyntaxException, IOException, InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException {
-        // Create the uri for the customer realm
-        var uri = new URI(keyCloakIdConfig.getHostname() + "/realms/" + keyCloakIdConfig.getRealm());
-
-        // Build the request for fetching the public key
-        var request = HttpRequest
-                .newBuilder(uri)
-                .timeout(TIMEOUT)
-                .headers("Content-Type", "application/json")
-                .GET()
-                .build();
-
-        // Create the http client builder
-        var clientBuilder = HttpClient
-                .newBuilder()
-                .connectTimeout(TIMEOUT);
-
-        // Send the request and get the response
-        HttpResponse<String> response;
-        try (var client = clientBuilder.build()) {
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        }
-
-        // Parse the response and extract the public key
-        var publicKey = new JSONObject(response.body())
-                .getString("public_key");
-
-        // Decode the public key into a byte array
-        var publicKeyBytes = Base64
-                .getDecoder()
-                .decode(publicKey);
-
-        // Create a key factory and generate the public key
-        var spec = new X509EncodedKeySpec(publicKeyBytes);
-        var kf = KeyFactory.getInstance("RSA");
-
-        return (RSAPublicKey) kf.generatePublic(spec);
     }
 }
