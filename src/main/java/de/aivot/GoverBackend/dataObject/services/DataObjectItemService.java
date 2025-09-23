@@ -185,7 +185,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
         if (derivedData.hasAnyError()) {
             throw ResponseException
-                    .badRequest("Datenobjekt fehlerhaft");
+                    .badRequest(derivedData);
         }
 
         return ElementData.toValueMap(schema.getSchema(), derivedData);

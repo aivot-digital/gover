@@ -48,6 +48,8 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
     }
 
     const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+        console.log('handleInputChange', field, value);
+
         if (currentItem == null) {
             return;
         }

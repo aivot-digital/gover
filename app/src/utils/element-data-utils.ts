@@ -233,11 +233,12 @@ export function walkElementData(
 export function mapElementData(
     currentElement: AnyElement,
     currentElementData: ElementData,
-    callback: (elem: AnyElement, value: ElementDataObject | null | undefined) => ElementDataObject | null | undefined,
+    callback: (elem: AnyElement, value: ElementDataObject | null | undefined, path: Array<AnyElement | number>) => ElementDataObject | null | undefined,
+    parents: Array<AnyElement | number> = [],
 ): ElementData {
     const elementDataObject: ElementDataObject = currentElementData[currentElement.id] ?? newElementDataObject(currentElement.type);
 
-    const callbackedElementDataObject = callback(currentElement, elementDataObject);
+    const callbackedElementDataObject = callback(currentElement, elementDataObject, parents);
 
     let newElementData: ElementData = {
         ...currentElementData,
@@ -248,7 +249,7 @@ export function mapElementData(
 
     if (isRootElement(currentElement)) {
         if (currentElement.introductionStep != null) {
-            const childMappedData = mapElementData(currentElement.introductionStep, newElementData, callback);
+            const childMappedData = mapElementData(currentElement.introductionStep, newElementData, callback, [...parents, currentElement]);
             newElementData = {
                 ...newElementData,
                 ...childMappedData,
@@ -256,7 +257,7 @@ export function mapElementData(
         }
 
         if (currentElement.summaryStep != null) {
-            const childMappedData = mapElementData(currentElement.summaryStep, newElementData, callback);
+            const childMappedData = mapElementData(currentElement.summaryStep, newElementData, callback, [...parents, currentElement]);
             newElementData = {
                 ...newElementData,
                 ...childMappedData,
@@ -264,7 +265,7 @@ export function mapElementData(
         }
 
         if (currentElement.submitStep != null) {
-            const childMappedData = mapElementData(currentElement.submitStep, newElementData, callback);
+            const childMappedData = mapElementData(currentElement.submitStep, newElementData, callback, [...parents, currentElement]);
             newElementData = {
                 ...newElementData,
                 ...childMappedData,
@@ -275,10 +276,10 @@ export function mapElementData(
 
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(val)) {
-            const mapped = val.map((childData) => {
+            const mapped = val.map((childData, index) => {
                 const childMappedData: ElementData = {};
                 for (const child of currentElement.children || []) {
-                    const childMappedValue = mapElementData(child, childData, callback);
+                    const childMappedValue = mapElementData(child, childData, callback, [...parents, currentElement, index]);
                     Object.assign(childMappedData, childMappedValue);
                 }
                 return childMappedData;
@@ -293,7 +294,7 @@ export function mapElementData(
         }
     } else if (isAnyElementWithChildren(currentElement)) {
         for (const child of currentElement.children || []) {
-            const childMappedData = mapElementData(child, newElementData, callback);
+            const childMappedData = mapElementData(child, newElementData, callback, [...parents, currentElement]);
             newElementData = {
                 ...newElementData,
                 ...childMappedData,
@@ -306,7 +307,7 @@ export function mapElementData(
 
 export function cleanElementData(rootElement: AnyElement, elementData: ElementData): ElementData {
     const elementDataCopy = {
-        ...elementData
+        ...elementData,
     };
 
     for (const additionalKey of ADDITIONAL_MERGE_KEYS) {
@@ -330,7 +331,7 @@ export function cleanElementData(rootElement: AnyElement, elementData: ElementDa
             computedValue: undefined,
             computedErrors: undefined,
             computedOverride: undefined,
-        }
+        };
 
         return up;
     });

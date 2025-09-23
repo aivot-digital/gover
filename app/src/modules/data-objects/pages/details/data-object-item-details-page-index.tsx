@@ -28,6 +28,10 @@ import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import Grid from '@mui/material/Grid';
 import {format as formatDateTime} from 'date-fns/format';
+import {mapElementData} from '../../../../utils/element-data-utils';
+import {ElementDataObject, newElementDataObject} from '../../../../models/element-data';
+import {ElementType} from '../../../../data/element-type/element-type';
+import {AnyElement} from '../../../../models/elements/any-element';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -86,7 +90,6 @@ export function DataObjectItemDetailsPageIndex() {
         currentItem: currentDataObjectItem,
         errors,
         hasNotChanged,
-        handleInputBlur,
         handleInputChange,
         validate,
         reset,
@@ -108,6 +111,44 @@ export function DataObjectItemDetailsPageIndex() {
         return flattenElements(dataObjectSchema.schema);
     }, [dataObjectSchema]);
 
+    useEffect(() => {
+        if (errors == null || Object.keys(errors).length === 0 || currentDataObjectItem == null || dataObjectSchema == null) {
+            return;
+        }
+
+        function applyErrorsToElementData(element: AnyElement, value: ElementDataObject | null | undefined, parents: Array<AnyElement | number>) {
+            let val: ElementDataObject = {
+                ...newElementDataObject(element.type),
+                ...value,
+            };
+
+            const parentPathParts = parents
+                .filter(p => typeof p === 'number' || p.type === ElementType.ReplicatingContainer)
+                .map((i) => typeof i !== 'number' ? i.id : i);
+            const pathParts = [
+                'data',
+                ...parentPathParts,
+                element.id,
+                'inputValue',
+            ];
+            const path = pathParts.join('.');
+
+            const err = errors[path as keyof DataObjectItem];
+            if (err != null) {
+                val.computedErrors = [err];
+            }
+
+            return val;
+        }
+
+        const updatedElementData = mapElementData(
+            dataObjectSchema.schema,
+            currentDataObjectItem.data,
+            applyErrorsToElementData,
+        );
+        handleInputChange('data')(updatedElementData);
+    }, [errors]);
+
     if (dataObjectSchema == null || currentDataObjectItem == null) {
         return (
             <GenericDetailsSkeleton />
@@ -124,8 +165,6 @@ export function DataObjectItemDetailsPageIndex() {
         }
 
         const validationResult = validate();
-
-        console.log(validationResult, errors);
 
         if (!validationResult) {
             dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
@@ -149,7 +188,12 @@ export function DataObjectItemDetailsPageIndex() {
                     }, 0);
                 })
                 .catch(err => {
-                    console.error(err);
+                    if (err.status === 400 && 'details' in err && 'details' in err.details) {
+                        handleInputChange('data')(err.details.details);
+                    } else {
+                        console.error(err);
+                    }
+
                     dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
@@ -165,7 +209,12 @@ export function DataObjectItemDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen am Datenobjekt erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    console.error(err);
+                    if (err.status === 400 && 'details' in err && 'details' in err.details) {
+                        handleInputChange('data')(err.details.details);
+                    } else {
+                        console.error(err);
+                    }
+
                     dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
@@ -249,7 +298,8 @@ export function DataObjectItemDetailsPageIndex() {
                         <TextFieldComponent
                             label="Erstellt am"
                             value={formatDateTime(currentDataObjectItem.created, 'dd.MM.yyyy HH:mm') + ' Uhr'}
-                            onChange={() => {}}
+                            onChange={() => {
+                            }}
                             disabled={true}
                         />
                     </Grid>
@@ -264,7 +314,8 @@ export function DataObjectItemDetailsPageIndex() {
                         <TextFieldComponent
                             label="Geändert am"
                             value={formatDateTime(currentDataObjectItem.updated, 'dd.MM.yyyy HH:mm') + ' Uhr'}
-                            onChange={() => {}}
+                            onChange={() => {
+                            }}
                             disabled={true}
                         />
                     </Grid>
