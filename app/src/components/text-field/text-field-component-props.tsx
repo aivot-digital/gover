@@ -1,5 +1,5 @@
 import {ReactNode} from 'react';
-import {SxProps} from '@mui/material';
+import {SxProps, TextFieldProps} from '@mui/material';
 
 export interface TextFieldComponentProps {
     label: string;
@@ -31,6 +31,7 @@ export interface TextFieldComponentProps {
     bufferInputUntilBlur?: boolean;
     debounce?: number;
     size?: 'small' | 'medium';
+    muiPassTroughProps?: TextFieldProps;
 }
 
 type EndAction = {

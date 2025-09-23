@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -24,6 +25,8 @@ public class TextField extends BaseInputElement<String> {
     private Integer minCharacters;
     @Nullable
     private TextPattern pattern;
+    @Nullable
+    private List<String> suggestions;
 
     public TextField() {
         super(ElementType.Text);
@@ -143,12 +146,12 @@ public class TextField extends BaseInputElement<String> {
     // region Hash & Equals
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+    public boolean equals(Object object) {
+        if (object == null || getClass() != object.getClass()) return false;
+        if (!super.equals(object)) return false;
 
-        TextField textField = (TextField) o;
-        return Objects.equals(placeholder, textField.placeholder) && Objects.equals(autocomplete, textField.autocomplete) && Objects.equals(isMultiline, textField.isMultiline) && Objects.equals(maxCharacters, textField.maxCharacters) && Objects.equals(minCharacters, textField.minCharacters) && Objects.equals(pattern, textField.pattern);
+        TextField textField = (TextField) object;
+        return Objects.equals(placeholder, textField.placeholder) && Objects.equals(autocomplete, textField.autocomplete) && Objects.equals(isMultiline, textField.isMultiline) && Objects.equals(maxCharacters, textField.maxCharacters) && Objects.equals(minCharacters, textField.minCharacters) && Objects.equals(pattern, textField.pattern) && Objects.equals(suggestions, textField.suggestions);
     }
 
     @Override
@@ -160,8 +163,10 @@ public class TextField extends BaseInputElement<String> {
         result = 31 * result + Objects.hashCode(maxCharacters);
         result = 31 * result + Objects.hashCode(minCharacters);
         result = 31 * result + Objects.hashCode(pattern);
+        result = 31 * result + Objects.hashCode(suggestions);
         return result;
     }
+
 
     // endregion
 
@@ -227,5 +232,14 @@ public class TextField extends BaseInputElement<String> {
         return this;
     }
 
+    @Nullable
+    public List<String> getSuggestions() {
+        return suggestions;
+    }
+
+    public TextField setSuggestions(@Nullable List<String> suggestions) {
+        this.suggestions = suggestions;
+        return this;
+    }
     // endregion
 }
