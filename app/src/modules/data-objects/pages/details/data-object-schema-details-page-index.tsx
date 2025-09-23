@@ -1,4 +1,4 @@
-import {Box, Button, Typography} from '@mui/material';
+import {Alert, Box, Button, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -24,6 +24,7 @@ import {RadioFieldComponent} from '../../../../components/radio-field/radio-fiel
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
+import {useConfirm} from '../../../../providers/confirm-provider';
 
 export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated'>> = yup.object({
     key: yup.string()
@@ -85,11 +86,7 @@ export function DataObjectSchemaDetailsPageIndex() {
         }
     }, [isNewItem, location, originalDataObject]);
 
-    const {
-        confirmOptions: confirmDeleteOptions,
-        showConfirmDialog: showConfirmDeleteDialog,
-        hideConfirmDialog: hideConfirmDeleteDialog,
-    } = useConfirmDialog();
+    const confirm = useConfirm();
 
     if (currentDataObject == null) {
         return (
@@ -156,20 +153,25 @@ export function DataObjectSchemaDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        showConfirmDeleteDialog({
+        if (originalDataObject == null || isNewItem) {
+            return;
+        }
+
+        confirm({
             title: 'Datenobjektschema löschen',
-            state: {},
-            onRender: (state, updateState) => {
-                return (
-                    <Typography>
-                        Möchten Sie das Datenobjektschema wirklich löschen?
-                        Alle Datenobjekte, die diesem Schema zugeordnet sind, werden ebenfalls gelöscht.
-                        Dieser Vorgang kann nicht rückgängig gemacht werden.
-                    </Typography>
-                );
-            },
-            onConfirm: (state) => {
-                if (originalDataObject == null || isNewItem) {
+            children: (
+                <Typography>
+                    Möchten Sie das Datenobjektschema wirklich löschen?
+                    Alle Datenobjekte, die diesem Schema zugeordnet sind, werden ebenfalls gelöscht.
+                    Dieser Vorgang kann nicht rückgängig gemacht werden.
+                </Typography>
+            ),
+            confirmButtonText: 'Datenobjektschema endgültig löschen',
+            confirmationText: originalDataObject.key,
+            isDestructive: true,
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
                     return;
                 }
 
@@ -189,11 +191,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         dispatch(showErrorSnackbar('Beim Löschen des Datenobjektschemas ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
                         setIsBusy(false);
                     });
-            },
-            onCancel: () => {
-                hideConfirmDeleteDialog();
-            },
-        });
+            });
     };
 
     return (
@@ -338,10 +336,6 @@ export function DataObjectSchemaDetailsPageIndex() {
             }
 
             {changeBlocker.dialog}
-
-            <ConfirmDialogV2
-                options={confirmDeleteOptions}
-            />
         </Box>
     );
 }
