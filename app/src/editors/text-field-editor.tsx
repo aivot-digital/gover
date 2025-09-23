@@ -1,19 +1,21 @@
 import React from 'react';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
-import {type BaseEditor} from './base-editor';
+import {BaseEditorProps} from './base-editor';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
-import {ElementType} from '../data/element-type/element-type';
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 
-export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = ({
-                                                                                     element,
-                                                                                     onPatch,
-                                                                                     editable,
-                                                                                 }) => {
+export function TextFieldEditor(props: BaseEditorProps<TextFieldElement, ElementTreeEntity>) {
+    const {
+        element,
+        onPatch,
+        editable,
+        scope,
+    } = props;
+
     return (
         <>
             <Grid
@@ -44,16 +46,19 @@ export const TextFieldEditor: BaseEditor<TextFieldElement, ElementTreeEntity> = 
                         lg: 6,
                     }}
                 >
-                    <AutocompleteSelect
-                        type={element.type}
-                        value={element.autocomplete}
-                        onChange={(val) => {
-                            onPatch({
-                                autocomplete: val,
-                            });
-                        }}
-                        editable={editable}
-                    />
+                    {
+                        scope !== 'data_modelling' &&
+                        <AutocompleteSelect
+                            type={element.type}
+                            value={element.autocomplete}
+                            onChange={(val) => {
+                                onPatch({
+                                    autocomplete: val,
+                                });
+                            }}
+                            editable={editable}
+                        />
+                    }
                 </Grid>
                 <Grid
                     size={{

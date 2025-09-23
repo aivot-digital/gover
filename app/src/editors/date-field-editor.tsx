@@ -1,4 +1,4 @@
-import {type BaseEditor} from './base-editor';
+import {BaseEditorProps} from './base-editor';
 import {DateFieldComponentModelMode, type DateFieldElement} from '../models/elements/form/input/date-field-element';
 import {type SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
@@ -22,11 +22,14 @@ const modes: SelectFieldComponentOption[] = [
     },
 ];
 
-export const DateFieldEditor: BaseEditor<DateFieldElement, ElementTreeEntity> = ({
-                                                                                     element,
-                                                                                     onPatch,
-                                                                                     editable,
-                                                                                 }) => {
+export function DateFieldEditor(props: BaseEditorProps<DateFieldElement, ElementTreeEntity>) {
+    const {
+        element,
+        onPatch,
+        editable,
+        scope,
+    } = props;
+
     return (
         <>
             <Grid
@@ -58,16 +61,19 @@ export const DateFieldEditor: BaseEditor<DateFieldElement, ElementTreeEntity> = 
                         lg: 6,
                     }}
                 >
-                    <AutocompleteSelect
-                        type={element.type}
-                        value={element.autocomplete}
-                        onChange={(val) => {
-                            onPatch({
-                                autocomplete: val,
-                            });
-                        }}
-                        editable={editable}
-                    />
+                    {
+                        scope !== 'data_modelling' &&
+                        <AutocompleteSelect
+                            type={element.type}
+                            value={element.autocomplete}
+                            onChange={(val) => {
+                                onPatch({
+                                    autocomplete: val,
+                                });
+                            }}
+                            editable={editable}
+                        />
+                    }
                 </Grid>
             </Grid>
         </>
