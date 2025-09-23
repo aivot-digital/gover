@@ -17,7 +17,7 @@ import {ShellUserMenu} from './shell-user-menu';
 import {Link, useLocation} from 'react-router-dom';
 import ChevronForward from '@aivot/mui-material-symbols-400-outlined/dist/chevron-forward/ChevronForward';
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-arrow-down/KeyboardArrowDown';
-import {createTheme, Paper, ThemeProvider, useTheme} from '@mui/material';
+import {createTheme, Dialog, DialogContent, Paper, ThemeProvider, useTheme} from '@mui/material';
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
 import Notifications from '@aivot/mui-material-symbols-400-outlined/dist/notifications/Notifications';
@@ -323,36 +323,70 @@ interface DrawerGroupProps {
 }
 
 function DrawerGroup(props: DrawerGroupProps) {
-    const dispatch = useAppDispatch();
-
     const {
         group,
         maximizeDrawer,
     } = props;
 
+    const [showDrawerItems, setShowDrawerItems] = useState<DrawerItem[] | null>(null);
+
     if (!maximizeDrawer) {
         return (
-            <Actions
-                sx={{
-                    height: 'auto',
-                    mt: 4,
-                }}
-                color="inherit"
-                actions={group.items.map((item) => item.children == null ? ({
-                    icon: item.icon,
-                    tooltip: item.label,
-                    to: item.to ?? '',
-                }) : ({
-                    icon: item.icon,
-                    tooltip: item.label,
-                    onClick: () => {
-                        dispatch(setMaximizeDrawer(true));
-                    },
-                }))}
-                dense={true}
-                direction="column"
-                tooltipPlacement="right"
-            />
+            <>
+                <Actions
+                    sx={{
+                        height: 'auto',
+                        mt: 4,
+                    }}
+                    color="inherit"
+                    actions={group.items.map((item) => item.children == null ? ({
+                        icon: item.icon,
+                        tooltip: item.label,
+                        to: item.to ?? '',
+                    }) : ({
+                        icon: item.icon,
+                        tooltip: item.label,
+                        onClick: () => {
+                            setShowDrawerItems(item.children ?? []);
+                        },
+                    }))}
+                    dense={true}
+                    direction="column"
+                    tooltipPlacement="right"
+                />
+
+                <Dialog
+                    open={showDrawerItems != null}
+                    onClose={() => {
+                        setShowDrawerItems(null);
+                    }}
+                >
+                    <DialogContent>
+                        <List
+                            dense={true}
+                            sx={{
+                                py: 0,
+                                my: 0,
+                            }}
+                        >
+                            {
+                                (showDrawerItems ?? [])
+                                    .map((child) => (
+                                        <DrawerListItem
+                                            item={child}
+                                            key={child.label}
+                                            showChildren={true}
+                                            showIcon={true}
+                                            onClick={() => {
+                                                setShowDrawerItems(null);
+                                            }}
+                                        />
+                                    ))
+                            }
+                        </List>
+                    </DialogContent>
+                </Dialog>
+            </>
         );
     }
 
@@ -404,9 +438,10 @@ interface DrawerListItemProps {
     item: DrawerItem;
     showChildren: boolean;
     showIcon: boolean;
+    onClick?: () => void;
 }
 
-function DrawerListItem({item, showChildren, showIcon}: DrawerListItemProps) {
+function DrawerListItem({item, showChildren, showIcon, onClick}: DrawerListItemProps) {
     const {
         to,
         children,
@@ -458,6 +493,11 @@ function DrawerListItem({item, showChildren, showIcon}: DrawerListItemProps) {
                 <ListItemButton
                     component={Link}
                     to={to}
+                    onClick={() => {
+                        if (onClick) {
+                            onClick();
+                        }
+                    }}
                     sx={{
                         borderRadius: 1,
                         bgcolor: isActive ? 'secondary.main' : undefined,
@@ -488,6 +528,9 @@ function DrawerListItem({item, showChildren, showIcon}: DrawerListItemProps) {
                     <ListItemButton
                         onClick={() => {
                             setExpanded(!expanded);
+                            if (onClick) {
+                                onClick();
+                            }
                         }}
                         sx={{
                             borderRadius: 1,
