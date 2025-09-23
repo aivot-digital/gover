@@ -1,14 +1,12 @@
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import {useAppSelector} from '../../../hooks/use-app-selector';
-import {selectUser, setMemberships, setUser} from '../../../slices/user-slice';
+import {selectUser} from '../../../slices/user-slice';
 import {Divider} from '@mui/material';
 import {useMemo} from 'react';
 import {getFullName} from '../../../models/entities/user';
-import {Link, useNavigate} from 'react-router-dom';
-import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {setStatus, ShellStatus} from '../../../slices/shell-slice';
-import {AuthService} from '../../../services/auth-service';
+import {Link} from 'react-router-dom';
+import {useLogout} from '../../../hooks/use-logout';
 
 interface ShellUserMenuProps {
     anchorEl: null | HTMLElement;
@@ -21,8 +19,7 @@ export function ShellUserMenu(props: ShellUserMenuProps) {
         onClose,
     } = props;
 
-    const dispatch = useAppDispatch();
-    const navigate = useNavigate();
+    const logout = useLogout();
 
     const user = useAppSelector(selectUser);
     const userName = useMemo(() => {
@@ -44,13 +41,7 @@ export function ShellUserMenu(props: ShellUserMenuProps) {
             </MenuItem>
             <Divider />
             <MenuItem
-                onClick={() => {
-                    new AuthService().logout();
-                    dispatch(setUser(undefined));
-                    dispatch(setMemberships([]));
-                    dispatch(setStatus(ShellStatus.Login));
-                    navigate('/');
-                }}
+                onClick={logout}
             >
                 Abmelden
             </MenuItem>

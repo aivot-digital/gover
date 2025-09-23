@@ -9,8 +9,11 @@ import {AppMode} from '../../data/app-mode';
 import {Introductory} from '../../components/introductory/introductory';
 import {NotificationsPanel} from './components/notifications-panel';
 import {StatsPanel} from './components/stats-panel';
+import {useLogout} from '../../hooks/use-logout';
 
 export function Dashboard() {
+    const logout = useLogout();
+
     return (
         <PageWrapper
             title="Übersicht"
@@ -25,13 +28,13 @@ export function Dashboard() {
                         {
                             icon: ModuleIcons.settings,
                             tooltip: 'Einstellungen',
-                            to: '/settings',
+                            to: '/settings/app',
                         },
                         'separator',
                         {
                             icon: <Logout />,
                             tooltip: 'Abmelden',
-                            to: '/logout',
+                            onClick: logout,
                         },
                     ]}
                 />
