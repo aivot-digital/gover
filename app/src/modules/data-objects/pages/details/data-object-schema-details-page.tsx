@@ -6,14 +6,27 @@ import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {useParams} from 'react-router-dom';
-import {useMemo} from 'react';
+import {useMemo, useRef} from 'react';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
+import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import {downloadObjectFile} from '../../../../utils/download-utils';
 
 export function DataObjectSchemaDetailsPage() {
     useAdminGuard();
 
+    const itemRef = useRef<DataObjectSchema | null>(null);
     const schemaKey = useParams().key;
     const isNew = useMemo(() => schemaKey === NEW_ID_INDICATOR, [schemaKey]);
+
+    const handleExport = () => {
+        const item = itemRef.current;
+
+        if (item == null) {
+            return;
+        }
+
+        downloadObjectFile(`datenobjektschema-${item.key}.json`, item);
+    };
 
     return (
         <PageWrapper
@@ -23,6 +36,7 @@ export function DataObjectSchemaDetailsPage() {
         >
             <GenericDetailsPage<DataObjectSchema, string, undefined>
                 idParam="key"
+                itemRef={itemRef}
                 header={{
                     icon: <DataArrayOutlinedIcon />,
                     title: 'Datenobjektschema bearbeiten',
@@ -48,6 +62,11 @@ export function DataObjectSchemaDetailsPage() {
                             variant: 'outlined',
                             icon: <CategoryOutlinedIcon />,
                             tooltip: 'Zu den Datenobjekten dieses Schemas wechseln',
+                        },
+                        {
+                            onClick: handleExport,
+                            tooltip: 'Datenobjektschema exportieren',
+                            icon: <Download />,
                         },
                     ],
                 }}

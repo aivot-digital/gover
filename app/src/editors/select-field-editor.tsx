@@ -6,8 +6,14 @@ import {OptionListInput} from '../components/option-list-input/option-list-input
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 
 export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, ElementTreeEntity>) {
-    const options = props.element.options ?? [];
+    const {
+        element,
+        editable,
+        onPatch,
+        scope,
+    } = props;
 
+    const options: SelectFieldElementOption[] = element.options ?? [];
 
     return (
         <>
@@ -16,27 +22,30 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
                 addLabel="Option hinzufügen"
                 hint="Die antragstellende Person kann genau eine dieser Optionen auswählen."
                 noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
-                value={options as SelectFieldElementOption[]}
+                value={options}
                 onChange={(options) => {
-                    props.onPatch({
+                    onPatch({
                         options,
                     });
                 }}
                 allowEmpty={false}
-                disabled={!props.editable}
+                disabled={!editable}
                 variant="outlined"
             />
 
-            <AutocompleteSelect
-                type={props.element.type}
-                value={props.element.autocomplete}
-                onChange={(val) => {
-                    props.onPatch({
-                        autocomplete: val,
-                    });
-                }}
-                editable={props.editable}
-            />
+            {
+                scope !== 'data_modelling' &&
+                <AutocompleteSelect
+                    type={element.type}
+                    value={element.autocomplete}
+                    onChange={(val) => {
+                        onPatch({
+                            autocomplete: val,
+                        });
+                    }}
+                    editable={editable}
+                />
+            }
         </>
     );
 }

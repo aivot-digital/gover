@@ -1,9 +1,9 @@
-import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useMemo} from 'react';
+import {Alert, Box, Button, Typography} from '@mui/material';
+import React, {useContext, useEffect, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
-import {useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
 import {isAdmin} from '../../../../utils/is-admin';
@@ -13,6 +13,7 @@ import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import * as yup from 'yup';
+import {ObjectSchema} from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {DataObjectSchema, ID_GEN_CUSTOM, ID_GEN_SERIAL, ID_GEN_UUID} from '../../models/data-object-schema';
 import {ElementTreeTree} from '../../../../components/element-tree/element-tree-tree';
@@ -23,8 +24,13 @@ import {RadioFieldComponent} from '../../../../components/radio-field/radio-fiel
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
+import {useConfirm} from '../../../../providers/confirm-provider';
+import {MultiCheckboxComponent, MultiCheckboxOptions} from '../../../../components/multi-checkbox-field/multi-checkbox-component';
+import {flattenElements} from '../../../../utils/flatten-elements';
+import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
+import {generateComponentTitle} from '../../../../utils/generate-component-title';
 
-export const _YupSchema = {
+export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated' | 'displayFields'>> = yup.object({
     key: yup.string()
         .trim()
         .min(3, 'Der Schlüssel des Datenobjektschemas muss mindestens 3 Zeichen lang sein.')
@@ -45,13 +51,15 @@ export const _YupSchema = {
         .trim()
         .max(64, 'Die ID Formatvorlage darf maximal 64 Zeichen lang sein.')
         .required('Die Angabe des ID Typs ist ein Pflichtfeld.'),
-};
+});
 
 export function DataObjectSchemaDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const user = useSelector(selectUser);
     const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+
+    const location = useLocation();
 
     const api = useApi();
 
@@ -67,19 +75,36 @@ export function DataObjectSchemaDetailsPageIndex() {
         currentItem: currentDataObject,
         errors,
         hasNotChanged,
+        handleInputPatch,
         handleInputBlur,
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<DataObjectSchema>(originalDataObject, yup.object(_YupSchema) as any);
+    } = useFormManager<DataObjectSchema>(originalDataObject, YupSchema as any);
 
     const changeBlocker = useChangeBlocker(originalDataObject, currentDataObject);
 
-    const {
-        confirmOptions: confirmDeleteOptions,
-        showConfirmDialog: showConfirmDeleteDialog,
-        hideConfirmDialog: hideConfirmDeleteDialog,
-    } = useConfirmDialog();
+    useEffect(() => {
+        if (isNewItem && location.state != null) {
+            handleInputPatch(location.state);
+        }
+    }, [isNewItem, location, originalDataObject]);
+
+    const confirm = useConfirm();
+
+    const availableDisplayFields: MultiCheckboxOptions[] = useMemo(() => {
+        if (currentDataObject == null) {
+            return [];
+        }
+
+        const elems = flattenElements(currentDataObject.schema, true);
+        return elems
+            .filter(e => isAnyInputElement(e))
+            .map(e => ({
+                label: generateComponentTitle(e),
+                value: e.id,
+            }));
+    }, [currentDataObject]);
 
     if (currentDataObject == null) {
         return (
@@ -146,20 +171,25 @@ export function DataObjectSchemaDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        showConfirmDeleteDialog({
+        if (originalDataObject == null || isNewItem) {
+            return;
+        }
+
+        confirm({
             title: 'Datenobjektschema löschen',
-            state: {},
-            onRender: (state, updateState) => {
-                return (
-                    <Typography>
-                        Möchten Sie das Datenobjektschema wirklich löschen?
-                        Alle Datenobjekte, die diesem Schema zugeordnet sind, werden ebenfalls gelöscht.
-                        Dieser Vorgang kann nicht rückgängig gemacht werden.
-                    </Typography>
-                );
-            },
-            onConfirm: (state) => {
-                if (originalDataObject == null || isNewItem) {
+            children: (
+                <Typography>
+                    Möchten Sie das Datenobjektschema wirklich löschen?
+                    Alle Datenobjekte, die diesem Schema zugeordnet sind, werden ebenfalls gelöscht.
+                    Dieser Vorgang kann nicht rückgängig gemacht werden.
+                </Typography>
+            ),
+            confirmButtonText: 'Datenobjektschema endgültig löschen',
+            confirmationText: originalDataObject.key,
+            isDestructive: true,
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
                     return;
                 }
 
@@ -179,11 +209,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         dispatch(showErrorSnackbar('Beim Löschen des Datenobjektschemas ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
                         setIsBusy(false);
                     });
-            },
-            onCancel: () => {
-                hideConfirmDeleteDialog();
-            },
-        });
+            });
     };
 
     return (
@@ -290,6 +316,16 @@ export function DataObjectSchemaDetailsPageIndex() {
                 ]}
             />
 
+            <MultiCheckboxComponent
+                label="Anzeigefelder"
+                hint="Die Werte dieser Felder werden zur Identifizierung ausgegeben."
+                value={currentDataObject.displayFields ?? []}
+                onChange={(val) => {
+                    handleInputChange('displayFields')(val ?? []);
+                }}
+                options={availableDisplayFields}
+            />
+
             {
                 userIsAdmin &&
                 <Box
@@ -328,10 +364,6 @@ export function DataObjectSchemaDetailsPageIndex() {
             }
 
             {changeBlocker.dialog}
-
-            <ConfirmDialogV2
-                options={confirmDeleteOptions}
-            />
         </Box>
     );
 }

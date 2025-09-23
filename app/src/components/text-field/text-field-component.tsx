@@ -149,6 +149,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
     return (
         <TextField
+            {...props.muiPassTroughProps}
             label={props.label}
             type={props.type}
             autoComplete={props.autocomplete}
@@ -214,10 +215,12 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             onChange={handleChange}
             onBlur={handleBlur}
             inputProps={{
+                ...(props.muiPassTroughProps?.inputProps),
                 ...(props.maxCharacters ? {maxLength: props.maxCharacters} : undefined),
                 'aria-disabled': props.busy || props.disabled,
             }}
             InputProps={{
+                ...(props.muiPassTroughProps?.InputProps),
                 startAdornment: props.startIcon && (
                     <InputAdornment position="start">{props.startIcon}</InputAdornment>
                 ),

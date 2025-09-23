@@ -75,6 +75,9 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         if (id == null) {
             setItem(undefined);
             setAdditionalData(undefined);
+            if (props.itemRef != null) {
+                props.itemRef.current = null;
+            }
             return;
         }
 
@@ -84,6 +87,9 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                 setItem(item);
                 setAdditionalData(additionalData);
                 setNotFound(false);
+                if (props.itemRef != null) {
+                    props.itemRef.current = item;
+                }
             })
             .catch((error: ApiError) => {
                 console.error(error);

@@ -7,7 +7,6 @@ import {type BaseViewProps} from '../views/base-view';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
 import {type ElementData, type ElementDataObject} from '../models/element-data';
 import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
-import {ElementType} from '../data/element-type/element-type';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -88,7 +87,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             [elementId]: {
                 ...elementDataObject,
                 $type: elementType,
-                inputValue: updatedValue,
+                inputValue: updatedValue ?? null,
                 isDirty: true,
             },
         };
@@ -182,8 +181,9 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             }}
             size={{
                 xs: 12,
-                md: ('weight' in element && element.weight != null) ? element.weight : 12
-            }}>
+                md: ('weight' in element && element.weight != null) ? element.weight : 12,
+            }}
+        >
             <ElementErrorBoundary viewProps={viewProps}>
                 <Component {...viewProps} />
             </ElementErrorBoundary>

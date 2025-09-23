@@ -10,6 +10,7 @@ export interface DataObjectSchema {
     description: string;
     idGen: '__UUID__' | '__SERIAL__' | '__CUSTOM__' | string;
     schema: GroupLayout;
+    displayFields: string[];
     created: string;
     updated: string;
 }

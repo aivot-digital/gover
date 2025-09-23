@@ -22,6 +22,8 @@ import {ElementToMuiDataGridType} from '../../../../data/element-type/element-to
 import {DataObjectItem} from '../../models/data-object-item';
 import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
+import {flattenElements} from '../../../../utils/flatten-elements';
+import {generateComponentTitle} from '../../../../utils/generate-component-title';
 
 export function DataObjectItemListPage() {
     useAdminGuard();
@@ -77,18 +79,7 @@ export function DataObjectItemListPage() {
                     </CellLink>
                 ),
             },
-            ...(dataObjectSchema.schema.children ?? [])
-                .filter(e => isAnyInputElement(e))
-                .filter(e => ElementToMuiDataGridType[e.type] != null)
-                .map(e => ({
-                    field: e.id ?? '',
-                    headerName: e.label ?? '',
-                    flex: 1,
-                    type: ElementToMuiDataGridType[e.type]!,
-                    valueGetter: (_: any, row: any) => {
-                        return row.data[e.id].inputValue;
-                    },
-                })),
+            ...dataObjectSchemaExtractDisplayFields(dataObjectSchema),
         ];
     }, [dataObjectSchema]);
 
@@ -177,4 +168,32 @@ export function DataObjectItemListPage() {
             />
         </PageWrapper>
     );
+}
+
+function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema): GridColDef[] {
+    const cols: GridColDef[] = [];
+    const allElements = flattenElements(dataObjectSchema.schema, true);
+
+    for (const elementId of dataObjectSchema.displayFields ?? []) {
+        const element = allElements
+            .find((el) => el.id === elementId);
+
+        if (element == null) {
+            continue;
+        }
+
+        if (isAnyInputElement(element)) {
+            cols.push({
+                field: element.id ?? '',
+                headerName: generateComponentTitle(element),
+                flex: 1,
+                type: ElementToMuiDataGridType[element.type]!,
+                valueGetter: (_: any, row: any) => {
+                    return row.data[element.id].inputValue;
+                },
+            });
+        }
+    }
+
+    return cols;
 }
