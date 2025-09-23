@@ -65,7 +65,6 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 />
             }
             {
-                (props.scope === 'application' || props.scope === 'preset') &&
                 ElementIsInput[props.component.type] &&
                 <Tab
                     label="Validierung"
@@ -107,15 +106,18 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
                 value={DefaultTabs.structure}
             />
 
-            <Box
-                sx={{
-                    height: 24,
-                    alignSelf: 'center',
-                    borderLeft: '1px solid',
-                    borderColor: 'divider',
-                    mx: 1,
-                }}
-            />
+            {
+                (props.scope === 'application' || props.scope === 'preset') &&
+                <Box
+                    sx={{
+                        height: 24,
+                        alignSelf: 'center',
+                        borderLeft: '1px solid',
+                        borderColor: 'divider',
+                        mx: 1,
+                    }}
+                />
+            }
 
             {
                 (props.scope === 'application' || props.scope === 'preset') &&

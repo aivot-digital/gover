@@ -1,9 +1,9 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useMemo} from 'react';
+import React, {useContext, useEffect, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
-import {useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
 import {isAdmin} from '../../../../utils/is-admin';
@@ -13,6 +13,7 @@ import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import * as yup from 'yup';
+import {ObjectSchema} from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {DataObjectSchema, ID_GEN_CUSTOM, ID_GEN_SERIAL, ID_GEN_UUID} from '../../models/data-object-schema';
 import {ElementTreeTree} from '../../../../components/element-tree/element-tree-tree';
@@ -24,7 +25,7 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 
-export const _YupSchema = {
+export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated'>> = yup.object({
     key: yup.string()
         .trim()
         .min(3, 'Der Schlüssel des Datenobjektschemas muss mindestens 3 Zeichen lang sein.')
@@ -45,13 +46,15 @@ export const _YupSchema = {
         .trim()
         .max(64, 'Die ID Formatvorlage darf maximal 64 Zeichen lang sein.')
         .required('Die Angabe des ID Typs ist ein Pflichtfeld.'),
-};
+});
 
 export function DataObjectSchemaDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const user = useSelector(selectUser);
     const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+
+    const location = useLocation();
 
     const api = useApi();
 
@@ -67,13 +70,20 @@ export function DataObjectSchemaDetailsPageIndex() {
         currentItem: currentDataObject,
         errors,
         hasNotChanged,
+        handleInputPatch,
         handleInputBlur,
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<DataObjectSchema>(originalDataObject, yup.object(_YupSchema) as any);
+    } = useFormManager<DataObjectSchema>(originalDataObject, YupSchema as any);
 
     const changeBlocker = useChangeBlocker(originalDataObject, currentDataObject);
+
+    useEffect(() => {
+        if (isNewItem && location.state != null) {
+            handleInputPatch(location.state);
+        }
+    }, [isNewItem, location, originalDataObject]);
 
     const {
         confirmOptions: confirmDeleteOptions,

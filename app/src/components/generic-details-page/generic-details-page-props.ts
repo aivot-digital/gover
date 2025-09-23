@@ -1,6 +1,7 @@
 import {BadgeProps} from '@mui/material';
 import {Api} from '../../hooks/use-api';
 import {GenericPageHeaderProps} from '../generic-page-header/generic-page-header-props';
+import {Ref, RefObject} from 'react';
 
 type TabConfig<ItemType> = {
     path: string;
@@ -23,7 +24,7 @@ export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
         to: string,
     },
     getHeaderTitle?: (item?: ItemType, isNewItem?: boolean, notFound?: boolean) => string;
-
+    itemRef?: RefObject<ItemType | null>;
 }
 
 type AdditionalDataFetchObject<AdditionalData, ID> = {
