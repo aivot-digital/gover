@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.models.config.KeyCloakOIDCConfig;
 import de.aivot.GoverBackend.user.models.KeycloakRoleMapping;
 import de.aivot.GoverBackend.user.models.KeycloakRoleMappings;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
+import de.aivot.GoverBackend.utils.HttpClientManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
@@ -25,6 +25,9 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Component
 public class KeyCloakApiService {
@@ -43,8 +46,8 @@ public class KeyCloakApiService {
         HttpResponse<String> response;
         try {
             response = get("/users/" + userId);
-        } catch (URISyntaxException | IOException | InterruptedException e) {
-            if (e instanceof HttpTimeoutException) {
+        } catch (URISyntaxException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
+            if (e instanceof HttpTimeoutException || e instanceof TimeoutException) {
                 throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Mitarbeiter:in im IDP.", e);
             }
             throw ResponseException.internalServerError("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", e);
@@ -79,8 +82,8 @@ public class KeyCloakApiService {
         HttpResponse<String> response;
         try {
             response = get("/users?max=1000");
-        } catch (URISyntaxException | IOException | InterruptedException e) {
-            if (e instanceof HttpTimeoutException) {
+        } catch (URISyntaxException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
+            if (e instanceof HttpTimeoutException || e instanceof TimeoutException) {
                 throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Mitarbeiter:innen im IDP.", e);
             }
             throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", e);
@@ -112,8 +115,8 @@ public class KeyCloakApiService {
         HttpResponse<String> response;
         try {
             response = get("/users/" + userId + "/role-mappings");
-        } catch (URISyntaxException | IOException | InterruptedException e) {
-            if (e instanceof HttpTimeoutException) {
+        } catch (URISyntaxException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
+            if (e instanceof HttpTimeoutException || e instanceof TimeoutException) {
                 throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Rollen für die Mitarbeiter:in im IDP.", e);
             }
             throw ResponseException.internalServerError("Liste der Rollen für die Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", e);
@@ -157,7 +160,7 @@ public class KeyCloakApiService {
      * @throws IOException          if the request fails
      * @throws InterruptedException if the request is interrupted
      */
-    private HttpResponse<String> get(String path) throws URISyntaxException, IOException, InterruptedException {
+    private HttpResponse<String> get(String path) throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException {
         var accessToken = getAccessToken();
 
         var uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
@@ -170,17 +173,21 @@ public class KeyCloakApiService {
                 .GET()
                 .build();
 
-        var clientBuilder = HttpClient
-                .newBuilder()
-                .connectTimeout(TIMEOUT);
+        logger.info("Starting GET request to Keycloak API at {}", uri);
 
-        try (var client = clientBuilder.build()) {
-            logger.info("Starting GET request to Keycloak API at {}", uri);
-            var res = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-            logger.info("GET request to Keycloak API at {} finished with status code {}", uri, res.statusCode());
-            return res;
-        }
+        // Use the shared HttpClient instance
+        var future = HttpClientManager
+                .getExecutor()
+                .submit(() -> HttpClientManager
+                        .getClient()
+                        .send(request, HttpResponse.BodyHandlers.ofString())
+                );
+
+        var res = future.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+        logger.info("GET request to Keycloak API at {} finished with status code {}", uri, res.statusCode());
+
+        return res;
     }
 
     /**
@@ -191,7 +198,7 @@ public class KeyCloakApiService {
      * @throws IOException          if the request fails
      * @throws InterruptedException if the request is interrupted
      */
-    private String getAccessToken() throws URISyntaxException, IOException, InterruptedException {
+    private String getAccessToken() throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException {
         // Create the request body for fetching the access token
         var requestBody = String.format(
                 "grant_type=client_credentials&client_id=%s&client_secret=%s",
@@ -210,26 +217,26 @@ public class KeyCloakApiService {
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
 
-        // Create the http client builder
-        var clientBuilder = HttpClient
-                .newBuilder()
-                .connectTimeout(TIMEOUT);
+        logger.info("Starting POST request to Keycloak Token Endpoint at {}", uri);
 
-        // Send the request and get the response
-        HttpResponse<String> response;
-        try (var client = clientBuilder.build()) {
-            logger.info("Starting POST request to Keycloak Token Endpoint at {}", uri);
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            logger.info("POST request to Keycloak Token Endpoint at {} finished with status code {}", uri, response.statusCode());
-        }
+        var future = HttpClientManager
+                .getExecutor()
+                .submit(() -> HttpClientManager
+                        .getClient()
+                        .send(request, HttpResponse.BodyHandlers.ofString())
+                );
+
+        var res = future.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+        logger.info("POST request to Keycloak Token Endpoint at {} finished with status code {}", uri, res.statusCode());
 
         // Check if the request was successful
-        if (response.statusCode() != 200) {
-            throw new IOException("Failed to get token from Keycloak: " + response.body());
+        if (res.statusCode() != 200) {
+            throw new IOException("Failed to get token from Keycloak: " + res.body());
         }
 
         // Parse the response and extract the access token
-        return new JSONObject(response.body())
+        return new JSONObject(res.body())
                 .getString("access_token");
     }
 }
