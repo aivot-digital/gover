@@ -25,8 +25,12 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 import {useConfirm} from '../../../../providers/confirm-provider';
+import {MultiCheckboxComponent, MultiCheckboxOptions} from '../../../../components/multi-checkbox-field/multi-checkbox-component';
+import {flattenElements} from '../../../../utils/flatten-elements';
+import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
+import {generateComponentTitle} from '../../../../utils/generate-component-title';
 
-export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated'>> = yup.object({
+export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated' | 'displayFields'>> = yup.object({
     key: yup.string()
         .trim()
         .min(3, 'Der Schlüssel des Datenobjektschemas muss mindestens 3 Zeichen lang sein.')
@@ -87,6 +91,20 @@ export function DataObjectSchemaDetailsPageIndex() {
     }, [isNewItem, location, originalDataObject]);
 
     const confirm = useConfirm();
+
+    const availableDisplayFields: MultiCheckboxOptions[] = useMemo(() => {
+        if (currentDataObject == null) {
+            return [];
+        }
+
+        const elems = flattenElements(currentDataObject.schema, true);
+        return elems
+            .filter(e => isAnyInputElement(e))
+            .map(e => ({
+                label: generateComponentTitle(e),
+                value: e.id,
+            }));
+    }, [currentDataObject]);
 
     if (currentDataObject == null) {
         return (
@@ -296,6 +314,16 @@ export function DataObjectSchemaDetailsPageIndex() {
                     ElementType.Date,
                     ElementType.Time,
                 ]}
+            />
+
+            <MultiCheckboxComponent
+                label="Anzeigefelder"
+                hint="Die Werte dieser Felder werden zur Identifizierung ausgegeben."
+                value={currentDataObject.displayFields ?? []}
+                onChange={(val) => {
+                    handleInputChange('displayFields')(val ?? []);
+                }}
+                options={availableDisplayFields}
             />
 
             {

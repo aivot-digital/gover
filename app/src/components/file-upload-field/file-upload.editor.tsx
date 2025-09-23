@@ -114,7 +114,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                     }}
                     hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
                     error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
-                    options={allowedExtensions ?? []}
+                    options={(allowedExtensions ?? []).map((ex) => ({
+                        label: ex,
+                        value: ex,
+                    }))}
                     required
                     disabled={!props.editable}
                     displayInline={true}

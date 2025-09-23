@@ -52,6 +52,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setSchema(entity.getSchema());
+        existingEntity.setDisplayFields(entity.getDisplayFields());
 
         validateSchemaConfig(existingEntity);
 

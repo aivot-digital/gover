@@ -6,6 +6,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "data_object_schemas")
@@ -38,6 +39,10 @@ public class DataObjectSchemaEntity {
     @Nonnull
     private LocalDateTime updated;
 
+    @Nonnull
+    @Column(columnDefinition = "varchar(64)[]")
+    private List<String> displayFields;
+
     @PrePersist
     public void prePersist() {
         created = LocalDateTime.now();
@@ -52,11 +57,11 @@ public class DataObjectSchemaEntity {
     // region Equals & Hash
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(Object object) {
+        if (object == null || getClass() != object.getClass()) return false;
 
-        DataObjectSchemaEntity that = (DataObjectSchemaEntity) o;
-        return key.equals(that.key) && name.equals(that.name) && description.equals(that.description) && idGen.equals(that.idGen) && schema.equals(that.schema) && created.equals(that.created) && updated.equals(that.updated);
+        DataObjectSchemaEntity that = (DataObjectSchemaEntity) object;
+        return key.equals(that.key) && name.equals(that.name) && description.equals(that.description) && idGen.equals(that.idGen) && schema.equals(that.schema) && created.equals(that.created) && updated.equals(that.updated) && displayFields.equals(that.displayFields);
     }
 
     @Override
@@ -68,8 +73,10 @@ public class DataObjectSchemaEntity {
         result = 31 * result + schema.hashCode();
         result = 31 * result + created.hashCode();
         result = 31 * result + updated.hashCode();
+        result = 31 * result + displayFields.hashCode();
         return result;
     }
+
 
     // endregion
 
@@ -142,6 +149,16 @@ public class DataObjectSchemaEntity {
 
     public DataObjectSchemaEntity setUpdated(@Nonnull LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nonnull
+    public List<String> getDisplayFields() {
+        return displayFields;
+    }
+
+    public DataObjectSchemaEntity setDisplayFields(@Nonnull List<String> displayFields) {
+        this.displayFields = displayFields;
         return this;
     }
 

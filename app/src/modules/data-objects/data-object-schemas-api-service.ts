@@ -21,6 +21,7 @@ export class DataObjectSchemasApiService extends CrudApiService<DataObjectSchema
             idGen: '__UUID__',
             description: '',
             schema: generateElementWithDefaultValues(ElementType.Container) as GroupLayout,
+            displayFields: [],
             created: new Date().toISOString(),
             updated: new Date().toISOString(),
         };
