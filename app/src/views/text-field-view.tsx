@@ -65,6 +65,7 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
     if (suggestions != null) {
         return (
             <Autocomplete
+                freeSolo={true}
                 disablePortal={false}
                 options={suggestions.map(s => ({
                     label: s,
