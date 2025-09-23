@@ -22,6 +22,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -190,6 +191,9 @@ public class KeyCloakApiService {
         return res;
     }
 
+    private String accessKeyBuffer;
+    private LocalDateTime accessKeyBufferExpiry;
+
     /**
      * Retrieve the access token for the backend from the keycloak server
      *
@@ -199,6 +203,10 @@ public class KeyCloakApiService {
      * @throws InterruptedException if the request is interrupted
      */
     private String getAccessToken() throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException {
+        if (accessKeyBuffer != null && accessKeyBufferExpiry != null && LocalDateTime.now().isBefore(accessKeyBufferExpiry)) {
+            return accessKeyBuffer;
+        }
+
         // Create the request body for fetching the access token
         var requestBody = String.format(
                 "grant_type=client_credentials&client_id=%s&client_secret=%s",
@@ -236,7 +244,11 @@ public class KeyCloakApiService {
         }
 
         // Parse the response and extract the access token
-        return new JSONObject(res.body())
-                .getString("access_token");
+        var jobject = new JSONObject(res.body());
+
+        var expirySeconds = jobject.getInt("expires_in");
+        accessKeyBufferExpiry = LocalDateTime.now().plusSeconds(expirySeconds - 60); // Refresh the token 60 seconds before it expires
+        accessKeyBuffer = jobject.getString("access_token");
+        return accessKeyBuffer;
     }
 }

@@ -1,56 +1,25 @@
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography} from '@mui/material';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
-import {useAppSelector} from '../../../hooks/use-app-selector';
-import {selectAuthData} from '../../../slices/auth-slice';
-import {getUrlWithoutQuery} from '../../../utils/location-utils';
+import {AuthService} from '../../../services/auth-service';
 
 export function ShellSessionExpiredDialog() {
-    const intervalRef = useRef<any>(undefined);
-    const authData = useAppSelector(selectAuthData);
-    const [isRefreshTokenExpired, setIsRefreshTokenExpired] = useState(false);
+    const authService = new AuthService();
+    const [isAuthenticated, setIsAuthenticated] = useState(true);
 
     useEffect(() => {
-        setIsRefreshTokenExpired(false);
-
-        if (intervalRef.current != null) {
-            clearInterval(intervalRef.current);
-        }
-
-        const refreshTokenExpiration = authData?.refreshToken?.expires;
-        if (refreshTokenExpiration == null) {
-            setIsRefreshTokenExpired(true);
-            return;
-        }
-
-        const now = new Date().getTime();
-        const timeLeftRefreshToken = refreshTokenExpiration - now;
-
-        if (timeLeftRefreshToken < 0) {
-            setIsRefreshTokenExpired(true);
-        } else {
-            setIsRefreshTokenExpired(false);
-        }
-
-        intervalRef.current = setInterval(() => {
-            const now = new Date().getTime();
-            const timeLeftRefreshToken = refreshTokenExpiration - now;
-
-            if (timeLeftRefreshToken < 0) {
-                setIsRefreshTokenExpired(true);
-            } else {
-                setIsRefreshTokenExpired(false);
-            }
+        const intervalPointer = setInterval(() => {
+            setIsAuthenticated(authService.isAuthenticated());
         }, 1000);
 
         return () => {
-            clearInterval(intervalRef.current);
+            clearInterval(intervalPointer);
         };
-    }, [authData]);
+    }, []);
 
     return (
         <Dialog
-            open={isRefreshTokenExpired}
+            open={!isAuthenticated}
             maxWidth="xs"
         >
             <DialogTitle>
@@ -69,12 +38,7 @@ export function ShellSessionExpiredDialog() {
                         <LoginOutlinedIcon />
                     }
                     component="a"
-                    href={`${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth?${new URLSearchParams({
-                        client_id: AppConfig.oidc.client,
-                        redirect_uri: getUrlWithoutQuery(),
-                        response_type: 'code',
-                        scope: 'openid profile email',
-                    }).toString()}`}
+                    href={authService.getLoginUrl()}
                 >
                     Erneut Anmelden
                 </Button>

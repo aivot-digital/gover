@@ -21,6 +21,7 @@ import {Outlet} from 'react-router-dom';
 import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popup';
 import {ShellLoader} from './components/shell-loader';
 import {AuthService} from '../../services/auth-service';
+import {ShellSessionExpiredDialog} from './components/shell-session-expired-dialog';
 
 interface StaffShellProps {
     children?: ReactNode;
@@ -99,7 +100,7 @@ export function StaffShell(props: StaffShellProps) {
 
                     <ShellSearchDialog />
                     <ShellSessionEndWarnPopup />
-                    {/*<ShellSessionExpiredDialog />*/}
+                    <ShellSessionExpiredDialog />
                     <ShellSnackbarContainer />
                 </>
             }

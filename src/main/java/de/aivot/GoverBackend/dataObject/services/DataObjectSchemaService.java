@@ -95,10 +95,11 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 }
                 var idChildExists = children
                         .stream()
-                        .anyMatch(c -> c.getId().equals("id"));
+                        .anyMatch(c -> c.getId().equals("$id"));
                 if (!idChildExists) {
                     throw ResponseException.badRequest("Custom ID generation requires a '$id' field in the schema.");
                 }
+                break;
             default:
                 var startPatternPresent = DataObjectItemService.ID_GEN_INC_START_PATTERN.matcher(entity.getIdGen()).matches();
                 var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(entity.getIdGen()).matches();
@@ -106,6 +107,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 if (!startPatternPresent && !endPatternPresent) {
                     throw ResponseException.badRequest("Invalid ID generation pattern. It must contain an increment pattern at the start or the end.");
                 }
+                break;
         }
     }
 }
