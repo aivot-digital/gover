@@ -5,7 +5,7 @@ import {type StoreDetailModule} from '../models/entities/store-detail-module';
 import {type StoreCreateModule} from '../models/entities/store-create-module';
 import {type StoreUpdateModule} from '../models/entities/store-update-module';
 
-import {ApiError} from "../models/api-error";
+import {createApiError} from '../models/api-error';
 
 export const storeBaseUrl = 'https://store.gover.digital/api/';
 
@@ -23,7 +23,7 @@ class _GoverStoreService {
                 undefined,
         );
         if (resp.status !== 200) {
-            throw new ApiError(resp.status, await resp.json());
+            throw await createApiError(resp);
         }
         return await resp.json();
     }
@@ -41,7 +41,7 @@ class _GoverStoreService {
                 undefined,
         );
         if (resp.status !== 200) {
-            throw new ApiError(resp.status, await resp.json());
+            throw await createApiError(resp);
         }
         return await resp.json();
     }
@@ -59,7 +59,7 @@ class _GoverStoreService {
                 undefined,
         );
         if (resp.status !== 200) {
-            throw new ApiError(resp.status, await resp.json());
+            throw await createApiError(resp);
         }
         return await resp.json();
     }
@@ -80,7 +80,7 @@ class _GoverStoreService {
             },
         );
         if (resp.status !== 200 && resp.status !== 201) {
-            throw new ApiError(resp.status, await resp.json());
+            throw await createApiError(resp);
         }
         return await resp.json();
     }
@@ -102,7 +102,7 @@ class _GoverStoreService {
             },
         );
         if (resp.status !== 200 && resp.status !== 201) {
-            throw new ApiError(resp.status, await resp.json());
+            throw await createApiError(resp);
         }
         return await resp.json();
     }

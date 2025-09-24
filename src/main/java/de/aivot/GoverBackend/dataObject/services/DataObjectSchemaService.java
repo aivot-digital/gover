@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.dataObject.services;
 
 import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectSchemaRepository;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -90,14 +91,27 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 var children = entity
                         .getSchema()
                         .getChildren();
+
                 if (children == null || children.isEmpty()) {
-                    throw ResponseException.badRequest("Custom ID generation requires a schema with at least one child.");
+                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Schema mit dem Feld „$id“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Schemas definiert ist.");
                 }
-                var idChildExists = children
+
+                var idChild = children
                         .stream()
-                        .anyMatch(c -> c.getId().equals("$id"));
-                if (!idChildExists) {
-                    throw ResponseException.badRequest("Custom ID generation requires a '$id' field in the schema.");
+                        .filter(c -> c.getId().equals("$id"))
+                        .findFirst();
+
+                if (idChild.isEmpty()) {
+                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Schema mit dem Feld „$id“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Schemas definiert ist.");
+                }
+
+                var idChildElement = idChild.get();
+                if (idChildElement instanceof TextField textField) {
+                    if (!Boolean.TRUE.equals(textField.getRequired())) {
+                        throw ResponseException.badRequest("Der gewählte ID-Typ setzt voraus, dass das Feld „$id“ ein Pflichtfeld ist.");
+                    }
+                } else {
+                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt voraus, dass das Feld „$id“ ein Textfeld ist.");
                 }
                 break;
             default:
@@ -105,7 +119,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(entity.getIdGen()).matches();
 
                 if (!startPatternPresent && !endPatternPresent) {
-                    throw ResponseException.badRequest("Invalid ID generation pattern. It must contain an increment pattern at the start or the end.");
+                    throw ResponseException.badRequest("Das Format des gewählten ID-Typs ist ungültig. Bitte stellen Sie sicher, dass der ID-Typ mit „%I[0-9]“ beginnt oder endet.");
                 }
                 break;
         }

@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -84,7 +85,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
                 if (_id == null) {
                     throw ResponseException
-                            .badRequest("Custom ID generation requires an '$id' field in the data");
+                            .badRequest("Für die ID-Generierungsmethode '__CUSTOM__' muss im Datenobjekt ein Feld „$id“ mit dem gewünschten ID-Wert übergeben werden.");
                 }
 
                 id = String.valueOf(_id);
@@ -132,6 +133,13 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
             }
         }
 
+        var idCheck = dataObjectItemRepository
+                .existsById(new DataObjectItemEntityId(entity.getSchemaKey(), id));
+        if (idCheck) {
+            throw ResponseException
+                    .badRequest("Es existiert bereits ein Datenobjekt mit der ID '" + id + "' für das Schema '" + entity.getSchemaKey() + "'");
+        }
+
         entity.setId(id);
 
         var derivedObjectItemData = deriveDataObjectItemData(entity, schema);
@@ -143,8 +151,8 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
     @Override
     public void performDelete(@Nonnull DataObjectItemEntity entity) throws ResponseException {
-        dataObjectItemRepository
-                .delete(entity);
+        entity.setDeleted(LocalDateTime.now());
+        dataObjectItemRepository.save(entity);
     }
 
     @Nullable

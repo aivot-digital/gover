@@ -28,6 +28,7 @@ public class DataObjectItemFilter implements Filter<DataObjectItemEntity>, Seria
         var filter = SpecificationBuilder
                 .create(DataObjectItemEntity.class)
                 .withEquals("schemaKey", schemaKey)
+                .withNull("deleted") // Never show deleted items
                 .withContains("id", id);
 
         if (dataFields != null) {

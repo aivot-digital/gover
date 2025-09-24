@@ -90,6 +90,7 @@ export function mergeDerivedElementDataWithLocal(derivedElementData: ElementData
 
         mergedData[additionalKey] = {
             ...localElementDataObject,
+            inputValue: derivedElementDataObject.isVisible ? localElementDataObject.inputValue : null,
             isVisible: derivedElementDataObject.isVisible,
             computedValue: derivedElementDataObject.computedValue,
             computedErrors: options.dontOverwriteErrors ? localElementDataObject.computedErrors : derivedElementDataObject.computedErrors,
@@ -112,6 +113,7 @@ function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, loca
 
     const mergedElementDataObject: ElementDataObject = {
         ...localElementDataObject,
+        inputValue: derivedElementDataObject.isVisible ? localElementDataObject.inputValue : null,
         isVisible: derivedElementDataObject.isVisible,
         computedValue: derivedElementDataObject.computedValue,
         computedErrors: options.dontOverwriteErrors ? localElementDataObject.computedErrors : derivedElementDataObject.computedErrors,

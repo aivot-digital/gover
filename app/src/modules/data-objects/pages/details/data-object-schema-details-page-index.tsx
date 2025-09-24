@@ -1,4 +1,4 @@
-import {Alert, Box, Button, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -22,13 +22,14 @@ import {ElementType} from '../../../../data/element-type/element-type';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {RadioFieldComponent} from '../../../../components/radio-field/radio-field-component';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
-import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {MultiCheckboxComponent, MultiCheckboxOptions} from '../../../../components/multi-checkbox-field/multi-checkbox-component';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
+import {isApiError} from '../../../../models/api-error';
+import {generateElementWithDefaultValues} from '../../../../utils/generate-element-with-default-values';
+import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 
 export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated' | 'displayFields'>> = yup.object({
     key: yup.string()
@@ -146,7 +147,11 @@ export function DataObjectSchemaDetailsPageIndex() {
                 })
                 .catch(err => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    if (isApiError(err) && err.displayableToUser) {
+                        dispatch(showErrorSnackbar(err.message));
+                    } else {
+                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    }
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -162,7 +167,11 @@ export function DataObjectSchemaDetailsPageIndex() {
                 })
                 .catch(err => {
                     console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    if (isApiError(err) && err.displayableToUser) {
+                        dispatch(showErrorSnackbar(err.message));
+                    } else {
+                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    }
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -263,7 +272,32 @@ export function DataObjectSchemaDetailsPageIndex() {
                 required
                 value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
                 onChange={(val) => {
-                    handleInputChange('idGen')(val ?? '');
+
+
+                    if (val === ID_GEN_CUSTOM) {
+                        const hasIdField = (currentDataObject?.schema.children ?? []).some(c => c.id === '$id');
+                        if (!hasIdField) {
+                            handleInputPatch({
+                                idGen: ID_GEN_CUSTOM,
+                                schema: {
+                                    ...currentDataObject.schema,
+                                    children: [
+                                        {
+                                            ...generateElementWithDefaultValues(ElementType.Text),
+                                            id: '$id',
+                                            name: 'ID',
+                                            label: 'ID',
+                                            hint: 'Eindeutige ID des Datenobjekts',
+                                            required: true,
+                                        } as TextFieldElement,
+                                        ...currentDataObject.schema.children ?? [],
+                                    ],
+                                },
+                            });
+                        }
+                    } else {
+                        handleInputChange('idGen')(val ?? '');
+                    }
                 }}
                 options={[
                     {label: 'UUID', subLabel: 'Eine automatisch generierte, eindeutige ID bestehend aus 36 Zeichen', value: ID_GEN_UUID},
