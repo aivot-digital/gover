@@ -1,5 +1,5 @@
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
-import {ApiError} from '../models/api-error';
+import {ApiError, createApiError, isApiError} from '../models/api-error';
 import {AuthData} from '../models/dtos/auth-data';
 
 type QueryParamsValue = string | number | boolean | undefined | null;
@@ -107,7 +107,7 @@ export class ApiService {
         });
 
         if (response.status !== 200) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
 
         return await response.json();
@@ -130,7 +130,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.blob();
     }
@@ -153,7 +153,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 201) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -175,7 +175,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 201) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -198,7 +198,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 201) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -221,7 +221,7 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
         return await response.json();
     }
@@ -243,18 +243,8 @@ export class ApiService {
             ...options?.requestOptions,
         });
         if (response.status !== 200 && response.status !== 204) {
-            throw await this.creatApiError(response);
+            throw await createApiError(response);
         }
-    }
-
-    private async creatApiError(response: Response): Promise<ApiError> {
-        let details = await response.text();
-        try {
-            details = JSON.parse(details);
-        } catch (err) {
-            // Ignore parse error
-        }
-        return new ApiError(response.status, details);
     }
 }
 

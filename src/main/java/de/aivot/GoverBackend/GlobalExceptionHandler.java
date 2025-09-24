@@ -58,10 +58,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResponseException.class)
     public ResponseEntity<Object> handleBaseResponseException(ResponseException e) {
+        var apiError = new ApiErrorDto(
+                e.getStatus(),
+                e.getTitle(),
+                e.getDetails(),
+                true
+        );
+
         return ResponseEntity
                 .status(e.getStatus())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ApiErrorDto(e.getStatus(), e.getTitle(), e.getDetails()));
+                .body(apiError);
     }
 
     @Override
@@ -76,12 +83,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         for (final FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.add(error.getField() + ": " + error.getDefaultMessage());
         }
+
         for (final ObjectError error : ex.getBindingResult().getGlobalErrors()) {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, "bad request", errors);
+        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, "bad request", errors, false);
 
-        return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
+        return handleExceptionInternal(ex, apiError, headers, apiError.getHttpStatus(), request);
     }
 }
