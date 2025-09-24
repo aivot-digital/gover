@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.dataObject.services;
 
 import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectSchemaRepository;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextField;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -93,12 +94,22 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                 if (children == null || children.isEmpty()) {
                     throw ResponseException.badRequest("Custom ID generation requires a schema with at least one child.");
                 }
-                var idChildExists = children
+                var idChild = children
                         .stream()
-                        .anyMatch(c -> c.getId().equals("id"));
-                if (!idChildExists) {
+                        .filter(c -> c.getId().equals("$id"))
+                        .findFirst();
+                if (idChild.isEmpty()) {
                     throw ResponseException.badRequest("Custom ID generation requires a '$id' field in the schema.");
                 }
+                var idChildElement = idChild.get();
+                if (idChildElement instanceof TextField textField) {
+                    if (!Boolean.TRUE.equals(textField.getRequired())) {
+                        throw ResponseException.badRequest("Custom ID generation requires the '$id' field to be required.");
+                    }
+                } else {
+                    throw ResponseException.badRequest("Custom ID generation requires the '$id' field to be a TextField.");
+                }
+                break;
             default:
                 var startPatternPresent = DataObjectItemService.ID_GEN_INC_START_PATTERN.matcher(entity.getIdGen()).matches();
                 var endPatternPresent = DataObjectItemService.ID_GEN_INC_END_PATTERN.matcher(entity.getIdGen()).matches();

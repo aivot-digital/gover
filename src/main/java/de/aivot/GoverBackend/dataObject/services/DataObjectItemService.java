@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -142,8 +143,8 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
     @Override
     public void performDelete(@Nonnull DataObjectItemEntity entity) throws ResponseException {
-        dataObjectItemRepository
-                .delete(entity);
+        entity.setDeleted(LocalDateTime.now());
+        dataObjectItemRepository.save(entity);
     }
 
     @Nullable
