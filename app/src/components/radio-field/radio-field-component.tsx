@@ -1,7 +1,7 @@
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {SelectFieldComponentOption} from '../select-field/select-field-component-option';
-import {useMemo} from 'react';
+import {Fragment, useMemo} from 'react';
 
 export interface RadioFieldComponentProps {
     label: string;
@@ -72,9 +72,8 @@ export function RadioFieldComponent({
                 }
                 {
                     (options ?? []).map(option => (
-                        <>
+                        <Fragment key={option.value}>
                             <FormControlLabel
-                                key={option.value}
                                 value={option.value}
                                 control={<Radio />}
                                 label={option.label}
@@ -93,7 +92,7 @@ export function RadioFieldComponent({
                                     {option.subLabel}
                                 </FormHelperText>
                             }
-                        </>
+                        </Fragment>
                     ))
                 }
             </RadioGroup>
