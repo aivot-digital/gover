@@ -1,13 +1,9 @@
 import {SystemSetupDTO} from './dtos/system-setup-dto';
+import {BaseApiService} from '../../services/base-api-service';
 
-export class SystemApiService {
+export class SystemApiService extends BaseApiService {
     public fetchSetup(): Promise<SystemSetupDTO> {
-        return fetch('/api/public/system/setup/', {
-            method: 'GET',
-        })
-            .then((response) => {
-                return response.json();
-            });
+        return this.getUnauthenticated<SystemSetupDTO>('/api/public/system/setup/');
     }
 
     public static getFaviconUrl(): string {

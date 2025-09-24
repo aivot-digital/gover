@@ -23,6 +23,7 @@ interface ErrorMessage {
 export enum ShellStatus {
     Loading,
     Login,
+    Offline,
     Ready,
 }
 

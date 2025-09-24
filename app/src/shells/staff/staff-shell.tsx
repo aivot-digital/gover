@@ -22,6 +22,8 @@ import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popu
 import {ShellLoader} from './components/shell-loader';
 import {AuthService} from '../../services/auth-service';
 import {ShellSessionExpiredDialog} from './components/shell-session-expired-dialog';
+import {isApiError} from '../../models/api-error';
+import {ShellOffline} from './components/shell-offline';
 
 interface StaffShellProps {
     children?: ReactNode;
@@ -40,6 +42,12 @@ export function StaffShell(props: StaffShellProps) {
         fetchSetup()
             .then((setup) => {
                 dispatch(setSetup(setup));
+            })
+            .catch((err) => {
+                if (isApiError(err) && err.status >= 500) {
+                    dispatch(setStatus(ShellStatus.Offline));
+                }
+                console.error(err);
             });
 
         authenticateWithOidcCode()
@@ -55,8 +63,14 @@ export function StaffShell(props: StaffShellProps) {
             });
     }, []);
 
+    if (status === ShellStatus.Offline) {
+        return (
+            <ShellOffline/>
+        );
+    }
+
     if (setup == null) {
-        return <div />;
+        return null;
     }
 
     return (

@@ -1,4 +1,5 @@
 import {AuthService} from './auth-service';
+import {ApiError, createApiError} from '../models/api-error';
 
 export interface RequestOptions {
     abort?: AbortSignal;
@@ -6,13 +7,20 @@ export interface RequestOptions {
     query?: Record<string, string | number | boolean | undefined> | URLSearchParams;
 }
 
+const DefaultUnauthorizedApiError: ApiError = {
+    status: 401,
+    message: 'Sie sind nicht angemeldet',
+    details: null,
+    displayableToUser: true,
+};
+
 export class BaseApiService {
     private readonly auth = new AuthService();
 
     public async get<T>(path: string, options?: RequestOptions): Promise<T> {
         const accessToken = await this.auth.getAccessToken(options?.abort);
         if (accessToken == null) {
-            throw new Error('No valid access token available');
+            throw DefaultUnauthorizedApiError;
         }
 
         const response = await fetch(combineUrl(path, options), {
@@ -25,7 +33,7 @@ export class BaseApiService {
             if (response.status === 401) {
                 this.auth.logout();
             }
-            throw new Error(`GET ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as T;
@@ -39,7 +47,7 @@ export class BaseApiService {
         });
 
         if (response.status !== 200) {
-            throw new Error(`GET ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as T;
@@ -48,7 +56,7 @@ export class BaseApiService {
     public async getBlob(path: string, options?: RequestOptions): Promise<Blob> {
         const accessToken = await this.auth.getAccessToken(options?.abort);
         if (accessToken == null) {
-            throw new Error('No valid access token available');
+            throw DefaultUnauthorizedApiError;
         }
 
         const response = await fetch(combineUrl(path, options), {
@@ -61,7 +69,7 @@ export class BaseApiService {
             if (response.status === 401) {
                 this.auth.logout();
             }
-            throw new Error(`GET ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.blob();
@@ -75,7 +83,7 @@ export class BaseApiService {
         });
 
         if (response.status !== 200) {
-            throw new Error(`GET ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.blob();
@@ -84,7 +92,7 @@ export class BaseApiService {
     public async post<T, R>(path: string, body: T, options?: RequestOptions): Promise<R> {
         const accessToken = await this.auth.getAccessToken(options?.abort);
         if (accessToken == null) {
-            throw new Error('No valid access token available');
+            throw DefaultUnauthorizedApiError;
         }
 
         const response = await fetch(combineUrl(path, options), {
@@ -98,7 +106,7 @@ export class BaseApiService {
             if (response.status === 401) {
                 this.auth.logout();
             }
-            throw new Error(`POST ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as R;
@@ -113,7 +121,7 @@ export class BaseApiService {
         });
 
         if (response.status !== 200 && response.status !== 201) {
-            throw new Error(`POST ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as R;
@@ -122,7 +130,7 @@ export class BaseApiService {
     public async postFormData<R>(path: string, formData: FormData, options?: RequestOptions): Promise<R> {
         const accessToken = await this.auth.getAccessToken(options?.abort);
         if (accessToken == null) {
-            throw new Error('No valid access token available');
+            throw DefaultUnauthorizedApiError;
         }
 
         const response = await fetch(combineUrl(path, options), {
@@ -136,7 +144,7 @@ export class BaseApiService {
             if (response.status === 401) {
                 this.auth.logout();
             }
-            throw new Error(`POST ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as R;
@@ -151,7 +159,7 @@ export class BaseApiService {
         });
 
         if (response.status !== 200 && response.status !== 201) {
-            throw new Error(`POST ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as R;
@@ -160,7 +168,7 @@ export class BaseApiService {
     public async postFormUrlEncoded<R>(path: string, formData: URLSearchParams, options?: RequestOptions): Promise<R> {
         const accessToken = await this.auth.getAccessToken(options?.abort);
         if (accessToken == null) {
-            throw new Error('No valid access token available');
+            throw DefaultUnauthorizedApiError;
         }
 
         const response = await fetch(combineUrl(path, options), {
@@ -177,7 +185,7 @@ export class BaseApiService {
             if (response.status === 401) {
                 this.auth.logout();
             }
-            throw new Error(`POST ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as R;
@@ -194,7 +202,7 @@ export class BaseApiService {
         });
 
         if (response.status !== 200 && response.status !== 201) {
-            throw new Error(`POST ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as R;
@@ -203,7 +211,7 @@ export class BaseApiService {
     public async put<T, R>(path: string, body: T, options?: RequestOptions): Promise<R> {
         const accessToken = await this.auth.getAccessToken(options?.abort);
         if (accessToken == null) {
-            throw new Error('No valid access token available');
+            throw DefaultUnauthorizedApiError;
         }
 
         const response = await fetch(combineUrl(path, options), {
@@ -217,7 +225,7 @@ export class BaseApiService {
             if (response.status === 401) {
                 this.auth.logout();
             }
-            throw new Error(`PUT ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
 
         return await response.json() as R;
@@ -226,7 +234,7 @@ export class BaseApiService {
     public async delete(path: string, options?: RequestOptions): Promise<void> {
         const accessToken = await this.auth.getAccessToken(options?.abort);
         if (accessToken == null) {
-            throw new Error('No valid access token available');
+            throw DefaultUnauthorizedApiError;
         }
 
         const response = await fetch(combineUrl(path, options), {
@@ -239,7 +247,7 @@ export class BaseApiService {
             if (response.status === 401) {
                 this.auth.logout();
             }
-            throw new Error(`DELETE ${path} failed with status ${response.status}`);
+            throw await createApiError(response);
         }
     }
 }
