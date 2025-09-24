@@ -17,8 +17,6 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
-import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
-import {flattenElements} from '../../../../utils/flatten-elements';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {DataObjectItem} from '../../models/data-object-item';
@@ -32,6 +30,8 @@ import {mapElementData} from '../../../../utils/element-data-utils';
 import {ElementDataObject, newElementDataObject} from '../../../../models/element-data';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {AnyElement} from '../../../../models/elements/any-element';
+import {isApiError} from '../../../../models/api-error';
+import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -104,13 +104,6 @@ export function DataObjectItemDetailsPageIndex() {
         hideConfirmDialog: hideConfirmDeleteDialog,
     } = useConfirmDialog();
 
-    const allElements = useMemo(() => {
-        if (dataObjectSchema == null) {
-            return [];
-        }
-        return flattenElements(dataObjectSchema.schema);
-    }, [dataObjectSchema]);
-
     useEffect(() => {
         if (errors == null || Object.keys(errors).length === 0 || currentDataObjectItem == null || dataObjectSchema == null) {
             return;
@@ -149,7 +142,22 @@ export function DataObjectItemDetailsPageIndex() {
         handleInputChange('data')(updatedElementData);
     }, [errors]);
 
-    if (dataObjectSchema == null || currentDataObjectItem == null) {
+    const schema = useMemo(() => {
+        if (dataObjectSchema == null) {
+            return null;
+        }
+
+        if (isNewItem || dataObjectSchema.idGen !== '__CUSTOM__') {
+            return dataObjectSchema.schema;
+        }
+
+        return {
+            ...dataObjectSchema.schema,
+            children: dataObjectSchema.schema.children.filter(c => c.id !== '$id'),
+        };
+    }, [isNewItem, dataObjectSchema]);
+
+    if (dataObjectSchema == null || currentDataObjectItem == null || schema == null) {
         return (
             <GenericDetailsSkeleton />
         );
@@ -188,8 +196,8 @@ export function DataObjectItemDetailsPageIndex() {
                     }, 0);
                 })
                 .catch(err => {
-                    if (err.status === 400 && 'details' in err && 'details' in err.details) {
-                        handleInputChange('data')(err.details.details);
+                    if (isApiError(err) && err.status === 400 && typeof err.details === 'object') {
+                        handleInputChange('data')(err.details);
                     } else {
                         console.error(err);
                     }
@@ -280,8 +288,8 @@ export function DataObjectItemDetailsPageIndex() {
                         }}
                     >
                         <TextFieldComponent
-                            label="Eindeutiger Bezeichner"
                             required
+                            label="Eindeutiger Bezeichner"
                             value={currentDataObjectItem.id}
                             onChange={handleInputChange('id')}
                             disabled={true}
@@ -304,7 +312,6 @@ export function DataObjectItemDetailsPageIndex() {
                         />
                     </Grid>
 
-
                     <Grid
                         size={{
                             xs: 12,
@@ -322,16 +329,10 @@ export function DataObjectItemDetailsPageIndex() {
                 </Grid>
             }
 
-            <ViewDispatcherComponent
-                rootElement={dataObjectSchema.schema}
-                allElements={allElements}
-                element={dataObjectSchema.schema}
-                isBusy={false}
-                isDeriving={false}
-                mode="viewer"
+            <ElementDerivationContext
+                element={schema}
                 elementData={currentDataObjectItem.data}
                 onElementDataChange={handleInputChange('data')}
-                derivationTriggerIdQueue={[]}
             />
 
             {

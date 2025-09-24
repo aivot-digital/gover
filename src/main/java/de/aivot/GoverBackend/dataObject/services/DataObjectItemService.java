@@ -84,7 +84,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
                 if (_id == null) {
                     throw ResponseException
-                            .badRequest("Custom ID generation requires an '$id' field in the data");
+                            .badRequest("Für die ID-Generierungsmethode '__CUSTOM__' muss im Datenobjekt ein Feld „$id“ mit dem gewünschten ID-Wert übergeben werden.");
                 }
 
                 id = String.valueOf(_id);
@@ -130,6 +130,13 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                         .replace(ID_GEN_PART_DAY, String.format("%02d", now.getDayOfMonth()))
                         .replaceFirst(ID_GEN_INC_PATTERN, String.format("%0" + padding + "d", currentMaxId + 1));
             }
+        }
+
+        var idCheck = dataObjectItemRepository
+                .existsById(new DataObjectItemEntityId(entity.getSchemaKey(), id));
+        if (idCheck) {
+            throw ResponseException
+                    .badRequest("Es existiert bereits ein Datenobjekt mit der ID '" + id + "' für das Schema '" + entity.getSchemaKey() + "'");
         }
 
         entity.setId(id);
