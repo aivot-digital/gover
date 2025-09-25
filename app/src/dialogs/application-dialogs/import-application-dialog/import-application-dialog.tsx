@@ -7,6 +7,8 @@ import {stripDataFromForm} from '../../../utils/strip-data-from-form';
 import {hideLoadingOverlay, hideLoadingOverlayWithTimeout, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {useApi} from '../../../hooks/use-api';
+import {FormsApiService} from '../../../modules/forms/forms-api-service';
 
 export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
     const {
@@ -15,6 +17,7 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
         ...passTroughProps
     } = props;
 
+    const api = useApi();
     const dispatch = useAppDispatch();
 
     const [importFailed, setImportFailed] = useState(false);
@@ -30,19 +33,8 @@ export function ImportApplicationDialog(props: ImportApplicationDialogProps) {
                 const value = evt.target?.result;
                 if (value != null) {
                     if (files[0].name.endsWith('.xml')) {
-                        fetch('https://xdf2gov.gover.digital/', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'text/xml',
-                            },
-                            body: value,
-                        })
-                            .then((res) => {
-                                if (res.status !== 200) {
-                                    throw new Error('Invalid response');
-                                }
-                                return res.json();
-                            })
+                        new FormsApiService(api)
+                            .xdfTransform(value)
                             .then((parsedModel: FormDetailsResponseDTO) => {
                                 onImport(stripDataFromForm(parsedModel));
                                 dispatch(hideLoadingOverlayWithTimeout(2000));
