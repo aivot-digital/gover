@@ -292,4 +292,8 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
     public checkSlugExists(slug: string): Promise<boolean> {
         return this.api.get<boolean>(`form-slugs/${slug}/`);
     }
+
+    public xdfTransform(value: string | ArrayBuffer): Promise<FormDetailsResponseDTO> {
+        return this.api.postXML<FormDetailsResponseDTO>('xdf/v2/transform/', value);
+    }
 }

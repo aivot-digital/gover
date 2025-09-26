@@ -11,6 +11,12 @@ public class TextPattern implements Serializable {
     @Nullable
     private String message;
 
+    public static TextPattern of(String regex, String message) {
+        return new TextPattern()
+                .setRegex(regex)
+                .setMessage(message);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

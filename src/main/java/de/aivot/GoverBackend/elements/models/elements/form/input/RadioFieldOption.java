@@ -12,6 +12,12 @@ public class RadioFieldOption implements Serializable {
     @Nullable
     private String label;
 
+    public static RadioFieldOption of(String value, String label) {
+        return new RadioFieldOption()
+                .setValue(value)
+                .setLabel(label);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

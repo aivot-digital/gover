@@ -1,5 +1,5 @@
 import {AuthDataDto} from '../models/dtos/auth-data-dto';
-import {ApiError, createApiError, isApiError} from '../models/api-error';
+import {createApiError} from '../models/api-error';
 import {AuthData} from '../models/dtos/auth-data';
 
 type QueryParamsValue = string | number | boolean | undefined | null;
@@ -193,6 +193,29 @@ export class ApiService {
         const response = await window.fetch(ApiService.appendQueryParams(url, options), {
             method: 'POST',
             body: new URLSearchParams(data),
+            headers: combinedHeaders,
+            signal: options?.abortController?.signal,
+            ...options?.requestOptions,
+        });
+        if (response.status !== 200 && response.status !== 201) {
+            throw await createApiError(response);
+        }
+        return await response.json();
+    }
+
+    public async postXML<T>(url: string, data: string | ArrayBuffer, options?: ApiOptions): Promise<T> {
+        const accessToken = await this.getAccessToken();
+
+        const combinedHeaders = combineHeaders(
+            {'Content-Type': 'application/xml'},
+            accessToken != null ? {Authorization: `Bearer ${accessToken}`} : undefined,
+            options?.requestOptions?.headers,
+        );
+        delete options?.requestOptions?.headers;
+
+        const response = await window.fetch(ApiService.appendQueryParams(url, options), {
+            method: 'POST',
+            body: data,
             headers: combinedHeaders,
             signal: options?.abortController?.signal,
             ...options?.requestOptions,
