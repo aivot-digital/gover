@@ -307,6 +307,112 @@ export function mapElementData(
     return newElementData;
 }
 
+
+export function filterElementData(
+    currentElement: AnyElement,
+    currentElementData: ElementData,
+    callback: (elem: AnyElement, value: ElementDataObject | null | undefined, path: Array<AnyElement | number>) => boolean,
+    parents: Array<AnyElement | number> = [],
+): ElementData {
+    const elementDataObject: ElementDataObject = currentElementData[currentElement.id] ?? newElementDataObject(currentElement.type);
+
+    const filterResult = callback(currentElement, elementDataObject, parents);
+
+    let filteredElementData: ElementData = {};
+
+    if (filterResult) {
+        filteredElementData[currentElement.id] = elementDataObject;
+    }
+
+    if (isRootElement(currentElement)) {
+        if (currentElement.introductionStep != null) {
+            const res = filterElementData(
+                currentElement.introductionStep,
+                currentElementData,
+                callback,
+                [...parents, currentElement],
+            );
+            if (Object.keys(res).length > 0) {
+                filteredElementData = {
+                    ...filteredElementData,
+                    ...res,
+                };
+            }
+        }
+
+        if (currentElement.summaryStep != null) {
+            const res = filterElementData(
+                currentElement.summaryStep,
+                currentElementData,
+                callback,
+                [...parents, currentElement],
+            );
+            if (Object.keys(res).length > 0) {
+                filteredElementData = {
+                    ...filteredElementData,
+                    ...res,
+                };
+            }
+        }
+
+        if (currentElement.submitStep != null) {
+            const res = filterElementData(
+                currentElement.submitStep,
+                currentElementData,
+                callback,
+                [...parents, currentElement],
+            );
+            if (Object.keys(res).length > 0) {
+                filteredElementData = {
+                    ...filteredElementData,
+                    ...res,
+                };
+            }
+        }
+    }
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        const val = resolveValue(currentElement, currentElementData);
+
+        if (Array.isArray(val)) {
+            const mapped = val
+                .map((childData, index) => {
+                    const childMappedData: ElementData = {};
+                    for (const child of currentElement.children || []) {
+                        const childMappedValue = filterElementData(child, childData, callback, [...parents, currentElement, index]);
+                        Object.assign(childMappedData, childMappedValue);
+                    }
+                    return childMappedData;
+                })
+                .filter(child => Object.keys(child).length > 0);
+
+            console.log('Mapped REPL', mapped);
+
+            if (mapped.length > 0) {
+                filteredElementData = {
+                    ...filteredElementData,
+                    [currentElement.id]: {
+                        ...elementDataObject,
+                        inputValue: mapped,
+                    },
+                };
+            }
+        }
+    } else if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            const res = filterElementData(child, currentElementData, callback, [...parents, currentElement]);
+            if (Object.keys(res).length > 0) {
+                filteredElementData = {
+                    ...filteredElementData,
+                    ...res,
+                };
+            }
+        }
+    }
+
+    return filteredElementData;
+}
+
 export function cleanElementData(rootElement: AnyElement, elementData: ElementData): ElementData {
     const elementDataCopy = {
         ...elementData,

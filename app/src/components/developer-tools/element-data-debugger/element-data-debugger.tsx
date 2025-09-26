@@ -1,7 +1,7 @@
 import {AnyElement} from '../../../models/elements/any-element';
 import {ElementData} from '../../../models/element-data';
 import {Box} from '@mui/material';
-import React from 'react';
+import React, {useMemo, useState} from 'react';
 import {Actions} from '../../actions/actions';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
@@ -10,6 +10,8 @@ import {downloadObjectFile, uploadObjectFile} from '../../../utils/download-util
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ExpandableCodeBlock} from '../../expandable-code-block/expandable-code-block';
+import {SearchInput} from '../../search-input-2/search-input';
+import {filterElementData, walkElementData} from '../../../utils/element-data-utils';
 
 interface ElementDataDebuggerProps {
     rootElement: AnyElement;
@@ -25,6 +27,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
     } = props;
 
     const dispatch = useAppDispatch();
+    const [elementIdSearch, setElementIdSearch] = useState<string>('');
 
     const handleExport = (): void => {
         const filename = `element_daten_${format(new Date(), 'dd-MM-yyyy')}.json`;
@@ -46,6 +49,22 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
             });
     };
 
+    const elementDataToDisplay = useMemo(() => {
+        const search = elementIdSearch
+            .toLowerCase()
+            .trim();
+
+        if (search.length === 0) {
+            return elementData;
+        }
+
+       return filterElementData(rootElement, elementData, (e) => e.id.toLowerCase().includes(search))
+    }, [rootElement, elementData, elementIdSearch]);
+
+    const jsonString = useMemo(() => {
+        return JSON.stringify(elementDataToDisplay, null, 2);
+    }, [elementDataToDisplay]);
+
     return (
         <Box>
             <Box
@@ -54,6 +73,12 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
                     mb: 2,
                 }}
             >
+                <SearchInput
+                    placeholder="Element ID suchen…"
+                    value={elementIdSearch}
+                    onChange={setElementIdSearch}
+                />
+
                 <Actions
                     sx={{
                         ml: 'auto',
@@ -76,7 +101,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
             </Box>
 
             <ExpandableCodeBlock
-                value={JSON.stringify(elementData, null, 2)}
+                value={jsonString}
             />
         </Box>
     );
