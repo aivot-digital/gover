@@ -50,14 +50,15 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     const elementDataObject: ElementDataObject = useMemo(() => {
         return elementData[elementId] ?? {
             $type: elementType,
-            inputValue: undefined,
+            inputValue: null,
+            previousInputValue: null,
             isVisible: true,
             isPrefilled: false,
             isDirty: false,
-            computedOverride: undefined,
-            computedValue: undefined,
-            computedErrors: undefined,
-            value: undefined,
+            computedOverride: null,
+            computedValue: null,
+            computedErrors: null,
+            value: null,
         };
     }, [elementData, elementId, elementType]);
 
@@ -93,7 +94,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         };
 
         onElementDataChange(newElementData, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [value, elementData, onElementDataChange, elementId, elementType]);
+    }, [value, elementData, elementDataObject, onElementDataChange, elementId, elementType]);
 
     const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == value || onElementBlur == null) {

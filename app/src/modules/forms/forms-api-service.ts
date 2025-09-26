@@ -162,6 +162,7 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         skipValuesFor: DerivationSkipIdentifier,
         skipOverridesFor: DerivationSkipIdentifier,
     }): Promise<ElementData> {
+        console.log(customerInput);
         return await this.api.post<ElementData>(
             `public/forms/${slug}/derive`,
             customerInput,

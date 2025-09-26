@@ -103,6 +103,12 @@ public class ElementDataObjectDeserializer extends StdDeserializer<ElementDataOb
             ed.setInputValue(parseValueNode(jp, type, inputValueNode, ctx));
         }
 
+        var previousInputValueNode = node
+                .get("previousInputValue");
+        if (previousInputValueNode != null && !previousInputValueNode.isNull()) {
+            ed.setPreviousInputValue(parseValueNode(jp, type, previousInputValueNode, ctx));
+        }
+
         var computedValueNode = node
                 .get("computedValue");
         if (computedValueNode != null && !computedValueNode.isNull()) {

@@ -41,7 +41,7 @@ import {StepElement} from '../../models/elements/steps/step-element';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
-import {ElementData, newElementDataObject} from '../../models/element-data';
+import {ElementData, ElementDataObject, newElementDataObject} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
@@ -264,11 +264,21 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
+                const submitElementData: ElementData = mapElementData(rootElement, elementData, (_, data) => {
+                    if (data != null) {
+                        const updated: ElementDataObject = {
+                            ...data,
+                            previousInputValue: null,
+                        };
+                        return updated;
+                    }
+                    return null;
+                });
                 submitResponse = await formsApiService
                     .submit({
                         id: form.id,
                         version: form.version,
-                    }, elementData, identityId);
+                    }, submitElementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
                     if (isApiError(error) && error.details != null && typeof error.details === 'object' && error.details.details != null && typeof error.details.details === 'object') {
@@ -483,6 +493,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                         [SummaryAttachmentsTooLargeKey]: {
                             $type: ElementType.FileUpload,
                             inputValue: [],
+                            previousInputValue: null,
                             isVisible: true,
                             isPrefilled: false,
                             isDirty: true,
@@ -522,6 +533,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                         [SubmitPaymentDataKey]: {
                             $type: ElementType.Number,
                             inputValue: calculatedCosts,
+                            previousInputValue: null,
                             isVisible: true,
                             isPrefilled: false,
                             isDirty: true,

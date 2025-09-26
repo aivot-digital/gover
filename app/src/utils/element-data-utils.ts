@@ -91,6 +91,7 @@ export function mergeDerivedElementDataWithLocal(derivedElementData: ElementData
         mergedData[additionalKey] = {
             ...localElementDataObject,
             inputValue: derivedElementDataObject.isVisible ? localElementDataObject.inputValue : null,
+            previousInputValue: derivedElementDataObject.previousInputValue,
             isVisible: derivedElementDataObject.isVisible,
             computedValue: derivedElementDataObject.computedValue,
             computedErrors: options.dontOverwriteErrors ? localElementDataObject.computedErrors : derivedElementDataObject.computedErrors,
@@ -111,9 +112,20 @@ function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, loca
 
     const localElementDataObject: ElementDataObject = localElementData[elementId] ?? newElementDataObject(elementType);
 
+    // If the element is visible. If not, inputValue should be null.
+    // If the element is visible, check is it was previously not visible and has a restored inputValue, then use that.
+    // Otherwise, use the local inputValue.
+    const inputValue =  derivedElementDataObject.isVisible ?
+        ((localElementDataObject.inputValue == null && !localElementDataObject.isVisible && derivedElementDataObject.inputValue != null) ?
+            derivedElementDataObject.inputValue :
+            localElementDataObject.inputValue
+        ) :
+        null;
+
     const mergedElementDataObject: ElementDataObject = {
         ...localElementDataObject,
-        inputValue: derivedElementDataObject.isVisible ? localElementDataObject.inputValue : null,
+        inputValue: inputValue,
+        previousInputValue: derivedElementDataObject.previousInputValue,
         isVisible: derivedElementDataObject.isVisible,
         computedValue: derivedElementDataObject.computedValue,
         computedErrors: options.dontOverwriteErrors ? localElementDataObject.computedErrors : derivedElementDataObject.computedErrors,
@@ -436,9 +448,9 @@ export function cleanElementData(rootElement: AnyElement, elementData: ElementDa
             isVisible: true,
             isDirty: false,
             isPrefilled: false,
-            computedValue: undefined,
-            computedErrors: undefined,
-            computedOverride: undefined,
+            computedValue: null,
+            computedErrors: null,
+            computedOverride: null,
         };
 
         return up;

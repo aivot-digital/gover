@@ -359,6 +359,7 @@ public class ElementDerivationService {
         var dataObject = new ElementDataObject(_currentElement)
                 .setType(_currentElement.getType())
                 .setInputValue(inputDataObject.getInputValue())
+                .setPreviousInputValue(inputDataObject.getPreviousInputValue())
                 .setIsDirty(inputDataObject.getIsDirty())
                 .setIsPrefilled(inputDataObject.getIsPrefilled());
 
@@ -432,6 +433,12 @@ public class ElementDerivationService {
 
         if (currentElement instanceof BaseInputElement<?> baseInputElement) {
             if (isVisible) {
+                if (dataObject.getInputValue() == null && dataObject.getPreviousInputValue() != null) {
+                    dataObject.setInputValue(dataObject.getPreviousInputValue());
+                    dataObject.setPreviousInputValue(null);
+                    dataObject.setIsDirty(true);
+                }
+
                 if (options.containsSkipValues(baseInputElement.getId())) {
                     dataObject.setComputedValue(inputDataObject.getComputedValue());
                 } else {
@@ -472,6 +479,9 @@ public class ElementDerivationService {
                     }
                 }
             } else {
+                if (dataObject.getInputValue() != null) {
+                    dataObject.setPreviousInputValue(dataObject.getInputValue());
+                }
                 dataObject.setInputValue(null);
                 dataObject.setComputedValue(null);
                 dataObject.setIsDirty(false);
