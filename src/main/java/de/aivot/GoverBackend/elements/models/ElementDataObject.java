@@ -20,6 +20,8 @@ public class ElementDataObject implements Serializable {
     @Nullable
     private Object inputValue;
     @Nullable
+    private Object previousInputValue;
+    @Nullable
     private Boolean isVisible;
     @Nullable
     private Boolean isPrefilled;
@@ -153,5 +155,16 @@ public class ElementDataObject implements Serializable {
     @JsonIgnore
     public boolean isNotEmpty() {
         return !isEmpty();
+    }
+
+
+    @Nullable
+    public Object getPreviousInputValue() {
+        return previousInputValue;
+    }
+
+    public ElementDataObject setPreviousInputValue(@Nullable Object previousInputValue) {
+        this.previousInputValue = previousInputValue;
+        return this;
     }
 }

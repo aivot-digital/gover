@@ -4,6 +4,7 @@ import {ElementType} from '../data/element-type/element-type';
 export type ElementDataObject = {
     $type: ElementType;
     inputValue: any | null | undefined;
+    previousInputValue: any | null | undefined;
     isVisible: boolean | null | undefined;
     isPrefilled: boolean | null | undefined;
     isDirty: boolean | null | undefined;
@@ -15,13 +16,14 @@ export type ElementDataObject = {
 export function newElementDataObject(type: ElementType): ElementDataObject {
     return {
         $type: type,
-        inputValue: undefined,
+        inputValue: null,
+        previousInputValue: null,
         isVisible: true,
         isPrefilled: false,
         isDirty: false,
-        computedOverride: undefined,
-        computedValue: undefined,
-        computedErrors: undefined,
+        computedOverride: null,
+        computedValue: null,
+        computedErrors: null,
     }
 }
 
