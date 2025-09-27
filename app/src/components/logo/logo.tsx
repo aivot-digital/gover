@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, {useState} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
 import {Box, Skeleton} from '@mui/material';
-import {AssetsApiService} from '../../modules/assets/assets-api-service';
+import {selectSetup} from '../../slices/shell-slice';
 
 interface LogoProps {
     width?: number;
@@ -11,28 +9,10 @@ interface LogoProps {
 }
 
 export function Logo(props: LogoProps) {
-    const [imageFailed, setImageFailed] = useState(false);
-    const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const logo = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.logo));
+    const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+    const setup = useAppSelector(selectSetup);
 
-    useEffect(() => {
-        setImageFailed(false);
-    }, [logo]);
-
-    if (logo == null) {
-        return (
-            <Skeleton
-                sx={{
-                    display: 'inline-block',
-                    width: '100%',
-                    maxWidth: props.width ?? 200,
-                    height: props.height ?? 100,
-                }}
-            />
-        );
-    }
-
-    if (imageFailed) {
+    if (imageStatus == 'failed') {
         return (
             <Box
                 sx={{
@@ -46,17 +26,41 @@ export function Logo(props: LogoProps) {
     }
 
     return (
-        <img
-            src={AssetsApiService.useAssetLink(logo)}
-            alt={"Logo " + name}
-            style={{
-                width: 'auto',
-                maxWidth: props.width ?? 200,
-                maxHeight: props.height ?? 100,
+        <Box
+            sx={{
+                position: 'relative',
             }}
-            onError={() => {
-                setImageFailed(true);
-            }}
-        />
+        >
+            {
+                imageStatus === 'loading' &&
+                <Skeleton
+                    sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        display: 'inline-block',
+                        width: '100%',
+                        maxWidth: props.width ?? 200,
+                        height: props.height ?? 100,
+                    }}
+                />
+            }
+
+            <img
+                src="/api/public/system/logo/"
+                alt={'Logo ' + setup?.providerName}
+                style={{
+                    width: 'auto',
+                    maxWidth: props.width ?? 200,
+                    maxHeight: props.height ?? 100,
+                }}
+                onLoad={() => {
+                    setImageStatus('present');
+                }}
+                onError={() => {
+                    setImageStatus('failed');
+                }}
+            />
+        </Box>
     );
 }
