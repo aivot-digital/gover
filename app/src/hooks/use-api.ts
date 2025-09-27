@@ -179,6 +179,10 @@ function baseApiServiceAsApi(): Api {
                 return await api
                     .post(createApiPath(`/api/${url}`), data, apiOptionsToRequestOptions(options));
         },
+        postXML: async <T>(url: string, data: ArrayBuffer | string, options?: ApiOptions): Promise<T> => {
+            return await api
+                .postXml(createApiPath(`/api/${url}`), data, apiOptionsToRequestOptions(options));
+        },
         postFormData: async <T>(url: string, data: FormData, options?: ApiOptions): Promise<T> => {
                 return await api
                     .postFormData(createApiPath(`/api/${url}`), data, apiOptionsToRequestOptions(options));

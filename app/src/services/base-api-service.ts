@@ -112,6 +112,32 @@ export class BaseApiService {
         return await response.json() as R;
     }
 
+    public async postXml<T, R>(path: string, body: ArrayBuffer | string, options?: RequestOptions): Promise<R> {
+        const accessToken = await this.auth.getAccessToken(options?.abort);
+        if (accessToken == null) {
+            throw DefaultUnauthorizedApiError;
+        }
+
+        const response = await fetch(combineUrl(path, options), {
+            method: 'POST',
+            headers: {
+                ...combineHeaders(createDefaultHeaders(accessToken), options),
+                'Content-Type': 'application/xml',
+            },
+            signal: options?.abort,
+            body: body,
+        });
+
+        if (response.status !== 200 && response.status !== 201) {
+            if (response.status === 401) {
+                this.auth.logout();
+            }
+            throw await createApiError(response);
+        }
+
+        return await response.json() as R;
+    }
+
     public async postUnauthenticated<T, R>(path: string, body: T, options?: RequestOptions): Promise<R> {
         const response = await fetch(combineUrl(path, options), {
             method: 'POST',
