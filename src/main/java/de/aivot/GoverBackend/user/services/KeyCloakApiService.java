@@ -3,12 +3,12 @@ package de.aivot.GoverBackend.user.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.KeyCloakOIDCConfig;
 import de.aivot.GoverBackend.user.models.KeycloakRoleMapping;
 import de.aivot.GoverBackend.user.models.KeycloakRoleMappings;
 import de.aivot.GoverBackend.user.models.KeycloakUser;
-import de.aivot.GoverBackend.utils.HttpClientManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +25,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 @Component
@@ -37,10 +37,12 @@ public class KeyCloakApiService {
     private final static Duration TIMEOUT = Duration.ofSeconds(5);
 
     private final KeyCloakOIDCConfig keyCloakOIDCConfig;
+    private final HttpService httpService;
 
     @Autowired
-    public KeyCloakApiService(KeyCloakOIDCConfig keyCloakOIDCConfig) {
+    public KeyCloakApiService(KeyCloakOIDCConfig keyCloakOIDCConfig, HttpService httpService) {
         this.keyCloakOIDCConfig = keyCloakOIDCConfig;
+        this.httpService = httpService;
     }
 
     public Optional<KeycloakUser> getUser(String userId) throws ResponseException {
@@ -174,17 +176,14 @@ public class KeyCloakApiService {
                 .GET()
                 .build();
 
+
         logger.info("Starting GET request to Keycloak API at {}", uri);
 
-        // Use the shared HttpClient instance
-        var future = HttpClientManager
-                .getExecutor()
-                .submit(() -> HttpClientManager
-                        .getClient()
-                        .send(request, HttpResponse.BodyHandlers.ofString())
-                );
-
-        var res = future.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+        var res = httpService
+                .get(uri, Map.of(
+                        "Content-Type", "application/json",
+                        "Authorization", "Bearer " + accessToken
+                ));
 
         logger.info("GET request to Keycloak API at {} finished with status code {}", uri, res.statusCode());
 
@@ -227,14 +226,9 @@ public class KeyCloakApiService {
 
         logger.info("Starting POST request to Keycloak Token Endpoint at {}", uri);
 
-        var future = HttpClientManager
-                .getExecutor()
-                .submit(() -> HttpClientManager
-                        .getClient()
-                        .send(request, HttpResponse.BodyHandlers.ofString())
-                );
-
-        var res = future.get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+        var res = httpService.post(uri, requestBody, Map.of(
+                "Content-Type", "application/x-www-form-urlencoded"
+        ));
 
         logger.info("POST request to Keycloak Token Endpoint at {} finished with status code {}", uri, res.statusCode());
 
