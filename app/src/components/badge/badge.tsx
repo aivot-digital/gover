@@ -1,26 +1,26 @@
 import {BadgeProps} from './badge-props';
-import {Badge as MuiBadge, Tooltip} from '@mui/material';
+import {Chip, Tooltip} from '@mui/material';
 
 export function Badge(props: BadgeProps) {
     if (props.tooltip) {
         return (
             <Tooltip {...props.tooltip}>
-                <MuiBadge
+                <Chip
                     color={props.color}
                     sx={props.sx}
-                >
-                    {props.label}
-                </MuiBadge>
+                    label={props.label}
+                    size="small"
+                />
             </Tooltip>
         );
     }
 
     return (
-        <MuiBadge
+        <Chip
             color={props.color}
             sx={props.sx}
-        >
-            {props.label}
-        </MuiBadge>
+            label={props.label}
+            size="small"
+        />
     );
 }

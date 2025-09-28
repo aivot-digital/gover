@@ -513,8 +513,12 @@ export function FormDetailsPage() {
                             }}
                         >
                             <GenericPageHeader
-                                title="Allgemeine Einstellungen"
-                                icon={ModuleIcons.configs}
+                                title={'Formular: ' + loadedForm.internalTitle}
+                                badge={{
+                                    color: 'default',
+                                    label: `Version ${loadedForm.version}`
+                                }}
+                                icon={ModuleIcons.forms}
                                 actions={[
                                     {
                                         tooltip: 'Änderung rückgängig machen',
