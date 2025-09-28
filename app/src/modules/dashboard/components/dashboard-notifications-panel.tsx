@@ -1,6 +1,6 @@
 import {Card, CardContent, Typography} from '@mui/material';
 
-export function NotificationsPanel() {
+export function DashboardNotificationsPanel() {
     return (
         <Card
             sx={{

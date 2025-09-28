@@ -7,9 +7,12 @@ import {ProviderLinksGrid} from '../provider-links/components/provider-links-gri
 import React from 'react';
 import {AppMode} from '../../data/app-mode';
 import {Introductory} from '../../components/introductory/introductory';
-import {NotificationsPanel} from './components/notifications-panel';
-import {StatsPanel} from './components/stats-panel';
+import {DashboardNotificationsPanel} from './components/dashboard-notifications-panel';
+import {DashboardStatsPanel} from './components/dashboard-stats-panel';
 import {useLogout} from '../../hooks/use-logout';
+import {DashboardHero} from './components/dashboard-hero';
+import {DashboardProviderLinks} from './components/dashboard-provider-links';
+import {DashboardFormsPanel} from './components/dashboard-forms-panel';
 
 export function Dashboard() {
     const logout = useLogout();
@@ -39,8 +42,11 @@ export function Dashboard() {
                     ]}
                 />
 
-                <Introductory
-                    mode={AppMode.Staff}
+                <DashboardHero
+                    sx={{
+                        mt: 2,
+                        mb: 4,
+                    }}
                 />
 
                 <Grid
@@ -53,7 +59,7 @@ export function Dashboard() {
                             md: 6,
                         }}
                     >
-                        <NotificationsPanel />
+                        <DashboardFormsPanel />
                     </Grid>
                     <Grid
                         size={{
@@ -61,11 +67,15 @@ export function Dashboard() {
                             md: 6,
                         }}
                     >
-                        <StatsPanel />
+                        <DashboardStatsPanel />
                     </Grid>
                 </Grid>
 
-                <ProviderLinksGrid />
+                <DashboardProviderLinks
+                    sx={{
+                        mt: 4,
+                    }}
+                />
             </Container>
         </PageWrapper>
     );

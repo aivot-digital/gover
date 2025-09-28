@@ -1,6 +1,6 @@
 import {Card, CardContent, Typography} from '@mui/material';
 
-export function StatsPanel() {
+export function DashboardStatsPanel() {
     return (
         <Card
             sx={{
