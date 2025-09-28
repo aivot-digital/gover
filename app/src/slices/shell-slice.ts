@@ -16,7 +16,7 @@ interface LoadingMessage {
 }
 
 interface ErrorMessage {
-    type: 'not-found' | 'forbidden' | 'unknown';
+    status: number;
     message?: string;
 }
 
@@ -68,6 +68,9 @@ const shellSlice = createSlice({
         setLoadingMessage(state, action: PayloadAction<LoadingMessage | undefined>) {
             state.loading = action.payload;
         },
+        setErrorMessage(state, action: PayloadAction<ErrorMessage | undefined>) {
+            state.error = action.payload;
+        },
     },
 });
 
@@ -77,6 +80,7 @@ export const {
     setMaximizeDrawer,
     setShowSearchDialog,
     setLoadingMessage,
+    setErrorMessage,
 } = shellSlice.actions;
 
 export const selectStatus = (state: RootState) => state.shell.status;
@@ -85,5 +89,6 @@ export const selectTheme = (state: RootState) => state.shell.setup?.providerThem
 export const selectMaximizeDrawer = (state: RootState) => state.shell.maximizeDrawer;
 export const selectShowSearchDialog = (state: RootState) => state.shell.showSearchDialog;
 export const selectLoadingMessage = (state: RootState) => state.shell.loading;
+export const selectErrorMessage = (state: RootState) => state.shell.error;
 
 export const shellReducer = shellSlice.reducer;
