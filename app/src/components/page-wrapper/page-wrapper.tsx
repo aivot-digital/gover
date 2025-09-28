@@ -34,7 +34,7 @@ export function PageWrapper(props: PropsWithChildren<PageWrapperProps>) {
                     sx={{
                         mt: isNewShellActive() ? undefined : 4,
                         pt: isNewShellActive() ? (props.fullHeight ? undefined : 2) : undefined,
-                        pb: isNewShellActive() ? undefined : 10,
+                        pb: props.fullHeight ? undefined : 10,
                         minHeight: isNewShellActive() ? undefined : 'calc(100vh - ' + toolbarHeight + 'px)',
                     }}
                     maxWidth={props.fullWidth ? false : 'lg'}
