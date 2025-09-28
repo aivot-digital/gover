@@ -3,8 +3,6 @@ import React, {type PropsWithChildren, useState} from 'react';
 import {MetaElement} from '../meta-element/meta-element';
 import {AppToolbar} from '../app-toolbar/app-toolbar';
 import {Box, Container} from '@mui/material';
-import {AppFooter} from '../app-footer/app-footer';
-import {AppMode} from '../../data/app-mode';
 import {AlertComponent} from '../alert/alert-component';
 import {LoadingWrapper} from '../loading-wrapper/loading-wrapper';
 import {isNewShellActive} from '../../shells/staff/is-new-shell-active';

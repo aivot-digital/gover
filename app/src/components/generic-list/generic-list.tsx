@@ -298,6 +298,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         borderRadius: 0,
         borderLeft: 'none',
         borderRight: 'none',
+        backgroundColor: 'background.paper',
         '& .MuiDataGrid-columnHeader:first-of-type, & .MuiDataGrid-cell[data-colindex="0"]': {
             paddingLeft: '16px',
         },
