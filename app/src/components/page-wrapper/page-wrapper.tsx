@@ -33,9 +33,9 @@ export function PageWrapper(props: PropsWithChildren<PageWrapperProps>) {
                 <Container
                     sx={{
                         mt: isNewShellActive() ? undefined : 4,
-                        pt: isNewShellActive() ? 2 : undefined,
-                        pb: 10,
-                        minHeight: 'calc(100vh - ' + toolbarHeight + 'px)',
+                        pt: isNewShellActive() ? (props.fullHeight ? undefined : 2) : undefined,
+                        pb: isNewShellActive() ? undefined : 10,
+                        minHeight: isNewShellActive() ? undefined : 'calc(100vh - ' + toolbarHeight + 'px)',
                     }}
                     maxWidth={props.fullWidth ? false : 'lg'}
                     disableGutters={props.fullWidth}

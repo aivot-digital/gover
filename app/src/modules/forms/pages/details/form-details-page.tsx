@@ -1,4 +1,4 @@
-import {Grid, ThemeProvider, useTheme} from '@mui/material';
+import {Box, Grid, Paper, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {clearLoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loading-placeholder';
@@ -6,7 +6,6 @@ import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
 import {createAppTheme} from '../../../../theming/themes';
 import {NotFoundPage} from '../../../../components/not-found-page/not-found-page';
-import {MetaElement} from '../../../../components/meta-element/meta-element';
 import {resetAdminSettings, toggleComponentTree, toggleValidation, toggleVisibility} from '../../../../slices/admin-settings-slice';
 import {AppToolbar} from '../../../../components/app-toolbar/app-toolbar';
 import {AdminToolsDialog} from '../../../../dialogs/admin-tools/admin-tools-dialog';
@@ -58,6 +57,9 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {addDerivationLogItems} from '../../../../slices/logging-slice';
 import {RootState} from '../../../../store';
+import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
 
 export const DialogSearchParam = 'dialog';
 
@@ -260,7 +262,7 @@ export function FormDetailsPage() {
         })
             .then((newState) => {
                 setElementData(newState.elementData);
-                dispatch(addDerivationLogItems(newState.logItems))
+                dispatch(addDerivationLogItems(newState.logItems));
             })
             .finally(() => {
                 dispatch(hideLoadingOverlay());
@@ -489,128 +491,145 @@ export function FormDetailsPage() {
 
         return (
             <ThemeProvider theme={_theme}>
-                <MetaElement
+                <PageWrapper
                     title={`Editor - ${loadedForm.internalTitle} — Version ${loadedForm.version}`}
-                />
-                <AppToolbar
-                    title={`${loadedForm.internalTitle} — Version ${loadedForm.version}`}
-                    updateToolbarHeight={updateToolbarHeight}
-                    actions={[
-                        {
-                            tooltip: 'Änderung rückgängig machen',
-                            icon: <UndoIcon />,
-                            onClick: handleUndo,
-                            disabled: !hasPastLoadedForm,
-                            visible: loadedForm.status === FormStatus.Drafted,
-                        },
-                        {
-                            tooltip: 'Änderung wiederherstellen',
-                            icon: <RedoIcon />,
-                            onClick: handleRedo,
-                            disabled: !hasFutureLoadedForm,
-                            visible: loadedForm.status === FormStatus.Drafted,
-                        },
-                        'separator',
-                        {
-                            tooltip: 'Historie anzeigen',
-                            icon: <AccessTimeIcon />,
-                            onClick: () => {
-                                setShowRevisions(true);
-                            },
-                            visible: canViewHistory,
-                        },
-                        {
-                            tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
-                            icon: disableValidation ? <DoneAllOutlinedIcon /> :
-                                <RemoveDoneOutlinedIcon />,
-                            onClick: () => {
-                                dispatch(toggleValidation());
-                            },
-                        },
-                        {
-                            tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                            icon: disableVisibility ? <VisibilityOutlinedIcon /> :
-                                <VisibilityOffOutlinedIcon />,
-                            onClick: () => {
-                                dispatch(toggleVisibility());
-                            },
-                        },
-                        'separator',
-                        {
-                            tooltip: 'Admin-Werkzeuge öffnen',
-                            icon: <HandymanOutlinedIcon />,
-                            onClick: () => {
-                                setShowAdminTools(true);
-                            },
-                        },
-                        {
-                            tooltip: hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
-                            icon: hideComponentTree ? <DesktopWindowsOutlinedIcon /> :
-                                <DesktopAccessDisabledOutlinedIcon />,
-                            onClick: () => {
-                                dispatch(toggleComponentTree());
-                            },
-                        },
-                        {
-                            tooltip: 'Formular als antragstellende Person öffnen (in neuem Tab)',
-                            icon: <LaunchOutlinedIcon />,
-                            href: `/${loadedForm.slug ?? ''}/${loadedForm.version ?? ''}`,
-                        },
-                    ]}
-                />
-                <Grid
-                    container
-                    sx={{
-                        minHeight: 'calc(100vh - ' + toolbarHeight + 'px)',
-                    }}
+                    fullWidth={true}
+                    fullHeight={true}
                 >
-                    {
-                        !hideComponentTree &&
-                        <Grid
-                            sx={{
-                                px: 2,
-                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                height: 'calc(100vh - ' + toolbarHeight + 'px)',
-                                overflowY: 'scroll',
-                                borderRight: '1px solid #E0E7E0',
-                                position: 'relative',
-                            }}
-                            size={4}
-                        >
-                            <ElementTree
-                                entity={loadedForm}
-                                onPatch={handlePatch}
-                                editable={isEditable}
-                                scope="application"
-                                enabledIdentityProviderInfos={identityProviderInfos}
-                            />
-                        </Grid>
-                    }
-
-                    <Grid
+                    <Box
                         sx={{
-                            height: 'calc(100vh - ' + toolbarHeight + 'px)',
-                            overflowY: 'scroll',
+                            height: '100vh',
+                            display: 'flex',
                         }}
-                        ref={scrollContainerRef}
-                        size={hideComponentTree ? 12 : 8}
                     >
-                        <ViewDispatcherComponent
-                            rootElement={loadedForm.rootElement}
-                            allElements={allElements}
-                            element={loadedForm.rootElement}
-                            scrollContainerRef={scrollContainerRef}
-                            isBusy={false}
-                            isDeriving={false}
-                            mode="editor"
-                            elementData={elementData}
-                            onElementDataChange={setElementData}
-                            onElementBlur={undefined}
-                            derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
-                            disableVisibility={disableVisibility}
-                        />
-                    </Grid>
-                </Grid>
+                        {/* Working Area */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flex: 1,
+                                px: 2,
+                                py: 2,
+                            }}
+                        >
+                            <GenericPageHeader
+                                title="Allgemeine Einstellungen"
+                                icon={ModuleIcons.configs}
+                                actions={[
+                                    {
+                                        tooltip: 'Änderung rückgängig machen',
+                                        icon: <UndoIcon />,
+                                        onClick: handleUndo,
+                                        disabled: !hasPastLoadedForm,
+                                        visible: loadedForm.status === FormStatus.Drafted,
+                                    },
+                                    {
+                                        tooltip: 'Änderung wiederherstellen',
+                                        icon: <RedoIcon />,
+                                        onClick: handleRedo,
+                                        disabled: !hasFutureLoadedForm,
+                                        visible: loadedForm.status === FormStatus.Drafted,
+                                    },
+                                    'separator',
+                                    {
+                                        tooltip: 'Historie anzeigen',
+                                        icon: <AccessTimeIcon />,
+                                        onClick: () => {
+                                            setShowRevisions(true);
+                                        },
+                                        visible: canViewHistory,
+                                    },
+                                    {
+                                        tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
+                                        icon: disableValidation ? <DoneAllOutlinedIcon /> :
+                                            <RemoveDoneOutlinedIcon />,
+                                        onClick: () => {
+                                            dispatch(toggleValidation());
+                                        },
+                                    },
+                                    {
+                                        tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
+                                        icon: disableVisibility ? <VisibilityOutlinedIcon /> :
+                                            <VisibilityOffOutlinedIcon />,
+                                        onClick: () => {
+                                            dispatch(toggleVisibility());
+                                        },
+                                    },
+                                    'separator',
+                                    {
+                                        tooltip: 'Admin-Werkzeuge öffnen',
+                                        icon: <HandymanOutlinedIcon />,
+                                        onClick: () => {
+                                            setShowAdminTools(true);
+                                        },
+                                    },
+                                    {
+                                        tooltip: hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
+                                        icon: hideComponentTree ? <DesktopWindowsOutlinedIcon /> :
+                                            <DesktopAccessDisabledOutlinedIcon />,
+                                        onClick: () => {
+                                            dispatch(toggleComponentTree());
+                                        },
+                                    },
+                                    {
+                                        tooltip: 'Formular als antragstellende Person öffnen (in neuem Tab)',
+                                        icon: <LaunchOutlinedIcon />,
+                                        href: `/${loadedForm.slug ?? ''}/${loadedForm.version ?? ''}`,
+                                    },
+                                ]}
+                            />
+
+                            <Paper
+                                sx={{
+                                    overflowY: 'scroll',
+                                    flex: 1,
+                                    mt: 2,
+                                }}
+                                ref={scrollContainerRef}
+                            >
+                                <ViewDispatcherComponent
+                                    rootElement={loadedForm.rootElement}
+                                    allElements={allElements}
+                                    element={loadedForm.rootElement}
+                                    scrollContainerRef={scrollContainerRef}
+                                    isBusy={false}
+                                    isDeriving={false}
+                                    mode="editor"
+                                    elementData={elementData}
+                                    onElementDataChange={setElementData}
+                                    onElementBlur={undefined}
+                                    derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                    disableVisibility={disableVisibility}
+                                />
+                            </Paper>
+                        </Box>
+
+                        {/* Element Tree */}
+                        {
+                            !hideComponentTree &&
+                            <Paper
+                                sx={{
+                                    px: 2,
+                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                    borderLeft: '1px solid #E0E7E0',
+                                    borderRadius: 0,
+                                    position: 'relative',
+                                    width: '24rem',
+                                    height: '100vh',
+                                }}
+                            >
+                                <ElementTree
+                                    entity={loadedForm}
+                                    onPatch={handlePatch}
+                                    editable={isEditable}
+                                    scope="application"
+                                    enabledIdentityProviderInfos={identityProviderInfos}
+                                />
+                            </Paper>
+                        }
+                    </Box>
+                </PageWrapper>
+
                 <AdminToolsDialog
                     open={showAdminTools}
                     onClose={() => {
