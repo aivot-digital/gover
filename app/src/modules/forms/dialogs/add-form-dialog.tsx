@@ -19,6 +19,8 @@ import {FormRequestDTO} from '../dtos/form-request-dto';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import {useConfirm} from '../../../providers/confirm-provider';
+import {useChangeBlocker} from '../../../hooks/use-change-blocker';
 
 const FormSchema = yup.object({
     developingDepartmentId: yup
@@ -61,6 +63,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
     const api = useApi();
     const dispatch = useAppDispatch();
+    const showConfirm = useConfirm();
 
     const user = useAppSelector(selectUser);
 
@@ -78,6 +81,8 @@ export function AddFormDialog(props: AddFormDialogProps) {
     const {
         slug: currentItemSlug,
     } = currentItem as FormDetailsResponseDTO;
+
+    const changeBlocker = useChangeBlocker(basis, currentItem);
 
     const hasErrors = useMemo(() => {
         return Object.keys(errors).length > 0 &&
@@ -177,10 +182,24 @@ export function AddFormDialog(props: AddFormDialogProps) {
         }
     };
 
-    const handleClose = (_: any, reason: string): void => {
-        if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
-            return;
+    const handleClose = async (_: any, reason: string): Promise<void> => {
+        if (changeBlocker.hasChanged) {
+            const confirmed = await showConfirm({
+                title: 'Anlage abbrechen?',
+                children: (
+                    <Typography>
+                        Möchten Sie die Anlage eines neuen Formulars wirklich abbrechen? Bisher eingegebene Daten werden dabei verworfen.
+                    </Typography>
+                ),
+                confirmButtonText: 'Ja, Eingaben verwerfen',
+                isDestructive: false,
+            });
+
+            if (!confirmed) {
+                return;
+            }
         }
+
         resetForm();
         onClose();
     };
@@ -355,6 +374,8 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     Abbrechen
                 </Button>
             </DialogActions>
+
+            {changeBlocker.dialog}
         </Dialog>
     );
 }
