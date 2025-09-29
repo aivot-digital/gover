@@ -1,11 +1,14 @@
 package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.config.repositories.SystemConfigRepository;
+import de.aivot.GoverBackend.data.SystemConfigKey;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -15,13 +18,12 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
-import de.aivot.GoverBackend.submission.entities.Submission;
-import de.aivot.GoverBackend.submission.filters.SubmissionFilter;
 import de.aivot.GoverBackend.submission.filters.SubmissionWithMembershipFilter;
-import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
 import de.aivot.GoverBackend.submission.repositories.SubmissionWithMembershipRepository;
+import de.aivot.GoverBackend.system.services.SystemService;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
-import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
+import de.aivot.GoverBackend.theme.services.ThemeService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -48,6 +51,8 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private final IdentityProviderRepository identityProviderRepository;
     private final FormRepository formRepository;
     private final SubmissionWithMembershipRepository submissionWithMembershipRepository;
+    private final SystemConfigRepository systemConfigRepository;
+    private final SystemService systemService;
 
     @Autowired
     public FormVersionService(FormVersionRepository repository,
@@ -58,7 +63,10 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                               PaymentProviderRepository paymentProviderRepository,
                               IdentityProviderRepository identityProviderRepository,
                               FormRepository formRepository,
-                              SubmissionWithMembershipRepository submissionWithMembershipRepository) {
+                              SubmissionWithMembershipRepository submissionWithMembershipRepository,
+                              SystemConfigRepository systemConfigRepository,
+                              SystemService systemService,
+                              SystemService systemService1) {
         this.repository = repository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
@@ -68,6 +76,8 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         this.identityProviderRepository = identityProviderRepository;
         this.formRepository = formRepository;
         this.submissionWithMembershipRepository = submissionWithMembershipRepository;
+        this.systemConfigRepository = systemConfigRepository;
+        this.systemService = systemService1;
     }
 
     @Nonnull
@@ -281,5 +291,40 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
 
         // Otherwise reset the value to null
         setter.accept(null);
+    }
+
+    @Nonnull
+    public List<ThemeEntity> getFormThemesInOrderOfImportance(FormVersionWithDetailsEntity formVersion) {
+        var themes = new LinkedList<ThemeEntity>();
+
+        if (formVersion.getThemeId() != null) {
+            themeRepository
+                    .findById(formVersion.getThemeId())
+                    .ifPresent(themes::add);
+        }
+
+        Consumer<Integer> getDepartmentTheme = (departmentId) -> {
+            if (departmentId == null) {
+                return;
+            }
+            departmentRepository
+                    .findById(departmentId)
+                    .ifPresent(department -> {
+                        if (department.getThemeId() != null) {
+                            themeRepository
+                                    .findById(department.getThemeId())
+                                    .ifPresent(themes::add);
+                        }
+                    });
+        };
+
+        getDepartmentTheme.accept(formVersion.getResponsibleDepartmentId());
+        getDepartmentTheme.accept(formVersion.getManagingDepartmentId());
+        getDepartmentTheme.accept(formVersion.getDevelopingDepartmentId());
+
+        themes.add(systemService
+                .retrieveDefaultTheme());
+
+        return themes;
     }
 }

@@ -83,6 +83,7 @@ public class CustomerMailService {
         attachments.add(pdfAttachment);
 
         mailService.sendMail(
+                null, // TODO: Theme
                 to,
                 Optional.empty(),
                 Optional.empty(),

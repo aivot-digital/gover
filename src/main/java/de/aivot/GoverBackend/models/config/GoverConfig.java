@@ -23,6 +23,14 @@ public class GoverConfig {
     private String goverHostname;
     private Integer maxSubmissionCopyRetryCount;
 
+    public String getDefaultLogoUrl() {
+        return createUrl("/assets/default-logo.png");
+    }
+
+    public String getDefaultFaviconUrl() {
+        return createUrl("/assets/default-favicon.ico");
+    }
+
     public String createUrl(String path) {
         var uri = URI.create(goverHostname);
         return uri.resolve(path).toString();

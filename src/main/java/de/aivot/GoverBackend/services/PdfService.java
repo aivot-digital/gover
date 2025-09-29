@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
-import de.aivot.GoverBackend.core.configs.LogoSystemConfigDefinition;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
@@ -258,7 +257,7 @@ public class PdfService {
                 .getValue();
 
         var logoAssetKey = systemConfigService
-                .retrieve(LogoSystemConfigDefinition.KEY)
+                .retrieve(null) // TODO: Theming
                 .getValue();
 
         var logoAssetName = "";

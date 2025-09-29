@@ -2,29 +2,31 @@ package de.aivot.GoverBackend.mail.services;
 
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
-import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.config.services.UserConfigService;
-import de.aivot.GoverBackend.core.configs.LogoSystemConfigDefinition;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
+import de.aivot.GoverBackend.department.filters.DepartmentMembershipFilter;
 import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
-import de.aivot.GoverBackend.department.filters.DepartmentMembershipFilter;
-import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.mail.enums.MailTemplate;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
 import de.aivot.GoverBackend.services.TemplateLoaderService;
-import de.aivot.GoverBackend.mail.enums.MailTemplate;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
+import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
-import jakarta.mail.*;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Multipart;
+import jakarta.mail.Part;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
@@ -71,8 +73,7 @@ public class MailService {
             DepartmentMembershipService departmentMembershipService,
             AssetRepository assetRepository,
             UserService userService,
-            UserConfigService userConfigService
-    ) {
+            UserConfigService userConfigService) {
         this.goverConfig = goverConfig;
         this.mailSender = mailSender;
         this.systemConfigService = systemConfigService;
@@ -106,11 +107,15 @@ public class MailService {
     ) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         context.put("department", department);
 
+        var departmentTheme = departmentService
+                .getDepartmentTheme(department);
+
         if (StringUtils.isNotNullOrEmpty(department.getDepartmentMail())) {
             String[] mails = department.getDepartmentMail().split(",");
             for (String mail : mails) {
                 if (StringUtils.isNotNullOrEmpty(mail)) {
                     sendMail(
+                            departmentTheme,
                             mail.trim(),
                             Optional.empty(),
                             Optional.empty(),
@@ -138,7 +143,11 @@ public class MailService {
 
                 context.put("membership", membership);
                 try {
-                    var hasSent = sendMailToUser(membership.getUserId(), subject, template, context);
+                    var hasSent = sendMailToUser(departmentTheme,
+                            membership.getUserId(),
+                            subject,
+                            template,
+                            context);
                     if (hasSent) {
                         hasSentAtLeastOnce = true;
                     }
@@ -185,11 +194,15 @@ public class MailService {
         for (DepartmentEntity department : departments) {
             context.put("department", department);
 
+           var theme = departmentService
+                   .getDepartmentTheme(department);
+
             if (StringUtils.isNotNullOrEmpty(department.getDepartmentMail())) {
                 String[] mails = department.getDepartmentMail().split(",");
                 for (String mail : mails) {
                     if (StringUtils.isNotNullOrEmpty(mail)) {
                         sendMail(
+                                theme,
                                 mail.trim(),
                                 Optional.empty(),
                                 Optional.empty(),
@@ -217,7 +230,7 @@ public class MailService {
 
                     context.put("membership", membership);
                     try {
-                        var hasSent = sendMailToUser(userId, subject, template, context);
+                        var hasSent = sendMailToUser(theme, userId, subject, template, context);
                         if (hasSent) {
                             alreadyNotifiedUserIds.add(userId);
                             hasSentAtLeastOnce = true;
@@ -246,6 +259,7 @@ public class MailService {
      * @throws ResponseException If the user config definition is not found
      */
     public boolean sendMailToUser(
+            ThemeEntity theme,
             String userId,
             String subject,
             MailTemplate template,
@@ -255,7 +269,7 @@ public class MailService {
         var user = userService
                 .retrieve(userId)
                 .orElseThrow(() -> new MessagingException("User with id \"" + userId + "\" not found"));
-        return sendMailToUser(user, subject, template, context);
+        return sendMailToUser(theme, user, subject, template, context);
     }
 
     /**
@@ -270,6 +284,7 @@ public class MailService {
      * @throws ResponseException If the user config definition is not found
      */
     public boolean sendMailToUser(
+            ThemeEntity theme,
             UserEntity user,
             String subject,
             MailTemplate template,
@@ -314,6 +329,7 @@ public class MailService {
 
         context.put("user", user);
         sendMail(
+                theme,
                 user.getEmail(),
                 Optional.empty(),
                 Optional.empty(),
@@ -327,6 +343,7 @@ public class MailService {
     }
 
     public void sendMail(
+            ThemeEntity theme,
             String to,
             Optional<String> cc,
             Optional<String> bcc,
@@ -335,10 +352,11 @@ public class MailService {
             Map<String, Object> context,
             Optional<Collection<Path>> attachmentPaths
     ) throws MessagingException, MailException, IOException, ResponseException {
-        sendMail(to, cc, bcc, subject, template, context, attachmentPaths, Optional.empty());
+        sendMail(theme, to, cc, bcc, subject, template, context, attachmentPaths, Optional.empty());
     }
 
     public void sendMail(
+            ThemeEntity theme,
             String to,
             Optional<String> cc,
             Optional<String> bcc,
@@ -370,7 +388,7 @@ public class MailService {
             );
         }
 
-        context.put("base", createBaseContext());
+        context.put("base", createBaseContext(theme));
 
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
@@ -420,7 +438,7 @@ public class MailService {
     }
 
     // TODO: This was copied to the pdf service. Needs unification!
-    private HashMap<String, Object> createBaseContext() throws ResponseException {
+    private HashMap<String, Object> createBaseContext(ThemeEntity theme) throws ResponseException {
         var context = new HashMap<String, Object>();
 
         context.put("providerName", systemConfigService
@@ -428,10 +446,7 @@ public class MailService {
                 .getValue()
         );
 
-        context.put("logoAssetKey", systemConfigService
-                .retrieve(LogoSystemConfigDefinition.KEY)
-                .getValue()
-        );
+        context.put("logoAssetKey", theme.getLogoKey());
 
         var logoAssetKey = context.get("logoAssetKey").toString();
         try {

@@ -1,11 +1,14 @@
 package de.aivot.GoverBackend.mail.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
@@ -40,6 +43,7 @@ public class SubmissionMailService {
     private final PdfService pdfService;
     private final PaymentTransactionRepository paymentTransactionService;
     private final PaymentProviderRepository paymentProviderService;
+    private final FormVersionService formVersionService;
 
     @Autowired
     public SubmissionMailService(
@@ -48,14 +52,14 @@ public class SubmissionMailService {
             UserService userService,
             PdfService pdfService,
             PaymentTransactionRepository paymentTransactionService,
-            PaymentProviderRepository paymentProviderService
-    ) {
+            PaymentProviderRepository paymentProviderService, FormVersionService formVersionService) {
         this.mailService = mailService;
         this.submissionStorageService = submissionStorageService;
         this.userService = userService;
         this.pdfService = pdfService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderService = paymentProviderService;
+        this.formVersionService = formVersionService;
     }
 
     public void sendToDestination(FormVersionWithDetailsEntity form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
@@ -104,7 +108,11 @@ public class SubmissionMailService {
         var destinationDataBytes = new ObjectMapper().writeValueAsBytes(destinationData);
         attachmentsData.add(new MailAttachmentBytes("Antrag.json", MediaType.APPLICATION_JSON, destinationDataBytes));
 
+        var departmentTheme = formVersionService
+                .getFormThemesInOrderOfImportance(form);
+
         mailService.sendMail(
+                departmentTheme.getFirst(),
                 to,
                 cc,
                 bcc,
@@ -210,6 +218,7 @@ public class SubmissionMailService {
 
         if (assignee != null) {
             mailService.sendMailToUser(
+                    null, // TODO
                     assignee.getId(),
                     "[Gover] " + (submission.getIsTestSubmission() ? "[Test] " : "") + title,
                     MailTemplate.SubmissionArchived,
@@ -273,6 +282,7 @@ public class SubmissionMailService {
 
         for (UserEntity recipient : recipients) {
             mailService.sendMailToUser(
+                    null, // TODO
                     recipient.getId(),
                     "[Gover] " + (submission.getIsTestSubmission() ? "[Test] " : "") + title,
                     isReassignment ? MailTemplate.SubmissionReassigned : MailTemplate.SubmissionAssigned,

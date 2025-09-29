@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.system.dtos;
 
-import de.aivot.GoverBackend.theme.entities.Theme;
+import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import jakarta.annotation.Nullable;
 
 public record SystemSetupDTO(
@@ -8,6 +9,6 @@ public record SystemSetupDTO(
         String providerName,
 
         @Nullable
-        Theme providerTheme
+        ThemeResponseDTO providerTheme
 ) {
 }

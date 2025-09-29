@@ -1,12 +1,16 @@
 package de.aivot.GoverBackend.system.controllers;
 
+import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.data.SystemConfigKey;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.system.dtos.SystemSetupDTO;
-import de.aivot.GoverBackend.theme.entities.Theme;
+import de.aivot.GoverBackend.system.services.SystemService;
+import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.services.ThemeService;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,14 +27,18 @@ public class SystemController {
     private final GoverConfig goverConfig;
     private final SystemConfigService systemConfigService;
     private final ThemeService themeService;
+    private final AssetService assetService;
+    private final SystemService systemService;
 
     @Autowired
     public SystemController(
             GoverConfig goverConfig,
-            SystemConfigService systemConfigService, ThemeService themeService) {
+            SystemConfigService systemConfigService, ThemeService themeService, AssetService assetService, SystemService systemService) {
         this.goverConfig = goverConfig;
         this.systemConfigService = systemConfigService;
         this.themeService = themeService;
+        this.assetService = assetService;
+        this.systemService = systemService;
     }
 
     @GetMapping("file-extensions/")
@@ -41,57 +49,43 @@ public class SystemController {
     @GetMapping("favicon/")
     public void getFavicon(
             HttpServletResponse response
-    ) throws IOException {
-        String faviconAssetKey;
-        try {
-            faviconAssetKey = systemConfigService
-                    .retrieve(SystemConfigKey.SYSTEM__FAVICON.getKey())
-                    .getValueAsString()
-                    .orElse(null);
-        } catch (ResponseException e) {
-            return;
+    ) throws IOException, ResponseException {
+        var theme = getSystemTheme();
+
+        String redirectUrl;
+        if (theme.getFaviconKey() != null) {
+            redirectUrl = goverConfig.getDefaultFaviconUrl();
+        } else {
+            redirectUrl = assetService.createUrl(theme.getFaviconKey());
         }
 
-        if (faviconAssetKey == null) {
-            return;
-        }
-
-        var targetUrl = goverConfig.createUrl("/api/public/assets/" + faviconAssetKey);
-
-        response.sendRedirect(targetUrl);
+        response.sendRedirect(redirectUrl);
     }
 
     @GetMapping("logo/")
     public void getLogo(
             HttpServletResponse response
-    ) throws IOException {
-        String faviconAssetKey;
-        try {
-            faviconAssetKey = systemConfigService
-                    .retrieve(SystemConfigKey.SYSTEM__LOGO.getKey())
-                    .getValueAsString()
-                    .orElse(null);
-        } catch (ResponseException e) {
-            return;
+    ) throws IOException, ResponseException {
+        var theme = getSystemTheme();
+
+        String redirectUrl;
+        if (theme.getLogoKey() != null) {
+            redirectUrl = goverConfig.getDefaultLogoUrl();
+        } else {
+            redirectUrl = assetService.createUrl(theme.getLogoKey());
         }
 
-        if (faviconAssetKey == null) {
-            return;
-        }
-
-        var targetUrl = goverConfig.createUrl("/api/public/assets/" + faviconAssetKey);
-
-        response.sendRedirect(targetUrl);
+        response.sendRedirect(redirectUrl);
     }
 
     @GetMapping("setup/")
-    public SystemSetupDTO getSelectedTheme() {
+    public SystemSetupDTO getSelectedTheme() throws ResponseException {
         var providerName = getProviderName();
         var systemTheme = getSystemTheme();
 
         return new SystemSetupDTO(
                 providerName,
-                systemTheme
+                ThemeResponseDTO.fromEntity(systemTheme)
         );
     }
 
@@ -110,24 +104,9 @@ public class SystemController {
         return providerName;
     }
 
-    @Nullable
-    private Theme getSystemTheme() {
-        Integer themeId;
-        try {
-            themeId = systemConfigService
-                    .retrieve(SystemConfigKey.SYSTEM__THEME.getKey())
-                    .getValueAsInteger()
-                    .orElse(null);
-        } catch (ResponseException e) {
-            return null;
-        }
-
-        if (themeId == null) {
-            return null;
-        }
-
-        return themeService
-                .retrieve(themeId)
-                .orElse(null);
+    @Nonnull
+    private ThemeEntity getSystemTheme() throws ResponseException {
+        return systemService
+                .retrieveDefaultTheme();
     }
 }

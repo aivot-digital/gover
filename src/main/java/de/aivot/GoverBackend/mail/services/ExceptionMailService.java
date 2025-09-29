@@ -67,6 +67,7 @@ public class ExceptionMailService {
         for (String mail : goverConfig.getReportMail()) {
             try {
                 mailService.sendMail(
+                        null, // TODO: Theme
                         mail,
                         Optional.empty(),
                         Optional.empty(),

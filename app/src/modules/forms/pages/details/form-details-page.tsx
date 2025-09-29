@@ -490,107 +490,107 @@ export function FormDetailsPage() {
         };
 
         return (
-            <ThemeProvider theme={_theme}>
-                <PageWrapper
-                    title={`Editor - ${loadedForm.internalTitle} — Version ${loadedForm.version}`}
-                    fullWidth={true}
-                    fullHeight={true}
+            <PageWrapper
+                title={`Editor - ${loadedForm.internalTitle} — Version ${loadedForm.version}`}
+                fullWidth={true}
+                fullHeight={true}
+            >
+                <Box
+                    sx={{
+                        height: '100vh',
+                        display: 'flex',
+                    }}
                 >
+                    {/* Working Area */}
                     <Box
                         sx={{
-                            height: '100vh',
                             display: 'flex',
+                            flexDirection: 'column',
+                            flex: 1,
+                            px: 2,
+                            py: 2,
                         }}
                     >
-                        {/* Working Area */}
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                flex: 1,
-                                px: 2,
-                                py: 2,
+                        <GenericPageHeader
+                            title={'Formular: ' + loadedForm.internalTitle}
+                            badge={{
+                                color: 'default',
+                                label: `Version ${loadedForm.version}`,
                             }}
-                        >
-                            <GenericPageHeader
-                                title={'Formular: ' + loadedForm.internalTitle}
-                                badge={{
-                                    color: 'default',
-                                    label: `Version ${loadedForm.version}`
-                                }}
-                                icon={ModuleIcons.forms}
-                                actions={[
-                                    {
-                                        tooltip: 'Änderung rückgängig machen',
-                                        icon: <UndoIcon />,
-                                        onClick: handleUndo,
-                                        disabled: !hasPastLoadedForm,
-                                        visible: loadedForm.status === FormStatus.Drafted,
+                            icon={ModuleIcons.forms}
+                            actions={[
+                                {
+                                    tooltip: 'Änderung rückgängig machen',
+                                    icon: <UndoIcon />,
+                                    onClick: handleUndo,
+                                    disabled: !hasPastLoadedForm,
+                                    visible: loadedForm.status === FormStatus.Drafted,
+                                },
+                                {
+                                    tooltip: 'Änderung wiederherstellen',
+                                    icon: <RedoIcon />,
+                                    onClick: handleRedo,
+                                    disabled: !hasFutureLoadedForm,
+                                    visible: loadedForm.status === FormStatus.Drafted,
+                                },
+                                'separator',
+                                {
+                                    tooltip: 'Historie anzeigen',
+                                    icon: <AccessTimeIcon />,
+                                    onClick: () => {
+                                        setShowRevisions(true);
                                     },
-                                    {
-                                        tooltip: 'Änderung wiederherstellen',
-                                        icon: <RedoIcon />,
-                                        onClick: handleRedo,
-                                        disabled: !hasFutureLoadedForm,
-                                        visible: loadedForm.status === FormStatus.Drafted,
+                                    visible: canViewHistory,
+                                },
+                                {
+                                    tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
+                                    icon: disableValidation ? <DoneAllOutlinedIcon /> :
+                                        <RemoveDoneOutlinedIcon />,
+                                    onClick: () => {
+                                        dispatch(toggleValidation());
                                     },
-                                    'separator',
-                                    {
-                                        tooltip: 'Historie anzeigen',
-                                        icon: <AccessTimeIcon />,
-                                        onClick: () => {
-                                            setShowRevisions(true);
-                                        },
-                                        visible: canViewHistory,
+                                },
+                                {
+                                    tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
+                                    icon: disableVisibility ? <VisibilityOutlinedIcon /> :
+                                        <VisibilityOffOutlinedIcon />,
+                                    onClick: () => {
+                                        dispatch(toggleVisibility());
                                     },
-                                    {
-                                        tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
-                                        icon: disableValidation ? <DoneAllOutlinedIcon /> :
-                                            <RemoveDoneOutlinedIcon />,
-                                        onClick: () => {
-                                            dispatch(toggleValidation());
-                                        },
+                                },
+                                'separator',
+                                {
+                                    tooltip: 'Admin-Werkzeuge öffnen',
+                                    icon: <HandymanOutlinedIcon />,
+                                    onClick: () => {
+                                        setShowAdminTools(true);
                                     },
-                                    {
-                                        tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                                        icon: disableVisibility ? <VisibilityOutlinedIcon /> :
-                                            <VisibilityOffOutlinedIcon />,
-                                        onClick: () => {
-                                            dispatch(toggleVisibility());
-                                        },
+                                },
+                                {
+                                    tooltip: hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
+                                    icon: hideComponentTree ? <DesktopWindowsOutlinedIcon /> :
+                                        <DesktopAccessDisabledOutlinedIcon />,
+                                    onClick: () => {
+                                        dispatch(toggleComponentTree());
                                     },
-                                    'separator',
-                                    {
-                                        tooltip: 'Admin-Werkzeuge öffnen',
-                                        icon: <HandymanOutlinedIcon />,
-                                        onClick: () => {
-                                            setShowAdminTools(true);
-                                        },
-                                    },
-                                    {
-                                        tooltip: hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
-                                        icon: hideComponentTree ? <DesktopWindowsOutlinedIcon /> :
-                                            <DesktopAccessDisabledOutlinedIcon />,
-                                        onClick: () => {
-                                            dispatch(toggleComponentTree());
-                                        },
-                                    },
-                                    {
-                                        tooltip: 'Formular als antragstellende Person öffnen (in neuem Tab)',
-                                        icon: <LaunchOutlinedIcon />,
-                                        href: `/${loadedForm.slug ?? ''}/${loadedForm.version ?? ''}`,
-                                    },
-                                ]}
-                            />
+                                },
+                                {
+                                    tooltip: 'Formular als antragstellende Person öffnen (in neuem Tab)',
+                                    icon: <LaunchOutlinedIcon />,
+                                    href: `/${loadedForm.slug ?? ''}/${loadedForm.version ?? ''}`,
+                                },
+                            ]}
+                        />
 
-                            <Paper
-                                sx={{
-                                    overflowY: 'scroll',
-                                    flex: 1,
-                                    mt: 2,
-                                }}
-                                ref={scrollContainerRef}
-                            >
+                        <Paper
+                            sx={{
+                                overflowY: 'scroll',
+                                flex: 1,
+                                mt: 2,
+                            }}
+                            ref={scrollContainerRef}
+                        >
+                            <ThemeProvider theme={_theme}>
                                 <ViewDispatcherComponent
                                     rootElement={loadedForm.rootElement}
                                     allElements={allElements}
@@ -605,34 +605,34 @@ export function FormDetailsPage() {
                                     derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
                                     disableVisibility={disableVisibility}
                                 />
-                            </Paper>
-                        </Box>
-
-                        {/* Element Tree */}
-                        {
-                            !hideComponentTree &&
-                            <Paper
-                                sx={{
-                                    px: 2,
-                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                    borderLeft: '1px solid #E0E7E0',
-                                    borderRadius: 0,
-                                    position: 'relative',
-                                    width: '24rem',
-                                    height: '100vh',
-                                }}
-                            >
-                                <ElementTree
-                                    entity={loadedForm}
-                                    onPatch={handlePatch}
-                                    editable={isEditable}
-                                    scope="application"
-                                    enabledIdentityProviderInfos={identityProviderInfos}
-                                />
-                            </Paper>
-                        }
+                            </ThemeProvider>
+                        </Paper>
                     </Box>
-                </PageWrapper>
+
+                    {/* Element Tree */}
+                    {
+                        !hideComponentTree &&
+                        <Paper
+                            sx={{
+                                px: 2,
+                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                borderLeft: '1px solid #E0E7E0',
+                                borderRadius: 0,
+                                position: 'relative',
+                                width: '24rem',
+                                height: '100vh',
+                            }}
+                        >
+                            <ElementTree
+                                entity={loadedForm}
+                                onPatch={handlePatch}
+                                editable={isEditable}
+                                scope="application"
+                                enabledIdentityProviderInfos={identityProviderInfos}
+                            />
+                        </Paper>
+                    }
+                </Box>
 
                 <AdminToolsDialog
                     open={showAdminTools}
@@ -640,7 +640,6 @@ export function FormDetailsPage() {
                         setShowAdminTools(false);
                     }}
                 />
-
                 <DeveloperTools
                     rootElement={loadedForm.rootElement}
                     elementData={elementData}
@@ -666,7 +665,7 @@ export function FormDetailsPage() {
                     open={showRevisions}
                     onClose={() => setShowRevisions(false)}
                 />
-            </ThemeProvider>
+            </PageWrapper>
         );
     }
 }
