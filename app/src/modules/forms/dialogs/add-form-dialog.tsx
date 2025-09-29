@@ -264,7 +264,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
                         mb: 2,
                     }}
                 >
-                    Vergeben Sie einen Titel für das Formular um es besser identifizieren zu können.
+                    Vergeben Sie einen internen Titel für das Formular um dieses identifizieren zu können.
                     Diesen Titel können nur Sie und ihre Kolleg:innen einsehen.
                 </Typography>
 
@@ -294,8 +294,8 @@ export function AddFormDialog(props: AddFormDialogProps) {
                         mb: 2,
                     }}
                 >
-                    Vergeben Sie einen Titel für das Formular um es besser identifizieren zu können.
-                    Diesen Titel können nur Sie und ihre Kolleg:innen einsehen.
+                    Vergeben Sie einen öffentlichen Titel für das Formular.
+                    Dieser Titel ist öffentlich sichtbar und wird ggü. Anstragstellenden angezeigt.
                 </Typography>
 
                 <TextFieldComponent

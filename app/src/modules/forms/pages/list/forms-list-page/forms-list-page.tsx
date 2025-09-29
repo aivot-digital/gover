@@ -43,6 +43,7 @@ import {FormStatusChip} from '../../../components/form-status-chip';
 import {DeleteApplicationDialog} from '../../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 import {FormsListPageHelp} from './components/forms-list-page-help';
 import {FormStatusChipGroup, getFormStatus} from '../../../components/form-status-chip-group';
+import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 
 export function FormsListPage() {
     const dispatch = useAppDispatch();
@@ -132,7 +133,7 @@ export function FormsListPage() {
                                 }}
                                 color={'text.secondary'}
                             >
-                                Entwickelt durch: {departments.find(dep => dep.id === params.row.developingDepartmentId)?.name}
+                                Entwickelt von: {departments.find(dep => dep.id === params.row.developingDepartmentId)?.name}
                             </Typography>
                         </Box>
                     );
@@ -377,7 +378,7 @@ export function FormsListPage() {
                             disabled: item.publishedVersion == null && item.draftedVersion != null,
                         },
                         {
-                            icon: <HistoryIcon />,
+                            icon: <HomeStorage />,
                             onClick: () => {
                                 setShowFormVersionsDialogFor(item);
                             },
@@ -398,7 +399,7 @@ export function FormsListPage() {
                                     form: item,
                                 });
                             },
-                            tooltip: 'Konfiguration testen',
+                            tooltip: 'Optionen',
                         },
                     ]}
                     defaultSortField="internalTitle"
@@ -425,23 +426,6 @@ export function FormsListPage() {
                     </ListItemIcon>
                     <ListItemText>
                         Formular duplizieren
-                    </ListItemText>
-                </MenuItem>
-
-                <MenuItem
-                    component="a"
-                    href={createCustomerPath(rowMenu?.form.slug ?? '')}
-                    target="_blank"
-                    disabled={(
-                        rowMenu?.form.draftedVersion == null &&
-                        rowMenu?.form.publishedVersion == null
-                    )}
-                >
-                    <ListItemIcon>
-                        <OpenInNewOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Formular als antragstellende Person öffnen (in neuem Tab)
                     </ListItemText>
                 </MenuItem>
 
