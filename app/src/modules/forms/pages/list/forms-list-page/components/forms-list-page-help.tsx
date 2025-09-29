@@ -4,67 +4,14 @@ import Typography from '@mui/material/Typography';
 export function FormsListPageHelp() {
     return (
         <>
-            <Typography
-                variant="body1"
-                paragraph
-            >
-                Konfigurieren Sie hier die Nutzerkontenanbieter, die in Ihrer Gover-Instanz global verfügbar sein sollen.
-                Die angebundenen Nutzerkonten können in Formularen als Authentifizierungsoptionen verwendet werden.
-                Unterstützt werden alle Anbieter, die eine OpenID Connect (OIDC) kompatible Schnittstelle bereitstellen.
+            <Typography variant="body1" paragraph>
+                In der Formulare-Übersicht verwalten Sie zentral alle Online-Formulare. Sie können neue Formulare anlegen, bestehende finden und öffnen sowie Entwürfe weiterbearbeiten. Der Listenbereich zeigt Ihnen u. a. Status und letzte Änderungen, damit Sie schnell erkennen, wo Handlungsbedarf besteht.
             </Typography>
-            <Typography
-                variant="body1"
-                paragraph
-            >
-                <strong>Mögliche Szenarien:</strong>
+            <Typography variant="body1" paragraph>
+                Wenn ein Formular bereit ist, veröffentlichen Sie es um Einreichungen zu ermöglichen. Änderungen an bereits veröffentlichten Formularen erfolgen über Versionen, damit laufende Prozesse stabil bleiben.
             </Typography>
-            <ul>
-                <li>
-                    <Typography
-                        variant="body1"
-                        paragraph
-                    >
-                        <strong>Direkt OpenID Connect kompatible IDPs</strong>
-                        (z.B. BundID, BayernID, Mein Unternehmenskonto, Servicekonto SH, Keycloak, Azure AD):
-                        <br />
-                        → Sie können den Anbieter direkt anbinden, indem Sie die Verbindungsdaten hier hinterlegen.
-                    </Typography>
-                </li>
-                <li>
-                    <Typography
-                        variant="body1"
-                        paragraph
-                    >
-                        <strong>Systeme ohne OpenID Connect Unterstützung</strong>
-                        (z.B. LDAP/AD, andere IDPs):
-                        <br />
-                        → Die Anbindung erfolgt über den integrierten Keycloak von Gover. Tragen Sie anschließend die OpenID Connect-Daten des Keycloak-Realms hier ein.
-                    </Typography>
-                </li>
-                <li>
-                    <Typography
-                        variant="body1"
-                        paragraph
-                    >
-                        <strong>LDAP/AD für Gover-Mitarbeitende:</strong>
-                        <br />
-                        → Nutzung der User Federation im Staff Realm des Gover-Keycloaks.
-                        <br />
-                        Diese Nutzerkonten werden nicht über die Funktion "Nutzerkontenanbieter" verwaltet.
-                    </Typography>
-                </li>
-            </ul>
-            <Typography
-                variant="body1"
-                paragraph
-            >
-                Es wird empfohlen, für jeden Nutzerkontenanbieter sowohl eine produktive als auch eine vorproduktive Anbindung einzurichten, um Tests zu erleichtern.
-            </Typography>
-            <Typography
-                variant="body1"
-                paragraph
-            >
-                Die notwendigen Konfigurationsdaten erhalten Sie in der Dokumentation des Anbieters oder direkt vom Anbieter selbst.
+            <Typography variant="body1" paragraph>
+                Nutzen Sie klare Titel und Zuordnungen zu Fachbereichen, damit Inhalte leicht und strukturiert auffindbar sind. Testen Sie Anpassungen vor der Veröffentlichung in Ruhe im Editor bzw. in einer neuen Version. So behalten Sie den Überblick und stellen sicher, dass Bürgerinnen und Bürger stets mit der passenden, aktuellen Fassung arbeiten.
             </Typography>
         </>
     );
