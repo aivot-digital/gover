@@ -344,7 +344,7 @@ export function FormsListPage() {
                         },
                     }}
                     searchLabel="Formular suchen"
-                    searchPlaceholder="Title des Formulars eingeben…"
+                    searchPlaceholder="Titel des Formulars eingeben…"
                     fetch={(options) => {
                         return new FormsApiService(options.api)
                             .list(options.page, options.size, options.sort, options.order, {

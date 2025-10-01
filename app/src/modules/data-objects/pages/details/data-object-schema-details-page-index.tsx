@@ -250,11 +250,11 @@ export function DataObjectSchemaDetailsPageIndex() {
                 error={errors.name}
                 minCharacters={3}
                 maxCharacters={255}
-                hint="Dient der internen Identifizierung des Zahlungsdienstleisters."
+                hint="Name des Datenobjektschemas zur internen Identifizierung."
             />
 
             <TextFieldComponent
-                label="Interne Beschreibung"
+                label="Beschreibung"
                 required
                 value={currentDataObject.description}
                 onChange={handleInputChange('description')}
@@ -264,7 +264,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 error={errors.description}
                 minCharacters={10}
                 maxCharacters={500}
-                hint="Interne Beschreibung des Zahlungsdienstleisters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
+                hint="Beschreibung des Datenobjektschemas zum besseren Verständnis."
             />
 
             <RadioFieldComponent
@@ -300,10 +300,26 @@ export function DataObjectSchemaDetailsPageIndex() {
                     }
                 }}
                 options={[
-                    {label: 'UUID', subLabel: 'Eine automatisch generierte, eindeutige ID bestehend aus 36 Zeichen', value: ID_GEN_UUID},
-                    {label: 'Seriell', subLabel: 'Eine aufsteigende, positive, ganze Zahl', value: ID_GEN_SERIAL},
-                    {label: 'Selbstdefiniert', subLabel: 'Die ID muss beim Anlegen des Datenobjekt selbst definiert werden. Das Datenobjekt benötigt zwangsweise ein Feld mit der ID $id', value: ID_GEN_CUSTOM},
-                    {label: 'Formatvorlage', subLabel: 'Die ID wird automatisch aus einer Formatvorlage erzeugt. Diese Vorlage muss zwingen am Anfang oder Ende einen Platzhalter für eine aufsteigende Nummer führen', value: ''},
+                    {
+                        label: 'UUID',
+                        subLabel: 'Global eindeutige Kennung mit 36 Zeichen (z. B. 550e8400-e29b-41d4-a716-446655440000). Wird beim Anlegen erzeugt.',
+                        value: ID_GEN_UUID,
+                    },
+                    {
+                        label: 'Seriell fortlaufend',
+                        subLabel: 'Automatisch inkrementierte/hochgezählte ganze Zahl (1, 2, 3 …).',
+                        value: ID_GEN_SERIAL,
+                    },
+                    {
+                        label: 'Manuell festgelegt',
+                        subLabel: 'Die ID wird manuell beim Anlegen eingetragen. Das Schema benötigt hierfür ein Pflichtfeld mit der Element-ID „$id“.',
+                        value: ID_GEN_CUSTOM,
+                    },
+                    {
+                        label: 'Formatvorlage',
+                        subLabel: 'Erzeugt fortlaufende IDs nach einem vorgegeben Muster mit der Unterstützung von Platzhaltern (z. B. ANT-%Y-%M-%D-%I4 → ANT-2025-10-01-0001). ',
+                        value: '',
+                    },
                 ]}
                 disabled={isBusy || !userIsAdmin || !isNewItem}
             />
@@ -313,7 +329,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 currentDataObject.idGen !== ID_GEN_SERIAL &&
                 currentDataObject.idGen !== ID_GEN_CUSTOM &&
                 <TextFieldComponent
-                    label="ID Formatvorlage"
+                    label="ID-Formatvorlage"
                     required
                     value={currentDataObject.idGen}
                     onChange={handleInputChange('idGen')}
@@ -322,43 +338,46 @@ export function DataObjectSchemaDetailsPageIndex() {
                     error={errors.idGen}
                     minCharacters={3}
                     maxCharacters={64}
-                    hint="Die Formatvorlage für die Generierung der IDs. Diese wird verwendet, um eindeutige IDs für die Objekte dieses Datenobjektschemas zu generieren."
+                    hint="Muster für automatisch generierte IDs. Unterstützte Platzhalter: %Y (Jahr), %M (Monat), %D (Tag), %I1–%I9 (fortlaufende Nummer mit führenden Nullen in gewählter Zahl). Der Platzhalter %I… muss zwingend enthalten sein und am Anfang ODER am Ende stehen (z. B. %Y-%M-%D-%I4)."
                 />
             }
 
-            <ElementTreeTree<GroupLayout>
-                label="Datenobjektschema"
-                hint="Das Datenobjektschema beschreibt die Struktur der Daten, die in diesem Datenobjekt gespeichert werden. Es definiert die Felder und deren Typen."
-                entity={{} as any}
-                value={currentDataObject.schema}
-                onChange={handleInputChange('schema')}
-                editable={true}
-                scope="data_modelling"
-                enabledIdentityProviderInfos={[]}
-                limitElementTypes={[
-                    ElementType.Container,
-                    ElementType.ReplicatingContainer,
-                    ElementType.Text,
-                    ElementType.Number,
-                    ElementType.Checkbox,
-                    ElementType.Select,
-                    ElementType.Radio,
-                    ElementType.MultiCheckbox,
-                    ElementType.Table,
-                    ElementType.Date,
-                    ElementType.Time,
-                ]}
-            />
+            <Box sx={{my: 3}}>
+                <ElementTreeTree<GroupLayout>
+                    label="Datenobjektschema"
+                    hint="Das Datenobjektschema beschreibt die Struktur der Daten, die in diesem Datenobjekt gespeichert werden. Es definiert die Felder und deren Typen."
+                    entity={{} as any}
+                    value={currentDataObject.schema}
+                    onChange={handleInputChange('schema')}
+                    editable={true}
+                    scope="data_modelling"
+                    enabledIdentityProviderInfos={[]}
+                    limitElementTypes={[
+                        ElementType.Container,
+                        ElementType.ReplicatingContainer,
+                        ElementType.Text,
+                        ElementType.Number,
+                        ElementType.Checkbox,
+                        ElementType.Select,
+                        ElementType.Radio,
+                        ElementType.MultiCheckbox,
+                        ElementType.Table,
+                        ElementType.Date,
+                        ElementType.Time,
+                    ]}
+                />
 
-            <MultiCheckboxComponent
-                label="Anzeigefelder"
-                hint="Die Werte dieser Felder werden zur Identifizierung ausgegeben."
-                value={currentDataObject.displayFields ?? []}
-                onChange={(val) => {
-                    handleInputChange('displayFields')(val ?? []);
-                }}
-                options={availableDisplayFields}
-            />
+                <MultiCheckboxComponent
+                    label="Anzeigefelder"
+                    hint="Die Werte dieser Felder werden in Listenansichten zur Identifizierung angezeigt."
+                    value={currentDataObject.displayFields ?? []}
+                    onChange={(val) => {
+                        handleInputChange('displayFields')(val ?? []);
+                    }}
+                    options={availableDisplayFields}
+                    displayInline
+                />
+            </Box>
 
             {
                 userIsAdmin &&
