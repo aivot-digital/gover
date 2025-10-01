@@ -5,9 +5,9 @@ alter table themes
 
 -- set keys for system media for system theme
 update themes
-set logo_key    = (select value from system_configs where key = 'SystemLogo' limit 1)::uuid,
-    favicon_key = (select value from system_configs where key = 'SystemFavicon' limit 1)::uuid
-where id = (select value from system_configs where key = 'SystemTheme' limit 1)::int;
+set logo_key    = cast((select value from system_configs where key = 'SystemLogo' and value <> '' limit 1) as uuid),
+    favicon_key = cast((select value from system_configs where key = 'SystemFavicon' and value <> '' limit 1) as uuid)
+where id = cast((select value from system_configs where key = 'SystemTheme' and value <> '' limit 1) as int);
 
 -- add theme_id to departments
 alter table departments
