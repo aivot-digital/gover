@@ -113,11 +113,6 @@ const DrawerGroups: DrawerGroup[] = [
                         to: '/settings/app',
                     },
                     {
-                        icon: ModuleIcons.settings,
-                        label: 'Medien-Einstellungen',
-                        to: '/settings/media',
-                    },
-                    {
                         icon: ModuleIcons.providerLinks,
                         label: 'Links',
                         to: '/provider-links',
