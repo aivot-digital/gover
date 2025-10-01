@@ -7,6 +7,7 @@ interface DepartmentFilters {
     userId: string;
     departmentId: number;
     membershipId: number;
+    themeId: number;
     departmentName: string;
     userEmail: string;
     userName: string;

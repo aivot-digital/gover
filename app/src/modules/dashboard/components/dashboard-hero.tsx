@@ -80,6 +80,7 @@ export function DashboardHero(props: DashboardHeroProps) {
                 {
                     Links.map(({Icon, text, href}) => (
                         <Typography
+                            key={href}
                             variant="h4"
                             fontSize="1.125rem"
                             lineHeight="1.25rem"

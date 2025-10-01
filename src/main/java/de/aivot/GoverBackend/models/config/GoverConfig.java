@@ -36,11 +36,12 @@ public class GoverConfig {
         return uri.resolve(path).toString();
     }
 
-    public String createUrl(String base, String... parts) {
+    public String createUrl(String base, Object... parts) {
         var uri = URI.create(goverHostname);
 
         var resolvedParts = Arrays
                 .stream(parts)
+                .map(Object::toString)
                 .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));
 

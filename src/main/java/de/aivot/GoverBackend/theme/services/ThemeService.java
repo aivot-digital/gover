@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.theme.services;
 
+import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.department.filters.DepartmentFilter;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.form.filters.FormVersionFilter;
@@ -24,14 +25,16 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
     private final ThemeRepository themeRepository;
     private final FormVersionRepository formVersionRepository;
     private final DepartmentRepository departmentRepository;
+    private final AssetRepository assetRepository;
 
     @Autowired
     public ThemeService(ThemeRepository themeRepository,
                         FormVersionRepository formVersionRepository,
-                        DepartmentRepository departmentRepository) {
+                        DepartmentRepository departmentRepository, AssetRepository assetRepository) {
         this.themeRepository = themeRepository;
         this.formVersionRepository = formVersionRepository;
         this.departmentRepository = departmentRepository;
+        this.assetRepository = assetRepository;
     }
 
     @Nonnull
@@ -81,8 +84,28 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
         existingEntity.setWarning(entity.getWarning());
         existingEntity.setInfo(entity.getInfo());
         existingEntity.setSuccess(entity.getSuccess());
-        existingEntity.setLogoKey(entity.getLogoKey());
-        existingEntity.setFaviconKey(entity.getFaviconKey());
+
+        var logoKey = entity.getLogoKey();
+        if (logoKey != null) {
+            var logoExists = assetRepository
+                    .existsById(logoKey);
+            if (logoExists) {
+                existingEntity.setLogoKey(logoKey);
+            } else {
+                existingEntity.setLogoKey(null);
+            }
+        }
+
+        var faviconKey = entity.getFaviconKey();
+        if (faviconKey != null) {
+            var faviconExists = assetRepository
+                    .existsById(faviconKey);
+            if (faviconExists) {
+                existingEntity.setFaviconKey(faviconKey);
+            } else {
+                existingEntity.setFaviconKey(null);
+            }
+        }
 
         return themeRepository.save(existingEntity);
     }

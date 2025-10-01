@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType
@@ -22,6 +22,9 @@ import {ConstraintDialog} from "../../../../dialogs/constraint-dialog/constraint
 import {ConstraintLinkProps} from "../../../../dialogs/constraint-dialog/constraint-link-props";
 import * as yup from "yup";
 import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
+import {ThemeResponseDTO} from '../../../themes/models/theme';
+import {ThemesApiService} from '../../../themes/themes-api-service';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 
 export const DepartmentSchema = yup.object({
     name: yup.string()
@@ -94,8 +97,21 @@ export function DepartmentsDetailsPageIndex() {
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
     const [relatedApplications, setRelatedApplications] = useState<ConstraintLinkProps[] | undefined>(undefined);
+    const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
 
-    if (department == null) {
+    useEffect(() => {
+        new ThemesApiService(api)
+            .listAll()
+            .then((result) => {
+                setAvailableThemes(result.content);
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Fabschemata.'));
+            });
+    }, []);
+
+    if (department == null || availableThemes == null) {
         return (
             <GenericDetailsSkeleton />
         );
@@ -268,6 +284,57 @@ export function DepartmentsDetailsPageIndex() {
                     />
                 </Grid>
             </Grid>
+            <Typography
+                variant="h6"
+                sx={{
+                    mt: 2,
+                    mb: 1,
+                }}
+            >
+                Farbschema des Fachbereichs
+            </Typography>
+            <Typography sx={{mb: 2, maxWidth: 900}}>
+                Hinterlegen Sie das Standard-Farbschema, das für Formulare dieses Fachbereichs verwendet werden soll.
+                Dieses überschreibt das System-Farbschema.
+                Bearbeiter:innen können für Formulare weiterhin ein individuelles Farbschema auswählen.
+                Wenn Sie kein Farbschema auswählen, wird das System-Farbschema verwendet.
+            </Typography>
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6
+                    }}>
+                    <SelectFieldComponent
+                        label="Farbschema des Fachbereichs"
+                        value={department.themeId?.toString()}
+                        onChange={(val) => {
+                            if (val == null) {
+                                handleInputChange('themeId')(null);
+                            } else {
+                                const intVal = parseInt(val);
+
+                                if (isNaN(intVal)) {
+                                    handleInputChange('themeId')(null);
+                                } else {
+                                    handleInputChange("themeId")(intVal);
+                                }
+                            }
+                        }}
+                        required={false}
+                        error={errors.themeId}
+                        options={availableThemes.map(theme => ({
+                            label: theme.name,
+                            value: theme.id.toString(),
+                        }))}
+                    />
+                </Grid>
+            </Grid>
+
+
             <Typography
                 variant="h6"
                 sx={{

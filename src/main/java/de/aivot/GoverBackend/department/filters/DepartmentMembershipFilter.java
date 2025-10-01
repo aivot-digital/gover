@@ -18,6 +18,19 @@ public class DepartmentMembershipFilter implements Filter<DepartmentMembershipEn
     private String name;
     private String departmentName;
 
+    @Override
+    public Specification<DepartmentMembershipEntity> build() {
+        return SpecificationBuilder
+                .create(DepartmentMembershipEntity.class)
+                .withEquals("departmentId", departmentId)
+                .withEquals("userId", userId)
+                .withInList("userId", userIds)
+                .withInList("departmentId", departmentIds)
+                .withEquals("role", role)
+                .build();
+    }
+
+
     public static DepartmentMembershipFilter create() {
         return new DepartmentMembershipFilter();
     }
@@ -82,17 +95,5 @@ public class DepartmentMembershipFilter implements Filter<DepartmentMembershipEn
 
     public void setDepartmentName(String departmentName) {
         this.departmentName = departmentName;
-    }
-
-    @Override
-    public Specification<DepartmentMembershipEntity> build() {
-        return SpecificationBuilder
-                .create(DepartmentMembershipEntity.class)
-                .withEquals("departmentId", departmentId)
-                .withEquals("userId", userId)
-                .withInList("userId", userIds)
-                .withInList("departmentId", departmentIds)
-                .withEquals("role", role)
-                .build();
     }
 }

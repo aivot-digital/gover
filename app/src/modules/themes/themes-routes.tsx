@@ -3,6 +3,7 @@ import {ThemeListPage} from './pages/list/theme-list-page';
 import {ThemeDetailsPage} from './pages/details/theme-details-page';
 import {ThemeDetailsPageIndex} from './pages/details/theme-details-page-index';
 import {ThemeDetailsPageForms} from './pages/details/theme-details-page-forms';
+import {ThemeDetailsPageDepartments} from './pages/details/theme-details-page-departments';
 
 export const themesRoutes: RouteObject[] = [
     {
@@ -20,6 +21,10 @@ export const themesRoutes: RouteObject[] = [
             {
                 path: '/themes/:id/forms',
                 element: <ThemeDetailsPageForms />,
+            },
+            {
+                path: '/themes/:id/departments',
+                element: <ThemeDetailsPageDepartments />,
             },
         ],
     },

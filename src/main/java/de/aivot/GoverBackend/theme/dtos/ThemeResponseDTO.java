@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import java.util.UUID;
 
 public record ThemeResponseDTO(
+        Integer id,
         String name,
         String main,
         String mainDark,
@@ -18,6 +19,7 @@ public record ThemeResponseDTO(
 ) {
     public static ThemeResponseDTO fromEntity(ThemeEntity theme) {
         return new ThemeResponseDTO(
+                theme.getId(),
                 theme.getName(),
                 theme.getMain(),
                 theme.getMainDark(),

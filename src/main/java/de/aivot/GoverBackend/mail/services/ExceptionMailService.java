@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
 import de.aivot.GoverBackend.models.config.GoverConfig;
+import de.aivot.GoverBackend.system.services.SystemService;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,16 +27,18 @@ public class ExceptionMailService {
 
     private final MailService mailService;
     private final GoverConfig goverConfig;
+    private final SystemService systemService;
 
     @Autowired
     public ExceptionMailService(
             AuditService auditService,
             MailService mailService,
-            GoverConfig goverConfig
-    ) {
+            GoverConfig goverConfig,
+            SystemService systemService) {
         this.auditService = auditService.createScopedAuditService(ExceptionMailService.class);
         this.mailService = mailService;
         this.goverConfig = goverConfig;
+        this.systemService = systemService;
     }
 
     public void send(Exception exception) {
@@ -63,11 +66,14 @@ public class ExceptionMailService {
         }
         context.put("additionalContext", internalAdditionalContext);
 
+        var systemTheme = systemService
+                .retrieveDefaultTheme();
+
         var mailReached = false;
         for (String mail : goverConfig.getReportMail()) {
             try {
                 mailService.sendMail(
-                        null, // TODO: Theme
+                        systemTheme,
                         mail,
                         Optional.empty(),
                         Optional.empty(),

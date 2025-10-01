@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
@@ -23,7 +24,7 @@ import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.submission.entities.Submission;
-import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
@@ -40,7 +41,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Component
 public class PdfService {
@@ -51,35 +51,33 @@ public class PdfService {
     private final DepartmentRepository departmentRepository;
     private final AssetRepository assetRepository;
     private final GoverConfig goverConfig;
-    private final ThemeRepository themeRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final IdentityProviderRepository identityProviderRepository;
     private final PaymentProviderRepository paymentProviderRepository;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final FormVersionService formVersionService;
 
     @Autowired
-    public PdfService(
-            GotenbergConfig gotenbergConfig,
-            SystemConfigService systemConfigService,
-            DepartmentRepository departmentRepository,
-            AssetRepository assetRepository,
-            GoverConfig goverConfig,
-            ThemeRepository themeRepository,
-            PaymentTransactionRepository paymentTransactionRepository,
-            IdentityProviderRepository identityProviderRepository,
-            PaymentProviderRepository paymentProviderRepository,
-            PaymentProviderDefinitionsService paymentProviderDefinitionsService
-    ) {
+    public PdfService(GotenbergConfig gotenbergConfig,
+                      SystemConfigService systemConfigService,
+                      DepartmentRepository departmentRepository,
+                      AssetRepository assetRepository,
+                      GoverConfig goverConfig,
+                      PaymentTransactionRepository paymentTransactionRepository,
+                      IdentityProviderRepository identityProviderRepository,
+                      PaymentProviderRepository paymentProviderRepository,
+                      PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+                      FormVersionService formVersionService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.departmentRepository = departmentRepository;
         this.assetRepository = assetRepository;
         this.goverConfig = goverConfig;
-        this.themeRepository = themeRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.identityProviderRepository = identityProviderRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.formVersionService = formVersionService;
     }
 
     public void testGotenbergConnection() throws IOException, InterruptedException {
@@ -169,19 +167,17 @@ public class PdfService {
     }
 
     private byte[] generatePdf(FormVersionWithDetailsEntity form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        dto.put("base", createBaseContext(scope));
+        var formTheme = formVersionService
+                .getFormThemesInOrderOfImportance(form)
+                .getFirst();
+
+        dto.put("base", createBaseContext(formTheme, scope));
         dto.put("department",
                 departmentRepository
                         .findById(form.getRelevantDepartmentId())
                         .orElseThrow(() -> new RuntimeException("Department not found"))
         );
-        dto.put("theme",
-                form.getThemeId() != null ?
-                        themeRepository
-                                .findById(form.getThemeId())
-                                .orElse(null)
-                        : null
-        );
+        dto.put("theme", formTheme);
 
         return generateGotenbergPdf(form, dto);
     }
@@ -251,26 +247,24 @@ public class PdfService {
     }
 
     // TODO: This is a copy from the MailService. Needs unification!
-    private FormPdfContext createBaseContext(FormPdfScope scope) throws ResponseException {
+    private FormPdfContext createBaseContext(ThemeEntity theme, FormPdfScope scope) throws ResponseException {
         var providerName = systemConfigService
                 .retrieve(ProviderNameSystemConfigDefinition.KEY)
                 .getValue();
 
-        var logoAssetKey = systemConfigService
-                .retrieve(null) // TODO: Theming
-                .getValue();
-
+        var logoAssetKey = theme.getLogoKey();
         var logoAssetName = "";
         try {
-            var assetKeyUUID = UUID.fromString(logoAssetKey);
-            logoAssetName = assetRepository
-                    .findById(assetKeyUUID)
-                    .map(AssetEntity::getFilename)
-                    .orElse("");
+            if (logoAssetKey != null) {
+                logoAssetName = assetRepository
+                        .findById(logoAssetKey)
+                        .map(AssetEntity::getFilename)
+                        .orElse("");
+            }
         } catch (Exception e) {
             // Ignore
         }
 
-        return new FormPdfContext(providerName, logoAssetKey, logoAssetName, goverConfig, scope);
+        return new FormPdfContext(providerName, logoAssetKey != null ? logoAssetKey.toString() : "", logoAssetName, goverConfig, scope);
     }
 }

@@ -45,6 +45,11 @@ export function ThemeDetailsPage() {
                         label: 'Formulare',
                         isDisabled: (item) => !item?.id,
                     },
+                    {
+                        path: '/themes/:id/departments',
+                        label: 'Fachbereiche',
+                        isDisabled: (item) => !item?.id,
+                    },
                 ]}
                 initializeItem={(api) => new ThemesApiService(api).initialize()}
                 fetchData={(api, id: number) => new ThemesApiService(api).retrieve(id)}

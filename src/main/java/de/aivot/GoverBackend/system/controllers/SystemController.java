@@ -53,7 +53,7 @@ public class SystemController {
         var theme = getSystemTheme();
 
         String redirectUrl;
-        if (theme.getFaviconKey() != null) {
+        if (theme.getFaviconKey() == null) {
             redirectUrl = goverConfig.getDefaultFaviconUrl();
         } else {
             redirectUrl = assetService.createUrl(theme.getFaviconKey());
@@ -69,7 +69,7 @@ public class SystemController {
         var theme = getSystemTheme();
 
         String redirectUrl;
-        if (theme.getLogoKey() != null) {
+        if (theme.getLogoKey() == null) {
             redirectUrl = goverConfig.getDefaultLogoUrl();
         } else {
             redirectUrl = assetService.createUrl(theme.getLogoKey());

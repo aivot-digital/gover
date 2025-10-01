@@ -96,6 +96,15 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         entity.setId(existingDepartment.getId());
         entity.setCreated(existingDepartment.getCreated());
         entity.setUpdated(LocalDateTime.now());
+
+        var themeId = entity.getThemeId();
+        if (themeId != null) {
+            var themeExists = themeRepository.existsById(themeId);
+            if (!themeExists) {
+                entity.setThemeId(null);
+            }
+        }
+
         return departmentRepository
                 .save(entity);
     }

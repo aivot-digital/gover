@@ -59,11 +59,9 @@ public record ThemeRequestDTO(
         String success,
 
         @Nullable
-        @org.hibernate.validator.constraints.UUID(message = "Der Logo-Schlüssel muss eine gültige UUID sein.")
         UUID logoKey,
 
         @Nullable
-        @org.hibernate.validator.constraints.UUID(message = "Der Favicon-Schlüssel muss eine gültige UUID sein.")
         UUID faviconKey
 ) implements RequestDTO<ThemeEntity> {
     @Override

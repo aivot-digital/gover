@@ -1,4 +1,4 @@
-import {Box, Button, Container, Typography} from '@mui/material';
+import {Box, Button, Container, Paper, Typography} from '@mui/material';
 import React from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {Logo} from '../../../components/logo/logo';
@@ -19,7 +19,7 @@ export function Login() {
                     justifyContent: 'center',
                 }}
             >
-                <Box
+                <Paper
                     sx={{
                         px: 9,
                         py: 7,
@@ -77,7 +77,7 @@ export function Login() {
                     >
                         Zur Anmeldung über IDP
                     </Button>
-                </Box>
+                </Paper>
             </Container>
         </>
     );

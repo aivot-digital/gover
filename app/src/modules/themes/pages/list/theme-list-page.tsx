@@ -18,6 +18,19 @@ import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
+const activeThemeChip = (
+    <Chip
+        label="Standard"
+        color="info"
+        variant="outlined"
+        size="small"
+        title="Aktives Farbschema der Gover-Instanz"
+        sx={{
+            ml: 1,
+        }}
+    />
+);
+
 export function ThemeListPage() {
     useAdminGuard();
 
@@ -94,7 +107,7 @@ export function ThemeListPage() {
                                 title={`Farbschema bearbeiten`}
                             >
                                 {String(params.value)}
-                                {params.row.id === Number(appThemeId) && <Chip label="Standard" color="info" variant="outlined" size={"small"} title="Aktives Farbschema der Gover-Instanz" sx={{ml:1}}/>}
+                                {params.row.id === Number(appThemeId) && activeThemeChip}
                             </CellLink>
                         ),
                     },
@@ -112,7 +125,10 @@ export function ThemeListPage() {
                                 <CellContentWrapper sx={{gap: 1, position: 'relative', zIndex: 2}}>
                                     {colorKeys.map((key, index) => (
                                         key === '|' ? (
-                                            <Box key={index} sx={{ width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5 }} />
+                                            <Box
+                                                key={index}
+                                                sx={{width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5}}
+                                            />
                                         ) : (
                                             <Box
                                                 key={index}
@@ -135,14 +151,14 @@ export function ThemeListPage() {
                                                         borderRadius: '50%',
                                                         backgroundColor: '#C0C0C0',
                                                         zIndex: -1,
-                                                    }
+                                                    },
                                                 }}
                                             />
                                         )
                                     ))}
                                 </CellContentWrapper>
                             );
-                        }
+                        },
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
@@ -159,7 +175,7 @@ export function ThemeListPage() {
                         icon: <DescriptionOutlined />,
                         to: `/themes/${item.id}/forms`,
                         tooltip: 'Formulare mit diesem Schema ansehen',
-                    }
+                    },
                 ]}
                 defaultSortField="name"
                 disableFullWidthToggle={true}

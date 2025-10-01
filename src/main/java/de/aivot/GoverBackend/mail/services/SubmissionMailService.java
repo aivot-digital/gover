@@ -216,9 +216,13 @@ public class SubmissionMailService {
         mailData.put("triggeringUser", triggeringUser);
         mailData.put("assignee", assignee);
 
+        var formTheme = formVersionService
+                .getFormThemesInOrderOfImportance(form)
+                .getFirst();
+
         if (assignee != null) {
             mailService.sendMailToUser(
-                    null, // TODO
+                    formTheme,
                     assignee.getId(),
                     "[Gover] " + (submission.getIsTestSubmission() ? "[Test] " : "") + title,
                     MailTemplate.SubmissionArchived,
@@ -280,9 +284,13 @@ public class SubmissionMailService {
             recipients.add(previousAssignee);
         }
 
+        var formTheme = formVersionService
+                .getFormThemesInOrderOfImportance(form)
+                .getFirst();
+
         for (UserEntity recipient : recipients) {
             mailService.sendMailToUser(
-                    null, // TODO
+                    formTheme,
                     recipient.getId(),
                     "[Gover] " + (submission.getIsTestSubmission() ? "[Test] " : "") + title,
                     isReassignment ? MailTemplate.SubmissionReassigned : MailTemplate.SubmissionAssigned,

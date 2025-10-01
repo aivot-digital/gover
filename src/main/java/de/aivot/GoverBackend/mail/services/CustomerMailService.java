@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.mail.services;
 
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
+import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
@@ -29,16 +30,18 @@ public class CustomerMailService {
     private final DepartmentRepository departmentRepository;
     private final PdfService pdfService;
     private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
+    private final DepartmentService departmentService;
 
     @Autowired
     public CustomerMailService(MailService mailService,
                                DepartmentRepository departmentRepository,
                                PdfService pdfService,
-                               FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
+                               FormVersionWithDetailsRepository formVersionWithDetailsRepository, DepartmentService departmentService) {
         this.mailService = mailService;
         this.departmentRepository = departmentRepository;
         this.pdfService = pdfService;
         this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
+        this.departmentService = departmentService;
     }
 
     public void sendSubmissionCopy(String to, Submission submission) throws MessagingException, IOException, ResponseException {
@@ -64,6 +67,9 @@ public class CustomerMailService {
                     .orElseThrow(() -> new RuntimeException("No developing department " + form.getDevelopingDepartmentId() + " found for form " + form.getId()));
         }
 
+        var departmentTheme = departmentService
+                .getDepartmentTheme(department);
+
         String title = "Ihre eingereichten Daten für das Formular \"" + form.getPublicTitle() + "\"";
 
         var context = new HashMap<String, Object>();
@@ -83,7 +89,7 @@ public class CustomerMailService {
         attachments.add(pdfAttachment);
 
         mailService.sendMail(
-                null, // TODO: Theme
+                departmentTheme,
                 to,
                 Optional.empty(),
                 Optional.empty(),
