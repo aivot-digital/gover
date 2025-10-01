@@ -44,11 +44,15 @@ import {DeleteApplicationDialog} from '../../../../../dialogs/application-dialog
 import {FormsListPageHelp} from './components/forms-list-page-help';
 import {FormStatusChipGroup, getFormStatus} from '../../../components/form-status-chip-group';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
+import {useConfirm} from '../../../../../providers/confirm-provider';
+import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 export function FormsListPage() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const api = useApi();
+    const showConfirm = useConfirm();
 
     const user = useAppSelector(selectUser);
 
@@ -369,11 +373,24 @@ export function FormsListPage() {
                             visible: item.draftedVersion != null,
                         },
                         {
-                            icon: <UploadIcon />,
-                            onClick: () => {
-                                handleNewFormDraft(item.id, item.publishedVersion);
+                            icon: <NewWindow />,
+                            onClick: async (): Promise<void> => {
+                                const confirmed = await showConfirm({
+                                    title: 'Neue Arbeitsversion anlegen?',
+                                    confirmButtonText: 'Ja, Arbeitsversion anlegen',
+                                    children: (
+                                        <>
+                                            <Box>
+                                                Für dieses Formular existiert derzeit keine aktive Arbeitsversion. Möchten Sie eine neue Arbeitsversion für dieses Formular anlegen um diese zu bearbeiten?
+                                            </Box>
+                                        </>
+                                    ),
+                                });
+                                if(confirmed){
+                                    handleNewFormDraft(item.id, item.publishedVersion);
+                                }
                             },
-                            tooltip: 'Neue Version anlegen',
+                            tooltip: 'Neue Arbeitsversion anlegen',
                             visible: item.draftedVersion == null,
                             disabled: item.publishedVersion == null && item.draftedVersion != null,
                         },
