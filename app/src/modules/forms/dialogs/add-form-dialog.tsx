@@ -14,18 +14,19 @@ import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import * as yup from 'yup';
 import type {DialogProps} from '@mui/material/esm/Dialog';
 import {FormsApiService} from '../forms-api-service';
-import {AlertComponent} from '../../../components/alert/alert-component';
 import {FormRequestDTO} from '../dtos/form-request-dto';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker';
+import {useNavigate} from 'react-router-dom';
 
 const FormSchema = yup.object({
     developingDepartmentId: yup
         .number()
-        .min(0, 'Bitte wählen Sie einen Fachbereich aus')
+        .integer()
+        .moreThan(0, 'Bitte wählen Sie einen Fachbereich aus')
         .required('Bitte wählen Sie einen Fachbereich aus'),
     internalTitle: yup
         .string()
@@ -38,13 +39,14 @@ const FormSchema = yup.object({
         .trim()
         .min(3, 'Der öffentliche Titel muss mindestens ${min} Zeichen lang sein')
         .max(120, 'Der öffentliche Titel darf maximal ${max} Zeichen lang sein')
-        .required(),
+        .required('Bitte geben Sie einen öffentlichen Titel an'),
     slug: yup
         .string()
         .trim()
         .min(3, 'Die URL muss mindestens ${min} Zeichen lang sein')
         .max(96, 'Die URL darf maximal ${max} Zeichen lang sein')
-        .matches(/^[a-z0-9]+[a-z0-9-]*$/, 'Die URL darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen und muss mit einem Buchstaben oder einer Zahl beginnen'),
+        .matches(/^[a-z0-9]+[a-z0-9-]*$/, 'Die URL darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen und muss mit einem Buchstaben oder einer Zahl beginnen')
+        .required('Bitte geben Sie ein URL-Element an'),
 });
 
 export interface AddFormDialogProps extends DialogProps {
@@ -64,6 +66,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
+    const navigate = useNavigate();
 
     const user = useAppSelector(selectUser);
 
@@ -73,6 +76,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
         errors,
         currentItem,
         handleInputChange,
+        handleInputChangeWithValidation,
         handleInputBlur,
         validate: validateForm,
         reset: resetForm,
@@ -173,6 +177,9 @@ export function AddFormDialog(props: AddFormDialogProps) {
                 .create(newForm);
             onSave(createdForm);
             handleClose(null, 'saveSuccess' as any);
+            navigate(`/forms/${createdForm.id}/${createdForm.version}`, {
+                replace: true,
+            });
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Das Formular konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
@@ -183,7 +190,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
     };
 
     const handleClose = async (_: any, reason: string): Promise<void> => {
-        if (changeBlocker.hasChanged) {
+        if (changeBlocker.hasChanged && reason !== 'saveSuccess') {
             const confirmed = await showConfirm({
                 title: 'Anlage abbrechen?',
                 children: (
@@ -246,7 +253,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     label="Entwickelnder Fachbereich"
                     value={currentItem?.developingDepartmentId != null ? currentItem.developingDepartmentId.toString() : undefined}
                     onChange={(val) => {
-                        handleInputChange('developingDepartmentId')(val != null ? parseInt(val) : 0);
+                        handleInputChangeWithValidation('developingDepartmentId')(val != null ? parseInt(val, 10) : undefined);
                     }}
                     options={availableDepartments.map((department) => ({
                         value: department.id.toString(),
@@ -276,7 +283,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     onBlur={(val) => {
                         const title = val != null ? val.trim() : '';
                         if (currentItem?.slug.length === 0) {
-                            handleInputChange('slug')(slugify(title, 96));
+                            handleInputChangeWithValidation('slug')(slugify(title, 96));
                         }
                         handleInputBlur('internalTitle')();
                     }}
@@ -365,8 +372,6 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     Abbrechen
                 </Button>
             </DialogActions>
-
-            {changeBlocker.dialog}
         </Dialog>
     );
 }
