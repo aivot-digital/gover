@@ -6,7 +6,6 @@ import org.hibernate.annotations.ColumnDefault;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
-// TODO: Rename to DepartmentMembershipEntity
 @Entity
 @Table(name = "department_memberships", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"departmentId", "userId"})
