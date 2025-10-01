@@ -220,7 +220,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
             </DialogTitleWithClose>
             <DialogContent tabIndex={0}>
                 {
-                    hasErrors &&
+                    (hasErrors || slugStatus == 'blocked') &&
                     <Alert
                         severity="error"
                         sx={{mb: 2}}
@@ -333,23 +333,14 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     onBlur={handleInputBlur('slug')}
                     required
                     disabled={isCreating}
-                    error={errors.slug}
+                    error={slugStatus == 'blocked' ? 'Das gewählte URL-Element ist nicht verfügbar, weil es bereits von einem anderen Formular verwendet wird. Bitte wählen Sie ein anderes URL-Element.' : errors.slug}
                     maxCharacters={96}
                     minCharacters={3}
                     debounce={600}
                 />
 
                 {
-                    slugStatus == 'blocked' &&
-                    <AlertComponent
-                        color="error"
-                    >
-                        URL nicht verfügbar
-                    </AlertComponent>
-                }
-
-                {
-                    hasErrors &&
+                    (hasErrors || slugStatus == 'blocked') &&
                     <Alert
                         severity="error"
                         sx={{mt: 2}}
