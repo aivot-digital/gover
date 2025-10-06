@@ -94,6 +94,7 @@ export function ElementEditorTabs<T extends AnyElement>(props: ElementEditorTabs
 
             {
                 (props.scope === 'application' || props.scope === 'preset') &&
+                props.component.type !== ElementType.Root &&
                 <Tab
                     label="Referenzen"
                     value={DefaultTabs.references}
