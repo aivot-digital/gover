@@ -19,8 +19,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useConfirm} from '../../../providers/confirm-provider';
-import {useChangeBlocker} from '../../../hooks/use-change-blocker';
-import {useNavigate} from 'react-router-dom';
+import {shallowEquals} from '../../../utils/equality-utils';
 
 const FormSchema = yup.object({
     developingDepartmentId: yup
@@ -66,7 +65,6 @@ export function AddFormDialog(props: AddFormDialogProps) {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
-    const navigate = useNavigate();
 
     const user = useAppSelector(selectUser);
 
@@ -86,7 +84,9 @@ export function AddFormDialog(props: AddFormDialogProps) {
         slug: currentItemSlug,
     } = currentItem as FormDetailsResponseDTO;
 
-    const changeBlocker = useChangeBlocker(basis, currentItem);
+    const hasChangedSinceOpen = useMemo(() => {
+        return !shallowEquals(basis, currentItem);
+    }, [basis, currentItem]);
 
     const hasErrors = useMemo(() => {
         return Object.keys(errors).length > 0 &&
@@ -177,9 +177,6 @@ export function AddFormDialog(props: AddFormDialogProps) {
                 .create(newForm);
             onSave(createdForm);
             handleClose(null, 'saveSuccess' as any);
-            navigate(`/forms/${createdForm.id}/${createdForm.version}`, {
-                replace: true,
-            });
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Das Formular konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
@@ -190,7 +187,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
     };
 
     const handleClose = async (_: any, reason: string): Promise<void> => {
-        if (changeBlocker.hasChanged && reason !== 'saveSuccess') {
+        if (hasChangedSinceOpen && reason !== 'saveSuccess') {
             const confirmed = await showConfirm({
                 title: 'Anlage abbrechen?',
                 children: (
@@ -220,7 +217,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
             disableEscapeKeyDown={true}
         >
             <DialogTitleWithClose
-                onClose={props.onClose}
+                onClose={() => handleClose(null, 'closeButtonClick')}
                 closeTooltip="Schließen"
             >
                 Neues Formular anlegen
