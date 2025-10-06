@@ -37,7 +37,7 @@ import {GridColDef} from '@mui/x-data-grid';
 import {FormStatus} from '../../../enums/form-status';
 import UploadIcon from '@mui/icons-material/Upload';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../../slices/loading-overlay-slice';
-import {useNavigate} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import HistoryIcon from '@mui/icons-material/History';
 import {FormStatusChip} from '../../../components/form-status-chip';
 import {DeleteApplicationDialog} from '../../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
@@ -101,7 +101,9 @@ export function FormsListPage() {
                                 variant="h5"
                                 sx={{mb: 0.5}}
                             >
-                                {params.row.internalTitle}
+                                <Link style={{color: 'inherit', textDecoration: 'none'}} to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}>
+                                    {params.row.internalTitle}
+                                </Link>
                             </Typography>
 
                             <Typography
@@ -404,7 +406,7 @@ export function FormsListPage() {
                         {
                             icon: <OpenInNewOutlinedIcon />,
                             href: `/${item.slug}`,
-                            tooltip: 'Formular als antragstellende Person öffnen',
+                            tooltip: 'Veröffentlichtes Formular als antragstellende Person öffnen',
                             target: '_blank',
                             disabled: item.publishedVersion == null,
                         },
