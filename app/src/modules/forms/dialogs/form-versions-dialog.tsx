@@ -13,6 +13,7 @@ import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import {format} from 'date-fns/format';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import {Link} from 'react-router-dom';
+import {Link as MuiLink} from '@mui/material';
 import {FormStatusChip} from '../components/form-status-chip';
 import {ExportApplicationDialog} from '../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
 import {downloadConfigFile} from '../../../utils/download-utils';
@@ -179,6 +180,14 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     }}
                 >
                     Version exportieren
+                </MenuItem>
+
+                <MenuItem
+                    component={MuiLink}
+                    href={`/${moreMenu?.item.slug}/${moreMenu?.item.version}`}
+                    target={'_blank'}
+                >
+                    Version im Vorschau-Modus aufrufen
                 </MenuItem>
 
                 <Divider />
