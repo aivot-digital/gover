@@ -36,7 +36,7 @@ export function FormStatusChipGroup(props: FormStatusChipGroupProps) {
     return (
         <Box
             sx={{
-                display: 'flex',
+                display: 'inline-flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 gap: 2,

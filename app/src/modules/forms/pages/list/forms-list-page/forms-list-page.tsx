@@ -162,6 +162,7 @@ export function FormsListPage() {
             {
                 field: 'publishedVersion',
                 headerName: 'Status',
+                flex: 0.75,
                 renderCell: (params) => (
                     <FormStatusChipGroup form={params.row} />
                 ),
