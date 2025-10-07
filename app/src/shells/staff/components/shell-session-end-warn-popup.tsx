@@ -20,17 +20,15 @@ export function ShellSessionEndWarnPopup() {
         const auth = new AuthService();
 
         const interval = setInterval(() => {
-            const expirationTimestamp = auth.getExpirationTimestamp();
-
-            if (expirationTimestamp == null) {
+            const expirationTimestampMS = auth.getExpirationTimestamp();
+            if (expirationTimestampMS == null) {
                 setSecondsUntilExpiration(0);
                 return;
             }
 
-            const now = Math.floor(Date.now() / 1000);
-            const secondsLeft = expirationTimestamp - now;
+            const secondsLeft = Math.floor((expirationTimestampMS - Date.now()) / 1000);
             setSecondsUntilExpiration(secondsLeft);
-        });
+        }, 1000);
 
         return () => clearInterval(interval);
     }, []);
@@ -60,7 +58,13 @@ export function ShellSessionEndWarnPopup() {
                     ml: 1,
                 }}
             >
-                Ihre Sitzung läuft ab in {secondsToMinutesAndSeconds(secondsUntilExpiration)} ab.
+                Ihre Sitzung läuft ab in <span
+                style={{
+                    display: 'inline-block',
+                    textAlign: 'center',
+                    width: '3rem',
+                }}
+            >{secondsToMinutesAndSeconds(secondsUntilExpiration)}</span> ab.
             </Typography>
             <IconButton
                 onClick={handleReloadAuth}

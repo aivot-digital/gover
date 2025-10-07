@@ -105,6 +105,7 @@ export class AuthService {
 
     /**
      * Get the expiration timestamp of the current refresh token.
+     * This is in Milliseconds since the Unix epoch.
      * Returns null if no valid refresh token is available.
      */
     public getExpirationTimestamp(): number | null {
