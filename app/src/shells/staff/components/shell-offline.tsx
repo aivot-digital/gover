@@ -21,7 +21,7 @@ export function ShellOffline() {
             <Paper
                 sx={{
                     p: 4,
-                    maxWidth: '20rem',
+                    maxWidth: '24rem',
                 }}
             >
                 <Typography
