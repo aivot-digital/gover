@@ -1,7 +1,10 @@
 package de.aivot.GoverBackend.form.services;
 
+import aj.org.objectweb.asm.commons.Remapper;
 import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntityId;
+import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.form.repositories.FormVersionWithMembershipRepository;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.ReadEntityService;
@@ -18,12 +21,14 @@ import java.util.Optional;
 @Service
 public class FormVersionWithMembershipService implements ReadEntityService<FormVersionWithMembershipEntity, FormVersionWithMembershipEntityId> {
     private final FormVersionWithMembershipRepository repository;
+    private final FormVersionRepository versionRepository;
 
     @Autowired
     public FormVersionWithMembershipService(
-            FormVersionWithMembershipRepository repository
-    ) {
+            FormVersionWithMembershipRepository repository,
+            FormVersionRepository formVersionRepository) {
         this.repository = repository;
+        this.versionRepository = formVersionRepository;
     }
 
     @Nonnull
@@ -56,5 +61,22 @@ public class FormVersionWithMembershipService implements ReadEntityService<FormV
     @Override
     public boolean exists(@Nonnull Specification<FormVersionWithMembershipEntity> specification) {
         return repository.exists(specification);
+    }
+
+    public Optional<FormVersionWithMembershipEntity> retrieveLatest(FormVersionWithMembershipFilter filter) {
+        if (filter.getId() == null) {
+            return Optional.empty();
+        }
+
+        var maxVersion = versionRepository
+                .maxVersionForFormId(filter.getId());
+
+        if (maxVersion.isEmpty()) {
+            return Optional.empty();
+        }
+
+        filter.setVersion(maxVersion.get());
+
+        return repository.findOne(filter.build());
     }
 }
