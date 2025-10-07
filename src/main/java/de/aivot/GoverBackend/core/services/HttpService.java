@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.core.services;
 
+import com.nimbusds.common.contenttype.ContentType;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
@@ -137,7 +138,7 @@ public class HttpService {
         if (headers != null) {
             extendedHeaders.putAll(headers);
         }
-        extendedHeaders.put("Content-Type", "application/x-www-form-urlencoded");
+        extendedHeaders.put("Content-Type", ContentType.APPLICATION_URLENCODED.getType());
 
         return post(uri, formUrlEncodedBody, extendedHeaders);
     }
