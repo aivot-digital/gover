@@ -1,9 +1,20 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useApi} from '../../../hooks/use-api';
 import {FormsApiService} from '../forms-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
-import {Box, Dialog, DialogContent, Divider, IconButton, ListItem, ListItemAvatar, ListItemText, Menu, MenuItem, Skeleton, Typography} from '@mui/material';
+import {showErrorSnackbar} from '../../../slices/snackbar-slice';
+import Box from '@mui/material/Box';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Skeleton from '@mui/material/Skeleton';
+import Typography from '@mui/material/Typography';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import List from '@mui/material/List';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
@@ -16,6 +27,7 @@ import {Link} from 'react-router-dom';
 import {FormStatusChip} from '../components/form-status-chip';
 import {ExportApplicationDialog} from '../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
 import {downloadConfigFile} from '../../../utils/download-utils';
+import {useConfirm} from '../../../providers/confirm-provider';
 
 interface FormVersionsDialogProps {
     formId: number;
@@ -32,6 +44,8 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
 
     const api = useApi();
     const dispatch = useAppDispatch();
+
+    const showConfirm = useConfirm();
 
     const [isLoading, setIsLoading] = useState(false);
     const [versions, setVersions] = useState<FormDetailsResponseDTO[]>([]);
@@ -70,26 +84,28 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
             });
     }, [formId]);
 
-    const handleFormDelete = (id: number, version: number) => {
-        const originalVersions = [...versions];
+    const handleUseAsNewDraft = (item: FormDetailsResponseDTO) => {
+        if (item.draftedVersion == null) {
+            onNewDraft(item);
+            return;
+        }
 
-        const versionsWithoutDeleted = versions.filter(v => !(v.id === id && v.version === version));
-        setVersions(versionsWithoutDeleted);
-
-        new FormsApiService(api)
-            .destroy({
-                id: id,
-                version: version,
-            })
-            .then(() => {
-                dispatch(showSuccessSnackbar('Formular-Version wurde gelöscht'));
-            })
-            .catch((error) => {
-                console.error(error);
-                dispatch(showErrorSnackbar('Fehler beim Löschen der Formular-Version'));
-                setVersions(originalVersions);
-            });
-    };
+        showConfirm({
+            title: 'Als Entwurf verwenden',
+            children: (
+                <Typography>
+                    Dieses Formular hat bereits eine Version in Bearbeitung (Version {item.draftedVersion}).<br />
+                    Möchten Sie trotzdem eine neue Entwurf-Version auf Basis dieser Version erstellen?
+                    Bitte beachten Sie, die existierende Entwurf-Version wird mit dieser Version überschrieben.
+                </Typography>
+            ),
+            isDestructive: false,
+        }).then((confirmed) => {
+            if (confirmed) {
+                onNewDraft(item);
+            }
+        });
+    }
 
     return (
         <>
@@ -153,7 +169,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     to={`/forms/${moreMenu?.item.id}/${moreMenu?.item.version}`}
                 >
                     {
-                        moreMenu?.item.status === FormStatus.Drafted ? 'Bearbeiten' : 'Anzeigen'
+                        moreMenu?.item.status === FormStatus.Drafted ? 'Diese Version Bearbeiten' : 'Diese Version Anzeigen'
                     }
                 </MenuItem>
 
@@ -162,11 +178,12 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                         if (moreMenu == null) {
                             return;
                         }
-                        onNewDraft(moreMenu.item);
+                        handleUseAsNewDraft(moreMenu.item);
                         setMoreMenu(undefined);
                     }}
+                    disabled={moreMenu?.item.status === FormStatus.Drafted}
                 >
-                    Als Entwurf verwenden
+                    Neuen Entwurf auf Basis dieser Version erzeugen
                 </MenuItem>
 
                 <MenuItem
@@ -179,21 +196,6 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     }}
                 >
                     Version exportieren
-                </MenuItem>
-
-                <Divider />
-
-                <MenuItem
-                    disabled={moreMenu?.item.status !== FormStatus.Revoked}
-                    onClick={() => {
-                        if (moreMenu == null) {
-                            return;
-                        }
-                        handleFormDelete(moreMenu.item.id, moreMenu.item.version);
-                        setMoreMenu(undefined);
-                    }}
-                >
-                    Version löschen
                 </MenuItem>
             </Menu>
 

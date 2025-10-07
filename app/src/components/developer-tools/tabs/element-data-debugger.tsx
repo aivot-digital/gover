@@ -40,6 +40,18 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
                 if (res == null) {
                     onLoadElementData({});
                 } else {
+                    let isValid = false;
+                    walkElementData(rootElement, res, (element, value, d) => {
+                        if (d != null) {
+                            isValid = true;
+                        }
+                    });
+
+                    if (!isValid) {
+                        dispatch(showErrorSnackbar('Die Datei enthält keine gültigen Nutzereingaben'));
+                        return;
+                    }
+
                     onLoadElementData(res);
                 }
             })
