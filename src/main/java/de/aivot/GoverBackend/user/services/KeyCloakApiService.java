@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.user.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.KeyCloakOIDCConfig;
@@ -180,10 +181,10 @@ public class KeyCloakApiService {
         logger.info("Starting GET request to Keycloak API at {}", uri);
 
         var res = httpService
-                .get(uri, Map.of(
-                        "Content-Type", "application/json",
-                        "Authorization", "Bearer " + accessToken
-                ));
+                .get(uri, HttpServiceHeaders
+                        .create()
+                        .with("Content-Type", "application/json")
+                        .with("Authorization", "Bearer " + accessToken));
 
         logger.info("GET request to Keycloak API at {} finished with status code {}", uri, res.statusCode());
 
@@ -207,28 +208,20 @@ public class KeyCloakApiService {
         }
 
         // Create the request body for fetching the access token
-        var requestBody = String.format(
-                "grant_type=client_credentials&client_id=%s&client_secret=%s",
-                keyCloakOIDCConfig.getBackendClientId(),
-                keyCloakOIDCConfig.getBackendClientSecret()
+        var requestBody = Map.of(
+                "grant_type", "client_credentials",
+                "client_id", keyCloakOIDCConfig.getBackendClientId(),
+                "client_secret", keyCloakOIDCConfig.getBackendClientSecret()
         );
 
         // Create the uri for the token endpoint
         var uri = new URI(keyCloakOIDCConfig.getHostname() + "/realms/" + keyCloakOIDCConfig.getRealm() + "/protocol/openid-connect/token");
 
         // Build the request for fetching the access token
-        var request = HttpRequest
-                .newBuilder(uri)
-                .timeout(TIMEOUT)
-                .headers("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .build();
 
         logger.info("Starting POST request to Keycloak Token Endpoint at {}", uri);
 
-        var res = httpService.post(uri, requestBody, Map.of(
-                "Content-Type", "application/x-www-form-urlencoded"
-        ));
+        var res = httpService.postFormUrlEncoded(uri, requestBody);
 
         logger.info("POST request to Keycloak Token Endpoint at {} finished with status code {}", uri, res.statusCode());
 

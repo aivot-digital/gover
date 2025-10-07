@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.identity.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
@@ -38,7 +39,6 @@ public class IdentityService {
     public static final String DEFAULT_LOGIN_VALUE = "true";
     public static final String GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code";
     public static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
-    public static final String CONTENT_TYPE_JSON = "application/json";
     public static final String AUTHORIZATION_HEADER_KEY = "Authorization";
 
     private final GoverConfig goverConfig;
@@ -491,10 +491,10 @@ public class IdentityService {
         HttpResponse<String> response;
         try {
             response = httpService
-                    .get(uri, Map.of(
-                            CONTENT_TYPE_HEADER_KEY, CONTENT_TYPE_JSON,
-                            AUTHORIZATION_HEADER_KEY, "Bearer " + authTokenData.accessToken()
-                    ));
+                    .get(uri, HttpServiceHeaders.create()
+                            .with(CONTENT_TYPE_HEADER_KEY, HttpServiceHeaders.APPLICATION_JSON)
+                            .with(AUTHORIZATION_HEADER_KEY, "Bearer " + authTokenData.accessToken())
+                    );
         } catch (IOException e) {
             throw ResponseException
                     .internalServerError(
@@ -589,9 +589,9 @@ public class IdentityService {
         HttpResponse<String> response;
         try {
             response = httpService
-                    .postFormUrlEncoded(uri, body, Map.of(
-                            "Authorization", "Bearer " + authTokenData.accessToken()
-                    ));
+                    .postFormUrlEncoded(uri, body, HttpServiceHeaders
+                            .create()
+                            .with(AUTHORIZATION_HEADER_KEY, "Bearer " + authTokenData.accessToken()));
         } catch (IOException e) {
             throw ResponseException
                     .internalServerError(
