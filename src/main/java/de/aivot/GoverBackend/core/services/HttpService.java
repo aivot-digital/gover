@@ -17,8 +17,18 @@ import java.util.stream.Collectors;
 
 @Service
 public class HttpService {
+    private final static Duration CONNECT_TIMEOUT = Duration.ofSeconds(45);
     private final static Duration GET_TIMEOUT = Duration.ofSeconds(15);
     private final static Duration POST_TIMEOUT = Duration.ofSeconds(30);
+
+    private final HttpClient httpClient;
+
+    public HttpService() {
+        this.httpClient = HttpClient
+                .newBuilder()
+                .connectTimeout(CONNECT_TIMEOUT)
+                .build();
+    }
 
     // region HTTP-Get Sync
 
@@ -43,10 +53,6 @@ public class HttpService {
 
     @Nonnull
     public CompletableFuture<HttpResponse<String>> getAsync(@Nonnull URI uri, @Nullable HttpServiceHeaders headers) {
-        var clientBilder = HttpClient
-                .newBuilder()
-                .connectTimeout(GET_TIMEOUT);
-
         var requestBuilder = HttpRequest
                 .newBuilder()
                 .timeout(GET_TIMEOUT)
@@ -60,13 +66,7 @@ public class HttpService {
         var request = requestBuilder
                 .build();
 
-        CompletableFuture<HttpResponse<String>> response;
-        try (var client = clientBilder.build()) {
-            response = client
-                    .sendAsync(request, HttpResponse.BodyHandlers.ofString());
-        }
-
-        return response;
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
     // endregion
@@ -93,10 +93,6 @@ public class HttpService {
 
     @Nonnull
     public CompletableFuture<HttpResponse<String>> postAsync(@Nonnull URI uri, @Nonnull String body, @Nullable HttpServiceHeaders headers) {
-        var clientBilder = HttpClient
-                .newBuilder()
-                .connectTimeout(POST_TIMEOUT);
-
         var requestBuilder = HttpRequest
                 .newBuilder()
                 .timeout(POST_TIMEOUT)
@@ -110,13 +106,8 @@ public class HttpService {
         var request = requestBuilder
                 .build();
 
-        CompletableFuture<HttpResponse<String>> response;
-        try (var client = clientBilder.build()) {
-            response = client
-                    .sendAsync(request, HttpResponse.BodyHandlers.ofString());
-        }
-
-        return response;
+        return httpClient
+                .sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 
     // endregion
