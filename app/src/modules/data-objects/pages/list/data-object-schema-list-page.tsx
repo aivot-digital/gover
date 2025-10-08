@@ -68,16 +68,18 @@ export function DataObjectSchemaListPage() {
                             },
                         ],
                         helpDialog: {
-                            title: 'Hilfe zu Datenobjektschema',
+                            title: 'Hilfe zu Datenobjektschemata',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
                                     <Typography>
-                                        Ein Datenobjektschema ist eine Definition für ein Datenobjekt, das in Gover verwendet wird.
-                                        Sie können damit Datenobjekte erstellen, die in Formularen und anderen Komponenten verwendet werden.
+                                        Ein Datenobjektschema beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen diese haben und wie Werte geprüft werden. Es sorgt dafür, dass Daten aus Formularen, Workflows und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
                                     </Typography>
-                                    <Typography sx={{mt: 2}}>
-                                        Ein Datenobjekt kann verschiedene Eigenschaften haben, die in Formularen verwendet werden können.
+                                    <Typography sx={{ mt: 2 }}>
+                                        Typischerweise umfasst ein Schema Felder mit Schlüsseln, Datentypen wie Text, Zahl, Datum oder Wahrheitswerte, Validierungen für Pflichtangaben, Wertebereiche oder Muster, sowie die Möglichkeit verschachtelte Objekte abzubilden. Ergänzend können Metadaten wie Beschreibungen, Labels oder Sichtbarkeitsregeln hinterlegt und sinnvolle Standardwerte definiert werden.
+                                    </Typography>
+                                    <Typography sx={{ mt: 2 }}>
+                                        Das Schema unterstützt verschiedene Komponenten bei der einheitlichen Nutzung desselben Datenmodells. Bei der Ausgestaltung empfehlen sich sprechende, langlebige Feldnamen, kompatible Weiterentwicklungen (hinzufügen statt umbenennen/entfernen) und deutliche Validierungen.
                                     </Typography>
                                 </>
                             ),

@@ -296,4 +296,8 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
     public xdfTransform(value: string | ArrayBuffer): Promise<FormDetailsResponseDTO> {
         return this.api.postXML<FormDetailsResponseDTO>('xdf/v2/transform/', value);
     }
+
+    public retrieveLatest(formId: number): Promise<FormDetailsResponseDTO> {
+        return this.api.get<FormDetailsResponseDTO>(`forms/${formId}/latest/`);
+    }
 }

@@ -11,6 +11,7 @@ import {flattenElements} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {getElementIcon} from '../../data/element-type/element-icons';
+import {AlertComponent} from '../alert/alert-component';
 
 interface ReferencesTabProps {
     rootElement: AnyElement;
@@ -102,18 +103,20 @@ export function ReferencesTab(props: ReferencesTabProps) {
                 title="Referenzen"
                 disableMarginTop
             >
-                Die Elementstruktur ist eine Expertenfunktion für erfahrene Nutzer:innen, die es erlaubt die zugrundeliegende Datenstruktur für Elemente einzusehen und zu überschreiben.
+                Hier können Sie zentral alle Elemente einsehen, die mit diesem Element in Verbindung stehen, entweder als Quelle (ausgehend) oder als Ziel (eingehend) einer Referenz.
             </ElementEditorSectionHeader>
 
             {
                 references.length === 0 && (
-                    <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        sx={{mt: 2}}
+                    <AlertComponent
+                        color="info"
+                        sx={{
+                            mt: 3,
+                        }}
+                        title="Keine Referenzen gefunden"
                     >
-                        Keine Referenzen gefunden.
-                    </Typography>
+                        Für dieses Element existieren noch keine eingehenden oder ausgehenden Referenzen. Wenn Sie auf dieses Element in den Sichtbarkeits-, Validierungs- oder Wert-Einstellungen verweisen, werden diese Referenzen hier aufgelistet.
+                    </AlertComponent>
                 )
             }
 

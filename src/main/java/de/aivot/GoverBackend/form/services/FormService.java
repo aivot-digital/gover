@@ -73,6 +73,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
         cleanedEntity.setPublishedVersion(null);
         cleanedEntity.setCreated(null);
         cleanedEntity.setUpdated(null);
+        cleanedEntity.setInternalTitle(cleanedEntity.getInternalTitle().strip());
 
         return repository.save(cleanedEntity);
     }
@@ -83,7 +84,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
         var cleanedForm = cleanForm(existingForm, updatedForm);
 
         existingForm.setSlug(updatedForm.getSlug());
-        existingForm.setInternalTitle(cleanedForm.getInternalTitle());
+        existingForm.setInternalTitle(cleanedForm.getInternalTitle().strip());
         existingForm.setPublicTitle(cleanedForm.getPublicTitle());
 
         existingForm.setDevelopingDepartmentId(cleanedForm.getDevelopingDepartmentId());

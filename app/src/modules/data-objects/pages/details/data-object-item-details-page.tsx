@@ -58,11 +58,10 @@ export function DataObjectItemDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Farbschema ist eine Sammlung von Farben, die in der Benutzeroberfläche von Gover verwendet werden. Farbschemata können global oder für einzelne Formulare genutzt werden.
-                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Farbschemata anlegen und nutzen.
+                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells in Gover: Es enthält die tatsächlichen Werte zu den im Schema definierten Feldern. Datenobjekte werden in Prozessen, Komponenten und Schnittstellen weiterverarbeitet und stellen damit die „laufenden“ Fachinformationen dar. Sie sind stets an ein Schema gebunden, das Struktur, Datentypen und Prüfregeln vorgibt.
                                 </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Ein Farbschema besteht aus einem Namen und einer Liste von Farben. Bei der Auswahl der Farben sollte die Barrierfreiheit berücksichtigt werden.
+                                <Typography sx={{ mt: 2 }}>
+                                    Typischerweise umfasst ein Datenobjekt Werte für Text-, Zahlen-, Datums- oder Wahrheitsfelder sowie ggf. verschachtelte Strukturen. Neben Nutzdaten können Metadaten enthalten sein, etwa Erstell- und Änderungszeitpunkte, Quelle/Ersteller:in, Status oder Referenzen auf verknüpfte Objekte. Standardwerte aus dem Schema werden beim Anlegen übernommen und Validierungen sorgen dafür, dass nur erlaubte, vollständige und konsistente Inhalte gespeichert werden.
                                 </Typography>
                             </>
                         ),
