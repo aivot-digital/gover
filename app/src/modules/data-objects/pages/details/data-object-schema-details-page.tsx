@@ -46,11 +46,13 @@ export function DataObjectSchemaDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Farbschema ist eine Sammlung von Farben, die in der Benutzeroberfläche von Gover verwendet werden. Farbschemata können global oder für einzelne Formulare genutzt werden.
-                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Farbschemata anlegen und nutzen.
+                                    Ein Datenobjektschema beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen diese haben und wie Werte geprüft werden. Es sorgt dafür, dass Daten aus Formularen, Workflows und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
                                 </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Ein Farbschema besteht aus einem Namen und einer Liste von Farben. Bei der Auswahl der Farben sollte die Barrierfreiheit berücksichtigt werden.
+                                <Typography sx={{ mt: 2 }}>
+                                    Typischerweise umfasst ein Schema Felder mit Schlüsseln, Datentypen wie Text, Zahl, Datum oder Wahrheitswerte, Validierungen für Pflichtangaben, Wertebereiche oder Muster, sowie die Möglichkeit verschachtelte Objekte abzubilden. Ergänzend können Metadaten wie Beschreibungen, Labels oder Sichtbarkeitsregeln hinterlegt und sinnvolle Standardwerte definiert werden.
+                                </Typography>
+                                <Typography sx={{ mt: 2 }}>
+                                    Das Schema unterstützt verschiedene Komponenten bei der einheitlichen Nutzung desselben Datenmodells. Bei der Ausgestaltung empfehlen sich sprechende, langlebige Feldnamen, kompatible Weiterentwicklungen (hinzufügen statt umbenennen/entfernen) und deutliche Validierungen.
                                 </Typography>
                             </>
                         ),

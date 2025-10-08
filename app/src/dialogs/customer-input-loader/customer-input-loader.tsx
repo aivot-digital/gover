@@ -88,8 +88,6 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     }, [identityData, localStorageData]);
 
     const handleLoadData = () => {
-        console.log('Loading local storage data:', localStorageData);
-
         if (localStorageData != null) {
             onElementDataLoad(localStorageData.data);
         }
@@ -98,15 +96,12 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     };
 
     const handleRestart = () => {
-        console.log('Handling restart of form');
         handleInsertUrlPrefillData();
         CustomerInputService.cleanCustomerInput(form);
         handleCleanup();
     };
 
     const handleInsertUrlPrefillData = () => {
-        console.log('Handling insert of URL prefill data:', urlPrefillData);
-
         if (urlPrefillData != null) {
             const allElements = flattenElements(form.rootElement, true);
 
@@ -132,15 +127,11 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     };
 
     const handleContinueAfterIdentitySuccess = () => {
-        console.log('Continuing after identity success:', identityData);
-
         if (identityData != null && typeof identityData !== 'string') {
             let prefilledData: ElementData;
             if (localStorageData != null) {
-                console.log('Merging local storage data with identity data');
                 prefilledData = prefillIdentityData(form.rootElement, localStorageData.data, identityData.identity);
             } else {
-                console.log('Prefilling identity data into form');
                 prefilledData = prefillIdentityData(form.rootElement, {}, identityData.identity);
             }
 
@@ -156,8 +147,6 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     };
 
     const handleCleanup = () => {
-        console.log('Cleaning up customer input loader state');
-
         setLocalStorageData(null);
         setUrlPrefillData(null);
         setIdentityData(null);

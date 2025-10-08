@@ -260,7 +260,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                         <Actions
                             actions={rowActions(params.row)}
                             sx={{
-                                marginLeft: 'auto',
+                                justifyContent: 'end',
                             }}
                         />
                     );

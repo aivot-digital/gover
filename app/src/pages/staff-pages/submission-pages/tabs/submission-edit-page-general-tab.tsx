@@ -94,7 +94,7 @@ function createGeneralRows(form: Form, submission: SubmissionDetailsResponseDTO,
 
                     <IconButton
                         component={Link}
-                        to={`/forms/${form.id}`}
+                        to={`/forms/${form.id}/${form.version}`}
                         target="_blank"
                         color="primary"
                         size="small"

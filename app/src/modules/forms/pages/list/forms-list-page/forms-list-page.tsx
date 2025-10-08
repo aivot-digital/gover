@@ -37,17 +37,22 @@ import {GridColDef} from '@mui/x-data-grid';
 import {FormStatus} from '../../../enums/form-status';
 import UploadIcon from '@mui/icons-material/Upload';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../../slices/loading-overlay-slice';
-import {useNavigate} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import HistoryIcon from '@mui/icons-material/History';
 import {FormStatusChip} from '../../../components/form-status-chip';
 import {DeleteApplicationDialog} from '../../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
 import {FormsListPageHelp} from './components/forms-list-page-help';
 import {FormStatusChipGroup, getFormStatus} from '../../../components/form-status-chip-group';
+import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
+import {useConfirm} from '../../../../../providers/confirm-provider';
+import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 export function FormsListPage() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const api = useApi();
+    const showConfirm = useConfirm();
 
     const user = useAppSelector(selectUser);
 
@@ -96,7 +101,9 @@ export function FormsListPage() {
                                 variant="h5"
                                 sx={{mb: 0.5}}
                             >
-                                {params.row.internalTitle}
+                                <Link style={{color: 'inherit', textDecoration: 'none'}} to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`} title={"Formular bearbeiten"}>
+                                    {params.row.internalTitle}
+                                </Link>
                             </Typography>
 
                             <Typography
@@ -132,7 +139,7 @@ export function FormsListPage() {
                                 }}
                                 color={'text.secondary'}
                             >
-                                Entwickelt durch: {departments.find(dep => dep.id === params.row.developingDepartmentId)?.name}
+                                Entwickelt von: {departments.find(dep => dep.id === params.row.developingDepartmentId)?.name}
                             </Typography>
                         </Box>
                     );
@@ -155,6 +162,7 @@ export function FormsListPage() {
             {
                 field: 'publishedVersion',
                 headerName: 'Status',
+                flex: 0.75,
                 renderCell: (params) => (
                     <FormStatusChipGroup form={params.row} />
                 ),
@@ -343,7 +351,7 @@ export function FormsListPage() {
                         },
                     }}
                     searchLabel="Formular suchen"
-                    searchPlaceholder="Title des Formulars eingeben…"
+                    searchPlaceholder="Titel des Formulars eingeben…"
                     fetch={(options) => {
                         return new FormsApiService(options.api)
                             .list(options.page, options.size, options.sort, options.order, {
@@ -357,7 +365,7 @@ export function FormsListPage() {
                     }}
                     columnDefinitions={columns}
                     getRowIdentifier={row => row.id.toString()}
-                    noDataPlaceholder="Keine Formulare angelegt"
+                    noDataPlaceholder="Keine Formulare vorhanden"
                     noSearchResultsPlaceholder="Keine Formulare gefunden"
                     rowActionsCount={4}
                     rowActions={(item: FormListResponseDTO) => [
@@ -368,16 +376,29 @@ export function FormsListPage() {
                             visible: item.draftedVersion != null,
                         },
                         {
-                            icon: <UploadIcon />,
-                            onClick: () => {
-                                handleNewFormDraft(item.id, item.publishedVersion);
+                            icon: <NewWindow />,
+                            onClick: async (): Promise<void> => {
+                                const confirmed = await showConfirm({
+                                    title: 'Neue Arbeitsversion anlegen?',
+                                    confirmButtonText: 'Ja, Arbeitsversion anlegen',
+                                    children: (
+                                        <>
+                                            <Box>
+                                                Für dieses Formular existiert derzeit keine aktive Arbeitsversion. Möchten Sie eine neue Arbeitsversion für dieses Formular anlegen um diese zu bearbeiten?
+                                            </Box>
+                                        </>
+                                    ),
+                                });
+                                if(confirmed){
+                                    handleNewFormDraft(item.id, item.publishedVersion);
+                                }
                             },
-                            tooltip: 'Neue Version anlegen',
+                            tooltip: 'Neue Arbeitsversion anlegen',
                             visible: item.draftedVersion == null,
                             disabled: item.publishedVersion == null && item.draftedVersion != null,
                         },
                         {
-                            icon: <HistoryIcon />,
+                            icon: <HomeStorage />,
                             onClick: () => {
                                 setShowFormVersionsDialogFor(item);
                             },
@@ -386,9 +407,9 @@ export function FormsListPage() {
                         {
                             icon: <OpenInNewOutlinedIcon />,
                             href: `/${item.slug}`,
-                            tooltip: 'Formular als antragstellende Person öffnen',
+                            tooltip: 'Veröffentlichtes Formular öffnen (neuer Tab)',
                             target: '_blank',
-                            disabled: item.publishedVersion == null,
+                            visible: item.publishedVersion != null,
                         },
                         {
                             icon: <MoreVertOutlinedIcon />,
@@ -398,7 +419,7 @@ export function FormsListPage() {
                                     form: item,
                                 });
                             },
-                            tooltip: 'Konfiguration testen',
+                            tooltip: 'Optionen',
                         },
                     ]}
                     defaultSortField="internalTitle"
@@ -425,23 +446,6 @@ export function FormsListPage() {
                     </ListItemIcon>
                     <ListItemText>
                         Formular duplizieren
-                    </ListItemText>
-                </MenuItem>
-
-                <MenuItem
-                    component="a"
-                    href={createCustomerPath(rowMenu?.form.slug ?? '')}
-                    target="_blank"
-                    disabled={(
-                        rowMenu?.form.draftedVersion == null &&
-                        rowMenu?.form.publishedVersion == null
-                    )}
-                >
-                    <ListItemIcon>
-                        <OpenInNewOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Formular als antragstellende Person öffnen (in neuem Tab)
                     </ListItemText>
                 </MenuItem>
 

@@ -9,7 +9,8 @@ interface FormManager<T> {
 
     handleInputPatch: (patch: Partial<T>) => void;
     handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
-    handleInputBlur: (field: keyof T) => () => void;
+    handleInputChangeWithValidation: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
+    handleInputBlur: (field: keyof T) => (value?: T[keyof T]) => void;
 
     validate: () => boolean;
     reset: () => void;
@@ -60,7 +61,25 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         validateField(field, value);
     };
 
-    const handleInputBlur = (field: keyof T) => () => {
+    const handleInputChangeWithValidation = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+        if (currentItem == null) {
+            return;
+        }
+
+        setEditedItem({
+            ...currentItem,
+            [field]: value,
+        });
+
+        setTouchedFields(prev => ({
+            ...prev,
+            [field]: true
+        }));
+
+        validateField(field, value, true);
+    };
+
+    const handleInputBlur = (field: keyof T) => (value?: T[keyof T]) => {
         if (currentItem == null) {
             return;
         }
@@ -70,7 +89,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             [field]: true,
         });
 
-        validateField(field, currentItem[field], true);
+        validateField(field, value ?? currentItem[field], true);
     };
 
     const validateField = (field: keyof T, value: T[keyof T] | undefined, validateUntouchedField: boolean = false) => {
@@ -130,6 +149,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
 
         handleInputPatch,
         handleInputChange,
+        handleInputChangeWithValidation,
         handleInputBlur,
 
         validate,

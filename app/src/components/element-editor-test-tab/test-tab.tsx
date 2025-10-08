@@ -77,7 +77,7 @@ export function TestTab<T extends AnyElement>(props: TestTabProps<T>) {
                                     dispatch(showSuccessSnackbar('Alle Kindelemente wurden als geprüft markiert.'));
                                 }
                             }}
-                            disabled={!hasUntestedChild(props.elementModel)}
+                            disabled={!props.editable || !hasUntestedChild(props.elementModel)}
                         >
                             {
                                 isRootElement(props.elementModel) ?

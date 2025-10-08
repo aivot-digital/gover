@@ -143,7 +143,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         value={props.entity.publicTitle}
                         label="Öffentlicher Titel & Überschrift des Formulars"
                         multiline
-                        hint="Dieser Titel wird öffentlicht für das Formular verwendet und ggü. Anstragstellenden angezeigt."
+                        hint="Dieser Titel wird öffentlich für das Formular verwendet und ggü. Anstragstellenden angezeigt."
                         onChange={(val) => {
                             props.onPatchEntity({
                                 publicTitle: val,

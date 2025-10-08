@@ -10,6 +10,7 @@ import {generateId} from '../../utils/id-utils';
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, ElementTreeEntity>) {
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
+    const columnKeyErrors = makeColumnKeyErrors(props.element.fields);
     const minRequiredError = (
         props.element.minimumRequiredRows != null &&
         props.element.maximumRows != null &&
@@ -102,8 +103,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             key: (column.key ?? '').trim(),
                                         })}
-                                        error={columnLabelErrors[index] != null}
-                                        helperText={columnLabelErrors[index]}
+                                        error={columnKeyErrors[index] != null}
+                                        helperText={columnKeyErrors[index] ?? undefined}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
@@ -119,7 +120,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                             label: (column.label ?? '').trim(),
                                         })}
                                         error={columnLabelErrors[index] != null}
-                                        helperText={columnLabelErrors[index]}
+                                        helperText={columnLabelErrors[index] ?? undefined}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
@@ -271,6 +272,26 @@ function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[] | null 
             errors.push(null);
         }
         labelSet.add(field.label ?? '');
+    }
+    return errors;
+}
+
+function makeColumnKeyErrors(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
+    if (fields == null) {
+        return [];
+    }
+    const errors: (string | null)[] = [];
+    const keySet = new Set<string>();
+    for (const field of fields) {
+        const key = (field.key ?? '').trim();
+        if (isStringNullOrEmpty(key) || key.length < 3) {
+            errors.push('Bitte geben Sie einen Schlüssel mit mindestens drei Zeichen ein.');
+        } else if (keySet.has(key)) {
+            errors.push('Eine Spalte mit diesem Schlüssel existiert bereits. Bitte geben Sie einen einzigartigen Schlüssel ein.');
+        } else {
+            errors.push(null);
+        }
+        keySet.add(key);
     }
     return errors;
 }
