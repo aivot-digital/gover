@@ -39,23 +39,23 @@ export function FormStatusChipGroup(props: FormStatusChipGroupProps) {
                 display: 'inline-flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                gap: 2,
+                gap: 1,
                 py: 2,
             }}
         >
             {
-                isDrafted &&
+                isPublished &&
                 <FormStatusChip
-                    status={FormStatus.Drafted}
+                    status={FormStatus.Published}
                     size="small"
                     variant="outlined"
                 />
             }
 
             {
-                isPublished &&
+                isDrafted &&
                 <FormStatusChip
-                    status={FormStatus.Published}
+                    status={FormStatus.Drafted}
                     size="small"
                     variant="outlined"
                 />

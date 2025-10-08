@@ -101,7 +101,7 @@ export function FormsListPage() {
                                 variant="h5"
                                 sx={{mb: 0.5}}
                             >
-                                <Link style={{color: 'inherit', textDecoration: 'none'}} to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}>
+                                <Link style={{color: 'inherit', textDecoration: 'none'}} to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`} title={"Formular bearbeiten"}>
                                     {params.row.internalTitle}
                                 </Link>
                             </Typography>
@@ -365,7 +365,7 @@ export function FormsListPage() {
                     }}
                     columnDefinitions={columns}
                     getRowIdentifier={row => row.id.toString()}
-                    noDataPlaceholder="Keine Formulare angelegt"
+                    noDataPlaceholder="Keine Formulare vorhanden"
                     noSearchResultsPlaceholder="Keine Formulare gefunden"
                     rowActionsCount={4}
                     rowActions={(item: FormListResponseDTO) => [
@@ -407,9 +407,9 @@ export function FormsListPage() {
                         {
                             icon: <OpenInNewOutlinedIcon />,
                             href: `/${item.slug}`,
-                            tooltip: 'Veröffentlichtes Formular als antragstellende Person öffnen',
+                            tooltip: 'Veröffentlichtes Formular öffnen (neuer Tab)',
                             target: '_blank',
-                            disabled: item.publishedVersion == null,
+                            visible: item.publishedVersion != null,
                         },
                         {
                             icon: <MoreVertOutlinedIcon />,
