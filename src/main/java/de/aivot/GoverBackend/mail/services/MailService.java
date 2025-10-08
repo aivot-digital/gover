@@ -448,9 +448,9 @@ public class MailService {
 
         context.put("logoAssetKey", theme.getLogoKey());
 
-        var logoAssetKey = context.get("logoAssetKey").toString();
+        var logoAssetKey = context.get("logoAssetKey");
         try {
-            var assetKeyUUID = UUID.fromString(logoAssetKey);
+            var assetKeyUUID = UUID.fromString(logoAssetKey.toString());
             context.put("logoAssetName", assetRepository
                     .findById(assetKeyUUID)
                     .map(AssetEntity::getFilename)
