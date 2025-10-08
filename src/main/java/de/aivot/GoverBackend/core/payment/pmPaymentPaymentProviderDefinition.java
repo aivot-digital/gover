@@ -2,7 +2,9 @@ package de.aivot.GoverBackend.core.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.common.contenttype.ContentType;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
+import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -21,14 +23,11 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.LinkedList;
 import java.util.Map;
@@ -44,10 +43,12 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
 
     private final SecretService secretService;
+    private final HttpService httpService;
 
     @Autowired
-    public pmPaymentPaymentProviderDefinition(SecretService secretService) {
+    public pmPaymentPaymentProviderDefinition(SecretService secretService, HttpService httpService) {
         this.secretService = secretService;
+        this.httpService = httpService;
     }
 
     @Nonnull
@@ -74,12 +75,12 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         var list = new LinkedList<BaseFormElement>();
 
         var originatorIdInput = new TextField()
-            .setPlaceholder("Originator ID")
-            .setRequired(true)
-            .setLabel("Originator ID")
-            .setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung für das Formular wie z.B. der Formularname, eine LeiKa-ID etc.")
-            .setWeight(6.0d)
-            .setId(ORIGINATOR_ID_FIELD);
+                .setPlaceholder("Originator ID")
+                .setRequired(true)
+                .setLabel("Originator ID")
+                .setHint("Diese ID wird vom Zahlungsdienstleister festgelegt. Üblicherweise ist dies eine Kennzeichnung für das Formular wie z.B. der Formularname, eine LeiKa-ID etc.")
+                .setWeight(6.0d)
+                .setId(ORIGINATOR_ID_FIELD);
         list.add((BaseFormElement) originatorIdInput);
 
         var endpointIdInput = new TextField();
@@ -182,21 +183,19 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID);
 
-        var request = HttpRequest
-                .newBuilder(URI.create(paymentPath))
-                .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
-                .headers("Accept", ContentType.APPLICATION_JSON.getType())
-                .headers("Authorization", "Bearer " + accessToken)
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build();
-
-        var client = HttpClient.newHttpClient();
-
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+            response = httpService
+                    .post(
+                            URI.create(paymentPath),
+                            body,
+                            HttpServiceHeaders
+                                    .create()
+                                    .withContentType(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAuthorizationBearer(accessToken)
+                    );
+        } catch (HttpConnectionException e) {
             throw new PaymentException(e, "Failed to poll payment from payment provider %s", getProviderName());
         }
 
@@ -213,8 +212,6 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction");
-        } finally {
-            client.close();
         }
     }
 
@@ -231,26 +228,21 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         var endpointID = getEndpointID(paymentProviderEntity, config);
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
 
-        var client = HttpClient
-                .newBuilder()
-                .build();
-
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID, transaction.getPaymentInformation().getTransactionId());
 
-        var request = HttpRequest
-                .newBuilder(URI.create(paymentPath))
-                .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
-                .headers("Accept", ContentType.APPLICATION_JSON.getType())
-                .headers("Authorization", "Bearer " + accessToken)
-                .GET()
-                .build();
-
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+            response = httpService
+                    .get(
+                            URI.create(paymentPath),
+                            HttpServiceHeaders
+                                    .create()
+                                    .withContentType(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAuthorizationBearer(accessToken)
+                    );
+        } catch (HttpConnectionException e) {
             throw new PaymentException(e, "Failed to check payment status for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
@@ -271,8 +263,6 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
-
-        client.close();
 
         return updatedTransaction;
     }
@@ -310,19 +300,18 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
 
         var formData = String.format("grant_type=client_credentials&client_id=%s&client_secret=%s", paymentProviderClientId, paymentProviderClientSecret);
 
-        var request = HttpRequest
-                .newBuilder(URI.create(normalizedPaymentProviderOAuthUrl))
-                .headers("Content-Type", ContentType.APPLICATION_URLENCODED.getType())
-                .POST(HttpRequest.BodyPublishers.ofString(formData))
-                .build();
-
-        var client = HttpClient.newHttpClient();
-
-        HttpResponse<String> response = null;
+        HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+            response = httpService
+                    .post(
+                            URI.create(normalizedPaymentProviderOAuthUrl),
+                            formData,
+                            HttpServiceHeaders
+                                    .create()
+                                    .withContentType(HttpServiceHeaders.APPLICATION_X_WWW_FORM_URLENCODED)
+                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
+                    );
+        } catch (HttpConnectionException e) {
             throw new PaymentHttpRequestException(e, paymentProviderEntity, formData.replaceAll("client_secret=.*", "client_secret=***"));
         }
 
@@ -340,8 +329,6 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         } catch (JsonProcessingException e) {
             throw new PaymentSerializationException(e, "Failed to deserialize response body", response.body(), paymentProviderEntity);
         }
-
-        client.close();
 
         return token;
     }

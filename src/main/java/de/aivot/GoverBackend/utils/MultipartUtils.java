@@ -37,5 +37,9 @@ public class MultipartUtils {
             allParts.add(end);
             return HttpRequest.BodyPublishers.ofByteArrays(allParts);
         }
+
+        public String getBoundary() {
+            return boundary;
+        }
     }
 }

@@ -3,7 +3,9 @@ package de.aivot.GoverBackend.core.payment;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.common.contenttype.ContentType;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
+import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -19,17 +21,13 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentMissingDataException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.payment.models.XBezahldiensteRequestor;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
 
@@ -42,10 +40,12 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
 
     private final SecretService secretService;
+    private final HttpService httpService;
 
     @Autowired
-    public epay21PaymentProviderDefinition(SecretService secretService) {
+    public epay21PaymentProviderDefinition(SecretService secretService, HttpService httpService) {
         this.secretService = secretService;
+        this.httpService = httpService;
     }
 
     @Nonnull
@@ -183,22 +183,19 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID);
 
-        var request = HttpRequest
-                .newBuilder(URI.create(paymentPath))
-                .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
-                .headers("Accept", ContentType.APPLICATION_JSON.getType())
-                .headers("Authorization", "Basic " + auth)
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build();
-
-        var client = HttpClient
-                .newHttpClient();
-
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+            response = httpService
+                    .post(
+                            URI.create(paymentPath),
+                            body,
+                            HttpServiceHeaders
+                                    .create()
+                                    .withContentType(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAuthorizationBearer(auth)
+                    );
+        } catch (HttpConnectionException e) {
             throw new PaymentException(e, "Failed to poll payment from payment provider %s", getProviderName());
         }
 
@@ -215,8 +212,6 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
             return objectMapper.readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction");
-        } finally {
-            client.close();
         }
     }
 
@@ -234,26 +229,21 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         var auth = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
 
-        var client = HttpClient
-                .newBuilder()
-                .build();
-
         var paymentPath = String
                 .format("%spaymenttransaction/%s/%s/%s", normalizedPaymentTransactionUrl, originatorID, endpointID, transaction.getPaymentInformation().getTransactionId());
 
-        var request = HttpRequest
-                .newBuilder(URI.create(paymentPath))
-                .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
-                .headers("Accept", ContentType.APPLICATION_JSON.getType())
-                .headers("Authorization", "Bearer " + auth)
-                .GET()
-                .build();
-
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
+            response = httpService
+                    .get(
+                            URI.create(paymentPath),
+                            HttpServiceHeaders
+                                    .create()
+                                    .withContentType(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAccept(HttpServiceHeaders.APPLICATION_JSON)
+                                    .withAuthorizationBearer(auth)
+                    );
+        } catch (HttpConnectionException e) {
             throw new PaymentException(e, "Failed to check payment status for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
@@ -274,8 +264,6 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
-
-        client.close();
 
         return updatedTransaction;
     }

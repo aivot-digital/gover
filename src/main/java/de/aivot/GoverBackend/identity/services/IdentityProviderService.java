@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
@@ -115,7 +116,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
         HttpResponse<String> response;
         try {
             response = httpService.get(uri);
-        } catch (IOException | InterruptedException e) {
+        } catch (HttpConnectionException e) {
             throw ResponseException.internalServerError(
                     e,
                     "Der Endpoint %s konnte nicht erreicht werden. Bitte überprüfen Sie den Endpoint.",

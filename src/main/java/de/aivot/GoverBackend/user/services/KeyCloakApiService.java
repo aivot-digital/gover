@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.user.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -35,8 +36,6 @@ import java.util.concurrent.TimeoutException;
 public class KeyCloakApiService {
     private final static Logger logger = LoggerFactory.getLogger(KeyCloakApiService.class);
 
-    private final static Duration TIMEOUT = Duration.ofSeconds(5);
-
     private final KeyCloakOIDCConfig keyCloakOIDCConfig;
     private final HttpService httpService;
 
@@ -50,10 +49,7 @@ public class KeyCloakApiService {
         HttpResponse<String> response;
         try {
             response = get("/users/" + userId);
-        } catch (URISyntaxException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
-            if (e instanceof HttpTimeoutException || e instanceof TimeoutException) {
-                throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Mitarbeiter:in im IDP.", e);
-            }
+        } catch (HttpConnectionException | IOException | URISyntaxException e) {
             throw ResponseException.internalServerError("Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", e);
         }
 
@@ -86,10 +82,7 @@ public class KeyCloakApiService {
         HttpResponse<String> response;
         try {
             response = get("/users?max=1000");
-        } catch (URISyntaxException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
-            if (e instanceof HttpTimeoutException || e instanceof TimeoutException) {
-                throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Mitarbeiter:innen im IDP.", e);
-            }
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
             throw ResponseException.internalServerError("Die Liste der Mitarbeiter:innen konnte nicht geladen werden.", e);
         }
 
@@ -119,10 +112,7 @@ public class KeyCloakApiService {
         HttpResponse<String> response;
         try {
             response = get("/users/" + userId + "/role-mappings");
-        } catch (URISyntaxException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
-            if (e instanceof HttpTimeoutException || e instanceof TimeoutException) {
-                throw ResponseException.internalServerError("Zeitüberschreitung bei der Abfrage der Rollen für die Mitarbeiter:in im IDP.", e);
-            }
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
             throw ResponseException.internalServerError("Liste der Rollen für die Mitarbeiter:in mit der ID " + userId + " konnte nicht geladen werden.", e);
         }
 
@@ -160,31 +150,22 @@ public class KeyCloakApiService {
      *
      * @param path the path to the resource
      * @return the response from the api
-     * @throws URISyntaxException   if the uri is invalid
-     * @throws IOException          if the request fails
-     * @throws InterruptedException if the request is interrupted
+     * @throws URISyntaxException      if the uri is invalid
+     * @throws IOException             if the request fails
+     * @throws HttpConnectionException if the request is interrupted
      */
-    private HttpResponse<String> get(String path) throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException {
+    private HttpResponse<String> get(String path) throws URISyntaxException, IOException, HttpConnectionException {
         var accessToken = getAccessToken();
 
         var uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
-
-        var request = HttpRequest
-                .newBuilder(uri)
-                .timeout(TIMEOUT)
-                .headers("Content-Type", "application/json")
-                .headers("Authorization", "Bearer " + accessToken)
-                .GET()
-                .build();
-
 
         logger.info("Starting GET request to Keycloak API at {}", uri);
 
         var res = httpService
                 .get(uri, HttpServiceHeaders
                         .create()
-                        .with("Content-Type", "application/json")
-                        .with("Authorization", "Bearer " + accessToken));
+                        .withContentType("application/json")
+                        .withAuthorizationBearer(accessToken));
 
         logger.info("GET request to Keycloak API at {} finished with status code {}", uri, res.statusCode());
 
@@ -198,11 +179,11 @@ public class KeyCloakApiService {
      * Retrieve the access token for the backend from the keycloak server
      *
      * @return the access token
-     * @throws URISyntaxException   if the uri is invalid
-     * @throws IOException          if the request fails
-     * @throws InterruptedException if the request is interrupted
+     * @throws URISyntaxException      if the uri is invalid
+     * @throws IOException             if the request fails
+     * @throws HttpConnectionException if the request is interrupted
      */
-    private String getAccessToken() throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException {
+    private String getAccessToken() throws URISyntaxException, IOException, HttpConnectionException {
         if (accessKeyBuffer != null && accessKeyBufferExpiry != null && LocalDateTime.now().isBefore(accessKeyBufferExpiry)) {
             return accessKeyBuffer;
         }

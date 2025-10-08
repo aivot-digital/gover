@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.identity.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
@@ -416,19 +417,11 @@ public class IdentityService {
         try {
             response = httpService
                     .postFormUrlEncoded(uri, body);
-        } catch (IOException e) {
+        } catch (HttpConnectionException e) {
             throw ResponseException
                     .internalServerError(
                             e,
                             "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für den Zugriffsschlüssel",
-                            provider.getName(),
-                            provider.getKey()
-                    );
-        } catch (InterruptedException e) {
-            throw ResponseException
-                    .internalServerError(
-                            e,
-                            "Verbindungsabbruch beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter %s (%s)",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -495,19 +488,11 @@ public class IdentityService {
                             .with(CONTENT_TYPE_HEADER_KEY, HttpServiceHeaders.APPLICATION_JSON)
                             .with(AUTHORIZATION_HEADER_KEY, "Bearer " + authTokenData.accessToken())
                     );
-        } catch (IOException e) {
+        } catch (HttpConnectionException e) {
             throw ResponseException
                     .internalServerError(
                             e,
                             "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für die Nutzerinformationen",
-                            provider.getName(),
-                            provider.getKey()
-                    );
-        } catch (InterruptedException e) {
-            throw ResponseException
-                    .internalServerError(
-                            e,
-                            "Verbindungsabbruch beim Abrufen der Nutzerinformationen für Nutzerkontenanbieter %s (%s)",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -592,19 +577,11 @@ public class IdentityService {
                     .postFormUrlEncoded(uri, body, HttpServiceHeaders
                             .create()
                             .with(AUTHORIZATION_HEADER_KEY, "Bearer " + authTokenData.accessToken()));
-        } catch (IOException e) {
+        } catch (HttpConnectionException e) {
             throw ResponseException
                     .internalServerError(
                             e,
                             "Fehler beim Verbindungsaufbau zum Nutzerkontenanbieter %s (%s) für den Logout",
-                            provider.getName(),
-                            provider.getKey()
-                    );
-        } catch (InterruptedException e) {
-            throw ResponseException
-                    .internalServerError(
-                            e,
-                            "Verbindungsabbruch beim Logout für Nutzerkontenanbieter %s (%s)",
                             provider.getName(),
                             provider.getKey()
                     );

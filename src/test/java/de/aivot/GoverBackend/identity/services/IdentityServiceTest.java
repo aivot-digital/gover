@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.identity.services;
 
+import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
@@ -228,7 +229,7 @@ class IdentityServiceTest {
         when(mockUserInfoResponse.body()).thenReturn(userInfoResponse);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
-                anyMap()
+                any(HttpServiceHeaders.class)
         )).thenReturn(mockUserInfoResponse);
 
         IdentityCacheEntity savedEntity = new IdentityCacheEntity()
@@ -330,7 +331,7 @@ class IdentityServiceTest {
         when(mockUserInfoResponse.body()).thenReturn(userInfoResponse);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
-                anyMap()
+                any(HttpServiceHeaders.class)
         )).thenReturn(mockUserInfoResponse);
 
         // Mock the logout endpoint response
@@ -339,7 +340,7 @@ class IdentityServiceTest {
         when(httpService.postFormUrlEncoded(
                 eq(URI.create("https://auth.example.com/logout")),
                 anyMap(),
-                anyMap()
+                any(HttpServiceHeaders.class)
         )).thenReturn(mockLogoutResponse);
 
         IdentityCacheEntity savedEntity = new IdentityCacheEntity()
@@ -367,7 +368,7 @@ class IdentityServiceTest {
         verify(httpService).postFormUrlEncoded(
                 eq(URI.create("https://auth.example.com/logout")),
                 anyMap(),
-                anyMap()
+                any(HttpServiceHeaders.class)
         );
     }
 
@@ -422,7 +423,7 @@ class IdentityServiceTest {
         when(mockUserInfoResponse.body()).thenReturn(userInfoResponse);
         when(httpService.get(
                 eq(URI.create("https://auth.example.com/userinfo")),
-                anyMap()
+                any(HttpServiceHeaders.class)
         )).thenReturn(mockUserInfoResponse);
 
         IdentityCacheEntity savedEntity = new IdentityCacheEntity()

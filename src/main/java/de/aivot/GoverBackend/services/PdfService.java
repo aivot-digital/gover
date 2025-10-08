@@ -5,6 +5,8 @@ import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
@@ -34,10 +36,9 @@ import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +57,7 @@ public class PdfService {
     private final PaymentProviderRepository paymentProviderRepository;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final FormVersionService formVersionService;
+    private final HttpService httpService;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
@@ -67,7 +69,8 @@ public class PdfService {
                       IdentityProviderRepository identityProviderRepository,
                       PaymentProviderRepository paymentProviderRepository,
                       PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-                      FormVersionService formVersionService) {
+                      FormVersionService formVersionService,
+                      HttpService httpService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.departmentRepository = departmentRepository;
@@ -78,19 +81,21 @@ public class PdfService {
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.formVersionService = formVersionService;
+        this.httpService = httpService;
     }
 
-    public void testGotenbergConnection() throws IOException, InterruptedException {
-        try (var client = HttpClient.newHttpClient()) {
-            var request = HttpRequest
-                    .newBuilder(URI.create("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/health"))
-                    .GET()
-                    .build();
+    public void testGotenbergConnection() throws IOException {
+        var healthUri = URI.create("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/health");
 
-            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 200) {
-                throw new IOException("Failed to connect to Gotenberg. Status code: " + response.statusCode());
-            }
+        HttpResponse<String> response;
+        try {
+            response = httpService.get(healthUri);
+        } catch (HttpConnectionException e) {
+            throw new IOException("Failed to connect to Gotenberg.", e);
+        }
+
+        if (response.statusCode() != 200) {
+            throw new IOException("Failed to connect to Gotenberg. Status code: " + response.statusCode());
         }
     }
 
@@ -188,8 +193,6 @@ public class PdfService {
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
         var boundary = "----GotenbergBoundary";
-        var uri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
-
         var multipart = new MultipartUtils.MultipartBodyPublisher(boundary)
                 .addPart("files", "index.html", template)
                 .addPart("files", "header.html", headerTemplate)
@@ -200,13 +203,14 @@ public class PdfService {
                 .addPart("paperHeight", "297mm")
                 .addPart("paperWidth", "210mm");
 
-        var client = HttpClient.newHttpClient();
-        var request = HttpRequest.newBuilder(uri)
-                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                .POST(multipart.build())
-                .build();
+        var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
-        var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<InputStream> response;
+        try {
+            response = httpService.post(convertUri, multipart);
+        } catch (HttpConnectionException e) {
+            throw new IOException("Failed to generate PDF with Gotenberg.", e);
+        }
 
         if (response.statusCode() != 200) {
             throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
