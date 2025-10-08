@@ -92,14 +92,26 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         <Box sx={{mt: 2}}>
             {
                 (element.label != null) &&
-                <FormLabel>
+                <FormLabel
+                    error={errors != null && errors.length > 0}
+                >
                     {element.label}
                 </FormLabel>
             }
             {
-                (element.hint != null) &&
+                (errors == null || errors.length === 0) &&
+                element.hint != null &&
                 <FormHelperText>
                     {element.hint}
+                </FormHelperText>
+            }
+            {
+                errors != null &&
+                errors.length > 0 &&
+                <FormHelperText
+                    error={true}
+                >
+                    {errors.join(' ')}
                 </FormHelperText>
             }
             {

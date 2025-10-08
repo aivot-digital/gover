@@ -20,7 +20,6 @@ import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
-import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.services.*;
@@ -368,46 +367,54 @@ public class FormController {
                 .retrieve(formId)
                 .orElseThrow(ResponseException::notFound);
 
-        var latestVersion = formVersionService
-                .getLatestVersion(formId)
-                .orElse(new FormVersionEntity(
-                        form.getId(),
-                        0,
-                        FormStatus.Drafted,
-                        FormType.Public,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        new RootElement(),
-                        LocalDateTime.now(),
-                        LocalDateTime.now(),
-                        null,
-                        null
-                ));
-
         // Check if the user has access to the department the form resides in
         if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-                throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
+            if (departmentMembershipService.checkUserNotInDepartment(user,
+                    form.getDevelopingDepartmentId())) {
+                throw ResponseException.forbidden(
+                        "Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
             }
             // TODO: Check user role
         }
 
-        if (form.getDraftedVersion() != null) {
-            throw ResponseException.conflict("Es existiert bereits eine Entwurfs-Version des Formulars.");
+        var latestVersion = formVersionService
+                .getLatestVersion(formId)
+                .orElse(null);
+
+        if (latestVersion != null) {
+            if (latestVersion.getStatus() == FormStatus.Drafted) {
+                var formVersionId = FormVersionEntityId
+                        .of(formId, latestVersion.getVersion());
+                formVersionService.delete(formVersionId);
+            }
+        } else {
+            latestVersion = new FormVersionEntity(
+                    form.getId(),
+                    0,
+                    FormStatus.Drafted,
+                    FormType.Public,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    new RootElement(),
+                    LocalDateTime.now(),
+                    LocalDateTime.now(),
+                    null,
+                    null
+            );
         }
 
         var newVersion = new FormVersionEntity(
@@ -471,7 +478,9 @@ public class FormController {
         }
 
         if (form.getDraftedVersion() != null) {
-            throw ResponseException.conflict("Es existiert bereits eine Entwurfs-Version des Formulars.");
+            var currentDraftedVersionId = FormVersionEntityId
+                    .of(formId, form.getDraftedVersion());
+            formVersionService.delete(currentDraftedVersionId);
         }
 
         var newVersion = new FormVersionEntity(
@@ -729,74 +738,14 @@ public class FormController {
                 AuditAction.Delete,
                 FormEntity.class,
                 Map.of(
-                        "formId", form.getId(),
-                        "formSlug", form.getSlug(),
-                        "developingDepartmentId", form.getDevelopingDepartmentId()
+                        "formId", deletedForm.getId(),
+                        "formSlug", deletedForm.getSlug(),
+                        "developingDepartmentId", deletedForm.getDevelopingDepartmentId()
                 )
         );
 
         try {
-            formMailService.sendDeleted(user, form);
-        } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
-            auditService.logException("Failed to send message about form deletion", e);
-            exceptionMailService.send(e);
-        }
-    }
-
-    /**
-     * Delete a form by its id.
-     * Forms can only be deleted by users who are members of the department the form resides in.
-     * If the form is locked by another user, an exception is thrown.
-     *
-     * @param jwt    The authentication object.
-     * @param formId The id of the form.
-     */
-    @DeleteMapping("{formId}/{formVersion}/")
-    public void delete(
-            @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer formId,
-            @Nonnull @PathVariable Integer formVersion
-    ) throws ResponseException {
-        // Extract staff user
-        var user = UserService
-                .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized);
-
-        // Retrieve the form by its id
-        var form = formVersionWithDetailsService
-                .retrieve(formId, formVersion)
-                .orElseThrow(ResponseException::notFound);
-
-        // Check if the user has access to the department the form resides in
-        if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-                throw ResponseException.forbidden("User does not have access to the department.");
-            }
-
-            // TODO: Check user role
-        }
-
-        // Check if the form is locked by another user
-        checkFormLock(formId, user);
-
-        // Delete the form
-        var formVersionId = FormVersionEntityId.of(formId, formVersion);
-        var deletedForm = formVersionService.delete(formVersionId);
-
-        auditService.logAction(
-                user,
-                AuditAction.Delete,
-                FormVersionEntity.class,
-                Map.of(
-                        "formId", form.getId(),
-                        "formSlug", form.getSlug(),
-                        "formVersion", deletedForm.getVersion(),
-                        "developingDepartmentId", form.getDevelopingDepartmentId()
-                )
-        );
-
-        try {
-            formMailService.sendDeleted(user, form);
+            formMailService.sendDeleted(user, deletedForm);
         } catch (MessagingException | IOException | NoValidUserEMailsInDepartmentException e) {
             auditService.logException("Failed to send message about form deletion", e);
             exceptionMailService.send(e);
@@ -814,7 +763,8 @@ public class FormController {
         if (existingFormLock.isPresent()) {
             var formLockedByUserId = existingFormLock.get().getUserId();
             if (!user.hasId(formLockedByUserId)) {
-                throw ResponseException.locked("Das Formular ist von einer anderen Mitarbeiter:in gesperrt.");
+                throw ResponseException
+                        .locked("Das Formular ist von einer anderen Mitarbeiter:in gesperrt.");
             }
         }
     }

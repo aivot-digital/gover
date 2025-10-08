@@ -224,10 +224,11 @@ function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, loca
 export function walkElementData(
     currentElement: AnyElement,
     currentElementData: ElementData,
-    callback: (elem: AnyElement, value: any | null | undefined) => void,
+    callback: (elem: AnyElement, value: any | null | undefined, dataObject: ElementDataObject | null | undefined) => void,
 ): void {
+    const dataObject: ElementDataObject | null | undefined = currentElementData[currentElement.id];
     const val = resolveValue(currentElement, currentElementData);
-    callback(currentElement, val);
+    callback(currentElement, val, dataObject);
 
     if (isReplicatingContainerLayout(currentElement)) {
         if (Array.isArray(val)) {
