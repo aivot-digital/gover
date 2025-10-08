@@ -1,42 +1,32 @@
 package de.aivot.GoverBackend.core.services;
 
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
+import de.aivot.GoverBackend.core.models.HttpResponseImpl;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class HttpService {
-    private final static Duration CONNECT_TIMEOUT = Duration.ofSeconds(45);
-    private final static Duration GET_TIMEOUT = Duration.ofSeconds(15);
-    private final static Duration POST_TIMEOUT = Duration.ofSeconds(30);
-
-    private final HttpClient httpClient;
+    private final RestClient httpClient;
 
     public HttpService() {
-        this.httpClient = HttpClient
-                .newBuilder()
-                .connectTimeout(CONNECT_TIMEOUT)
+        this.httpClient = RestClient
+                .builder()
                 .build();
     }
 
-    // region HTTP-Get Sync
+    // region HTTP-Get
 
     @Nonnull
     public HttpResponse<String> get(@Nonnull URI uri) throws HttpConnectionException {
@@ -45,43 +35,30 @@ public class HttpService {
 
     @Nonnull
     public HttpResponse<String> get(@Nonnull URI uri, @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
+        String responseBody;
         try {
-            return getAsync(uri, headers)
-                    .orTimeout(GET_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
-                    .join();
-        } catch (CancellationException | CompletionException e) {
-            throw new HttpConnectionException(e);
+            responseBody = httpClient
+                    .get()
+                    .uri(uri)
+                    .headers(_headers -> {
+                        if (headers != null) {
+                            headers.forEach(_headers::add);
+                        }
+                    })
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            return new HttpResponseImpl<>(
+                    e.getStatusCode().value(),
+                    e.getResponseBodyAsString()
+            );
         }
+
+        return new HttpResponseImpl<>(200, responseBody);
     }
 
     // endregion
-    // region HTTP-Get Async
-
-    @Nonnull
-    public CompletableFuture<HttpResponse<String>> getAsync(@Nonnull URI uri) {
-        return getAsync(uri, null);
-    }
-
-    @Nonnull
-    public CompletableFuture<HttpResponse<String>> getAsync(@Nonnull URI uri, @Nullable HttpServiceHeaders headers) {
-        var requestBuilder = HttpRequest
-                .newBuilder()
-                .timeout(GET_TIMEOUT)
-                .uri(uri)
-                .GET();
-
-        if (headers != null) {
-            headers.forEach(requestBuilder::header);
-        }
-
-        var request = requestBuilder
-                .build();
-
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-    }
-
-    // endregion
-    // region HTTP-Post Sync
+    // region HTTP-Post
 
     @Nonnull
     public HttpResponse<String> post(@Nonnull URI uri, @Nonnull String body) throws HttpConnectionException {
@@ -89,79 +66,47 @@ public class HttpService {
     }
 
     @Nonnull
-    public HttpResponse<String> post(@Nonnull URI uri, @Nonnull String body, @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
+    public HttpResponse<String> post(@Nonnull URI uri, @Nonnull String body, @Nullable HttpServiceHeaders headers) throws  HttpConnectionException {
+        String responseBody;
         try {
-            return postAsync(uri, body, headers)
-                    .orTimeout(POST_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
-                    .join();
-        } catch (CancellationException | CompletionException e) {
-            throw new HttpConnectionException(e);
+            responseBody = httpClient
+                    .post()
+                    .uri(uri)
+                    .body(body)
+                    .headers(_headers -> {
+                        if (headers != null) {
+                            headers.forEach(_headers::add);
+                        }
+                    })
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientResponseException e) {
+            return new HttpResponseImpl<>(
+                    e.getStatusCode().value(),
+                    e.getResponseBodyAsString()
+            );
         }
+
+        return new HttpResponseImpl<>(200, responseBody);
     }
 
     // endregion
-    // region HTTP-Post Async
+    // region HTTP-Post Form-UrlEncoded
 
     @Nonnull
-    public CompletableFuture<HttpResponse<String>> postAsync(@Nonnull URI uri, @Nonnull String body) {
-        return postAsync(uri, body, null);
-    }
-
-    @Nonnull
-    public CompletableFuture<HttpResponse<String>> postAsync(@Nonnull URI uri, @Nonnull String body, @Nullable HttpServiceHeaders headers) {
-        var requestBuilder = HttpRequest
-                .newBuilder()
-                .timeout(POST_TIMEOUT)
-                .uri(uri)
-                .POST(HttpRequest.BodyPublishers.ofString(body));
-
-        if (headers != null) {
-            headers.forEach(requestBuilder::header);
-        }
-
-        var request = requestBuilder
-                .build();
-
-        return httpClient
-                .sendAsync(request, HttpResponse.BodyHandlers.ofString());
-    }
-
-    // endregion
-    // region HTTP-Post Form-UrlEncoded Sync
-
-    @Nonnull
-    public HttpResponse<String> postFormUrlEncoded(@Nonnull URI uri, @Nonnull Map<String, String> body) throws HttpConnectionException {
+    public HttpResponse<String> postFormUrlEncoded(
+            @Nonnull URI uri,
+            @Nonnull Map<String, String> body
+    ) throws HttpConnectionException {
         return postFormUrlEncoded(uri, body, null);
     }
 
     @Nonnull
-    public HttpResponse<String> postFormUrlEncoded(@Nonnull URI uri, @Nonnull Map<String, String> body, @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
-        try {
-            return postFormUrlEncodedAsync(uri, body, headers)
-                    .orTimeout(GET_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
-                    .join();
-        } catch (CompletionException | CancellationException e) {
-            throw new HttpConnectionException(e);
-        }
-    }
-
-    // endregion
-    // region HTTP-Post Form-UrlEncoded Async
-
-    @Nonnull
-    public CompletableFuture<HttpResponse<String>> postFormUrlEncodedAsync(
-            @Nonnull URI uri,
-            @Nonnull Map<String, String> body
-    ) {
-        return postFormUrlEncodedAsync(uri, body, null);
-    }
-
-    @Nonnull
-    public CompletableFuture<HttpResponse<String>> postFormUrlEncodedAsync(
+    public HttpResponse<String> postFormUrlEncoded(
             @Nonnull URI uri,
             @Nonnull Map<String, String> body,
             @Nullable HttpServiceHeaders headers
-    ) {
+    ) throws HttpConnectionException {
         var formUrlEncodedBody = body
                 .entrySet()
                 .stream()
@@ -173,55 +118,41 @@ public class HttpService {
                 .with(headers)
                 .with("Content-Type", HttpServiceHeaders.APPLICATION_X_WWW_FORM_URLENCODED);
 
-        return postAsync(uri, formUrlEncodedBody, extendedHeaders);
+        return post(uri, formUrlEncodedBody, extendedHeaders);
     }
 
     // endregion
-    // region HTTP-Post Multipart Sync
+    // region HTTP-Post Multipart
 
     @Nonnull
-    public HttpResponse<InputStream> post(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body) throws HttpConnectionException {
-        return post(uri, body, null);
+    public HttpResponse<InputStream> postMultipart(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body)  throws HttpConnectionException {
+        return postMultipart(uri, body, null);
     }
 
     @Nonnull
-    public HttpResponse<InputStream> post(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body, @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
+    public HttpResponse<InputStream> postMultipart(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body, @Nullable HttpServiceHeaders headers)  throws HttpConnectionException {
+        InputStream responseBody;
         try {
-            return postAsync(uri, body, headers)
-                    .orTimeout(GET_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
-                    .join();
-        } catch (CompletionException | CancellationException e) {
-            throw new HttpConnectionException(e);
-        }
-    }
-
-    // endregion
-    // region HTTP-Post Multipart Async
-
-    @Nonnull
-    public CompletableFuture<HttpResponse<InputStream>> postAsync(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body) {
-        return postAsync(uri, body, null);
-    }
-
-    @Nonnull
-    public CompletableFuture<HttpResponse<InputStream>> postAsync(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body, @Nullable HttpServiceHeaders headers) {
-        var requestBuilder = HttpRequest
-                .newBuilder()
-                .timeout(POST_TIMEOUT)
-                .uri(uri)
-                .POST(body.build());
-
-        if (headers != null) {
-            headers.forEach(requestBuilder::header);
+            responseBody = httpClient
+                    .post()
+                    .uri(uri)
+                    .body(body)
+                    .headers(_headers -> {
+                        if (headers != null) {
+                            headers.forEach(_headers::add);
+                        }
+                    })
+                    .header("Content-Type", HttpServiceHeaders.MULTIPART_FORM_DATA + "; boundary=" + body.getBoundary())
+                    .retrieve()
+                    .body(InputStream.class);
+        } catch (RestClientResponseException e) {
+            return new HttpResponseImpl<>(
+                    e.getStatusCode().value(),
+                    null
+            );
         }
 
-        requestBuilder.header("Content-Type", HttpServiceHeaders.MULTIPART_FORM_DATA + "; boundary=" + body.getBoundary());
-
-        var request = requestBuilder
-                .build();
-
-        return httpClient
-                .sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
+        return new HttpResponseImpl<>(200, responseBody);
     }
 
     // endregion

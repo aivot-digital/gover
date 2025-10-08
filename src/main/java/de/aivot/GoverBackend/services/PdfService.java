@@ -207,7 +207,7 @@ public class PdfService {
 
         HttpResponse<InputStream> response;
         try {
-            response = httpService.post(convertUri, multipart);
+            response = httpService.postMultipart(convertUri, multipart);
         } catch (HttpConnectionException e) {
             throw new IOException("Failed to generate PDF with Gotenberg.", e);
         }
