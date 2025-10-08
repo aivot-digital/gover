@@ -6,6 +6,7 @@ import {generateComponentTitle} from './generate-component-title';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from './flatten-elements';
 import {getElementNameForType} from '../data/element-type/element-names';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
+import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 
 
 
@@ -68,7 +69,7 @@ function elementToElementDataType(element: AnyElement): string[] {
         ${element.id}: ${element.id}_edo;`);
     }
 
-    if (isAnyElementWithChildren(element)) {
+    if (isAnyElementWithChildren(element) && !isReplicatingContainerLayout(element)) {
         for (const child of element.children ?? []) {
             fields.push(
                 ...elementToElementDataType(child),
@@ -134,7 +135,8 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.Table:
             return `{${element.fields?.map(field => `${field.key}: string | number | null | undefined`).join('; ')}}[]`;
         case ElementType.ReplicatingContainer:
-            return 'object[]';
+            const children = (element.children ?? []).map(element => `${element.id}: ${createElementDataObjectInterfaceName(element)};`).join('\n');
+            return `{${children}}[]`;
         default:
             return 'never';
     }

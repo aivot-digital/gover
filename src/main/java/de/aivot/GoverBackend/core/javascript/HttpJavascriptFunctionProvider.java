@@ -38,6 +38,14 @@ public class HttpJavascriptFunctionProvider implements JavascriptFunctionProvide
         return "Dieses Paket enthält Funktionen für HTTP-Anfragen.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "get(url: string, headers: Record<string, string>): {statusCode: number; body: string};",
+                "post(url: string, body: string, headers: Record<string, string>): {statusCode: number; body: string};"
+        };
+    }
+
     /**
      * Sends a GET request to the given URL with the given headers.
      *

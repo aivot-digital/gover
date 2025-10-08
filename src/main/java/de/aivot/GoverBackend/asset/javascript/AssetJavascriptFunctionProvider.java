@@ -42,6 +42,16 @@ public class AssetJavascriptFunctionProvider implements JavascriptFunctionProvid
         return "Dieses Paket enthält Funktionen für Dokumente & Medieninhalte.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "getBytes(assetKey: string): ArrayBuffer;",
+                "getText(assetKey: string): string;",
+                "getBase64(assetKey: string): string;",
+                "getDownloadUrl(assetKey: string): string;"
+        };
+    }
+
     @HostAccess.Export
     public byte[] getBytes(String assetKey) throws IOException {
         var assetObj = assetService

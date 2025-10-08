@@ -26,6 +26,27 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
         return "Dieses Paket enthält Funktionen für Datumsoperationen.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "createDate(): Date;",
+                "createDate(date: string): Date | null;",
+                "isSameDay(dateA: Date, dateB: Date): boolean;",
+                "isBefore(dateA: Date, dateB: Date): boolean;",
+                "isBeforeOrSameDay(dateA: Date, dateB: Date): boolean;",
+                "isAfter(dateA: Date, dateB: Date): boolean;",
+                "isAfterOrSameDay(dateA: Date, dateB: Date): boolean;",
+                "addDays(date: Date, days: number): Date | null;",
+                "addWeeks(date: Date, weeks: number): Date | null;",
+                "addMonths(date: Date, months: number): Date | null;",
+                "addYears(date: Date, years: number): Date | null;",
+                "subtractDays(date: Date, days: number): Date | null;",
+                "subtractWeeks(date: Date, weeks: number): Date | null;",
+                "subtractMonths(date: Date, months: number): Date | null;",
+                "subtractYears(date: Date, years: number): Date | null;"
+        };
+    }
+
     @HostAccess.Export
     public ZonedDateTime createDate() {
         return LocalDate

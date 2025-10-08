@@ -43,6 +43,14 @@ public class XRepositoryCodelistJavascriptFunctionProvider implements Javascript
         return "Dieses Paket enthält Funktionen für Codelisten aus den XRepositories.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "getValues(urn: string | null): Array<Record<string, any>>;",
+                "getOptions(urn: string | null): Array<{value: string; label: string}>;"
+        };
+    }
+
     @HostAccess.Export
     public ProxyArray getValues(@Nullable String urn) {
         if (urn == null) {

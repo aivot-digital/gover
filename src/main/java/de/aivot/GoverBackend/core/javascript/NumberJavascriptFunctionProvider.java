@@ -22,6 +22,15 @@ public class NumberJavascriptFunctionProvider implements JavascriptFunctionProvi
         return "Dieses Paket enthält Funktionen für Zahlenangaben.";
     }
 
+    @Override
+    public String[] getMethodTypeDefinitions() {
+        return new String[]{
+                "formatGermanNumber(number: number): string;",
+                "formatGermanNumber(number: number, decimalPlaces: number): string;",
+                "parseGermanNumber(numberStr: string): number;"
+        };
+    }
+
     @HostAccess.Export
     public String formatGermanNumber(Number number) {
         if (number == null) {
