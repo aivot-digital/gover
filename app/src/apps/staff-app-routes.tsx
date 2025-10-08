@@ -39,6 +39,10 @@ export const staffAppRoutes: Record<string, Route> = {
         path: '/',
         element: <ModuleSelectPage />,
     },
+    applicationEditLatest: {
+        path: '/forms/:id',
+        element: <FormEditPage />,
+    },
     applicationEdit: {
         path: '/forms/:id/:version',
         element: <FormEditPage />,

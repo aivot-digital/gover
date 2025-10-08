@@ -305,7 +305,7 @@ export function DataObjectItemDetailsPageIndex() {
                     >
                         <TextFieldComponent
                             label="Erstellt am"
-                            value={formatDateTime(currentDataObjectItem.created, 'dd.MM.yyyy HH:mm') + ' Uhr'}
+                            value={formatDateTime(currentDataObjectItem.created, 'dd.MM.yyyy HH:mm:ss') + ' Uhr'}
                             onChange={() => {
                             }}
                             disabled={true}
@@ -320,7 +320,7 @@ export function DataObjectItemDetailsPageIndex() {
                     >
                         <TextFieldComponent
                             label="Geändert am"
-                            value={formatDateTime(currentDataObjectItem.updated, 'dd.MM.yyyy HH:mm') + ' Uhr'}
+                            value={formatDateTime(currentDataObjectItem.updated, 'dd.MM.yyyy HH:mm:ss') + ' Uhr'}
                             onChange={() => {
                             }}
                             disabled={true}

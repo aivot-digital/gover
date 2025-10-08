@@ -3,7 +3,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {type RootState} from '../../../store';
 import {clearLoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
-import {useParams, useSearchParams} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {createAppTheme} from '../../../theming/themes';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
@@ -62,6 +62,7 @@ export const DialogSearchParam = 'dialog';
 
 export function FormEditPage() {
     const baseTheme = useTheme();
+    const navigate = useNavigate();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -84,17 +85,21 @@ export function FormEditPage() {
         return id;
     }, [formIdStr]);
 
-    const formVersion = useMemo(() => {
+    const [formVersion, setFormVersion] = useState<number | 'latest' | undefined>(undefined);
+
+    useEffect(() => {
         if (formVersionStr == null) {
-            return undefined;
+            setFormVersion('latest');
+            return;
         }
 
         const version = parseInt(formVersionStr);
         if (isNaN(version)) {
-            return undefined;
+            setFormVersion('latest');
+            return;
         }
 
-        return version;
+        setFormVersion(version);
     }, [formVersionStr]);
 
     const dispatch = useAppDispatch();
@@ -168,19 +173,37 @@ export function FormEditPage() {
         dispatch(setIdentityId(undefined));
         setFailedToLoad(false);
         if (formId != null && formVersion != null) {
-            new FormsApiService(api)
-                .retrieve({
-                    id: formId,
-                    version: formVersion,
-                })
-                .then((app) => {
-                    CustomerInputService.cleanCustomerInput(app);
-                    dispatch(updateLoadedForm(app));
-                })
-                .catch((err) => {
-                    console.error(err);
-                    setFailedToLoad(true);
-                });
+            if (formVersion === 'latest') {
+                new FormsApiService(api)
+                    .retrieveLatest(formId)
+                    .then((app) => {
+                        navigate(`/forms/${formId}/${app.version}`, {
+                            replace: true,
+                        });
+                        setFormVersion(app.version);
+                        CustomerInputService.cleanCustomerInput(app);
+                        dispatch(updateLoadedForm(app));
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        setFailedToLoad(true);
+                    });
+            } else {
+                new FormsApiService(api)
+                    .retrieve({
+                        id: formId,
+                        version: formVersion,
+                    })
+                    .then((app) => {
+                        CustomerInputService.cleanCustomerInput(app);
+                        dispatch(updateLoadedForm(app));
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        setFailedToLoad(true);
+                    });
+            }
+
             fetchLockState(formId);
         }
     }, [formId, formVersion, dispatch]);
@@ -298,7 +321,7 @@ export function FormEditPage() {
     }
 
     const handleUndo = () => {
-        if (formId == null || formVersion == null) {
+        if (formId == null || formVersion == null || formVersion === 'latest') {
             return;
         }
 
@@ -336,7 +359,7 @@ export function FormEditPage() {
     };
 
     const handleRedo = () => {
-        if (formId == null || formVersion == null) {
+        if (formId == null || formVersion == null || formVersion === 'latest') {
             return;
         }
 

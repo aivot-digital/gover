@@ -2,7 +2,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, Divider, Grid, Typogr
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -62,6 +62,7 @@ export function canPrefillElement(e: AnyElement): boolean {
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
     const [elementData, setElementData] = useState<ElementData>({});
+    const [hasPrefillableElements, setHasPrefillableElements] = useState<Boolean>(false);
     const form = useAppSelector(selectLoadedForm);
 
     const link = useMemo(() => {
@@ -112,6 +113,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 };
             })
     }, [form]);
+
+    useEffect(() => {
+        setHasPrefillableElements(allElementsPerStep.some((x) => x.elements.length > 0));
+    }, [allElementsPerStep]);
 
     const handleCopyLink = async () => {
         if (form == null) {
@@ -346,7 +351,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     <Button
                         variant={'contained'}
                         onClick={handleCopyLink}
-                        disabled={linkTooLong}
+                        disabled={linkTooLong || !hasPrefillableElements}
                         startIcon={<ContentPasteOutlinedIcon />}
                     >
                         Link in Zwischenablage kopieren
@@ -367,7 +372,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleDownloadQrCode}
-                        disabled={linkTooLong}
+                        disabled={linkTooLong || !hasPrefillableElements}
                         startIcon={<QrCode2OutlinedIcon />}
                         sx={{
                             ml: 2,
@@ -392,6 +397,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleExport}
+                        disabled={!hasPrefillableElements}
                         startIcon={<ImportExportOutlinedIcon />}
                         sx={{
                             ml: 'auto',
@@ -402,6 +408,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleImport}
+                        disabled={!hasPrefillableElements}
                         startIcon={<CloudUploadOutlinedIcon />}
                         sx={{
                             ml: 2,

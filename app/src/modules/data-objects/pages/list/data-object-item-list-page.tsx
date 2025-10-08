@@ -122,11 +122,10 @@ export function DataObjectItemListPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Datenobjektschema ist eine Definition für ein Datenobjekt, das in Gover verwendet wird.
-                                    Sie können damit Datenobjekte erstellen, die in Formularen und anderen Komponenten verwendet werden.
+                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells in Gover: Es enthält die tatsächlichen Werte zu den im Schema definierten Feldern. Datenobjekte werden in Prozessen, Komponenten und Schnittstellen weiterverarbeitet und stellen damit die „laufenden“ Fachinformationen dar. Sie sind stets an ein Schema gebunden, das Struktur, Datentypen und Prüfregeln vorgibt.
                                 </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Ein Datenobjekt kann verschiedene Eigenschaften haben, die in Formularen verwendet werden können.
+                                <Typography sx={{ mt: 2 }}>
+                                    Typischerweise umfasst ein Datenobjekt Werte für Text-, Zahlen-, Datums- oder Wahrheitsfelder sowie ggf. verschachtelte Strukturen. Neben Nutzdaten können Metadaten enthalten sein, etwa Erstell- und Änderungszeitpunkte, Quelle/Ersteller:in, Status oder Referenzen auf verknüpfte Objekte. Standardwerte aus dem Schema werden beim Anlegen übernommen und Validierungen sorgen dafür, dass nur erlaubte, vollständige und konsistente Inhalte gespeichert werden.
                                 </Typography>
                             </>
                         ),

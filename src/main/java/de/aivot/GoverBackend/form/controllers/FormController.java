@@ -204,6 +204,37 @@ public class FormController {
      * @param formId The id of the form.
      * @return The form as a DTO.
      */
+    @GetMapping("{formId}/latest/")
+    public FormDetailsResponseDTO retrieveLatest(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId
+    ) throws ResponseException {
+        // Check if the user is a staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Create a form filter
+        var formFilter = FormVersionWithMembershipFilter
+                .create()
+                .setId(formId)
+                .setUserId(user.getId());
+
+        // Retrieve the form by its id
+        return formVersionWithMembershipService
+                .retrieveLatest(formFilter)
+                .map(FormDetailsResponseDTO::fromEntity)
+                .orElseThrow(ResponseException::notFound);
+    }
+
+    /**
+     * Retrieve a form by its id.
+     * Form retrieval is not limited to the user's department.
+     *
+     * @param jwt    The authentication object.
+     * @param formId The id of the form.
+     * @return The form as a DTO.
+     */
     @GetMapping("{formId}/{formVersion}/")
     public FormDetailsResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
