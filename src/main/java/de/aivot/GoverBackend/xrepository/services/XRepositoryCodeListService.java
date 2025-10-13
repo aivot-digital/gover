@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,8 +30,9 @@ public class XRepositoryCodeListService {
 
     @Nonnull
     public XRepositoryCodeList getCodeList(@Nonnull String codeListUrn) throws ResponseException {
+        var encodedCoreLisUrn = URLEncoder.encode(codeListUrn, StandardCharsets.UTF_8);
         var uri = URI
-                .create(XREPOSITORY_API_URL + codeListUrn + ":technischerBestandteilGenericode");
+                .create(XREPOSITORY_API_URL + encodedCoreLisUrn + ":technischerBestandteilGenericode");
 
         HttpResponse<String> response;
         try {
@@ -37,7 +40,7 @@ public class XRepositoryCodeListService {
                     .get(uri);
         } catch (IOException | InterruptedException e) {
             throw ResponseException
-                    .internalServerError(e, "Beim Abrufen der Codeliste mit der URN %s ist ein Fehler aufgetreten: %s", codeListUrn, e.getMessage());
+                    .internalServerError(e, "Beim Abrufen der Codeliste mit der URN %s ist ein Fehler aufgetreten: %s", encodedCoreLisUrn, e.getMessage());
         }
 
         switch (response.statusCode()) {
@@ -46,12 +49,12 @@ public class XRepositoryCodeListService {
                     return new XmlMapper()
                             .readValue(response.body(), XRepositoryCodeList.class);
                 } catch (JsonProcessingException e) {
-                    throw ResponseException.internalServerError(e, "Fehler beim Parsen der Codeliste mit der URN %s: %s", codeListUrn, e.getMessage());
+                    throw ResponseException.internalServerError(e, "Fehler beim Parsen der Codeliste mit der URN %s: %s", encodedCoreLisUrn, e.getMessage());
                 }
             case 404:
-                throw ResponseException.notFound("Die Codeliste mit der URN %s wurde nicht gefunden.", codeListUrn);
+                throw ResponseException.notFound("Die Codeliste mit der URN %s wurde nicht gefunden.", encodedCoreLisUrn);
             default:
-                throw ResponseException.internalServerError("Fehler beim Abrufen der Codeliste mit der URN %s. Der Statuscode war %d", codeListUrn, response.statusCode());
+                throw ResponseException.internalServerError("Fehler beim Abrufen der Codeliste mit der URN %s. Der Statuscode war %d", encodedCoreLisUrn, response.statusCode());
         }
     }
 
