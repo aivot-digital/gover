@@ -280,9 +280,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                         version: form.version,
                     }, submitElementData, identityId);
             } catch (error: ApiError | any) {
+                console.log(error);
+                console.log(JSON.stringify(error));
+
                 if (isApiError(error) || 'status' in error) {
-                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && error.details.details != null && typeof error.details.details === 'object') {
-                        onElementDataChange(error.details.details as ElementData, []);
+                    if (isApiError(error) && error.details != null && typeof error.details === 'object') {
+                        onElementDataChange(error.details as ElementData, []);
                     } else {
                         switch (error.status) {
                             case 406:
