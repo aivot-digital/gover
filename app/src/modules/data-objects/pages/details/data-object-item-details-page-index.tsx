@@ -89,10 +89,10 @@ export function DataObjectItemDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<DataObjectItem>(originalDataObjectItem, yupSchema as any);
+    } = useFormManager<DataObjectItem>(originalDataObjectItem, yupSchema as any, true);
 
     const changeBlocker =
-        useChangeBlocker(originalDataObjectItem, currentDataObjectItem);
+        useChangeBlocker(originalDataObjectItem, currentDataObjectItem, undefined, undefined, true);
 
     const {
         confirmOptions: confirmDeleteOptions,
