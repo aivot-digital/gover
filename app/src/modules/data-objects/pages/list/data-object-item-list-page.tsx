@@ -147,8 +147,8 @@ export function DataObjectItemListPage() {
                 }}
                 columnDefinitions={columns}
                 getRowIdentifier={row => row.id.toString()}
-                noDataPlaceholder="Keine Datenobjektschemata angelegt"
-                noSearchResultsPlaceholder="Keine Datenobjektschema gefunden"
+                noDataPlaceholder="Keine Datenobjekte angelegt"
+                noSearchResultsPlaceholder="Keine Datenobjekte gefunden"
                 rowActionsCount={2}
                 rowActions={(item: DataObjectItem) => [
                     {
