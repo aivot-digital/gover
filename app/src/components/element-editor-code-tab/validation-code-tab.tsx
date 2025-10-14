@@ -33,6 +33,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
     const dispatch = useAppDispatch();
 
     const {
+        allElements,
         element,
         onChange,
     } = props;
@@ -325,6 +326,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                 />
             </BaseCodeTab>
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
                     const _editor = editorRef.current;

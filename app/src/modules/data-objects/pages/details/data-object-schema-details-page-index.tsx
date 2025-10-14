@@ -362,7 +362,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 <ElementTreeTree<GroupLayout>
                     label="Datenobjektschema"
                     hint="Das Datenobjektschema beschreibt die Struktur der Daten, die in diesem Datenobjekt gespeichert werden. Es definiert die Felder und deren Typen."
-                    entity={{} as any}
+                    entity={currentDataObject.schema as any}
                     value={currentDataObject.schema}
                     onChange={handleInputChange('schema')}
                     editable={true}
