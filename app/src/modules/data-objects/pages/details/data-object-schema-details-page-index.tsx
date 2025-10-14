@@ -30,6 +30,7 @@ import {generateComponentTitle} from '../../../../utils/generate-component-title
 import {isApiError} from '../../../../models/api-error';
 import {generateElementWithDefaultValues} from '../../../../utils/generate-element-with-default-values';
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 
 export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated' | 'displayFields'>> = yup.object({
     key: yup.string()
@@ -53,6 +54,29 @@ export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created'
         .max(64, 'Die ID Formatvorlage darf maximal 64 Zeichen lang sein.')
         .required('Die Angabe des ID Typs ist ein Pflichtfeld.'),
 });
+
+const IdGenOptions = [
+    {
+        label: 'UUID',
+        subLabel: 'Global eindeutige Kennung mit 36 Zeichen (z. B. 550e8400-e29b-41d4-a716-446655440000). Wird beim Anlegen erzeugt.',
+        value: ID_GEN_UUID,
+    },
+    {
+        label: 'Seriell fortlaufend',
+        subLabel: 'Automatisch inkrementierte/hochgezählte ganze Zahl (1, 2, 3 …).',
+        value: ID_GEN_SERIAL,
+    },
+    {
+        label: 'Manuell festgelegt',
+        subLabel: 'Die ID wird manuell beim Anlegen eingetragen. Das Schema benötigt hierfür ein Pflichtfeld mit der Element-ID „$id“.',
+        value: ID_GEN_CUSTOM,
+    },
+    {
+        label: 'Formatvorlage',
+        subLabel: 'Erzeugt fortlaufende IDs nach einem vorgegeben Muster mit der Unterstützung von Platzhaltern (z. B. ANT-%Y-%M-%D-%I4 → ANT-2025-10-01-0001). ',
+        value: '',
+    },
+];
 
 export function DataObjectSchemaDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -267,62 +291,54 @@ export function DataObjectSchemaDetailsPageIndex() {
                 hint="Beschreibung des Datenobjektschemas zum besseren Verständnis."
             />
 
-            <RadioFieldComponent
-                label="ID Typ"
-                required
-                value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
-                onChange={(val) => {
 
-
-                    if (val === ID_GEN_CUSTOM) {
-                        const hasIdField = (currentDataObject?.schema.children ?? []).some(c => c.id === '$id');
-                        if (!hasIdField) {
-                            handleInputPatch({
-                                idGen: ID_GEN_CUSTOM,
-                                schema: {
-                                    ...currentDataObject.schema,
-                                    children: [
-                                        {
-                                            ...generateElementWithDefaultValues(ElementType.Text),
-                                            id: '$id',
-                                            name: 'ID',
-                                            label: 'ID',
-                                            hint: 'Eindeutige ID des Datenobjekts',
-                                            required: true,
-                                        } as TextFieldElement,
-                                        ...currentDataObject.schema.children ?? [],
-                                    ],
-                                },
-                            });
+            {
+                !isNewItem &&
+                <SelectFieldComponent
+                    label="ID-Typ"
+                    required
+                    value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
+                    onChange={(val) => {}}
+                    options={IdGenOptions}
+                    disabled={true}
+                />
+            }
+            {
+                isNewItem &&
+                <RadioFieldComponent
+                    label="ID-Typ"
+                    required
+                    value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
+                    onChange={(val) => {
+                        if (val === ID_GEN_CUSTOM) {
+                            const hasIdField = (currentDataObject?.schema.children ?? []).some(c => c.id === '$id');
+                            if (!hasIdField) {
+                                handleInputPatch({
+                                    idGen: ID_GEN_CUSTOM,
+                                    schema: {
+                                        ...currentDataObject.schema,
+                                        children: [
+                                            {
+                                                ...generateElementWithDefaultValues(ElementType.Text),
+                                                id: '$id',
+                                                name: 'ID',
+                                                label: 'ID',
+                                                hint: 'Eindeutige ID des Datenobjekts',
+                                                required: true,
+                                            } as TextFieldElement,
+                                            ...currentDataObject.schema.children ?? [],
+                                        ],
+                                    },
+                                });
+                            }
+                        } else {
+                            handleInputChange('idGen')(val ?? '');
                         }
-                    } else {
-                        handleInputChange('idGen')(val ?? '');
-                    }
-                }}
-                options={[
-                    {
-                        label: 'UUID',
-                        subLabel: 'Global eindeutige Kennung mit 36 Zeichen (z. B. 550e8400-e29b-41d4-a716-446655440000). Wird beim Anlegen erzeugt.',
-                        value: ID_GEN_UUID,
-                    },
-                    {
-                        label: 'Seriell fortlaufend',
-                        subLabel: 'Automatisch inkrementierte/hochgezählte ganze Zahl (1, 2, 3 …).',
-                        value: ID_GEN_SERIAL,
-                    },
-                    {
-                        label: 'Manuell festgelegt',
-                        subLabel: 'Die ID wird manuell beim Anlegen eingetragen. Das Schema benötigt hierfür ein Pflichtfeld mit der Element-ID „$id“.',
-                        value: ID_GEN_CUSTOM,
-                    },
-                    {
-                        label: 'Formatvorlage',
-                        subLabel: 'Erzeugt fortlaufende IDs nach einem vorgegeben Muster mit der Unterstützung von Platzhaltern (z. B. ANT-%Y-%M-%D-%I4 → ANT-2025-10-01-0001). ',
-                        value: '',
-                    },
-                ]}
-                disabled={isBusy || !userIsAdmin || !isNewItem}
-            />
+                    }}
+                    options={IdGenOptions}
+                    disabled={isBusy || !userIsAdmin || !isNewItem}
+                />
+            }
 
             {
                 currentDataObject.idGen !== ID_GEN_UUID &&
@@ -346,7 +362,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 <ElementTreeTree<GroupLayout>
                     label="Datenobjektschema"
                     hint="Das Datenobjektschema beschreibt die Struktur der Daten, die in diesem Datenobjekt gespeichert werden. Es definiert die Felder und deren Typen."
-                    entity={{} as any}
+                    entity={currentDataObject.schema as any}
                     value={currentDataObject.schema}
                     onChange={handleInputChange('schema')}
                     editable={true}
@@ -368,8 +384,8 @@ export function DataObjectSchemaDetailsPageIndex() {
                 />
 
                 <MultiCheckboxComponent
-                    label="Anzeigefelder"
-                    hint="Die Werte dieser Felder werden in Listenansichten zur Identifizierung angezeigt."
+                    label="Anzeigeattribute"
+                    hint="Die Werte dieser Felder bzw. Attribute werden in Listenansichten zur Identifizierung angezeigt."
                     value={currentDataObject.displayFields ?? []}
                     onChange={(val) => {
                         handleInputChange('displayFields')(val ?? []);

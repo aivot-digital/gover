@@ -1,8 +1,6 @@
 import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
-import {Preset} from "../../models/entities/preset";
-import {CustomerInput} from '../../models/customer-input';
-import {FormState} from '../../models/dtos/form-state';
+import {PresetCreateReqeustDTO, Preset} from "../../models/entities/preset";
 import {ElementData, ElementDerivationResponse} from '../../models/element-data';
 
 interface PresetFilter {
@@ -10,7 +8,7 @@ interface PresetFilter {
     published: boolean;
 }
 
-export class PresetsApiService extends CrudApiService<Preset, Preset, Preset, Preset, Preset, string, PresetFilter> {
+export class PresetsApiService extends CrudApiService<PresetCreateReqeustDTO, Preset, Preset, Preset, Preset, string, PresetFilter> {
     public constructor(api: Api) {
         super(api, 'presets/');
     }

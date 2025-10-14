@@ -1,6 +1,6 @@
 import {useMemo, useState} from 'react';
 import {ObjectSchema, ValidationError} from 'yup';
-import {shallowEquals} from '../utils/equality-utils';
+import {deepEquals, shallowEquals} from '../utils/equality-utils';
 
 interface FormManager<T> {
     currentItem: T | undefined | null;
@@ -17,7 +17,7 @@ interface FormManager<T> {
 }
 
 // TODO: Fix extending type
-export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>): FormManager<T> {
+export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>, useDeepEquals: boolean = false): FormManager<T> {
     const [editedItem, setEditedItem] = useState<T>();
     const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
     const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
@@ -27,7 +27,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
     }, [editedItem, originalItem]);
 
     const hasNotChanged = useMemo(() => {
-        return editedItem == null || shallowEquals(originalItem, editedItem);
+        return editedItem == null || (useDeepEquals ? deepEquals(originalItem, editedItem) : shallowEquals(originalItem, editedItem));
     }, [originalItem, editedItem]);
 
     const handleInputPatch = (patch: Partial<T>) => {

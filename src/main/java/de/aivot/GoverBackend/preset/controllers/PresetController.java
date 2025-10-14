@@ -3,11 +3,9 @@ package de.aivot.GoverBackend.preset.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
-import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.preset.dtos.PresetCreateRequestDTO;
 import de.aivot.GoverBackend.preset.entities.PresetEntity;
-import de.aivot.GoverBackend.preset.entities.PresetVersionEntity;
 import de.aivot.GoverBackend.preset.filters.PresetFilter;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
@@ -76,20 +74,23 @@ public class PresetController {
     @PostMapping("")
     public PresetEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @Valid @RequestBody PresetEntity newPresetEntity
+            @Nonnull @Valid @RequestBody PresetCreateRequestDTO requestDTO
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        newPresetEntity.setKey(UUID.randomUUID());
-        newPresetEntity.setPublishedVersion(null);
-        newPresetEntity.setDraftedVersion(null);
-        newPresetEntity.setCreated(LocalDateTime.now());
-        newPresetEntity.setUpdated(LocalDateTime.now());
+        var newEntity = requestDTO
+                .toEntity();
 
-        var entity = presetRepository
-                .save(newPresetEntity);
+        var savedEntity = presetRepository
+                .save(newEntity);
+
+        var newVersion = requestDTO
+                .toVersionEntity(savedEntity);
+
+        var savedVersion = presetVersionRepository
+                .save(newVersion);
 
         auditService
                 .logAction(
@@ -97,25 +98,14 @@ public class PresetController {
                         AuditAction.Create,
                         PresetEntity.class,
                         Map.of(
-                                "key", entity.getKey(),
-                                "title", entity.getTitle()
+                                "key", savedEntity.getKey(),
+                                "title", savedEntity.getTitle(),
+                                "version", savedVersion.getVersion()
                         )
                 );
 
-        var initialPresetVersion = new PresetVersionEntity(
-                entity.getKey(),
-                1,
-                new GroupLayout(),
-                FormStatus.Drafted,
-                LocalDateTime.now(),
-                LocalDateTime.now(),
-                null,
-                null
-        );
-        presetVersionRepository.save(initialPresetVersion);
-
         return presetRepository
-                .findById(entity.getKey())
+                .findById(savedEntity.getKey())
                 .orElseThrow(ResponseException::notFound);
     }
 

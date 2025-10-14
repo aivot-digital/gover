@@ -8,8 +8,8 @@ import {DataObjectSchema} from '../../models/data-object-schema';
 import {useParams} from 'react-router-dom';
 import {useMemo, useRef} from 'react';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 import {downloadObjectFile} from '../../../../utils/download-utils';
+import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
 
 export function DataObjectSchemaDetailsPage() {
     useAdminGuard();
@@ -59,16 +59,16 @@ export function DataObjectSchemaDetailsPage() {
                     },
                     actions: isNew ? [] : [
                         {
-                            label: 'Datenobjekte anzeigen',
-                            to: `/data-objects/${schemaKey}/items`,
+                            icon: <CloudDownloadOutlinedIcon />,
+                            onClick: handleExport,
                             variant: 'outlined',
-                            icon: <CategoryOutlinedIcon />,
-                            tooltip: 'Zu den Datenobjekten dieses Schemas wechseln',
+                            label: 'Schema exportieren',
                         },
                         {
-                            onClick: handleExport,
-                            tooltip: 'Datenobjektschema exportieren',
-                            icon: <Download />,
+                            label: 'Datenobjekte anzeigen',
+                            to: `/data-objects/${schemaKey}/items`,
+                            variant: 'contained',
+                            icon: <CategoryOutlinedIcon />,
                         },
                     ],
                 }}

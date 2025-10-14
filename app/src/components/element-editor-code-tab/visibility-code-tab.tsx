@@ -27,6 +27,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
     const dispatch = useAppDispatch();
 
     const {
+        allElements,
         element,
         onChange,
     } = props;
@@ -204,6 +205,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
             </BaseCodeTab>
 
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
                     const _editor = editorRef.current;

@@ -104,6 +104,7 @@ public class ElementData extends HashMap<String, ElementDataObject> implements S
                 valueMap.containsKey(element.getId())
         ) {
             elementDataObject.setInputValue(valueMap.get(element.getId()));
+            elementDataObject.setIsDirty(true);
         }
 
         // Pattern match the element type and handle it accordingly.

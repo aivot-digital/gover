@@ -150,7 +150,9 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
         setLocalStorageData(null);
         setUrlPrefillData(null);
         setIdentityData(null);
-        setSearchParams({});
+        setSearchParams({}, {
+            replace: true,
+        });
     };
 
     useEffect(() => {

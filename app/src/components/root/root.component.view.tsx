@@ -283,8 +283,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     }, submitElementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
-                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && error.details.details != null && typeof error.details.details === 'object') {
-                        onElementDataChange(error.details.details as ElementData, []);
+                    if (isApiError(error) && error.details != null && typeof error.details === 'object') {
+                        onElementDataChange(error.details as ElementData, []);
                     } else {
                         switch (error.status) {
                             case 406:
@@ -316,7 +316,9 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 });
                 dispatch(nextStep());
                 // Clear possible identity data from search params
-                setSearchParams({});
+                setSearchParams({}, {
+                    replace: true,
+                });
                 CustomerInputService.cleanCustomerInput(form);
             }
         }
