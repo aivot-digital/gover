@@ -132,9 +132,9 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                 }}
                 sx={{
                     ...props.sx,
-                    "& .MuiInputBase-root": {
-                        backgroundColor: props.busy ? "#F8F8F8" : undefined,
-                        cursor: props.busy ? "not-allowed" : undefined,
+                    "& .MuiPickersInputBase-root": {
+                        backgroundColor: (props.busy || props.disabled) ? "#F8F8F8" : undefined,
+                        cursor: (props.busy || props.disabled) ? "not-allowed" : undefined,
                     },
                 }}
             />
