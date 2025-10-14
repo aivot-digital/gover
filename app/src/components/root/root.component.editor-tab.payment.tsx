@@ -1,8 +1,8 @@
-import React, {useEffect, useReducer, useState} from 'react';
+import React, {useEffect, useMemo, useReducer, useState} from 'react';
 import {Box, Button, Grid, IconButton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
-import {Form, Form as Application} from '../../models/entities/form';
+import {Form, Form as Application, isForm} from '../../models/entities/form';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {PaymentProduct, PaymentType} from '../../models/payment/payment-product';
 import {NumberFieldComponent} from '../number-field/number-field-component';
@@ -29,8 +29,10 @@ import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
 
 interface PaymentPositionItemProps {
+    allElements: ElementWithParents[];
     index: number;
     product: PaymentProduct;
     form: Form;
@@ -483,6 +485,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
                 </>
             }
             <SelectElementDialog
+                allElements={props.allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
                     navigator.clipboard.writeText(element.id);
@@ -503,6 +506,13 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
         provider => provider.key === props.entity.paymentProviderKey,
     );
     const isTestPaymentProvider = selectedPaymentProvider?.isTestProvider ?? false;
+
+    const allElements = useMemo(() => {
+        if (isForm(props.entity)) {
+            return flattenElementsWithParents(props.entity.rootElement, [], true);
+        }
+        return [];
+    }, [props.entity]);
 
     useEffect(() => {
         new PaymentProvidersApiService(api)
@@ -724,6 +734,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
                             props.entity.paymentProducts.map((product, index) => (
                                 <PaymentPositionItem
                                     key={index}
+                                    allElements={allElements}
                                     index={index}
                                     product={product}
                                     form={props.entity}

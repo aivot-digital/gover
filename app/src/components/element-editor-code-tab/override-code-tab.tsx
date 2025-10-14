@@ -24,6 +24,7 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
     const dispatch = useAppDispatch();
 
     const {
+        allElements,
         element,
         onChange,
     } = props;
@@ -132,6 +133,7 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
             </BaseCodeTab>
 
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
                     const _editor = editorRef.current;

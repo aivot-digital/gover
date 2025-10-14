@@ -43,6 +43,8 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     public static final Pattern ID_GEN_INC_START_PATTERN = Pattern.compile("^(" + ID_GEN_INC_PATTERN + ")" + ID_GEN_FLUFF_PATTERN);
     public static final Pattern ID_GEN_INC_END_PATTERN = Pattern.compile(ID_GEN_FLUFF_PATTERN + "(" + ID_GEN_INC_PATTERN + ")$");
 
+    public static final String ID_FIELD_NAME = "$id";
+
     private final DataObjectItemRepository dataObjectItemRepository;
     private final DataObjectSchemaRepository dataObjectSchemaRepository;
     private final ElementDerivationService elementDerivationService;
@@ -78,15 +80,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 id = String.valueOf(maxId + 1);
             }
             case ID_GEN_CUSTOM -> {
-                var _id = entity
-                        .getData()
-                        .get("$id");
-
-                if (_id == null) {
-                    throw ResponseException
-                            .badRequest("Für die ID-Generierungsmethode '__CUSTOM__' muss im Datenobjekt ein Feld „$id“ mit dem gewünschten ID-Wert übergeben werden.");
-                }
-
+                var _id = getCustomObjectId(entity);
                 id = String.valueOf(_id);
             }
             default -> {
@@ -148,6 +142,20 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 .save(entity);
     }
 
+    @Nonnull
+    private static Object getCustomObjectId(@Nonnull DataObjectItemEntity entity) throws ResponseException {
+        var _id = entity
+                .getData()
+                .get(ID_FIELD_NAME);
+
+        if (_id == null) {
+            throw ResponseException
+                    .badRequest("Für die ID-Generierungsmethode '__CUSTOM__' muss im Datenobjekt ein Feld „" + ID_FIELD_NAME + "“ mit dem gewünschten ID-Wert übergeben werden.");
+        }
+
+        return _id;
+    }
+
     @Override
     public void performDelete(@Nonnull DataObjectItemEntity entity) throws ResponseException {
         entity.setDeleted(LocalDateTime.now());
@@ -168,11 +176,20 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     public DataObjectItemEntity performUpdate(@Nonnull DataObjectItemEntityId id,
                                               @Nonnull DataObjectItemEntity entity,
                                               @Nonnull DataObjectItemEntity existingEntity) throws ResponseException {
+        if (existingEntity.getDeleted() != null) {
+            throw ResponseException.notFound();
+        }
+
         var schema = dataObjectSchemaRepository
                 .findById(entity.getSchemaKey())
                 .orElseThrow(ResponseException::badRequest);
 
+        if (ID_GEN_CUSTOM.equals(schema.getIdGen())) {
+            getCustomObjectId(entity);
+        }
+
         var derivedObjectItemData = deriveDataObjectItemData(entity, schema);
+        derivedObjectItemData.put(ID_FIELD_NAME, existingEntity.getId());
         existingEntity.setData(derivedObjectItemData);
 
         return dataObjectItemRepository

@@ -352,6 +352,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
             />
 
             <SelectElementDialog
+                allElements={props.allElements}
                 open={elementSelectDialogOpenIndex != null}
                 onSelect={(element) => {
                     if (elementSelectDialogOpenIndex != null) {

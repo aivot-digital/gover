@@ -28,6 +28,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
     const dispatch = useAppDispatch();
 
     const {
+        allElements,
         element,
         onChange,
     } = props;
@@ -162,6 +163,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
             </BaseCodeTab>
 
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
                     const _editor = editorRef.current;

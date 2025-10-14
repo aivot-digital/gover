@@ -1,5 +1,9 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Box, Button, Container, Grid, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
@@ -155,7 +159,10 @@ export function PresetEditPage() {
         }
 
         presetsApiService
-            .update(preset.key, preset)
+            .update(preset.key, {
+                title: preset.title,
+                rootElement: {} as any,
+            })
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
