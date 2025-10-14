@@ -347,7 +347,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     <TextFieldComponent
                         label="ID des Elements"
                         value={props.element.id ?? ''}
-                        disabled={props.scope === 'application' || props.scope === 'preset' || props.scope === 'data_modelling' || !props.editable}
+                        disabled={props.scope === 'application' || props.scope === 'preset' || !props.editable}
                         onChange={(id) => {
                             if (props.scope === 'data_modelling') {
                                 // @ts-ignore
@@ -369,6 +369,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                                     });
                             },
                         }}
+                        hint={props.scope === 'data_modelling' ? 'Wenn Sie eine bereits in Verwendung befindliche ID nachträglich ändern, werden bereits erfasste Daten verworfen. Eine automatische Migration findet nicht derzeit statt. Bitte verwenden Sie daher von Beginn an stabile, eindeutige IDs.' : undefined}
                     />
                 </Grid>
             </Grid>
