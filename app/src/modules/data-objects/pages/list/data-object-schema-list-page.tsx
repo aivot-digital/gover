@@ -14,10 +14,10 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import {DataObjectSchema} from '../../models/data-object-schema';
 import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
-import Upload from '@aivot/mui-material-symbols-400-outlined/dist/upload/Upload';
 import {uploadObjectFile} from '../../../../utils/download-utils';
 import {useNavigate} from 'react-router-dom';
 import {v4 as uuid4} from 'uuid';
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 
 export function DataObjectSchemaListPage() {
     useAdminGuard();
@@ -53,19 +53,20 @@ export function DataObjectSchemaListPage() {
                         title: 'Datenobjektschema',
                         actions: [
                             {
+                                icon: <CloudUploadOutlinedIcon />,
+                                disabled: !userIsAdmin,
+                                onClick: handleImport,
+                                variant: 'outlined',
+                                label: 'Schema importieren',
+                            },
+                            {
                                 label: 'Neues Datenobjektschema',
                                 icon: <AddOutlinedIcon />,
                                 disabled: !userIsAdmin,
                                 tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
                                 to: '/data-objects/new',
                                 variant: 'contained',
-                            },
-                            {
-                                icon: <Upload />,
-                                tooltip: 'Datenobjektschema importieren',
-                                disabled: !userIsAdmin,
-                                onClick: handleImport,
-                            },
+                            }
                         ],
                         helpDialog: {
                             title: 'Hilfe zu Datenobjektschemata',
