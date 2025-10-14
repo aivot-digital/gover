@@ -190,6 +190,7 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                 valueGetter: (_: any, row: any) => {
                     return row.data[element.id].inputValue;
                 },
+                sortable: false,
             });
         }
     }
