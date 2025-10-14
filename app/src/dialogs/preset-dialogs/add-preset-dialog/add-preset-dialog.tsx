@@ -1,33 +1,43 @@
-import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import Typography from '@mui/material/Typography';
+import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AddPresetDialogProps} from './add-preset-dialog-props';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
-import {type Preset} from '../../../models/entities/preset';
-import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {type Preset, PresetCreateReqeustDTO} from '../../../models/entities/preset';
 import {ElementType} from '../../../data/element-type/element-type';
-import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {useApi} from '../../../hooks/use-api';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
-import {PresetsApiService} from "../../../modules/presets/presets-api-service";
-import {PresetVersionApiService} from "../../../modules/presets/preset-version-api-service";
+import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 
 
-type Errors = Partial<Record<keyof Preset, string>>;
+type Errors = Partial<Record<keyof PresetCreateReqeustDTO, string>>;
 
-function createEmptyPreset(): Preset {
+function createEmptyPreset(): PresetCreateReqeustDTO {
     return {
-        key: '',
         title: '',
-        publishedVersion: null,
-        draftedVersion: null,
-        updated: new Date().toISOString(),
-        created: new Date().toISOString(),
+        rootElement: {
+            id: '',
+            type: ElementType.Container,
+            children: [],
+            storeLink: null,
+            weight: undefined,
+            name: undefined,
+            testProtocolSet: undefined,
+            visibility: undefined,
+            override: undefined,
+            metadata: undefined,
+        },
     };
 }
 
-function validate(preset: Preset): Errors | null {
+function validate(preset: PresetCreateReqeustDTO): Errors | null {
     let errors: Errors | null = null;
 
 
@@ -53,18 +63,19 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
         ...passTroughProps
     } = props;
 
-    const [preset, setPreset] = useState(createEmptyPreset());
+    const [preset, setPreset] = useState<PresetCreateReqeustDTO>(createEmptyPreset());
     const [errors, setErrors] = useState<Errors>({});
 
     useEffect(() => {
         if (root?.name != null && root.name !== preset.title) {
             handlePatch({
                 title: root.name,
+                rootElement: root,
             });
         }
     }, [root]);
 
-    const handlePatch = (patch: Partial<Preset>): void => {
+    const handlePatch = (patch: Partial<PresetCreateReqeustDTO>): void => {
         setPreset({
             ...preset,
             ...patch,

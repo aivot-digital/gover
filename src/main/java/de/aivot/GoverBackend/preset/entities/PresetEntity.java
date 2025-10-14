@@ -2,10 +2,7 @@ package de.aivot.GoverBackend.preset.entities;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
@@ -40,6 +37,46 @@ public class PresetEntity {
 
     @Nullable
     private LocalDateTime updated;
+
+    // region Constructors
+
+    // Empty constructor for JPA
+    public PresetEntity() {
+    }
+
+    // Full constructor
+    public PresetEntity(@Nonnull UUID key,
+                        @Nonnull String title,
+                        @Nullable Integer publishedVersion,
+                        @Nullable Integer draftedVersion,
+                        @Nonnull Integer versionCount,
+                        @Nullable LocalDateTime created,
+                        @Nullable LocalDateTime updated) {
+        this.key = key;
+        this.title = title;
+        this.publishedVersion = publishedVersion;
+        this.draftedVersion = draftedVersion;
+        this.versionCount = versionCount;
+        this.created = created;
+        this.updated = updated;
+    }
+
+    // endregion
+
+    // region Signals
+
+    @PrePersist
+    public void prePersist() {
+        created = LocalDateTime.now();
+        updated = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = LocalDateTime.now();
+    }
+
+    // endregion
 
     // region Getters & Setters
 
