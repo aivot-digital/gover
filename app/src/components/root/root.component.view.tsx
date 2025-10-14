@@ -280,9 +280,6 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                         version: form.version,
                     }, submitElementData, identityId);
             } catch (error: ApiError | any) {
-                console.log(error);
-                console.log(JSON.stringify(error));
-
                 if (isApiError(error) || 'status' in error) {
                     if (isApiError(error) && error.details != null && typeof error.details === 'object') {
                         onElementDataChange(error.details as ElementData, []);
