@@ -39,4 +39,6 @@ http://localhost:80 {
     header /assets/fonts/* {
         Access-Control-Allow-Origin *
     }
+
+    redir /security.txt /.well-known/security.txt 301
 }
