@@ -314,7 +314,9 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 });
                 dispatch(nextStep());
                 // Clear possible identity data from search params
-                setSearchParams({});
+                setSearchParams({}, {
+                    replace: true,
+                });
                 CustomerInputService.cleanCustomerInput(form);
             }
         }
