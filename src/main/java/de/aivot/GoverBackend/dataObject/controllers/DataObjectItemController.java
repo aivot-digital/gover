@@ -105,6 +105,7 @@ public class DataObjectItemController {
 
         return service
                 .retrieve(id)
+                .filter(entity -> entity.getDeleted() == null)
                 .map(i -> DataObjectItemResponseDTO.fromEntity(i, schema))
                 .orElseThrow(ResponseException::notFound);
     }

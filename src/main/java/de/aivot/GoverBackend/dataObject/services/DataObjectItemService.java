@@ -176,6 +176,10 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     public DataObjectItemEntity performUpdate(@Nonnull DataObjectItemEntityId id,
                                               @Nonnull DataObjectItemEntity entity,
                                               @Nonnull DataObjectItemEntity existingEntity) throws ResponseException {
+        if (existingEntity.getDeleted() != null) {
+            throw ResponseException.notFound();
+        }
+
         var schema = dataObjectSchemaRepository
                 .findById(entity.getSchemaKey())
                 .orElseThrow(ResponseException::badRequest);

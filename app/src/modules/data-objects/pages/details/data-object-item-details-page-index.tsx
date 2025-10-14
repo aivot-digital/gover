@@ -23,13 +23,9 @@ import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
-import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
+import {applyYupErrorsToElementData, goverSchemaToYup2} from '../../../../utils/gover-schema-to-yup';
 import Grid from '@mui/material/Grid';
 import {format as formatDateTime} from 'date-fns/format';
-import {mapElementData} from '../../../../utils/element-data-utils';
-import {ElementDataObject, newElementDataObject} from '../../../../models/element-data';
-import {ElementType} from '../../../../data/element-type/element-type';
-import {AnyElement} from '../../../../models/elements/any-element';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 
@@ -74,7 +70,7 @@ export function DataObjectItemDetailsPageIndex() {
                 data: yup
                     .object()
                     .required()
-                    .shape(goverSchemaToYup(dataObjectSchema.schema)),
+                    .shape(goverSchemaToYup2(dataObjectSchema.schema)),
             });
     }, [dataObjectSchema]);
 
@@ -109,36 +105,12 @@ export function DataObjectItemDetailsPageIndex() {
             return;
         }
 
-        function applyErrorsToElementData(element: AnyElement, value: ElementDataObject | null | undefined, parents: Array<AnyElement | number>) {
-            let val: ElementDataObject = {
-                ...newElementDataObject(element.type),
-                ...value,
-            };
-
-            const parentPathParts = parents
-                .filter(p => typeof p === 'number' || p.type === ElementType.ReplicatingContainer)
-                .map((i) => typeof i !== 'number' ? i.id : i);
-            const pathParts = [
-                'data',
-                ...parentPathParts,
-                element.id,
-                'inputValue',
-            ];
-            const path = pathParts.join('.');
-
-            const err = errors[path as keyof DataObjectItem];
-            if (err != null) {
-                val.computedErrors = [err];
-            }
-
-            return val;
-        }
-
-        const updatedElementData = mapElementData(
+        const updatedElementData = applyYupErrorsToElementData(
             dataObjectSchema.schema,
             currentDataObjectItem.data,
-            applyErrorsToElementData,
+            errors,
         );
+
         handleInputChange('data')(updatedElementData);
     }, [errors]);
 
