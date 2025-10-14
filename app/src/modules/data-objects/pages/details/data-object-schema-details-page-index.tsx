@@ -368,8 +368,8 @@ export function DataObjectSchemaDetailsPageIndex() {
                 />
 
                 <MultiCheckboxComponent
-                    label="Anzeigefelder"
-                    hint="Die Werte dieser Felder werden in Listenansichten zur Identifizierung angezeigt."
+                    label="Anzeigeattribute"
+                    hint="Die Werte dieser Felder bzw. Attribute werden in Listenansichten zur Identifizierung angezeigt."
                     value={currentDataObject.displayFields ?? []}
                     onChange={(val) => {
                         handleInputChange('displayFields')(val ?? []);
