@@ -83,7 +83,7 @@ export function PaymentProviderDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<PaymentProviderResponseDTO>(item, yup.object(paymentProviderSchema) as any);
+    } = useFormManager<PaymentProviderResponseDTO>(item, yup.object(paymentProviderSchema) as any, true);
 
     const definitions = useMemo(() => {
         return additionalData?.definitions ?? [];
@@ -106,7 +106,7 @@ export function PaymentProviderDetailsPageIndex() {
         }
     }, [definition]);
 
-    const changeBlocker = useChangeBlocker(item, paymentProvider);
+    const changeBlocker = useChangeBlocker(item, paymentProvider, undefined, undefined, true);
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);

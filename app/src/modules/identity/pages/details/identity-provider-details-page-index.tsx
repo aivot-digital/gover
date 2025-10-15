@@ -205,9 +205,9 @@ export function IdentityProviderDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any);
+    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any, true);
 
-    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider);
+    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider, undefined, undefined, true);
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
