@@ -8,8 +8,7 @@ import de.aivot.GoverBackend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
@@ -59,36 +58,59 @@ public class TimeField extends BaseInputElement<ZonedDateTime> {
             return true;
         }
 
-        if (referencedValue instanceof String sValA && comparedValue instanceof String sValB) {
-            Integer hourA = getHour(sValA);
-            Integer minuteA = getMinute(sValA);
-
-            Integer hourB = getHour(sValB);
-            Integer minuteB = getMinute(sValB);
-
-            if (hourA == null || minuteA == null || hourB == null || minuteB == null) {
-                return false;
-            }
-
-            final boolean hourEquals = hourA.equals(hourB);
-            final boolean minuteEquals = minuteA.equals(minuteB);
-            final boolean equals = hourEquals && minuteEquals;
-
-            return switch (operator) {
-                case Equals -> equals;
-                case NotEquals -> !(equals);
-
-                case LessThan -> hourA.compareTo(hourB) < 0 || (hourEquals && minuteA.compareTo(minuteB) < 0);
-                case LessThanOrEqual -> hourA.compareTo(hourB) <= 0 || (hourEquals && minuteA.compareTo(minuteB) <= 0);
-
-                case GreaterThan -> hourA.compareTo(hourB) > 0 || (hourEquals && minuteA.compareTo(minuteB) > 0);
-                case GreaterThanOrEqual -> hourA.compareTo(hourB) >= 0 || (hourEquals && minuteA.compareTo(minuteB) >= 0);
-
-                default -> false;
-            };
+        ZonedDateTime dValA;
+        switch (referencedValue) {
+            case ZonedDateTime zValue -> dValA = zValue;
+            case LocalDateTime lValue -> dValA = lValue.atZone(zoneId);
+            case LocalDate ldValue -> dValA = ZonedDateTime.of(ldValue, LocalTime.now(), zoneId);
+            case LocalTime lValue -> dValA = ZonedDateTime.of(LocalDate.now(), lValue, zoneId);
+            case Instant iValue -> dValA = iValue.atZone(zoneId);
+            case String sValue -> dValA = formatValue(sValue);
+            default -> dValA = null;
         }
 
-        return false;
+        if (dValA == null) {
+            return false;
+        }
+
+        String sValA = dValA.format(
+                DateTimeFormatter
+                        .ofPattern("HH:mm")
+                        .withZone(zoneId)
+        );
+
+        if (!(comparedValue instanceof String)) {
+            return false;
+        }
+
+        String sValB = (String) comparedValue;
+
+        Integer hourA = getHour(sValA);
+        Integer minuteA = getMinute(sValA);
+
+        Integer hourB = getHour(sValB);
+        Integer minuteB = getMinute(sValB);
+
+        if (hourA == null || minuteA == null || hourB == null || minuteB == null) {
+            return false;
+        }
+
+        final boolean hourEquals = hourA.equals(hourB);
+        final boolean minuteEquals = minuteA.equals(minuteB);
+        final boolean equals = hourEquals && minuteEquals;
+
+        return switch (operator) {
+            case Equals -> equals;
+            case NotEquals -> !(equals);
+
+            case LessThan -> hourA.compareTo(hourB) < 0 || (hourEquals && minuteA.compareTo(minuteB) < 0);
+            case LessThanOrEqual -> hourA.compareTo(hourB) <= 0 || (hourEquals && minuteA.compareTo(minuteB) <= 0);
+
+            case GreaterThan -> hourA.compareTo(hourB) > 0 || (hourEquals && minuteA.compareTo(minuteB) > 0);
+            case GreaterThanOrEqual -> hourA.compareTo(hourB) >= 0 || (hourEquals && minuteA.compareTo(minuteB) >= 0);
+
+            default -> false;
+        };
     }
 
     private static final Pattern hhMmPattern = Pattern.compile("^\\d\\d:\\d\\d$");

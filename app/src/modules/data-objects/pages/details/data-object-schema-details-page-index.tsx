@@ -105,9 +105,9 @@ export function DataObjectSchemaDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<DataObjectSchema>(originalDataObject, YupSchema as any);
+    } = useFormManager<DataObjectSchema>(originalDataObject, YupSchema as any, true);
 
-    const changeBlocker = useChangeBlocker(originalDataObject, currentDataObject);
+    const changeBlocker = useChangeBlocker(originalDataObject, currentDataObject, undefined, undefined, true);
 
     useEffect(() => {
         if (isNewItem && location.state != null) {
