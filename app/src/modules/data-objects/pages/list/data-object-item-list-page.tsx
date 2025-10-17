@@ -24,6 +24,9 @@ import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
+import {ElementType} from '../../../../data/element-type/element-type';
+import {format} from 'date-fns/format';
+import {parseISO} from 'date-fns/parseISO';
 
 export function DataObjectItemListPage() {
     useAdminGuard();
@@ -122,10 +125,13 @@ export function DataObjectItemListPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells in Gover: Es enthält die tatsächlichen Werte zu den im Schema definierten Feldern. Datenobjekte werden in Prozessen, Komponenten und Schnittstellen weiterverarbeitet und stellen damit die „laufenden“ Fachinformationen dar. Sie sind stets an ein Schema gebunden, das Struktur, Datentypen und Prüfregeln vorgibt.
+                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells in Gover: Es enthält die tatsächlichen Werte zu den im Schema definierten Feldern. Datenobjekte werden in Prozessen, Komponenten und
+                                    Schnittstellen weiterverarbeitet und stellen damit die „laufenden“ Fachinformationen dar. Sie sind stets an ein Schema gebunden, das Struktur, Datentypen und Prüfregeln vorgibt.
                                 </Typography>
-                                <Typography sx={{ mt: 2 }}>
-                                    Typischerweise umfasst ein Datenobjekt Werte für Text-, Zahlen-, Datums- oder Wahrheitsfelder sowie ggf. verschachtelte Strukturen. Neben Nutzdaten können Metadaten enthalten sein, etwa Erstell- und Änderungszeitpunkte, Quelle/Ersteller:in, Status oder Referenzen auf verknüpfte Objekte. Standardwerte aus dem Schema werden beim Anlegen übernommen und Validierungen sorgen dafür, dass nur erlaubte, vollständige und konsistente Inhalte gespeichert werden.
+                                <Typography sx={{mt: 2}}>
+                                    Typischerweise umfasst ein Datenobjekt Werte für Text-, Zahlen-, Datums- oder Wahrheitsfelder sowie ggf. verschachtelte Strukturen. Neben Nutzdaten können Metadaten enthalten sein, etwa Erstell- und
+                                    Änderungszeitpunkte, Quelle/Ersteller:in, Status oder Referenzen auf verknüpfte Objekte. Standardwerte aus dem Schema werden beim Anlegen übernommen und Validierungen sorgen dafür, dass nur erlaubte,
+                                    vollständige und konsistente Inhalte gespeichert werden.
                                 </Typography>
                             </>
                         ),
@@ -186,8 +192,28 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                 field: element.id ?? '',
                 headerName: generateComponentTitle(element),
                 flex: 1,
-                type: ElementToMuiDataGridType[element.type]!,
+                type: ElementToMuiDataGridType[element.type] ?? 'string',
                 valueGetter: (_: any, row: any) => {
+                    const value = row.data[element.id]?.inputValue;
+
+                    if (value == null) {
+                        return null;
+                    }
+
+                    switch (element.type) {
+                        case ElementType.MultiCheckbox:
+                            return value
+                                .map((val: string) => element.options?.find((opt) => opt.value === val)?.label)
+                                .join(', ');
+                        case ElementType.Date:
+                            return format(parseISO(value), 'dd.MM.yyyy');
+                        case ElementType.Time:
+                            return format(parseISO(value), 'HH:mm');
+                        case ElementType.Radio:
+                        case ElementType.Select:
+                            return element.options?.find((opt) => opt.value === value)?.label;
+                    }
+
                     return row.data[element.id].inputValue;
                 },
                 sortable: false,
