@@ -124,6 +124,7 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={element}
                     lowCodeOld={[]}
                     lowCode={override.javascriptCode?.code != null ? [override.javascriptCode.code] : []}

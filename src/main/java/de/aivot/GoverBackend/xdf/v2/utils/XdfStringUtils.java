@@ -21,12 +21,12 @@ public class XdfStringUtils {
     @Nonnull
     public static String idfToName(@Nullable XdfIdentifikation identifikation) {
         if (identifikation == null) {
-            return "";
+            return "feld";
         }
 
         var id = identifikation.getId();
         if (StringUtils.isNullOrEmpty(id)) {
-            return "";
+            return "feld";
         }
 
         var res = XdfStringUtils.cleanString(
@@ -36,7 +36,7 @@ public class XdfStringUtils {
         );
 
         if (res == null) {
-            return "";
+            return "feld";
         }
 
         return res;

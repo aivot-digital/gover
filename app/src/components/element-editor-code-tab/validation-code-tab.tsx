@@ -318,6 +318,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={props.element}
                     lowCodeOld={[]}
                     lowCode={validation.javascriptCode?.code != null ? [validation.javascriptCode.code] : []}

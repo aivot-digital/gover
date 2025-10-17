@@ -154,6 +154,7 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={props.element}
                     lowCodeOld={[]}
                     lowCode={value.javascriptCode?.code != null ? [value.javascriptCode.code] : []}

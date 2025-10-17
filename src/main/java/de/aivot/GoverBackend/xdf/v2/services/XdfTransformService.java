@@ -27,11 +27,11 @@ import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.xdf.v2.data.XdfFieldType;
 import de.aivot.GoverBackend.xdf.v2.models.*;
+import de.aivot.GoverBackend.xdf.v2.utils.XdfIdCounter;
 import de.aivot.GoverBackend.xdf.v2.utils.XdfStringUtils;
 import de.aivot.GoverBackend.xrepository.services.XRepositoryCodeListService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -57,10 +57,13 @@ public class XdfTransformService {
             return null;
         }
 
-        return stammdatenschemaToRootElement(sd);
+        var idCounter = new XdfIdCounter();
+
+        return stammdatenschemaToRootElement(idCounter, sd);
     }
 
-    private FormVersionWithDetailsEntity stammdatenschemaToRootElement(@Nullable XdfStammdatenschema stammdatenschema) {
+    private FormVersionWithDetailsEntity stammdatenschemaToRootElement(@Nonnull XdfIdCounter idCounter,
+                                                                       @Nullable XdfStammdatenschema stammdatenschema) {
         if (stammdatenschema == null) {
             return null;
         }
@@ -70,29 +73,32 @@ public class XdfTransformService {
 
         var publicTitle = XdfStringUtils
                 .cleanString(stammdatenschema.getName());
-        var slug = StringUtils.slugify(publicTitle, 32);
+        var slug = StringUtils.slugify(publicTitle != null ? publicTitle : "Unbenanntes Formular", 32);
 
         var teaserText = getTeaserText(stammdatenschema);
 
         var steps = new LinkedList<StepElement>();
         for (var stepStruktur : stammdatenschema.getStruktur()) {
-            var fields = strukturToElements(stepStruktur, 0);
+            var fields = strukturToElements(idCounter, stepStruktur, 0);
 
-            String id = null;
+            String originalId = null;
             String name = null;
             if (stepStruktur.getEnthaelt() != null) {
                 if (stepStruktur.getEnthaelt().getDatenfeldgruppe() != null) {
-                    id = XdfStringUtils
+                    originalId = XdfStringUtils
                             .idfToName(stepStruktur.getEnthaelt().getDatenfeldgruppe().getIdentifikation());
                     name = XdfStringUtils
                             .cleanString(stepStruktur.getEnthaelt().getDatenfeldgruppe().getName());
                 } else if (stepStruktur.getEnthaelt().getDatenfeld() != null) {
-                    id = XdfStringUtils.
+                    originalId = XdfStringUtils.
                             idfToName(stepStruktur.getEnthaelt().getDatenfeld().getIdentifikation());
                     name = XdfStringUtils
                             .cleanString(stepStruktur.getEnthaelt().getDatenfeld().getName());
                 }
             }
+
+            var id = idCounter
+                    .countId(originalId != null ? originalId : "schritt");
 
             var step = new StepElement();
 
@@ -108,6 +114,7 @@ public class XdfTransformService {
                 .setChildren(steps)
                 .setSummaryStep(new SummaryStepElement())
                 .setSubmitStep(new SubmitStepElement());
+        root.setId("root");
 
         return new FormVersionWithDetailsEntity()
                 .setSlug(slug)
@@ -121,8 +128,8 @@ public class XdfTransformService {
                 .setRootElement(root);
     }
 
-    @NotNull
-    private static String getTeaserText(@NotNull XdfStammdatenschema stammdatenschema) {
+    @Nonnull
+    private static String getTeaserText(@Nonnull XdfStammdatenschema stammdatenschema) {
         String teaserTextRaw;
         if (StringUtils.isNotNullOrEmpty(stammdatenschema.getBeschreibung())) {
             teaserTextRaw = stammdatenschema.getBeschreibung();
@@ -134,13 +141,17 @@ public class XdfTransformService {
             teaserTextRaw = "Unbenanntes Formular";
         }
 
-        return XdfStringUtils
+        var cleanedTeaserText = XdfStringUtils
                 .cleanString(teaserTextRaw);
+
+        return cleanedTeaserText != null ? cleanedTeaserText : "Unbenanntes Formular";
     }
 
     private static final Pattern ANZAHL_REGEX = Pattern.compile("^(0|([1-9][0-9]*)):(\\*|(0|([1-9][0-9]*)))$");
 
-    private List<BaseFormElement> strukturToElements(XdfStruktur struktur, int depth) {
+    private List<BaseFormElement> strukturToElements(@Nonnull XdfIdCounter idCounter,
+                                                     @Nonnull XdfStruktur struktur,
+                                                     int depth) {
         Matcher matcher = ANZAHL_REGEX.matcher(struktur.getAnzahl());
         if (!matcher.matches()) {
             throw new RuntimeException("Invalid Anzahl format: " + struktur.getAnzahl());
@@ -168,13 +179,13 @@ public class XdfTransformService {
 
         var datenfeldgruppe = enthaelt.getDatenfeldgruppe();
         if (datenfeldgruppe != null) {
-            var group = datenfeldGruppeToElements(datenfeldgruppe, isRequired, depth);
+            var group = datenfeldGruppeToElements(idCounter, datenfeldgruppe, isRequired, depth);
             fields.add(group);
         }
 
         var datenfeld = enthaelt.getDatenfeld();
         if (datenfeld != null) {
-            var _fields = datenFeldToElements(xRepositoryCodeListService, datenfeld, isRequired);
+            var _fields = datenFeldToElements(idCounter, xRepositoryCodeListService, datenfeld, isRequired);
             fields.addAll(_fields);
         }
 
@@ -203,6 +214,7 @@ public class XdfTransformService {
             };
 
             var replicatingContainer = new ReplicatingContainerLayout();
+            replicatingContainer.setId(idCounter.countId("replicating_container"));
             replicatingContainer.setChildren(fields);
             replicatingContainer.setRequired(isRequired || minAnzahl > 0);
             replicatingContainer.setLabel(label);
@@ -225,7 +237,10 @@ public class XdfTransformService {
         return fields;
     }
 
-    private GroupLayout datenfeldGruppeToElements(XdfDatenfeldgruppe datenfeldgruppe, boolean isRequired, int depth) {
+    private GroupLayout datenfeldGruppeToElements(@Nonnull XdfIdCounter idCounter,
+                                                  @Nonnull XdfDatenfeldgruppe datenfeldgruppe,
+                                                  boolean isRequired, // TODO: use isRequired?
+                                                  int depth) {
         var elements = new LinkedList<BaseFormElement>();
 
         if (depth >= 1) {
@@ -235,22 +250,28 @@ public class XdfTransformService {
         }
 
         for (var struktur : datenfeldgruppe.getStruktur()) {
-            var fields = strukturToElements(struktur, depth + 1);
+            var fields = strukturToElements(idCounter, struktur, depth + 1);
             elements.addAll(fields);
         }
 
         var group = new GroupLayout();
+        group.setId(idCounter.countId("gruppe"));
         group.setName(XdfStringUtils.idfToName(datenfeldgruppe.getIdentifikation()));
         group.setChildren(elements);
 
         return group;
     }
 
-    public List<BaseFormElement> datenFeldToElements(XRepositoryCodeListService xRepositoryCodeListService, XdfDatenfeld datenfeld, boolean isRequired) {
+    public List<BaseFormElement> datenFeldToElements(XdfIdCounter idCounter,
+                                                     XRepositoryCodeListService xRepositoryCodeListService,
+                                                     XdfDatenfeld datenfeld,
+                                                     boolean isRequired) {
         var fields = new LinkedList<BaseFormElement>();
 
-        var id = XdfStringUtils
+        var originalId = XdfStringUtils
                 .idfToName(datenfeld.getIdentifikation());
+        var id = idCounter
+                .countId(originalId);
         var name = XdfStringUtils
                 .cleanString(datenfeld.getName());
 

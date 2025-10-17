@@ -32,6 +32,17 @@ import {generateElementWithDefaultValues} from '../../../../utils/generate-eleme
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 
+const AllowedDisplayFieldTypes = [
+    ElementType.Text,
+    ElementType.Number,
+    ElementType.Date,
+    ElementType.Time,
+    ElementType.Select,
+    ElementType.Radio,
+    ElementType.Checkbox,
+    ElementType.MultiCheckbox,
+];
+
 export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated' | 'displayFields'>> = yup.object({
     key: yup.string()
         .trim()
@@ -124,7 +135,7 @@ export function DataObjectSchemaDetailsPageIndex() {
 
         const elems = flattenElements(currentDataObject.schema, true);
         return elems
-            .filter(e => isAnyInputElement(e))
+            .filter(e => isAnyInputElement(e) && AllowedDisplayFieldTypes.includes(e.type))
             .map(e => ({
                 label: generateComponentTitle(e),
                 value: e.id,
@@ -298,7 +309,8 @@ export function DataObjectSchemaDetailsPageIndex() {
                     label="ID-Typ"
                     required
                     value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
-                    onChange={(val) => {}}
+                    onChange={(val) => {
+                    }}
                     options={IdGenOptions}
                     disabled={true}
                 />

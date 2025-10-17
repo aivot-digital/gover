@@ -93,7 +93,7 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                         .getChildren();
 
                 if (children == null || children.isEmpty()) {
-                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Elemente mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenobjektschemas definiert ist.");
+                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenobjektschemas definiert ist.");
                 }
 
                 var idChild = children
@@ -102,13 +102,13 @@ public class DataObjectSchemaService implements EntityService<DataObjectSchemaEn
                         .findFirst();
 
                 if (idChild.isEmpty()) {
-                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Elemente mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenobjektschemas definiert ist.");
+                    throw ResponseException.badRequest("Der gewählte ID-Typ setzt ein Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ voraus. Stellen Sie sicher, dass das Feld auf der obersten Ebene des Datenobjektschemas definiert ist.");
                 }
 
                 var idChildElement = idChild.get();
                 if (idChildElement instanceof TextField textField) {
                     if (!Boolean.TRUE.equals(textField.getRequired())) {
-                        throw ResponseException.badRequest("Der gewählte ID-Typ setzt voraus, dass das Elemente mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ ein Pflichtfeld ist.");
+                        throw ResponseException.badRequest("Der gewählte ID-Typ setzt voraus, dass das Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ ein Pflichtfeld ist.");
                     }
                 } else {
                     throw ResponseException.badRequest("Der gewählte ID-Typ setzt voraus, dass das Element mit der ID „" + DataObjectItemService.ID_FIELD_NAME + "“ ein Textfeld ist.");

@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
 import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
@@ -477,10 +478,15 @@ public class ElementDerivationService {
                                         javascriptEngine,
                                         noCodeEvaluationService,
                                         logger);
-                        var formattedComputedValue = baseInputElement
-                                .formatValue(computedValue);
-                        dataObject
-                                .setComputedValue(formattedComputedValue);
+
+                        if (baseInputElement.getType() == ElementType.Checkbox && computedValue == null) {
+                            dataObject.setComputedValue(null);
+                        } else {
+                            var formattedComputedValue = baseInputElement
+                                    .formatValue(computedValue);
+                            dataObject
+                                    .setComputedValue(formattedComputedValue);
+                        }
                     } catch (DerivationException e) {
                         logger.error(e);
                         dataObject.addComputedError(e.getMessage());
