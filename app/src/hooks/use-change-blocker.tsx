@@ -8,7 +8,7 @@ export function useChangeBlocker(
     edited: any,
     customTitle?: string,
     customMessage?: string,
-    useDeepEquals: boolean = false
+    useDeepEquals: boolean = true
 ) {
     const hasChanged = useMemo(() => {
         if (useDeepEquals) {

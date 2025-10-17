@@ -17,7 +17,7 @@ interface FormManager<T> {
 }
 
 // TODO: Fix extending type
-export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>, useDeepEquals: boolean = false): FormManager<T> {
+export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>, useDeepEquals: boolean = true): FormManager<T> {
     const [editedItem, setEditedItem] = useState<T>();
     const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
     const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
