@@ -9,8 +9,10 @@ import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {getElementIcon} from '../../../../data/element-type/element-icons';
 import {Hint} from '../../../hint/hint';
+import {ElementWithParents} from '../../../../utils/flatten-elements';
 
 interface ReferenceCheckProps {
+    allElements: ElementWithParents[];
     element: AnyElement;
     lowCodeOld: (string | undefined)[];
     lowCode: (string | undefined)[];
@@ -20,14 +22,13 @@ interface ReferenceCheckProps {
 
 export function ReferenceCheck(props: ReferenceCheckProps) {
     const {
+        allElements,
         element,
         lowCodeOld,
         lowCode,
         noCodeOld,
         noCode,
     } = props;
-
-    const allElements = useAppSelector(selectAllElements);
 
     const referencedElements = useMemo(() => determineReferencedElements(
         element,
@@ -151,7 +152,7 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
 
 function determineReferencedElements(
     element: AnyElement,
-    allElements: AnyElement[] | undefined,
+    allElements: ElementWithParents[] | undefined,
     lowCodeOld: (string | undefined)[], // TODO: Remove legacy low code
     lowCode: (string | undefined)[],
     noCodeOld: (ConditionSet | undefined)[],
@@ -200,15 +201,15 @@ function determineReferencedElements(
         isForwardReference: boolean;
     }[] = [];
 
-    const indexOfElement = allElements.findIndex(e => e.id === element.id);
+    const indexOfElement = allElements.findIndex(({element: e}) => e.id === element.id);
 
     for (const id of Array.from(referencedElementIdsSet)) {
-        const elementFound = allElements.find(e => e.id === id);
-        const indexOfReference = allElements.findIndex(e => e.id === id);
+        const elementFound = allElements.find(({element: e}) => e.id === id);
+        const indexOfReference = allElements.findIndex(({element: e}) => e.id === id);
 
         if (elementFound) {
             const isForwardReference = indexOfReference > indexOfElement;
-            referencedElements.push({element: elementFound, isForwardReference});
+            referencedElements.push({element: elementFound.element, isForwardReference});
         }
     }
 

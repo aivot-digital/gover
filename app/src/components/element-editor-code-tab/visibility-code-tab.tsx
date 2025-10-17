@@ -196,6 +196,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={props.element}
                     lowCodeOld={[]}
                     lowCode={visibility.javascriptCode?.code != null ? [visibility.javascriptCode.code] : []}
