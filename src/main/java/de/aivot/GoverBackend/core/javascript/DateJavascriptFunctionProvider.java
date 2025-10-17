@@ -68,7 +68,7 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
                                 .parse(dateString, formatter)
                                 .atStartOfDay(ZoneId.systemDefault());
                     } catch (Exception e) {
-                        yield null;
+                        // Try next format
                     }
                 }
                 yield null;
@@ -278,7 +278,7 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
     }
 
     @HostAccess.Export
-    public Integer diff(Object startRaw, Object endRaw, String unit) {
+    public Number diff(Object startRaw, Object endRaw, String unit) {
         var start = createDate(startRaw);
         var end = createDate(endRaw);
 
@@ -288,7 +288,7 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
 
         return switch (unit.toLowerCase()) {
             case "days" -> (int) Duration.between(start.toLocalDate().atStartOfDay(), end.toLocalDate().atStartOfDay()).toDays();
-            case "weeks" -> (int) Duration.between(start.toLocalDate().atStartOfDay(), end.toLocalDate().atStartOfDay()).toDays() / 7;
+            case "weeks" -> Duration.between(start.toLocalDate().atStartOfDay(), end.toLocalDate().atStartOfDay()).toDays() / 7.f;
             case "months" -> (end.getYear() - start.getYear()) * 12 + (end.getMonthValue() - start.getMonthValue());
             case "years" -> end.getYear() - start.getYear();
             default -> null;
