@@ -1,12 +1,12 @@
 package de.aivot.GoverBackend.core.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -26,6 +26,18 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
         return "Dieses Paket enthält Funktionen für Datumsoperationen.";
     }
 
+    private static final DateTimeFormatter isoDateDateFormatter = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd")
+            .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter germanDateFormatter = DateTimeFormatter
+            .ofPattern("dd.MM.yyyy")
+            .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter[] availableDateFormatters = new DateTimeFormatter[]{
+            DateTimeFormatter.ISO_DATE_TIME,
+            isoDateDateFormatter,
+            germanDateFormatter
+    };
+
     @HostAccess.Export
     public ZonedDateTime createDate() {
         return LocalDate
@@ -33,38 +45,43 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
                 .atStartOfDay(ZoneId.systemDefault());
     }
 
-    private static final DateTimeFormatter isoDateFormatter = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd")
-            .withZone(ZoneId.systemDefault());
-    private static final DateTimeFormatter germanDateFormatter = DateTimeFormatter
-            .ofPattern("dd.MM.yyyy")
-            .withZone(ZoneId.systemDefault());
-    private static final DateTimeFormatter[] availableDateFormatters = new DateTimeFormatter[]{
-            isoDateFormatter,
-            germanDateFormatter
-    };
-
+    @Nullable
     @HostAccess.Export
-    public ZonedDateTime createDate(String date) {
-        if (date == null || date.isEmpty()) {
+    public ZonedDateTime createDate(@Nullable Object date) {
+        if (date == null) {
             return null;
         }
 
-        for (DateTimeFormatter formatter : availableDateFormatters) {
-            try {
-                return LocalDate
-                        .parse(date, formatter)
-                        .atStartOfDay(ZoneId.systemDefault());
-            } catch (Exception e) {
-                // Ignore and try the next formatter
+        return switch (date) {
+            case ZonedDateTime zonedDateTime -> zonedDateTime;
+            case Number number -> {
+                long epochMilli = number.longValue();
+                yield ZonedDateTime.ofInstant(
+                        Instant.ofEpochSecond(epochMilli),
+                        ZoneId.systemDefault()
+                );
             }
-        }
-
-        return null;
+            case String dateString -> {
+                for (DateTimeFormatter formatter : availableDateFormatters) {
+                    try {
+                        yield LocalDate
+                                .parse(dateString, formatter)
+                                .atStartOfDay(ZoneId.systemDefault());
+                    } catch (Exception e) {
+                        yield null;
+                    }
+                }
+                yield null;
+            }
+            default -> null;
+        };
     }
 
     @HostAccess.Export
-    public Boolean isSameDay(ZonedDateTime dateA, ZonedDateTime dateB) {
+    public Boolean isSameDay(Object dateARaw, Object dateBRaw) {
+        var dateA = createDate(dateARaw);
+        var dateB = createDate(dateBRaw);
+
         if (dateA == null || dateB == null) {
             return false;
         }
@@ -85,7 +102,10 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
     }
 
     @HostAccess.Export
-    public boolean isBefore(ZonedDateTime dateA, ZonedDateTime dateB) {
+    public boolean isBefore(Object dateARaw, Object dateBRaw) {
+        var dateA = createDate(dateARaw);
+        var dateB = createDate(dateBRaw);
+
         if (dateA == null || dateB == null) {
             return false;
         }
@@ -118,12 +138,18 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
     }
 
     @HostAccess.Export
-    public boolean isBeforeOrSameDay(ZonedDateTime dateA, ZonedDateTime dateB) {
+    public boolean isBeforeOrSameDay(Object dateARaw, Object dateBRaw) {
+        var dateA = createDate(dateARaw);
+        var dateB = createDate(dateBRaw);
+
         return isBefore(dateA, dateB) || isSameDay(dateA, dateB);
     }
 
     @HostAccess.Export
-    public boolean isAfter(ZonedDateTime dateA, ZonedDateTime dateB) {
+    public boolean isAfter(Object dateARaw, Object dateBRaw) {
+        var dateA = createDate(dateARaw);
+        var dateB = createDate(dateBRaw);
+
         if (dateA == null || dateB == null) {
             return false;
         }
@@ -156,71 +182,116 @@ public class DateJavascriptFunctionProvider implements JavascriptFunctionProvide
     }
 
     @HostAccess.Export
-    public boolean isAfterOrSameDay(ZonedDateTime dateA, ZonedDateTime dateB) {
+    public boolean isAfterOrSameDay(Object dateARaw, Object dateBRaw) {
+        var dateA = createDate(dateARaw);
+        var dateB = createDate(dateBRaw);
+
         return isAfter(dateA, dateB) || isSameDay(dateA, dateB);
     }
 
     @HostAccess.Export
-    public ZonedDateTime addDays(ZonedDateTime date, int days) {
+    public ZonedDateTime addDays(Object dateRaw, int days) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.plusDays(days);
     }
 
     @HostAccess.Export
-    public ZonedDateTime addWeeks(ZonedDateTime date, int weeks) {
+    public ZonedDateTime addWeeks(Object dateRaw, int weeks) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.plusWeeks(weeks);
     }
 
     @HostAccess.Export
-    public ZonedDateTime addMonths(ZonedDateTime date, int months) {
+    public ZonedDateTime addMonths(Object dateRaw, int months) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.plusMonths(months);
     }
 
     @HostAccess.Export
-    public ZonedDateTime addYears(ZonedDateTime date, int years) {
+    public ZonedDateTime addYears(Object dateRaw, int years) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.plusYears(years);
     }
 
     @HostAccess.Export
-    public ZonedDateTime subtractDays(ZonedDateTime date, int days) {
+    public ZonedDateTime subtractDays(Object dateRaw, int days) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.minusDays(days);
     }
 
     @HostAccess.Export
-    public ZonedDateTime subtractWeeks(ZonedDateTime date, int weeks) {
+    public ZonedDateTime subtractWeeks(Object dateRaw, int weeks) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.minusWeeks(weeks);
     }
 
     @HostAccess.Export
-    public ZonedDateTime subtractMonths(ZonedDateTime date, int months) {
+    public ZonedDateTime subtractMonths(Object dateRaw, int months) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.minusMonths(months);
     }
 
     @HostAccess.Export
-    public ZonedDateTime subtractYears(ZonedDateTime date, int years) {
+    public ZonedDateTime subtractYears(Object dateRaw, int years) {
+        var date = createDate(dateRaw);
+
         if (date == null) {
             return null;
         }
+
         return date.minusYears(years);
+    }
+
+    @HostAccess.Export
+    public Integer diff(Object startRaw, Object endRaw, String unit) {
+        var start = createDate(startRaw);
+        var end = createDate(endRaw);
+
+        if (start == null || end == null || unit == null) {
+            return null;
+        }
+
+        return switch (unit.toLowerCase()) {
+            case "days" -> (int) Duration.between(start.toLocalDate().atStartOfDay(), end.toLocalDate().atStartOfDay()).toDays();
+            case "weeks" -> (int) Duration.between(start.toLocalDate().atStartOfDay(), end.toLocalDate().atStartOfDay()).toDays() / 7;
+            case "months" -> (end.getYear() - start.getYear()) * 12 + (end.getMonthValue() - start.getMonthValue());
+            case "years" -> end.getYear() - start.getYear();
+            default -> null;
+        };
     }
 }
