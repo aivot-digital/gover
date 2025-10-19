@@ -8,7 +8,6 @@ import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {ElementEditorSectionHeader} from '../../../element-editor-section-header/element-editor-section-header';
 
 export function FunctionSelector(props: FunctionSelectorProps) {
-    const enableNewCodeEditors = useAppSelector(selectSystemConfigValue(SystemConfigKeys.experimentalFeatures.newCodeEditors));
     const options = [];
 
     if (props.allowNoCode) {
@@ -21,7 +20,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
             },
         );
     }
-    if (props.allowExpression && enableNewCodeEditors) {
+    if (props.allowExpression) {
         options.push(
             {
                 title: '[ALPHA] Erweiterter No-Code (Fortgeschrittene Regelgestaltung)',
