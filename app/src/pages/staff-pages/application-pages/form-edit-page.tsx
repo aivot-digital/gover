@@ -1,23 +1,9 @@
 import {Grid, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {type RootState} from '../../../store';
-import {
-    clearCustomerInput,
-    clearErrors,
-    clearLoadedForm,
-    clearVisibilities,
-    hydrateFromDerivationWithoutErrors,
-    redoLoadedForm,
-    selectFutureLoadedForm,
-    selectLoadedForm,
-    selectPastLoadedForm,
-    setFormState,
-    showDialog,
-    undoLoadedForm,
-    updateLoadedForm,
-} from '../../../slices/app-slice';
+import {clearLoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
-import {useParams, useSearchParams} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {createAppTheme} from '../../../theming/themes';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
@@ -43,7 +29,6 @@ import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccess
 import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import LaunchOutlinedIcon from '@mui/icons-material/LaunchOutlined';
 import {type Theme} from '../../../modules/themes/models/theme';
-import {ApplicationStatus} from '../../../data/application-status';
 import {selectMemberships, selectUser} from '../../../slices/user-slice';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useApi} from '../../../hooks/use-api';
@@ -61,32 +46,69 @@ import {ThemesApiService} from '../../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../../modules/forms/forms-api-service';
 import {enqueueSnackbar} from 'notistack';
 import {FormRevisionsDialog} from '../../../modules/forms/dialogs/form-revisions-dialog';
-import {Form} from '../../../models/entities/form';
 import {ElementTreeEntity} from '../../../components/element-tree/element-tree-entity';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-overlay-slice';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
-import {FormState} from '../../../models/dtos/form-state';
 import {useDidUpdateEffect} from '../../../hooks/use-did-update-effect';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {setIdentityId} from '../../../slices/identity-slice';
+import {ElementData} from '../../../models/element-data';
+import {asFormRequestDTO, FormDetailsResponseDTO} from '../../../modules/forms/dtos/form-details-response-dto';
+import {FormStatus} from '../../../modules/forms/enums/form-status';
+import {selectSystemConfigValue} from '../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../data/system-config-keys';
 
 export const DialogSearchParam = 'dialog';
 
 export function FormEditPage() {
     const baseTheme = useTheme();
+    const navigate = useNavigate();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
     const {
         id: formIdStr,
+        version: formVersionStr,
     } = useParams();
+
+    const formId = useMemo(() => {
+        if (formIdStr == null) {
+            return undefined;
+        }
+
+        const id = parseInt(formIdStr);
+        if (isNaN(id)) {
+            return undefined;
+        }
+
+        return id;
+    }, [formIdStr]);
+
+    const [formVersion, setFormVersion] = useState<number | 'latest' | undefined>(undefined);
+
+    useEffect(() => {
+        if (formVersionStr == null) {
+            setFormVersion('latest');
+            return;
+        }
+
+        const version = parseInt(formVersionStr);
+        if (isNaN(version)) {
+            setFormVersion('latest');
+            return;
+        }
+
+        setFormVersion(version);
+    }, [formVersionStr]);
 
     const dispatch = useAppDispatch();
     const api = useApi();
 
     const [showAdminTools, setShowAdminTools] = useState(false);
     const [showRevisions, setShowRevisions] = useState(false);
+
+    const [elementData, setElementData] = useState<ElementData>({});
 
     const {
         disableVisibility,
@@ -95,7 +117,7 @@ export function FormEditPage() {
     } = useAppSelector((state: RootState) => state.adminSettings);
 
     const loadedForm = useAppSelector(selectLoadedForm);
-    const customerInput = useAppSelector((state) => state.app.inputs);
+    const systemThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const pastLoadedForm = useAppSelector(selectPastLoadedForm);
     const hasPastLoadedForm = useMemo(() => pastLoadedForm.length > 0, [pastLoadedForm]);
@@ -121,9 +143,7 @@ export function FormEditPage() {
     // Cleanup lock state on unload
     useEffect(() => {
         function handleCleanup() {
-            // Use the formId here and not the loaded form to prevent the cleanup function being triggered on each form change
-            const formId = parseInt(formIdStr ?? '');
-            if (isNaN(formId)) {
+            if (formId == null) {
                 return;
             }
 
@@ -149,45 +169,92 @@ export function FormEditPage() {
     useEffect(() => {
         dispatch(clearLoadedForm());
         dispatch(resetAdminSettings());
-        dispatch(clearCustomerInput());
-        dispatch(clearErrors());
         dispatch(setCurrentStep(0));
         dispatch(setIdentityId(undefined));
         setFailedToLoad(false);
-        if (formIdStr != null) {
-            const id = parseInt(formIdStr);
-            new FormsApiService(api)
-                .retrieve(id)
-                .then((app) => {
-                    CustomerInputService.cleanCustomerInput(app);
-                    dispatch(updateLoadedForm(app));
-                })
-                .catch((err) => {
-                    console.error(err);
-                    setFailedToLoad(true);
-                });
-            fetchLockState(id);
+        if (formId != null && formVersion != null) {
+            if (formVersion === 'latest') {
+                new FormsApiService(api)
+                    .retrieveLatest(formId)
+                    .then((app) => {
+                        navigate(`/forms/${formId}/${app.version}`, {
+                            replace: true,
+                        });
+                        setFormVersion(app.version);
+                        CustomerInputService.cleanCustomerInput(app);
+                        dispatch(updateLoadedForm(app));
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        setFailedToLoad(true);
+                    });
+            } else {
+                new FormsApiService(api)
+                    .retrieve({
+                        id: formId,
+                        version: formVersion,
+                    })
+                    .then((app) => {
+                        CustomerInputService.cleanCustomerInput(app);
+                        dispatch(updateLoadedForm(app));
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        setFailedToLoad(true);
+                    });
+            }
+
+            fetchLockState(formId);
         }
-    }, [formIdStr, dispatch]);
+    }, [formId, formVersion, dispatch]);
 
     useEffect(() => {
-        if (loadedForm?.themeId != null) {
+        if (loadedForm == null) {
+            return;
+        }
+
+        if (loadedForm.themeId === theme?.id) {
+            return;
+        }
+
+        if (loadedForm.themeId != null && !isNaN(loadedForm.themeId)) {
             new ThemesApiService(api)
                 .retrieve(loadedForm.themeId)
                 .then(setTheme)
                 .catch((err) => {
                     console.error(err);
                 });
-        } else {
-            setTheme(undefined);
+            return;
         }
 
-        if (loadedForm != null) {
-            FormsApiService
-                .getIdentityProviders(loadedForm.id)
-                .then(res => setIdentityProviderInfos(res.content));
+        if (parseInt(systemThemeId) === theme?.id) {
+            return;
         }
+
+        if (systemThemeId != null && !isNaN(parseInt(systemThemeId))) {
+            new ThemesApiService(api)
+                .retrieve(parseInt(systemThemeId))
+                .then(setTheme)
+                .catch((err) => {
+                    console.error(err);
+                });
+        }
+    }, [loadedForm, systemThemeId]);
+
+    useEffect(() => {
+        if (loadedForm == null) {
+            return;
+        }
+
+        if (identityProviderInfos != null) {
+            return;
+        }
+
+        new FormsApiService(api)
+            .getIdentityProviders(loadedForm.slug, loadedForm.version)
+            .then(res => setIdentityProviderInfos(res.content));
     }, [loadedForm]);
+
 
     useDidUpdateEffect(() => {
         if (loadedForm == null) {
@@ -196,30 +263,25 @@ export function FormEditPage() {
 
         dispatch(showLoadingOverlay('Sichtbarkeiten berechnen'));
 
-        withAsyncWrapper<any, FormState>({
+        withAsyncWrapper<any, ElementData>({
             desiredMinRuntime: 600,
             main: () => {
                 return new FormsApiService(api)
                     .determineFormState(
-                        loadedForm.id,
-                        customerInput,
+                        loadedForm.slug,
+                        loadedForm.version,
+                        elementData,
                         {
-                            stepsToValidate: ['NONE'],
-                            stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                            stepsToCalculateValues: ['ALL'],
-                            stepsToCalculateOverrides: ['ALL'],
+                            skipErrorsFor: [],
+                            skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                            skipValuesFor: [],
+                            skipOverridesFor: [],
                         },
                     );
             },
         })
             .then((newState) => {
-                dispatch(setFormState({
-                    formState: newState,
-                    options: {
-                        freshVisibilities: true,
-                        ignoreErrors: true,
-                    },
-                }));
+                setElementData(newState);
             })
             .finally(() => {
                 dispatch(hideLoadingOverlay());
@@ -259,26 +321,32 @@ export function FormEditPage() {
     }
 
     const handleUndo = () => {
+        if (formId == null || formVersion == null || formVersion === 'latest') {
+            return;
+        }
+
         dispatch(undoLoadedForm());
         dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
-            .update(loadedForm!.id, pastLoadedForm[pastLoadedForm.length - 1])
+            .update({
+                id: formId,
+                version: formVersion,
+            }, pastLoadedForm[pastLoadedForm.length - 1])
             .then((loadedForm) => {
                 new FormsApiService(api)
                     .determineFormState(
-                        loadedForm.id,
-                        customerInput,
+                        loadedForm.slug,
+                        loadedForm.version,
+                        elementData,
                         {
-                            stepsToValidate: ['NONE'],
-                            stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                            stepsToCalculateValues: ['ALL'],
-                            stepsToCalculateOverrides: ['ALL'],
+                            skipErrorsFor: ['ALL'],
+                            skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                            skipValuesFor: [],
+                            skipOverridesFor: [],
                         },
                     )
                     .then((state) => {
-                        dispatch(clearVisibilities());
-                        dispatch(clearErrors());
-                        dispatch(hydrateFromDerivationWithoutErrors(state));
+                        setElementData(state);
                     });
             })
             .catch((err) => {
@@ -291,26 +359,32 @@ export function FormEditPage() {
     };
 
     const handleRedo = () => {
+        if (formId == null || formVersion == null || formVersion === 'latest') {
+            return;
+        }
+
         dispatch(redoLoadedForm());
         dispatch(showLoadingOverlay('Speichern…'));
         new FormsApiService(api)
-            .update(loadedForm!.id, futureLoadedForm[futureLoadedForm.length - 1])
+            .update({
+                id: formId,
+                version: formVersion,
+            }, futureLoadedForm[futureLoadedForm.length - 1])
             .then((loadedForm) => {
                 new FormsApiService(api)
                     .determineFormState(
-                        loadedForm.id,
-                        customerInput,
+                        loadedForm.slug,
+                        loadedForm.version,
+                        elementData,
                         {
-                            stepsToValidate: ['NONE'],
-                            stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                            stepsToCalculateValues: ['ALL'],
-                            stepsToCalculateOverrides: ['ALL'],
+                            skipErrorsFor: ['ALL'],
+                            skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                            skipValuesFor: [],
+                            skipOverridesFor: [],
                         },
                     )
                     .then((state) => {
-                        dispatch(clearVisibilities());
-                        dispatch(clearErrors());
-                        dispatch(hydrateFromDerivationWithoutErrors(state));
+                        setElementData(state);
                     });
             })
             .catch((err) => {
@@ -346,11 +420,10 @@ export function FormEditPage() {
     } else if (loadedForm == null) {
         return <LoadingPlaceholder />;
     } else {
-        const allElements = flattenElements(loadedForm.root);
+        const allElements = flattenElements(loadedForm.rootElement);
 
         const isEditable = (
-            loadedForm.status !== ApplicationStatus.Published &&
-            loadedForm.status !== ApplicationStatus.Revoked &&
+            loadedForm.status == FormStatus.Drafted &&
             (memberships ?? []).some((mem) => mem.departmentId === loadedForm.developingDepartmentId) &&
             (lockState == null || lockState.state === EntityLockState.Free || lockState.state === EntityLockState.LockedSelf)
         );
@@ -385,8 +458,11 @@ export function FormEditPage() {
                     try {
                         const updatedForm = await apiService
                             .update(
-                                updatedAppModel.id,
-                                updatedAppModel as Form,
+                                {
+                                    id: loadedForm.id,
+                                    version: loadedForm.version,
+                                },
+                                asFormRequestDTO(updatedAppModel as FormDetailsResponseDTO),
                             );
                         dispatch(updateLoadedForm(updatedForm));
                     } catch (err: any) {
@@ -404,24 +480,20 @@ export function FormEditPage() {
                     }
 
                     try {
+                        console.log('Determening Form State');
                         const newState = await apiService
                             .determineFormState(
-                                updatedAppModel.id,
-                                customerInput,
+                                loadedForm.slug,
+                                loadedForm.version,
+                                elementData,
                                 {
-                                    stepsToValidate: ['NONE'],
-                                    stepsToCalculateVisibilities: disableVisibility ? ['NONE'] : ['ALL'],
-                                    stepsToCalculateValues: ['ALL'],
-                                    stepsToCalculateOverrides: ['ALL'],
+                                    skipErrorsFor: ['ALL'],
+                                    skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                                    skipValuesFor: [],
+                                    skipOverridesFor: [],
                                 },
                             );
-                        dispatch(setFormState({
-                            formState: newState,
-                            options: {
-                                freshVisibilities: true,
-                                ignoreErrors: true,
-                            },
-                        }));
+                        setElementData(newState);
                     } catch (err: any) {
                         console.error(err);
                         dispatch(showErrorSnackbar('Die Formularzustände konnten nicht berechnet werden.'));
@@ -436,10 +508,10 @@ export function FormEditPage() {
         return (
             <ThemeProvider theme={_theme}>
                 <MetaElement
-                    title={`Editor - ${loadedForm.title} - ${loadedForm.version}`}
+                    title={`Editor - ${loadedForm.internalTitle} — Version ${loadedForm.version}`}
                 />
                 <AppToolbar
-                    title={`${loadedForm.title} - ${loadedForm.version}`}
+                    title={`${loadedForm.internalTitle} — Version ${loadedForm.version}`}
                     updateToolbarHeight={updateToolbarHeight}
                     actions={[
                         {
@@ -447,14 +519,14 @@ export function FormEditPage() {
                             icon: <UndoIcon />,
                             onClick: handleUndo,
                             disabled: !hasPastLoadedForm,
-                            visible: loadedForm.status === ApplicationStatus.Drafted || loadedForm.status === ApplicationStatus.InReview,
+                            visible: loadedForm.status === FormStatus.Drafted,
                         },
                         {
                             tooltip: 'Änderung wiederherstellen',
                             icon: <RedoIcon />,
                             onClick: handleRedo,
                             disabled: !hasFutureLoadedForm,
-                            visible: loadedForm.status === ApplicationStatus.Drafted || loadedForm.status === ApplicationStatus.InReview,
+                            visible: loadedForm.status === FormStatus.Drafted,
                         },
                         'separator',
                         {
@@ -521,7 +593,8 @@ export function FormEditPage() {
                                 borderRight: '1px solid #E0E7E0',
                                 position: 'relative',
                             }}
-                            size={4}>
+                            size={4}
+                        >
                             <ElementTree
                                 entity={loadedForm}
                                 onPatch={handlePatch}
@@ -538,14 +611,21 @@ export function FormEditPage() {
                             overflowY: 'scroll',
                         }}
                         ref={scrollContainerRef}
-                        size={hideComponentTree ? 12 : 8}>
+                        size={hideComponentTree ? 12 : 8}
+                    >
                         <ViewDispatcherComponent
+                            rootElement={loadedForm.rootElement}
                             allElements={allElements}
-                            element={loadedForm.root}
+                            element={loadedForm.rootElement}
                             scrollContainerRef={scrollContainerRef}
                             isBusy={false}
                             isDeriving={false}
                             mode="editor"
+                            elementData={elementData}
+                            onElementDataChange={setElementData}
+                            onElementBlur={undefined}
+                            derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                            disableVisibility={disableVisibility}
                         />
                     </Grid>
                 </Grid>
@@ -555,7 +635,12 @@ export function FormEditPage() {
                         setShowAdminTools(false);
                     }}
                 />
-                <DeveloperTools />
+
+                <DeveloperTools
+                    rootElement={loadedForm.rootElement}
+                    elementData={elementData}
+                    onElementDataChange={setElementData}
+                />
                 <HelpDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === HelpDialogId}

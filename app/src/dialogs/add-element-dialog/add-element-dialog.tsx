@@ -1,6 +1,6 @@
 import {Box, Dialog, Grid, Tab, Tabs} from '@mui/material';
 import {type AddElementDialogProps} from './add-element-dialog-props';
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {type ElementType} from '../../data/element-type/element-type';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {PresetTab} from './tabs/preset-tab';
@@ -8,7 +8,7 @@ import {ElementTab} from './tabs/element-tab';
 import {ElementInfoTab} from './tabs/element-info-tab';
 import {StoreTab} from './tabs/store-tab';
 import {ModuleInfoTab} from './tabs/module-info-tab';
-import {AnyElement} from "../../models/elements/any-element";
+import {AnyElement} from '../../models/elements/any-element';
 
 
 export function AddElementDialog(props: AddElementDialogProps) {
@@ -53,18 +53,25 @@ export function AddElementDialog(props: AddElementDialogProps) {
                     label="Basis-Elemente"
                     value={0}
                 />
-                <Tab
-                    label="Vorlagen"
-                    value={1}
-                />
-                <Tab
-                    label="Gover Store"
-                    value={2}
-                />
+                {
+                    props.hidePresets !== true &&
+                    <Tab
+                        label="Vorlagen"
+                        value={1}
+                    />
+                }
+                {
+                    props.hideGoverStore !== true &&
+                    <Tab
+                        label="Gover Store"
+                        value={2}
+                    />
+                }
             </Tabs>
             <Grid container>
                 <Grid
-                    size={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}>
+                    size={(currentTab === 0 && showElementInfo != null) || (currentTab === 2 && showModuleId != null) ? 6 : 12}
+                >
                     <Box
                         sx={{
                             height: '50vh',
@@ -78,6 +85,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                                 onAddElement={handleAddElement}
                                 showElementInfo={setShowElementInfo}
                                 highlightedElement={showElementInfo}
+                                limitElementTypes={props.limitElementTypes}
                             />
                         }
                         {

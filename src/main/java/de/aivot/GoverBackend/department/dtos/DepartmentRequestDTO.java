@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.department.dtos;
 
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
-import de.aivot.GoverBackend.lib.ReqeustDTO;
+import de.aivot.GoverBackend.lib.RequestDTO;
 import de.aivot.GoverBackend.validation.ValidEmailList;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -55,7 +55,7 @@ public record DepartmentRequestDTO(
         @Nullable
         @ValidEmailList
         String departmentMail
-) implements ReqeustDTO<DepartmentEntity> {
+) implements RequestDTO<DepartmentEntity> {
     @Override
     public DepartmentEntity toEntity() {
         var department = new DepartmentEntity();

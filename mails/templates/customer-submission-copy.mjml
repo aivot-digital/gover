@@ -15,7 +15,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "<b th:text="${form.getApplicationTitle}">Beispielformular</b>".
+                        im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "<b th:text="${form.publicTitle}">Beispielformular</b>".
                     </p>
 
                     <p>

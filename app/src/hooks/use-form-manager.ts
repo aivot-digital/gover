@@ -1,6 +1,6 @@
 import {useMemo, useState} from 'react';
 import {ObjectSchema, ValidationError} from 'yup';
-import {shallowEquals} from '../utils/equality-utils';
+import {deepEquals, shallowEquals} from '../utils/equality-utils';
 
 interface FormManager<T> {
     currentItem: T | undefined | null;
@@ -9,14 +9,15 @@ interface FormManager<T> {
 
     handleInputPatch: (patch: Partial<T>) => void;
     handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
-    handleInputBlur: (field: keyof T) => () => void;
+    handleInputChangeWithValidation: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
+    handleInputBlur: (field: keyof T) => (value?: T[keyof T]) => void;
 
     validate: () => boolean;
     reset: () => void;
 }
 
 // TODO: Fix extending type
-export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>): FormManager<T> {
+export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>, useDeepEquals: boolean = true): FormManager<T> {
     const [editedItem, setEditedItem] = useState<T>();
     const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
     const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
@@ -26,7 +27,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
     }, [editedItem, originalItem]);
 
     const hasNotChanged = useMemo(() => {
-        return editedItem == null || shallowEquals(originalItem, editedItem);
+        return editedItem == null || (useDeepEquals ? deepEquals(originalItem, editedItem) : shallowEquals(originalItem, editedItem));
     }, [originalItem, editedItem]);
 
     const handleInputPatch = (patch: Partial<T>) => {
@@ -60,7 +61,25 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         validateField(field, value);
     };
 
-    const handleInputBlur = (field: keyof T) => () => {
+    const handleInputChangeWithValidation = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+        if (currentItem == null) {
+            return;
+        }
+
+        setEditedItem({
+            ...currentItem,
+            [field]: value,
+        });
+
+        setTouchedFields(prev => ({
+            ...prev,
+            [field]: true
+        }));
+
+        validateField(field, value, true);
+    };
+
+    const handleInputBlur = (field: keyof T) => (value?: T[keyof T]) => {
         if (currentItem == null) {
             return;
         }
@@ -70,7 +89,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             [field]: true,
         });
 
-        validateField(field, currentItem[field], true);
+        validateField(field, value ?? currentItem[field], true);
     };
 
     const validateField = (field: keyof T, value: T[keyof T] | undefined, validateUntouchedField: boolean = false) => {
@@ -116,7 +135,6 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             }
             return false;
         }
-
     };
 
     const reset = () => {
@@ -131,6 +149,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
 
         handleInputPatch,
         handleInputChange,
+        handleInputChangeWithValidation,
         handleInputBlur,
 
         validate,

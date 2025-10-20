@@ -185,9 +185,9 @@ export function DateFieldComponent({
                 slotProps={slotProps}
                 sx={{
                     ...sx,
-                    "& .MuiInputBase-root": {
-                        backgroundColor: busy ? "#F8F8F8" : undefined,
-                        cursor: busy ? "not-allowed" : undefined,
+                    "& .MuiPickersInputBase-root": {
+                        backgroundColor: (busy || disabled) ? "#F8F8F8" : undefined,
+                        cursor: (busy || disabled) ? "not-allowed" : undefined,
                     },
                 }}
                 readOnly={busy}

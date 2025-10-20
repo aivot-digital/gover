@@ -1,4 +1,4 @@
-import React, {useMemo, useReducer} from 'react';
+import React, {useMemo, useReducer, useRef} from 'react';
 import {ConditionSetOperator} from '../../data/condition-set-operator';
 import {BaseCodeTab} from './base-code-tab';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
@@ -14,19 +14,9 @@ import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 import {ReferenceCheck} from './components/reference-check/reference-check';
-
-const exampleLegacyValueCode = `/**
- * Diese Funktion wird aufgerufen, um einen Wert für das Element zu berechnen.
- * Der Wert wird dann in der Anzeige des Elements verwendet und muss dem Typ des Elements entsprechen.
- *
- * @param{Data} data Die Nutzereingaben
- * @param{CurrentElement} element Das aktuelle Element
- * @param{string} id Die ID des aktuellen Elements\
- */
-function main(data, element, id) {
-    console.log(data, element, id);
-    return null;
-}`;
+import {ElementVisibilityFunction} from '../../models/elements/element-visibility-function';
+import {editor} from 'monaco-editor';
+import {ElementValueFunction} from '../../models/elements/element-value-function';
 
 const exampleValueCode = `(function(){
     // Diese Funktion wird aufgerufen, um einen Wert für das Element zu berechnen.
@@ -36,159 +26,95 @@ const exampleValueCode = `(function(){
 
 export function ValueCodeTab(props: ValueCodeTabProps) {
     const dispatch = useAppDispatch();
+
+    const {
+        allElements,
+        element,
+        onChange,
+    } = props;
+
+    const {
+        value: _value,
+    } = element;
+
+    const value: ElementValueFunction = useMemo(() => _value ?? {
+        requirements: undefined,
+        javascriptCode: undefined,
+        expression: undefined,
+        referencedIds: undefined,
+    }, [_value]);
+
+    const hasValueFunction = useMemo(() => {
+        return (
+            value.javascriptCode?.code != null ||
+            value.expression != null
+        );
+    }, [value]);
+
+    const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
-    const hasVisibilityFunction = useMemo(() => {
-        return (
-                props.element.computeValue != null && (
-                    isStringNotNullOrEmpty(props.element.computeValue.code) ||
-                    (
-                        props.element.computeValue.conditionSet != null &&
-                        (props.element.computeValue.conditionSet.conditions != null && props.element.computeValue.conditionSet.conditions.length > 0) ||
-                        (props.element.computeValue.conditionSet?.conditionsSets != null && props.element.computeValue.conditionSet.conditionsSets.length > 0)
-                    )
-                )
-            ) ||
-            props.element.valueCode?.code != null ||
-            props.element.valueExpression != null;
-    }, [props.element]);
+    const handleChange = (patch: Partial<ElementValueFunction>) => {
+        onChange({
+            value: {
+                ...value,
+                ...patch,
+            },
+        });
+    };
 
     return (
         <>
             <BaseCodeTab
                 label="Dynamischer Wert"
-                description={'Hier können Sie einen dynamischen Wert für das Element definieren. Dieser Wert wird in der Anzeige des Elements verwendet und kann von den Nutzereingaben abhängen.'}
-                requirements={props.element.computeValue?.requirements}
-                onRequirementsChange={(req) => {
-                    props.onChange({
-                        computeValue: {
-                            ...props.element.computeValue,
-                            requirements: req ?? '',
-                        },
-                    });
-                }}
-                onDeleteFunction={() => {
-                    props.onChange({
-                        computeValue: {
-                            requirements: props.element.computeValue?.requirements ?? '',
-                        },
-                        valueCode: undefined,
-                        valueExpression: undefined,
-                    });
-                }}
+                description="Hier können Sie einen dynamischen Wert für das Element definieren. Dieser Wert wird in der Anzeige des Elements verwendet und kann von den Nutzereingaben abhängen."
                 editable={props.editable}
                 allowsNoCode={false}
                 allowsExpression={true}
+                requirements={value.requirements ?? undefined}
+                onRequirementsChange={(req) => {
+                    handleChange({
+                        requirements: req,
+                    });
+                }}
                 onSelectFunction={(type) => {
                     switch (type) {
-                        case 'legacy-code':
-                            props.onChange({
-                                computeValue: {
-                                    requirements: props.element.computeValue?.requirements ?? '',
-                                    code: exampleLegacyValueCode,
-                                    conditionSet: undefined,
-                                },
-                                valueCode: undefined,
-                                valueExpression: undefined,
-                            });
-                            break;
-                        case 'legacy-condition':
-                            props.onChange({
-                                computeValue: {
-                                    requirements: props.element.computeValue?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: {
-                                        operator: ConditionSetOperator.Any,
-                                        conditions: [
-                                            {
-                                                reference: '',
-                                                operator: ConditionOperator.Equals,
-                                                value: '',
-                                                conditionUnmetMessage: '',
-                                            },
-                                        ],
-                                        conditionsSets: [],
-                                        conditionSetUnmetMessage: '',
-                                    },
-                                },
-                                valueCode: undefined,
-                                valueExpression: undefined,
-                            });
-                            break;
                         case 'code':
-                            props.onChange({
-                                computeValue: {
-                                    requirements: props.element.computeValue?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: undefined,
-                                },
-                                valueCode: {
+                            handleChange({
+                                expression: undefined,
+                                javascriptCode: {
                                     code: exampleValueCode,
                                 },
-                                valueExpression: undefined,
                             });
                             break;
                         case 'expression':
-                            props.onChange({
-                                computeValue: {
-                                    requirements: props.element.computeValue?.requirements ?? '',
-                                    code: undefined,
-                                    conditionSet: undefined,
-                                },
-                                valueCode: undefined,
-                                valueExpression: {
+                            handleChange({
+                                expression: {
+                                    type: "NoCodeExpression",
                                     operatorIdentifier: '',
                                     operands: [],
                                 },
+                                javascriptCode: undefined,
                             });
                             break;
                     }
                 }}
-                hasFunction={hasVisibilityFunction}
+                onDeleteFunction={() => {
+                    handleChange({
+                        javascriptCode: undefined,
+                        expression: undefined,
+                        referencedIds: undefined,
+                    });
+                }}
+                hasFunction={hasValueFunction}
             >
                 {
-                    props.element.computeValue?.code != null && (
+                    value.javascriptCode != null && (
                         <CodeEditor
-                            value={props.element.computeValue.code}
+                            value={value.javascriptCode.code ?? undefined}
                             onChange={(code) => {
-                                props.onChange({
-                                    computeValue: {
-                                        requirements: props.element.computeValue?.requirements ?? '',
-                                        code: code,
-                                    },
-                                });
-                            }}
-                            actions={props.editable ? [
-                                {
-                                    tooltip: 'Element-ID nachschlagen',
-                                    icon: <LocationSearchingIcon />,
-                                    onClick: toggleShowElementSelectDialog,
-                                },
-                            ] : []}
-                            disabled={!props.editable}
-                            alert={{
-                                color: 'warning',
-                                title: 'Diese Version des Low-Codes ist veraltet',
-                                richtext: true,
-                                text: `
-                                    Sie wird künftig nicht mehr unterstützt und zu einem späteren Zeitpunkt entfernt. Bitte verwenden Sie ausschließlich den neuen Low-Code. 
-                                    Um auf die neue Version umzustellen, klicken Sie im Code-Editor oben rechts auf das Drei-Punkte-Menü und wählen Sie <strong>„Anderen Funktionstyp auswählen“</strong>.
-                                    Beachten Sie bitte: Der bisherige Code wird dabei <strong>nicht automatisch übernommen</strong> und muss manuell übertragen und angepasst werden.
-                                `,
-                                sx: {
-                                    mb: 1,
-                                }
-                            }}
-                        />
-                    )
-                }
-                {
-                    props.element.valueCode?.code != null && (
-                        <CodeEditor
-                            value={props.element.valueCode.code}
-                            onChange={(code) => {
-                                props.onChange({
-                                    valueCode: {
+                                handleChange({
+                                    javascriptCode: {
                                         code: code,
                                     },
                                 });
@@ -203,35 +129,22 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                             disabled={!props.editable}
                             typeHints={[{
                                 name: 'Context',
-                                content: createLowCodeContextType(props.element, props.parents[0]),
+                                content: createLowCodeContextType(props.parents[0]),
                             }]}
-                        />
-                    )
-                }
-                {
-                    props.element.computeValue?.conditionSet != null && (
-                        <CodeTabNoCodeEditor
-                            parents={props.parents}
-                            element={props.element}
-                            func={props.element.computeValue}
-                            onChange={(updatedFunc) => {
-                                props.onChange({
-                                    computeValue: updatedFunc,
-                                });
+                            onEditorMount={(editor) => {
+                                editorRef.current = editor;
                             }}
-                            shouldReturnString={false}
-                            editable={props.editable}
                         />
                     )
                 }
                 {
-                    props.element.valueExpression != null && (
+                    value.expression != null && (
                         <ExpressionEditorWrapper
                             parents={props.parents}
-                            expression={props.element.valueExpression}
+                            expression={value.expression}
                             onChange={(expression) => {
-                                props.onChange({
-                                    valueExpression: expression,
+                                handleChange({
+                                    expression: expression,
                                 });
                             }}
                             editable={props.editable}
@@ -241,20 +154,39 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                 }
 
                 <ReferenceCheck
+                    allElements={allElements}
                     element={props.element}
-                    lowCodeOld={[props.element.computeValue?.code]}
-                    lowCode={[props.element.valueCode?.code]}
-                    noCodeOld={[props.element.computeValue?.conditionSet]}
-                    noCode={[props.element.valueExpression]}
+                    lowCodeOld={[]}
+                    lowCode={value.javascriptCode?.code != null ? [value.javascriptCode.code] : []}
+                    noCodeOld={[]}
+                    noCode={value.expression != null ? [value.expression] : []}
                 />
             </BaseCodeTab>
 
             <SelectElementDialog
+                allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
-                    navigator.clipboard.writeText(element.id);
+                    const _editor = editorRef.current;
+                    const _selection = _editor?.getSelection();
+
+                    if (_editor != null && _selection != null) {
+                        const editOperation: editor.IIdentifiedSingleEditOperation = {
+                            range: _selection,
+                            text: element.id,
+                            forceMoveMarkers: true,
+                        };
+
+                        _editor
+                            .executeEdits('my-source', [editOperation]);
+
+                        dispatch(showSuccessSnackbar('Element-ID eingefügt'));
+                    } else {
+                        navigator.clipboard.writeText(element.id);
+                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                    }
+
                     toggleShowElementSelectDialog();
-                    dispatch(showSuccessSnackbar('Element-ID kopiert'));
                 }}
                 onClose={toggleShowElementSelectDialog}
             />

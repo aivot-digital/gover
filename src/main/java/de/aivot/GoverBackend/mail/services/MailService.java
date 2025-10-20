@@ -437,7 +437,7 @@ public class MailService {
         try {
             var assetKeyUUID = UUID.fromString(logoAssetKey);
             context.put("logoAssetName", assetRepository
-                    .findById(assetKeyUUID.toString())
+                    .findById(assetKeyUUID)
                     .map(AssetEntity::getFilename)
                     .orElse("")
             );

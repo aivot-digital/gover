@@ -2,20 +2,28 @@ package de.aivot.GoverBackend.identity.models;
 
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+
+import java.io.Serializable;
 import java.util.Map;
+import java.util.UUID;
 
 public record IdentityData(
         @Nonnull
-        String providerKey,
+        String identityId,
+        @Nonnull
+        UUID providerKey,
         @Nonnull
         String metadataIdentifier,
         @Nonnull
         Map<String, String> attributes
-) {
-    public static IdentityData from(IdentityCacheEntity entity) {
+) implements Serializable {
+    public static IdentityData from(@Nonnull String identityId, @Nonnull IdentityCacheEntity entity) {
+        var uuid = UUID.fromString(entity.getProviderKey());
+
         return new IdentityData(
-                entity.getProviderKey(),
+                identityId,
+                uuid,
                 entity.getMetadataIdentifier(),
                 entity.getIdentityData()
         );

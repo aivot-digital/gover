@@ -1,5 +1,4 @@
 import React from 'react';
-import {FormListPage} from '../pages/staff-pages/application-pages/form-list-page';
 import {FormEditPage} from '../pages/staff-pages/application-pages/form-edit-page';
 import {Settings} from '../pages/staff-pages/settings/settings';
 import {PresetEditPage} from '../pages/staff-pages/preset-pages/preset-edit-page';
@@ -8,49 +7,44 @@ import {SubmissionEditPage} from '../pages/staff-pages/submission-pages/submissi
 import {type Route} from '../models/lib/route';
 import {NotFound} from '../pages/shared/not-found/not-found';
 import {ModuleSelectPage} from '../pages/staff-pages/module-select-pages/module-select-page';
-import {PaymentProvidersListPage} from '../pages/staff-pages/payment-providers/list/payment-providers-list-page';
-import {PaymentProviderDetailsPage} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page';
-import {PaymentProviderDetailsPageIndex} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page-index';
-import {PaymentProviderDetailsPageTest} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page-test';
-import {
-    PaymentProviderDetailsPageForms
-} from "../pages/staff-pages/payment-providers/details/payment-provider-details-page-forms";
-import {AccountDetailsPage} from "../modules/users/pages/account/account-details-page";
-import {AccountDetailsPageIndex} from "../modules/users/pages/account/account-details-page-index";
-import {AccountDetailsPageDepartmentMemberships} from "../modules/users/pages/account/account-details-page-department-memberships";
-import {AccountDetailsPageNotifications} from "../modules/users/pages/account/account-details-page-notifications";
-import {ThemeListPage} from "../modules/themes/pages/list/theme-list-page";
-import {ThemeDetailsPage} from "../modules/themes/pages/details/theme-details-page";
-import {ThemeDetailsPageIndex} from "../modules/themes/pages/details/theme-details-page-index";
-import {ThemeDetailsPageForms} from "../modules/themes/pages/details/theme-details-page-forms";
-import {UserListPage} from "../modules/users/pages/user/list/user-list-page";
-import {UserDetailsPage} from "../modules/users/pages/user/details/user-details-page";
-import {UserDetailsPageIndex} from "../modules/users/pages/user/details/user-details-page-index";
-import {
-    UserDetailsPageDepartmentMemberships
-} from "../modules/users/pages/user/details/user-details-page-department-memberships";
-import {AssetListPage} from "../modules/assets/pages/asset-list-page";
-import {AssetDetailsPageIndex} from "../modules/assets/pages/asset-details-page-index";
-import {AssetDetailsPage} from "../modules/assets/pages/asset-details-page";
-import {DestinationListPage} from "../modules/destination/pages/list/destination-list-page";
-import {DestinationDetailsPage} from "../modules/destination/pages/details/destination-details-page";
-import {DestinationDetailsPageIndex} from "../modules/destination/pages/details/destination-details-page-index";
-import {DestinationDetailsPageForms} from "../modules/destination/pages/details/destination-details-page-forms";
-import {PresetListPage} from "../pages/staff-pages/preset-pages/preset-list-page";
-import {PaymentProviderDetailsPageTransactions} from '../pages/staff-pages/payment-providers/details/payment-provider-details-page-transactions';
+import {PaymentProvidersListPage} from '../modules/payment/pages/list/payment-providers-list-page';
+import {PaymentProviderDetailsPage} from '../modules/payment/pages/details/payment-provider-details-page';
+import {PaymentProviderDetailsPageIndex} from '../modules/payment/pages/details/payment-provider-details-page-index';
+import {PaymentProviderDetailsPageTest} from '../modules/payment/pages/details/payment-provider-details-page-test';
+import {PaymentProviderDetailsPageForms} from '../modules/payment/pages/details/payment-provider-details-page-forms';
+import {AccountDetailsPage} from '../modules/users/pages/account/account-details-page';
+import {AccountDetailsPageIndex} from '../modules/users/pages/account/account-details-page-index';
+import {AccountDetailsPageDepartmentMemberships} from '../modules/users/pages/account/account-details-page-department-memberships';
+import {AccountDetailsPageNotifications} from '../modules/users/pages/account/account-details-page-notifications';
+import {ThemeListPage} from '../modules/themes/pages/list/theme-list-page';
+import {ThemeDetailsPage} from '../modules/themes/pages/details/theme-details-page';
+import {ThemeDetailsPageIndex} from '../modules/themes/pages/details/theme-details-page-index';
+import {ThemeDetailsPageForms} from '../modules/themes/pages/details/theme-details-page-forms';
+import {UserListPage} from '../modules/users/pages/user/list/user-list-page';
+import {UserDetailsPage} from '../modules/users/pages/user/details/user-details-page';
+import {UserDetailsPageIndex} from '../modules/users/pages/user/details/user-details-page-index';
+import {UserDetailsPageDepartmentMemberships} from '../modules/users/pages/user/details/user-details-page-department-memberships';
+import {AssetListPage} from '../modules/assets/pages/asset-list-page';
+import {AssetDetailsPageIndex} from '../modules/assets/pages/asset-details-page-index';
+import {AssetDetailsPage} from '../modules/assets/pages/asset-details-page';
+import {DestinationListPage} from '../modules/destination/pages/list/destination-list-page';
+import {DestinationDetailsPage} from '../modules/destination/pages/details/destination-details-page';
+import {DestinationDetailsPageIndex} from '../modules/destination/pages/details/destination-details-page-index';
+import {DestinationDetailsPageForms} from '../modules/destination/pages/details/destination-details-page-forms';
+import {PresetListPage} from '../pages/staff-pages/preset-pages/preset-list-page';
+import {PaymentProviderDetailsPageTransactions} from '../modules/payment/pages/details/payment-provider-details-page-transactions';
 
 export const staffAppRoutes: Record<string, Route> = {
     moduleSelect: {
         path: '/',
         element: <ModuleSelectPage />,
     },
-
-    applicationList: {
-        path: '/forms',
-        element: <FormListPage />,
+    applicationEditLatest: {
+        path: '/forms/:id',
+        element: <FormEditPage />,
     },
     applicationEdit: {
-        path: '/forms/:id',
+        path: '/forms/:id/:version',
         element: <FormEditPage />,
     },
 

@@ -1,8 +1,6 @@
 package de.aivot.GoverBackend.form.controllers;
 
-import de.aivot.GoverBackend.exceptions.ConflictException;
-import de.aivot.GoverBackend.exceptions.NotFoundException;
-import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.services.PdfService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,27 +21,46 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Controller for generating and serving printable PDF versions of forms.
+ * <p>
+ * This controller provides an endpoint to retrieve a PDF representation of a form version.
+ * It uses {@link PdfService} to generate the PDF and {@link FormVersionWithDetailsService} to retrieve form details.
+ */
 @RestController
-@RequestMapping("/api/forms/{formId}/print/")
+@RequestMapping("/api/forms/{formId}/{formVersion}/print/")
 public class FormPrintController {
     private final PdfService pdfService;
-    private final FormService formService;
+    private final FormVersionWithDetailsService formVersionWithDetailsService;
 
+    /**
+     * Constructs a new FormPrintController with required services.
+     *
+     * @param pdfService                    Service for generating PDFs from form data.
+     * @param formVersionWithDetailsService Service for retrieving form version details.
+     */
     @Autowired
-    public FormPrintController(
-            PdfService pdfService,
-            FormService formService
-    ) {
+    public FormPrintController(PdfService pdfService,
+                               FormVersionWithDetailsService formVersionWithDetailsService) {
         this.pdfService = pdfService;
-        this.formService = formService;
+        this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
 
+    /**
+     * Generates and returns a printable PDF for the specified form and version.
+     *
+     * @param formId      The ID of the form to print.
+     * @param formVersion The version of the form to print.
+     * @return ResponseEntity containing the PDF as a resource.
+     * @throws ResponseException If the form is not found or PDF generation fails.
+     */
     @GetMapping("")
     public ResponseEntity<Resource> print(
-            @Nonnull @PathVariable Integer formId
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @PathVariable Integer formVersion
     ) throws ResponseException {
-        var form = formService
-                .retrieve(formId)
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
         byte[] bytes;

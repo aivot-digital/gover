@@ -2,7 +2,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, Divider, Grid, Typogr
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -29,6 +29,8 @@ import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {ElementData} from '../../models/element-data';
+import {isForm} from '../../models/entities/form';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -59,7 +61,8 @@ export function canPrefillElement(e: AnyElement): boolean {
 
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
-    const [inputs, setInputs] = useState<CustomerInput>({});
+    const [elementData, setElementData] = useState<ElementData>({});
+    const [hasPrefillableElements, setHasPrefillableElements] = useState<Boolean>(false);
     const form = useAppSelector(selectLoadedForm);
 
     const link = useMemo(() => {
@@ -69,12 +72,20 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
         const versionedLink = `${window.location.protocol}//${window.location.host}/${form.slug}/${form.version}`;
 
+        const inputs: Record<string, any> = {};
+        for (const key of Object.keys(elementData)) {
+            const dataObject = elementData[key];
+            if (dataObject != null) {
+                inputs[key] = dataObject.inputValue;
+            }
+        }
+
         const queryParams = new URLSearchParams({
             [prefillQueryParamKey]: JSON.stringify(inputs),
         }).toString();
 
         return `${versionedLink}?${queryParams}`;
-    }, [inputs, form]);
+    }, [elementData, form]);
 
     const linkTooLong = useMemo(() => {
         return link.length > MAX_LINK_LENGTH;
@@ -88,11 +99,11 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         step: StepElement,
         elements: AnyElement[],
     }[] = useMemo(() => {
-        if (form == null) {
+        if (form == null || form.rootElement == null || form.rootElement.children == null) {
             return [];
         }
 
-        return form.root.children
+        return form.rootElement.children
             .map((s) => {
                 const stepElements = flattenElements(s, true)
                     .filter(canPrefillElement);
@@ -102,6 +113,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 };
             })
     }, [form]);
+
+    useEffect(() => {
+        setHasPrefillableElements(allElementsPerStep.some((x) => x.elements.length > 0));
+    }, [allElementsPerStep]);
 
     const handleCopyLink = async () => {
         if (form == null) {
@@ -134,7 +149,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             return;
         }
 
-        downloadObjectFile(`prefill-${form.slug}-${form.version}.json`, inputs);
+        downloadObjectFile(`prefill-${form.slug}-${form.version}.json`, elementData);
     };
 
     const handleImport = () => {
@@ -161,7 +176,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 if (Object.keys(validValues).length === 0) {
                     dispatch(showErrorSnackbar('Keine gültigen Eingaben zum Importieren gefunden.'));
                 } else {
-                    setInputs(validValues);
+                    setElementData(validValues);
                     dispatch(showSuccessSnackbar('Daten erfolgreich importiert!'));
                 }
             })
@@ -172,7 +187,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
     };
 
     const handleClose = () => {
-        setInputs({});
+        setElementData({});
         props.onClose();
     };
 
@@ -301,26 +316,19 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                                                     {elements.map((element) => (
                                                         <ViewDispatcherComponent
+                                                            rootElement={element}
                                                             key={element.id}
                                                             allElements={[]}
-                                                            element={{
-                                                                ...element,
-                                                                width: 12,
-                                                            }}
+                                                            element={element}
                                                             isBusy={false}
                                                             isDeriving={false}
                                                             mode="viewer"
-                                                            valueOverride={{
-                                                                values: inputs,
-                                                                onChange: (key, value) => {
-                                                                    setInputs({
-                                                                        ...inputs,
-                                                                        [key]: value,
-                                                                    });
-                                                                },
-                                                            }}
-                                                            visibilitiesOverride={{}}
-                                                            overridesOverride={{}}
+                                                            elementData={elementData}
+                                                            onElementDataChange={setElementData}
+                                                            onElementBlur={undefined}
+                                                            disableVisibility={true}
+                                                            scrollContainerRef={undefined}
+                                                            derivationTriggerIdQueue={[]}
                                                         />
                                                     ))}
                                                 </Grid>
@@ -343,7 +351,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                     <Button
                         variant={'contained'}
                         onClick={handleCopyLink}
-                        disabled={linkTooLong}
+                        disabled={linkTooLong || !hasPrefillableElements}
                         startIcon={<ContentPasteOutlinedIcon />}
                     >
                         Link in Zwischenablage kopieren
@@ -364,7 +372,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleDownloadQrCode}
-                        disabled={linkTooLong}
+                        disabled={linkTooLong || !hasPrefillableElements}
                         startIcon={<QrCode2OutlinedIcon />}
                         sx={{
                             ml: 2,
@@ -389,6 +397,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleExport}
+                        disabled={!hasPrefillableElements}
                         startIcon={<ImportExportOutlinedIcon />}
                         sx={{
                             ml: 'auto',
@@ -399,6 +408,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                     <Button
                         onClick={handleImport}
+                        disabled={!hasPrefillableElements}
                         startIcon={<CloudUploadOutlinedIcon />}
                         sx={{
                             ml: 2,

@@ -1,7 +1,9 @@
 package de.aivot.GoverBackend.nocode.models;
 
-import de.aivot.GoverBackend.utils.MapUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.util.*;
 
@@ -9,68 +11,33 @@ import java.util.*;
  * Represents an expression in the NoCode language.
  * An expression consists of an operator and a list of operands.
  */
-public class NoCodeExpression implements NoCodeOperand {
-    private final String operatorIdentifier;
-    private final Collection<NoCodeOperand> operands;
+public class NoCodeExpression extends NoCodeOperand {
+    public static final String TYPE_ID = "NoCodeExpression";
 
-    public NoCodeExpression(Map<String, Object> values) {
-        operatorIdentifier = MapUtils.getString(values, "operatorIdentifier");
-        operands = MapUtils
-                .getCollectionKeepNull(values, "operands", (operandValue) -> {
-                    if (operandValue == null) {
-                        return null;
-                    } else if (operandValue.containsKey("value")) {
-                        return new NoCodeStaticValue(operandValue.get("value"));
-                    } else if (operandValue.containsKey("elementId")) {
-                        return new NoCodeReference((String) operandValue.get("elementId"));
-                    } else {
-                        return new NoCodeExpression(operandValue);
-                    }
-                });
+    @Nullable
+    private String operatorIdentifier;
+    @Nullable
+    private List<NoCodeOperand> operands;
+
+    public NoCodeExpression() {
+        super(TYPE_ID);
     }
 
-    public NoCodeExpression(String operatorIdentifier, NoCodeOperand... operands) {
+    public NoCodeExpression(@Nonnull String operatorIdentifier, @Nonnull NoCodeOperand... operands) {
+        super(TYPE_ID);
         this.operatorIdentifier = operatorIdentifier;
         this.operands = Arrays.stream(operands).toList();
     }
 
-    public String getOperatorIdentifier() {
-        return operatorIdentifier;
-    }
-
-    /**
-     * This collection may contain null values, which represent null operands.
-     *
-     * @return The operands of the expression.
-     */
-    public Collection<NoCodeOperand> getOperands() {
-        return operands;
-    }
-
     public boolean isEmpty() {
-        return StringUtils.isNullOrEmpty(operatorIdentifier) && operands.isEmpty();
+        return StringUtils.isNullOrEmpty(operatorIdentifier) && (operands == null || operands.isEmpty());
     }
 
     public boolean isNotEmpty() {
         return !isEmpty();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        NoCodeExpression that = (NoCodeExpression) o;
-        return Objects.equals(operatorIdentifier, that.operatorIdentifier) && Objects.equals(operands, that.operands);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Objects.hashCode(operatorIdentifier);
-        result = 31 * result + operands.hashCode();
-        return result;
-    }
-
+    @JsonIgnore
     public Set<String> getReferencedIds() {
         if (operands == null || operands.isEmpty()) {
             return new HashSet<>();
@@ -89,5 +56,53 @@ public class NoCodeExpression implements NoCodeOperand {
         }
 
         return referencedIds;
+    }
+
+    // region Hash & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        NoCodeExpression that = (NoCodeExpression) o;
+        return Objects.equals(operatorIdentifier, that.operatorIdentifier) && Objects.equals(operands, that.operands);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Objects.hashCode(operatorIdentifier);
+        result = 31 * result + Objects.hashCode(operands);
+        return result;
+    }
+
+    // endregion
+
+    // region Getters & Setters
+
+    @Nullable
+    public String getOperatorIdentifier() {
+        return operatorIdentifier;
+    }
+
+    public NoCodeExpression setOperatorIdentifier(@Nullable String operatorIdentifier) {
+        this.operatorIdentifier = operatorIdentifier;
+        return this;
+    }
+
+    public NoCodeExpression setOperands(@Nullable List<NoCodeOperand> operands) {
+        this.operands = operands;
+        return this;
+    }
+
+    /**
+     * This collection may contain null values, which represent null operands.
+     *
+     * @return The operands of the expression.
+     */
+    @Nullable
+    public Collection<NoCodeOperand> getOperands() {
+        return operands;
     }
 }

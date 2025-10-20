@@ -33,7 +33,7 @@ public class PaymentProviderTestService {
     }
 
     public PaymentProviderTestResult test(
-            @Nonnull String paymentProviderKey,
+            @Nonnull UUID paymentProviderKey,
             @Nonnull String purpose,
             @Nonnull String description,
             @Nonnull BigDecimal amount

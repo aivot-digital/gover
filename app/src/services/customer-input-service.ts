@@ -1,8 +1,9 @@
-import {type CustomerInput} from '../models/customer-input';
 import {type Form as Application} from '../models/entities/form';
 import {StorageScope, StorageService} from './storage-service';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {AppInfo} from '../app-info';
+import {ElementData} from '../models/element-data';
+import {cleanElementData} from '../utils/element-data-utils';
 
 const MAJOR_VERSION = AppInfo.version.split('.')[0];
 const DATA_KEY = 'state';
@@ -21,13 +22,13 @@ export class CustomerInputService {
         return null;
     }
 
-    public static loadCustomerInputState(form: Application): CustomerInput | null {
+    public static loadCustomerInputState(form: Application): ElementData | null {
         const key = this.getKey(form, DATA_KEY);
-        return StorageService.loadObject_unsafe<CustomerInput>(key);
+        return StorageService.loadObject_unsafe<ElementData>(key);
     }
 
-    public static storeCustomerInput(application: Application, state: CustomerInput): void {
-        const stateCopy = {...state};
+    public static storeCustomerInput(application: Application, state: ElementData): void {
+        const stateCopy = cleanElementData(application.rootElement, state);
         delete stateCopy[IdentityCustomerInputKey];
         StorageService.storeObject_unsafe(this.getKey(application, DATA_KEY), stateCopy, StorageScope.Local);
         StorageService.storeString_unsafe(this.getKey(application, DATE_KEY), new Date().toISOString(), StorageScope.Local);

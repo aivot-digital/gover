@@ -1,110 +1,131 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.entities.FormWithMembership;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 public record FormDetailsResponseDTO(
         Integer id,
         String slug,
-        String version,
-        String title,
+        String internalTitle,
+        String publicTitle,
+        Integer developingDepartmentId,
+        Integer managingDepartmentId,
+        Integer responsibleDepartmentId,
+        Integer publishedVersion,
+        Integer draftedVersion,
+        Integer versionCount,
+        Integer formId,
+        Integer version,
         FormStatus status,
         FormType type,
-        RootElement root,
-        Integer destinationId,
         Integer legalSupportDepartmentId,
         Integer technicalSupportDepartmentId,
         Integer imprintDepartmentId,
         Integer privacyDepartmentId,
         Integer accessibilityDepartmentId,
-        Integer developingDepartmentId,
-        Integer managingDepartmentId,
-        Integer responsibleDepartmentId,
+        Integer destinationId,
         Integer themeId,
-        LocalDateTime created,
-        LocalDateTime updated,
-        Integer customerAccessHours,
-        Integer submissionDeletionWeeks,
-        String pdfBodyTemplateKey,
-        Collection<PaymentProduct> products,
+        UUID pdfTemplateKey,
+        UUID paymentProviderKey,
         String paymentPurpose,
         String paymentDescription,
-        String paymentProvider,
-        Boolean identityRequired,
-        List<IdentityProviderLink> identityProviders
+        List<PaymentProduct> paymentProducts,
+        List<IdentityProviderLink> identityProviders,
+        Boolean identityVerificationRequired,
+        Integer customerAccessHours,
+        Integer submissionRetentionWeeks,
+        RootElement rootElement,
+        LocalDateTime created,
+        LocalDateTime updated,
+        LocalDateTime published,
+        LocalDateTime revoked
 ) {
-    public static FormDetailsResponseDTO fromEntity(Form form) {
+    public static FormDetailsResponseDTO fromEntity(FormVersionWithDetailsEntity form) {
         return new FormDetailsResponseDTO(
                 form.getId(),
                 form.getSlug(),
+                form.getInternalTitle(),
+                form.getPublicTitle(),
+                form.getDevelopingDepartmentId(),
+                form.getManagingDepartmentId(),
+                form.getResponsibleDepartmentId(),
+                form.getPublishedVersion(),
+                form.getDraftedVersion(),
+                form.getVersionCount(),
+                form.getFormId(),
                 form.getVersion(),
-                form.getTitle(),
                 form.getStatus(),
                 form.getType(),
-                form.getRoot(),
-                form.getDestinationId(),
                 form.getLegalSupportDepartmentId(),
                 form.getTechnicalSupportDepartmentId(),
                 form.getImprintDepartmentId(),
                 form.getPrivacyDepartmentId(),
                 form.getAccessibilityDepartmentId(),
-                form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
+                form.getDestinationId(),
                 form.getThemeId(),
-                form.getCreated(),
-                form.getUpdated(),
-                form.getCustomerAccessHours(),
-                form.getSubmissionDeletionWeeks(),
-                form.getPdfBodyTemplateKey(),
-                form.getProducts(),
+                form.getPdfTemplateKey(),
+                form.getPaymentProviderKey(),
                 form.getPaymentPurpose(),
                 form.getPaymentDescription(),
-                form.getPaymentProvider(),
-                form.getIdentityRequired(),
-                form.getIdentityProviders()
+                form.getPaymentProducts(),
+                form.getIdentityProviders(),
+                form.getIdentityVerificationRequired(),
+                form.getCustomerAccessHours(),
+                form.getSubmissionRetentionWeeks(),
+                form.getRootElement(),
+                form.getCreated(),
+                form.getUpdated(),
+                form.getPublished(),
+                form.getRevoked()
         );
     }
 
-    public static FormDetailsResponseDTO fromEntity(FormWithMembership form) {
+    public static FormDetailsResponseDTO fromEntity(FormVersionWithMembershipEntity form) {
         return new FormDetailsResponseDTO(
                 form.getId(),
                 form.getSlug(),
+                form.getInternalTitle(),
+                form.getPublicTitle(),
+                form.getDevelopingDepartmentId(),
+                form.getManagingDepartmentId(),
+                form.getResponsibleDepartmentId(),
+                form.getPublishedVersion(),
+                form.getDraftedVersion(),
+                form.getVersionCount(),
+                form.getFormId(),
                 form.getVersion(),
-                form.getTitle(),
                 form.getStatus(),
                 form.getType(),
-                form.getRoot(),
-                form.getDestinationId(),
                 form.getLegalSupportDepartmentId(),
                 form.getTechnicalSupportDepartmentId(),
                 form.getImprintDepartmentId(),
                 form.getPrivacyDepartmentId(),
                 form.getAccessibilityDepartmentId(),
-                form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
+                form.getDestinationId(),
                 form.getThemeId(),
-                form.getCreated(),
-                form.getUpdated(),
-                form.getCustomerAccessHours(),
-                form.getSubmissionDeletionWeeks(),
-                form.getPdfBodyTemplateKey(),
-                form.getProducts(),
+                form.getPdfTemplateKey(),
+                form.getPaymentProviderKey(),
                 form.getPaymentPurpose(),
                 form.getPaymentDescription(),
-                form.getPaymentProvider(),
-                form.getIdentityRequired(),
-                form.getIdentityProviders()
+                form.getPaymentProducts(),
+                form.getIdentityProviders(),
+                form.getIdentityVerificationRequired(),
+                form.getCustomerAccessHours(),
+                form.getSubmissionRetentionWeeks(),
+                form.getRootElement(),
+                form.getCreated(),
+                form.getUpdated(),
+                form.getPublished(),
+                form.getRevoked()
         );
     }
 }

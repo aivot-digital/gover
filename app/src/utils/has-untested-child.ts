@@ -21,8 +21,8 @@ export function hasUntestedChild(element: AnyElementWithChildren): boolean {
         }
     }
 
-    return element
-        .children
+    return (element
+        .children ?? [])
         .some((child: AnyElement) => {
             return !isElementTested(child) || (isAnyElementWithChildren(child) && hasUntestedChild(child));
         });

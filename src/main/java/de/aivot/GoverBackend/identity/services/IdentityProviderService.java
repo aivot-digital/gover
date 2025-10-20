@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.core.services.HttpService;
+import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.models.OpenIdConfiguration;
@@ -16,6 +18,7 @@ import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,12 +61,13 @@ import java.util.UUID;
  * @see ResponseException
  */
 @Service
-public class IdentityProviderService implements EntityService<IdentityProviderEntity, String> {
+public class IdentityProviderService implements EntityService<IdentityProviderEntity, UUID> {
     private final IdentityProviderRepository identityProviderRepository;
     private final SecretRepository secretRepository;
     private final AssetRepository assetRepository;
     private final FormRepository formRepository;
     private final HttpService httpService;
+    private final FormVersionRepository formVersionRepository;
 
     @Autowired
     public IdentityProviderService(
@@ -71,13 +75,14 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
             SecretRepository secretRepository,
             AssetRepository assetRepository,
             FormRepository formRepository,
-            HttpService httpService
-    ) {
+            HttpService httpService,
+            FormVersionRepository formVersionRepository) {
         this.identityProviderRepository = identityProviderRepository;
         this.secretRepository = secretRepository;
         this.assetRepository = assetRepository;
         this.formRepository = formRepository;
         this.httpService = httpService;
+        this.formVersionRepository = formVersionRepository;
     }
 
     /**
@@ -167,7 +172,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     @Override
     public IdentityProviderEntity create(@Nonnull IdentityProviderEntity entity) throws ResponseException {
         // Set default values
-        entity.setKey(UUID.randomUUID().toString());
+        entity.setKey(UUID.randomUUID());
         entity.setType(IdentityProviderType.Custom);
 
         cleanClientSecretKey(entity);
@@ -207,7 +212,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
      * @return {@code true} if the entity exists, {@code false} otherwise.
      */
     @Override
-    public boolean exists(@Nonnull String id) {
+    public boolean exists(@Nonnull UUID id) {
         return identityProviderRepository
                 .existsById(id);
     }
@@ -233,7 +238,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
      */
     @Nonnull
     @Override
-    public Optional<IdentityProviderEntity> retrieve(@Nonnull String id) throws ResponseException {
+    public Optional<IdentityProviderEntity> retrieve(@Nonnull UUID id) throws ResponseException {
         return identityProviderRepository
                 .findById(id);
     }
@@ -282,7 +287,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     @Nonnull
     @Override
     public IdentityProviderEntity performUpdate(
-            @Nonnull String id,
+            @Nonnull UUID id,
             @Nonnull IdentityProviderEntity updatedEntity,
             @Nonnull IdentityProviderEntity existingEntity
     ) throws ResponseException {
@@ -338,8 +343,12 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
             );
         }
 
-        var linkedFormExists = formRepository
-                .existsWithLinkedIdentityProvider(entity.getKey());
+
+        var linkedFormExists = formVersionRepository
+                .exists(SpecificationBuilder
+                        .create(FormVersionEntity.class)
+                        .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", entity.getKey().toString())
+                        .build());
 
         if (linkedFormExists) {
             throw ResponseException.conflict(
@@ -356,7 +365,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     // region Helpers
 
     private void cleanClientSecretKey(@Nonnull IdentityProviderEntity updatedEntity) {
-        if (StringUtils.isNullOrEmpty(updatedEntity.getClientSecretKey())) {
+        if (updatedEntity.getClientSecretKey() == null) {
             updatedEntity.setClientSecretKey(null);
         } else {
             Optional<SecretEntity> secretEntity;
@@ -374,20 +383,22 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     }
 
     private void cleanIconAssetKey(@Nonnull IdentityProviderEntity updatedEntity) {
-        if (StringUtils.isNullOrEmpty(updatedEntity.getIconAssetKey())) {
+        if (updatedEntity.getIconAssetKey() == null) {
             updatedEntity.setIconAssetKey(null);
-        } else {
-            Optional<AssetEntity> assetEntity;
-            try {
-                assetEntity = assetRepository
-                        .findById(updatedEntity.getIconAssetKey());
-            } catch (Exception e) {
-                assetEntity = Optional.empty();
-            }
+            return;
+        }
 
-            if (assetEntity.isEmpty()) {
-                updatedEntity.setIconAssetKey(null);
-            }
+        Optional<AssetEntity> assetEntity;
+        try {
+            assetEntity = assetRepository
+                    .findById(updatedEntity.getIconAssetKey());
+        } catch (Exception e) {
+            updatedEntity.setIconAssetKey(null);
+            return;
+        }
+
+        if (assetEntity.isEmpty()) {
+            updatedEntity.setIconAssetKey(null);
         }
     }
 

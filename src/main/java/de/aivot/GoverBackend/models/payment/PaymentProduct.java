@@ -1,19 +1,19 @@
 package de.aivot.GoverBackend.models.payment;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.aivot.GoverBackend.enums.PaymentType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
-import de.aivot.GoverBackend.models.functions.FunctionCode;
 
 import java.io.Serializable;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentProduct implements Serializable {
     private String id;
     private String reference;
     private String description;
     private PaymentType type;
     private Integer upfrontFixedQuantity;
-    private FunctionCode upfrontQuantityFunction;
     private JavascriptCode upfrontQuantityJavascript;
     private Double taxRate;
     private Double netPrice;
@@ -42,14 +42,6 @@ public class PaymentProduct implements Serializable {
 
     public void setUpfrontFixedQuantity(Integer upfrontFixedQuantity) {
         this.upfrontFixedQuantity = upfrontFixedQuantity;
-    }
-
-    public FunctionCode getUpfrontQuantityFunction() {
-        return upfrontQuantityFunction;
-    }
-
-    public void setUpfrontQuantityFunction(FunctionCode upfrontQuantityFunction) {
-        this.upfrontQuantityFunction = upfrontQuantityFunction;
     }
 
     public Double getTaxRate() {
@@ -108,5 +100,6 @@ public class PaymentProduct implements Serializable {
         this.upfrontQuantityJavascript = upfrontQuantityJavascript;
     }
 
-    public record BookingDataItem(String key, String value) implements Serializable {}
+    public record BookingDataItem(String key, String value) implements Serializable {
+    }
 }

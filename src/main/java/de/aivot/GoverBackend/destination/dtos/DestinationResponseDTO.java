@@ -24,6 +24,8 @@ public record DestinationResponseDTO(
         @Nonnull
         String authorizationHeader,
         @Nonnull
+        String script,
+        @Nonnull
         Integer maxAttachmentMegaBytes
 ) {
     public static DestinationResponseDTO fromEntity(Destination destination) {
@@ -36,6 +38,7 @@ public record DestinationResponseDTO(
                 destination.getMailBCC(),
                 destination.getApiAddress(),
                 destination.getAuthorizationHeader(),
+                destination.getScript(),
                 destination.getMaxAttachmentMegaBytes()
         );
     }

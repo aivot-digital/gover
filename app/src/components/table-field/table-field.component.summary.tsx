@@ -14,10 +14,12 @@ import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseSummaryProps} from "../../summaries/base-summary";
 
 // TODO: Value Type
-export function TableFieldComponentSummary({
-                                               model,
-                                               value,
-                                           }: BaseSummaryProps<TableFieldElement, any>) {
+export function TableFieldComponentSummary(props: BaseSummaryProps<TableFieldElement, any>) {
+    const {
+        model,
+        value,
+    } = props;
+
     const theme = useTheme();
 
     return (
@@ -74,11 +76,11 @@ export function TableFieldComponentSummary({
                                     <TableRow key={index}>
                                         {
                                             (model.fields ?? []).map(field => (
-                                                <TableCell key={field.label} sx={{minWidth: '126px'}}>
+                                                <TableCell key={field.key ?? index.toString()} sx={{minWidth: '126px'}}>
                                                     {
                                                         field.datatype === 'number' ?
-                                                            formatNumStringToGermanNum(value[field.label], field.decimalPlaces) :
-                                                            value[field.label]
+                                                            formatNumStringToGermanNum(value[field.key ?? ''], field.decimalPlaces) :
+                                                            value[field.key ?? '']
                                                     }
                                                 </TableCell>
                                             ))

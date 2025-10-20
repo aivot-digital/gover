@@ -3,7 +3,6 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
 import {ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
-import {LoadCustomerInputDialog} from '../../dialogs/load-customer-input/load-customer-input.dialog';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../components/not-found-page/not-found-page';
 import {MetaElement} from '../../components/meta-element/meta-element';
@@ -23,15 +22,15 @@ import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
-import {usePrefill} from '../../hooks/use-prefill';
+import {ElementData} from '../../models/element-data';
+import {CustomerInputService} from '../../services/customer-input-service';
+import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
 
 export const DialogSearchParam = 'dialog';
 
 export function FormPage() {
     const baseTheme = useTheme();
     const api = useApi();
-
-    usePrefill();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -43,12 +42,24 @@ export function FormPage() {
 
     const dispatch = useAppDispatch();
     const form = useAppSelector(selectLoadedForm);
+    const systemThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
     const [failedToLoad, setFailedToLoad] = useState(false);
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const identityId = useAppSelector(selectIdentityId);
 
+    const [elementData, setElementData] = useState<ElementData>({});
+
     const [theme, setTheme] = useState<Theme>();
+
+    const handleSetElementData = (data: ElementData, storeData: boolean = true) => {
+        setElementData(data);
+
+        if (storeData && form != null) {
+            CustomerInputService
+                .storeCustomerInput(form, data);
+        }
+    };
 
     useEffect(() => {
         dispatch(showDialog(metaDialogName ?? undefined));
@@ -63,7 +74,8 @@ export function FormPage() {
         new FormsApiService(api)
             .retrieveBySlugAndVersion(slug, version, identityId)
             .then((application) => {
-                dispatch(updateLoadedForm(application));
+                const form = formCitizenDetailsResponseDTO(application);
+                dispatch(updateLoadedForm(form));
             })
             .catch(err => {
                 console.error(err);
@@ -72,7 +84,7 @@ export function FormPage() {
     }, [slug, api, identityId]);
 
     useEffect(() => {
-        if (form?.themeId != null) {
+        if (form != null && form.themeId != null) {
             new ThemesApiService(api)
                 .retrievePublic(form.themeId)
                 .then(setTheme)
@@ -80,40 +92,57 @@ export function FormPage() {
                     console.error(err);
                 });
         }
-    }, [form]);
+
+        if (systemThemeId != null) {
+            new ThemesApiService(api)
+                .retrievePublic(parseInt(systemThemeId))
+                .then(setTheme)
+                .catch((err) => {
+                    console.error(err);
+                });
+        }
+    }, [form, systemThemeId]);
 
     const _theme = useMemo(() => {
         return createAppTheme(theme, baseTheme);
     }, [theme, baseTheme]);
 
     if (failedToLoad) {
-        return <><MetaElement
-            title="Seite nicht gefunden"
-            titlePrefix={provider}
-        /><NotFoundPage /></>;
+        return (
+            <>
+                <MetaElement
+                    title="Seite nicht gefunden"
+                    titlePrefix={provider}
+                />
+                <NotFoundPage />
+            </>
+        );
     } else if (form == null) {
-        return <LoadingPlaceholder />;
+        return (
+            <LoadingPlaceholder />
+        );
     } else {
-        const allElements = flattenElements(form.root);
+        const allElements = flattenElements(form.rootElement);
 
         return (
             <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
-                        title={form.root.tabTitle ?? form.root.headline}
+                        title={form.rootElement.tabTitle ?? form.rootElement.headline ?? ''}
                         titlePrefix={provider}
                     />
 
                     <ViewDispatcherComponent
+                        rootElement={form.rootElement}
                         allElements={allElements}
-                        element={form.root}
+                        element={form.rootElement}
                         isBusy={false}
                         isDeriving={false}
                         mode="viewer"
-                    />
-
-                    <LoadCustomerInputDialog
-                        form={form}
+                        elementData={elementData}
+                        onElementDataChange={(data) => handleSetElementData(data)}
+                        derivationTriggerIdQueue={[]}
+                        disableVisibility={false}
                     />
 
                     <HelpDialog

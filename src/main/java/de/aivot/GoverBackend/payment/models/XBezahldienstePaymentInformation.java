@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.utils.StringUtils;
 
 import java.net.URI;
+import java.util.Objects;
 
 /**
  * Dieses Objekt enthält die Informationen vom Bezahldienst, die 1-zu-1 in den Antrag übernommen werden können. Die Antrags-API wird künftig angeglichen.
@@ -58,6 +59,32 @@ public class XBezahldienstePaymentInformation {
     // Grundsätzlich ist dieses Feld nicht notwendig - Inhalte sind zwischen Bezahldienst und Fachverfahren abzustimmen.
     @JsonProperty("statusDetail")
     private String statusDetail = null;
+
+    // region Hash & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        XBezahldienstePaymentInformation that = (XBezahldienstePaymentInformation) o;
+        return Objects.equals(transactionUrl, that.transactionUrl) && Objects.equals(transactionRedirectUrl, that.transactionRedirectUrl) && Objects.equals(transactionId, that.transactionId) && Objects.equals(transactionReference, that.transactionReference) && Objects.equals(transactionTimestamp, that.transactionTimestamp) && paymentMethod == that.paymentMethod && Objects.equals(paymentMethodDetail, that.paymentMethodDetail) && status == that.status && Objects.equals(statusDetail, that.statusDetail);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(transactionUrl);
+        result = 31 * result + Objects.hashCode(transactionRedirectUrl);
+        result = 31 * result + Objects.hashCode(transactionId);
+        result = 31 * result + Objects.hashCode(transactionReference);
+        result = 31 * result + Objects.hashCode(transactionTimestamp);
+        result = 31 * result + Objects.hashCode(paymentMethod);
+        result = 31 * result + Objects.hashCode(paymentMethodDetail);
+        result = 31 * result + Objects.hashCode(status);
+        result = 31 * result + Objects.hashCode(statusDetail);
+        return result;
+    }
+
+    // endregion
 
     public URI getTransactionUrl() {
         return transactionUrl;

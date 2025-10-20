@@ -1,10 +1,10 @@
 package de.aivot.GoverBackend.elements.utils;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 
 import java.util.function.Consumer;
 

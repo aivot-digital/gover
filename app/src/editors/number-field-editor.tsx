@@ -55,7 +55,7 @@ export const NumberFieldEditor: BaseEditor<NumberFieldElement, ElementTreeEntity
                     lg: 6
                 }}>
                 <NumberFieldComponent
-                    value={element.decimalPlaces}
+                    value={element.decimalPlaces ?? undefined}
                     label="Anzahl der Dezimalstellen"
                     onChange={(val) => {
                         onPatch({

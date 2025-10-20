@@ -22,6 +22,7 @@ public record NoCodeOperatorDetailsDTO(
         String label,
         String description,
         String abstractDescription,
+        String[] tags,
         NoCodeParameter[] parameters,
         NoCodeDataType returnType
 ) {
@@ -40,6 +41,7 @@ public record NoCodeOperatorDetailsDTO(
                         op.getLabel(),
                         op.getDescription(),
                         op.getAbstract(),
+                        op.getTags(),
                         op.getParameters(),
                         op.getReturnType()
                 ));

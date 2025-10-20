@@ -5,7 +5,9 @@ import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import de.aivot.GoverBackend.mail.services.SubmissionMailService;
@@ -31,6 +33,7 @@ public class SubmissionTransactionChangeListener implements PaymentTransactionCh
     private final ExceptionMailService exceptionMailService;
     private final PaymentProviderRepository paymentProviderRepository;
     private final FormRepository formRepository;
+    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     public SubmissionTransactionChangeListener(
             SubmissionRepository submissionRepository,
@@ -40,8 +43,8 @@ public class SubmissionTransactionChangeListener implements PaymentTransactionCh
             SubmissionMailService submissionMailService,
             ExceptionMailService exceptionMailService,
             PaymentProviderRepository paymentProviderRepository,
-            FormRepository formRepository
-    ) {
+            FormRepository formRepository,
+            FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.submissionRepository = submissionRepository;
         this.destinationSubmitService = destinationSubmitService;
         this.destinationService = destinationService;
@@ -50,6 +53,7 @@ public class SubmissionTransactionChangeListener implements PaymentTransactionCh
         this.exceptionMailService = exceptionMailService;
         this.paymentProviderRepository = paymentProviderRepository;
         this.formRepository = formRepository;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
 
     @Override
@@ -69,8 +73,8 @@ public class SubmissionTransactionChangeListener implements PaymentTransactionCh
 
         var status = paymentTransactionEntity.getPaymentInformation().getStatus();
 
-        var form = formRepository
-                .findById(submission.getFormId())
+        var form = formVersionWithDetailsRepository
+                .findById(FormVersionWithDetailsEntityId.of(submission.getFormId(), submission.getFormVersion()))
                 .orElseThrow(() -> ResponseException.internalServerError("Formular mit der ID " + submission.getFormId() + " konnte nicht gefunden werden."));
 
         switch (status) {

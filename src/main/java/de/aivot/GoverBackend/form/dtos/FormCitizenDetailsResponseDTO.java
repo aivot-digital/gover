@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 
 import javax.annotation.Nonnull;
@@ -15,7 +15,7 @@ public record FormCitizenDetailsResponseDTO(
         @Nonnull
         String slug,
         @Nonnull
-        String version,
+        Integer version,
         @Nonnull
         String title,
         @Nonnull
@@ -44,15 +44,15 @@ public record FormCitizenDetailsResponseDTO(
         List<IdentityProviderLink> identityProviders
 
 ) {
-    public static FormCitizenDetailsResponseDTO fromEntity(Form form, boolean obfuscateSteps) {
+    public static FormCitizenDetailsResponseDTO fromEntity(FormVersionWithDetailsEntity form, boolean obfuscateSteps) {
         ElementStreamUtils
-                .applyAction(form.getRoot(), element -> {
+                .applyAction(form.getRootElement(), element -> {
                     element.setName("");
-                        element.setTestProtocolSet(null);
+                    element.setTestProtocolSet(null);
                 });
 
         if (obfuscateSteps) {
-            for (var step : form.getRoot().getChildren()) {
+            for (var step : form.getRootElement().getChildren()) {
                 step.setChildren(List.of());
             }
         }
@@ -61,8 +61,8 @@ public record FormCitizenDetailsResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getVersion(),
-                form.getTitle(),
-                form.getRoot(),
+                form.getInternalTitle(),
+                form.getRootElement(),
                 form.getLegalSupportDepartmentId(),
                 form.getTechnicalSupportDepartmentId(),
                 form.getImprintDepartmentId(),
@@ -72,7 +72,7 @@ public record FormCitizenDetailsResponseDTO(
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
                 form.getThemeId(),
-                form.getIdentityRequired(),
+                form.getIdentityVerificationRequired(),
                 form.getIdentityProviders()
         );
     }

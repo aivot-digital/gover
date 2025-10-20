@@ -1,35 +1,34 @@
 package de.aivot.GoverBackend.nocode.models;
 
+import de.aivot.GoverBackend.utils.StringUtils;
+
 import javax.annotation.Nullable;
 import java.util.Objects;
 
 /**
  * Represents a static value in the NoCode language.
  */
-public class NoCodeStaticValue implements NoCodeOperand {
-    private final Object value;
+public class NoCodeStaticValue extends NoCodeOperand {
+    public static final String TYPE_ID = "NoCodeStaticValue";
+
+    @Nullable
+    private Object value;
+
+    public NoCodeStaticValue() {
+        super(TYPE_ID);
+    }
 
     public NoCodeStaticValue(@Nullable Object value) {
+        super(TYPE_ID);
         this.value = value;
     }
 
-    /**
-     * Returns the value of the static value.
-     *
-     * @return the value of the static value
-     */
-    @Nullable
-    public Object getValue() {
-        if (value instanceof String sValue && sValue.trim().isEmpty()) {
-            return null;
-        }
-        return value;
-    }
+    // region Hash & Equals
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
         NoCodeStaticValue that = (NoCodeStaticValue) o;
         return Objects.equals(value, that.value);
@@ -37,6 +36,27 @@ public class NoCodeStaticValue implements NoCodeOperand {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(value);
+        int result = super.hashCode();
+        result = 31 * result + Objects.hashCode(value);
+        return result;
     }
+
+    // endregion
+
+    // region Getters & Setters
+
+    public NoCodeStaticValue setValue(@Nullable Object value) {
+        this.value = value;
+        return this;
+    }
+
+    @Nullable
+    public Object getValue() {
+        if (value instanceof String sValue && StringUtils.isNullOrEmpty(sValue)) {
+            return null;
+        }
+        return value;
+    }
+
+    // endregion
 }

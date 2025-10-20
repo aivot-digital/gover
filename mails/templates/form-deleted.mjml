@@ -18,7 +18,7 @@
                         es wurde ein bestehendes Formular in Gover gelöscht.
                         <br/>
                         <br/>
-                        Formular: <b th:text="${form.title}">Beispielformular</b>
+                        Formular: <b th:text="${form.internalTitle}">Beispielformular</b>
                         <br/>
                         Version: <b th:text="${form.version}">1.2.3</b>
                         <br/>

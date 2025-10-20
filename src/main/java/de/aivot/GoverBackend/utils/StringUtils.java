@@ -58,4 +58,21 @@ public class StringUtils {
         }
         return key.substring(0, 2) + "****" + key.substring(key.length() - 2);
     }
+
+    public static String slugify(String str, int length) {
+        String slug = str.toLowerCase()
+                .replace("ä", "ae")
+                .replace("ö", "oe")
+                .replace("ü", "ue")
+                .replace("ß", "ss");
+        slug = java.text.Normalizer.normalize(slug, java.text.Normalizer.Form.NFKD);
+        slug = slug.replaceAll("\\s+", "-")
+                .replaceAll("[^\\w-]+", "")
+                .replaceAll("-{2,}", "-");
+        if (slug.length() > length) {
+            slug = slug.substring(0, length);
+        }
+        return slug;
+    }
+
 }

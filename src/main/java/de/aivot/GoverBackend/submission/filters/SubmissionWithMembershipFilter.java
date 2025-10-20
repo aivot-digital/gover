@@ -13,6 +13,7 @@ public class SubmissionWithMembershipFilter implements Filter<SubmissionWithMemb
     private String id;
 
     private Integer formId;
+    private Integer formVersion;
     private String assigneeId;
     private SubmissionStatus status;
     private String fileNumber;
@@ -166,6 +167,7 @@ public class SubmissionWithMembershipFilter implements Filter<SubmissionWithMemb
                 .withEquals("id", id)
 
                 .withEquals("formId", formId)
+                .withEquals("formVersion", formVersion)
                 .withEquals("assigneeId", assigneeId)
                 .withEquals("status", status)
                 .withEquals("fileNumber", fileNumber)
@@ -191,6 +193,15 @@ public class SubmissionWithMembershipFilter implements Filter<SubmissionWithMemb
                 .withEquals("userRole", userRole)
 
                 .build();
+    }
+
+    public Integer getFormVersion() {
+        return formVersion;
+    }
+
+    public SubmissionWithMembershipFilter setFormVersion(Integer formVersion) {
+        this.formVersion = formVersion;
+        return this;
     }
 
     // TODO

@@ -1,68 +1,105 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.entities.FormWithMembership;
-import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.enums.FormType;
-import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithMembershipEntity;
+import de.aivot.GoverBackend.form.entities.FormWithMembershipEntity;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public record FormListResponseDTO(
+        @Nonnull
         Integer id,
+        @Nonnull
         String slug,
-        String version,
-        String title,
-        FormStatus status,
-        FormType type,
+        @Nonnull
+        String internalTitle,
+        @Nonnull
+        String publicTitle,
+        @Nonnull
         Integer developingDepartmentId,
+        @Nullable
         Integer managingDepartmentId,
+        @Nullable
         Integer responsibleDepartmentId,
-        Integer themeId,
+        @Nonnull
         LocalDateTime created,
+        @Nonnull
         LocalDateTime updated,
-        String paymentProvider,
-        Boolean identityRequired,
-        List<IdentityProviderLink> identityProviders
+        @Nullable
+        Integer publishedVersion,
+        @Nullable
+        Integer draftedVersion,
+        @Nonnull
+        Integer versionCount
 ) {
-    public static FormListResponseDTO fromEntity(Form form) {
+    public static FormListResponseDTO fromEntity(FormEntity form) {
         return new FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
-                form.getVersion(),
-                form.getTitle(),
-                form.getStatus(),
-                form.getType(),
+                form.getInternalTitle(),
+                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
-                form.getThemeId(),
                 form.getCreated(),
                 form.getUpdated(),
-                form.getPaymentProvider(),
-                form.getIdentityRequired(),
-                form.getIdentityProviders()
+                form.getPublishedVersion(),
+                form.getDraftedVersion(),
+                form.getVersionCount()
         );
     }
 
-    public static FormListResponseDTO fromEntity(FormWithMembership form) {
+    public static FormListResponseDTO fromEntity(FormVersionWithDetailsEntity form) {
         return new FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
-                form.getVersion(),
-                form.getTitle(),
-                form.getStatus(),
-                form.getType(),
+                form.getInternalTitle(),
+                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
-                form.getThemeId(),
                 form.getCreated(),
                 form.getUpdated(),
-                form.getPaymentProvider(),
-                form.getIdentityRequired(),
-                form.getIdentityProviders()
+                form.getPublishedVersion(),
+                form.getDraftedVersion(),
+                form.getVersionCount()
+        );
+    }
+
+    public static FormListResponseDTO fromEntity(FormVersionWithMembershipEntity form) {
+        return new FormListResponseDTO(
+                form.getId(),
+                form.getSlug(),
+                form.getInternalTitle(),
+                form.getPublicTitle(),
+                form.getDevelopingDepartmentId(),
+                form.getManagingDepartmentId(),
+                form.getResponsibleDepartmentId(),
+                form.getCreated(),
+                form.getUpdated(),
+                form.getPublishedVersion(),
+                form.getDraftedVersion(),
+                form.getVersionCount()
+        );
+    }
+
+    public static FormListResponseDTO fromEntity(FormWithMembershipEntity formWithMembershipEntity) {
+        return new FormListResponseDTO(
+                formWithMembershipEntity.getId(),
+                formWithMembershipEntity.getSlug(),
+                formWithMembershipEntity.getInternalTitle(),
+                formWithMembershipEntity.getPublicTitle(),
+                formWithMembershipEntity.getDevelopingDepartmentId(),
+                formWithMembershipEntity.getManagingDepartmentId(),
+                formWithMembershipEntity.getResponsibleDepartmentId(),
+                formWithMembershipEntity.getCreated(),
+                formWithMembershipEntity.getUpdated(),
+                formWithMembershipEntity.getPublishedVersion(),
+                formWithMembershipEntity.getDraftedVersion(),
+                formWithMembershipEntity.getVersionCount()
         );
     }
 }

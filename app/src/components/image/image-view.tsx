@@ -6,8 +6,8 @@ export function ImageView({element}: BaseViewProps<ImageElement, void>) {
     return (
         <Box component={"figure"} sx={{m: 0}}>
             <img
-                src={element.src}
-                alt={element.alt}
+                src={element.src ?? undefined}
+                alt={element.alt ?? undefined}
             />
             {element.caption && (
                 <Typography component={"figcaption"} variant="caption" color="text.secondary" display="block" mt={.5}>

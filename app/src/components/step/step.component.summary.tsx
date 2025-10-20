@@ -1,26 +1,38 @@
-import {Box, IconButton, Typography} from '@mui/material';
-import {StepElement} from '../../models/elements/steps/step-element';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import {type StepElement} from '../../models/elements/steps/step-element';
 import Tooltip from '@mui/material/Tooltip';
 import React from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {setCurrentStep} from '../../slices/stepper-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {clearErrors, selectLoadedForm} from '../../slices/app-slice';
+import {selectLoadedForm} from '../../slices/app-slice';
 import {getStepIcon} from '../../data/step-icons';
-import {BaseSummaryProps} from '../../summaries/base-summary';
+import {type BaseSummaryProps} from '../../summaries/base-summary';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 
-export function StepComponentSummary({allElements, model, showTechnical, allowStepNavigation, isBusy, idPrefix, customerInput}: BaseSummaryProps<StepElement, any>) {
+export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) {
+    const {
+        model,
+        showTechnical,
+        allowStepNavigation,
+        elementData,
+    } = props;
+
+    const {
+        children,
+    } = model;
+
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedForm);
 
     // FIXME: This is no a good solution.
-    const index = application?.root.children?.findIndex(step => step.id === model.id);
+    const index = application?.rootElement.children?.findIndex(step => step.id === model.id);
 
     const handleNavigateToStep = () => {
         if (index != null) {
-            dispatch(clearErrors());
             dispatch(setCurrentStep(index + 1)); // Add 1 to skip general information page
         }
     };
@@ -28,65 +40,62 @@ export function StepComponentSummary({allElements, model, showTechnical, allowSt
     const Icon = getStepIcon(model);
     return (
         <>
-        <Box
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                mt: 4,
-                mb: 1.5,
-            }}
-        >
-            <Typography
-                component="h3"
-                variant="h5"
-                color="primary"
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    mt: 4,
+                    mb: 1.5,
+                }}
             >
-                <Icon
-                    sx={{
-                        marginRight: '8px',
-                        fontSize: '1rem',
-                        transform: 'scale(1.6) translateY(1px)',
-                    }}
-                />
-                &nbsp;
-                {
-                    model.title ? model.title : 'Unbenannter Abschnitt'
-                }
-            </Typography>
-            {
-                (allowStepNavigation == null || allowStepNavigation === true) &&
-                <Tooltip
-                    title="Diesen Abschnitt bearbeiten"
-                    arrow
-                    placement="top"
+                <Typography
+                    component="h3"
+                    variant="h5"
+                    color="primary"
                 >
-                    <IconButton
-                        onClick={handleNavigateToStep}
-                        size="small"
+                    <Icon
                         sx={{
-                            ml: 'auto',
-                            color: '#BFBFBF',
+                            marginRight: '8px',
+                            fontSize: '1rem',
+                            transform: 'scale(1.6) translateY(1px)',
                         }}
-                        disabled={isBusy}
-                    >
-                        <EditNoteOutlinedIcon />
-                    </IconButton>
-                </Tooltip>
-            }
-        </Box>
-            {
-                model.children.map((model, index) => (
-                    <SummaryDispatcherComponent
-                        allElements={allElements}
-                        key={model.id + index.toString()}
-                        element={model}
-                        showTechnical={showTechnical}
-                        allowStepNavigation={allowStepNavigation}
-                        isBusy={isBusy}
-                        idPrefix={idPrefix}
-                        customerInput={customerInput}
                     />
-                ))
+                    &nbsp;
+                    {
+                        model.title ? model.title : 'Unbenannter Abschnitt'
+                    }
+                </Typography>
+                {
+                    (allowStepNavigation == null || allowStepNavigation === true) &&
+                    <Tooltip
+                        title="Diesen Abschnitt bearbeiten"
+                        arrow
+                        placement="top"
+                    >
+                        <IconButton
+                            onClick={handleNavigateToStep}
+                            size="small"
+                            sx={{
+                                ml: 'auto',
+                                color: '#BFBFBF',
+                            }}
+                        >
+                            <EditNoteOutlinedIcon />
+                        </IconButton>
+                    </Tooltip>
+                }
+            </Box>
+            {
+                (children ?? [])
+                    .map((model) => (
+                        <SummaryDispatcherComponent
+                            key={model.id}
+                            element={model}
+                            showTechnical={showTechnical}
+                            allowStepNavigation={allowStepNavigation}
+                            elementData={elementData}
+                        />
+                    ))
             }
         </>
     );

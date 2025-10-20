@@ -1,16 +1,17 @@
 package de.aivot.GoverBackend.submission.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
-import de.aivot.GoverBackend.form.entities.Form;
-import org.hibernate.annotations.ColumnDefault;
-
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.Objects;
 
 @Entity
 @Table(name = "submissions")
@@ -19,8 +20,11 @@ public class Submission {
     @Column(length = 36)
     private String id;
 
-    @NotNull
+    @Nonnull
     private Integer formId;
+
+    @Nonnull
+    private Integer formVersion;
 
     @NotNull
     private LocalDateTime created;
@@ -39,9 +43,9 @@ public class Submission {
     private LocalDateTime archived;
 
     @NotNull
+    @Convert(converter = ElementDataConverter.class)
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> customerInput;
+    private ElementData customerInput;
 
     private Integer destinationId;
 
@@ -77,6 +81,42 @@ public class Submission {
     public void preUpdate() {
         updated = LocalDateTime.now();
     }
+
+    // Equals & HashCode
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == null || getClass() != object.getClass()) return false;
+
+        Submission that = (Submission) object;
+        return Objects.equals(id, that.id) && formId.equals(that.formId) && formVersion.equals(that.formVersion) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated) && status == that.status && Objects.equals(assigneeId, that.assigneeId) && Objects.equals(fileNumber, that.fileNumber) && Objects.equals(archived, that.archived) && Objects.equals(customerInput, that.customerInput) && Objects.equals(destinationId, that.destinationId) && Objects.equals(destinationSuccess, that.destinationSuccess) && Objects.equals(destinationResult, that.destinationResult) && Objects.equals(destinationTimestamp, that.destinationTimestamp) && Objects.equals(isTestSubmission, that.isTestSubmission) && Objects.equals(copySent, that.copySent) && Objects.equals(copyTries, that.copyTries) && Objects.equals(reviewScore, that.reviewScore) && Objects.equals(paymentTransactionKey, that.paymentTransactionKey);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(id);
+        result = 31 * result + formId.hashCode();
+        result = 31 * result + formVersion.hashCode();
+        result = 31 * result + Objects.hashCode(created);
+        result = 31 * result + Objects.hashCode(updated);
+        result = 31 * result + Objects.hashCode(status);
+        result = 31 * result + Objects.hashCode(assigneeId);
+        result = 31 * result + Objects.hashCode(fileNumber);
+        result = 31 * result + Objects.hashCode(archived);
+        result = 31 * result + Objects.hashCode(customerInput);
+        result = 31 * result + Objects.hashCode(destinationId);
+        result = 31 * result + Objects.hashCode(destinationSuccess);
+        result = 31 * result + Objects.hashCode(destinationResult);
+        result = 31 * result + Objects.hashCode(destinationTimestamp);
+        result = 31 * result + Objects.hashCode(isTestSubmission);
+        result = 31 * result + Objects.hashCode(copySent);
+        result = 31 * result + Objects.hashCode(copyTries);
+        result = 31 * result + Objects.hashCode(reviewScore);
+        result = 31 * result + Objects.hashCode(paymentTransactionKey);
+        return result;
+    }
+
+    // endregion
 
     // region Getter & Setter
 
@@ -152,11 +192,11 @@ public class Submission {
         return this;
     }
 
-    public Map<String, Object> getCustomerInput() {
+    public ElementData getCustomerInput() {
         return customerInput;
     }
 
-    public Submission setCustomerInput(Map<String, Object> customerInput) {
+    public Submission setCustomerInput(ElementData customerInput) {
         this.customerInput = customerInput;
         return this;
     }
@@ -246,12 +286,22 @@ public class Submission {
     // endregion
 
     @JsonIgnore
-    public boolean hasExternalAccessExpired(Form form) {
+    public boolean hasExternalAccessExpired(FormVersionWithDetailsEntity form) {
         int accessHours = form.getCustomerAccessHours() != null ? form.getCustomerAccessHours() : 4;
 
         LocalDateTime expirationTimestamp = created.plusHours(accessHours);
         LocalDateTime currentTimestamp = LocalDateTime.now();
 
         return currentTimestamp.isAfter(expirationTimestamp);
+    }
+
+    @Nonnull
+    public Integer getFormVersion() {
+        return formVersion;
+    }
+
+    public Submission setFormVersion(@Nonnull Integer formVersion) {
+        this.formVersion = formVersion;
+        return this;
     }
 }

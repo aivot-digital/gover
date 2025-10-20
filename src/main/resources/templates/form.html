@@ -1,4 +1,4 @@
-<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.Form"*/-->
+<!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity"*/-->
 <!--/*@thymesVar id="submission" type="de.aivot.GoverBackend.submission.entities.Submission"*/-->
 <!--/*@thymesVar id="paymentTransaction" type="de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity"*/-->
 <!--/*@thymesVar id="paymentProvider" type="de.aivot.GoverBackend.payment.entities.PaymentProviderEntity"*/-->
@@ -7,8 +7,8 @@
 <!--/*@thymesVar id="elements" type="java.util.Collection<de.aivot.GoverBackend.services.pdf.PdfElement>"*/-->
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
 <!--/*@thymesVar id="identityProvider" type="de.aivot.GoverBackend.identity.entities.IdentityProviderEntity"*/-->
-<!--/*@thymesVar id="identityData" type="de.aivot.GoverBackend.identity.models.IdentityValue"*/-->
-<!--/*@thymesVar id="attachments" type="java.util.List<de.aivot.GoverBackend.elements.models.form.input.FileUploadField>"*/-->
+<!--/*@thymesVar id="identityData" type="de.aivot.GoverBackend.identity.models.IdentityData"*/-->
+<!--/*@thymesVar id="attachments" type="java.util.List<de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadField>"*/-->
 <!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
 <!--/*@thymesVar id="#numberformat" type="de.aivot.GoverBackend.services.pdf.NumberFormatDialect"*/-->
@@ -19,7 +19,7 @@
         lang="de"
 >
     <head>
-        <title th:text="${form.applicationTitle}">Gover PDF-Dokument</title>
+        <title th:text="${form.publicTitle}">Gover PDF-Dokument</title>
         <meta charset="UTF-8" />
         <style>
             /* Public Sans webfonts */
@@ -451,7 +451,7 @@
         *********************************************************************** */-->
         <h1
                 id="formulartitel"
-                th:text="${ form.getFormTitle() }"
+                th:text="${ form.getPublicTitle() }"
         >
             Titel des Formulars
         </h1>
@@ -467,17 +467,17 @@
         >
             <h2>Allgemeine Informationen</h2>
 
-            <!--/* Hier wird der Teaser-Text angezeigt welcher grob das Formular zusammenfasst. */-->
+            <!--/* Hier wird der Teaser-Text angezeigt, welcher grob das Formular zusammenfasst. */-->
             <div
-                    th:if="${not #strings.isEmpty(form.getRoot().getIntroductionStep().getTeaserText())}"
-                    th:utext="${ form.getRoot().getIntroductionStep().getTeaserText() }"
+                    th:if="${not #strings.isEmpty(form.getRootElement().getIntroductionStep().getTeaserText())}"
+                    th:utext="${ form.getRootElement().getIntroductionStep().getTeaserText() }"
                     class="content-without-margin-on-childs"
             >
                 Allgemeine Informationen für antragstellende Personen
             </div>
 
             <!--/* Die Liste der antragsberechtigten Personen des Formulars. Dient als Fragment, welches später wiederverwendet werden kann. */-->
-            <th:block th:with="list=${form.getRoot().getIntroductionStep().getEligiblePersons()},label='Antragsberechtigte'">
+            <th:block th:with="list=${form.getRootElement().getIntroductionStep().getEligiblePersons()},label='Antragsberechtigte'">
                 <div
                         class="avoid-break-inside"
                         th:fragment="list"
@@ -496,22 +496,22 @@
             </th:block>
 
             <!--/* Die Liste der relevanten Dokumente */-->
-            <th:block th:with="list=${form.getRoot().getIntroductionStep().getSupportingDocuments()},label='Relevante Dokumente'">
+            <th:block th:with="list=${form.getRootElement().getIntroductionStep().getSupportingDocuments()},label='Relevante Dokumente'">
                 <th:block th:replace="~{::list}"></th:block>
             </th:block>
 
             <!--/* Die Liste der einzureichenden Dokumente */-->
-            <th:block th:with="list=${form.getRoot().getIntroductionStep().getDocumentsToAttach()},label='Einzureichende Dokumente'">
+            <th:block th:with="list=${form.getRootElement().getIntroductionStep().getDocumentsToAttach()},label='Einzureichende Dokumente'">
                 <th:block th:replace="~{::list}"></th:block>
             </th:block>
 
             <!--/* Informationen über die Antragsfristen */-->
             <div
                     class="avoid-break-inside"
-                    th:if="${not #strings.isEmpty(form.getRoot().getExpiring())}"
+                    th:if="${not #strings.isEmpty(form.getRootElement().getExpiring())}"
             >
                 <h4>Antragsfristen</h4>
-                <div th:utext="${ form.getRoot().getExpiring() }">
+                <div th:utext="${ form.getRootElement().getExpiring() }">
                     Antragsfristen
                 </div>
             </div>
@@ -519,10 +519,10 @@
             <!--/* Informationen über die Gebühren des Antrages */-->
             <div
                     class="avoid-break-inside"
-                    th:if="${not #strings.isEmpty(form.getRoot().getIntroductionStep().getExpectedCosts())}"
+                    th:if="${not #strings.isEmpty(form.getRootElement().getIntroductionStep().getExpectedCosts())}"
             >
                 <h4>Gebühren dieses Antrages</h4>
-                <div th:utext="${ form.getRoot().getIntroductionStep().getExpectedCosts() }" class="content-without-margin-on-childs">
+                <div th:utext="${ form.getRootElement().getIntroductionStep().getExpectedCosts() }" class="content-without-margin-on-childs">
                     Gebühren
                 </div>
             </div>
@@ -533,15 +533,15 @@
                     Hinweise zum Datenschutz
                 </h3>
 
-                <div th:utext="${ form.getRoot().getCleanedPrivacyText() }">
+                <div th:utext="${ form.getRootElement().getCleanedPrivacyText() }">
                     Datenschutzhinweise
                 </div>
 
                 <div th:if="${ base.isBlankPrint() || base.isCitizenPrint() || base.isDestinationPrint() }">
                     <a
                             class="do-not-print-link"
-                            th:utext="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
-                            th:href="${ base.createUrl(form.getSlug() + '/' + form.getVersion() + '?dialog=privacy')}"
+                            th:utext="${ base.createUrl(form.getSlug()) + '&dialog=privacy' }"
+                            th:href="${ base.createUrl(form.getSlug()) + '&dialog=privacy' }"
                             target="_blank"
                     >
                         Link zur Datenschutzerklärung
@@ -572,15 +572,15 @@
                         Besuchen Sie dazu die folgende URL bzw. den Link
                         <a
                                 class="do-not-print-link"
-                                th:href="${ base.createUrl(form.getSlug() + '/' + form.getVersion()) }"
-                                th:text="${ base.createUrl(form.getSlug() + '/' + form.getVersion()) }"
+                                th:href="${ base.createUrl(form.getSlug()) }"
+                                th:text="${ base.createUrl(form.getSlug()) }"
                         ></a>
                         mit Ihrem Webbrowser oder scannen Sie den nebenstehenden QR-Code mit der Kamera Ihres mobilen Endgeräts.
                     </p>
                 </div>
                 <div style="margin-left: auto; margin-top: -1rem;">
                     <img
-                            th:src="${ #qrcode.create(base.createUrl(form.getSlug() + '/' + form.getVersion())) }"
+                            th:src="${ #qrcode.create(base.createUrl(form.getSlug())) }"
                             width="160px"
                             height="160px"
                     >
@@ -768,11 +768,11 @@
                 >
                     <span th:text="${ attribute.getLabel() }"></span>:
                     <span
-                            th:text="${ identityData.userInfo().get(attribute.getKeyInData()) }"
-                            th:if="${ identityData.userInfo().get(attribute.getKeyInData()) != null }"
+                            th:text="${ identityData.attributes().get(attribute.getKeyInData()) }"
+                            th:if="${ identityData.attributes().get(attribute.getKeyInData()) != null }"
                     ></span>
                     <span
-                            th:if="${ identityData.userInfo().get(attribute.getKeyInData()) == null }"
+                            th:if="${ identityData.attributes().get(attribute.getKeyInData()) == null }"
                     >Keine Angaben</span>
                 </li>
             </ul>
@@ -914,7 +914,7 @@
                                         />
                                         <div
                                                 style="font-size: 0.85rem; margin-top: 0.25rem; margin-bottom: 0.25rem;"
-                                                th:unless="${child.element.caption.isEmpty()}"
+                                                th:unless="${child.element.caption == null || child.element.caption.isEmpty()}"
                                                 th:text="${child.element.caption}"
                                         >
                                             Caption des Bildes
@@ -1302,15 +1302,15 @@
                                                             th:each="field: ${child.element.fields}"
                                                             th:class="'table-value-cell' + ${field.datatype.name() == 'Number' ? ' number' : ''}"
                                                     >
-                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) == null}">
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.key) == null}">
                                                             Keine Angaben
                                                         </span>
-                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) != null and field.datatype.name() == 'Number'}"
-                                                              th:text="${#numberformat.format(row.get(field.label), field.decimalPlaces)}"
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.key) != null and field.datatype.name() == 'Number'}"
+                                                              th:text="${#numberformat.format(row.get(field.key), field.decimalPlaces)}"
                                                         >
                                                         </span>
-                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.label) != null and field.datatype.name() != 'Number'}"
-                                                              th:text="${row.get(field.label)}"
+                                                        <span th:if="${base.isNotBlankPrint() and row.get(field.key) != null and field.datatype.name() != 'Number'}"
+                                                              th:text="${row.get(field.key)}"
                                                         >
                                                         </span>
                                                     </td>
@@ -1398,21 +1398,21 @@
         </section>
 
         <section
-                th:if="${ base.isBlankPrint() && form.getRoot().getOfflineSignatureNeeded() || (form.getRoot().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRoot().getOfflineSubmissionText())) }"
+                th:if="${ base.isBlankPrint() && form.getRootElement().getOfflineSignatureNeeded() || (form.getRootElement().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRootElement().getOfflineSubmissionText())) }"
                 class="avoid-break-inside"
         >
             <th:block
-                    th:if="${form.getRoot().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRoot().getOfflineSubmissionText())}"
+                    th:if="${form.getRootElement().getOfflineSubmissionText() != null && !#strings.isEmpty(form.getRootElement().getOfflineSubmissionText())}"
             >
                 <h2>Hinweise zur Einreichung des ausgefüllten Antrages</h2>
                 <p>
                     Bitte reichen Sie das ausgefüllte Formular auf nachstehendem Weg ein:
                 </p>
-                <div th:utext="${ form.getRoot().getOfflineSubmissionText() }" class="content-without-margin-on-childs"></div>
+                <div th:utext="${ form.getRootElement().getOfflineSubmissionText() }" class="content-without-margin-on-childs"></div>
             </th:block>
 
             <th:block
-                    th:if="${form.getRoot().getOfflineSignatureNeeded()}"
+                    th:if="${form.getRootElement().getOfflineSignatureNeeded()}"
             >
                 <h2>Unterschrift</h2>
                 <div class="signature-container">

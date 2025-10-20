@@ -1,88 +1,45 @@
-import {Form} from '../models/entities/form';
-import {IdentityValue} from '../modules/identity/models/identity-value';
-import {CustomerInput} from '../models/customer-input';
-import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
 import {AnyElement} from '../models/elements/any-element';
-import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
-import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
-import {LegacySystemIdpKey} from '../data/legacy-system-idp-key';
-import {resolveId} from './id-utils';
-import {ElementType} from '../data/element-type/element-type';
+import {ElementData, ElementDataObject} from '../models/element-data';
+import {IdentityData} from '../modules/identity/models/identity-data';
+import {mapElementData} from './element-data-utils';
 import {isStringNullOrEmpty} from './string-utils';
-import {systemIdentityProviderFormatValues} from '../modules/identity/utils/system-identity-provider-format-values';
 
-type PrefilledCustomerInput = Partial<CustomerInput>;
-
-export function prefillElements(
-    form: Form,
-    identityValue: IdentityValue,
-    customerInput: CustomerInput,
-): PrefilledCustomerInput {
-    const formattedIdentityValue = systemIdentityProviderFormatValues(identityValue);
-    return {
-        [IdentityCustomerInputKey]: formattedIdentityValue,
-        ...prefillElement(form.root, formattedIdentityValue, customerInput, undefined),
-    };
-}
-
-function prefillElement(
+export function prefillIdentityData(
     element: AnyElement,
-    identityValue: IdentityValue,
-    customerInput: CustomerInput,
-    idPrefix: string | undefined,
-): PrefilledCustomerInput {
-    const resolvedId = resolveId(element.id, idPrefix);
-    let prefilledCustomerInput: PrefilledCustomerInput = {};
+    elementData: ElementData,
+    identityData: IdentityData,
+): ElementData {
+    const {
+        metadataIdentifier,
+        attributes,
+    } = identityData;
 
-    if (isAnyInputElement(element)) {
-        const userinfoValue = getUserinfoValue(element, identityValue);
-        if (userinfoValue != null) {
-            prefilledCustomerInput[resolvedId] = userinfoValue;
+    const updatedElementData = mapElementData(element, elementData, (element, elementDataObject) => {
+        if (elementDataObject == null) {
+            return null;
         }
-    }
 
-    if (isAnyElementWithChildren(element)) {
-        if (element.type === ElementType.ReplicatingContainer) {
-            const childIds: string[] | null | undefined = customerInput[resolvedId];
-            if (childIds != null) {
-                for (const childId of childIds) {
-                    for (const child of element.children) {
-                        const resolvedChildId = resolveId(resolvedId, childId);
-
-                        const prefilledChildInput = prefillElement(child, identityValue, customerInput, resolvedChildId);
-                        prefilledCustomerInput = {
-                            ...prefilledCustomerInput,
-                            ...prefilledChildInput,
-                        };
-                    }
-                }
-            }
-        } else {
-            for (const child of element.children) {
-                const prefilledChildInput = prefillElement(child, identityValue, customerInput, idPrefix);
-                prefilledCustomerInput = {
-                    ...prefilledCustomerInput,
-                    ...prefilledChildInput,
-                };
-            }
+        const identityMapping = getMetadataMapping(element, metadataIdentifier);
+        if (identityMapping == null) {
+            return elementDataObject;
         }
-    }
 
-    return prefilledCustomerInput;
+        const identityValue = attributes[identityMapping];
+        if (identityValue == null) {
+            return elementDataObject;
+        }
+
+        return {
+            ...elementDataObject,
+            isPrefilled: true,
+            inputValue: identityValue,
+        } as ElementDataObject;
+    });
+
+    return updatedElementData;
 }
 
-function getUserinfoValue(element: AnyInputElement, identityValue: IdentityValue): string | undefined {
-    const metadataMapping = getMetadataMapping(element, identityValue.metadataIdentifier);
-    if (metadataMapping == null) {
-        return undefined;
-    }
-
-    const value: string | null | undefined = identityValue.userInfo[metadataMapping];
-
-    return value ?? undefined;
-}
-
-export function getMetadataMapping(element: AnyInputElement, idpMetadataIdentifier: string): string | undefined {
+export function getMetadataMapping(element: AnyElement, idpMetadataIdentifier: string): string | undefined {
     const metadata = element.metadata;
 
     if (metadata == null) {
@@ -90,31 +47,14 @@ export function getMetadataMapping(element: AnyInputElement, idpMetadataIdentifi
     }
 
     const {
-        bayernIdMapping,
-        bundIdMapping,
-        shIdMapping,
-        mukMapping,
         identityMappings,
     } = metadata;
 
-    const mappings = {
-        ...identityMappings
-    };
-
-    if (bayernIdMapping != null) {
-        mappings[LegacySystemIdpKey.BayernId] = bayernIdMapping;
-    }
-    if (bundIdMapping != null) {
-        mappings[LegacySystemIdpKey.BundId] = bundIdMapping;
-    }
-    if (shIdMapping != null) {
-        mappings[LegacySystemIdpKey.ShId] = shIdMapping;
-    }
-    if (mukMapping != null) {
-        mappings[LegacySystemIdpKey.Muk] = mukMapping;
+    if (identityMappings == null) {
+        return undefined;
     }
 
-    const mapping: string | null | undefined = mappings[idpMetadataIdentifier];
+    const mapping: string | null | undefined = identityMappings[idpMetadataIdentifier];
 
     if (isStringNullOrEmpty(mapping)) {
         return undefined;

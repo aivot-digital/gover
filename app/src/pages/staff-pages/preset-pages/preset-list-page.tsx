@@ -12,13 +12,12 @@ import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
-import {GridColDef, GridRenderCellParams} from '@mui/x-data-grid';
-import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
+import {GridColDef} from '@mui/x-data-grid';
 import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {useNavigate} from 'react-router-dom';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 
-const _columns: Array<GridColDef<Preset>> = [
+const columns: Array<GridColDef<Preset>> = [
     {
         field: 'icon',
         headerName: '',
@@ -32,7 +31,7 @@ const _columns: Array<GridColDef<Preset>> = [
         headerName: 'Titel',
         renderCell: (params) => (
             <CellLink
-                to={`/presets/edit/${params.id}/${params.row.currentVersion}`}
+                to={`/presets/edit/${params.id}/${params.row.draftedVersion}`}
                 title={`Vorlage bearbeiten`}
             >
                 {String(params.value)}
@@ -41,14 +40,13 @@ const _columns: Array<GridColDef<Preset>> = [
         flex: 1,
     },
     {
-        field: 'currentVersion',
+        field: 'draftedVersion',
         headerName: 'Arbeits-Version',
         flex: 1,
     },
     {
-        field: 'currentPublishedVersion',
+        field: 'publishedVersion',
         headerName: 'Veröffentlichte Version',
-        renderCell: (params) => params.row.currentPublishedVersion ?? 'Unveröffentlicht',
         flex: 1,
     },
 ];
@@ -61,20 +59,8 @@ export function PresetListPage() {
     const [showAddPresetDialog, setShowAddPresetDialog] = useState(false);
 
     const navigateTo = (preset: Preset): void => {
-        navigate(`/presets/edit/${preset.key}/${preset.currentVersion}`);
+        navigate(`/presets/edit/${preset.key}/${preset.draftedVersion}`);
     };
-
-    const columns = storeKey != null && isStringNotNullOrEmpty(storeKey) ?
-        [
-            ..._columns,
-            {
-                field: 'currentStoreVersion',
-                headerName: 'Store-Version',
-                renderCell: (params: GridRenderCellParams<any, Preset>) => params.row.currentStoreVersion ?? 'Nicht im Store verfügbar',
-                flex: 1,
-            },
-        ] :
-        _columns;
 
     return (
         <PageWrapper
@@ -134,7 +120,7 @@ export function PresetListPage() {
                 rowActions={(item: Preset) => [
                     {
                         icon: <EditOutlined />,
-                        to: `/presets/edit/${item.key}/${item.currentVersion}`,
+                        to: `/presets/edit/${item.key}/${item.draftedVersion}`,
                         tooltip: 'Vorlage bearbeiten',
                     },
                 ]}

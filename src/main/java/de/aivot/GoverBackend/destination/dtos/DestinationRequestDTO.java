@@ -16,6 +16,7 @@ public record DestinationRequestDTO(
         String mailBCC,
         String apiAddress,
         String authorizationHeader,
+        String script,
         Integer maxAttachmentMegaBytes
 ) {
     public Destination toEntity() {
@@ -27,6 +28,7 @@ public record DestinationRequestDTO(
         destination.setMailBCC(this.mailBCC);
         destination.setApiAddress(this.apiAddress);
         destination.setAuthorizationHeader(this.authorizationHeader);
+        destination.setScript(this.script);
         destination.setMaxAttachmentMegaBytes(this.maxAttachmentMegaBytes);
         return destination;
     }

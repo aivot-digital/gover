@@ -79,15 +79,13 @@ class JavascriptCodeTest {
                 .setCode("""
                         (function(){
                             //>>>text_123
-                            const plz = ctx.inputValues.text_456;
+                            const plz = ctx.text_456.inputValue;
                         
                             if (plz == null || plz.length !== 5) {
                                 return null;
                             }
                         
-                            const overrides = ctx.overrides;
-                        
-                            var data = overrides.text_789;
+                            var data = ctx.text_789.computedOverride;
                         
                             const res = core.get(`https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&postalcode=${plz}`, {});
                         

@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
@@ -12,8 +13,6 @@ import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.payment.repositories.PaymentProviderRepository;
 import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
-import de.aivot.GoverBackend.payment.services.PaymentProviderService;
-import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
 import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.services.DestinationDataFormatter;
 import de.aivot.GoverBackend.services.PdfService;
@@ -59,7 +58,7 @@ public class SubmissionMailService {
         this.paymentProviderService = paymentProviderService;
     }
 
-    public void sendToDestination(Form form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
+    public void sendToDestination(FormVersionWithDetailsEntity form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
         byte[] pdfBytes;
         try {
             pdfBytes = pdfService.generateCustomerSummary(form, submission, FormPdfScope.Staff);
@@ -117,7 +116,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendDestinationFailed(Form form, Submission submission, Destination destination) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendDestinationFailed(FormVersionWithDetailsEntity form, Submission submission, Destination destination) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         var title = "Übertragung an Schnittstelle fehlgeschlagen";
         var mailData = new HashMap<String, Object>();
         mailData.put("title", title);
@@ -134,7 +133,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendPaymentFailed(Form form, Submission submission, PaymentTransactionEntity paymentTransactionEntity, PaymentProviderEntity paymentProviderEntity) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendPaymentFailed(FormVersionWithDetailsEntity form, Submission submission, PaymentTransactionEntity paymentTransactionEntity, PaymentProviderEntity paymentProviderEntity) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Integer departmentToNotify;
         if (form.getManagingDepartmentId() != null) {
             departmentToNotify = form.getManagingDepartmentId();
@@ -161,7 +160,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendReceived(Form form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
+    public void sendReceived(FormVersionWithDetailsEntity form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException {
         Integer departmentToNotify;
         if (form.getManagingDepartmentId() != null) {
             departmentToNotify = form.getManagingDepartmentId();
@@ -186,7 +185,7 @@ public class SubmissionMailService {
         );
     }
 
-    public void sendArchived(UserEntity triggeringUser, Form form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException, InvalidUserEMailException {
+    public void sendArchived(UserEntity triggeringUser, FormVersionWithDetailsEntity form, Submission submission) throws MessagingException, IOException, NoValidUserEMailsInDepartmentException, ResponseException, InvalidUserEMailException {
         String title = "Ein Antrag wurde abgeschlossen";
         String fileNumber = getFileNumber(submission);
 
@@ -242,7 +241,7 @@ public class SubmissionMailService {
     public void sendAssigned(
             UserEntity triggeringUser,
             UserEntity newAssignee,
-            Form form,
+            FormVersionWithDetailsEntity form,
             Submission submission,
             boolean isReassignment,
             @Nullable UserEntity previousAssignee

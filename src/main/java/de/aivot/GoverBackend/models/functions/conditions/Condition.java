@@ -1,31 +1,27 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
-import de.aivot.GoverBackend.elements.models.BaseElementDerivationContext;
-import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.ElementWithChildren;
 import de.aivot.GoverBackend.enums.ConditionOperator;
-import de.aivot.GoverBackend.utils.MapUtils;
 
-import java.util.Map;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Condition {
+public class Condition implements Serializable {
     private ConditionOperator operator;
     private String reference;
     private String target;
     private String value;
     private String conditionUnmetMessage;
 
-    public Condition(Map<String, Object> data) {
-        operator = MapUtils.getEnum(data, "operator", Integer.class, ConditionOperator.class, ConditionOperator.values());
+    public Condition() {
 
-        reference = MapUtils.getString(data, "reference");
-        target = MapUtils.getString(data, "target");
-        value = MapUtils.getString(data, "value");
-
-        conditionUnmetMessage = MapUtils.getString(data, "conditionUnmetMessage");
     }
 
-    public String evaluate(String idPrefix, BaseElementDerivationContext context) {
+    public String evaluate(ElementWithChildren<?> rootElement, ElementData elementData, BaseElement element) {
         // Prüfe, ob ein Operator angegeben wurde. Falls nicht, gib eine Fehlermeldung zurück.
         if (operator == null) {
             return "Auswertung fehlgeschlagen. Kein Operator angegeben.";
@@ -37,9 +33,9 @@ public class Condition {
         }
 
         // Prüfe, ob das Referenz-Element gefunden werden kann. Falls nicht, gib eine Fehlermeldung zurück.
-        var optReferencedElement = context
-                .getRootElement()
+        var optReferencedElement = rootElement
                 .findChild(reference);
+
         if (optReferencedElement.isEmpty()) {
             return "Auswertung fehlgeschlagen. Referenz-Element nicht gefunden.";
         }
@@ -48,17 +44,17 @@ public class Condition {
 
         // Prüfe, ob das Referenz-Element ein Eingabe-Element ist. Falls nicht, gib eine Fehlermeldung zurück.
         if (referencedBaseElement instanceof BaseInputElement<?> referencedElement) {
-            var referencedElementId = referencedBaseElement.getResolvedId(idPrefix);
-
             // Hole den Wert des Referenz-Elements. Dieser kann NULL sein.
-            var rawValA = context
-                    .getValue(referencedElementId)
-                    .orElse(null);
+            var rawValA = elementData
+                    .getOrDefault(referencedElement.getId(), new ElementDataObject(referencedElement))
+                    .getValue();
 
             Object rawValB = null;
             if (!operator.getUnary()) {
                 if (target != null) {
-                    var optTargetElement = context.getRootElement().findChild(target);
+                    var optTargetElement = rootElement
+                            .findChild(target);
+
                     if (optTargetElement.isEmpty()) {
                         return "Auswertung fehlgeschlagen. Ziel-Element nicht gefunden.";
                     }
@@ -66,7 +62,9 @@ public class Condition {
                     var targetBaseElement = optTargetElement.get();
 
                     if (targetBaseElement instanceof BaseInputElement<?> targetElement) {
-                        rawValB = context.getValue(targetElement.getResolvedId(idPrefix)).orElse(null);
+                        rawValB = elementData
+                                .getOrDefault(targetElement.getId(), new ElementDataObject(targetElement))
+                                .getValue();
                     } else {
                         return "Auswertung fehlgeschlagen. Ziel-Element ist kein Eingabe-Element.";
                     }

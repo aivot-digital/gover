@@ -1,12 +1,11 @@
 import {type ElementEditorContentProps} from '../element-editor-content/element-editor-content-props';
 import {Alert, AlertTitle, Box, Button, Divider, Paper, Tooltip} from '@mui/material';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Form as Application} from '../../models/entities/form';
 import {type RootElement} from '../../models/elements/root-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectMemberships} from '../../slices/user-slice';
-import {ApplicationStatus} from '../../data/application-status';
 import {UserRole} from '../../data/user-role';
 import {Checklist} from '../checklist/checklist';
 import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
@@ -23,6 +22,7 @@ import {useConfirm} from '../../providers/confirm-provider';
 import {FormType} from '../../modules/forms/enums/form-type';
 import {SxProps} from '@mui/material/styles';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {FormStatus} from '../../modules/forms/enums/form-status';
 
 export function ApplicationInternalPublishTab<T extends RootElement, E extends Application>(props: ElementEditorContentProps<T, E>) {
     const api = useApi();
@@ -32,14 +32,17 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
     const [checklist, setChecklist] = useState<FormPublishChecklistItem[]>();
     const memberships = useAppSelector(selectMemberships);
 
-    const [isPublished, setIsPublished] = useState(props.entity.status === ApplicationStatus.Published);
-    const [isRevoked, setIsRevoked] = useState(props.entity.status === ApplicationStatus.Revoked);
-    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.identityRequired);
+    const [isPublished, setIsPublished] = useState(props.entity.status === FormStatus.Published);
+    const [isRevoked, setIsRevoked] = useState(props.entity.status === FormStatus.Revoked);
+    const [isIdentityRequired, setIsIdentityRequired] = useState(props.entity.identityVerificationRequired);
     const [isInternal, setIsInternal] = useState(props.entity.type === FormType.Internal);
 
     useEffect(() => {
         new FormsApiService(api)
-            .checkPublish(props.entity.id)
+            .checkPublish({
+                id: props.entity.id,
+                version: props.entity.version,
+            })
             .then(setChecklist)
             .catch((err) => {
                 console.error(err);
@@ -54,7 +57,10 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
     const renderInternalAlert = (sxProps?: SxProps<Object>) => {
         if (isInternal && isIdentityRequired) {
             return (
-                <AlertComponent color="info" sx={sxProps}>
+                <AlertComponent
+                    color="info"
+                    sx={sxProps}
+                >
                     <AlertTitle>Internes Formular mit erzwungener Authentifizierung</AlertTitle>
                     <Box sx={{maxWidth: 940}}>
                         Dieses Formular erscheint nicht auf der öffentlichen Formularübersicht (Index-Liste), ist aber über den direkten Link zugänglich.
@@ -66,7 +72,10 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
         if (isInternal) {
             return (
-                <AlertComponent color="info" sx={sxProps}>
+                <AlertComponent
+                    color="info"
+                    sx={sxProps}
+                >
                     <AlertTitle>Internes Formular</AlertTitle>
                     <Box sx={{maxWidth: 940}}>
                         Dieses Formular erscheint nicht auf der öffentlichen Formularliste (Index-Liste), ist aber über den direkten Link zugänglich.
@@ -94,8 +103,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
     const handlePublish = async (): Promise<void> => {
         const confirmed = await showConfirm({
-            title: "Formular veröffentlichen?",
-            confirmButtonText: "Ja, Formular veröffentlichen",
+            title: 'Formular veröffentlichen?',
+            confirmButtonText: 'Ja, Formular veröffentlichen',
             children: (
                 <>
                     <Box>
@@ -105,7 +114,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                         Wenn Sie das Formular veröffentlichen, können Sie die Inhalte dieser Version nicht mehr bearbeiten und müssen für Änderungen am Formular eine neue Version erstellen.
                     </Box>
                     {
-                        isInternal && renderInternalAlert({ mt: 4, mb: 0 })
+                        isInternal && renderInternalAlert({mt: 4, mb: 0})
                     }
                 </>
             ),
@@ -115,7 +124,10 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
             dispatch(showLoadingOverlay('Formular wird veröffentlicht'));
 
             new FormsApiService(api)
-                .publish(props.entity.id)
+                .publish({
+                    id: props.entity.id,
+                    version: props.entity.version,
+                })
                 .then((updatedForm) => {
                     setIsPublished(true);
                     setIsRevoked(false);
@@ -140,8 +152,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
     const handleRevoke = async (): Promise<void> => {
         const confirmed = await showConfirm({
-            title: "Formular zurückziehen?",
-            confirmButtonText: "Ja, Formular zurückziehen",
+            title: 'Formular zurückziehen?',
+            confirmButtonText: 'Ja, Formular zurückziehen',
             isDestructive: true,
             children: (
                 <div>
@@ -154,7 +166,10 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
             dispatch(showLoadingOverlay('Formular wird zurückgezogen'));
 
             new FormsApiService(api)
-                .revoke(props.entity.id)
+                .revoke({
+                    id: props.entity.id,
+                    version: props.entity.version,
+                })
                 .then((updatedForm) => {
                     setIsRevoked(true);
                     setIsPublished(false);
@@ -196,7 +211,7 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
 
                 {
                     checklist != null &&
-                    <Paper variant={"outlined"}>
+                    <Paper variant={'outlined'}>
                         <Checklist
                             items={checklist}
                             sx={{

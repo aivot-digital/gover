@@ -205,9 +205,9 @@ export function IdentityProviderDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any);
+    } = useFormManager<IdentityProviderDetailsDTO>(originalIdentityProvider, dynamicFormSchema as any, true);
 
-    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider);
+    const changeBlocker = useChangeBlocker(originalIdentityProvider, identityProvider, undefined, undefined, true);
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
@@ -359,14 +359,14 @@ export function IdentityProviderDetailsPageIndex() {
 
         try {
             const relatedForms = await new FormsApiService(api)
-                .listAll({
+                .listAllVersions({
                     identityProviderKey: identityProvider.key,
                 });
 
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = relatedForms.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.title,
+                    label: f.internalTitle,
                     to: `/forms/${f.id}`,
                 }));
 

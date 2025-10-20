@@ -1,6 +1,6 @@
 import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
 import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
-import {DataGrid, GridCellEditCommitParams, GridColumns, GridRenderCellParams, GridSelectionModel} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridPaginationModel, GridRenderCellParams, GridRowId, GridRowModel, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {useMemo, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../../views/base-view';
@@ -15,7 +15,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -26,9 +26,12 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         disabled,
     } = element;
 
-    const [selectionModel, setSelectionModel] = useState<GridSelectionModel>();
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>();
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
-    const [pageSize, setPageSize] = useState(8);
+    const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+        pageSize: 8,
+        page: 0,
+    });
 
     const isDisabled = useMemo(() => {
         return disabled || isGloballyDisabled;
@@ -44,7 +47,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         }
 
         const newRow = (fields ?? []).reduce((acc, val) => {
-            acc[val.label] = null;
+            acc[val.key ?? ''] = null;
             return acc;
         }, {} as { [key: string]: string | number | null });
 
@@ -57,68 +60,73 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
     const handleDelete = () => {
         if (element.id != null && selectionModel != null) {
-            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectionModel.includes(index));
+            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectionModel.ids.has(index));
             setValue(updatedRows.length > 0 ? updatedRows : undefined);
-            setSelectionModel([]);
+            setSelectionModel({
+                type: 'include',
+                ids: new Set(),
+            });
             setConfirmDelete(undefined);
         }
     };
 
-    const handleCellEdit = (params: GridCellEditCommitParams) => {
-        if (fields == null) {
-            return;
-        }
-
-        const field = fields
-            .find(field => field.label === params.field);
-
-        if (field == null) {
-            return;
-        }
-
-        let cellValue = params.value;
-
-        if (cellValue == null) {
-            cellValue = undefined;
-        } else if (field.datatype === 'number') {
-            if (typeof cellValue === 'string' && isNaN(Number(cellValue))) {
-                cellValue = parseGermanNumber(cellValue);
+    const handleCellEdit = (newRow: GridValidRowModel, oldRow: GridValidRowModel, params: {
+        rowId: GridRowId;
+    }) => {
+        const processedRow: Record<string, string | number | null> = {};
+        for (const field of fields ?? []) {
+            if (field.key == null) {
+                continue;
             }
 
-            cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces ?? 0));
-        } else if (field.datatype === 'string') {
-            if (isStringNullOrEmpty(cellValue)) {
-                cellValue = undefined;
+            let cellValue = newRow[field.key];
+
+            if (cellValue == null) {
+                cellValue = null;
+            } else if (field.datatype === 'number') {
+                if (typeof cellValue === 'string' && isNaN(Number(cellValue))) {
+                    cellValue = parseGermanNumber(cellValue);
+                }
+
+                cellValue = parseFloat(Number(cellValue).toFixed(field.decimalPlaces ?? 0));
+            } else if (field.datatype === 'string') {
+                if (isStringNullOrEmpty(cellValue)) {
+                    cellValue = null;
+                } else {
+                    cellValue = cellValue.toString();
+                }
             }
 
-            cellValue = cellValue.toString();
+            processedRow[field.key] = cellValue;
         }
 
         const updatedValues = [
             ...(value ?? []),
         ];
 
-        updatedValues[params.id as number] = {
-            ...updatedValues[params.id as number],
-            [params.field]: cellValue,
-        };
+        updatedValues[params.rowId as number] = processedRow;
 
         setValue(updatedValues);
+
+        return {
+            ...processedRow,
+            _id: params.rowId,
+        }
     };
 
-    const columns: GridColumns = useMemo(() => {
+    const columns: GridColDef[] = useMemo(() => {
         if (fields == null) {
             return [];
         }
 
         return fields
             .map((field) => ({
-                field: field.label,
+                field: field.key ?? '',
                 headerName: field.label + (field.optional ? '' : ' *'),
                 editable: !field.disabled && !isDisabled && !isBusy && !isDeriving,
                 flex: 1,
-                type: field.datatype,
-                renderCell: (params: GridRenderCellParams<string>) => (
+                type: field.datatype ?? 'string',
+                renderCell: (params: GridRenderCellParams<any>) => (
                     (params.value == null || params.value.length === 0) &&
                     field.placeholder != null &&
                     field.placeholder.length > 0 ?
@@ -142,12 +150,12 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
         return value
             .map((data: any, index: number) => ({
-                id: index,
+                _id: index,
                 ...data,
             }));
     }, [value]);
 
-    const hasSelectedRows = useMemo(() => selectionModel != null && selectionModel.length > 0, [selectionModel]);
+    const hasSelectedRows = useMemo(() => selectionModel != null && selectionModel.ids.size > 0, [selectionModel]);
 
     return (
         <>
@@ -160,7 +168,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
                 }}
             >
                 <FormLabel
-                    error={error != null}
+                    error={errors != null}
                 >
                     {element.label} {element.required && ' *'}
                 </FormLabel>
@@ -193,20 +201,21 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             >
                 <DataGrid
                     rows={rows}
+                    getRowId={row => row._id}
                     columns={columns}
-                    pageSize={pageSize}
-                    rowsPerPageOptions={[8, 16, 32]}
-                    onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                    paginationModel={paginationModel}
+                    pageSizeOptions={[8, 16, 32]}
+                    onPaginationModelChange={(newPaginationModel) => setPaginationModel(newPaginationModel)}
                     autoHeight
 
                     // can stay active on isBusy because pointerEvents are blocked via CSS and to prevent layout shift
                     checkboxSelection={!element.disabled}
 
-                    disableSelectionOnClick={true}
-                    onSelectionModelChange={!isBusy ? setSelectionModel : undefined}
-                    selectionModel={selectionModel}
+                    disableRowSelectionOnClick={true}
+                    onRowSelectionModelChange={!isBusy ? setSelectionModel : undefined}
+                    rowSelectionModel={selectionModel}
 
-                    onCellEditCommit={!isBusy ? handleCellEdit : undefined}
+                    processRowUpdate={!isBusy ? handleCellEdit : undefined}
 
                     disableColumnSelector
                     disableColumnFilter
@@ -220,15 +229,15 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             </div>
 
             {
-                (error || element.hint) &&
+                (errors != null || element.hint) &&
                 <FormHelperText
                     sx={{mt: 1}}
-                    error={error != null}
+                    error={errors != null}
                 >
                     {
-                        error == null ?
+                        errors == null ?
                             element.hint :
-                            error
+                            errors.join(' ')
                     }
                 </FormHelperText>
             }

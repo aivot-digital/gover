@@ -1,6 +1,6 @@
 Hallo,
 
-im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "[(${title})]".
+im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "[(${form.publicTitle})]".
 
 Mit freundlichen Grüßen
 [(${base.providerName})]

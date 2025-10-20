@@ -29,7 +29,10 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
             }}
             {...other}
         >
-            <Typography variant={"h4"}>
+            <Typography
+                variant="h4"
+                component="div"
+            >
                 {children}
             </Typography>
 

@@ -1,50 +1,48 @@
 package de.aivot.GoverBackend.models.lib;
 
-import de.aivot.GoverBackend.utils.MapUtils;
+import jakarta.annotation.Nullable;
 
-import java.util.Map;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class TestProtocol {
+public class TestProtocol implements Serializable {
+    @Nullable
     private String userId;
+    @Nullable
     private String timestamp;
-
-    public TestProtocol(Map<String, Object> data) {
-        userId = MapUtils.getString(data, "userId");
-        timestamp = MapUtils.getString(data, "timestamp");
-    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
         TestProtocol that = (TestProtocol) o;
-
-        if (!Objects.equals(userId, that.userId)) return false;
-        return Objects.equals(timestamp, that.timestamp);
+        return Objects.equals(userId, that.userId) && Objects.equals(timestamp, that.timestamp);
     }
 
     @Override
     public int hashCode() {
-        int result = userId != null ? userId.hashCode() : 0;
-        result = 31 * result + (timestamp != null ? timestamp.hashCode() : 0);
+        int result = Objects.hashCode(userId);
+        result = 31 * result + Objects.hashCode(timestamp);
         return result;
     }
 
+    @Nullable
     public String getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public TestProtocol setUserId(@Nullable String userId) {
         this.userId = userId;
+        return this;
     }
 
+    @Nullable
     public String getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(String timestamp) {
+    public TestProtocol setTimestamp(@Nullable String timestamp) {
         this.timestamp = timestamp;
+        return this;
     }
 }

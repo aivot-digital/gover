@@ -228,17 +228,17 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                             variant="switch"
                             label="Authentifizierung erforderlich"
                             hint="Aktivieren Sie diese Option, wenn Sie eine Authentifizierung der antragstellenden Person über einen der bereitgestellten Nutzerkontenanbieter benötigen."
-                            value={props.entity.identityRequired}
+                            value={props.entity.identityVerificationRequired}
                             onChange={(checked) => {
                                 props.onPatchEntity({
-                                    identityRequired: checked,
+                                    identityVerificationRequired: checked,
                                 });
                             }}
                             disabled={!props.editable}
                         />
 
                         {
-                            props.entity.identityRequired &&
+                            props.entity.identityVerificationRequired &&
                             props.entity.identityProviders.length === 0 &&
                             <AlertComponent
                                 color="warning"

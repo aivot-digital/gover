@@ -5,14 +5,14 @@ import org.hibernate.validator.constraints.Length;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "assets")
 public class AssetEntity {
     @Id
     @NotNull
-    @Column(columnDefinition = "uuid")
-    private String key;
+    private UUID key;
 
     @NotNull
     @Column(length = 255)
@@ -34,11 +34,11 @@ public class AssetEntity {
 
     // region Getters & Setters
 
-    public String getKey() {
+    public UUID getKey() {
         return key;
     }
 
-    public void setKey(String key) {
+    public void setKey(UUID key) {
         this.key = key;
     }
 

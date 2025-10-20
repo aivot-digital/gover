@@ -59,6 +59,7 @@ export function ModuleSelectPage() {
             />
             <AppHeader
                 mode={AppMode.Staff}
+                onDeleteFormData={() => {}}
             />
             <Introductory
                 mode={AppMode.Staff}

@@ -1,23 +1,22 @@
 package de.aivot.GoverBackend.submission.entities;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementDeserializer;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementSerializer;
-import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.enums.*;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
-import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.identity.converters.IdentityProviderLinksConverter;
+import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
+import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "submissions_with_memberships")
@@ -25,14 +24,18 @@ import java.util.Map;
 public class SubmissionWithMembership {
     @Id
     private String id;
+    @Id
+    private Integer formId;
     private LocalDateTime created;
     private String assigneeId;
     private LocalDateTime archived;
     private String fileNumber;
     private Integer destinationId;
+
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> customerInput;
+    @Convert(converter = ElementDataConverter.class)
+    private ElementData customerInput;
+
     private Boolean destinationSuccess;
     private Boolean isTestSubmission;
     private Boolean copySent;
@@ -40,42 +43,79 @@ public class SubmissionWithMembership {
     private Integer reviewScore;
     private String destinationResult;
     private LocalDateTime destinationTimestamp;
+
     @Column(columnDefinition = "int4")
     private SubmissionStatus status;
+
     private LocalDateTime updated;
     private String paymentTransactionKey;
+
     @Id
-    private Integer formId;
+    @Column(columnDefinition = "int2")
+    private Integer formVersion;
+
     private String formSlug;
-    private String formVersion;
-    private String formTitle;
+
+    private String formInternalTitle;
+    private String formPublicTitle;
+
+    private Integer formDevelopingDepartmentId;
+    private Integer formManagingDepartmentId;
+    private Integer formResponsibleDepartmentId;
+
+    private LocalDateTime formCreated;
+    private LocalDateTime formUpdated;
+
+    @Column(columnDefinition = "int2")
+    private Integer formPublishedVersion;
+
+    @Column(columnDefinition = "int2")
+    private Integer formDraftedVersion;
+
+    private Integer formVersionCount;
+
     private FormStatus formStatus;
     private FormType formType;
-    @Convert(converter = RootElementConverter.class)
-    @JsonSerialize(converter = JacksonRootElementSerializer.class)
-    @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
-    @Column(columnDefinition = "jsonb")
-    private RootElement formRoot;
-    private Integer formDestinationId;
+
     private Integer formLegalSupportDepartmentId;
     private Integer formTechnicalSupportDepartmentId;
     private Integer formImprintDepartmentId;
     private Integer formPrivacyDepartmentId;
     private Integer formAccessibilityDepartmentId;
-    private Integer formDevelopingDepartmentId;
-    private Integer formManagingDepartmentId;
-    private Integer formResponsibleDepartmentId;
-    private Integer formThemeId;
-    private LocalDateTime formCreated;
-    private LocalDateTime formUpdated;
+
+    @Column(columnDefinition = "int2")
     private Integer formCustomerAccessHours;
-    private Integer formSubmissionDeletionWeeks;
-    private String formPdfBodyTemplateKey;
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Collection<PaymentProduct> formProducts;
+
+    @Column(columnDefinition = "int2")
+    private Integer formSubmissionRetentionWeeks;
+
+    private Integer formThemeId;
+
+    private UUID formPdfTemplateKey;
+
+    private UUID formPaymentProviderKey;
     private String formPaymentPurpose;
     private String formPaymentDescription;
-    private String formPaymentProvider;
+
+    @Convert(converter = PaymentProductsConverter.class)
+    @Column(columnDefinition = "jsonb")
+    private List<PaymentProduct> formPaymentProducts;
+
+    @Convert(converter = IdentityProviderLinksConverter.class)
+    @Column(columnDefinition = "jsonb")
+    private List<IdentityProviderLink> formIdentityProviders;
+
+    private Boolean formIdentityVerificationRequired;
+
+    private Integer formDestinationId;
+
+    @Convert(converter = RootElementConverter.class)
+    @Column(columnDefinition = "jsonb")
+    private RootElement formRootElement;
+
+    private LocalDateTime formVersionPublished;
+    private LocalDateTime formVersionRevoked;
+
     @Id
     private String userId;
     private String userEmail;
@@ -94,6 +134,7 @@ public class SubmissionWithMembership {
         return new Submission()
                 .setId(id)
                 .setFormId(formId)
+                .setFormVersion(formVersion)
                 .setCreated(created)
                 .setUpdated(updated)
                 .setStatus(status)
@@ -112,12 +153,98 @@ public class SubmissionWithMembership {
                 .setPaymentTransactionKey(paymentTransactionKey);
     }
 
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == null || getClass() != object.getClass()) return false;
+
+        SubmissionWithMembership that = (SubmissionWithMembership) object;
+        return Objects.equals(id, that.id) && Objects.equals(formId, that.formId) && Objects.equals(created, that.created) && Objects.equals(assigneeId, that.assigneeId) && Objects.equals(archived, that.archived) && Objects.equals(fileNumber, that.fileNumber) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerInput, that.customerInput) && Objects.equals(destinationSuccess, that.destinationSuccess) && Objects.equals(isTestSubmission, that.isTestSubmission) && Objects.equals(copySent, that.copySent) && Objects.equals(copyTries, that.copyTries) && Objects.equals(reviewScore, that.reviewScore) && Objects.equals(destinationResult, that.destinationResult) && Objects.equals(destinationTimestamp, that.destinationTimestamp) && status == that.status && Objects.equals(updated, that.updated) && Objects.equals(paymentTransactionKey, that.paymentTransactionKey) && Objects.equals(formVersion, that.formVersion) && Objects.equals(formSlug, that.formSlug) && Objects.equals(formInternalTitle, that.formInternalTitle) && Objects.equals(formPublicTitle, that.formPublicTitle) && Objects.equals(formDevelopingDepartmentId, that.formDevelopingDepartmentId) && Objects.equals(formManagingDepartmentId, that.formManagingDepartmentId) && Objects.equals(formResponsibleDepartmentId, that.formResponsibleDepartmentId) && Objects.equals(formCreated, that.formCreated) && Objects.equals(formUpdated, that.formUpdated) && Objects.equals(formPublishedVersion, that.formPublishedVersion) && Objects.equals(formDraftedVersion, that.formDraftedVersion) && Objects.equals(formVersionCount, that.formVersionCount) && formStatus == that.formStatus && formType == that.formType && Objects.equals(formLegalSupportDepartmentId, that.formLegalSupportDepartmentId) && Objects.equals(formTechnicalSupportDepartmentId, that.formTechnicalSupportDepartmentId) && Objects.equals(formImprintDepartmentId, that.formImprintDepartmentId) && Objects.equals(formPrivacyDepartmentId, that.formPrivacyDepartmentId) && Objects.equals(formAccessibilityDepartmentId, that.formAccessibilityDepartmentId) && Objects.equals(formCustomerAccessHours, that.formCustomerAccessHours) && Objects.equals(formSubmissionRetentionWeeks, that.formSubmissionRetentionWeeks) && Objects.equals(formThemeId, that.formThemeId) && Objects.equals(formPdfTemplateKey, that.formPdfTemplateKey) && Objects.equals(formPaymentProviderKey, that.formPaymentProviderKey) && Objects.equals(formPaymentPurpose, that.formPaymentPurpose) && Objects.equals(formPaymentDescription, that.formPaymentDescription) && Objects.equals(formPaymentProducts, that.formPaymentProducts) && Objects.equals(formIdentityProviders, that.formIdentityProviders) && Objects.equals(formIdentityVerificationRequired, that.formIdentityVerificationRequired) && Objects.equals(formDestinationId, that.formDestinationId) && Objects.equals(formRootElement, that.formRootElement) && Objects.equals(formVersionPublished, that.formVersionPublished) && Objects.equals(formVersionRevoked, that.formVersionRevoked) && Objects.equals(userId, that.userId) && Objects.equals(userEmail, that.userEmail) && Objects.equals(userFirstName, that.userFirstName) && Objects.equals(userLastName, that.userLastName) && Objects.equals(userFullName, that.userFullName) && Objects.equals(userEnabled, that.userEnabled) && Objects.equals(userVerified, that.userVerified) && Objects.equals(userGlobalAdmin, that.userGlobalAdmin) && Objects.equals(userDeletedInIdp, that.userDeletedInIdp) && Objects.equals(userIsDeveloper, that.userIsDeveloper) && Objects.equals(userIsManager, that.userIsManager) && Objects.equals(userIsResponsible, that.userIsResponsible);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(id);
+        result = 31 * result + Objects.hashCode(formId);
+        result = 31 * result + Objects.hashCode(created);
+        result = 31 * result + Objects.hashCode(assigneeId);
+        result = 31 * result + Objects.hashCode(archived);
+        result = 31 * result + Objects.hashCode(fileNumber);
+        result = 31 * result + Objects.hashCode(destinationId);
+        result = 31 * result + Objects.hashCode(customerInput);
+        result = 31 * result + Objects.hashCode(destinationSuccess);
+        result = 31 * result + Objects.hashCode(isTestSubmission);
+        result = 31 * result + Objects.hashCode(copySent);
+        result = 31 * result + Objects.hashCode(copyTries);
+        result = 31 * result + Objects.hashCode(reviewScore);
+        result = 31 * result + Objects.hashCode(destinationResult);
+        result = 31 * result + Objects.hashCode(destinationTimestamp);
+        result = 31 * result + Objects.hashCode(status);
+        result = 31 * result + Objects.hashCode(updated);
+        result = 31 * result + Objects.hashCode(paymentTransactionKey);
+        result = 31 * result + Objects.hashCode(formVersion);
+        result = 31 * result + Objects.hashCode(formSlug);
+        result = 31 * result + Objects.hashCode(formInternalTitle);
+        result = 31 * result + Objects.hashCode(formPublicTitle);
+        result = 31 * result + Objects.hashCode(formDevelopingDepartmentId);
+        result = 31 * result + Objects.hashCode(formManagingDepartmentId);
+        result = 31 * result + Objects.hashCode(formResponsibleDepartmentId);
+        result = 31 * result + Objects.hashCode(formCreated);
+        result = 31 * result + Objects.hashCode(formUpdated);
+        result = 31 * result + Objects.hashCode(formPublishedVersion);
+        result = 31 * result + Objects.hashCode(formDraftedVersion);
+        result = 31 * result + Objects.hashCode(formVersionCount);
+        result = 31 * result + Objects.hashCode(formStatus);
+        result = 31 * result + Objects.hashCode(formType);
+        result = 31 * result + Objects.hashCode(formLegalSupportDepartmentId);
+        result = 31 * result + Objects.hashCode(formTechnicalSupportDepartmentId);
+        result = 31 * result + Objects.hashCode(formImprintDepartmentId);
+        result = 31 * result + Objects.hashCode(formPrivacyDepartmentId);
+        result = 31 * result + Objects.hashCode(formAccessibilityDepartmentId);
+        result = 31 * result + Objects.hashCode(formCustomerAccessHours);
+        result = 31 * result + Objects.hashCode(formSubmissionRetentionWeeks);
+        result = 31 * result + Objects.hashCode(formThemeId);
+        result = 31 * result + Objects.hashCode(formPdfTemplateKey);
+        result = 31 * result + Objects.hashCode(formPaymentProviderKey);
+        result = 31 * result + Objects.hashCode(formPaymentPurpose);
+        result = 31 * result + Objects.hashCode(formPaymentDescription);
+        result = 31 * result + Objects.hashCode(formPaymentProducts);
+        result = 31 * result + Objects.hashCode(formIdentityProviders);
+        result = 31 * result + Objects.hashCode(formIdentityVerificationRequired);
+        result = 31 * result + Objects.hashCode(formDestinationId);
+        result = 31 * result + Objects.hashCode(formRootElement);
+        result = 31 * result + Objects.hashCode(formVersionPublished);
+        result = 31 * result + Objects.hashCode(formVersionRevoked);
+        result = 31 * result + Objects.hashCode(userId);
+        result = 31 * result + Objects.hashCode(userEmail);
+        result = 31 * result + Objects.hashCode(userFirstName);
+        result = 31 * result + Objects.hashCode(userLastName);
+        result = 31 * result + Objects.hashCode(userFullName);
+        result = 31 * result + Objects.hashCode(userEnabled);
+        result = 31 * result + Objects.hashCode(userVerified);
+        result = 31 * result + Objects.hashCode(userGlobalAdmin);
+        result = 31 * result + Objects.hashCode(userDeletedInIdp);
+        result = 31 * result + Objects.hashCode(userIsDeveloper);
+        result = 31 * result + Objects.hashCode(userIsManager);
+        result = 31 * result + Objects.hashCode(userIsResponsible);
+        return result;
+    }
+
     public String getId() {
         return id;
     }
 
     public SubmissionWithMembership setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public Integer getFormId() {
+        return formId;
+    }
+
+    public SubmissionWithMembership setFormId(Integer formId) {
+        this.formId = formId;
         return this;
     }
 
@@ -166,11 +293,11 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public Map<String, Object> getCustomerInput() {
+    public ElementData getCustomerInput() {
         return customerInput;
     }
 
-    public SubmissionWithMembership setCustomerInput(Map<String, Object> customerInput) {
+    public SubmissionWithMembership setCustomerInput(ElementData customerInput) {
         this.customerInput = customerInput;
         return this;
     }
@@ -265,12 +392,12 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public Integer getFormId() {
-        return formId;
+    public Integer getFormVersion() {
+        return formVersion;
     }
 
-    public SubmissionWithMembership setFormId(Integer formId) {
-        this.formId = formId;
+    public SubmissionWithMembership setFormVersion(Integer formVersion) {
+        this.formVersion = formVersion;
         return this;
     }
 
@@ -283,21 +410,84 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public String getFormVersion() {
-        return formVersion;
+    public String getFormInternalTitle() {
+        return formInternalTitle;
     }
 
-    public SubmissionWithMembership setFormVersion(String formVersion) {
-        this.formVersion = formVersion;
+    public SubmissionWithMembership setFormInternalTitle(String formInternalTitle) {
+        this.formInternalTitle = formInternalTitle;
         return this;
     }
 
-    public String getFormTitle() {
-        return formTitle;
+    public String getFormPublicTitle() {
+        return formPublicTitle;
     }
 
-    public SubmissionWithMembership setFormTitle(String formTitle) {
-        this.formTitle = formTitle;
+    public SubmissionWithMembership setFormPublicTitle(String formPublicTitle) {
+        this.formPublicTitle = formPublicTitle;
+        return this;
+    }
+
+    public Integer getFormDevelopingDepartmentId() {
+        return formDevelopingDepartmentId;
+    }
+
+    public SubmissionWithMembership setFormDevelopingDepartmentId(Integer formDevelopingDepartmentId) {
+        this.formDevelopingDepartmentId = formDevelopingDepartmentId;
+        return this;
+    }
+
+    public Integer getFormManagingDepartmentId() {
+        return formManagingDepartmentId;
+    }
+
+    public SubmissionWithMembership setFormManagingDepartmentId(Integer formManagingDepartmentId) {
+        this.formManagingDepartmentId = formManagingDepartmentId;
+        return this;
+    }
+
+    public Integer getFormResponsibleDepartmentId() {
+        return formResponsibleDepartmentId;
+    }
+
+    public SubmissionWithMembership setFormResponsibleDepartmentId(Integer formResponsibleDepartmentId) {
+        this.formResponsibleDepartmentId = formResponsibleDepartmentId;
+        return this;
+    }
+
+    public LocalDateTime getFormCreated() {
+        return formCreated;
+    }
+
+    public SubmissionWithMembership setFormCreated(LocalDateTime formCreated) {
+        this.formCreated = formCreated;
+        return this;
+    }
+
+    public LocalDateTime getFormUpdated() {
+        return formUpdated;
+    }
+
+    public SubmissionWithMembership setFormUpdated(LocalDateTime formUpdated) {
+        this.formUpdated = formUpdated;
+        return this;
+    }
+
+    public Integer getFormPublishedVersion() {
+        return formPublishedVersion;
+    }
+
+    public SubmissionWithMembership setFormPublishedVersion(Integer formPublishedVersion) {
+        this.formPublishedVersion = formPublishedVersion;
+        return this;
+    }
+
+    public Integer getFormDraftedVersion() {
+        return formDraftedVersion;
+    }
+
+    public SubmissionWithMembership setFormDraftedVersion(Integer formDraftedVersion) {
+        this.formDraftedVersion = formDraftedVersion;
         return this;
     }
 
@@ -316,24 +506,6 @@ public class SubmissionWithMembership {
 
     public SubmissionWithMembership setFormType(FormType formType) {
         this.formType = formType;
-        return this;
-    }
-
-    public RootElement getFormRoot() {
-        return formRoot;
-    }
-
-    public SubmissionWithMembership setFormRoot(RootElement formRoot) {
-        this.formRoot = formRoot;
-        return this;
-    }
-
-    public Integer getFormDestinationId() {
-        return formDestinationId;
-    }
-
-    public SubmissionWithMembership setFormDestinationId(Integer formDestinationId) {
-        this.formDestinationId = formDestinationId;
         return this;
     }
 
@@ -382,30 +554,21 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public Integer getFormDevelopingDepartmentId() {
-        return formDevelopingDepartmentId;
+    public Integer getFormCustomerAccessHours() {
+        return formCustomerAccessHours;
     }
 
-    public SubmissionWithMembership setFormDevelopingDepartmentId(Integer formDevelopingDepartmentId) {
-        this.formDevelopingDepartmentId = formDevelopingDepartmentId;
+    public SubmissionWithMembership setFormCustomerAccessHours(Integer formCustomerAccessHours) {
+        this.formCustomerAccessHours = formCustomerAccessHours;
         return this;
     }
 
-    public Integer getFormManagingDepartmentId() {
-        return formManagingDepartmentId;
+    public Integer getFormSubmissionRetentionWeeks() {
+        return formSubmissionRetentionWeeks;
     }
 
-    public SubmissionWithMembership setFormManagingDepartmentId(Integer formManagingDepartmentId) {
-        this.formManagingDepartmentId = formManagingDepartmentId;
-        return this;
-    }
-
-    public Integer getFormResponsibleDepartmentId() {
-        return formResponsibleDepartmentId;
-    }
-
-    public SubmissionWithMembership setFormResponsibleDepartmentId(Integer formResponsibleDepartmentId) {
-        this.formResponsibleDepartmentId = formResponsibleDepartmentId;
+    public SubmissionWithMembership setFormSubmissionRetentionWeeks(Integer formSubmissionRetentionWeeks) {
+        this.formSubmissionRetentionWeeks = formSubmissionRetentionWeeks;
         return this;
     }
 
@@ -418,57 +581,21 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public LocalDateTime getFormCreated() {
-        return formCreated;
+    public UUID getFormPdfTemplateKey() {
+        return formPdfTemplateKey;
     }
 
-    public SubmissionWithMembership setFormCreated(LocalDateTime formCreated) {
-        this.formCreated = formCreated;
+    public SubmissionWithMembership setFormPdfTemplateKey(UUID formPdfTemplateKey) {
+        this.formPdfTemplateKey = formPdfTemplateKey;
         return this;
     }
 
-    public LocalDateTime getFormUpdated() {
-        return formUpdated;
+    public UUID getFormPaymentProviderKey() {
+        return formPaymentProviderKey;
     }
 
-    public SubmissionWithMembership setFormUpdated(LocalDateTime formUpdated) {
-        this.formUpdated = formUpdated;
-        return this;
-    }
-
-    public Integer getFormCustomerAccessHours() {
-        return formCustomerAccessHours;
-    }
-
-    public SubmissionWithMembership setFormCustomerAccessHours(Integer formCustomerAccessHours) {
-        this.formCustomerAccessHours = formCustomerAccessHours;
-        return this;
-    }
-
-    public Integer getFormSubmissionDeletionWeeks() {
-        return formSubmissionDeletionWeeks;
-    }
-
-    public SubmissionWithMembership setFormSubmissionDeletionWeeks(Integer formSubmissionDeletionWeeks) {
-        this.formSubmissionDeletionWeeks = formSubmissionDeletionWeeks;
-        return this;
-    }
-
-    public String getFormPdfBodyTemplateKey() {
-        return formPdfBodyTemplateKey;
-    }
-
-    public SubmissionWithMembership setFormPdfBodyTemplateKey(String formPdfBodyTemplateKey) {
-        this.formPdfBodyTemplateKey = formPdfBodyTemplateKey;
-        return this;
-    }
-
-    public Collection<PaymentProduct> getFormProducts() {
-        return formProducts;
-    }
-
-    public SubmissionWithMembership setFormProducts(Collection<PaymentProduct> formProducts) {
-        this.formProducts = formProducts;
+    public SubmissionWithMembership setFormPaymentProviderKey(UUID formPaymentProviderKey) {
+        this.formPaymentProviderKey = formPaymentProviderKey;
         return this;
     }
 
@@ -490,12 +617,66 @@ public class SubmissionWithMembership {
         return this;
     }
 
-    public String getFormPaymentProvider() {
-        return formPaymentProvider;
+    public List<PaymentProduct> getFormPaymentProducts() {
+        return formPaymentProducts;
     }
 
-    public SubmissionWithMembership setFormPaymentProvider(String formPaymentProvider) {
-        this.formPaymentProvider = formPaymentProvider;
+    public SubmissionWithMembership setFormPaymentProducts(List<PaymentProduct> formPaymentProducts) {
+        this.formPaymentProducts = formPaymentProducts;
+        return this;
+    }
+
+    public List<IdentityProviderLink> getFormIdentityProviders() {
+        return formIdentityProviders;
+    }
+
+    public SubmissionWithMembership setFormIdentityProviders(List<IdentityProviderLink> formIdentityProviders) {
+        this.formIdentityProviders = formIdentityProviders;
+        return this;
+    }
+
+    public Boolean getFormIdentityVerificationRequired() {
+        return formIdentityVerificationRequired;
+    }
+
+    public SubmissionWithMembership setFormIdentityVerificationRequired(Boolean formIdentityVerificationRequired) {
+        this.formIdentityVerificationRequired = formIdentityVerificationRequired;
+        return this;
+    }
+
+    public Integer getFormDestinationId() {
+        return formDestinationId;
+    }
+
+    public SubmissionWithMembership setFormDestinationId(Integer formDestinationId) {
+        this.formDestinationId = formDestinationId;
+        return this;
+    }
+
+    public RootElement getFormRootElement() {
+        return formRootElement;
+    }
+
+    public SubmissionWithMembership setFormRootElement(RootElement formRootElement) {
+        this.formRootElement = formRootElement;
+        return this;
+    }
+
+    public LocalDateTime getFormVersionPublished() {
+        return formVersionPublished;
+    }
+
+    public SubmissionWithMembership setFormVersionPublished(LocalDateTime formVersionPublished) {
+        this.formVersionPublished = formVersionPublished;
+        return this;
+    }
+
+    public LocalDateTime getFormVersionRevoked() {
+        return formVersionRevoked;
+    }
+
+    public SubmissionWithMembership setFormVersionRevoked(LocalDateTime formVersionRevoked) {
+        this.formVersionRevoked = formVersionRevoked;
         return this;
     }
 
@@ -604,6 +785,15 @@ public class SubmissionWithMembership {
 
     public SubmissionWithMembership setUserIsResponsible(Boolean userIsResponsible) {
         this.userIsResponsible = userIsResponsible;
+        return this;
+    }
+
+    public Integer getFormVersionCount() {
+        return formVersionCount;
+    }
+
+    public SubmissionWithMembership setFormVersionCount(Integer formVersionCount) {
+        this.formVersionCount = formVersionCount;
         return this;
     }
 }

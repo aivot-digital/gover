@@ -1,14 +1,17 @@
 package de.aivot.GoverBackend.form.controllers;
 
+import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.services.DepartmentMembershipService;
-import de.aivot.GoverBackend.form.cache.entities.FormLock;
+import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
 import de.aivot.GoverBackend.form.dtos.FormDetailsResponseDTO;
 import de.aivot.GoverBackend.form.dtos.FormRevisionResponseDTO;
+import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.services.FormLockService;
 import de.aivot.GoverBackend.form.services.FormRevisionService;
 import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +29,10 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.math.BigInteger;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/forms/{formId}/revisions/")
+@RequestMapping("/api/forms/{formId}/{formVersion}/revisions/")
 public class FormRevisionController {
     private final ScopedAuditService auditService;
 
@@ -36,6 +40,7 @@ public class FormRevisionController {
     private final FormLockService formLockService;
     private final DepartmentMembershipService departmentMembershipService;
     private final FormRevisionService formRevisionService;
+    private final FormVersionWithDetailsService formVersionWithDetailsService;
 
     @Autowired
     public FormRevisionController(
@@ -43,13 +48,14 @@ public class FormRevisionController {
             FormService formService,
             DepartmentMembershipService departmentMembershipService,
             FormLockService formLockService,
-            FormRevisionService formRevisionService
-    ) {
+            FormRevisionService formRevisionService,
+            FormVersionWithDetailsService formVersionWithDetailsService) {
         this.auditService = auditService.createScopedAuditService(FormRevisionController.class);
         this.formService = formService;
         this.formLockService = formLockService;
         this.departmentMembershipService = departmentMembershipService;
         this.formRevisionService = formRevisionService;
+        this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
 
     @GetMapping("")
@@ -79,14 +85,15 @@ public class FormRevisionController {
     public FormDetailsResponseDTO rollback(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer formId,
+            @PathVariable Integer formVersion,
             @PathVariable BigInteger revisionId
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var form = formService
-                .retrieve(formId)
+        var form = formVersionWithDetailsService
+                .retrieve(formId, formVersion)
                 .orElseThrow(ResponseException::notFound);
 
         if (!user.getGlobalAdmin() && departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
@@ -102,7 +109,7 @@ public class FormRevisionController {
                 throw new ResponseException(HttpStatus.LOCKED, "Das Formular ist aktuell durch eine andere Mitarbeiter:in gesperrt. Bitte versuchen Sie es später erneut.");
             }
         } else {
-            var formLock = new FormLock()
+            var formLock = new FormLockCacheEntity()
                     .setFormId(formId)
                     .setUserId(user.getId());
 
@@ -111,7 +118,15 @@ public class FormRevisionController {
 
         var rolledBackForm = formRevisionService.rollback(form, revisionId);
 
-        // TODO: Add audit log
+        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+                "formId", rolledBackForm.getId(),
+                "formSlug", rolledBackForm.getSlug(),
+                "developingDepartmentId", rolledBackForm.getDevelopingDepartmentId()
+        ));
+        auditService.logAction(user, AuditAction.Update, FormEntity.class, Map.of(
+                "formId", rolledBackForm.getFormId(),
+                "formVersion", rolledBackForm.getVersion()
+        ));
 
         // Create a revision for the form
         formRevisionService.create(user, rolledBackForm, form);

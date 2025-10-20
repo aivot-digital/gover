@@ -23,6 +23,8 @@ export interface Api {
 
     postFormUrlEncoded<T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T>;
 
+    postXML<T>(url: string, data: string | ArrayBuffer, options?: ApiOptions): Promise<T>;
+
     put<T>(url: string, data: any, options?: ApiOptions): Promise<T>;
 
     destroy<T>(url: string, options?: ApiOptions): Promise<void>;
@@ -111,6 +113,15 @@ export function useApi(): Api {
                     return await serviceRef
                         .current
                         .postFormUrlEncoded(createApiPath(`/api/${url}`), data, options);
+                } catch (err) {
+                    throw handleUnauthorized(err);
+                }
+            },
+            postXML: async <T>(url: string, data: string | ArrayBuffer, options?: ApiOptions): Promise<T> => {
+                try {
+                    return await serviceRef
+                        .current
+                        .postXML(createApiPath(`/api/${url}`), data, options);
                 } catch (err) {
                     throw handleUnauthorized(err);
                 }

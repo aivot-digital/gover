@@ -18,7 +18,7 @@
                         ein Antrag wurde in Gover neu zugewiesen.
                         <br/>
                         <br/>
-                        Antrag auf: <b th:text="${form.title}">Beispielformular</b> - Version
+                        Antrag auf: <b th:text="${form.internalTitle}">Beispielformular</b> - Version
                         <b th:text="${form.version}">1.0.0</b>
                         <br/>
                         Aktenzeichen:

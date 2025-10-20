@@ -1,7 +1,7 @@
 Hallo,
 
 ein neuer Antrag ist eingegangen. Sie finden die Antragsdaten [# th:if="${hasAttachments}"] sowie die hochgeladenen Anlagen [/] im Anhang dieser E-Mail.
-Antrag auf: [(${form.title})] - Version [(${form.version})]
+Antrag auf: [(${form.internalTitle})] - Version [(${form.version})]
 Hinterlegte Schnittstelle: [(${destination.name})]
 Antragseingang: [(${#temporals.format(submission.created, 'dd.MM.yyyy HH:mm')})] Uhr
 

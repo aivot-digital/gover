@@ -1,20 +1,23 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.data.SpecialCustomerInputKeys;
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.form.input.FileUploadField;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
-import de.aivot.GoverBackend.form.entities.Form;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadField;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
-import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.submission.entities.Submission;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -27,10 +30,12 @@ import java.util.function.Consumer;
 
 
 public class DestinationDataFormatter {
+    private static final Logger logger = LoggerFactory.getLogger(DestinationDataFormatter.class);
+
     private final Map<String, Object> data;
     private static final String destinationSkipKey = "#";
 
-    private final Form form;
+    private final FormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;
     private final PaymentProviderEntity paymentProvider;
@@ -39,7 +44,7 @@ public class DestinationDataFormatter {
 
     private DestinationDataFormatter(
             @Nonnull
-            Form form,
+            FormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -62,7 +67,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
-            Form form,
+            FormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -81,7 +86,7 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter create(
             @Nonnull
-            Form form,
+            FormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
             @Nullable
@@ -127,10 +132,10 @@ public class DestinationDataFormatter {
 
     private void createFormData() {
         insertValue("form.id", form.getId());
-        insertValue("form.name", form.getTitle());
+        insertValue("form.name", form.getInternalTitle());
         insertValue("form.slug", form.getSlug());
         insertValue("form.version", form.getVersion());
-        insertValue("form.headline", form.getFormTitle());
+        insertValue("form.headline", form.getPublicTitle());
         insertValue("form.managing_department_id", form.getManagingDepartmentId());
         insertValue("form.responsible_department_id", form.getResponsibleDepartmentId());
         insertValue("form.developing_department_id", form.getDevelopingDepartmentId());
@@ -144,29 +149,36 @@ public class DestinationDataFormatter {
     }
 
     private void createAuthenticationData() {
-        var rawIdpData = submission
+        ElementDataObject rawIdpData = submission
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
 
-        if (rawIdpData instanceof Map<?,?> mRawIdpData) {
-            IdentityValue identityValue;
-            try {
-                identityValue = IdentityValue
-                        .fromMap(mRawIdpData);
-            } catch (IllegalArgumentException e) {
-                insertValue("authentication.is_authenticated", false);
-                return;
-            }
-
-            insertValue("authentication.is_authenticated", true);
-            insertValue("authentication.identity_provider", identityValue.identityProviderKey());
-            insertValue("authentication.data", identityValue.userInfo());
+        if (rawIdpData == null || rawIdpData.getInputValue() == null) {
+            insertValue("authentication.is_authenticated", false);
+            return;
         }
+
+        IdentityData identityValue = null;
+        try {
+            identityValue = new ObjectMapper()
+                    .convertValue(rawIdpData.getInputValue(), IdentityData.class);
+        } catch (IllegalArgumentException e) {
+            logger.error("Could not convert IdentityData to IdentityData", e);
+        }
+
+        if (identityValue == null) {
+            insertValue("authentication.is_authenticated", false);
+            return;
+        }
+
+        insertValue("authentication.is_authenticated", true);
+        insertValue("authentication.identity_provider", identityValue.providerKey());
+        insertValue("authentication.data", identityValue.attributes());
     }
 
     private void createCustomerData() {
         Map<String, Object> customerData = new HashMap<>();
-        extractDataFromElement(customerData, form.getRoot(), null);
+        extractDataFromElement(customerData, form.getRootElement(), null);
         data.put("data", customerData);
     }
 

@@ -71,7 +71,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                             lg: 4
                         }}>
                         <NumberFieldComponent
-                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles}
+                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles ?? undefined}
                             label="Mindestanzahl an Anlagen"
                             hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
                             onChange={(val) => {
@@ -89,7 +89,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                             lg: 4
                         }}>
                     <NumberFieldComponent
-                        value={props.element.maxFiles}
+                        value={props.element.maxFiles ?? undefined}
                         label="Maximalanzahl an Anlagen"
                         hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
                         onChange={(val) => {
@@ -106,7 +106,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             <Grid size={12}>
                 <MultiCheckboxComponent
                     label="Erlaubte Dateiendungen"
-                    value={props.element.extensions}
+                    value={props.element.extensions ?? undefined}
                     onChange={(val) => {
                         props.onPatch({
                             extensions: val,
@@ -114,7 +114,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                     }}
                     hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
                     error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
-                    options={allowedExtensions ?? []}
+                    options={(allowedExtensions ?? []).map((ex) => ({
+                        label: ex,
+                        value: ex,
+                    }))}
                     required
                     disabled={!props.editable}
                     displayInline={true}

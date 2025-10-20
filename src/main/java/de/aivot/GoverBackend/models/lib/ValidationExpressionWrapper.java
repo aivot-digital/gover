@@ -1,36 +1,20 @@
 package de.aivot.GoverBackend.models.lib;
 
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
-import de.aivot.GoverBackend.utils.MapUtils;
 
-import java.util.Map;
+import javax.annotation.Nullable;
 import java.util.Objects;
 
 public class ValidationExpressionWrapper {
-    private final NoCodeExpression expression;
-    private final String message;
+    @Nullable
+    private NoCodeExpression expression;
+    @Nullable
+    private String message;
 
-    public ValidationExpressionWrapper(Map<String, Object> values) {
-        this.expression = MapUtils.getApply(values, "expression", Map.class, NoCodeExpression::new);
-        this.message = MapUtils.getString(values, "message", "");
-    }
-
-    public ValidationExpressionWrapper(NoCodeExpression expression, String message) {
-        this.expression = expression;
-        this.message = message;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public NoCodeExpression getExpression() {
-        return expression;
-    }
+    // region Hash & Equals
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
         ValidationExpressionWrapper that = (ValidationExpressionWrapper) o;
@@ -43,4 +27,30 @@ public class ValidationExpressionWrapper {
         result = 31 * result + Objects.hashCode(message);
         return result;
     }
+
+    // endregion
+
+    // region Getters & Setters
+
+    @Nullable
+    public NoCodeExpression getExpression() {
+        return expression;
+    }
+
+    public ValidationExpressionWrapper setExpression(@Nullable NoCodeExpression expression) {
+        this.expression = expression;
+        return this;
+    }
+
+    @Nullable
+    public String getMessage() {
+        return message;
+    }
+
+    public ValidationExpressionWrapper setMessage(@Nullable String message) {
+        this.message = message;
+        return this;
+    }
+
+    // endregion
 }

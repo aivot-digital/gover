@@ -11,6 +11,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 
@@ -50,6 +51,32 @@ public class XBezahldienstePaymentRequest implements Serializable {
     // Der Bezahler des Payment Requests.
     @JsonProperty("requestor")
     private XBezahldiensteRequestor requestor = null;
+
+    // region Has & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        XBezahldienstePaymentRequest that = (XBezahldienstePaymentRequest) o;
+        return Objects.equals(requestId, that.requestId) && Objects.equals(requestTimestamp, that.requestTimestamp) && Objects.equals(currency, that.currency) && Objects.equals(grosAmount, that.grosAmount) && Objects.equals(purpose, that.purpose) && Objects.equals(description, that.description) && Objects.equals(redirectUrl, that.redirectUrl) && Objects.equals(items, that.items) && Objects.equals(requestor, that.requestor);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(requestId);
+        result = 31 * result + Objects.hashCode(requestTimestamp);
+        result = 31 * result + Objects.hashCode(currency);
+        result = 31 * result + Objects.hashCode(grosAmount);
+        result = 31 * result + Objects.hashCode(purpose);
+        result = 31 * result + Objects.hashCode(description);
+        result = 31 * result + Objects.hashCode(redirectUrl);
+        result = 31 * result + Objects.hashCode(items);
+        result = 31 * result + Objects.hashCode(requestor);
+        return result;
+    }
+
+    // endregion
 
     public String getRequestId() {
         return requestId;

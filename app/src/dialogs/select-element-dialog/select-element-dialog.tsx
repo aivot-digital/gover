@@ -1,8 +1,5 @@
-import {SelectElementDialogProps} from './select-element-dialog-props';
 import {useMemo} from 'react';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectLoadedForm} from '../../slices/app-slice';
-import {flattenElementsWithParents} from '../../utils/flatten-elements';
+import {ElementWithParents} from '../../utils/flatten-elements';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {AnyElement} from '../../models/elements/any-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
@@ -10,8 +7,20 @@ import {SearchBaseDialog} from '../search-base-dialog/search-base-dialog';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {getElementIcon} from '../../data/element-type/element-icons';
 
+interface SelectElementDialogProps {
+    allElements: ElementWithParents[];
+    open: boolean;
+    onSelect: (element: AnyElement) => void;
+    onClose: () => void;
+}
+
 export function SelectElementDialog(props: SelectElementDialogProps) {
-    const form = useAppSelector(selectLoadedForm);
+    const {
+        allElements,
+        open,
+        onSelect,
+        onClose,
+    } = props;
 
     const allElementsWithParent: {
         $: AnyElement;
@@ -20,10 +29,7 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
         pathTitles: string;
         pathIds: string[];
     }[] = useMemo(() => {
-        if (form == null) {
-            return [];
-        }
-        return flattenElementsWithParents(form.root, [])
+        return allElements
             .filter(({element}) => isAnyInputElement(element))
             .map(({element, parents}) => ({
                 $: element,
@@ -32,17 +38,17 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                 pathTitles: parents.map(e => generateComponentTitle(e)).join(' > '),
                 pathIds: parents.map(e => e.id),
             }));
-    }, [form]);
+    }, [allElements]);
 
     return (
         <SearchBaseDialog
-            open={props.open}
-            onClose={props.onClose}
+            open={open}
+            onClose={onClose}
             title="Element auswählen"
             tabs={[{
                 title: 'Alle',
                 options: allElementsWithParent,
-                onSelect: ({$}) => props.onSelect($),
+                onSelect: ({$}) => onSelect($),
                 searchPlaceholder: 'Element suchen',
                 searchKeys: ['title', 'id', 'pathTitles', 'pathIds'],
                 primaryTextKey: 'title',
@@ -55,11 +61,18 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                 detailsBuilder: (option) => {
                     return (
                         <ViewDispatcherComponent
+                            rootElement={option.$}
                             allElements={[]}
                             element={option.$}
                             isBusy={false}
                             isDeriving={false}
                             mode="editor"
+                            elementData={{}}
+                            onElementDataChange={() => {
+                            }}
+                            onElementBlur={undefined}
+                            disableVisibility={true}
+                            derivationTriggerIdQueue={[]}
                         />
                     );
                 },

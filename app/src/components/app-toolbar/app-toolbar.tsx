@@ -110,6 +110,7 @@ export function AppToolbar(props: AppToolbarProps) {
                     mode={AppMode.Staff}
                     onClose={handleCloseMenu}
                     anchorElement={menuAnchorEl}
+                    onDeleteFormData={() => {}}
                 />
             }
         </>

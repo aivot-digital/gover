@@ -57,23 +57,31 @@ const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
 };
 
 export function ElementTab({
-    parentType,
-    onAddElement,
-    showElementInfo,
-    highlightedElement,
-}: BaseTabProps & {
+                               parentType,
+                               onAddElement,
+                               showElementInfo,
+                               highlightedElement,
+                               limitElementTypes,
+                           }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
+    limitElementTypes?: ElementType[];
 }) {
     const childOptions = ElementChildOptions[parentType] ?? [];
 
-    const optionGroups = childOptions.reduce<{ [key in ElementTypeGroups]?: ElementType[] }>((groups, child) => {
-        const childGroup = elementGroupMap[child] ?? ElementTypeGroups.Other;
-        const groupChildren = groups[childGroup] ?? [];
-        groupChildren.push(child);
-        groups[childGroup] = groupChildren;
-        return groups;
-    }, {});
+    const optionGroups = childOptions
+        .filter(et => {
+            if (limitElementTypes == null || limitElementTypes.includes(et)) {
+                return true;
+            }
+        })
+        .reduce<{ [key in ElementTypeGroups]?: ElementType[] }>((groups, child) => {
+            const childGroup = elementGroupMap[child] ?? ElementTypeGroups.Other;
+            const groupChildren = groups[childGroup] ?? [];
+            groupChildren.push(child);
+            groups[childGroup] = groupChildren;
+            return groups;
+        }, {});
 
     return (
         <List
@@ -105,8 +113,12 @@ export function ElementTab({
                                         disablePadding
                                         secondaryAction={
                                             <Tooltip title="Mehr Informationen">
-                                                <IconButton onClick={() => {showElementInfo(type);}}>
-                                                    <InfoOutlinedIcon/>
+                                                <IconButton
+                                                    onClick={() => {
+                                                        showElementInfo(type);
+                                                    }}
+                                                >
+                                                    <InfoOutlinedIcon />
                                                 </IconButton>
                                             </Tooltip>
                                         }
@@ -122,7 +134,7 @@ export function ElementTab({
                                             selected={highlightedElement === type}
                                         >
                                             <ListItemIcon sx={{pl: 1.5}}>
-                                                <Icon/>
+                                                <Icon />
                                             </ListItemIcon>
                                             <ListItemText
                                                 disableTypography

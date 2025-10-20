@@ -1,18 +1,18 @@
 package de.aivot.GoverBackend.payment.entities;
 
-import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.elements.models.ElementData;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payment_providers")
 public class PaymentProviderEntity {
     @Id
-    @Column(length = 36)
-    private String key;
+    private UUID key;
 
     @NotNull
     @Column(length = 32)
@@ -36,14 +36,14 @@ public class PaymentProviderEntity {
 
     @NotNull
     @Column(columnDefinition = "jsonb")
-    @Convert(converter = JsonObjectConverter.class)
-    private Map<String, Object> config;
+    @Convert(converter = ElementDataConverter.class)
+    private ElementData config;
 
-    public String getKey() {
+    public UUID getKey() {
         return key;
     }
 
-    public void setKey(String key) {
+    public void setKey(UUID key) {
         this.key = key;
     }
 
@@ -71,11 +71,11 @@ public class PaymentProviderEntity {
         this.description = description;
     }
 
-    public Map<String, Object> getConfig() {
+    public ElementData getConfig() {
         return config;
     }
 
-    public void setConfig(Map<String, Object> config) {
+    public void setConfig(ElementData config) {
         this.config = config;
     }
 

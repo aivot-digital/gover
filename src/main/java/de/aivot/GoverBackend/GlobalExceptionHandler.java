@@ -9,11 +9,13 @@ import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
@@ -56,10 +58,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResponseException.class)
     public ResponseEntity<Object> handleBaseResponseException(ResponseException e) {
+        var apiError = new ApiErrorDto(
+                e.getStatus(),
+                e.getTitle(),
+                e.getDetails(),
+                true
+        );
+
         return ResponseEntity
                 .status(e.getStatus())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ApiErrorDto(e.getStatus(), e.getTitle(), e.getDetails()));
+                .body(apiError);
     }
 
     @Override
@@ -74,12 +83,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         for (final FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.add(error.getField() + ": " + error.getDefaultMessage());
         }
+
         for (final ObjectError error : ex.getBindingResult().getGlobalErrors()) {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, "bad request", errors);
+        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, "bad request", errors, false);
 
-        return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
+        return handleExceptionInternal(ex, apiError, headers, apiError.getHttpStatus(), request);
     }
 }

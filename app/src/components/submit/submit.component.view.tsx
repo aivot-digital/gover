@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {type SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {type Department} from '../../modules/departments/models/department';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectCustomerInputError, selectCustomerInputValue, selectLoadedForm, updateCustomerInput} from '../../slices/app-slice';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {selectLoadedForm} from '../../slices/app-slice';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
@@ -21,18 +20,22 @@ import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {AltchaWidget} from '../altcha/altcha-widget';
 
-export const SubmitHumanKey = '__human__';
 export const SubmitPaymentDataKey = '__payment_data__';
 
-export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void>): React.ReactNode | null {
+export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): React.ReactNode | null {
+    const {
+        element,
+        value,
+        setValue,
+        errors,
+        elementData,
+    } = props;
+
     const api = useApi();
     const theme = useTheme();
-    const dispatch = useAppDispatch();
+
     const initialDisplayCount = 4;
 
-    const customerInputs = useAppSelector(state => state.app.inputs);
-    const isHuman = useAppSelector(selectCustomerInputValue(SubmitHumanKey));
-    const error = useAppSelector(selectCustomerInputError(SubmitHumanKey));
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     const form = useAppSelector(selectLoadedForm);
@@ -48,7 +51,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
         }
 
         new FormsApiService(api)
-            .calculateCosts(form.id, customerInputs)
+            .calculateCosts(form.slug, form.version, elementData)
             .then((data) => {
                 setCosts(data);
             });
@@ -79,9 +82,12 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
     }, [form]);
 
     const renderDocumentToReceive = (doc: string, index: number) => (
-        <ListItem disableGutters key={String(index) + doc}>
-            <ListItemIcon sx={{ minWidth: '34px' }}>
-                <UploadFileOutlinedIcon sx={{ color: theme.palette.primary.main }} />
+        <ListItem
+            disableGutters
+            key={String(index) + doc}
+        >
+            <ListItemIcon sx={{minWidth: '34px'}}>
+                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}} />
             </ListItemIcon>
             <ListItemText>{doc}</ListItemText>
         </ListItem>
@@ -104,18 +110,18 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     Zuständige Stelle
                 </Typography>
                 <Typography
-                    component={"pre"}
+                    component={'pre'}
                     variant="body2"
                     sx={{mt: 1}}
                 >
                     {[
                         isStringNotNullOrEmpty(providerName) ? providerName : null,
                         responsibleDepartment.name,
-                        responsibleDepartment.address
-                    ].filter(Boolean).join("\n")}
+                        responsibleDepartment.address,
+                    ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
-        )
+            </Box>,
+        );
     }
 
     if (managingDepartment != null) {
@@ -129,18 +135,18 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     Bewirtschaftende Stelle
                 </Typography>
                 <Typography
-                    component={"pre"}
+                    component={'pre'}
                     variant="body2"
                     sx={{mt: 1}}
                 >
                     {[
                         isStringNotNullOrEmpty(providerName) ? providerName : null,
                         managingDepartment.name,
-                        managingDepartment.address
-                    ].filter(Boolean).join("\n")}
+                        managingDepartment.address,
+                    ].filter(Boolean).join('\n')}
                 </Typography>
-            </Box>
-        )
+            </Box>,
+        );
     }
 
     if (props.element.textProcessingTime) {
@@ -160,8 +166,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 >
                     {props.element.textProcessingTime}
                 </Typography>
-            </Box>
-        )
+            </Box>,
+        );
     }
 
     if ((props.element.documentsToReceive != null)
@@ -176,8 +182,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 pluralLabel="Dokumente"
                 listId="documents-to-receive"
                 renderItem={renderDocumentToReceive}
-            />
-        )
+            />,
+        );
     }
 
     return (
@@ -187,8 +193,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 !isStringNullOrEmpty(props.element.textPreSubmit) &&
                 <Preamble
                     text={props.element.textPreSubmit}
-                    logoLink={form.root.introductionStep.initiativeLogoLink}
-                    logoAlt={form.root.introductionStep.initiativeName}
+                    logoLink={form.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
+                    logoAlt={form.rootElement.introductionStep?.initiativeName ?? undefined}
                 />
             }
 
@@ -202,7 +208,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                 <FadingPaper>
                     <Box
                         sx={{
-                            columnCount: { xs: 1, md: 2 },
+                            columnCount: {xs: 1, md: 2},
                             columnGap: 7,
                         }}
                     >
@@ -294,7 +300,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
 
             <Box sx={{mt: 4}}>
                 <Typography
-                    id={SubmitHumanKey}
+                    id={element.id}
                     component={'h3'}
                     variant="h5"
                     color="primary"
@@ -318,23 +324,18 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, void
                     }}
                 >
                     <AltchaWidget
-                        onChallengeSuccess={(solution) => {
-                            dispatch(updateCustomerInput({
-                                key: SubmitHumanKey,
-                                value: JSON.stringify(solution),
-                            }));
-                        }}
+                        onChallengeSuccess={setValue}
                     />
+
                     {
-                        error &&
+                        errors != null &&
                         <Box sx={{mt: 2}}>
                             <FormHelperText error={true}>
-                                {error}
+                                {errors.join(' ')}
                             </FormHelperText>
                         </Box>
                     }
                 </Box>
-
             </Box>
         </>
     );

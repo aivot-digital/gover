@@ -419,7 +419,7 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                 <ElementEditor
                     parents={[] /* Uppermost element so no parents here */}
                     entity={props.entity}
-                    element={props.entity.root as any /* TODO: Fix this any type */}
+                    element={props.entity.rootElement as any /* TODO: Fix this any type */}
                     onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
                         setShowEditor(false);
                         props.onPatch(updatedElement, updatedApplication);

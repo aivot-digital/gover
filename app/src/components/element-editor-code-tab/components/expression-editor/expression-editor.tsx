@@ -109,7 +109,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                             >
                                 {
                                     operator.parameters.map((parameter, index, all) => {
-                                        const operand: NoCodeOperand | undefined | null = props.expression.operands[index];
+                                        const operand: NoCodeOperand | undefined | null = (props.expression.operands ?? [])[index];
 
                                         return (
                                             <Box
@@ -163,7 +163,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                                                     if (i === index) {
                                                                         updatedOperands.push(newOperand);
                                                                     } else {
-                                                                        updatedOperands.push(props.expression.operands[i] ?? null);
+                                                                        updatedOperands.push((props.expression.operands ?? [])[i] ?? null);
                                                                     }
                                                                 }
                                                                 props.onChange({
@@ -193,10 +193,11 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                                                     (parameter.options ?? []).length === 0 &&
                                                                     <TextFieldComponent
                                                                         label={parameter.label}
-                                                                        value={operand.value}
+                                                                        value={operand.value ?? undefined}
                                                                         onChange={(value) => {
-                                                                            const updatedOperands = [...props.expression.operands];
+                                                                            const updatedOperands = [...props.expression.operands ?? []];
                                                                             updatedOperands[index] = {
+                                                                                type: 'NoCodeStaticValue',
                                                                                 value: value ?? '',
                                                                             };
                                                                             props.onChange({
@@ -212,11 +213,12 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                                                     (parameter.options ?? []).length > 0 &&
                                                                     <SelectFieldComponent
                                                                         label={parameter.label}
-                                                                        value={operand.value}
+                                                                        value={operand.value ?? undefined}
                                                                         options={parameter.options ?? []}
                                                                         onChange={(value) => {
-                                                                            const updatedOperands = [...props.expression.operands];
+                                                                            const updatedOperands = [...props.expression.operands ?? []];
                                                                             updatedOperands[index] = {
+                                                                                type: 'NoCodeStaticValue',
                                                                                 value: value ?? '',
                                                                             };
                                                                             props.onChange({
@@ -233,10 +235,11 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                                                         <SelectFieldComponent
                                                                             label={parameter.label}
                                                                             required
-                                                                            value={operand.elementId}
+                                                                            value={operand.elementId ?? undefined}
                                                                             onChange={(val) => {
-                                                                                const updatedOperands = [...props.expression.operands];
+                                                                                const updatedOperands = [...props.expression.operands ?? []];
                                                                                 updatedOperands[index] = {
+                                                                                    type: 'NoCodeReference',
                                                                                     elementId: val ?? '',
                                                                                 };
                                                                                 props.onChange({
@@ -256,7 +259,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                                                             allOperators={props.allOperators}
                                                                             expression={operand}
                                                                             onChange={(expression) => {
-                                                                                const updatedOperands = [...props.expression.operands];
+                                                                                const updatedOperands = [...props.expression.operands ?? []];
                                                                                 updatedOperands[index] = expression;
                                                                                 props.onChange({
                                                                                     ...props.expression,
@@ -294,7 +297,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                                             <IconButton
                                                                 buttonProps={{
                                                                     onClick: () => {
-                                                                        const updatedOperands = [...props.expression.operands];
+                                                                        const updatedOperands = [...props.expression.operands ?? []];
                                                                         updatedOperands[index] = null;
                                                                         props.onChange({
                                                                             ...props.expression,
@@ -349,11 +352,13 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
             />
 
             <SelectElementDialog
+                allElements={props.allElements}
                 open={elementSelectDialogOpenIndex != null}
                 onSelect={(element) => {
                     if (elementSelectDialogOpenIndex != null) {
-                        const updatedOperands = [...props.expression.operands];
+                        const updatedOperands = [...props.expression.operands ?? []];
                         updatedOperands[elementSelectDialogOpenIndex] = {
+                            type: 'NoCodeReference',
                             elementId: element.id ?? '',
                         };
                         props.onChange({
@@ -374,6 +379,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                 operators={props.allOperators}
                 onSelect={(operator) => {
                     const newExpression: NoCodeExpression = {
+                        type: 'NoCodeExpression',
                         operatorIdentifier: operator.identifier,
                         operands: [
                             props.expression,

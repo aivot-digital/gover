@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.theme.controllers;
 
+import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.theme.entities.Theme;
 import de.aivot.GoverBackend.theme.filters.ThemeFilter;
@@ -24,14 +26,16 @@ import javax.annotation.Nullable;
 public class ThemeController {
     private final ThemeService service;
     private final FormRepository formRepository;
+    private final FormVersionRepository formVersionRepository;
 
     @Autowired
     public ThemeController(
             ThemeService service,
-            FormRepository formRepository
-    ) {
+            FormRepository formRepository,
+            FormVersionRepository formVersionRepository) {
         this.service = service;
         this.formRepository = formRepository;
+        this.formVersionRepository = formVersionRepository;
     }
 
     @GetMapping("")
@@ -104,7 +108,12 @@ public class ThemeController {
                 .asAdmin()
                 .orElseThrow(ResponseException::forbidden);
 
-        if (formRepository.existsByThemeId(id)) {
+        var spec = FormVersionFilter
+                .create()
+                .setThemeId(id)
+                .build();
+
+        if (formVersionRepository.exists(spec)) {
             throw new ResponseException(HttpStatus.CONFLICT, "Das Farbschema wird noch von einem oder mehreren Formularen verwendet.");
         }
 

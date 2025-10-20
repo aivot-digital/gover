@@ -7,6 +7,7 @@ import {type ReplicatingContainerLayout} from '../../models/elements/form/layout
 import {type ElementTreeScope} from '../element-tree/element-tree-scope';
 import {AnyFormElement} from '../../models/elements/form/any-form-element';
 import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
+import {ElementType} from '../../data/element-type/element-type';
 
 
 export interface ElementTreeItemListProps<T extends AnyElementWithChildren, E extends ElementTreeEntity> {
@@ -19,4 +20,5 @@ export interface ElementTreeItemListProps<T extends AnyElementWithChildren, E ex
     editable: boolean;
     scope: ElementTreeScope;
     enabledIdentityProviderInfos: IdentityProviderInfo[];
+    limitElementTypes?: ElementType[];
 }

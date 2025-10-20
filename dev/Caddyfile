@@ -19,11 +19,6 @@ http://localhost:80 {
         path /api/*
     }
 
-    @bi {
-        path /bi
-        path /bi/*
-    }
-
     handle @idp {
         uri strip_prefix /idp
         reverse_proxy keycloak:8080
@@ -31,10 +26,6 @@ http://localhost:80 {
 
     handle @api {
         reverse_proxy host.docker.internal:8080
-    }
-
-    handle @bi {
-        reverse_proxy grafana:3000
     }
 
     handle @staff {
@@ -48,4 +39,6 @@ http://localhost:80 {
     header /assets/fonts/* {
         Access-Control-Allow-Origin *
     }
+
+    redir /security.txt /.well-known/security.txt 301
 }

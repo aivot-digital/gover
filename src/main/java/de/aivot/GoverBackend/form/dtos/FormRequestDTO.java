@@ -1,121 +1,158 @@
 package de.aivot.GoverBackend.form.dtos;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementDeserializer;
-import de.aivot.GoverBackend.core.converters.JacksonRootElementSerializer;
 import de.aivot.GoverBackend.core.converters.RootElementConverter;
-import de.aivot.GoverBackend.enums.*;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.elements.models.elements.RootElement;
+import de.aivot.GoverBackend.form.entities.FormEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
 import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
-import de.aivot.GoverBackend.lib.ReqeustDTO;
-import de.aivot.GoverBackend.elements.models.RootElement;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Convert;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.validator.constraints.Length;
+import jakarta.validation.constraints.Size;
 
-import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 public record FormRequestDTO(
-        @NotNull(message = "slug cannot be null")
-        @NotBlank(message = "slug cannot be blank")
-        @Length(min = 1, max = 255, message = "slug must be at least 1 character long")
+        @Nonnull
+        @NotNull(message = "Die Slug darf nicht null sein")
+        @NotBlank(message = "Die Slug darf nicht leer sein")
+        @Size(min = 1, max = 255, message = "Die Slug muss mindestens 1 Zeichen lang sein, maximal aber 255 Zeichen lang sein")
         String slug,
 
-        @NotNull(message = "version cannot be null")
-        @NotBlank(message = "version cannot be blank")
-        @Length(min = 5, max = 11, message = "version must be at least 5 character long")
-        String version,
+        @Nonnull
+        @NotNull(message = "Der interne Titel darf nicht null sein")
+        @NotBlank(message = "Der interne Titel darf nicht leer sein")
+        @Size(min = 1, max = 96, message = "Der Titel muss mindestens 1 Zeichen lang sein, maximal aber 96 Zeichen lang sein")
+        String internalTitle,
 
-        @NotNull(message = "title cannot be null")
-        @NotBlank(message = "title cannot be blank")
-        @Length(min = 1, max = 96, message = "title must be at least 1 character long")
-        String title,
+        @Nonnull
+        @NotNull(message = "Der öffentliche Titel darf nicht null sein")
+        @NotBlank(message = "Der öffentliche Titel darf nicht leer sein")
+        @Size(min = 1, max = 96, message = "title must be at least 1 character long")
+        String publicTitle,
 
-        @NotNull(message = "status cannot be null")
-        FormStatus status,
-
-        FormType type, // Defaults to FormType.Public (0)
-
-        @NotNull(message = "root cannot be null")
-        @Convert(converter = RootElementConverter.class)
-        @JsonSerialize(converter = JacksonRootElementSerializer.class)
-        @JsonDeserialize(converter = JacksonRootElementDeserializer.class)
-        RootElement root,
-
-        @NotNull(message = "destinationId cannot be null")
+        @Nonnull
+        @NotNull(message = "Die ID des entwickelnden Fachbereichs darf nicht null sein")
         Integer developingDepartmentId,
 
-        Integer destinationId,
-        Integer legalSupportDepartmentId,
-        Integer technicalSupportDepartmentId,
-        Integer imprintDepartmentId,
-        Integer privacyDepartmentId,
-        Integer accessibilityDepartmentId,
+        @Nullable
         Integer managingDepartmentId,
+
+        @Nullable
         Integer responsibleDepartmentId,
+
+        @Nonnull
+        @NotNull(message = "Der Typ darf nicht null sein")
+        FormType type,
+
+        @Nullable
+        Integer legalSupportDepartmentId,
+
+        @Nullable
+        Integer technicalSupportDepartmentId,
+
+        @Nullable
+        Integer imprintDepartmentId,
+
+        @Nullable
+        Integer privacyDepartmentId,
+
+        @Nullable
+        Integer accessibilityDepartmentId,
+
+        @Nullable
+        Integer destinationId,
+
+        @Nullable
         Integer themeId,
 
-        Integer customerAccessHours,
-        Integer submissionDeletionWeeks,
+        @Nullable
+        UUID pdfTemplateKey,
 
-        @Length(max = 36, message = "uuid must be 36 characters long")
-        String pdfBodyTemplateKey,
+        @Nullable
+        UUID paymentProviderKey,
 
-        Collection<PaymentProduct> products,
-
-        @Length(max = 27, message = "paymentPurpose must be at most 27 characters long")
+        @Nullable
+        @Size(max = 27, message = "Der Zahlungszweck darf maximal 27 Zeichen lang sein")
         String paymentPurpose,
 
-        @Length(max = 250, message = "paymentDescription must be at most 250 characters long")
+        @Nullable
+        @Size(max = 250, message = "Die Zahlungsbeschreibung darf maximal 250 Zeichen lang sein")
         String paymentDescription,
 
-        @Length(max = 36, message = "uuid must be 36 characters long")
-        String paymentProvider,
+        @Nullable
+        List<PaymentProduct> paymentProducts,
 
-        @NotNull(message = "identityRequired cannot be null")
-        Boolean identityRequired,
+        @Nonnull
+        @NotNull(message = "Die Anforderung zur Identitätsprüfung darf nicht null sein")
+        Boolean identityVerificationRequired,
 
-        @NotNull(message = "identityProviders cannot be null")
-        List<IdentityProviderLink> identityProviders
-) implements ReqeustDTO<Form> {
+        @Nonnull
+        @NotNull(message = "Die Liste der Identitätsanbieter darf nicht null sein, kann aber leer sein")
+        List<IdentityProviderLink> identityProviders,
+
+        @Nullable
+        Integer customerAccessHours,
+
+        @Nullable
+        Integer submissionRetentionWeeks,
+
+        @NotNull(message = "Das Root-Element darf nicht null sein")
+        @Convert(converter = RootElementConverter.class)
+        RootElement rootElement
+) {
     @Nonnull
-    @Override
-    public Form toEntity() {
-        var form = new Form();
+    public FormEntity toFormEntity() {
+        // Do not fill in the auto generated data, for they are not being updated or inserted
+        return new FormEntity(
+                null,
+                slug,
+                internalTitle,
+                publicTitle,
+                developingDepartmentId,
+                managingDepartmentId,
+                responsibleDepartmentId,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
 
-        form.setSlug(slug);
-        form.setVersion(version);
-        form.setTitle(title);
-        form.setStatus(status);
-        form.setType(type != null ? type : FormType.Public);
-        form.setRoot(root);
-        form.setDevelopingDepartmentId(developingDepartmentId);
-        form.setDestinationId(destinationId);
-        form.setLegalSupportDepartmentId(legalSupportDepartmentId);
-        form.setTechnicalSupportDepartmentId(technicalSupportDepartmentId);
-        form.setImprintDepartmentId(imprintDepartmentId);
-        form.setPrivacyDepartmentId(privacyDepartmentId);
-        form.setAccessibilityDepartmentId(accessibilityDepartmentId);
-        form.setManagingDepartmentId(managingDepartmentId);
-        form.setResponsibleDepartmentId(responsibleDepartmentId);
-        form.setThemeId(themeId);
-        form.setCustomerAccessHours(customerAccessHours);
-        form.setSubmissionDeletionWeeks(submissionDeletionWeeks);
-        form.setPdfBodyTemplateKey(pdfBodyTemplateKey);
-        form.setProducts(products);
-        form.setPaymentPurpose(paymentPurpose);
-        form.setPaymentDescription(paymentDescription);
-        form.setPaymentProvider(paymentProvider);
-        form.setIdentityRequired(identityRequired);
-        form.setIdentityProviders(identityProviders);
-
-        return form;
+    public FormVersionEntity toFormVersionEntity() {
+        return new FormVersionEntity(
+                null,
+                null,
+                FormStatus.Drafted,
+                type,
+                legalSupportDepartmentId,
+                technicalSupportDepartmentId,
+                imprintDepartmentId,
+                privacyDepartmentId,
+                accessibilityDepartmentId,
+                destinationId,
+                customerAccessHours,
+                submissionRetentionWeeks,
+                themeId,
+                pdfTemplateKey,
+                paymentProviderKey,
+                paymentPurpose,
+                paymentDescription,
+                paymentProducts,
+                identityProviders,
+                identityVerificationRequired,
+                rootElement,
+                null,
+                null,
+                null,
+                null
+        );
     }
 }

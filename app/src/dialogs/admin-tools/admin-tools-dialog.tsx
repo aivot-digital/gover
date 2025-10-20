@@ -22,6 +22,7 @@ import BugReportIcon from '@mui/icons-material/BugReport';
 import DrawIcon from '@mui/icons-material/Draw';
 import {ExportApplicationDialog} from '../application-dialogs/export-application-dialog/export-application-dialog';
 import {PrefillFormDialog} from '../prefill-form-dialog/prefill-form-dialog';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
 
 const switches: Array<{
     label: string;
@@ -50,7 +51,7 @@ const switches: Array<{
 ];
 
 export function AdminToolsDialog(props: AdminToolsDialogProps) {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const api = useApi();
 
     const form = useAppSelector(selectLoadedForm);
@@ -64,7 +65,7 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
     const downloadPdfFile = (form: Form) => {
         dispatch(showLoadingOverlay('Vordruck wird generiert'));
         api
-            .getBlob(`forms/${form.id}/print/`)
+            .getBlob(`forms/${form.id}/${form.version}/print/`)
             .then((blob) => {
                 downloadBlobFile(`vordruck - ${form.slug} - ${form.version}.pdf`, blob);
                 dispatch(hideLoadingOverlayWithTimeout(1000));
@@ -228,8 +229,8 @@ export function AdminToolsDialog(props: AdminToolsDialogProps) {
                 </DialogTitleWithClose>
                 <DialogContent tabIndex={0}>
                     {
-                        form?.root != null &&
-                        <FormMetrics root={form.root} />
+                        form?.rootElement != null &&
+                        <FormMetrics root={form.rootElement} />
                     }
                 </DialogContent>
             </Dialog>

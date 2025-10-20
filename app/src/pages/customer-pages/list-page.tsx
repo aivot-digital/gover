@@ -12,10 +12,9 @@ import {AppMode} from '../../data/app-mode';
 import {ListHeader} from '../../components/list-header/list-header';
 import {AppFooter} from '../../components/app-footer/app-footer';
 import {Introductory} from '../../components/introductory/introductory';
-import {ApplicationListItemPublic} from '../../components/application-list-item/application-list-item-public';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetStepper} from '../../slices/stepper-slice';
-import {clearCustomerInput, clearErrors, clearLoadedForm, showDialog} from '../../slices/app-slice';
+import {clearLoadedForm, showDialog} from '../../slices/app-slice';
 import {AlertComponent} from '../../components/alert/alert-component';
 import {useApi} from '../../hooks/use-api';
 import {Theme} from '../../modules/themes/models/theme';
@@ -28,6 +27,7 @@ import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
 import {setIdentityId} from '../../slices/identity-slice';
+import {PublicFormListItem} from '../../components/public-form-list-item/public-form-list-item';
 
 export function ListPage() {
     const baseTheme = useTheme();
@@ -53,8 +53,6 @@ export function ListPage() {
                 setFailedToLoad(true);
             });
 
-        dispatch(clearCustomerInput());
-        dispatch(clearErrors());
         dispatch(resetStepper());
         dispatch(clearLoadedForm());
         dispatch(setIdentityId(undefined));
@@ -109,6 +107,7 @@ export function ListPage() {
 
                 <AppHeader
                     mode={AppMode.CustomerDisplay}
+                    onDeleteFormData={() => {}}
                 />
 
                 <main role="main">
@@ -152,8 +151,8 @@ export function ListPage() {
                                     <List component={'div'}>
                                         {
                                             filteredApplications.map((app) => (
-                                                <ApplicationListItemPublic
-                                                    key={app.slug + app.version}
+                                                <PublicFormListItem
+                                                    key={app.slug}
                                                     form={app}
                                                 />
                                             ))

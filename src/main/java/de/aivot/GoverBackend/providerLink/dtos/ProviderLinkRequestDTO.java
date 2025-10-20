@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.providerLink.dtos;
 
-import de.aivot.GoverBackend.lib.ReqeustDTO;
+import de.aivot.GoverBackend.lib.RequestDTO;
 import de.aivot.GoverBackend.providerLink.entities.ProviderLink;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,7 +18,7 @@ public record ProviderLinkRequestDTO(
         @Length(min = 1, max = 128, message = "Link must be between 1 and 128 characters")
         @URL(message = "Link must be a valid URL")
         String link
-) implements ReqeustDTO<ProviderLink> {
+) implements RequestDTO<ProviderLink> {
     @Override
     public ProviderLink toEntity() {
         var providerLink = new ProviderLink();

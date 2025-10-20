@@ -205,7 +205,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte vor Antragstellung lesen sollten."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine relevanten Dokumente angegeben"
-                value={props.element.supportingDocuments}
+                value={props.element.supportingDocuments ?? undefined}
                 onChange={(supportingDocuments) => {
                     props.onPatch({
                         supportingDocuments,
@@ -219,7 +219,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 hint="Geben Sie hier Dokumente an, welche Antragsberechtigte einzureichen haben."
                 addLabel="Dokument hinzufügen"
                 noItemsHint="Keine einzureichenden Dokumente angegeben"
-                value={props.element.documentsToAttach}
+                value={props.element.documentsToAttach ?? undefined}
                 onChange={(supportingDocuments) => {
                     props.onPatch({
                         documentsToAttach: supportingDocuments,

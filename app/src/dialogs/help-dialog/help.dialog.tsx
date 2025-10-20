@@ -1,13 +1,13 @@
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography} from '@mui/material';
 import {BoxLink} from '../../components/box-link/box-link';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
 import {type HelpDialogProps} from './help-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
-import {useApi} from "../../hooks/use-api";
+import {useApi} from '../../hooks/use-api';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 
@@ -45,7 +45,7 @@ export function HelpDialog(props: HelpDialogProps) {
 
     const FAQs = [
         {
-            question: "Wie funktioniert die Online-Antragstellung?",
+            question: 'Wie funktioniert die Online-Antragstellung?',
             answer: (
                 <>
                     <Typography>
@@ -56,23 +56,34 @@ export function HelpDialog(props: HelpDialogProps) {
                         <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, zum Navigieren durch die Schritte und um Ihre Eingaben zu prüfen.</li>
                         <li>Klicken Sie abschließend auf <b>„Antrag verbindlich einreichen“</b>.</li>
                         <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen Sie erneut, das Formular abzusenden.</li>
-                        <li>Nach erfolgreicher Übermittlung wird Ihr Antrag direkt an die zuständige Behörde weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte durch, indem Sie den im Antrag angezeigten Anweisungen folgen.</li>
+                        <li>Nach erfolgreicher Übermittlung wird Ihr Antrag direkt an die zuständige Behörde weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte durch, indem Sie den im Antrag angezeigten
+                            Anweisungen folgen.
+                        </li>
                         <li>Laden Sie den Antrag als PDF herunter oder lassen Sie ihn sich per E-Mail zusenden.</li>
                     </ul>
                 </>
             ),
         },
         {
-            question: "Welche Zeichen kann ich im Formular verwenden?",
+            question: 'Welche Zeichen kann ich im Formular verwenden?',
             answer: (
                 <>
                     <Typography>
                         Das Formular unterstützt Zeichen aus dem <b>Unicode-Zeichensatz</b>, die in der <b>UTF-8-Kodierung</b> gespeichert und übertragen werden. Sie können folgende Zeichen verwenden:
                     </Typography>
                     <ul>
-                        <li><b>Buchstaben:</b> A-Z, a-z, Umlaute (ä, ö, ü), ß, sowie diakritische Zeichen (á, à, â, é, è, ê, ô, etc.).</li>
-                        <li><b>Zahlen:</b> 0-9</li>
-                        <li><b>Sonderzeichen:</b> , . : ( ) ? ! @ „ ‚ § € / + - _</li>
+                        <li>
+                            <b>Buchstaben:</b>
+                            A-Z, a-z, Umlaute (ä, ö, ü), ß, sowie diakritische Zeichen (á, à, â, é, è, ê, ô, etc.).
+                        </li>
+                        <li>
+                            <b>Zahlen:</b>
+                            0-9
+                        </li>
+                        <li>
+                            <b>Sonderzeichen:</b>
+                            , . : ( ) ? ! @ „ ‚ § € / + - _
+                        </li>
                     </ul>
                     <Typography>
                         Andere Sonderzeichen, Steuerzeichen oder nicht-druckbare Zeichen sind nicht erlaubt.
@@ -82,16 +93,31 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: "Welche Dateiformate kann ich hochladen?",
+            question: 'Welche Dateiformate kann ich hochladen?',
             answer: (
                 <>
                     <Typography>Grundsätzlich können folgende Dateiformate hochgeladen werden:</Typography>
                     <ul>
-                        <li><b>Dokumente:</b> pdf, doc, docx, odt, fodt, odf</li>
-                        <li><b>Tabellen:</b> xls, xlsx, ods, fods</li>
-                        <li><b>Präsentationen:</b> ppt, pptx, odp, fodp</li>
-                        <li><b>Bilder & Grafiken:</b> png, jpg, jpeg, odg, fodg</li>
-                        <li><b>Maximale Dateigröße:</b> 10 MB pro Datei, insgesamt max. 100 MB</li>
+                        <li>
+                            <b>Dokumente:</b>
+                            pdf, doc, docx, odt, fodt, odf
+                        </li>
+                        <li>
+                            <b>Tabellen:</b>
+                            xls, xlsx, ods, fods
+                        </li>
+                        <li>
+                            <b>Präsentationen:</b>
+                            ppt, pptx, odp, fodp
+                        </li>
+                        <li>
+                            <b>Bilder & Grafiken:</b>
+                            png, jpg, jpeg, odg, fodg
+                        </li>
+                        <li>
+                            <b>Maximale Dateigröße:</b>
+                            10 MB pro Datei, insgesamt max. 100 MB
+                        </li>
                     </ul>
                     <Typography>
                         Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag variieren. Bitte beachten Sie die Hinweise im Formular.
@@ -100,29 +126,35 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: "Benötige ich zusätzliche Software für meinen Antrag?",
+            question: 'Benötige ich zusätzliche Software für meinen Antrag?',
             answer: (
                 <>
                     <Typography>
                         Sie benötigen zum Ausfüllen eines Formulars grundsätzlich keine zusätzliche Software abseits ihres Web-Browsers.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Wenn Sie optional ein PDF-Dokument herunterladen und ansehen möchten, so benötigen Sie möglicherweise eine spezielle Software. Eine bekannte Lösung ist der PDF Reader der Firma Adobe (<a
-                        rel="noreferrer"
-                        href={'https://get.adobe.com/de/reader/'}
-                        target={'_blank'}
-                    >https://get.adobe.com/de/reader/</a>), es gibt aber auch das
-                        kostenfreie Alternativen wie z. B. Foxit PDF Reader (<a
-                        rel="noreferrer"
-                        href={'https://www.foxitsoftware.com/de/pdf-reader/'}
-                        target={'_blank'}
-                    >https://www.foxitsoftware.com/de/pdf-reader/</a>).
+                        Wenn Sie optional ein PDF-Dokument herunterladen und ansehen möchten, so benötigen Sie möglicherweise eine spezielle Software. Eine bekannte Lösung ist der PDF Reader der Firma Adobe (
+                        <a
+                            rel="noreferrer"
+                            href={'https://get.adobe.com/de/reader/'}
+                            target={'_blank'}
+                        >https://get.adobe.com/de/reader/
+                        </a>
+                        ), es gibt aber auch das
+                        kostenfreie Alternativen wie z. B. Foxit PDF Reader (
+                        <a
+                            rel="noreferrer"
+                            href={'https://www.foxitsoftware.com/de/pdf-reader/'}
+                            target={'_blank'}
+                        >https://www.foxitsoftware.com/de/pdf-reader/
+                        </a>
+                        ).
                     </Typography>
                 </>
             ),
         },
         {
-            question: "Wer ist für meinen Antrag zuständig?",
+            question: 'Wer ist für meinen Antrag zuständig?',
             answer: (
                 <Typography>
                     Die Bearbeitung erfolgt durch die im Formular genannten zuständigen Parteien. Die Online-Plattform dient nur der digitalen Übermittlung der Antragsdaten.
@@ -130,7 +162,7 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: "Werden meine Daten sicher übertragen?",
+            question: 'Werden meine Daten sicher übertragen?',
             answer: (
                 <Typography>
                     Ihre Daten werden über eine <b>verschlüsselte HTTPS- bzw. TLS-Verbindung</b> übertragen und sind somit auf dem Transportweg vor unbefugtem Zugriff geschützt.
@@ -138,11 +170,12 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: "Kann ich meinen Antrag zwischenspeichern und später weiterbearbeiten?",
+            question: 'Kann ich meinen Antrag zwischenspeichern und später weiterbearbeiten?',
             answer: (
                 <>
                     <Typography>
-                        Ihre Eingaben werden automatisch im <b>lokalen Speicher (Local Storage)</b> Ihres Browsers zwischengespeichert. Wenn Sie das Formular erneut aufrufen, können Sie entscheiden, ob Sie Ihre Eingaben fortsetzen oder einen neuen Antrag beginnen möchten.
+                        Ihre Eingaben werden automatisch im <b>lokalen Speicher (Local Storage)</b> Ihres Browsers zwischengespeichert. Wenn Sie das Formular erneut aufrufen, können Sie entscheiden, ob Sie Ihre Eingaben fortsetzen oder
+                        einen neuen Antrag beginnen möchten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         <b>Wichtige Hinweise:</b>
@@ -157,11 +190,12 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: "Kann ich meinen Antrag nachträglich ändern oder zurückziehen?",
+            question: 'Kann ich meinen Antrag nachträglich ändern oder zurückziehen?',
             answer: (
                 <>
                     <Typography>
-                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald Ihr Antrag übermittelt wurde. Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Antrag genannten Ansprechpartner, welche Ihnen möglicherweise weiterhelfen können.
+                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald Ihr Antrag übermittelt wurde. Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Antrag genannten Ansprechpartner, welche Ihnen
+                        möglicherweise weiterhelfen können.
                     </Typography>
                 </>
             ),
@@ -197,20 +231,22 @@ export function HelpDialog(props: HelpDialogProps) {
                         <Grid
                             size={{
                                 xs: 12,
-                                md: 6
-                            }}>
+                                md: 6,
+                            }}
+                        >
                             <BoxLink
-                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.title}`}
+                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.publicTitle}`}
                                 text={'Fachlicher Support\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
                             />
                         </Grid>
                         <Grid
                             size={{
                                 xs: 12,
-                                md: 6
-                            }}>
+                                md: 6,
+                            }}
+                        >
                             <BoxLink
-                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.title}`}
+                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.publicTitle}`}
                                 text={'Technischer Support\nUnterstützung bei technischen Problemen und Fehlern'}
                             />
                         </Grid>

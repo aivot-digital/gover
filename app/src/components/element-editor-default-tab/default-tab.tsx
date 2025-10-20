@@ -101,8 +101,9 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 6
-                        }}>
+                            lg: 6,
+                        }}
+                    >
                         <TextFieldComponent
                             label="Interner Name"
                             value={props.element.name}
@@ -128,8 +129,9 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 6
-                        }}>
+                            lg: 6,
+                        }}
+                    >
                         <SelectFieldComponent
                             label="Breite des Elements in der Darstellung"
                             value={(props.element as AnyFormElement)?.weight?.toString() ?? '12'}
@@ -185,8 +187,9 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 6
-                            }}>
+                                lg: 6,
+                            }}
+                        >
                             <TextFieldComponent
                                 value={props.element.label}
                                 label="Titel"
@@ -205,8 +208,9 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 6
-                            }}>
+                                lg: 6,
+                            }}
+                        >
                             <TextFieldComponent
                                 value={props.element.hint}
                                 label="Hinweis"
@@ -238,6 +242,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                 entity={props.entity}
                 onPatchEntity={props.onChangeEntity}
                 editable={props.editable}
+                scope={props.scope}
             />
             {
                 isAnyInputElement(props.element) &&
@@ -254,14 +259,15 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 4
-                            }}>
+                                lg: 4,
+                            }}
+                        >
                             <CheckboxFieldComponent
                                 label="Pflichtangabe"
-                                value={props.element.required}
+                                value={props.element.required ?? undefined}
                                 onChange={(checked) => {
                                     props.onChange({
-                                        // @ts-expect-error
+                                        // @ts-ignore
                                         required: checked,
                                         disabled: false,
                                         technical: false,
@@ -274,42 +280,50 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 4
-                            }}>
-                            <CheckboxFieldComponent
-                                label="Eingabe deaktiviert"
-                                value={props.element.disabled}
-                                onChange={(checked) => {
-                                    props.onChange({
-                                        // @ts-expect-error
-                                        required: false,
-                                        disabled: checked,
-                                        technical: false,
-                                    });
-                                }}
-                                hint="Deaktivierte Eingaben können nicht bearbeitet werden."
-                                disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.technical)}
-                            />
+                                lg: 4,
+                            }}
+                        >
+                            {
+                                props.scope !== 'data_modelling' &&
+                                <CheckboxFieldComponent
+                                    label="Eingabe deaktiviert"
+                                    value={props.element.disabled ?? undefined}
+                                    onChange={(checked) => {
+                                        props.onChange({
+                                            // @ts-ignore
+                                            required: false,
+                                            disabled: checked,
+                                            technical: false,
+                                        });
+                                    }}
+                                    hint="Deaktivierte Eingaben können nicht bearbeitet werden."
+                                    disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.technical)}
+                                />
+                            }
                         </Grid>
                         <Grid
                             size={{
                                 xs: 12,
-                                lg: 4
-                            }}>
-                            <CheckboxFieldComponent
-                                label="Technisches Feld"
-                                value={props.element.technical}
-                                onChange={(checked) => {
-                                    props.onChange({
-                                        // @ts-expect-error
-                                        required: false,
-                                        disabled: false,
-                                        technical: checked,
-                                    });
-                                }}
-                                hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
-                                disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.disabled)}
-                            />
+                                lg: 4,
+                            }}
+                        >
+                            {
+                                props.scope !== 'data_modelling' &&
+                                <CheckboxFieldComponent
+                                    label="Technisches Feld"
+                                    value={props.element.technical ?? undefined}
+                                    onChange={(checked) => {
+                                        props.onChange({
+                                            // @ts-ignore
+                                            required: false,
+                                            disabled: false,
+                                            technical: checked,
+                                        });
+                                    }}
+                                    hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
+                                    disabled={!props.editable || Boolean(props.element.required) || Boolean(props.element.disabled)}
+                                />
+                            }
                         </Grid>
                     </Grid>
                 </>
@@ -327,13 +341,20 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="ID des Elements"
                         value={props.element.id ?? ''}
-                        disabled
-                        onChange={(_) => {
+                        disabled={props.scope === 'application' || props.scope === 'preset' || !props.editable}
+                        onChange={(id) => {
+                            if (props.scope === 'data_modelling') {
+                                // @ts-ignore
+                                props.onChange({
+                                    id: id ?? '',
+                                });
+                            }
                         }}
                         endAction={{
                             icon: <ContentPasteIcon />,
@@ -348,6 +369,7 @@ export function DefaultTab<T extends AnyElement, E extends ElementTreeEntity>(pr
                                     });
                             },
                         }}
+                        hint={props.scope === 'data_modelling' ? 'Wenn Sie eine bereits in Verwendung befindliche ID nachträglich ändern, werden bereits erfasste Daten verworfen. Eine automatische Migration findet derzeit nicht statt. Bitte verwenden Sie daher von Beginn an stabile, eindeutige IDs.' : undefined}
                     />
                 </Grid>
             </Grid>

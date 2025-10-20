@@ -1,12 +1,14 @@
 import {Grid, Typography, useTheme} from '@mui/material';
-import {BaseSummary} from './base-summary';
+import {BaseSummaryProps} from './base-summary';
 import {CheckboxFieldElement} from '../models/elements/form/input/checkbox-field-element';
 
-export const CheckboxFieldSummary: BaseSummary<CheckboxFieldElement, boolean> = ({
-                                                                                     model,
-                                                                                     value,
-                                                                                 }) => {
+export function CheckboxFieldSummary(props: BaseSummaryProps<CheckboxFieldElement, boolean>) {
     const theme = useTheme();
+
+    const {
+        model,
+        value,
+    } = props;
 
     return (
         <Grid

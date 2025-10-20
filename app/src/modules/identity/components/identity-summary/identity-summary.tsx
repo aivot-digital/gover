@@ -1,15 +1,14 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Form} from '../../../../models/entities/form';
 import {SubmissionDetailsResponseDTO} from '../../../submissions/dtos/submission-details-response-dto';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityCustomerInputKey} from '../../constants/identity-customer-input-key';
-import {IdentityValue} from '../../models/identity-value';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {useApi} from '../../../../hooks/use-api';
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import SubdirectoryArrowRightOutlinedIcon from '@mui/icons-material/SubdirectoryArrowRightOutlined';
 import {isStringNullOrEmpty} from '../../../../utils/string-utils';
+import {IdentityData} from '../../models/identity-data';
 
 interface IdentitySummaryProps {
     submission: SubmissionDetailsResponseDTO;
@@ -24,8 +23,8 @@ export function IdentitySummary(props: IdentitySummaryProps) {
 
     const [identityProvider, setIdentityProvider] = useState<IdentityProviderDetailsDTO>();
 
-    const identityValue: IdentityValue | undefined = useMemo(() => {
-        return submission.customerInput[IdentityCustomerInputKey];
+    const identityValue: IdentityData | undefined = useMemo(() => {
+        return submission.customerInput[IdentityCustomerInputKey]?.inputValue;
     }, [submission]);
 
     useEffect(() => {
@@ -35,7 +34,7 @@ export function IdentitySummary(props: IdentitySummaryProps) {
         }
 
         new IdentityProvidersApiService(api)
-            .retrieve(identityValue.identityProviderKey)
+            .retrieve(identityValue.providerKey)
             .then(setIdentityProvider)
             .catch(console.error);
     }, [identityValue]);
@@ -60,7 +59,7 @@ export function IdentitySummary(props: IdentitySummaryProps) {
     );
 }
 
-function createAuthRows(identityValue: IdentityValue, identityProvider: IdentityProviderDetailsDTO) {
+function createAuthRows(identityValue: IdentityData, identityProvider: IdentityProviderDetailsDTO) {
     const rows = [{
         icon: <CheckCircleOutlineOutlinedIcon color="success" />,
         label: 'Authentifizierung',
@@ -72,7 +71,7 @@ function createAuthRows(identityValue: IdentityValue, identityProvider: Identity
             continue;
         }
 
-        let value = identityValue.userInfo[attribute.keyInData];
+        let value = identityValue.attributes[attribute.keyInData];
         if (isStringNullOrEmpty(value)) {
             value = 'Keine Angaben';
         }

@@ -102,7 +102,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         >
             <TimePicker
                 label={`${props.label}${props.required ? ' *' : ''}`}
-                value={dateValue}
+                value={localValue}
                 onChange={handleChange}
                 onAccept={handleAccept}
                 onClose={handleClose}
@@ -132,9 +132,9 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                 }}
                 sx={{
                     ...props.sx,
-                    "& .MuiInputBase-root": {
-                        backgroundColor: props.busy ? "#F8F8F8" : undefined,
-                        cursor: props.busy ? "not-allowed" : undefined,
+                    "& .MuiPickersInputBase-root": {
+                        backgroundColor: (props.busy || props.disabled) ? "#F8F8F8" : undefined,
+                        cursor: (props.busy || props.disabled) ? "not-allowed" : undefined,
                     },
                 }}
             />

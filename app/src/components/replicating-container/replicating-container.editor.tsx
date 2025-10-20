@@ -101,7 +101,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     lg: 6
                 }}>
                 <NumberFieldComponent
-                    value={props.element.maximumSets}
+                    value={props.element.maximumSets ?? undefined}
                     label="Maximalanzahl der hinzuzufügenden Datensätze"
                     hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
                     error={minRequiredError ? 'Sie fordern mehr Datensätze als Sie maximal zulassen.' : undefined}

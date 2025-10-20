@@ -8,9 +8,10 @@ import org.springframework.data.jpa.domain.Specification;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.UUID;
 
 public class PaymentTransactionFilter implements Filter<PaymentTransactionEntity> {
-    private String paymentProviderKey;
+    private UUID paymentProviderKey;
     private XBezahldienstStatus status;
     private Boolean hasError;
 
@@ -21,7 +22,7 @@ public class PaymentTransactionFilter implements Filter<PaymentTransactionEntity
         return new PaymentTransactionFilter();
     }
 
-    public PaymentTransactionFilter setPaymentProviderKey(String paymentProviderKey) {
+    public PaymentTransactionFilter setPaymentProviderKey(UUID paymentProviderKey) {
         this.paymentProviderKey = paymentProviderKey;
         return this;
     }

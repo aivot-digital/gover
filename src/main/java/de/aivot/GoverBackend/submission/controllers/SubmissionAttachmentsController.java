@@ -1,9 +1,7 @@
 package de.aivot.GoverBackend.submission.controllers;
 
-import de.aivot.GoverBackend.exceptions.ForbiddenException;
-import de.aivot.GoverBackend.exceptions.NotFoundException;
-import de.aivot.GoverBackend.exceptions.UnauthorizedException;
-import de.aivot.GoverBackend.form.services.FormService;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.form.services.FormVersionWithDetailsService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.services.PaymentProviderService;
 import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
@@ -41,7 +39,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/submissions/{submissionId}/attachments/")
 public class SubmissionAttachmentsController {
-    private final FormService formService;
     private final SubmissionWithMembershipService submissionWithMembershipService;
     private final SubmissionStorageService submissionStorageService;
     private final PdfService pdfService;
@@ -49,17 +46,17 @@ public class SubmissionAttachmentsController {
     private final SubmissionService submissionService;
     private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderService paymentProviderService;
+    private final FormVersionWithDetailsService formVersionWithDetailsService;
 
     @Autowired
-    public SubmissionAttachmentsController(
-            SubmissionWithMembershipService submissionWithMembershipService,
-            SubmissionStorageService submissionStorageService,
-            PdfService pdfService,
-            SubmissionAttachmentService submissionAttachmentService,
-            SubmissionService submissionService,
-            FormService formService,
-            PaymentTransactionService paymentTransactionService, PaymentProviderService paymentProviderService) {
-        this.formService = formService;
+    public SubmissionAttachmentsController(SubmissionWithMembershipService submissionWithMembershipService,
+                                           SubmissionStorageService submissionStorageService,
+                                           PdfService pdfService,
+                                           SubmissionAttachmentService submissionAttachmentService,
+                                           SubmissionService submissionService,
+                                           PaymentTransactionService paymentTransactionService,
+                                           PaymentProviderService paymentProviderService,
+                                           FormVersionWithDetailsService formVersionWithDetailsService) {
         this.submissionWithMembershipService = submissionWithMembershipService;
         this.submissionStorageService = submissionStorageService;
         this.pdfService = pdfService;
@@ -67,6 +64,7 @@ public class SubmissionAttachmentsController {
         this.submissionService = submissionService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderService = paymentProviderService;
+        this.formVersionWithDetailsService = formVersionWithDetailsService;
     }
 
     @GetMapping("")
@@ -130,7 +128,7 @@ public class SubmissionAttachmentsController {
     }
 
     @GetMapping("gover-data.json")
-    public Map<String, Object> downloadGoverDataAttachment(
+    public ElementData downloadGoverDataAttachment(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String submissionId
     ) throws ResponseException {
@@ -153,8 +151,8 @@ public class SubmissionAttachmentsController {
                 .retrieve(submissionId)
                 .orElseThrow(ResponseException::notFound);
 
-        var form = formService
-                .retrieve(submission.getFormId())
+        var form = formVersionWithDetailsService
+                .retrieve(submission.getFormId(), submission.getFormVersion())
                 .orElseThrow(ResponseException::notFound);
 
         var paymentTransaction = submission.getPaymentTransactionKey() == null ?
@@ -204,8 +202,8 @@ public class SubmissionAttachmentsController {
                 .retrieve(submissionId)
                 .orElseThrow(ResponseException::notFound);
 
-        var form = formService
-                .retrieve(submission.getFormId())
+        var form = formVersionWithDetailsService
+                .retrieve(submission.getFormId(), submission.getFormVersion())
                 .orElseThrow(ResponseException::notFound);
 
         byte[] pdfBytes;
@@ -226,7 +224,7 @@ public class SubmissionAttachmentsController {
         // Create content disposition
         ContentDisposition contentDisposition = ContentDisposition
                 .builder("inline")
-                .filename(form.getFormTitle().replaceAll("[^\\w\\d-_]+", "") + ".pdf", StandardCharsets.UTF_8)
+                .filename(form.getPublicTitle().replaceAll("[^\\w\\d-_]+", "") + ".pdf", StandardCharsets.UTF_8)
                 .build();
 
         // Respond resource

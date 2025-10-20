@@ -69,6 +69,8 @@ export function AssetDetailsPageIndex() {
     const [file, setFile] = useState<File[]>();
     const [uploadError, setUploadError] = useState<string>();
 
+    const uploadChangeBlocker = useChangeBlocker(undefined, file);
+
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
 
     const [uploader, setUploader] = useState<User>();
@@ -218,6 +220,8 @@ export function AssetDetailsPageIndex() {
                         required={true}
                         error={uploadError}
                     />
+
+                    {uploadChangeBlocker.dialog}
                 </>
             }
             {

@@ -1,26 +1,34 @@
 package de.aivot.GoverBackend.submission.controllers;
 
 import de.aivot.GoverBackend.captcha.services.AltchaService;
+import de.aivot.GoverBackend.core.converters.ElementDataConverter;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
-import de.aivot.GoverBackend.elements.models.steps.SubmitStepElement;
+import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
 import de.aivot.GoverBackend.exceptions.ConflictException;
 import de.aivot.GoverBackend.exceptions.NotAcceptableException;
 import de.aivot.GoverBackend.exceptions.UserFriendlyResponseStatusException;
-import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntityId;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
-import de.aivot.GoverBackend.form.services.FormDerivationService;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
+import de.aivot.GoverBackend.form.repositories.FormVersionWithDetailsRepository;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
-import de.aivot.GoverBackend.identity.models.IdentityValue;
+import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.utils.SystemIdentityProviderFormatter;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.services.CustomerMailService;
@@ -45,10 +53,8 @@ import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
 import de.aivot.GoverBackend.submission.repositories.SubmissionAttachmentRepository;
 import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
-import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.mail.MessagingException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -65,8 +71,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 public class SubmitController {
@@ -82,13 +90,14 @@ public class SubmitController {
     private final CustomerMailService customerMailService;
     private final SubmissionMailService submissionMailService;
     private final ExceptionMailService exceptionMailService;
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
     private final FormPaymentService paymentService;
     private final PaymentProviderService paymentProviderService;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderRepository paymentProviderRepository;
     private final IdentityCacheRepository identityCacheRepository;
     private final AltchaService altchaService;
+    private final ElementDerivationService elementDerivationService;
+    private final FormVersionWithDetailsRepository formVersionWithDetailsRepository;
 
     @Autowired
     public SubmitController(
@@ -104,13 +113,12 @@ public class SubmitController {
             CustomerMailService customerMailService,
             SubmissionMailService submissionMailService,
             ExceptionMailService exceptionMailService,
-            FormDerivationServiceFactory formDerivationServiceFactory,
             FormPaymentService paymentService,
             PaymentProviderService paymentProviderService,
             PaymentTransactionRepository paymentTransactionRepository,
             PaymentProviderRepository paymentProviderRepository,
             IdentityCacheRepository identityCacheRepository,
-            AltchaService altchaService) {
+            AltchaService altchaService, ElementDerivationService elementDerivationService, FormVersionWithDetailsRepository formVersionWithDetailsRepository) {
         this.formRepository = formRepository;
         this.submissionRepository = submissionRepository;
         this.submissionAttachmentRepository = submissionAttachmentRepository;
@@ -123,26 +131,28 @@ public class SubmitController {
         this.customerMailService = customerMailService;
         this.submissionMailService = submissionMailService;
         this.exceptionMailService = exceptionMailService;
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.identityCacheRepository = identityCacheRepository;
         this.altchaService = altchaService;
+        this.elementDerivationService = elementDerivationService;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
     }
 
-    @PostMapping("/api/public/submit/{applicationId}/")
+    @PostMapping("/api/public/submit/{formId}/{formVersion}/")
     public Submission submit(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer applicationId,
+            @PathVariable Integer formId,
+            @PathVariable Integer formVersion,
             @RequestParam(value = "inputs", required = true) String inputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         // Fetch form
-        var form = formRepository
-                .findById(applicationId)
+        var form = formVersionWithDetailsRepository
+                .findById(FormVersionWithDetailsEntityId.of(formId, formVersion))
                 .orElseThrow(ResponseException::notFound);
 
         Destination destination = null;
@@ -153,43 +163,58 @@ public class SubmitController {
         }
 
         // Test form published or user authenticated
-        if (form.getStatus() != FormStatus.Published && (jwt == null)) {
+        if (form.getStatus() != FormStatus.Published && jwt == null) {
             throw ResponseException.forbidden();
         }
 
         // Get customer input
-        var customerInput = new JSONObject(inputs).toMap();
-
+        ElementData elementData;
         try {
-            var rawValue = (String) customerInput.get(SubmitStepElement.CAPTCHA_FIELD_ID);
+            elementData = new ElementDataConverter()
+                    .convertToEntityAttribute(inputs);
+        } catch (Exception e) {
+            throw ResponseException.badRequest(
+                    "Ungültige Eingabedaten.",
+                    "Die Eingabedaten konnten nicht verarbeitet werden. Bitte überprüfen Sie die Struktur der Daten."
+            );
+        }
 
-            if (rawValue == null || rawValue.isBlank()) {
-                throw new Exception("Missing Captcha payload");
+        var submitStepElementData = elementData
+                .getOrDefault(
+                        form.getRootElement().getSubmitStep().getId(),
+                        new ElementDataObject(ElementType.SubmitStep)
+                );
+
+        // Verify captcha if present
+        try {
+
+            var rawCaptchaValue = submitStepElementData.getValue();
+
+            var formattedCaptchaValue = SubmitStepElement
+                    ._formatValue(rawCaptchaValue);
+
+            var payloadNode = formattedCaptchaValue != null ? formattedCaptchaValue.get("payload") : null;
+            if (payloadNode == null) {
+                submitStepElementData.setComputedErrors(List.of("Bitte bestätigen Sie, dass Sie ein Mensch sind."));
+                throw ResponseException.badRequest(elementData);
             }
 
-            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            var json = mapper.readTree(rawValue);
-
-            var payloadNode = json.get("payload");
-            if (payloadNode == null || payloadNode.isNull() || payloadNode.asText().isBlank()) {
-                throw new Exception("Missing 'payload' field in Captcha JSON");
-            }
-
-            var payload = payloadNode.asText();
+            var payload = payloadNode.toString();
             var captchaVerificationStatus = altchaService.verify(payload);
 
             if (!captchaVerificationStatus) {
-                throw new Exception("Verification failed");
+                submitStepElementData.setComputedErrors(List.of("Captcha-Verifizierung fehlgeschlagen."));
+                throw ResponseException.badRequest(elementData);
             }
-
         } catch (Exception e) {
-            throw ResponseException.badRequest("Verifizierung des Captcha fehlgeschlagen.");
+            submitStepElementData.setComputedErrors(List.of("Verifizierung des Captcha fehlgeschlagen."));
+            throw ResponseException.badRequest(elementData);
         }
 
         var optionalIdp = extractIdp(identityId);
 
         // Hydrate the customer input with the data from an idp
-        hydrateCustomerInputWithIdpData(form, optionalIdp, customerInput);
+        hydrateCustomerInputWithIdpData(form, optionalIdp, elementData);
 
         // Test files for viruses
         avService.testMultipartFiles(files);
@@ -198,48 +223,38 @@ public class SubmitController {
         destinationSubmitService.testDestinationAttachmentSize(destination, files);
 
         // Validate customer input
-        var derivationContext = formDerivationServiceFactory
-                .create(form, List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER), List.of(FormDerivationService.FORM_STEP_LIMIT_ALL_IDENTIFIER))
-                .derive(form.getRoot(), customerInput);
-        try {
-            derivationContext.close();
-        } catch (Exception e) {
-            throw ResponseException.internalServerError(e);
+        var verifiedElementData = elementDerivationService
+                .derive(new ElementDerivationRequest()
+                        .setElement(form.getRootElement())
+                        .setElementData(elementData)
+                        .setOptions(new ElementDerivationOptions())
+                );
+
+        if (verifiedElementData.hasAnyError()) {
+            throw ResponseException.badRequest(verifiedElementData);
         }
 
-        if (derivationContext.getElementDerivationData().hasErrors()) {
-            var details = derivationContext
-                    .getElementDerivationData()
-                    .getErrors()
-                    .entrySet()
-                    .stream()
-                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                    .collect(Collectors.joining("\n"));
-            throw ResponseException.badRequest("Validierung fehlgeschlagen", details); // TODO: Extend error message
-        }
-
-        // Transfer derived values to customer input
-        customerInput = derivationContext
-                .getElementDerivationData()
-                .getCombinedValues();
+        // Copy the identity value to the verified element data
+        verifiedElementData
+                .put(IdentityValueKey.IdCustomerInputKey, elementData.get(IdentityValueKey.IdCustomerInputKey));
 
         // Prepare submission id
         var submissionId = UUID
                 .randomUUID()
                 .toString();
 
-
         // Create submission
         Submission submission = new Submission();
 
         submission.setId(submissionId);
         submission.setFormId(form.getId());
+        submission.setFormVersion(form.getVersion());
         submission.setStatus(SubmissionStatus.Pending);
         submission.setCreated(LocalDateTime.now());
         submission.setUpdated(LocalDateTime.now());
         submission.setAssigneeId(null);
-        submission.setCustomerInput(customerInput);
-        submission.setIsTestSubmission(form.getStatus() != FormStatus.Published || jwt != null);
+        submission.setCustomerInput(verifiedElementData);
+        submission.setIsTestSubmission(jwt != null);
         submission.setCopySent(false);
         submission.setCopyTries(0);
         submission.setDestinationId(destination != null ? destination.getId() : null);
@@ -285,10 +300,10 @@ public class SubmitController {
 
         Optional<PaymentTransactionEntity> paymentRequest = Optional.empty();
         // If a payment provider is set, create a transaction
-        if (form.getPaymentProvider() != null) {
+        if (form.getPaymentProviderKey() != null) {
             try {
                 paymentRequest = paymentService
-                        .createTransaction(form, submissionId, customerInput);
+                        .createTransaction(form, submissionId, verifiedElementData);
             } catch (PaymentException e) {
                 // If the payment creation failed, delete the submission and throw an exception
                 submissionRepository.delete(submission);
@@ -343,8 +358,8 @@ public class SubmitController {
         return submissionCopy;
     }
 
-    private void hydrateCustomerInputWithIdpData(Form form, Optional<IdentityCacheEntity> optionalIdp, Map<String, Object> customerInput) throws ResponseException {
-        if (form.getIdentityRequired() && optionalIdp.isEmpty()) {
+    private void hydrateCustomerInputWithIdpData(FormVersionWithDetailsEntity form, Optional<IdentityCacheEntity> optionalIdp, ElementData customerInput) throws ResponseException {
+        if (form.getIdentityVerificationRequired() && optionalIdp.isEmpty()) {
             throw ResponseException.badRequest("Ein Identitätsnachweis ist erforderlich, um den Antrag einzureichen.");
         }
 
@@ -355,7 +370,7 @@ public class SubmitController {
         var identityCacheEntity = optionalIdp.get();
 
         var flatElements = ElementFlattenUtils
-                .flattenElements(form.getRoot());
+                .flattenElements(form.getRootElement());
 
         for (var element : flatElements) {
             var metadata = element.getMetadata();
@@ -385,18 +400,26 @@ public class SubmitController {
             // If the metadata identifier is an identifier of a system identity provider, format the value accordingly
             mappedValue = SystemIdentityProviderFormatter.formatForSystemIdentityProvider(identityCacheEntity.getMetadataIdentifier(), mapping, mappedValue);
 
-            customerInput.put(element.getId(), mappedValue);
+            var existingDataObject = customerInput.getOrDefault(element.getId(), new ElementDataObject(element));
+            existingDataObject.setType(element.getType());
+            existingDataObject.setInputValue(mappedValue);
+
+            customerInput.put(element, existingDataObject);
         }
 
         // Create the identity value
-        var identityValue = new IdentityValue(
-                identityCacheEntity.getProviderKey(),
+        var identityValue = new IdentityData(
+                identityCacheEntity.getId(),
+                UUID.fromString(identityCacheEntity.getProviderKey()),
                 identityCacheEntity.getMetadataIdentifier(),
                 identityCacheEntity.getIdentityData()
         );
 
+        var identityValueDataObject = new ElementDataObject(ElementType.SubmittedStep);
+        identityValueDataObject.setInputValue(identityValue);
+
         // Add the idp data to the customer input
-        customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValue.toMap());
+        customerInput.put(IdentityValueKey.IdCustomerInputKey, identityValueDataObject);
     }
 
     @PostMapping("/api/public/send-copy/{submissionId}/")
@@ -491,8 +514,8 @@ public class SubmitController {
             throw new UserFriendlyResponseStatusException(HttpStatus.FORBIDDEN, "Die Zugriffsfrist für den Antrag ist abgelaufen. Bitte wenden Sie sich an die zuständige Dienststelle. Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: " + uuid);
         }
 
-        var form = formRepository
-                .findById(submission.getFormId())
+        var form = formVersionWithDetailsRepository
+                .findById(FormVersionWithDetailsEntityId.of(submission.getFormId(), submission.getFormVersion()))
                 .orElseThrow(() -> new UserFriendlyResponseStatusException(HttpStatus.NOT_FOUND, "Das Formular mit der ID " + submission.getFormId() + " konnte nicht gefunden werden."));
 
         // Get the path to the generated pdf
@@ -525,8 +548,8 @@ public class SubmitController {
     }
 
     private boolean testSubmissionExpired(Submission submission) {
-        var form = formRepository
-                .findById(submission.getFormId());
+        var form = formVersionWithDetailsRepository
+                .findById(FormVersionWithDetailsEntityId.of(submission.getFormId(), submission.getFormVersion()));
 
         return form.map(submission::hasExternalAccessExpired).orElse(true);
     }

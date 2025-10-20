@@ -202,7 +202,20 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <MultiCheckboxComponent
                     label="Mehrfachauswahl"
                     value={['Option 2', 'Option 3']}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[
+                        {
+                            label: 'Option 1',
+                            value: 'Option 1',
+                        },
+                        {
+                            label: 'Option 2',
+                            value: 'Option 2',
+                        },
+                        {
+                            label: 'Option 3',
+                            value: 'Option 3',
+                        },
+                    ]}
                     onChange={() => {
                     }}
                     hint="Hinweis zur Mehrfachauswahl"
@@ -213,7 +226,20 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <MultiCheckboxComponent
                     label="Mehrfachauswahl"
                     value={undefined}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[
+                        {
+                            label: 'Option 1',
+                            value: 'Option 1',
+                        },
+                        {
+                            label: 'Option 2',
+                            value: 'Option 2',
+                        },
+                        {
+                            label: 'Option 3',
+                            value: 'Option 3',
+                        },
+                    ]}
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Mehrfachauswahl"
@@ -228,8 +254,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Es unterstützt zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
             </Typography>
 
-            <AlertComponent color={"info"}>
-                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern – verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet keine automatische Formatierung statt.
+            <AlertComponent color={'info'}>
+                Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern – verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet keine automatische
+                Formatierung statt.
             </AlertComponent>
 
             <Divider sx={{my: 4}}>
@@ -303,7 +330,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={'Option 2'}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     hint="Hinweis zur Einzelauswahl"
@@ -314,7 +341,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Verpflichtende Einzelauswahl mit Optionsfeldern"
                     value={'Option 3'}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     required
@@ -325,7 +352,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <RadioFieldComponent
                     label="Einzelauswahl mit Optionsfeldern"
                     value={undefined}
-                    options={['Option 1', 'Option 2', 'Option 3']}
+                    options={[{label: 'Option 1', value: 'option_1'}, {label: 'Option 2', value: 'option_2'}, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
                     error="Fehlermeldung zur Einzelauswahl"
@@ -438,7 +465,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Der Einsatz des Elements wird dabei je nach Umfang für maximal bis zu drei Spalten empfohlen.
             </Typography>
 
-            <AlertComponent color={"info"}>
+            <AlertComponent color={'info'}>
                 Für komplexere Eingaben – etwa mit Datumsfeldern oder vielen Datenpunkten – empfiehlt sich die Strukturierte Listeneingabe.
                 Sie erlaubt die Verwendung aller Elementtypen, bietet detaillierte Konfigurationsmöglichkeiten und sorgt für eine deutlich bessere Nutzerfreundlichkeit.
             </AlertComponent>
@@ -532,9 +559,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 };
 
 export function ElementInfoTab({
-    type,
-    onClose,
-}: {type: ElementType, onClose: () => void}) {
+                                   type,
+                                   onClose,
+                               }: { type: ElementType, onClose: () => void }) {
     return (
         <DialogContent tabIndex={0}>
             <Box
@@ -551,7 +578,7 @@ export function ElementInfoTab({
                         onClick={onClose}
                         size="small"
                     >
-                        <CloseOutlinedIcon/>
+                        <CloseOutlinedIcon />
                     </IconButton>
                 </Tooltip>
             </Box>

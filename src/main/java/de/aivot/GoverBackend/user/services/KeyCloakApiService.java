@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +32,8 @@ import java.util.Optional;
 
 @Component
 public class KeyCloakApiService {
+    private final static Duration TIMEOUT = Duration.ofSeconds(5);
+
     private final KeyCloakOIDCConfig keyCloakOIDCConfig;
     private final KeyCloakIdConfig keyCloakIdConfig;
 
@@ -154,15 +157,21 @@ public class KeyCloakApiService {
 
         var uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
 
-        try (var client = HttpClient.newHttpClient()) {
-            var request = HttpRequest
-                    .newBuilder(uri)
-                    .headers("Content-Type", "application/json")
-                    .headers("Authorization", "Bearer " + accessToken)
-                    .GET()
-                    .build();
+        var request = HttpRequest
+                .newBuilder(uri)
+                .timeout(TIMEOUT)
+                .headers("Content-Type", "application/json")
+                .headers("Authorization", "Bearer " + accessToken)
+                .GET()
+                .build();
 
-            return client.send(request, HttpResponse.BodyHandlers.ofString());
+        var clientBuilder = HttpClient
+                .newBuilder()
+                .connectTimeout(TIMEOUT);
+
+        try (var client = clientBuilder.build()) {
+            return client
+                    .send(request, HttpResponse.BodyHandlers.ofString());
         }
     }
 
@@ -188,13 +197,19 @@ public class KeyCloakApiService {
         // Build the request for fetching the access token
         var request = HttpRequest
                 .newBuilder(uri)
+                .timeout(TIMEOUT)
                 .headers("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
 
+        // Create the http client builder
+        var clientBuilder = HttpClient
+                .newBuilder()
+                .connectTimeout(TIMEOUT);
+
         // Send the request and get the response
         HttpResponse<String> response;
-        try (HttpClient client = HttpClient.newHttpClient()) {
+        try (var client = clientBuilder.build()) {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         }
 
@@ -225,13 +240,19 @@ public class KeyCloakApiService {
         // Build the request for fetching the public key
         var request = HttpRequest
                 .newBuilder(uri)
+                .timeout(TIMEOUT)
                 .headers("Content-Type", "application/json")
                 .GET()
                 .build();
 
+        // Create the http client builder
+        var clientBuilder = HttpClient
+                .newBuilder()
+                .connectTimeout(TIMEOUT);
+
         // Send the request and get the response
         HttpResponse<String> response;
-        try (HttpClient client = HttpClient.newHttpClient()) {
+        try (var client = clientBuilder.build()) {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         }
 

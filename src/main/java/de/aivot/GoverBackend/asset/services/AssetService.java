@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class AssetService implements EntityService<AssetEntity, String> {
+public class AssetService implements EntityService<AssetEntity, UUID> {
     private final AssetRepository repository;
 
     @Autowired
@@ -27,7 +27,7 @@ public class AssetService implements EntityService<AssetEntity, String> {
     @Nonnull
     @Override
     public AssetEntity create(@Nonnull AssetEntity entity) throws ResponseException {
-        entity.setKey(UUID.randomUUID().toString());
+        entity.setKey(UUID.randomUUID());
         return repository.save(entity);
     }
 
@@ -48,7 +48,7 @@ public class AssetService implements EntityService<AssetEntity, String> {
     @Nonnull
     @Override
     public AssetEntity performUpdate(
-            @Nonnull String id,
+            @Nonnull UUID id,
             @Nonnull AssetEntity entity,
             @Nonnull AssetEntity existingEntity
     ) throws ResponseException {
@@ -59,7 +59,7 @@ public class AssetService implements EntityService<AssetEntity, String> {
 
     @Nonnull
     @Override
-    public Optional<AssetEntity> retrieve(@Nonnull String id) {
+    public Optional<AssetEntity> retrieve(@Nonnull UUID id) {
         return repository.findById(id);
     }
 
@@ -72,7 +72,7 @@ public class AssetService implements EntityService<AssetEntity, String> {
     }
 
     @Override
-    public boolean exists(@Nonnull String id) {
+    public boolean exists(@Nonnull UUID id) {
         return repository.existsById(id);
     }
 

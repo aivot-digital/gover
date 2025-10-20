@@ -17,7 +17,7 @@ import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import Balancer from 'react-wrap-balancer';
 
-export function AppHeader({mode}: AppHeaderProps) {
+export function AppHeader({mode, onDeleteFormData}: AppHeaderProps) {
     const dispatch = useAppDispatch();
     const theme = useTheme();
     const name = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -28,7 +28,7 @@ export function AppHeader({mode}: AppHeaderProps) {
 
     const appTitleLine1 = 'Online-Antrags-Management';
     const appTitleLine2 = name;
-    const formTitle = (app?.root.headline ?? '');
+    const formTitle = (app?.publicTitle ?? '');
 
     const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
         setMenuAnchorEl(event.currentTarget);
@@ -195,6 +195,7 @@ export function AppHeader({mode}: AppHeaderProps) {
                     mode={mode}
                     onClose={handleCloseMenu}
                     anchorElement={menuAnchorEl}
+                    onDeleteFormData={onDeleteFormData}
                 />
             }
         </header>

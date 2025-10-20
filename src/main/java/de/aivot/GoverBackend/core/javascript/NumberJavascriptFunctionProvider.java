@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.core.javascript;
 
-import de.aivot.GoverBackend.elements.models.form.input.NumberField;
+import de.aivot.GoverBackend.elements.models.elements.form.input.NumberField;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;

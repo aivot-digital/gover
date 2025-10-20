@@ -6,6 +6,8 @@ import org.graalvm.polyglot.HostAccess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 /**
  * This class provides JavaScript functions for retrieving secrets.
  * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
@@ -42,8 +44,15 @@ public class SecretJavascriptFunctionProvider implements JavascriptFunctionProvi
      */
     @HostAccess.Export
     public String get(String key) {
+        UUID parsedKey;
+        try {
+            parsedKey = UUID.fromString(key);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid UUID format", e);
+        }
+
         var secret = secretService
-                .retrieve(key)
+                .retrieve(parsedKey)
                 .orElseThrow(() -> new IllegalArgumentException("Secret not found"));
         try {
             return secretService.decrypt(secret);

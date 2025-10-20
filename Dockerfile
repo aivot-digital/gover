@@ -14,6 +14,11 @@ RUN npm run build:prod
 
 FROM node:24.2.0-alpine3.21 AS build_app
 
+# Set build version and date
+ARG BUILD_VERSION=0.0.0
+ARG BUILD_NUMBER=0
+ARG BUILD_DATE=2025-05-24T10:15:00Z
+
 # Set work dir
 WORKDIR /app
 
@@ -85,6 +90,10 @@ ENV LANG=de_DE.UTF-8
 ENV LANGUAGE=de_DE:de
 ENV LC_ALL=de_DE.UTF-8
 
+ENV BUILD_VERSION=$BUILD_VERSION
+ENV BUILD_NUMBER=$BUILD_NUMBER
+ENV BUILD_DATE=$BUILD_DATE
+
 # Prepare app working directoy
 WORKDIR /app
 
@@ -93,7 +102,7 @@ COPY docker/entrypoint.sh /app/entrypoint.sh
 
 # Install locale, nginx, configure nginx and entrypoint script
 RUN apk upgrade --no-cache && \
-    apk add tzdata musl musl-utils musl-locales nginx && \
+    apk add curl tzdata musl musl-utils musl-locales nginx && \
     chmod +x /app/entrypoint.sh
 
 # Copy nginx configs

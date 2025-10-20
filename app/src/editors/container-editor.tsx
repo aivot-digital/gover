@@ -90,7 +90,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                         }}>
                         <CheckboxFieldComponent
                             label="Pflichtangabe"
-                            value={onlyInputChild.required}
+                            value={onlyInputChild.required ?? false}
                             onChange={(val) => {
                                 props.onPatch({
                                     children: [

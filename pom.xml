@@ -180,6 +180,11 @@
             <artifactId>bucket4j-core</artifactId>
             <version>8.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+            <version>2.19.1</version> <!-- The same version as the one in spring boot -->
+        </dependency>
     </dependencies>
 
     <build>

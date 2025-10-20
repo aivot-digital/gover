@@ -31,6 +31,7 @@ export function OperandTypeSelector(props: OperandTypeSelectorProps) {
                     }}
                     onClick={() => {
                         props.onChange({
+                            type: 'NoCodeExpression',
                             operatorIdentifier: '',
                             operands: [],
                         });
@@ -48,6 +49,7 @@ export function OperandTypeSelector(props: OperandTypeSelectorProps) {
                     }}
                     onClick={() => {
                         props.onChange({
+                            type: 'NoCodeReference',
                             elementId: '',
                         });
                     }}
@@ -64,6 +66,7 @@ export function OperandTypeSelector(props: OperandTypeSelectorProps) {
                     }}
                     onClick={() => {
                         props.onChange({
+                            type: 'NoCodeStaticValue',
                             value: '',
                         });
                     }}

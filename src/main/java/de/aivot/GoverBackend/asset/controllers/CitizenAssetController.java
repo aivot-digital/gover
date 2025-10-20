@@ -136,11 +136,14 @@ public class CitizenAssetController {
 
     private AssetEntity getAssetById(String assetId) throws ResponseException {
         try {
-            UUID.fromString(assetId);
+            var uuid = UUID.fromString(assetId);
+            return getAssetById(uuid);
         } catch (Exception e) {
             throw ResponseException.notFound();
         }
+    }
 
+    private AssetEntity getAssetById(UUID assetId) throws ResponseException {
         return assetRepository
                 .findById(assetId)
                 .orElseThrow(ResponseException::notFound);

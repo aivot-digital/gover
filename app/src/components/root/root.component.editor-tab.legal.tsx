@@ -148,15 +148,15 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
                         label="Löschfrist in Wochen"
                         hint="Die Zeit in Wochen, nach der abgeschlossene Anträge automatisiert gelöscht werden. Geben Sie 0 ein um Anträge nicht zu löschen."
                         placeholder="2"
-                        value={props.entity.submissionDeletionWeeks ?? undefined}
+                        value={props.entity.submissionRetentionWeeks ?? undefined}
                         onChange={(val) => {
                             props.onPatchEntity({
-                                submissionDeletionWeeks: val,
+                                submissionRetentionWeeks: val,
                             });
                         }}
                         decimalPlaces={0}
                         suffix="Wochen"
-                        error={props.entity.submissionDeletionWeeks != null && props.entity.submissionDeletionWeeks < 0 ? 'Bitte geben Sie eine Löschfrist ein, die größer oder gleich 0 ist.' : undefined}
+                        error={props.entity.submissionRetentionWeeks != null && props.entity.submissionRetentionWeeks < 0 ? 'Bitte geben Sie eine Löschfrist ein, die größer oder gleich 0 ist.' : undefined}
                         disabled={!props.editable}
                     />
                 </Grid>

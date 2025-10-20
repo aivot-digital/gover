@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.services.SecretService;
+import de.aivot.GoverBackend.system.properties.CORSProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -32,6 +33,7 @@ class IdentityServiceTest {
     private IdentityService identityService;
     private HttpService httpService;
     private SecretService secretService;
+    private CORSProperties corsProperties;
 
     @BeforeEach
     void setUp() {
@@ -40,12 +42,20 @@ class IdentityServiceTest {
         identityCacheRepository = mock(IdentityCacheRepository.class);
         httpService = mock(HttpService.class);
         secretService = mock(SecretService.class);
-        identityService = new IdentityService(goverConfig, secretService, httpService, identityProviderService, identityCacheRepository);
+        corsProperties = mock(CORSProperties.class);
+        identityService = new IdentityService(
+                goverConfig,
+                corsProperties,
+                secretService,
+                httpService,
+                identityProviderService,
+                identityCacheRepository
+        );
     }
 
     @Test
     void createRedirectURL_ShouldConstructValidURL() throws ResponseException {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         URI callbackBaseUrl = URI.create("https://example.com/callback");
         String origin = "https://example.com";
         List<String> additionalScopes = List.of("scope3");
@@ -99,7 +109,7 @@ class IdentityServiceTest {
 
     @Test
     void createRedirectURL_ShouldThrowException_WhenOriginIsInvalid() throws ResponseException {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         URI callbackBaseUrl = URI.create("https://example.com/callback");
         String invalidOrigin = "invalid-origin";
 
@@ -119,7 +129,7 @@ class IdentityServiceTest {
 
     @Test
     void createRedirectURL_ShouldCombineScopesCorrectly() throws ResponseException {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         URI callbackBaseUrl = URI.create("https://example.com/callback");
         String origin = "https://example.com";
         List<String> additionalScopes = List.of("scope2", "scope3");
@@ -148,7 +158,7 @@ class IdentityServiceTest {
 
     @Test
     void handleCallback_ShouldThrowException_WhenAuthorizationCodeIsNull() {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         URI callbackUrl = URI.create("https://example.com/callback");
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
@@ -160,7 +170,7 @@ class IdentityServiceTest {
 
     @Test
     void handleCallback_ShouldThrowException_WhenProviderKeyIsInvalid() throws ResponseException {
-        String providerKey = "invalid-provider";
+        UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
 
@@ -175,7 +185,7 @@ class IdentityServiceTest {
 
     @Test
     void handleCallback_ShouldProcessCallbackSuccessfully() throws ResponseException, IOException, InterruptedException {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
 
@@ -224,7 +234,7 @@ class IdentityServiceTest {
         IdentityCacheEntity savedEntity = new IdentityCacheEntity()
                 .setId(UUID.randomUUID().toString())
                 .setIdentityData(Map.of("name", "John Doe", "email", "john.doe@example.com"))
-                .setProviderKey(providerKey);
+                .setProviderKey(providerKey.toString());
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
@@ -245,7 +255,7 @@ class IdentityServiceTest {
 
     @Test
     void handleCallback_ShouldThrowException_WhenTokenRetrievalFails() throws ResponseException, IOException, InterruptedException {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
 
@@ -271,12 +281,12 @@ class IdentityServiceTest {
                 identityService.handleCallback(providerKey, authorizationCode, callbackUrl, "https://example.com/origin")
         );
 
-        assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (valid-provider): 400", exception.getMessage());
+        assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (" + providerKey.toString() + "): 400", exception.getMessage());
     }
 
     @Test
     void handleCallback_ShouldPerformLogoutSuccessfully() throws ResponseException, IOException, InterruptedException {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
 
@@ -335,7 +345,7 @@ class IdentityServiceTest {
         IdentityCacheEntity savedEntity = new IdentityCacheEntity()
                 .setId(UUID.randomUUID().toString())
                 .setIdentityData(Map.of("name", "John Doe", "email", "john.doe@example.com"))
-                .setProviderKey(providerKey);
+                .setProviderKey(providerKey.toString());
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
@@ -363,7 +373,7 @@ class IdentityServiceTest {
 
     @Test
     void handleCallback_ShouldRetrieveAndUseClientSecret() throws Exception {
-        String providerKey = "valid-provider";
+        UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
 
@@ -372,7 +382,7 @@ class IdentityServiceTest {
         provider.setIsEnabled(true);
         provider.setTokenEndpoint("https://auth.example.com/token");
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
-        provider.setClientSecretKey("secret-key");
+        provider.setClientSecretKey(UUID.randomUUID());
         provider.setAttributes(List.of());
 
         String decryptedSecret = "decrypted-client-secret";
@@ -394,7 +404,7 @@ class IdentityServiceTest {
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
         var dummySecret = new SecretEntity();
-        when(secretService.retrieve("secret-key")).thenReturn(Optional.of(dummySecret));
+        when(secretService.retrieve(provider.getClientSecretKey())).thenReturn(Optional.of(dummySecret));
         when(secretService.decrypt(dummySecret)).thenReturn(decryptedSecret);
 
         // Mock the token endpoint response
@@ -418,7 +428,7 @@ class IdentityServiceTest {
         IdentityCacheEntity savedEntity = new IdentityCacheEntity()
                 .setId(UUID.randomUUID().toString())
                 .setIdentityData(Map.of("name", "John Doe", "email", "john.doe@example.com"))
-                .setProviderKey(providerKey);
+                .setProviderKey(providerKey.toString());
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(savedEntity);
 
@@ -436,7 +446,7 @@ class IdentityServiceTest {
         assertEquals(expectedUrl, result);
 
         // Verify that the client secret was retrieved and decrypted
-        verify(secretService).retrieve("secret-key");
+        verify(secretService).retrieve(provider.getClientSecretKey());
         verify(secretService).decrypt(dummySecret);
     }
 }

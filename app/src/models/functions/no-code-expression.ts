@@ -1,6 +1,7 @@
 export interface NoCodeExpression {
-    operatorIdentifier: string;
-    operands: (NoCodeOperand | null)[];
+    type: 'NoCodeExpression';
+    operatorIdentifier: string | null | undefined;
+    operands: (NoCodeOperand | null)[] | null | undefined;
 }
 
 export function isNoCodeExpression(obj: any): obj is NoCodeExpression {
@@ -8,7 +9,8 @@ export function isNoCodeExpression(obj: any): obj is NoCodeExpression {
 }
 
 export interface NoCodeReference {
-    elementId: string;
+    type: 'NoCodeReference';
+    elementId: string | null | undefined;
 }
 
 export function isNoCodeReference(obj: any): obj is NoCodeReference {
@@ -16,7 +18,8 @@ export function isNoCodeReference(obj: any): obj is NoCodeReference {
 }
 
 export interface NoCodeStaticValue {
-    value: string;
+    type: 'NoCodeStaticValue';
+    value: string | null | undefined;
 }
 
 export function isNoCodeStaticValue(obj: any): obj is NoCodeStaticValue {
@@ -26,6 +29,6 @@ export function isNoCodeStaticValue(obj: any): obj is NoCodeStaticValue {
 export type NoCodeOperand = NoCodeExpression | NoCodeReference | NoCodeStaticValue;
 
 export interface ValidationExpressionWrapper {
-    expression: NoCodeExpression;
-    message: string;
+    expression: NoCodeExpression | null | undefined;
+    message: string | null | undefined;
 }

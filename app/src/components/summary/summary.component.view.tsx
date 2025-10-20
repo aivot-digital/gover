@@ -2,17 +2,24 @@ import React from 'react';
 import {useSelector} from 'react-redux';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
-import {ElementType} from '../../data/element-type/element-type';
 import {Box, Typography} from '@mui/material';
-import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {BaseViewProps} from '../../views/base-view';
-import {AppInfo} from '../../app-info';
+import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
-export const SummaryUserInputKey = '__summary__';
-export const SummaryAttachmentsTooLargeKey = '__summary_attachments__';
+export const SummaryUserInputKey = '__summary__'; // TODO: Remove
+export const SummaryAttachmentsTooLargeKey = '__summary_attachments__'; // TODO: Solve
 
-export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: BaseViewProps<SummaryStepElement, any>) {
+export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, any>) {
+    const {
+        isBusy,
+        isDeriving,
+        value,
+        elementData,
+        setValue,
+        errors,
+    } = props;
+
     const form = useSelector(selectLoadedForm);
 
     if (form == null) {
@@ -33,18 +40,13 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
                 Eingabe zu ändern.
             </Typography>
 
-            {
-                form.root.children.map((model, index) => (
-                    <SummaryDispatcherComponent
-                        allElements={allElements}
-                        key={model.id + index.toString()}
-                        element={model}
-                        showTechnical={false}
-                        allowStepNavigation={true}
-                        isBusy={isBusy}
-                    />
-                ))
-            }
+            <SummaryDispatcherComponent
+                key={form.rootElement.id}
+                element={form.rootElement}
+                showTechnical={false}
+                allowStepNavigation={true}
+                elementData={elementData}
+            />
 
             <Typography
                 component="h3"
@@ -68,17 +70,15 @@ export function SummaryComponentView({allElements, isBusy, isDeriving, mode}: Ba
             </Typography>
 
             <Box>
-                <ViewDispatcherComponent
-                    allElements={allElements}
-                    element={{
-                        type: ElementType.Checkbox,
-                        label: 'Ich habe die Zusammenfassung meines Antrages geprüft. *',
-                        id: SummaryUserInputKey,
-                        appVersion: AppInfo.version,
+                <CheckboxFieldComponent
+                    label="Ich habe die Zusammenfassung meines Antrages geprüft."
+                    required={true}
+                    value={value}
+                    onChange={(checked) => {
+                        setValue(checked);
                     }}
-                    isBusy={isBusy}
-                    isDeriving={isDeriving}
-                    mode={mode}
+                    busy={isBusy || isDeriving}
+                    error={errors != null ? errors.join(' ') : undefined}
                 />
             </Box>
         </>

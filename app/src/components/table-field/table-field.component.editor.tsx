@@ -5,9 +5,12 @@ import {BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
+import {generateUniqueID} from 'web-vitals/dist/modules/lib/generateUniqueID';
+import {generateId} from '../../utils/id-utils';
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, ElementTreeEntity>) {
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
+    const columnKeyErrors = makeColumnKeyErrors(props.element.fields);
     const minRequiredError = (
         props.element.minimumRequiredRows != null &&
         props.element.maximumRows != null &&
@@ -29,7 +32,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             lg: 6
                         }}>
                         <NumberFieldComponent
-                            value={props.element.minimumRequiredRows}
+                            value={props.element.minimumRequiredRows ?? undefined}
                             label="Mindestanzahl der hinzuzufügenden Zeilen"
                             hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
                             error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
@@ -49,7 +52,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         lg: 6
                     }}>
                     <NumberFieldComponent
-                        value={props.element.maximumRows}
+                        value={props.element.maximumRows ?? undefined}
                         label="Maximalanzahl der hinzuzufügenden Zeilen"
                         hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
                         error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
@@ -89,7 +92,23 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 container
                                 spacing={1}
                             >
-                                <Grid size={4}>
+                                <Grid size={3}>
+                                    <TextField
+                                        label="Schlüssel"
+                                        margin="normal"
+                                        value={column.key}
+                                        onChange={event => onChange({
+                                            key: event.target.value,
+                                        })}
+                                        onBlur={() => onChange({
+                                            key: (column.key ?? '').trim(),
+                                        })}
+                                        error={columnKeyErrors[index] != null}
+                                        helperText={columnKeyErrors[index] ?? undefined}
+                                        disabled={!props.editable}
+                                    />
+                                </Grid>
+                                <Grid size={3}>
                                     <TextField
                                         label="Titel"
                                         margin="normal"
@@ -101,11 +120,11 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                             label: (column.label ?? '').trim(),
                                         })}
                                         error={columnLabelErrors[index] != null}
-                                        helperText={columnLabelErrors[index]}
+                                        helperText={columnLabelErrors[index] ?? undefined}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
-                                <Grid size={4}>
+                                <Grid size={3}>
                                     <TextField
                                         label="Platzhalter"
                                         margin="normal"
@@ -122,7 +141,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 </Grid>
                                 {
                                     column.datatype === 'number' &&
-                                    <Grid size={4}>
+                                    <Grid size={3}>
                                         <TextField
                                             label="Dezimalstellen"
                                             margin="normal"
@@ -219,8 +238,13 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         fields: [
                             ...(props.element.fields ?? []),
                             {
+                                key: generateId(5),
                                 label: 'Neue Spalte',
                                 datatype: 'string',
+                                placeholder: undefined,
+                                optional: true,
+                                disabled: false,
+                                decimalPlaces: undefined,
                             },
                         ],
                     });
@@ -233,21 +257,41 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
     );
 }
 
-function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[]): (string | null)[] {
+function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
     if (fields == null) {
         return [];
     }
     const errors: (string | null)[] = [];
     const labelSet = new Set<string>();
     for (const field of fields) {
-        if (isStringNullOrEmpty(field.label) || field.label.length < 3) {
+        if (isStringNullOrEmpty(field.label) || field.label == null || field.label.length < 3) {
             errors.push('Bitte geben Sie einen Titel mit mindestens drei Zeichen ein.');
         } else if (labelSet.has(field.label)) {
             errors.push('Eine Spalte mit diesem Titel existiert bereits. Bitte geben Sie einen einzigartigen Titel ein.');
         } else {
             errors.push(null);
         }
-        labelSet.add(field.label);
+        labelSet.add(field.label ?? '');
+    }
+    return errors;
+}
+
+function makeColumnKeyErrors(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
+    if (fields == null) {
+        return [];
+    }
+    const errors: (string | null)[] = [];
+    const keySet = new Set<string>();
+    for (const field of fields) {
+        const key = (field.key ?? '').trim();
+        if (isStringNullOrEmpty(key) || key.length < 3) {
+            errors.push('Bitte geben Sie einen Schlüssel mit mindestens drei Zeichen ein.');
+        } else if (keySet.has(key)) {
+            errors.push('Eine Spalte mit diesem Schlüssel existiert bereits. Bitte geben Sie einen einzigartigen Schlüssel ein.');
+        } else {
+            errors.push(null);
+        }
+        keySet.add(key);
     }
     return errors;
 }

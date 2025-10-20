@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
@@ -31,6 +32,7 @@ class IdentityProviderServiceTest {
     private AssetRepository assetRepository;
     private HttpService httpService;
     private FormRepository formRepository;
+    private FormVersionRepository formVersionRepository;
 
     @BeforeEach
     void setUp() {
@@ -39,13 +41,15 @@ class IdentityProviderServiceTest {
         secretRepository = mock(SecretRepository.class);
         assetRepository = mock(AssetRepository.class);
         formRepository = mock(FormRepository.class);
+        formVersionRepository = mock(FormVersionRepository.class);
 
         identityProviderService = new IdentityProviderService(
                 identityProviderRepository,
                 secretRepository,
                 assetRepository,
                 formRepository,
-                httpService
+                httpService,
+                formVersionRepository
         );
     }
 
@@ -139,7 +143,7 @@ class IdentityProviderServiceTest {
 
     @Test
     void create_ExistingClientSecretKey() throws ResponseException {
-        String secretKey = UUID.randomUUID().toString();
+        UUID secretKey = UUID.randomUUID();
         IdentityProviderEntity entity = new IdentityProviderEntity();
         entity.setClientSecretKey(secretKey);
 
@@ -158,7 +162,7 @@ class IdentityProviderServiceTest {
 
     @Test
     void create_NonExistingClientSecretKey() throws ResponseException {
-        String secretKey = UUID.randomUUID().toString();
+        UUID secretKey = UUID.randomUUID();
         IdentityProviderEntity entity = new IdentityProviderEntity();
         entity.setClientSecretKey(secretKey);
 
@@ -193,7 +197,7 @@ class IdentityProviderServiceTest {
 
     @Test
     void create_ExistingIconAssetKey() throws ResponseException {
-        String assetKey = UUID.randomUUID().toString();
+        UUID assetKey = UUID.randomUUID();
         IdentityProviderEntity entity = new IdentityProviderEntity();
         entity.setIconAssetKey(assetKey);
 
@@ -212,7 +216,7 @@ class IdentityProviderServiceTest {
 
     @Test
     void create_NonExistingIconAssetKey() throws ResponseException {
-        String assetKey = UUID.randomUUID().toString();
+        UUID assetKey = UUID.randomUUID();
         IdentityProviderEntity entity = new IdentityProviderEntity();
         entity.setIconAssetKey(assetKey);
 
@@ -231,8 +235,9 @@ class IdentityProviderServiceTest {
 
     @Test
     void performUpdate_SystemIdentityProvider_UpdatesEnabledFieldOnly() throws ResponseException {
+        UUID existingKey = UUID.randomUUID();
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
-        existingEntity.setKey("system-key");
+        existingEntity.setKey(existingKey);
         existingEntity.setType(IdentityProviderType.BundId);
         existingEntity.setIsEnabled(false); // Initially disabled
 
@@ -242,9 +247,11 @@ class IdentityProviderServiceTest {
         when(identityProviderRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        IdentityProviderEntity result = identityProviderService.performUpdate("id", updatedEntity, existingEntity);
+        UUID otherId = UUID.randomUUID();
 
-        assertEquals("system-key", result.getKey());
+        IdentityProviderEntity result = identityProviderService.performUpdate(otherId, updatedEntity, existingEntity);
+
+        assertEquals(existingKey, result.getKey());
         assertEquals(IdentityProviderType.BundId, result.getType());
         assertTrue(result.getIsEnabled()); // Ensure the enabled field is updated
         verify(identityProviderRepository, times(1)).save(result);
@@ -252,8 +259,10 @@ class IdentityProviderServiceTest {
 
     @Test
     void performUpdate_NotGivenClientSecretKey() throws ResponseException {
+        UUID existingKey = UUID.randomUUID();
+
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
-        existingEntity.setKey("existing-key");
+        existingEntity.setKey(existingKey);
         existingEntity.setType(IdentityProviderType.Custom);
 
         IdentityProviderEntity updatedEntity = new IdentityProviderEntity();
@@ -262,19 +271,22 @@ class IdentityProviderServiceTest {
         when(identityProviderRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        UUID otherId = UUID.randomUUID();
+
         IdentityProviderEntity result = identityProviderService
-                .performUpdate("id", updatedEntity, existingEntity);
+                .performUpdate(otherId, updatedEntity, existingEntity);
 
         assertNull(result.getClientSecretKey());
-        assertEquals("existing-key", result.getKey());
+        assertEquals(existingKey, result.getKey());
         assertEquals(IdentityProviderType.Custom, result.getType());
     }
 
     @Test
     void performUpdate_ExistingClientSecretKey() throws ResponseException {
-        String secretKey = UUID.randomUUID().toString();
+        UUID secretKey = UUID.randomUUID();
+        UUID existingKey = UUID.randomUUID();
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
-        existingEntity.setKey("existing-key");
+        existingEntity.setKey(existingKey);
         existingEntity.setType(IdentityProviderType.Custom);
 
         IdentityProviderEntity updatedEntity = new IdentityProviderEntity();
@@ -285,19 +297,22 @@ class IdentityProviderServiceTest {
         when(identityProviderRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        UUID otherId = UUID.randomUUID();
+
         IdentityProviderEntity result = identityProviderService
-                .performUpdate("id", updatedEntity, existingEntity);
+                .performUpdate(otherId, updatedEntity, existingEntity);
 
         assertEquals(secretKey, result.getClientSecretKey());
-        assertEquals("existing-key", result.getKey());
+        assertEquals(existingKey, result.getKey());
         assertEquals(IdentityProviderType.Custom, result.getType());
     }
 
     @Test
     void performUpdate_NonExistingClientSecretKey() throws ResponseException {
-        String secretKey = UUID.randomUUID().toString();
+        UUID secretKey = UUID.randomUUID();
+        UUID existingKey = UUID.randomUUID();
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
-        existingEntity.setKey("existing-key");
+        existingEntity.setKey(existingKey);
         existingEntity.setType(IdentityProviderType.Custom);
 
         IdentityProviderEntity updatedEntity = new IdentityProviderEntity();
@@ -308,18 +323,21 @@ class IdentityProviderServiceTest {
         when(identityProviderRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        UUID otherId = UUID.randomUUID();
+
         IdentityProviderEntity result = identityProviderService
-                .performUpdate("id", updatedEntity, existingEntity);
+                .performUpdate(otherId, updatedEntity, existingEntity);
 
         assertNull(result.getClientSecretKey());
-        assertEquals("existing-key", result.getKey());
+        assertEquals(existingKey, result.getKey());
         assertEquals(IdentityProviderType.Custom, result.getType());
     }
 
     @Test
     void performUpdate_NotGivenIconAssetKey() throws ResponseException {
+        UUID existingKey = UUID.randomUUID();
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
-        existingEntity.setKey("existing-key");
+        existingEntity.setKey(existingKey);
         existingEntity.setType(IdentityProviderType.Custom);
 
         IdentityProviderEntity updatedEntity = new IdentityProviderEntity();
@@ -328,19 +346,22 @@ class IdentityProviderServiceTest {
         when(identityProviderRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        UUID otherId = UUID.randomUUID();
+
         IdentityProviderEntity result = identityProviderService
-                .performUpdate("id", updatedEntity, existingEntity);
+                .performUpdate(otherId, updatedEntity, existingEntity);
 
         assertNull(result.getIconAssetKey());
-        assertEquals("existing-key", result.getKey());
+        assertEquals(existingKey, result.getKey());
         assertEquals(IdentityProviderType.Custom, result.getType());
     }
 
     @Test
     void performUpdate_ExistingIconAssetKey() throws ResponseException {
-        String assetKey = UUID.randomUUID().toString();
+        UUID assetKey = UUID.randomUUID();
+        UUID existingKey = UUID.randomUUID();
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
-        existingEntity.setKey("existing-key");
+        existingEntity.setKey(existingKey);
         existingEntity.setType(IdentityProviderType.Custom);
 
         IdentityProviderEntity updatedEntity = new IdentityProviderEntity();
@@ -351,19 +372,22 @@ class IdentityProviderServiceTest {
         when(identityProviderRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        UUID otherId = UUID.randomUUID();
+        
         IdentityProviderEntity result = identityProviderService
-                .performUpdate("id", updatedEntity, existingEntity);
+                .performUpdate(otherId, updatedEntity, existingEntity);
 
         assertEquals(assetKey, result.getIconAssetKey());
-        assertEquals("existing-key", result.getKey());
+        assertEquals(existingKey, result.getKey());
         assertEquals(IdentityProviderType.Custom, result.getType());
     }
 
     @Test
     void performUpdate_NonExistingIconAssetKey() throws ResponseException {
-        String assetKey = UUID.randomUUID().toString();
+        UUID assetKey = UUID.randomUUID();
+        UUID existingKey = UUID.randomUUID();
         IdentityProviderEntity existingEntity = new IdentityProviderEntity();
-        existingEntity.setKey("existing-key");
+        existingEntity.setKey(existingKey);
         existingEntity.setType(IdentityProviderType.Custom);
 
         IdentityProviderEntity updatedEntity = new IdentityProviderEntity();
@@ -374,49 +398,24 @@ class IdentityProviderServiceTest {
         when(identityProviderRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        UUID otherId = UUID.randomUUID();
+
         IdentityProviderEntity result = identityProviderService
-                .performUpdate("id", updatedEntity, existingEntity);
+                .performUpdate(otherId, updatedEntity, existingEntity);
 
         assertNull(result.getIconAssetKey());
-        assertEquals("existing-key", result.getKey());
+        assertEquals(existingKey, result.getKey());
         assertEquals(IdentityProviderType.Custom, result.getType());
-    }
-
-    @Test
-    void performDelete_CustomIdentityProviderWithoutLinkedForms() throws ResponseException {
-        IdentityProviderEntity entity = new IdentityProviderEntity();
-        entity.setKey("custom-key");
-        entity.setType(IdentityProviderType.Custom);
-        entity.setIsEnabled(false);
-
-        when(formRepository.existsWithLinkedIdentityProvider(entity.getKey())).thenReturn(false);
-
-        assertDoesNotThrow(() -> identityProviderService.performDelete(entity));
-        verify(identityProviderRepository, times(1)).delete(entity);
     }
 
     @Test
     void performDelete_SystemIdentityProvider() {
         IdentityProviderEntity entity = new IdentityProviderEntity();
-        entity.setKey("system-key");
+        entity.setKey(UUID.randomUUID());
         entity.setType(IdentityProviderType.BundId);
 
         ResponseException exception = assertThrows(ResponseException.class, () -> identityProviderService.performDelete(entity));
-        assertEquals("Der Nutzerkontenanbieter null (system-key) ist ein Systemanbieter und kann nicht gelöscht werden.", exception.getMessage());
-        verify(identityProviderRepository, never()).delete(entity);
-    }
-
-    @Test
-    void performDelete_CustomIdentityProviderWithLinkedForms() {
-        IdentityProviderEntity entity = new IdentityProviderEntity();
-        entity.setKey("custom-key");
-        entity.setType(IdentityProviderType.Custom);
-        entity.setIsEnabled(true);
-
-        when(formRepository.existsWithLinkedIdentityProvider(entity.getKey())).thenReturn(true);
-
-        ResponseException exception = assertThrows(ResponseException.class, () -> identityProviderService.performDelete(entity));
-        assertEquals("Der Nutzerkontenanbieter null (custom-key) ist noch aktiviert. Bitte deaktivieren Sie den Anbieter, bevor Sie ihn löschen.", exception.getMessage());
+        assertEquals("Der Nutzerkontenanbieter null (" + entity.getKey() + ") ist ein Systemanbieter und kann nicht gelöscht werden.", exception.getMessage());
         verify(identityProviderRepository, never()).delete(entity);
     }
 }

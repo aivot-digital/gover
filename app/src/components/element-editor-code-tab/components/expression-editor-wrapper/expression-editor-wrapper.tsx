@@ -33,10 +33,14 @@ import {TableFieldComponent} from '../../../table-field/table-field-component';
 function extractReferencedElementIds(expression: NoCodeExpression): string[] {
     const ids: string[] = [];
 
-    for (const op of expression.operands) {
+    for (const op of (expression.operands ?? [])) {
+        if (op == null) {
+            continue;
+        }
+
         if (isNoCodeReference(op)) {
-            if (!ids.includes(op.elementId)) {
-                ids.push(op.elementId);
+            if (!ids.includes(op.elementId!)) {
+                ids.push(op.elementId!);
             }
         } else if (isNoCodeExpression(op)) {
             extractReferencedElementIds(op).forEach((id) => {
@@ -181,7 +185,14 @@ function generateElementForElementId(allElements: ElementWithParents[], values: 
                 return (
                     <TableFieldComponent
                         label={generateComponentTitle(element.element)}
-                        fields={element.element.fields ?? []}
+                        fields={(element.element.fields ?? []).map(f => ({
+                            label: f.label ?? '',
+                            datatype: f.datatype ?? 'string',
+                            decimalPlaces: f.decimalPlaces ?? undefined,
+                            disabled: f.disabled ?? undefined,
+                            optional: f.optional ?? undefined,
+                            placeholder: f.placeholder ?? undefined,
+                        }))}
                         value={values[element.element.id]}
                         onChange={(value) => {
                             onChange(element.element.id, value);

@@ -5,6 +5,6 @@ import {PresetVersion} from '../../../models/entities/preset-version';
 
 export interface AddPresetDialogProps extends DialogProps {
     onClose: () => void;
-    onAdded: (preset: Preset, version: PresetVersion) => void;
+    onAdded: (preset: Preset) => void;
     root?: GroupLayout;
 }

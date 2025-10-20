@@ -4,7 +4,8 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.preset.entities.Preset;
+import de.aivot.GoverBackend.preset.dtos.PresetCreateRequestDTO;
+import de.aivot.GoverBackend.preset.entities.PresetEntity;
 import de.aivot.GoverBackend.preset.filters.PresetFilter;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
@@ -29,18 +30,17 @@ import java.util.UUID;
 @RequestMapping("/api/presets/")
 public class PresetController {
     private final PresetRepository presetRepository;
-    private final PresetVersionRepository versionRepository;
     private final ScopedAuditService auditService;
+    private final PresetVersionRepository presetVersionRepository;
 
     @Autowired
     public PresetController(
             PresetRepository presetRepository,
-            PresetVersionRepository versionRepository,
-            AuditService auditService
-    ) {
+            AuditService auditService,
+            PresetVersionRepository presetVersionRepository) {
         this.presetRepository = presetRepository;
-        this.versionRepository = versionRepository;
         this.auditService = auditService.createScopedAuditService(PresetController.class);
+        this.presetVersionRepository = presetVersionRepository;
     }
 
     /**
@@ -52,7 +52,7 @@ public class PresetController {
      * @return The page of presets.
      */
     @GetMapping("")
-    public Page<Preset> list(
+    public Page<PresetEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid PresetFilter filter
@@ -68,54 +68,45 @@ public class PresetController {
     /**
      * Create a new preset.
      *
-     * @param newPreset The preset to create.
+     * @param newPresetEntity The preset to create.
      * @return The created preset.
      */
     @PostMapping("")
-    public Preset create(
+    public PresetEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @Valid @RequestBody Preset newPreset
+            @Nonnull @Valid @RequestBody PresetCreateRequestDTO requestDTO
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var key = UUID
-                .randomUUID()
-                .toString();
+        var newEntity = requestDTO
+                .toEntity();
 
-        var spec = PresetFilter
-                .create()
-                .setExactTitle(newPreset.getTitle())
-                .build();
+        var savedEntity = presetRepository
+                .save(newEntity);
 
-        if (presetRepository.exists(spec)) {
-            throw ResponseException.conflict("Es existiert bereits eine Vorlage mit diesem Titel.");
-        }
+        var newVersion = requestDTO
+                .toVersionEntity(savedEntity);
 
-        newPreset.setKey(key);
-        newPreset.setStoreId(null);
-        newPreset.setCurrentVersion(null);
-        newPreset.setCurrentStoreVersion(null);
-        newPreset.setCurrentPublishedVersion(null);
-        newPreset.setCreated(LocalDateTime.now());
-        newPreset.setUpdated(LocalDateTime.now());
-
-        var entity = presetRepository
-                .save(newPreset);
+        var savedVersion = presetVersionRepository
+                .save(newVersion);
 
         auditService
                 .logAction(
                         user,
                         AuditAction.Create,
-                        Preset.class,
+                        PresetEntity.class,
                         Map.of(
-                                "key", entity.getKey(),
-                                "title", entity.getTitle()
+                                "key", savedEntity.getKey(),
+                                "title", savedEntity.getTitle(),
+                                "version", savedVersion.getVersion()
                         )
                 );
 
-        return entity;
+        return presetRepository
+                .findById(savedEntity.getKey())
+                .orElseThrow(ResponseException::notFound);
     }
 
     /**
@@ -126,9 +117,9 @@ public class PresetController {
      * @return The preset.
      */
     @GetMapping("{key}/")
-    public Preset retrieve(
+    public PresetEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String key
+            @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         UserService
                 .fromJWT(jwt)
@@ -142,16 +133,16 @@ public class PresetController {
     /**
      * Update a preset.
      *
-     * @param jwt           The JWT of the user.
-     * @param key           The key of the preset to update.
-     * @param updatedPreset The updated preset.
+     * @param jwt                 The JWT of the user.
+     * @param key                 The key of the preset to update.
+     * @param updatedPresetEntity The updated preset.
      * @return The updated preset.
      */
     @PutMapping("{key}/")
-    public Preset update(
+    public PresetEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable String key,
-            @Nonnull @Valid @RequestBody Preset updatedPreset
+            @Nonnull @PathVariable UUID key,
+            @Nonnull @Valid @RequestBody PresetEntity updatedPresetEntity
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -161,7 +152,7 @@ public class PresetController {
                 .findById(key)
                 .orElseThrow(ResponseException::notFound);
 
-        preset.setStoreId(updatedPreset.getStoreId());
+        preset.setTitle(updatedPresetEntity.getTitle());
         preset.setUpdated(LocalDateTime.now());
 
         var savePreset = presetRepository.save(preset);
@@ -169,14 +160,11 @@ public class PresetController {
         Map<String, Object> auditData = new HashMap<>();
         auditData.put("key", savePreset.getKey());
         auditData.put("title", savePreset.getTitle());
-        if (savePreset.getStoreId() != null) {
-            auditData.put("storeId", savePreset.getStoreId());
-        }
 
         auditService.logAction(
                 user,
                 AuditAction.Update,
-                Preset.class,
+                PresetEntity.class,
                 auditData
         );
 
@@ -193,7 +181,7 @@ public class PresetController {
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
-            @Nonnull @PathVariable String key
+            @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
@@ -203,15 +191,12 @@ public class PresetController {
                 .findById(key)
                 .orElseThrow(ResponseException::notFound);
 
-        var versions = versionRepository.findAllByPreset(key, pageable);
-        versionRepository.deleteAll(versions);
-
         presetRepository.delete(preset);
 
         auditService.logAction(
                 user,
                 AuditAction.Delete,
-                Preset.class,
+                PresetEntity.class,
                 Map.of(
                         "key", preset.getKey(),
                         "title", preset.getTitle()

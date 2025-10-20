@@ -1,8 +1,7 @@
 package de.aivot.GoverBackend.submission.dtos;
 
-import de.aivot.GoverBackend.lib.ReqeustDTO;
+import de.aivot.GoverBackend.lib.RequestDTO;
 import de.aivot.GoverBackend.submission.entities.Submission;
-import jakarta.validation.constraints.Max;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
@@ -17,7 +16,7 @@ public record SubmissionRequestDTO(
         Boolean archived,
 
         Boolean canceled
-) implements ReqeustDTO<Submission> {
+) implements RequestDTO<Submission> {
     @Override
     public Submission toEntity() {
         var submission = new Submission();

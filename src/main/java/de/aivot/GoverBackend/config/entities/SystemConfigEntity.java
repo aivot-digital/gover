@@ -53,7 +53,12 @@ public class SystemConfigEntity {
             return Optional.empty();
         }
 
-        var bool = Boolean.parseBoolean(value);
+        Boolean bool = null;
+        try {
+            bool = Boolean.parseBoolean(value);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
 
         return Optional.of(bool);
     }
@@ -64,7 +69,12 @@ public class SystemConfigEntity {
             return Optional.empty();
         }
 
-        var integer = Integer.parseInt(value);
+        Integer integer = null;
+        try {
+            integer = Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
 
         return Optional.of(integer);
     }

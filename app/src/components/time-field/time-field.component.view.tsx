@@ -9,7 +9,7 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
@@ -42,11 +42,11 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
             value={dateValue}
             onChange={handleChange}
             autocomplete="off"
-            hint={element.hint}
-            required={element.required}
+            hint={element.hint ?? undefined}
+            required={element.required ?? false}
             disabled={isDisabled}
             busy={isBusy}
-            error={error}
+            error={errors?.join(', ') ?? undefined}
             debounce={1000}
         />
     );

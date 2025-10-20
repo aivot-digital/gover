@@ -8,10 +8,11 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record PaymentTransactionResponseDTO(
         @Nonnull String key,
-        @Nonnull String paymentProviderKey,
+        @Nonnull UUID paymentProviderKey,
         @Nonnull XBezahldienstePaymentRequest paymentRequest,
         @Nonnull XBezahldienstePaymentInformation paymentInformation,
         @Nullable String paymentError,

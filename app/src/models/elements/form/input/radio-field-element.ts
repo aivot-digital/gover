@@ -6,7 +6,7 @@ export interface RadioFieldElementOption {
     label: string;
 }
 
-export interface RadioFieldElement extends BaseInputElement<string | RadioFieldElementOption[], ElementType.Radio> {
-    options?: string[] | RadioFieldElementOption[];
-    displayInline?: boolean;
+export interface RadioFieldElement extends BaseInputElement<ElementType.Radio> {
+    options: RadioFieldElementOption[] | null | undefined;
+    displayInline: boolean | null | undefined;
 }

@@ -31,7 +31,7 @@ export function FormMetrics(props: FormMetricsProps) {
         },
     ], [metrics]);
 
-    const stepMetrics = useMemo(() => props.root.children.map(step => ({
+    const stepMetrics = useMemo(() => (props.root.children ?? []).map(step => ({
         step: step,
         metrics: calculateMetrics(step),
     })), [props.root]);
@@ -204,7 +204,7 @@ function calculateMetrics(root: AnyElementWithChildren): Metrics {
     };
 
     const flatElements = flattenElements(root);
-    const flatElementsPerStep = root.children.map((step) => flattenElements(step));
+    const flatElementsPerStep = (root.children ?? []).map((step) => flattenElements(step));
 
     metrics.inputElements = flatElements.filter(isAnyInputElement).length;
 
@@ -234,7 +234,7 @@ function calculateMetrics(root: AnyElementWithChildren): Metrics {
 function getDepthOfElement(element: AnyElement, filter?: (e: AnyElement) => boolean): number {
     if (isAnyElementWithChildren(element)) {
         let maxDepth = 0;
-        for (const child of element.children) {
+        for (const child of element.children ?? []) {
             const depth = getDepthOfElement(child, filter);
             if (depth > maxDepth) {
                 maxDepth = depth;

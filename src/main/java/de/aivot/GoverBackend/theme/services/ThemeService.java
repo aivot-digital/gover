@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.theme.services;
 
-import de.aivot.GoverBackend.form.filters.FormFilter;
+import de.aivot.GoverBackend.form.filters.FormVersionFilter;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
+import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -22,14 +23,16 @@ import java.util.Optional;
 public class ThemeService implements EntityService<Theme, Integer> {
     private final ThemeRepository themeRepository;
     private final FormRepository formRepository;
+    private final FormVersionRepository formVersionRepository;
 
     @Autowired
     public ThemeService(
             ThemeRepository themeRepository,
-            FormRepository formRepository
-    ) {
+            FormRepository formRepository,
+            FormVersionRepository formVersionRepository) {
         this.themeRepository = themeRepository;
         this.formRepository = formRepository;
+        this.formVersionRepository = formVersionRepository;
     }
 
     @Nonnull
@@ -41,12 +44,12 @@ public class ThemeService implements EntityService<Theme, Integer> {
 
     @Override
     public void performDelete(@Nonnull Theme entity) throws ResponseException {
-        var formSpec = FormFilter
+        var formSpec = FormVersionFilter
                 .create()
                 .setThemeId(entity.getId())
                 .build();
 
-        if (formRepository.exists(formSpec)) {
+        if (formVersionRepository.exists(formSpec)) {
             throw new ResponseException(HttpStatus.CONFLICT, "Das Farbschema wird noch von einem oder mehreren Formularen verwendet.");
         }
 

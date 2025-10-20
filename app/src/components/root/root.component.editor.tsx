@@ -95,12 +95,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         lg: 6
                     }}>
                     <TextFieldComponent
-                        value={props.entity?.title}
+                        value={props.entity?.internalTitle}
                         label="Interner Titel des Formulars"
                         hint="Dieser Titel wird intern in Gover verwendet und ist nicht öffentlich sichtbar."
                         onChange={(val) => {
                             props.onPatchEntity({
-                                title: val,
+                                internalTitle: val,
                             });
                         }}
                         minCharacters={1}
@@ -108,9 +108,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         disabled={!props.editable}
                         required={true}
                         error={
-                            !props.entity?.title || props.entity.title.length < 1
+                            !props.entity?.internalTitle || props.entity.internalTitle.length < 1
                                 ? "Der Titel muss mindestens 1 Zeichen lang sein."
-                                : props.entity.title.length > 96
+                                : props.entity.internalTitle.length > 96
                                     ? "Der Titel darf maximal 96 Zeichen lang sein."
                                     : undefined
                         }
@@ -140,13 +140,13 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         lg: 6
                     }}>
                     <TextFieldComponent
-                        value={props.element.headline}
+                        value={props.entity.publicTitle}
                         label="Öffentlicher Titel & Überschrift des Formulars"
                         multiline
-                        hint="Dieser Titel wird öffentlicht für das Formular verwendet und ggü. Anstragstellenden angezeigt."
+                        hint="Dieser Titel wird öffentlich für das Formular verwendet und ggü. Anstragstellenden angezeigt."
                         onChange={(val) => {
-                            props.onPatch({
-                                headline: val,
+                            props.onPatchEntity({
+                                publicTitle: val,
                             });
                         }}
                         rows={3}
@@ -236,7 +236,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                                     icon: <QrCode2OutlinedIcon />,
                                     tooltip: 'QR-Code herunterladen',
                                     onClick: async () => {
-                                        await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.slug ?? ''}-${(props.entity?.version ?? '').replace(/\./g, '-')}.png`);
+                                        await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.slug ?? ''}-${(props.entity?.version ?? '')}.png`);
                                     },
                                 },
                             ]
@@ -370,10 +370,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     >
                         <SelectFieldComponent
                             label="PDF-Vorlage"
-                            value={props.entity?.pdfBodyTemplateKey ?? undefined}
+                            value={props.entity?.pdfTemplateKey ?? undefined}
                             onChange={(val) => {
                                 props.onPatchEntity({
-                                    pdfBodyTemplateKey: val,
+                                    pdfTemplateKey: val,
                                 });
                             }}
                             options={templateOptions}
@@ -506,7 +506,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                     <CheckboxFieldComponent
                         label="Das Formular erfordert eine Unterschrift"
                         hint="Wenn diese Option aktiviert ist, wird im PDF-Vordruck ein Unterschriftenfeld eingefügt. Dies erfolgt nur, sofern die PDF-Vorlage dies unterstützt."
-                        value={props.element.offlineSignatureNeeded}
+                        value={props.element.offlineSignatureNeeded ?? false}
                         onChange={val => {
                             props.onPatch({
                                 offlineSignatureNeeded: val,

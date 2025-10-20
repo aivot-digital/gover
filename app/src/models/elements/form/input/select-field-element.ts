@@ -6,8 +6,8 @@ export interface SelectFieldElementOption {
     label: string;
 }
 
-export interface SelectFieldElement extends BaseInputElement<string | SelectFieldElementOption[], ElementType.Select> {
-    autocomplete?: string;
-    placeholder?: string;
-    options?: string[] | SelectFieldElementOption[];
+export interface SelectFieldElement extends BaseInputElement<ElementType.Select> {
+    autocomplete: string | null | undefined;
+    placeholder: string | null | undefined;
+    options: SelectFieldElementOption[] | null | undefined;
 }

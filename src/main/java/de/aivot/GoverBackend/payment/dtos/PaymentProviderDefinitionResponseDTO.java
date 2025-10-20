@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.payment.dtos;
 
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.elements.form.layout.GroupLayout;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 
 import javax.annotation.Nonnull;

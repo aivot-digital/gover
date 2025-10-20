@@ -1,85 +1,143 @@
-import {createLowCodeType} from './create-low-code-type';
 import {ElementType} from '../data/element-type/element-type';
-import {flattenElements} from './flatten-elements';
 import {AnyElement} from '../models/elements/any-element';
-import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
+import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
+import {isRootElement} from '../models/elements/root-element';
 import {generateComponentTitle} from './generate-component-title';
+import {ElementWithParents, flattenElements, flattenElementsWithParents} from './flatten-elements';
+import {getElementNameForType} from '../data/element-type/element-names';
+import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 
-export function createLowCodeContextType(element: AnyElement | undefined, rootElement: AnyElement) {
-    const formType = createLowCodeType('Form', {
-        id: 'string',
-    }, {});
 
-    const allElements = flattenElements(rootElement, true)
-        .filter(elem => isAnyInputElement(elem));
 
-    const fieldNames: Record<string, string> = {};
+export function createLowCodeContextType(rootElement: AnyElement) {
+    // Create element data object interfaces for all elements in the root element.
+    const relevantElements = flattenElementsWithParents(rootElement, [], false);
 
-    const inputValuesFields: Record<string, string> = {};
-    const computedValuesFields: Record<string, string> = {};
-    const valuesFields: Record<string, string> = {};
-    const visibilitiesFields: Record<string, string> = {};
-    const errorsFields: Record<string, string> = {};
-    const overridesFields: Record<string, string> = {};
-
-    for (const element of allElements) {
-        fieldNames[element.id] = generateComponentTitle(element);
-
-        inputValuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
-        computedValuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
-        valuesFields[element.id] = `undefined | null | ${typeMap[element.type]}`;
-        visibilitiesFields[element.id] = 'boolean';
-        errorsFields[element.id] = 'undefined | null | string';
-        overridesFields[element.id] = 'undefined | null | ' + elementToTypeDefinition(element);
+    if (isRootElement(rootElement)) {
+        if (rootElement.introductionStep != null) {
+            relevantElements.push({
+                element: rootElement.introductionStep,
+                parents: [rootElement],
+            });
+        }
+        if (rootElement.summaryStep != null) {
+            relevantElements.push({
+                element: rootElement.summaryStep,
+                parents: [rootElement],
+            });
+        }
+        if (rootElement.submitStep != null) {
+            relevantElements.push({
+                element: rootElement.submitStep,
+                parents: [rootElement],
+            });
+        }
     }
 
-    const inputValuesType = createLowCodeType('InputValues', inputValuesFields, fieldNames);
-    const computedValuesType = createLowCodeType('ComputedValues', computedValuesFields, fieldNames);
-    const valuesType = createLowCodeType('Values', valuesFields, fieldNames);
-    const visibilitiesType = createLowCodeType('Visibilities', visibilitiesFields, fieldNames);
-    const errorsType = createLowCodeType('Errors', errorsFields, fieldNames);
-    const overridesType = createLowCodeType('Overrides', overridesFields, fieldNames);
+    const elementDataObjectInterfaces = relevantElements
+        .map(elementToContextDataObjectInterface)
+        .join('\n\n');
 
-    const lowCodePrepared: Record<string, any> = {
-        id: 'string',
-        inputValues: 'InputValues',
-        computedValues: 'ComputedValues',
-        values: 'Values',
-        visibilities: 'Visibilities',
-        errors: 'Errors',
-        overrides: 'Overrides',
-    };
 
-    if (element != null) {
-        lowCodePrepared['element'] = elementToTypeDefinition(element);
+    const types = elementToElementDataType(rootElement);
+
+    const typeDef = `// Element Types
+    ${elementDataObjectInterfaces}
+    
+    // Context Type
+    declare interface Context {
+        ${types.join('\n')}
     }
-
-    const contextType = createLowCodeType('ctx', lowCodePrepared, {
-        id: 'ID of the current element',
-        inputValues: 'All input values of the form',
-        computedValues: 'All computed values of the form until this element',
-        values: 'All values of the form as a combination of input values and computed until this element. input values have the higher precedence',
-        visibilities: 'Visibility states of all elements in the form until this element',
-        errors: 'Errors of all elements in the form until this element',
-        overrides: 'Overrides of all elements in the form until this element',
-        element: 'The current element',
-    });
-
-    return `// TYPES
-    declare ${formType}
-    declare ${inputValuesType}
-    declare ${computedValuesType}
-    declare ${valuesType}
-    declare ${visibilitiesType}
-    declare ${errorsType}
-    declare ${overridesType}
     
-    // CONTEXT
-    declare ${contextType}
-    
-    // Global
+    // Global Context Variable
     declare var ctx: Context;
     `;
+
+    return typeDef;
+}
+
+function createElementDataObjectInterfaceName(element: AnyElement): string {
+    return `${element.id}_edo`;
+}
+
+function elementToElementDataType(element: AnyElement): string[] {
+    const fields = [];
+
+    if (isAnyInputElement(element)) {
+        fields.push(`/** ${generateComponentTitle(element)}*/
+        ${element.id}: ${element.id}_edo;`);
+    }
+
+    if (isAnyElementWithChildren(element)) {
+        for (const child of element.children ?? []) {
+            fields.push(
+                ...elementToElementDataType(child),
+            );
+        }
+    }
+
+    return fields;
+}
+
+function elementToContextDataObjectInterface({element, parents}: ElementWithParents): string {
+    const valueType = elementToValueType(element);
+    const elementType = elementToTypeDefinition(element);
+
+    return `
+    /**
+     * Der Datensatz für das Element "${generateComponentTitle(element)}".
+     * Das Element hat die ID "${element.id}" und den Typ "${getElementNameForType(element.type)}".
+     * Der Pfad zu diesem Element lauter: ${parents.map(generateComponentTitle).join(' -> ')}
+     */
+    declare interface ${createElementDataObjectInterfaceName(element)} {
+        /** Der Typ-Identifikator des Elementes. In diesem Fall ${getElementNameForType(element.type)} */
+        $type: ${element.type};
+        /** Der eingegebene Wert des Elementes. */
+        inputValue: ${valueType} | undefined | null;
+        /** Gibt an, ob das Element sichtbar ist. */
+        isVisible: boolean | undefined | null;
+        /** Gibt an, ob das Element durch ein Nutzerkonto vorausgefüllt ist. */
+        isPrefilled: boolean | undefined | null;
+        /** Gibt an, ob das Element durch eine Nutzer:in verändert wurde. */
+        isDirty: boolean | undefined | null;
+        /** Die berechnete Überschreibung des Elementes. */
+        computedOverride: ${elementType} | undefined | null;
+        /** Der berechnete Wert des Elementes. */
+        computedValue: ${valueType} | undefined | null;
+        /** Die berechneten Fehler des Elementes. */
+        computedErrors: string[] | undefined | null;
+    }`;
+}
+
+function elementToValueType(element: AnyElement): string {
+    switch (element.type) {
+        case ElementType.Checkbox:
+            return 'boolean';
+        case ElementType.Text:
+        case ElementType.Date:
+        case ElementType.Time:
+            return 'string';
+        case ElementType.Radio:
+        case ElementType.Select:
+            return element.options?.map(option => `'${option.value}'`).join(' | ') ?? 'string';
+        case ElementType.Number:
+            return 'number';
+        case ElementType.MultiCheckbox:
+            return 'string[]';
+        case ElementType.FileUpload:
+            return '{name: string; uri: string; size: number;}[]';
+        case ElementType.IntroductionStep:
+        case ElementType.SummaryStep:
+            return 'boolean';
+        case ElementType.SubmitStep:
+            return 'object';
+        case ElementType.Table:
+            return `{${element.fields?.map(field => `${field.key}: string | number | null | undefined`).join('; ')}}[]`;
+        case ElementType.ReplicatingContainer:
+            return 'object[]';
+        default:
+            return 'never';
+    }
 }
 
 function elementToTypeDefinition(element: AnyElement): string {
@@ -90,29 +148,3 @@ function elementToTypeDefinition(element: AnyElement): string {
     lines.push('    }');
     return lines.join('\n');
 }
-
-const typeMap: Record<ElementType, string> = {
-    [ElementType.Root]: 'undefined',
-    [ElementType.Step]: 'undefined',
-    [ElementType.Alert]: 'undefined',
-    [ElementType.Container]: 'undefined',
-    [ElementType.Checkbox]: 'boolean',
-    [ElementType.Date]: 'string',
-    [ElementType.Headline]: 'undefined',
-    [ElementType.MultiCheckbox]: 'string[]',
-    [ElementType.Number]: 'number',
-    [ElementType.ReplicatingContainer]: 'string[]',
-    [ElementType.Richtext]: 'undefined',
-    [ElementType.Radio]: 'string',
-    [ElementType.Select]: 'string',
-    [ElementType.Spacer]: 'undefined',
-    [ElementType.Table]: 'Record<string, string | number>[]',
-    [ElementType.Text]: 'string',
-    [ElementType.Time]: 'string',
-    [ElementType.IntroductionStep]: 'undefined',
-    [ElementType.SubmitStep]: 'undefined',
-    [ElementType.SummaryStep]: 'undefined',
-    [ElementType.Image]: 'undefined',
-    [ElementType.SubmittedStep]: 'undefined',
-    [ElementType.FileUpload]: '{name: string; uri: string; size: number;}',
-};

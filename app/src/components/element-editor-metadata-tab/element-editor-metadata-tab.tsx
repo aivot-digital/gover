@@ -33,8 +33,8 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
 
     useEffect(() => {
         if (isForm(entity)) {
-            FormsApiService
-                .getIdentityProviders(entity.id)
+            new FormsApiService(api)
+                .getIdentityProviders(entity.slug, entity.version)
                 .then((linkedIdentityProvidersPage) => {
                     return linkedIdentityProvidersPage.content;
                 })

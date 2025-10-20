@@ -92,7 +92,10 @@ export function SubmissionEditPage() {
 
         setLoadingFlag('form');
         new FormsApiService(api)
-            .retrieve(submission.formId)
+            .retrieve({
+                id: submission.formId,
+                version: submission.formVersion,
+            })
             .then((res) => {
                 setForm(res);
             })
@@ -296,7 +299,7 @@ export function SubmissionEditPage() {
 
     let title = 'Antrag';
     if (form != null) {
-        title += ` - ${form.title} - ${form.version}`;
+        title += ` - ${form.internalTitle} - ${form.version}`;
         if (isStringNotNullOrEmpty(submission?.fileNumber)) {
             title += ` - ${submission?.fileNumber ?? ''}`;
         }

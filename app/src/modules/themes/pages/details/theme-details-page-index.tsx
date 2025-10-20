@@ -140,12 +140,14 @@ export function ThemeDetailsPageIndex() {
         setIsBusy(true);
         try {
             const uniqueForms = await new FormsApiService(api)
-                .list(0, 999, undefined, undefined, {themeId: parseInt(themeId ?? "")})
+                .listAllVersions({
+                    themeId: theme.id,
+                });
 
             if (uniqueForms.content.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = uniqueForms.content.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.title,
+                    label: f.internalTitle,
                     to: `/forms/${f.id}`
                 }));
 

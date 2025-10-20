@@ -11,7 +11,7 @@ import {type AnyElementWithChildren, isAnyElementWithChildren} from '../../model
 import {type AnyElement} from '../../models/elements/any-element';
 import {AddElementDialog} from '../../dialogs/add-element-dialog/add-element-dialog';
 import {ElementType} from '../../data/element-type/element-type';
-import {findNoCodeUsage, findNoCodeUsageOfChildren} from '../../utils/find-no-code-usage';
+import {findNoCodeUsage, findUsageOfChild} from '../../utils/find-no-code-usage';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isChildOf} from '../../utils/is-child-of';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -26,8 +26,8 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
     const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
 
     const [expanded, setExpanded] = useState(false);
-    const [showEditor, toggleShowEditor] = useReducer<(f: boolean) => boolean>((p) => !p, false);
-    const [showAddDialog, toggleShowAddDialog] = useReducer<(f: boolean) => boolean>((p) => !p, false);
+    const [showEditor, toggleShowEditor] = useReducer((p) => !p, false);
+    const [showAddDialog, toggleShowAddDialog] = useReducer((p) => !p, false);
 
     const isLayoutElement = isAnyElementWithChildren(props.element);
     const isNotStoreModule = !(props.element.type === ElementType.Container && props.element.storeLink != null);
@@ -64,7 +64,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             props.onPatch({
                 ...props.element,
                 children: [
-                    ...props.element.children,
+                    ...props.element.children ?? [],
                     addedElement,
                 ],
             }, {});
@@ -84,7 +84,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
         }
 
         if (isAnyElementWithChildren(props.element)) {
-            const childUsages = findNoCodeUsageOfChildren(props.element, props.parents[0]);
+            const childUsages = findUsageOfChild(props.element, props.parents[0]);
             if (childUsages.length > 0) {
                 const allReferencesAreChildrenOfElement = childUsages.every(([_, referencingElements]) => referencingElements.every((e) => isChildOf(e, props.element as AnyElementWithChildren)));
                 if (!allReferencesAreChildrenOfElement) {
@@ -104,7 +104,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
 
     return (
         <Box
-            ref={props.editable && props.disableDrag !== true ? drag : undefined}
+            ref={props.editable && props.disableDrag !== true ? (drag as any) : undefined}
             sx={{
                 opacity: isDragging ? 0 : 1,
             }}
@@ -139,6 +139,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                     editable={props.editable}
                     scope={props.scope}
                     enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
+                    limitElementTypes={props.limitElementTypes}
                 />
             }
 
@@ -147,6 +148,9 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 parentType={props.element.type}
                 onAddElement={handleAddElement}
                 onClose={toggleShowAddDialog}
+                limitElementTypes={props.limitElementTypes}
+                hideGoverStore={props.scope === 'data_modelling'}
+                hidePresets={props.scope === 'data_modelling'}
             />
 
             {

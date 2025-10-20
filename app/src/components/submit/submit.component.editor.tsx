@@ -46,7 +46,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, 
             />
 
             <StringListInput
-                value={props.element.documentsToReceive}
+                value={props.element.documentsToReceive ?? undefined}
                 label="Dokumente die antragstellende Personen erhalten"
                 onChange={(val) => {
                     props.onPatch({
