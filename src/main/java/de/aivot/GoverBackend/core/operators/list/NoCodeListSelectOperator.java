@@ -61,18 +61,15 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.List,
-                        "Liste"
+                        "Liste",
+                        "Die Liste oder Tabelle, aus der die Werte extrahiert werden sollen."
                 ),
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Feld"
+                        NoCodeDataType.Runtime,
+                        "Feld",
+                        "Das Feld (Spalte), dessen Werte extrahiert werden sollen."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.List;
     }
 
     @Override
@@ -86,6 +83,6 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
                 .map(map -> map.getOrDefault(field, null))
                 .toList();
 
-        return new NoCodeResult(NoCodeDataType.Any, result);
+        return new NoCodeResult(result);
     }
 }

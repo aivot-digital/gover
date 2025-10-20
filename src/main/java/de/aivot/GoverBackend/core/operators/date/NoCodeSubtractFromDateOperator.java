@@ -61,26 +61,24 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Date,
-                        "Datum"
+                        "Datum",
+                        "Das Ausgangsdatum, von dem subtrahiert werden soll."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Anzahl"
+                        "Anzahl",
+                        "Die Anzahl der Einheiten, die vom Datum subtrahiert werden sollen."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.String,
                         "Einheit",
+                        "Die Einheit der Zeit, die subtrahiert werden soll (Tage, Wochen, Monate, Jahre).",
                         new NoCodeParameterOption("Tage", NoCodeAddToDateOperator.DAYS_UNIT),
                         new NoCodeParameterOption("Wochen", NoCodeAddToDateOperator.WEEKS_UNIT),
                         new NoCodeParameterOption("Monate", NoCodeAddToDateOperator.MONTHS_UNIT),
                         new NoCodeParameterOption("Jahre", NoCodeAddToDateOperator.YEARS_UNIT)
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
     }
 
     @Override
@@ -101,6 +99,6 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
             default -> throw new NoCodeException("Ungültige Einheit: " + unit);
         };
 
-        return new NoCodeResult(NoCodeDataType.Date, date);
+        return new NoCodeResult(date);
     }
 }

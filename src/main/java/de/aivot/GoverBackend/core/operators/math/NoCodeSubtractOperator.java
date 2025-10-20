@@ -60,18 +60,15 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Minuend"
+                        "Minuend",
+                        "Der Wert, von dem subtrahiert wird."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Subtrahend"
+                        "Subtrahend",
+                        "Der Wert, der subtrahiert wird."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
     }
 
     @Override
@@ -87,6 +84,6 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
             result = result.subtract(minuend);
         }
 
-        return new NoCodeResult(NoCodeDataType.Number, result);
+        return new NoCodeResult(result);
     }
 }

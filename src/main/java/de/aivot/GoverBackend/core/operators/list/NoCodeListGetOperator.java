@@ -62,18 +62,15 @@ public class NoCodeListGetOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.List,
-                        "Liste"
+                        "Liste",
+                        "Die Liste, aus der ein Element abgerufen werden soll"
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Index"
+                        "Index",
+                        "Der Index des Elements, das abgerufen werden soll (0-basiert; negative Werte zählen von hinten)"
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Any;
     }
 
     @Override
@@ -86,9 +83,6 @@ public class NoCodeListGetOperator extends NoCodeOperator {
             index = Math.abs(index) - 1;
         }
 
-        return new NoCodeResult(
-                NoCodeDataType.Any,
-                list.stream().skip(index).findFirst().orElse(null)
-        );
+        return new NoCodeResult(list.stream().skip(index).findFirst().orElse(null));
     }
 }

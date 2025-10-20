@@ -46,9 +46,9 @@ public class ElementValueDerivationService {
             }
 
             // Determine if the value computation should be done with a value expression
-            if (val.getExpression() != null && val.getExpression().isNotEmpty()) {
+            if (val.getNoCode() != null) {
                 return noCodeEvaluationService
-                        .evaluate(val.getExpression(), accumulator)
+                        .evaluate(val.getNoCode(), accumulator)
                         .getValue();
             }
         } catch (Exception e) {

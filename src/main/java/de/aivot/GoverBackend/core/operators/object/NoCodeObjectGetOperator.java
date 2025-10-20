@@ -58,18 +58,15 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Object,
-                        "Objekt"
+                        "Objekt",
+                        "Das Objekt, aus dem ein Element abgerufen werden soll."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.String,
-                        "Feldbezeichner"
+                        "Feldbezeichner",
+                        "Der Bezeichner des Feldes, das abgerufen werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Any;
     }
 
     @Override
@@ -77,9 +74,6 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
         var obj = castToMap(args[0]);
         var field = castToString(args[1]);
 
-        return new NoCodeResult(
-                NoCodeDataType.Any,
-                obj.getOrDefault(field, null)
-        );
+        return new NoCodeResult(obj.getOrDefault(field, null));
     }
 }

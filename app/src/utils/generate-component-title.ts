@@ -4,7 +4,11 @@ import {type AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty, stringOrDefault} from './string-utils';
 
 
-export function generateComponentTitle(component: AnyElement): string {
+export function generateComponentTitle(component: AnyElement | null | undefined): string {
+    if (component == null) {
+        return '';
+    }
+
     if (component.name != null && isStringNotNullOrEmpty(component.name)) {
         return component.name;
     }

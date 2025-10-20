@@ -62,18 +62,15 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Faktor 1"
+                        "Faktor 1",
+                        "Der erste zu multiplizierende Wert."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Faktor 2"
+                        "Faktor 2",
+                        "Der zweite zu multiplizierende Wert."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
     }
 
     @Override
@@ -89,6 +86,6 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
             result = result.multiply(arg);
         }
 
-        return new NoCodeResult(NoCodeDataType.Number, result);
+        return new NoCodeResult(result);
     }
 }

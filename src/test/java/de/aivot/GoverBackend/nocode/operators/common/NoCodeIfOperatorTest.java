@@ -18,11 +18,11 @@ class NoCodeIfOperatorTest {
         var data = ElementData.of("a", true, "b", false);
 
         // Test condition true
-        assertEquals(NoCodeDataType.Any, operator.performEvaluation(data, true, "yes", "no").getDataType());
+        assertEquals(NoCodeDataType.Runtime, operator.performEvaluation(data, true, "yes", "no").getDataType());
         assertEquals("yes", operator.performEvaluation(data, true, "yes", "no").getValue());
 
         // Test condition false
-        assertEquals(NoCodeDataType.Any, operator.performEvaluation(data, false, "yes", "no").getDataType());
+        assertEquals(NoCodeDataType.Runtime, operator.performEvaluation(data, false, "yes", "no").getDataType());
         assertEquals("no", operator.performEvaluation(data, false, "yes", "no").getValue());
 
         // Test null condition

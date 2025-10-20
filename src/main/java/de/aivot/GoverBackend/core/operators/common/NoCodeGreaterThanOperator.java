@@ -57,19 +57,16 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
     public NoCodeParameter[] getParameters() {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 1"
+                        NoCodeDataType.Runtime,
+                        "Wert 1",
+                        "Der erste zu vergleichende Wert."
                 ),
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 2"
+                        NoCodeDataType.Runtime,
+                        "Wert 2",
+                        "Der zweite zu vergleichende Wert."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
     }
 
     @Override
@@ -77,6 +74,6 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
         var arg0 = castToNumber(args[0]);
         var arg1 = castToNumber(args[1]);
 
-        return new NoCodeResult(NoCodeDataType.Boolean, arg0.compareTo(arg1) > 0);
+        return new NoCodeResult(arg0.compareTo(arg1) > 0);
     }
 }

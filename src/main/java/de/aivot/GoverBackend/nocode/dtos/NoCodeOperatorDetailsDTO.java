@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.nocode.dtos;
 
-import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorServiceProvider;
 
@@ -14,7 +13,6 @@ import java.util.stream.Stream;
  * @param label       The label of the operator.
  * @param description The description of the operator.
  * @param parameters  The parameters that the operator expects.
- * @param returnType  The type of the return value of the operator.
  */
 public record NoCodeOperatorDetailsDTO(
         String identifier,
@@ -23,8 +21,7 @@ public record NoCodeOperatorDetailsDTO(
         String description,
         String abstractDescription,
         String[] tags,
-        NoCodeParameter[] parameters,
-        NoCodeDataType returnType
+        NoCodeParameter[] parameters
 ) {
     /**
      * Convert an operator SPI to a stream of DTOs.
@@ -42,8 +39,7 @@ public record NoCodeOperatorDetailsDTO(
                         op.getDescription(),
                         op.getAbstract(),
                         op.getTags(),
-                        op.getParameters(),
-                        op.getReturnType()
+                        op.getParameters()
                 ));
     }
 }

@@ -56,18 +56,15 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Stunde"
+                        "Stunde",
+                        "Die Stunde der Zeit (0-23)."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Minute"
+                        "Minute",
+                        "Die Minute der Zeit (0-59)."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
     }
 
     @Override
@@ -80,6 +77,6 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                 .withHour(hour)
                 .withMinute(minute);
 
-        return new NoCodeResult(NoCodeDataType.Date, time);
+        return new NoCodeResult(time);
     }
 }

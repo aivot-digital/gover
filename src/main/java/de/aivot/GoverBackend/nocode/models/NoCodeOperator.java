@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.nocode.models;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 
@@ -71,13 +70,6 @@ public abstract class NoCodeOperator {
      * @return the list of parameters that the operator expects
      */
     public abstract NoCodeParameter[] getParameters();
-
-    /**
-     * Returns the type of the return value of the operator.
-     *
-     * @return the type of the return value of the operator
-     */
-    public abstract NoCodeDataType getReturnType();
 
     @Nonnull
     public NoCodeResult evaluate(ElementData data, Object... args) throws NoCodeException {

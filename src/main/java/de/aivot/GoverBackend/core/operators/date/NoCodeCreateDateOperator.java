@@ -58,15 +58,13 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Tag"
+                        "Tag",
+                        "Der Tag des Monats (1-31)"
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Monat"
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Jahr",
+                        "Monat",
+                        "Der Monat des Jahres (1-12)",
                         new NoCodeParameterOption("Januar", "1"),
                         new NoCodeParameterOption("Februar", "2"),
                         new NoCodeParameterOption("März", "3"),
@@ -80,12 +78,12 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                         new NoCodeParameterOption("November", "11"),
                         new NoCodeParameterOption("Dezember", "12")
                 ),
+                new NoCodeParameter(
+                        NoCodeDataType.Number,
+                        "Jahr",
+                        "Das Jahr (z.B. 2023)"
+                ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
     }
 
     @Override
@@ -100,6 +98,6 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                 ZoneId.systemDefault()
         );
 
-        return new NoCodeResult(NoCodeDataType.Date, date);
+        return new NoCodeResult(date);
     }
 }

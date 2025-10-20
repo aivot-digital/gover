@@ -1,23 +1,22 @@
 import {NoCodeExpression} from '../../../../models/functions/no-code-expression';
 import {NoCodeOperatorDetailsDTO} from '../../../../models/dtos/no-code-operator-details-dto';
-import {Box, Tooltip, Typography} from '@mui/material';
+import {Box, Typography} from '@mui/material';
 import {Actions} from '../../../actions/actions';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SwitchAccessShortcutAddIcon from '@mui/icons-material/SwitchAccessShortcutAdd';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import React from 'react';
+import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
+import {Hint} from '../../../hint/hint';
 
 interface ExpressionHeaderProps {
     expression: NoCodeExpression;
     operator: NoCodeOperatorDetailsDTO;
-    onChange: (expression: NoCodeExpression) => void;
+    onChange: (expression: NoCodeExpression | null | undefined) => void;
     onShowSelect: () => void;
     onAddAbove: () => void;
     onShowInfo: () => void;
-    testedExpression?: NoCodeExpression;
-    onTest: () => void;
 }
 
 export function ExpressionHeader(props: ExpressionHeaderProps) {
@@ -26,37 +25,46 @@ export function ExpressionHeader(props: ExpressionHeaderProps) {
             sx={{
                 display: 'flex',
                 alignItems: 'center',
+                gap: 1,
             }}
         >
-            <Typography>
-                {props.operator.label}
-            </Typography>
+            <Box
+                sx={{
+                    bgcolor: 'background.default',
+                    py: 0.5,
+                    px: 1,
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                }}
+            >
+                <Functions
+                    style={{
+                        fontSize: '90%',
+                    }}
+                />
 
-            {
-                props.testedExpression === props.expression &&
-                <Tooltip
-                    title="Das Testergebnis bezieht sich auf diesen Ausdruck."
-                    placement="right"
+                <Typography
+                    fontSize="80%"
                 >
-                    <ScienceOutlinedIcon
-                        sx={{
-                            marginLeft: 1,
-                        }}
-                        color="primary"
-                    />
-                </Tooltip>
-            }
+                    {props.operator.label}
+                </Typography>
+            </Box>
+
+            <Typography
+                variant="caption"
+                color="textSecondary"
+            >
+                {props.operator.abstractDescription}
+            </Typography>
 
             <Actions
                 sx={{
                     ml: 'auto',
                 }}
+                dense={true}
                 actions={[
-                    {
-                        icon: <ScienceOutlinedIcon />,
-                        tooltip: 'Ausdruck testen',
-                        onClick: props.onTest,
-                    },
                     {
                         icon: <SwitchAccessShortcutAddIcon />,
                         tooltip: 'Ausdruck oberhalb einfügen',
@@ -76,11 +84,7 @@ export function ExpressionHeader(props: ExpressionHeaderProps) {
                         icon: <DeleteOutlineIcon />,
                         tooltip: 'Operator löschen',
                         onClick: () => {
-                            props.onChange({
-                                ...props.expression,
-                                operatorIdentifier: '',
-                                operands: [],
-                            });
+                            props.onChange(null);
                         },
                     },
                 ]}

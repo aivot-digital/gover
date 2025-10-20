@@ -58,6 +58,6 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
 
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(NoCodeDataType.Boolean, super.performEvaluation(data, args).getValueAsBoolean());
+        return new NoCodeResult(super.performEvaluation(data, args).getValueAsBoolean());
     }
 }

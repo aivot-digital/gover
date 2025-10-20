@@ -8,7 +8,6 @@ import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ReferenceCheck} from './components/reference-check/reference-check';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ElementOverrideFunction} from '../../models/elements/element-override-function';
 import {editor} from 'monaco-editor';
 
@@ -34,14 +33,15 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
     } = element;
 
     const override: ElementOverrideFunction = useMemo(() => _override ?? {
+        type: undefined,
         requirements: undefined,
         javascriptCode: undefined,
-        expression: undefined,
+        fieldNoCodeMap: undefined,
         referencedIds: undefined,
     }, [_override]);
 
     const hasOverrideFunction = useMemo(() => {
-        return override.javascriptCode?.code != null;
+        return override.type != null;
     }, [override]);
 
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
@@ -74,29 +74,36 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                     switch (type) {
                         case 'code':
                             handleChange({
+                                type: 'Javascript',
                                 javascriptCode: {
                                     code: exampleOverrideCode,
                                 },
-                                expression: undefined,
+                                fieldNoCodeMap: undefined,
                             });
                             break;
                         case 'expression':
+                            handleChange({
+                                type: 'NoCode',
+                                javascriptCode: undefined,
+                                fieldNoCodeMap: {},
+                            });
                             break;
                     }
                 }}
                 onDeleteFunction={() => {
                     handleChange({
                         javascriptCode: undefined,
-                        expression: undefined,
+                        fieldNoCodeMap: undefined,
                         referencedIds: undefined,
+                        type: undefined,
                     });
                 }}
                 hasFunction={hasOverrideFunction}
             >
                 {
-                    override.javascriptCode != null && (
+                    override.type === 'Javascript' && (
                         <CodeEditor
-                            value={override.javascriptCode.code ?? undefined}
+                            value={override.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
                                 handleChange({
                                     javascriptCode: {
@@ -120,6 +127,14 @@ export function OverrideCodeTab(props: OverrideCodeTabProps) {
                                 editorRef.current = editor;
                             }}
                         />
+                    )
+                }
+
+                {
+                    override.type === 'NoCode' && (
+                        <div>
+                            No-Code Überschreibungsfunktionen sind derzeit nicht unterstützt.
+                        </div>
                     )
                 }
 

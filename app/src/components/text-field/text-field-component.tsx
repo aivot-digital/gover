@@ -51,6 +51,10 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
     // Handle input change
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (props.readonly) {
+            return; // Ignore changes if readonly
+        }
+
         const newValue = event.target.value;
         setInputValue(newValue); // update UI directly!
 

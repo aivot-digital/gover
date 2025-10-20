@@ -56,11 +56,6 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
-    }
-
-    @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         var today = ZonedDateTime
                 .now()
@@ -68,6 +63,6 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
                 .withMinute(0)
                 .withSecond(0)
                 .withNano(0);
-        return new NoCodeResult(NoCodeDataType.Date, today);
+        return new NoCodeResult(today);
     }
 }

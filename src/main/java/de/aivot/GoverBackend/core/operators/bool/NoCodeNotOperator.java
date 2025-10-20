@@ -57,7 +57,8 @@ public class NoCodeNotOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Boolean,
-                        "Wert",
+                        "Bedingung",
+                        "Die zu überprüfende Bedingung.",
                         new NoCodeParameterOption("Wahr", "true"),
                         new NoCodeParameterOption("Falsch", "false")
                 ),
@@ -65,14 +66,9 @@ public class NoCodeNotOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
-    }
-
-    @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         var arg = castToBoolean(args[0]);
 
-        return new NoCodeResult(NoCodeDataType.Boolean, !arg);
+        return new NoCodeResult(!arg);
     }
 }

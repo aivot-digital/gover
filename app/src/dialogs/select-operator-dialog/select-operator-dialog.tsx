@@ -17,9 +17,9 @@ export function SelectOperatorDialog(props: SelectOperatorDialogProps) {
             .operators
             .filter(op => {
                 return !respectDesiredReturnType || (
-                    props.desiredReturnType === NoCodeDataType.Any ||
+                    props.desiredReturnType === NoCodeDataType.Runtime ||
                     op.returnType === props.desiredReturnType ||
-                    op.returnType === NoCodeDataType.Any
+                    op.returnType === NoCodeDataType.Runtime
                 );
             });
     }, [props.operators, respectDesiredReturnType]);

@@ -63,19 +63,16 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
     public NoCodeParameter[] getParameters() {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
-                        NoCodeDataType.List,
-                        "Liste"
+                        NoCodeDataType.Runtime,
+                        "Liste",
+                        "Eine Liste von Werten, in der gesucht werden soll."
                 ),
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert"
+                        NoCodeDataType.Runtime,
+                        "Wert",
+                        "Der Wert, nach dem in der Liste gesucht werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
     }
 
     @Override
@@ -86,10 +83,10 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
         for (Object item : list) {
             var castedItem = castToTypeOfReference(value, item);
             if (Objects.equals(castedItem, value)) {
-                return new NoCodeResult(NoCodeDataType.Boolean, true);
+                return new NoCodeResult(true);
             }
         }
 
-        return new NoCodeResult(NoCodeDataType.Boolean, false);
+        return new NoCodeResult(false);
     }
 }

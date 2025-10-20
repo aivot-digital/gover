@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
-import {MenuItem, TextField, Typography} from '@mui/material';
+import React, {useMemo} from 'react';
+import {IconButton, InputAdornment, MenuItem, TextField, Typography} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
+import Tooltip from '@mui/material/Tooltip';
 
 export function SelectFieldComponent({
                                          label,
@@ -16,6 +17,8 @@ export function SelectFieldComponent({
                                          onChange,
                                          options,
                                          emptyStatePlaceholder,
+                                         startIcon,
+                                         endAction,
                                          sx,
                                      }: SelectFieldComponentProps) {
     const val = value ?? '';
@@ -44,7 +47,7 @@ export function SelectFieldComponent({
                         </Typography>
                     }
                 </MenuItem>
-            ))
+            ));
     }, [options]);
 
     return (
@@ -71,6 +74,18 @@ export function SelectFieldComponent({
             InputProps={{
                 sx: sx,
                 readOnly: readOnly,
+                startAdornment: startIcon && (
+                    <InputAdornment position="start">{startIcon}</InputAdornment>
+                ),
+                endAdornment: endAction && (
+                    <InputAdornment position="end" sx={{
+                        mr: 2,
+                    }}>
+                        {Array.isArray(endAction)
+                            ? endAction.map(renderIconButton)
+                            : renderIconButton(endAction)}
+                    </InputAdornment>
+                ),
             }}
             SelectProps={{
                 renderValue: (value) => {
@@ -105,3 +120,18 @@ export function SelectFieldComponent({
     );
 }
 
+const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
+    action.tooltip ? (
+        <Tooltip
+            key={key}
+            title={action.tooltip}
+        >
+            <IconButton onClick={action.onClick}>{action.icon}</IconButton>
+        </Tooltip>
+    ) : (
+        <IconButton
+            key={key}
+            onClick={action.onClick}
+        >{action.icon}</IconButton>
+    )
+);

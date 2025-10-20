@@ -62,23 +62,21 @@ public class NoCodeIfOperator extends NoCodeOperator {
                 new NoCodeParameter(
                         NoCodeDataType.Boolean,
                         "Wahrheitswert",
+                        "Der zu überprüfende Wahrheitswert.",
                         new NoCodeParameterOption("Wahr", "true"),
                         new NoCodeParameterOption("Falsch", "false")
                 ),
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Ergebnis bei Wahr"
+                        NoCodeDataType.Runtime,
+                        "Ergebnis bei Wahr",
+                        "Der zurückzugebende Wert, wenn der Wahrheitswert wahr ist."
                 ),
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Ergebnis bei Falsch"
+                        NoCodeDataType.Runtime,
+                        "Ergebnis bei Falsch",
+                        "Der zurückzugebende Wert, wenn der Wahrheitswert falsch ist."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Any;
     }
 
     @Override
@@ -87,6 +85,6 @@ public class NoCodeIfOperator extends NoCodeOperator {
         var arg1 = args[1];
         var arg2 = args[2];
 
-        return new NoCodeResult(NoCodeDataType.Any, arg0 ? arg1 : arg2);
+        return new NoCodeResult(arg0 ? arg1 : arg2);
     }
 }

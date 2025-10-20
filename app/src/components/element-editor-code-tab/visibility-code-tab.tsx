@@ -2,11 +2,9 @@ import React, {useMemo, useReducer, useRef} from 'react';
 import {ConditionSetOperator} from '../../data/condition-set-operator';
 import {VisibilityCodeTabProps} from './visibility-code-tab-props';
 import {BaseCodeTab} from './base-code-tab';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ConditionOperator} from '../../data/condition-operator';
 import {CodeEditor} from '../code-editor/code-editor';
 import {CodeTabNoCodeEditor} from '../code-tab-no-code-editor';
-import {ExpressionEditorWrapper} from './components/expression-editor-wrapper/expression-editor-wrapper';
 import {NoCodeDataType} from '../../data/no-code-data-type';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
@@ -16,6 +14,7 @@ import {createLowCodeContextType} from '../../utils/create-low-code-context-type
 import {ReferenceCheck} from './components/reference-check/reference-check';
 import {ElementVisibilityFunction} from '../../models/elements/element-visibility-function';
 import {editor} from 'monaco-editor';
+import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
 
 const exampleVisibilityCode = `(function(){
     // Hier kann der Code eingefügt werden, der bestimmt, ob das Element sichtbar ist.
@@ -37,19 +36,16 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
     } = element;
 
     const visibility: ElementVisibilityFunction = useMemo(() => _visibility ?? {
+        type: undefined,
         requirements: undefined,
         conditionSet: undefined,
         javascriptCode: undefined,
-        expression: undefined,
+        noCode: undefined,
         referencedIds: undefined,
     }, [_visibility]);
 
     const hasVisibilityFunction = useMemo(() => {
-        return (
-            visibility.javascriptCode?.code != null ||
-            visibility.conditionSet != null ||
-            visibility.expression != null
-        );
+        return visibility.type != null;
     }, [visibility]);
 
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
@@ -82,6 +78,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     switch (type) {
                         case 'legacy-condition':
                             handleChange({
+                                type: 'ConditionSet',
                                 conditionSet: {
                                     operator: ConditionSetOperator.Any,
                                     conditions: [
@@ -95,14 +92,15 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                                     conditionsSets: [],
                                     conditionSetUnmetMessage: '',
                                 },
-                                expression: undefined,
+                                noCode: undefined,
                                 javascriptCode: undefined,
                             });
                             break;
                         case 'code':
                             handleChange({
+                                type: 'Javascript',
                                 conditionSet: undefined,
-                                expression: undefined,
+                                noCode: undefined,
                                 javascriptCode: {
                                     code: exampleVisibilityCode,
                                 },
@@ -110,12 +108,9 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                             break;
                         case 'expression':
                             handleChange({
+                                type: 'NoCode',
                                 conditionSet: undefined,
-                                expression: {
-                                    type: "NoCodeExpression",
-                                    operatorIdentifier: '',
-                                    operands: [],
-                                },
+                                noCode: undefined,
                                 javascriptCode: undefined,
                             });
                             break;
@@ -125,16 +120,17 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     handleChange({
                         javascriptCode: undefined,
                         conditionSet: undefined,
-                        expression: undefined,
+                        noCode: undefined,
                         referencedIds: undefined,
+                        type: undefined,
                     });
                 }}
                 hasFunction={hasVisibilityFunction}
             >
                 {
-                    visibility.javascriptCode != null && (
+                    visibility.type === 'Javascript' && (
                         <CodeEditor
-                            value={visibility.javascriptCode.code ?? undefined}
+                            value={visibility.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
                                 handleChange({
                                     javascriptCode: {
@@ -161,13 +157,13 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     )
                 }
                 {
-                    visibility.conditionSet != null && (
+                    visibility.type === 'ConditionSet' && (
                         <CodeTabNoCodeEditor
                             parents={props.parents}
                             element={props.element}
                             func={{
                                 requirements: '',
-                                conditionSet: visibility.conditionSet,
+                                conditionSet: visibility.conditionSet ?? undefined,
                             }}
                             onChange={(updatedFunc) => {
                                 handleChange({
@@ -180,17 +176,17 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     )
                 }
                 {
-                    visibility.expression != null && (
-                        <ExpressionEditorWrapper
+                    visibility.type === 'NoCode' && (
+                        <NoCodeEditorWrapper
                             parents={props.parents}
-                            expression={visibility.expression}
-                            onChange={(expression) => {
+                            noCode={visibility.noCode}
+                            onChange={(noCode) => {
                                 handleChange({
-                                    expression: expression,
+                                    noCode: noCode,
                                 });
                             }}
                             editable={props.editable}
-                            desiredReturnType={NoCodeDataType.Any}
+                            desiredReturnType={NoCodeDataType.Runtime}
                         />
                     )
                 }
@@ -201,7 +197,7 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                     lowCodeOld={[]}
                     lowCode={visibility.javascriptCode?.code != null ? [visibility.javascriptCode.code] : []}
                     noCodeOld={visibility.conditionSet != null ? [visibility.conditionSet] : []}
-                    noCode={visibility.expression != null ? [visibility.expression] : []}
+                    noCode={visibility.noCode != null ? [visibility.noCode] : []}
                 />
             </BaseCodeTab>
 

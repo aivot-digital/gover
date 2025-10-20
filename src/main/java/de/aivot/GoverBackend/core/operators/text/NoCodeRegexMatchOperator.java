@@ -4,9 +4,7 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
-import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
-import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.*;
 
 import java.util.regex.Pattern;
 
@@ -63,18 +61,15 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.String,
-                        "Text"
+                        "Text",
+                        "Der zu überprüfende Text"
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.String,
-                        "Regulärer Ausdruck"
+                        "Regulärer Ausdruck",
+                        "Der reguläre Ausdruck, mit dem der Text verglichen werden soll"
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
     }
 
     @Override
@@ -87,6 +82,6 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
         String regex = castToString(args[1]);
 
         boolean matches = Pattern.matches(regex, input);
-        return new NoCodeResult(NoCodeDataType.Boolean, matches);
+        return new NoCodeResult(matches);
     }
 }

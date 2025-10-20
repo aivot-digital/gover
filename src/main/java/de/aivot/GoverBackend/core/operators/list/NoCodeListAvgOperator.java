@@ -70,14 +70,10 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.List,
-                        "Liste"
+                        "Liste",
+                        "Die Liste der numerischen Werte, deren Durchschnitt berechnet werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
     }
 
     @Override
@@ -85,7 +81,7 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
         var list = castToList(args[0]);
 
         if (list.isEmpty()) {
-            return new NoCodeResult(NoCodeDataType.Number, BigDecimal.ZERO);
+            return new NoCodeResult(BigDecimal.ZERO);
         }
 
         var sum = BigDecimal.ZERO;
@@ -95,6 +91,6 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
 
         var avg = sum.divide(BigDecimal.valueOf(list.size()), RoundingMode.HALF_UP);
 
-        return new NoCodeResult(NoCodeDataType.Any, avg);
+        return new NoCodeResult(avg);
     }
 }

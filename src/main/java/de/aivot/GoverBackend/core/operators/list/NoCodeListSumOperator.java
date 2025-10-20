@@ -63,14 +63,10 @@ public class NoCodeListSumOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.List,
-                        "Liste"
+                        "Liste",
+                        "Die Liste der numerischen Werte, deren Summe berechnet werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
     }
 
     @Override
@@ -82,7 +78,7 @@ public class NoCodeListSumOperator extends NoCodeOperator {
         var list = castToList(args[0]);
 
         if (list.isEmpty()) {
-            return new NoCodeResult(NoCodeDataType.Number, BigDecimal.ZERO);
+            return new NoCodeResult(BigDecimal.ZERO);
         }
 
         BigDecimal sum = BigDecimal.ZERO;
@@ -90,6 +86,6 @@ public class NoCodeListSumOperator extends NoCodeOperator {
             sum = sum.add(castToNumber(summand));
         }
 
-        return new NoCodeResult(NoCodeDataType.Any, sum);
+        return new NoCodeResult(sum);
     }
 }

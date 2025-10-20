@@ -65,26 +65,24 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Date,
-                        "Datum"
+                        "Datum",
+                        "Das Ausgangsdatum, zu dem Tage, Wochen, Monate oder Jahre hinzugefügt werden sollen."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Anzahl"
+                        "Anzahl",
+                        "Die Anzahl der Tage, Wochen, Monate oder Jahre, die zum Datum hinzugefügt werden sollen."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.String,
                         "Einheit",
+                        "Die Einheit der hinzuzufügenden Zeitspanne (Tage, Wochen, Monate, Jahre).",
                         new NoCodeParameterOption("Tage", DAYS_UNIT),
                         new NoCodeParameterOption("Wochen", WEEKS_UNIT),
                         new NoCodeParameterOption("Monate", MONTHS_UNIT),
                         new NoCodeParameterOption("Jahre", YEARS_UNIT)
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Date;
     }
 
     @Override
@@ -101,6 +99,6 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
             default -> throw new NoCodeException("Ungültige Einheit: " + unit);
         };
 
-        return new NoCodeResult(NoCodeDataType.Date, date);
+        return new NoCodeResult(date);
     }
 }

@@ -1,7 +1,5 @@
 package de.aivot.GoverBackend.nocode.models;
 
-import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.annotation.Nonnull;
@@ -10,27 +8,13 @@ import java.util.Collection;
 
 /**
  * Represents the result of a NoCode evaluation.
- * Contains the data type and the value of the result.
+ * Contains the value of the result.
  */
 public class NoCodeResult {
-    private final NoCodeDataType dataType;
     private final Object value;
 
-    public NoCodeResult(@Nonnull NoCodeDataType dataType, @Nullable Object value) {
-        this.dataType = dataType;
+    public NoCodeResult(@Nullable Object value) {
         this.value = value;
-    }
-
-    /**
-     * Returns the data type of the result.
-     * The actual type of the value might differ from the data type.
-     * Operators set this value when creating a result but might not correctly set the value.
-     *
-     * @return the data type of the result
-     */
-    @Nonnull
-    public NoCodeDataType getDataType() {
-        return dataType;
     }
 
     /**

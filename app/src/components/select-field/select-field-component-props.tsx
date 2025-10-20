@@ -1,5 +1,6 @@
 import {SelectFieldComponentOption} from "./select-field-component-option";
 import {SxProps, Theme} from "@mui/material";
+import {ReactNode} from 'react';
 
 export interface SelectFieldComponentProps {
     label: string;
@@ -15,4 +16,12 @@ export interface SelectFieldComponentProps {
     options: SelectFieldComponentOption[];
     emptyStatePlaceholder?: string;
     sx?: SxProps<Theme>;
+    startIcon?: React.ReactNode;
+    endAction?: EndAction | Array<EndAction>;
 }
+
+type EndAction = {
+    icon: ReactNode;
+    tooltip?: string;
+    onClick: () => void;
+};

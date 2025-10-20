@@ -1,5 +1,5 @@
 export enum NoCodeDataType {
-    Any = 0,
+    Runtime = 0,
 
     Boolean = 10,
     Number = 11,
@@ -11,7 +11,7 @@ export enum NoCodeDataType {
 }
 
 export const NoCodeDataTypeLabels: Record<NoCodeDataType, string> = {
-    [NoCodeDataType.Any]: 'Beliebiger Wert',
+    [NoCodeDataType.Runtime]: 'Beliebiger Wert',
     [NoCodeDataType.Boolean]: 'Wahrheitswert',
     [NoCodeDataType.Number]: 'Zahlenwert',
     [NoCodeDataType.String]: 'Textwert',

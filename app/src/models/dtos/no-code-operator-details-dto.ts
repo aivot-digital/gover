@@ -13,6 +13,7 @@ export interface NoCodeOperatorDetailsDTO {
 export interface NoCodeParameter {
     type: NoCodeDataType;
     label: string;
+    description: string | null | undefined;
     options: NoCodeParameterOption[];
 }
 

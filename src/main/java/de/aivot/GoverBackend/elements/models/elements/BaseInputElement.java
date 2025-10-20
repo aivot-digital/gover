@@ -104,7 +104,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 return true;
             }
 
-            if (validation.getValidationExpressions() != null && !validation.getValidationExpressions().isEmpty()) {
+            if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
                 return true;
             }
 
@@ -118,7 +118,7 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
                 return true;
             }
 
-            if (value.getExpression() != null) {
+            if (value.getNoCode() != null) {
                 return true;
             }
         }

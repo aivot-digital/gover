@@ -56,18 +56,15 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.List,
-                        "Liste 1"
+                        "Liste 1",
+                        "Die erste Liste, die zusammengefügt werden soll."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.List,
-                        "Liste 2"
+                        "Liste 2",
+                        "Die zweite Liste, die zusammengefügt werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.List;
     }
 
     @Override
@@ -78,6 +75,6 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
         var result = new ArrayList<>(list1);
         result.addAll(list2);
 
-        return new NoCodeResult(NoCodeDataType.List, result);
+        return new NoCodeResult(result);
     }
 }

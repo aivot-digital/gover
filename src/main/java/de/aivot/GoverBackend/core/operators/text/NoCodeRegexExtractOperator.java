@@ -64,18 +64,15 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.String,
-                        "Text"
+                        "Text",
+                        "Der Text, aus dem extrahiert werden soll."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.String,
-                        "Regulärer Ausdruck"
+                        "Regulärer Ausdruck",
+                        "Der reguläre Ausdruck, der die zu extrahierenden Muster definiert."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.List;
     }
 
     @Override
@@ -95,6 +92,6 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
             matches.add(matcher.group());
         }
 
-        return new NoCodeResult(NoCodeDataType.List, matches);
+        return new NoCodeResult(matches);
     }
 }

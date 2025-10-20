@@ -47,19 +47,15 @@ public class NoCodeValueOperator extends NoCodeOperator {
     public NoCodeParameter[] getParameters() {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Ziel"
+                        NoCodeDataType.String,
+                        "Ziel",
+                        "Die ID des Elementes, dessen Wert zurückgegeben werden soll."
                 ),
         };
     }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Any;
-    }
-
+    
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(NoCodeDataType.Any, args[0]);
+        return new NoCodeResult(args[0]);
     }
 }

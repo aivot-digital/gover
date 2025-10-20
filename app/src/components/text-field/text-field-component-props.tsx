@@ -7,6 +7,7 @@ export interface TextFieldComponentProps {
     placeholder?: string;
     required?: boolean;
     disabled?: boolean;
+    readonly?: boolean;
     busy?: boolean;
     display?: boolean;
     multiline?: boolean;

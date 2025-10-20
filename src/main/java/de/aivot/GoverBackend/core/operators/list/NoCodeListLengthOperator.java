@@ -58,18 +58,14 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.List,
-                        "Liste"
+                        "Liste",
+                        "Die Liste, deren Länge ermittelt werden soll."
                 ),
         };
     }
 
     @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
-    }
-
-    @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(NoCodeDataType.Number, castToList(args[0]).size());
+        return new NoCodeResult(castToList(args[0]).size());
     }
 }

@@ -59,19 +59,16 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
     public NoCodeParameter[] getParameters() {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 1"
+                        NoCodeDataType.Runtime,
+                        "Wert 1",
+                        "Der erste Wert, der mit dem zweiten Wert verglichen werden soll."
                 ),
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert 2"
+                        NoCodeDataType.Runtime,
+                        "Wert 2",
+                        "Der zweite Wert, mit dem der erste Wert verglichen werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
     }
 
     @Override
@@ -79,6 +76,6 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
         var arg0 = castToNumber(args[0]);
         var arg1 = castToNumber(args[1]);
 
-        return new NoCodeResult(NoCodeDataType.Boolean, arg0.compareTo(arg1) <= 0);
+        return new NoCodeResult(arg0.compareTo(arg1) <= 0);
     }
 }

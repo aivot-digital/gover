@@ -62,18 +62,15 @@ public class NoCodeSplitOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.String,
-                        "Text"
+                        "Text",
+                        "Der Text, der aufgeteilt werden soll."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.String,
-                        "Separator"
+                        "Separator",
+                        "Das Zeichen oder die Zeichenfolge, anhand derer der Text aufgeteilt werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.List;
     }
 
     @Override
@@ -85,6 +82,6 @@ public class NoCodeSplitOperator extends NoCodeOperator {
         var input = castToString(args[0]);
         var separator = castToString(args[1]);
 
-        return new NoCodeResult(NoCodeDataType.List, List.of(input.split(separator)));
+        return new NoCodeResult(List.of(input.split(separator)));
     }
 }

@@ -57,19 +57,15 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
     public NoCodeParameter[] getParameters() {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert"
+                        NoCodeDataType.Runtime,
+                        "Wert",
+                        "Der zu überprüfende Wert."
                 ),
         };
     }
 
     @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
-    }
-
-    @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(NoCodeDataType.Boolean, args[0] != null);
+        return new NoCodeResult(args[0] != null);
     }
 }

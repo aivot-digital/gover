@@ -25,6 +25,7 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
                 m: 0,
                 p: 2,
                 pl: 2.8,
+                pr: onClose != null ? 8 : 2,
                 borderBottom: props.bordered ? `1px solid ${theme.palette.grey[300]}` : 'none',
             }}
             {...other}

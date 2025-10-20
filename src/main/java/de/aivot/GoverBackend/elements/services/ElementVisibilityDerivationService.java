@@ -80,9 +80,9 @@ public class ElementVisibilityDerivationService {
         }
 
         // Determine if visibility calculation should be done with a no code expression
-        if (vis.getExpression() != null) {
+        if (vis.getNoCode() != null) {
             return noCodeEvaluationService
-                    .evaluate(vis.getExpression(), elementData)
+                    .evaluate(vis.getNoCode(), elementData)
                     .getValueAsBoolean();
         }
 

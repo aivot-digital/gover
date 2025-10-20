@@ -62,13 +62,15 @@ public class NoCodeOrOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Boolean,
-                        "Wert 1",
+                        "Bedingung 1",
+                        "Die erste Bedingung für die ODER-Verknüpfung.",
                         new NoCodeParameterOption("Wahr", "true"),
                         new NoCodeParameterOption("Falsch", "false")
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Boolean,
-                        "Wert 2",
+                        "Bedingung 2",
+                        "Die zweite Bedingung für die ODER-Verknüpfung.",
                         new NoCodeParameterOption("Wahr", "true"),
                         new NoCodeParameterOption("Falsch", "false")
                 ),
@@ -76,15 +78,10 @@ public class NoCodeOrOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
-    }
-
-    @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         var arg0 = castToBoolean(args[0]);
         var arg1 = castToBoolean(args[1]);
 
-        return new NoCodeResult(NoCodeDataType.Boolean, arg0 || arg1);
+        return new NoCodeResult(arg0 || arg1);
     }
 }

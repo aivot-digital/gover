@@ -62,18 +62,15 @@ public class NoCodeAddOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Summand 1"
+                        "Summand 1",
+                        "Der erste Wert, der addiert werden soll."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Summand 2"
+                        "Summand 2",
+                        "Der zweite Wert, der addiert werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
     }
 
     @Override
@@ -88,6 +85,6 @@ public class NoCodeAddOperator extends NoCodeOperator {
             sum = sum.add(arg);
         }
 
-        return new NoCodeResult(NoCodeDataType.Number, sum);
+        return new NoCodeResult(sum);
     }
 }

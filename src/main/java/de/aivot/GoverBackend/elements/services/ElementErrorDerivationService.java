@@ -15,8 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
 public class ElementErrorDerivationService {
     private final Logger logger = LoggerFactory.getLogger(ElementErrorDerivationService.class);
@@ -87,10 +85,10 @@ public class ElementErrorDerivationService {
             return res.asString();
         }
 
-        if (validation.getValidationExpressions() != null && !validation.getValidationExpressions().isEmpty()) {
-            for (var validationExpression : validation.getValidationExpressions()) {
+        if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
+            for (var validationExpression : validation.getNoCodeList()) {
                 var res = noCodeEvaluationService
-                        .evaluate(validationExpression.getExpression(), accumulator);
+                        .evaluate(validationExpression.getNoCode(), accumulator);
                 if (!res.getValueAsBoolean()) {
                     return validationExpression.getMessage();
                 }

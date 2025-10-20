@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.core.operators.common;
 
 import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
@@ -61,15 +60,11 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     public NoCodeParameter[] getParameters() {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
-                        NoCodeDataType.Any,
-                        "Wert"
+                        NoCodeDataType.Runtime,
+                        "Wert",
+                        "Die ID des zu überprüfenden Elements."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Boolean;
     }
 
     @Override
@@ -77,6 +72,6 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
         var arg = castToString(args[0]);
         var dataObject = data.get(arg);
         var isVisible = dataObject != null && dataObject.getIsVisible();
-        return new NoCodeResult(NoCodeDataType.Boolean, isVisible);
+        return new NoCodeResult(isVisible);
     }
 }

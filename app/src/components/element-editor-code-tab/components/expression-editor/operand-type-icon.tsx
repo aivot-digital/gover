@@ -1,10 +1,10 @@
 import {ReactNode} from 'react';
-import GpsFixedOutlinedIcon from '@mui/icons-material/GpsFixedOutlined';
-import FunctionsOutlinedIcon from '@mui/icons-material/FunctionsOutlined';
-import AbcOutlinedIcon from '@mui/icons-material/AbcOutlined';
+import MyLocation from '@aivot/mui-material-symbols-400-outlined/dist/my-location/MyLocation';
+import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
+import Article from '@aivot/mui-material-symbols-400-outlined/dist/article/Article';
 
 export const OperandTypeIcon: Record<'value' | 'reference' | 'exp', ReactNode> = {
-    exp: <FunctionsOutlinedIcon/>,
-    reference: <GpsFixedOutlinedIcon/>,
-    value: <AbcOutlinedIcon/>,
+    exp: <Functions />,
+    reference: <MyLocation />,
+    value: <Article />,
 };

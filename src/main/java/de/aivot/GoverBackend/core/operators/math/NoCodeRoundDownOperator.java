@@ -64,18 +64,15 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Wert"
+                        "Wert",
+                        "Die Zahl, die abgerundet werden soll."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Dezimalstellen"
+                        "Dezimalstellen",
+                        "Die Anzahl der Dezimalstellen, auf die abgerundet werden soll."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
     }
 
     @Override
@@ -87,6 +84,6 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
         var number = castToNumber(args[0]);
         var decimalPlaces = castToNumber(args[1]).intValue();
 
-        return new NoCodeResult(NoCodeDataType.Number, number.setScale(decimalPlaces, RoundingMode.HALF_DOWN));
+        return new NoCodeResult(number.setScale(decimalPlaces, RoundingMode.HALF_DOWN));
     }
 }

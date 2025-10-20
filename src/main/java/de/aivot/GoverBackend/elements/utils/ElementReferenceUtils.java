@@ -3,6 +3,9 @@ package de.aivot.GoverBackend.elements.utils;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
+import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
+import de.aivot.GoverBackend.nocode.models.NoCodeReference;
+import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -13,7 +16,7 @@ public class ElementReferenceUtils {
     @Nonnull
     public static Set<String> getReferencedIds(
             @Nullable JavascriptCode jsCode,
-            @Nullable NoCodeExpression expression,
+            @Nullable NoCodeOperand expression,
             @Nullable ConditionSet conditionSet
     ) {
         var referencedIds = new HashSet<String>();
@@ -21,7 +24,13 @@ public class ElementReferenceUtils {
             referencedIds.addAll(jsCode.getReferencedIds());
         }
         if (expression != null) {
-            referencedIds.addAll(expression.getReferencedIds());
+            switch (expression) {
+                case NoCodeReference reference -> referencedIds.add(reference.getElementId());
+                case NoCodeExpression noCodeExpression -> referencedIds.addAll(noCodeExpression.getReferencedIds());
+                default -> {
+                    // Do nothing
+                }
+            }
         }
         if (conditionSet != null) {
             referencedIds.addAll(conditionSet.getReferencedIds());

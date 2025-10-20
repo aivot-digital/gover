@@ -127,7 +127,7 @@ public abstract class BaseElement implements Serializable {
                 return true;
             }
 
-            if (visibility.getExpression() != null) {
+            if (visibility.getNoCode() != null) {
                 return true;
             }
 
@@ -141,7 +141,7 @@ public abstract class BaseElement implements Serializable {
                 return true;
             }
 
-            if (override.getExpression() != null) {
+            if (override.getFieldNoCodeMap() != null) {
                 return true;
             }
         }

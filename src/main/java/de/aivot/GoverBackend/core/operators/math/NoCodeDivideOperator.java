@@ -63,18 +63,15 @@ public class NoCodeDivideOperator extends NoCodeOperator {
         return new NoCodeParameter[]{
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Dividend"
+                        "Dividend",
+                        "Der zu teilende Wert."
                 ),
                 new NoCodeParameter(
                         NoCodeDataType.Number,
-                        "Divisor"
+                        "Divisor",
+                        "Der Wert, durch den geteilt wird."
                 ),
         };
-    }
-
-    @Override
-    public NoCodeDataType getReturnType() {
-        return NoCodeDataType.Number;
     }
 
     @Override
@@ -94,6 +91,6 @@ public class NoCodeDivideOperator extends NoCodeOperator {
             dividend = dividend.divide(divisor, RoundingMode.HALF_UP);
         }
 
-        return new NoCodeResult(NoCodeDataType.Number, dividend);
+        return new NoCodeResult(dividend);
     }
 }

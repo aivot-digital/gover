@@ -29,6 +29,6 @@ export function isNoCodeStaticValue(obj: any): obj is NoCodeStaticValue {
 export type NoCodeOperand = NoCodeExpression | NoCodeReference | NoCodeStaticValue;
 
 export interface ValidationExpressionWrapper {
-    expression: NoCodeExpression | null | undefined;
+    noCode: NoCodeOperand | null | undefined;
     message: string | null | undefined;
 }
