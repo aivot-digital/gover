@@ -34,13 +34,13 @@ interface ShellState {
     loading?: LoadingMessage;
     error?: ErrorMessage;
     setup?: SystemSetupDTO;
-    maximizeDrawer: boolean;
+    minimizeDrawer: boolean;
     showSearchDialog: boolean;
 }
 
 const initialState: ShellState = {
     status: ShellStatus.Loading,
-    maximizeDrawer: localStorage.getItem('maximizeDrawer') != null,
+    minimizeDrawer: localStorage.getItem('minimizeDrawer') != null,
     showSearchDialog: false,
 };
 
@@ -54,12 +54,12 @@ const shellSlice = createSlice({
         setSetup(state, action: PayloadAction<SystemSetupDTO>) {
             state.setup = action.payload;
         },
-        setMaximizeDrawer(state, action: PayloadAction<boolean>) {
-            state.maximizeDrawer = action.payload;
+        setMinimizeDrawer(state, action: PayloadAction<boolean>) {
+            state.minimizeDrawer = action.payload;
             if (action.payload) {
-                localStorage.setItem('maximizeDrawer', 'true');
+                localStorage.setItem('minimizeDrawer', 'true');
             } else {
-                localStorage.removeItem('maximizeDrawer');
+                localStorage.removeItem('minimizeDrawer');
             }
         },
         setShowSearchDialog(state, action: PayloadAction<boolean>) {
@@ -77,7 +77,7 @@ const shellSlice = createSlice({
 export const {
     setStatus,
     setSetup,
-    setMaximizeDrawer,
+    setMinimizeDrawer,
     setShowSearchDialog,
     setLoadingMessage,
     setErrorMessage,
@@ -86,7 +86,7 @@ export const {
 export const selectStatus = (state: RootState) => state.shell.status;
 export const selectSetup = (state: RootState) => state.shell.setup;
 export const selectTheme = (state: RootState) => state.shell.setup?.providerTheme;
-export const selectMaximizeDrawer = (state: RootState) => state.shell.maximizeDrawer;
+export const selectMinimizeDrawer = (state: RootState) => state.shell.minimizeDrawer;
 export const selectShowSearchDialog = (state: RootState) => state.shell.showSearchDialog;
 export const selectLoadingMessage = (state: RootState) => state.shell.loading;
 export const selectErrorMessage = (state: RootState) => state.shell.error;

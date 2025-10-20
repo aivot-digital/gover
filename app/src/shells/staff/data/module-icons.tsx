@@ -15,6 +15,10 @@ import Dashboard from '@aivot/mui-material-symbols-400-outlined/dist/dashboard/D
 import ShieldPerson from '@aivot/mui-material-symbols-400-outlined/dist/shield-person/ShieldPerson';
 import Group from '@aivot/mui-material-symbols-400-outlined/dist/group/Group';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
+import Extension from '@aivot/mui-material-symbols-400-outlined/dist/extension/Extension';
+import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
+import TaskAlt from '@aivot/mui-material-symbols-400-outlined/dist/task-alt/TaskAlt';
+import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -22,6 +26,7 @@ export const ModuleIcons = {
     assets: <DriveFolderUpload />,
     configs: <Build />,
     dataObjects: <DataObject />,
+    dataModels: <FolderData />,
     departments: <GroupWork />,
     destinations: <Webhook />,
     forms: <Description />,
@@ -34,4 +39,7 @@ export const ModuleIcons = {
     themes: <Palette />,
     users: <Group />,
     settings: <Settings />,
+    marketplace: <Extension />,
+    processes: <Route />,
+    tasks: <TaskAlt />,
 };
