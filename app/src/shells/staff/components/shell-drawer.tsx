@@ -1,24 +1,17 @@
 import React, {ReactNode, useEffect, useMemo, useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Typography from '@mui/material/Typography';
+import {Box, Button, Chip, createTheme, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
-import {selectMaximizeDrawer, setMaximizeDrawer, setShowSearchDialog} from '../../../slices/shell-slice';
-import KeyboardTabRtl from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-tab-rtl/KeyboardTabRtl';
-import SearchFilled from '@aivot/mui-material-symbols-400-outlined/dist/search/SearchFilled';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {selectMinimizeDrawer, setMinimizeDrawer, setShowSearchDialog} from '../../../slices/shell-slice';
 import {ShellUserMenu} from './shell-user-menu';
-import {Link, useLocation} from 'react-router-dom';
-import ChevronForward from '@aivot/mui-material-symbols-400-outlined/dist/chevron-forward/ChevronForward';
-import KeyboardArrowDown from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-arrow-down/KeyboardArrowDown';
-import {createTheme, Dialog, DialogContent, Paper, ThemeProvider, useTheme} from '@mui/material';
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
+
+import KeyboardTabRtl from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-tab-rtl/KeyboardTabRtl';
+import SearchFilled from '@aivot/mui-material-symbols-400-outlined/dist/search/SearchFilled';
+import ChevronForward from '@aivot/mui-material-symbols-400-outlined/dist/chevron-forward/ChevronForward';
+import KeyboardArrowDown from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-arrow-down/KeyboardArrowDown';
 import Notifications from '@aivot/mui-material-symbols-400-outlined/dist/notifications/Notifications';
 import ForwardToInbox from '@aivot/mui-material-symbols-400-outlined/dist/forward-to-inbox/ForwardToInbox';
 import PageInfo from '@aivot/mui-material-symbols-400-outlined/dist/page-info/PageInfo';
@@ -26,16 +19,21 @@ import Start from '@aivot/mui-material-symbols-400-outlined/dist/start/Start';
 import ShellDrawerLogo from './shell-drawer-logo';
 import ShellDrawerUserIcon from './shell-drawer-user-icon';
 
+/* -----------------------------
+ * Types & Navigation Structure
+ * ----------------------------- */
 interface DrawerGroup {
     title: string | null;
     items: DrawerItem[];
 }
 
-interface DrawerItem {
+export interface DrawerItem {
     icon: ReactNode;
     label: string;
     to?: string;
     children?: DrawerItem[];
+    chipContent?: ReactNode;
+    disabled?: boolean;
 }
 
 const DrawerGroups: DrawerGroup[] = [
@@ -53,14 +51,30 @@ const DrawerGroups: DrawerGroup[] = [
         title: 'Bearbeitung',
         items: [
             {
+                icon: ModuleIcons.tasks,
+                label: 'Aufgaben',
+                disabled: true,
+            },
+            {
+                icon: ModuleIcons.submissions,
+                label: 'Vorgänge',
+                to: '/submissions',
+                chipContent: 26,
+            },
+            {
                 icon: ModuleIcons.forms,
                 label: 'Formulare',
                 to: '/forms',
             },
             {
-                icon: ModuleIcons.submissions,
-                label: 'Anträge',
-                to: '/submissions',
+                icon: ModuleIcons.processes,
+                label: 'Prozesse',
+                disabled: true,
+            },
+            {
+                icon: ModuleIcons.dataObjects,
+                label: 'Datenobjekte',
+                disabled: true,
             },
         ],
     },
@@ -72,6 +86,14 @@ const DrawerGroups: DrawerGroup[] = [
                 label: 'Vorlagen',
                 to: '/presets',
             },
+            {
+                icon: ModuleIcons.marketplace,
+                label: 'Marktplatz',
+                disabled: true,
+                children: [
+                    {icon: ModuleIcons.departments, label: 'Durchsuchen'},
+                ],
+            },
         ],
     },
     {
@@ -81,86 +103,34 @@ const DrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.organization,
                 label: 'Organisation',
                 children: [
-                    {
-                        icon: ModuleIcons.departments,
-                        label: 'Fachbereiche',
-                        to: '/departments',
-                    },
-                    {
-                        icon: ModuleIcons.users,
-                        label: 'Mitarbeiter:innen',
-                        to: '/users',
-                    },
+                    {icon: ModuleIcons.departments, label: 'Fachbereiche', to: '/departments'},
+                    {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
                 ],
             },
+            {icon: ModuleIcons.assets, label: 'Dateien & Medien', to: '/assets'},
             {
-                icon: ModuleIcons.dataObjects,
-                label: 'Datenobjekte',
+                icon: ModuleIcons.dataModels,
+                label: 'Datenmodelle',
                 to: '/data-objects',
-            },
-            {
-                icon: ModuleIcons.assets,
-                label: 'Dateien & Medien',
-                to: '/assets',
             },
             {
                 icon: ModuleIcons.settings,
                 label: 'Konfiguration',
                 children: [
-                    {
-                        icon: ModuleIcons.settings,
-                        label: 'Allgemeine Einstellungen',
-                        to: '/settings/app',
-                    },
-                    {
-                        icon: ModuleIcons.providerLinks,
-                        label: 'Links',
-                        to: '/provider-links',
-                    },
-                    {
-                        icon: ModuleIcons.themes,
-                        label: 'Farbschemata',
-                        to: '/themes',
-                    },
-                    {
-                        icon: ModuleIcons.payment,
-                        label: 'Zahlungsanbieter',
-                        to: '/payment-providers',
-                    },
-                    {
-                        icon: ModuleIcons.identity,
-                        label: 'Nutzerkontenanbieter',
-                        to: '/identity-providers',
-                    },
-                    {
-                        icon: ModuleIcons.secrets,
-                        label: 'Geheimnisse',
-                        to: '/secrets',
-                    },
-                    {
-                        icon: <ForwardToInbox />,
-                        label: 'SMTP-Test',
-                        to: '/settings/smtp',
-                    },
-                    {
-                        icon: <PageInfo />,
-                        label: 'Systemstatus',
-                        to: '/settings/status',
-                    },
+                    {icon: ModuleIcons.settings, label: 'Allgemeine Einstellungen', to: '/settings/app'},
+                    {icon: ModuleIcons.providerLinks, label: 'Links', to: '/provider-links'},
+                    {icon: ModuleIcons.themes, label: 'Farbschemata', to: '/themes'},
+                    {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
+                    {icon: ModuleIcons.identity, label: 'Nutzerkontenanbieter', to: '/identity-providers'},
+                    {icon: ModuleIcons.secrets, label: 'Geheimnisse', to: '/secrets'},
+                    {icon: <ForwardToInbox />, label: 'SMTP-Test', to: '/settings/smtp'},
+                    {icon: <PageInfo />, label: 'Systemstatus', to: '/settings/status'},
                     {
                         icon: <PageInfo />,
                         label: 'Dritte Ebene',
                         children: [
-                            {
-                                icon: ModuleIcons.departments,
-                                label: 'Fachbereiche',
-                                to: '/departments',
-                            },
-                            {
-                                icon: ModuleIcons.users,
-                                label: 'Mitarbeiter:innen',
-                                to: '/users',
-                            },
+                            {icon: ModuleIcons.departments, label: 'Test 1'},
+                            {icon: ModuleIcons.users, label: 'Test 2'},
                         ],
                     },
                 ],
@@ -169,42 +139,72 @@ const DrawerGroups: DrawerGroup[] = [
     },
 ];
 
+/* -----------------------------
+ * Main Drawer Component
+ * ----------------------------- */
 export function ShellDrawer() {
     const baseTheme = useTheme();
     const dispatch = useAppDispatch();
-    const maximizeDrawer = useAppSelector(selectMaximizeDrawer);
-
+    const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [showBlockedMsg, setShowBlockedMsg] = useState(false);
+
+    // responsive auto-minimize
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1450) {
+                dispatch(setMinimizeDrawer(true));
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [dispatch]);
 
     const handleToggleDrawer = () => {
-        dispatch(setMaximizeDrawer(!maximizeDrawer));
+        if (minimizeDrawer && window.innerWidth < 1450) {
+            setShowBlockedMsg(true);
+            return;
+        }
+        dispatch(setMinimizeDrawer(!minimizeDrawer));
     };
 
     const handleToggleSearchDialog = () => {
         dispatch(setShowSearchDialog(true));
     };
 
-    const drawerTheme = useMemo(() => {
-        return createTheme({
-            ...baseTheme,
-            palette: {
-                primary: baseTheme.palette.primary,
-                secondary: baseTheme.palette.secondary,
-                error: baseTheme.palette.error,
-                warning: baseTheme.palette.warning,
-                info: baseTheme.palette.info,
-                success: baseTheme.palette.success,
-            },
-        });
-    }, [baseTheme]);
+    const drawerTheme = useMemo(
+        () =>
+            createTheme({
+                ...baseTheme,
+                palette: {
+                    primary: baseTheme.palette.primary,
+                    secondary: baseTheme.palette.secondary,
+                },
+                components: {
+                    MuiTooltip: {
+                        styleOverrides: {
+                            tooltip: {
+                                backgroundColor: 'rgba(255,255,255,0.90)',
+                                color: '#111',
+                                fontWeight: 500,
+                                fontSize: '0.8rem',
+                                boxShadow:
+                                    '0px 2px 6px rgba(0,0,0,0.25), 0px 4px 12px rgba(0,0,0,0.15)',
+                            },
+                            arrow: {
+                                color: 'rgba(255,255,255,90)',
+                            },
+                        },
+                    },
+                },
+            }),
+        [baseTheme],
+    );
 
     return (
         <ThemeProvider theme={drawerTheme}>
-            <Box
-                sx={{
-                    display: 'block',
-                }}
-            >
+            <Box sx={{display: 'block'}}>
                 <Paper
                     sx={{
                         display: 'flex',
@@ -214,205 +214,188 @@ export function ShellDrawer() {
                         py: 1.5,
                         px: 1.75,
                         borderRadius: 0,
-                        width: maximizeDrawer ? '18rem' : '4rem',
+                        width: minimizeDrawer ? '4rem' : '18rem',
                         backgroundColor: 'primary.dark',
                         color: 'rgba(255, 255, 255, 0.8)',
                     }}
                     elevation={1}
                 >
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            mb: 3,
-                        }}
-                    >
-                        <Link to={'/'} title={'Zurück zur Übersicht'} style={{display: 'flex', alignItems: 'center', textDecoration: 'none'}}>
-                            <ShellDrawerLogo minimize={!maximizeDrawer} />
+                    {/* Header */}
+                    <Box sx={{display: 'flex', flexDirection: 'row', mb: 3}}>
+                        <Link
+                            to="/"
+                            title="Zurück zur Übersicht"
+                            style={{display: 'flex', alignItems: 'center', textDecoration: 'none'}}
+                        >
+                            <ShellDrawerLogo minimize={minimizeDrawer} />
                         </Link>
 
                         <Actions
-                            sx={{
-                                ml: 'auto',
-                            }}
+                            sx={{ml: 'auto'}}
                             color="inherit"
-                            dense={true}
+                            dense
                             actions={[
                                 {
-                                    icon: <Notifications />,
-                                    tooltip: 'Benachrichtigungen',
-                                    onClick: event => {
+                                    icon: <Notifications />, tooltip: 'Benachrichtigungen', onClick: () => {
                                     },
                                 },
                                 {
                                     icon: <ShellDrawerUserIcon />,
-                                    tooltip: 'Benutzerkonto',
-                                    onClick: event => {
-                                        setUserMenuAnchorEl(event.currentTarget as HTMLElement);
-                                    },
+                                    tooltip: 'Mein Konto',
+                                    onClick: (event) => setUserMenuAnchorEl(event.currentTarget as HTMLElement),
                                 },
                             ]}
-                            direction={maximizeDrawer ? 'row' : 'column'}
-                            tooltipPlacement={maximizeDrawer ? 'bottom' : 'right'}
+                            direction={minimizeDrawer ? 'column' : 'row'}
+                            tooltipPlacement={minimizeDrawer ? 'right' : 'bottom'}
                         />
                     </Box>
 
-                    <Box
-                        sx={{
-                            mb: 2,
-                        }}
-                    >
-                        {
-                            maximizeDrawer ?
-                                <Button
-                                    startIcon={<SearchFilled />}
-                                    variant="outlined"
-                                    fullWidth={true}
-                                    onClick={handleToggleSearchDialog}
-                                    color="inherit"
-                                    sx={{
-                                        justifyContent: 'flex-start',
-                                        textAlign: 'left',
-                                        background: 'rgba(255, 255, 255, 0.15)',
-                                        borderColor: 'rgba(255, 255, 255, 0.2)',
-                                        fontWeight: 600,
-                                        fontSize: '1rem',
-                                        color: 'rgba(255, 255, 255, 0.8)',
-                                    }}
-                                >
-                                    Suche
-                                </Button> :
-                                <Actions
-                                    color="inherit"
-                                    direction="column"
-                                    actions={[{
+                    {/* Search */}
+                    <Box sx={{mb: 2}}>
+                        {!minimizeDrawer ? (
+                            <Button
+                                startIcon={<SearchFilled />}
+                                variant="outlined"
+                                fullWidth
+                                onClick={handleToggleSearchDialog}
+                                color="inherit"
+                                sx={{
+                                    justifyContent: 'flex-start',
+                                    textAlign: 'left',
+                                    background: 'rgba(255, 255, 255, 0.15)',
+                                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                                    fontWeight: 600,
+                                    fontSize: '1rem',
+                                    color: 'rgba(255, 255, 255, 0.8)',
+                                    textTransform: 'none',
+                                    '&:hover': {
+                                        background: 'rgba(255, 255, 255, 0.2)',
+                                        borderColor: 'rgba(255, 255, 255, 0.25)',
+                                        color: 'rgba(255, 255, 255, 1)',
+                                    },
+                                }}
+                            >
+                                Suche
+                            </Button>
+                        ) : (
+                            <Actions
+                                color="inherit"
+                                direction="column"
+                                actions={[
+                                    {
                                         icon: <SearchFilled />,
                                         tooltip: 'Suche',
                                         onClick: handleToggleSearchDialog,
-                                    }]}
-                                    tooltipPlacement="right"
-                                />
-                        }
+                                    },
+                                ]}
+                                tooltipPlacement="right"
+                            />
+                        )}
                     </Box>
 
+                    {/* Navigation */}
                     <Box sx={{flex: 1}}>
-                        {
-                            DrawerGroups.map((group, index) => (
-                                <DrawerGroup
-                                    key={group.title || index}
-                                    group={group}
-                                    maximizeDrawer={maximizeDrawer}
-                                />
-                            ))
-                        }
+                        {DrawerGroups.map((group, index) => (
+                            <DrawerGroup
+                                key={group.title || index}
+                                group={group}
+                                minimizeDrawer={minimizeDrawer}
+                            />
+                        ))}
                     </Box>
 
+                    {/* Footer */}
                     <Actions
-                        sx={{
-                            flex: 0,
-                            display: 'flex',
-                            justifyContent: 'right',
-                        }}
+                        sx={{flex: 0, display: 'flex', justifyContent: 'right'}}
                         color="inherit"
-                        direction={maximizeDrawer ? 'row' : 'column'}
-                        actions={[{
-                            tooltip: maximizeDrawer ? 'Minimieren' : 'Maximieren',
-                            icon: maximizeDrawer ? <KeyboardTabRtl /> : <Start />,
-                            onClick: handleToggleDrawer,
-                        }]}
-                        tooltipPlacement={maximizeDrawer ? 'top' : 'right'}
+                        direction={minimizeDrawer ? 'column' : 'row'}
+                        actions={[
+                            {
+                                tooltip: minimizeDrawer ? 'Maximieren' : 'Minimieren',
+                                icon: minimizeDrawer ? <Start /> : <KeyboardTabRtl />,
+                                onClick: handleToggleDrawer,
+                            },
+                        ]}
+                        tooltipPlacement={minimizeDrawer ? 'right' : 'top'}
                     />
                 </Paper>
             </Box>
 
             <ShellUserMenu
                 anchorEl={userMenuAnchorEl}
-                onClose={() => {
-                    setUserMenuAnchorEl(null);
-                }}
+                onClose={() => setUserMenuAnchorEl(null)}
+            />
+
+            <Snackbar
+                open={showBlockedMsg}
+                autoHideDuration={3000}
+                onClose={() => setShowBlockedMsg(false)}
+                message="Menü kann nicht maximiert werden: Fenster/Bildschirm zu klein."
             />
         </ThemeProvider>
     );
 }
 
+/* -----------------------------
+ * DrawerGroup
+ * ----------------------------- */
 interface DrawerGroupProps {
     group: DrawerGroup;
-    maximizeDrawer: boolean;
+    minimizeDrawer: boolean;
 }
 
-function DrawerGroup(props: DrawerGroupProps) {
-    const {
-        group,
-        maximizeDrawer,
-    } = props;
+function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [activeItem, setActiveItem] = useState<DrawerItem | null>(null);
 
-    const [showDrawerItems, setShowDrawerItems] = useState<DrawerItem[] | null>(null);
+    const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, item: DrawerItem) => {
+        if (!item.children) return;
+        setActiveItem(item);
+        setAnchorEl(event.currentTarget);
+    };
 
-    if (!maximizeDrawer) {
+    const handleCloseMenu = () => {
+        setActiveItem(null);
+        setAnchorEl(null);
+    };
+
+    if (minimizeDrawer) {
         return (
             <>
                 <Actions
-                    sx={{
-                        height: 'auto',
-                        mt: 4,
-                    }}
+                    sx={{height: 'auto', mt: 4}}
                     color="inherit"
-                    actions={group.items.map((item) => item.children == null ? ({
-                        icon: item.icon,
-                        tooltip: item.label,
-                        to: item.to ?? '',
-                    }) : ({
-                        icon: item.icon,
-                        tooltip: item.label,
-                        onClick: () => {
-                            setShowDrawerItems(item.children ?? []);
-                        },
-                    }))}
-                    dense={true}
+                    actions={group.items.map((item) =>
+                        item.children == null
+                            ? {
+                                icon: item.icon,
+                                tooltip: item.label,
+                                to: item.to ?? '',
+                                disabled: item.disabled,
+                            }
+                            : {
+                                icon: item.icon,
+                                tooltip: item.label,
+                                onClick: (e: any) => handleOpenMenu(e, item),
+                                disabled: item.disabled,
+                            },
+                    )}
+                    dense
                     direction="column"
                     tooltipPlacement="right"
                 />
-
-                <Dialog
-                    open={showDrawerItems != null}
-                    onClose={() => {
-                        setShowDrawerItems(null);
-                    }}
-                >
-                    <DialogContent>
-                        <List
-                            dense={true}
-                            sx={{
-                                py: 0,
-                                my: 0,
-                            }}
-                        >
-                            {
-                                (showDrawerItems ?? [])
-                                    .map((child) => (
-                                        <DrawerListItem
-                                            item={child}
-                                            key={child.label}
-                                            showChildren={true}
-                                            showIcon={true}
-                                            onClick={() => {
-                                                setShowDrawerItems(null);
-                                            }}
-                                        />
-                                    ))
-                            }
-                        </List>
-                    </DialogContent>
-                </Dialog>
+                <NestedMenu
+                    anchorEl={anchorEl}
+                    rootItem={activeItem}
+                    onClose={handleCloseMenu}
+                />
             </>
         );
     }
 
     return (
         <Box>
-            {
-                maximizeDrawer &&
-                group.title != null &&
+            {group.title && (
                 <Typography
                     sx={{
                         mt: 1.5,
@@ -425,234 +408,329 @@ function DrawerGroup(props: DrawerGroupProps) {
                 >
                     {group.title}
                 </Typography>
-            }
-
-            {
-                !maximizeDrawer &&
-                <Box
-                    sx={{
-                        height: '1rem',
-                    }}
-                />
-            }
-
+            )}
             <List
-                dense={true}
-                sx={{
-                    my: 0,
-                }}
+                dense
+                sx={{my: 0}}
             >
-                {
-                    group.items.map((item, itemIndex) => (
-                        <DrawerListItem
-                            item={item}
-                            key={item.label}
-                            showChildren={maximizeDrawer}
-                            showIcon={true}
-                        />
-                    ))
-                }
+                {group.items.map((item) => (
+                    <DrawerListItem
+                        key={item.label}
+                        item={item}
+                        level={0}
+                    />
+                ))}
             </List>
         </Box>
     );
 }
 
-interface DrawerListItemProps {
-    item: DrawerItem;
-    showChildren: boolean;
-    showIcon: boolean;
-    onClick?: () => void;
-}
-
-function DrawerListItem({item, showChildren, showIcon, onClick}: DrawerListItemProps) {
-    const {
-        to,
-        children,
-    } = item;
-
-    const [expanded, setExpanded] = useState(localStorage.getItem(`drawer-item-${item.label}-expanded`) != null);
+/* -----------------------------
+ * DrawerListItem (recursive)
+ * ----------------------------- */
+function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number }) {
+    const navigate = useNavigate();
     const location = useLocation();
-    const {
-        pathname,
-    } = location;
+    const pathname = location.pathname;
+
+    const storageKey = `drawer-item-${item.label}-expanded`;
+    const [expanded, setExpanded] = useState<boolean>(() => localStorage.getItem(storageKey) != null);
 
     useEffect(() => {
-        if (expanded) {
-            localStorage.setItem(`drawer-item-${item.label}-expanded`, 'true');
-        } else {
-            localStorage.removeItem(`drawer-item-${item.label}-expanded`);
-        }
-    }, [expanded]);
+        if (expanded) localStorage.setItem(storageKey, 'true');
+        else localStorage.removeItem(storageKey);
+    }, [expanded, storageKey]);
 
     const isActive = useMemo(() => {
-        if (to != null) {
-            if (to === '/') {
+        if (item.to) {
+            if (item.to === '/') {
                 return pathname === '/';
             }
-            return pathname.startsWith(to);
+            return pathname.startsWith(item.to);
         }
 
-        if (children != null) {
-            return children.some((child) => {
-                if (child.to != null) {
-                    if (child.to === '/') {
-                        return pathname === '/';
-                    }
-                    return pathname.startsWith(child.to);
-                }
-                return false;
+        if (item.children) {
+            return item.children.some((c) => {
+                if (c.to === '/') return pathname === '/';
+                return c.to ? pathname.startsWith(c.to) : false;
             });
         }
 
         return false;
-    }, [pathname, to, children]);
+    }, [pathname, item]);
 
-    if (to != null) {
-        return (
+
+    const handleClick = () => {
+        if (item.children) setExpanded((e) => !e);
+        else if (item.to) navigate(item.to);
+    };
+
+    const labelSizeScale =
+        level === 0 ? {fontSize: '1rem', fontWeight: 600} :
+            {fontSize: '0.8rem', fontWeight: 600};
+    const iconSizeScale =
+        level === 0 ? {'& .MuiSvgIcon-root': {width: 24, fontSize: '1.5rem'}} :
+            {'& .MuiSvgIcon-root': {width: 20, fontSize: '1.25rem'}};
+
+    const activeStyles =
+        level === 0
+            ? {
+                backgroundColor: expanded && !isActive
+                    ? 'rgba(255,255,255,0.1)'
+                    : isActive ? 'secondary.main' : undefined,
+                '& .MuiListItemText-primary, & .MuiListItemIcon-root, .toggle-icon': {
+                    color: isActive ? 'primary.dark' : 'rgba(255,255,255,0.8)',
+                },
+                '&:hover': {
+                    backgroundColor: expanded && !isActive
+                        ? 'rgba(255,255,255,0.1)'
+                        : isActive ? 'secondary.main' : 'rgba(255, 255, 255, 0.1)',
+                    '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
+                        color: isActive ? 'primary.main' : 'rgba(255,255,255,1)',
+                    },
+                },
+            }
+            : {
+                backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : undefined,
+                '& .MuiListItemText-primary, & .MuiListItemIcon-root, .toggle-icon': {
+                    color: isActive ? 'secondary.main' : 'rgba(255,255,255,0.75)',
+                },
+                '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
+                        color: isActive ? 'secondary.main' : 'rgba(255,255,255,1)',
+                    },
+                },
+            };
+
+    return (
+        <>
             <ListItem
-                dense={true}
-                disableGutters={true}
+                dense
+                disableGutters
+                sx={{py: 0.3125}}
             >
                 <ListItemButton
-                    component={Link}
-                    to={to}
-                    onClick={() => {
-                        if (onClick) {
-                            onClick();
-                        }
-                    }}
+                    component={item.to && !item.disabled ? Link : 'div'}
+                    to={item.to && !item.disabled ? item.to : undefined}
+                    onClick={!item.disabled ? handleClick : undefined}
+                    disabled={item.disabled}
                     sx={{
+                        position: 'relative',
                         px: 1,
+                        ml: level * 4,
                         borderRadius: 1,
-                        backgroundColor: isActive ? 'secondary.main' : undefined,
+                        opacity: item.disabled ? '0.5!important' : 1,
+                        cursor: item.disabled ? 'not-allowed' : 'pointer',
+                        pointerEvents: item.disabled ? 'none' : 'auto',
+                        ...activeStyles,
                         '& .MuiListItemIcon-root': {
                             minWidth: 'auto',
-                            width: '24px',
                             textAlign: 'center',
-                            marginRight: 1,
+                            mr: 1,
+                            ...iconSizeScale,
                         },
                         '& .MuiListItemText-primary': {
-                            fontWeight: 600,
-                            fontSize: '1rem',
+                            ...labelSizeScale,
                         },
-                        '& .MuiListItemIcon-root, .MuiListItemText-primary': {
-                            color: isActive ? 'primary.dark' : 'rgba(255, 255, 255, 0.8)',
-                        },
-                        '&:hover': {
-                            backgroundColor: isActive ? 'secondary.main' : 'rgba(255, 255, 255, 0.1)',
-                            '& .MuiListItemIcon-root, .MuiListItemText-primary': {
-                                color: isActive ? 'primary.main' : 'rgba(255,255,255,1)',
-                            },
-                        }
-                    }}
-                >
-                    {
-                        showIcon &&
-                        <ListItemIcon>
-                            {item.icon}
-                        </ListItemIcon>
-                    }
-                    {
-                        showChildren &&
-                        <ListItemText
-                            primary={item.label}
-                        />
-                    }
-                </ListItemButton>
-            </ListItem>
-        );
-    } else if (children != null) {
-
-        return (
-            <>
-                <ListItem
-                    dense={true}
-                    disableGutters={true}
-                >
-                    <ListItemButton
-                        onClick={() => {
-                            setExpanded(!expanded);
-                            if (onClick) {
-                                onClick();
-                            }
-                        }}
-                        sx={{
-                            px: 1,
-                            borderRadius: 1,
-                            backgroundColor: isActive ? 'secondary.main' : undefined,
-                            '& .MuiListItemIcon-root': {
-                                minWidth: 'auto',
-                                width: '24px',
-                                textAlign: 'center',
-                                marginRight: 1,
-                            },
-                            '& .MuiListItemText-primary': {
-                                fontWeight: 600,
-                                fontSize: '1rem',
-                            },
-                            '& .toggle-icon': {
-                                fontSize: '1rem',
-                                fontWeight: 600,
-                            },
-                            '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
-                                color: isActive ? 'primary.dark' : 'rgba(255, 255, 255, 0.8)',
-                            },
-                            '&:hover': {
-                                backgroundColor: isActive ? 'secondary.main' : 'rgba(255, 255, 255, 0.1)',
-                                '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
-                                    color: isActive ? 'primary.main' : 'rgba(255,255,255,1)',
+                        ...(level > 0
+                            ? {
+                                '&::before': {
+                                    left: 0,
+                                    content: '""',
+                                    position: 'absolute',
+                                    width: '13px',
+                                    height: '13px',
+                                    backgroundColor: 'primary.light',
+                                    transform: 'translate(calc(13px * -1), calc(13px * -0.4))',
+                                    mask: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 14 14'%3E%3Cpath d='M1 1v4a8 8 0 0 0 8 8h4' stroke='%23efefef' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E\") 50% 50% / 100% no-repeat",
                                 },
                             }
-                        }}
-                    >
+                            : {}),
+                    }}
+                >
+                    <ListItemIcon>
                         {
-                            showIcon &&
-                            <ListItemIcon>
-                                <PageInfo />
-                            </ListItemIcon>
+                            item.icon ?? <PageInfo />
                         }
-                        {
-                            showChildren &&
-                            <ListItemText
-                                primary={item.label}
-                            />
+                    </ListItemIcon>
+                    <ListItemText primary={item.label} />
+                    <Box className={'toggle-icon'} sx={{display: 'flex', alignItems: 'center'}}>
+                        {item.children &&
+                            (expanded ? <KeyboardArrowDown /> : <ChevronForward />)
                         }
-                        {
-                            showChildren &&
-                            <Box className={'toggle-icon'} sx={{display: 'flex', alignItems: 'center'}}>
-                                {
-                                    expanded ? <KeyboardArrowDown /> : <ChevronForward />
-                                }
-                            </Box>
-                        }
-                    </ListItemButton>
-                </ListItem>
-                {
-                    showChildren &&
-                    expanded &&
-                    <List
-                        dense={true}
-                        sx={{
-                            py: 0,
-                            my: 0,
-                            pl: 4,
-                        }}
-                    >
-                        {
-                            children.map((child) => (
-                                <DrawerListItem
-                                    item={child}
-                                    key={child.label}
-                                    showChildren={showChildren}
-                                    showIcon={false}
-                                />
-                            ))
-                        }
-                    </List>
-                }
-            </>
-        );
-    } else {
-        return null;
-    }
+                    </Box>
+                    {item.chipContent != null && (
+                        <Chip
+                            label={item.chipContent}
+                            size="small"
+                            sx={{
+                                ml: 'auto',
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                height: 24,
+                                borderRadius: '9999px',
+                                px: 0.75,
+                                color: isActive
+                                    ? 'primary.dark'
+                                    : 'rgba(255,255,255,0.90)',
+                                backgroundColor: isActive
+                                    ? 'rgba(0,0,0,0.10)'
+                                    : 'rgba(255,255,255,0.10)',
+                                '& .MuiChip-label': {
+                                    px: 0.75,
+                                    lineHeight: '1rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.25,
+                                },
+                            }}
+                        />
+                    )}
+                </ListItemButton>
+            </ListItem>
+            {item.children && expanded && (
+                <List
+                    dense
+                    disablePadding
+                    sx={{
+                        position: 'relative',
+                        py: 0,
+                        my: 0,
+                        '&::before': {
+                            top: '-4px',
+                            left: level * 30 + 19,
+                            width: '2px',
+                            content: '""',
+                            position: 'absolute',
+                            backgroundColor: 'primary.light',
+                            bottom: 'calc(36px - 2px - 14px / 2)',
+                        },
+                    }}
+                >
+                    {item.children.map((child) => (
+                        <DrawerListItem
+                            key={child.label}
+                            item={child}
+                            level={level + 1}
+                        />
+                    ))}
+                </List>
+            )}
+        </>
+    );
 }
+
+/* -----------------------------
+ * NestedMenu for minimized mode
+ * ----------------------------- */
+function NestedMenu({
+                        anchorEl,
+                        rootItem,
+                        onClose,
+                    }: {
+    anchorEl: HTMLElement | null;
+    rootItem: DrawerItem | null;
+    onClose: () => void;
+}) {
+    const open = Boolean(anchorEl) && !!rootItem?.children && !rootItem.disabled;
+    if (!rootItem) return null;
+
+    return (
+        <Menu
+            anchorEl={anchorEl}
+            open={open}
+            onClose={onClose}
+            anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
+            transformOrigin={{vertical: 'top', horizontal: 'left'}}
+            MenuListProps={{dense: true}}
+            disableAutoFocusItem
+        >
+            {rootItem.children?.map((child) => (
+                <NestedMenuItem
+                    key={child.label}
+                    item={child}
+                    onAnyClose={onClose}
+                />
+            ))}
+        </Menu>
+    );
+}
+
+function NestedMenuItem({
+                            item,
+                            onAnyClose,
+                        }: {
+    item: DrawerItem;
+    onAnyClose: () => void;
+}) {
+    const navigate = useNavigate();
+    const [submenuAnchor, setSubmenuAnchor] = useState<HTMLElement | null>(null);
+    const hasChildren = !!item.children?.length;
+
+    const handleItemClick = (e: React.MouseEvent<HTMLElement>) => {
+        e.stopPropagation();
+
+        if (item.disabled) {
+            return;
+        }
+
+        if (hasChildren) {
+            // toggle submenu open/close on click
+            if (submenuAnchor) {
+                setSubmenuAnchor(null);
+            } else {
+                setSubmenuAnchor(e.currentTarget);
+            }
+        } else if (item.to) {
+            navigate(item.to);
+            onAnyClose(); // close all menus after navigation
+        }
+    };
+
+    const handleCloseSubmenu: NonNullable<React.ComponentProps<typeof Menu>['onClose']> = () => {
+        setSubmenuAnchor(null);
+    };
+
+    return (
+        <>
+            <MenuItem
+                onClick={handleItemClick}
+                sx={{
+                    minWidth: 220,
+                    gap: 1,
+                    cursor: 'pointer',
+                    '&:hover': {backgroundColor: 'rgba(255,255,255,0.08)'},
+                }}
+            >
+                <Box sx={{width: 24, display: 'inline-flex', justifyContent: 'center'}}>
+                    {item.icon ?? <PageInfo />}
+                </Box>
+                <Box sx={{flex: 1}}>{item.label}</Box>
+                {hasChildren && <ChevronForward />}
+            </MenuItem>
+
+            {hasChildren && (
+                <Menu
+                    anchorEl={submenuAnchor}
+                    open={Boolean(submenuAnchor)}
+                    onClose={handleCloseSubmenu}
+                    anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+                    transformOrigin={{vertical: 'top', horizontal: 'left'}}
+                    MenuListProps={{dense: true}}
+                    disableAutoFocusItem
+                >
+                    {item.children!.map((child) => (
+                        <NestedMenuItem
+                            key={child.label}
+                            item={child}
+                            onAnyClose={onAnyClose}
+                        />
+                    ))}
+                </Menu>
+            )}
+        </>
+    );
+}
+
+
