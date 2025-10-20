@@ -7,7 +7,6 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
-import AccountCircleFilled from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircleFilled';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectMaximizeDrawer, setMaximizeDrawer, setShowSearchDialog} from '../../../slices/shell-slice';
 import KeyboardTabRtl from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-tab-rtl/KeyboardTabRtl';
@@ -21,10 +20,11 @@ import {createTheme, Dialog, DialogContent, Paper, ThemeProvider, useTheme} from
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
 import Notifications from '@aivot/mui-material-symbols-400-outlined/dist/notifications/Notifications';
-import {Logo} from '../../../components/logo/logo';
 import ForwardToInbox from '@aivot/mui-material-symbols-400-outlined/dist/forward-to-inbox/ForwardToInbox';
 import PageInfo from '@aivot/mui-material-symbols-400-outlined/dist/page-info/PageInfo';
 import Start from '@aivot/mui-material-symbols-400-outlined/dist/start/Start';
+import ShellDrawerLogo from './shell-drawer-logo';
+import ShellDrawerUserIcon from './shell-drawer-user-icon';
 
 interface DrawerGroup {
     title: string | null;
@@ -147,6 +147,22 @@ const DrawerGroups: DrawerGroup[] = [
                         label: 'Systemstatus',
                         to: '/settings/status',
                     },
+                    {
+                        icon: <PageInfo />,
+                        label: 'Dritte Ebene',
+                        children: [
+                            {
+                                icon: ModuleIcons.departments,
+                                label: 'Fachbereiche',
+                                to: '/departments',
+                            },
+                            {
+                                icon: ModuleIcons.users,
+                                label: 'Mitarbeiter:innen',
+                                to: '/users',
+                            },
+                        ],
+                    },
                 ],
             },
         ],
@@ -178,7 +194,6 @@ export function ShellDrawer() {
                 warning: baseTheme.palette.warning,
                 info: baseTheme.palette.info,
                 success: baseTheme.palette.success,
-                mode: 'dark',
             },
         });
     }, [baseTheme]);
@@ -196,10 +211,12 @@ export function ShellDrawer() {
                         flexDirection: 'column',
                         height: '100vh',
                         overflowY: 'auto',
-                        py: 0.5,
-                        px: 1.5,
+                        py: 1.5,
+                        px: 1.75,
                         borderRadius: 0,
                         width: maximizeDrawer ? '18rem' : '4rem',
+                        backgroundColor: 'primary.dark',
+                        color: 'rgba(255, 255, 255, 0.8)',
                     }}
                     elevation={1}
                 >
@@ -207,14 +224,12 @@ export function ShellDrawer() {
                         sx={{
                             display: 'flex',
                             flexDirection: 'row',
-                            mb: 2,
-                            px: 1.5,
+                            mb: 3,
                         }}
                     >
-                        {
-                            maximizeDrawer &&
-                            <Logo />
-                        }
+                        <Link to={'/'} title={'Zurück zur Übersicht'} style={{display: 'flex', alignItems: 'center', textDecoration: 'none'}}>
+                            <ShellDrawerLogo minimize={!maximizeDrawer} />
+                        </Link>
 
                         <Actions
                             sx={{
@@ -230,7 +245,7 @@ export function ShellDrawer() {
                                     },
                                 },
                                 {
-                                    icon: <AccountCircleFilled />,
+                                    icon: <ShellDrawerUserIcon />,
                                     tooltip: 'Benutzerkonto',
                                     onClick: event => {
                                         setUserMenuAnchorEl(event.currentTarget as HTMLElement);
@@ -245,7 +260,6 @@ export function ShellDrawer() {
                     <Box
                         sx={{
                             mb: 2,
-                            px: 1.5,
                         }}
                     >
                         {
@@ -259,7 +273,11 @@ export function ShellDrawer() {
                                     sx={{
                                         justifyContent: 'flex-start',
                                         textAlign: 'left',
-                                        background: 'rgba(255, 255, 255, 0.125)',
+                                        background: 'rgba(255, 255, 255, 0.15)',
+                                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                                        fontWeight: 600,
+                                        fontSize: '1rem',
+                                        color: 'rgba(255, 255, 255, 0.8)',
                                     }}
                                 >
                                     Suche
@@ -397,7 +415,12 @@ function DrawerGroup(props: DrawerGroupProps) {
                 group.title != null &&
                 <Typography
                     sx={{
-                        px: 2,
+                        mt: 1.5,
+                        px: 1.25,
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        color: 'white',
                     }}
                 >
                     {group.title}
@@ -499,8 +522,28 @@ function DrawerListItem({item, showChildren, showIcon, onClick}: DrawerListItemP
                         }
                     }}
                     sx={{
+                        px: 1,
                         borderRadius: 1,
-                        bgcolor: isActive ? 'secondary.main' : undefined,
+                        backgroundColor: isActive ? 'secondary.main' : undefined,
+                        '& .MuiListItemIcon-root': {
+                            minWidth: 'auto',
+                            width: '24px',
+                            textAlign: 'center',
+                            marginRight: 1,
+                        },
+                        '& .MuiListItemText-primary': {
+                            fontWeight: 600,
+                            fontSize: '1rem',
+                        },
+                        '& .MuiListItemIcon-root, .MuiListItemText-primary': {
+                            color: isActive ? 'primary.dark' : 'rgba(255, 255, 255, 0.8)',
+                        },
+                        '&:hover': {
+                            backgroundColor: isActive ? 'secondary.main' : 'rgba(255, 255, 255, 0.1)',
+                            '& .MuiListItemIcon-root, .MuiListItemText-primary': {
+                                color: isActive ? 'primary.main' : 'rgba(255,255,255,1)',
+                            },
+                        }
                     }}
                 >
                     {
@@ -519,6 +562,7 @@ function DrawerListItem({item, showChildren, showIcon, onClick}: DrawerListItemP
             </ListItem>
         );
     } else if (children != null) {
+
         return (
             <>
                 <ListItem
@@ -533,14 +577,38 @@ function DrawerListItem({item, showChildren, showIcon, onClick}: DrawerListItemP
                             }
                         }}
                         sx={{
+                            px: 1,
                             borderRadius: 1,
-                            bgcolor: isActive ? 'secondary.main' : undefined,
+                            backgroundColor: isActive ? 'secondary.main' : undefined,
+                            '& .MuiListItemIcon-root': {
+                                minWidth: 'auto',
+                                width: '24px',
+                                textAlign: 'center',
+                                marginRight: 1,
+                            },
+                            '& .MuiListItemText-primary': {
+                                fontWeight: 600,
+                                fontSize: '1rem',
+                            },
+                            '& .toggle-icon': {
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                            },
+                            '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
+                                color: isActive ? 'primary.dark' : 'rgba(255, 255, 255, 0.8)',
+                            },
+                            '&:hover': {
+                                backgroundColor: isActive ? 'secondary.main' : 'rgba(255, 255, 255, 0.1)',
+                                '& .MuiListItemIcon-root, .MuiListItemText-primary, .toggle-icon': {
+                                    color: isActive ? 'primary.main' : 'rgba(255,255,255,1)',
+                                },
+                            }
                         }}
                     >
                         {
                             showIcon &&
                             <ListItemIcon>
-                                {item.icon}
+                                <PageInfo />
                             </ListItemIcon>
                         }
                         {
@@ -551,11 +619,11 @@ function DrawerListItem({item, showChildren, showIcon, onClick}: DrawerListItemP
                         }
                         {
                             showChildren &&
-                            <>
+                            <Box className={'toggle-icon'} sx={{display: 'flex', alignItems: 'center'}}>
                                 {
                                     expanded ? <KeyboardArrowDown /> : <ChevronForward />
                                 }
-                            </>
+                            </Box>
                         }
                     </ListItemButton>
                 </ListItem>
@@ -567,7 +635,7 @@ function DrawerListItem({item, showChildren, showIcon, onClick}: DrawerListItemP
                         sx={{
                             py: 0,
                             my: 0,
-                            pl: 2,
+                            pl: 4,
                         }}
                     >
                         {
