@@ -304,7 +304,17 @@ export function DataObjectItemDetailsPageIndex() {
             <ElementDerivationContext
                 element={schema}
                 elementData={currentDataObjectItem.data}
-                onElementDataChange={handleInputChange('data')}
+                onElementDataChange={(changedElementData) => {
+                    if (Object.keys(currentDataObjectItem.data).length === 0) {
+                        setItem({
+                            ...currentDataObjectItem,
+                            data: changedElementData,
+                        });
+                        reset();
+                    } else {
+                        handleInputChange('data')(changedElementData);
+                    }
+                }}
             />
 
             {
