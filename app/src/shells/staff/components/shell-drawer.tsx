@@ -1,5 +1,5 @@
 import React, {ReactNode, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, createTheme, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Box, Button, Chip, createTheme, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -18,6 +18,9 @@ import PageInfo from '@aivot/mui-material-symbols-400-outlined/dist/page-info/Pa
 import Start from '@aivot/mui-material-symbols-400-outlined/dist/start/Start';
 import ShellDrawerLogo from './shell-drawer-logo';
 import ShellDrawerUserIcon from './shell-drawer-user-icon';
+import SimpleBar from 'simplebar-react';
+import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
+import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -90,6 +93,7 @@ const DrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.marketplace,
                 label: 'Marktplatz',
                 disabled: true,
+                chipContent: 'NEU',
                 children: [
                     {icon: ModuleIcons.departments, label: 'Durchsuchen'},
                 ],
@@ -212,7 +216,7 @@ export function ShellDrawer() {
                         height: '100vh',
                         overflowY: 'auto',
                         py: 1.5,
-                        px: 1.75,
+
                         borderRadius: 0,
                         width: minimizeDrawer ? '4rem' : '18rem',
                         backgroundColor: 'primary.dark',
@@ -220,104 +224,156 @@ export function ShellDrawer() {
                     }}
                     elevation={1}
                 >
-                    {/* Header */}
-                    <Box sx={{display: 'flex', flexDirection: 'row', mb: 3}}>
-                        <Link
-                            to="/"
-                            title="Zurück zur Übersicht"
-                            style={{display: 'flex', alignItems: 'center', textDecoration: 'none'}}
-                        >
-                            <ShellDrawerLogo minimize={minimizeDrawer} />
-                        </Link>
-
-                        <Actions
-                            sx={{ml: 'auto'}}
-                            color="inherit"
-                            dense
-                            actions={[
-                                {
-                                    icon: <Notifications />, tooltip: 'Benachrichtigungen', onClick: () => {
-                                    },
-                                },
-                                {
-                                    icon: <ShellDrawerUserIcon />,
-                                    tooltip: 'Mein Konto',
-                                    onClick: (event) => setUserMenuAnchorEl(event.currentTarget as HTMLElement),
-                                },
-                            ]}
-                            direction={minimizeDrawer ? 'column' : 'row'}
-                            tooltipPlacement={minimizeDrawer ? 'right' : 'bottom'}
-                        />
-                    </Box>
-
-                    {/* Search */}
-                    <Box sx={{mb: 2}}>
-                        {!minimizeDrawer ? (
-                            <Button
-                                startIcon={<SearchFilled />}
-                                variant="outlined"
-                                fullWidth
-                                onClick={handleToggleSearchDialog}
-                                color="inherit"
-                                sx={{
-                                    justifyContent: 'flex-start',
-                                    textAlign: 'left',
-                                    background: 'rgba(255, 255, 255, 0.15)',
-                                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                                    fontWeight: 600,
-                                    fontSize: '1rem',
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                    textTransform: 'none',
-                                    '&:hover': {
-                                        background: 'rgba(255, 255, 255, 0.2)',
-                                        borderColor: 'rgba(255, 255, 255, 0.25)',
-                                        color: 'rgba(255, 255, 255, 1)',
-                                    },
-                                }}
+                    <Box sx={{display: 'flex', flexDirection: 'column', px: 1.75,}}>
+                        {/* Header */}
+                        <Box sx={{display: 'flex', flexDirection: 'row', mb: 3}}>
+                            <Link
+                                to="/"
+                                title="Zurück zur Übersicht"
+                                style={{display: 'flex', alignItems: 'center', textDecoration: 'none'}}
                             >
-                                Suche
-                            </Button>
-                        ) : (
+                                <ShellDrawerLogo minimize={minimizeDrawer} />
+                            </Link>
+
                             <Actions
+                                sx={{ml: 'auto'}}
                                 color="inherit"
-                                direction="column"
+                                dense
                                 actions={[
                                     {
-                                        icon: <SearchFilled />,
-                                        tooltip: 'Suche',
-                                        onClick: handleToggleSearchDialog,
+                                        icon: <Notifications />, tooltip: 'Benachrichtigungen', onClick: () => {
+                                        },
+                                    },
+                                    {
+                                        icon: <ShellDrawerUserIcon />,
+                                        tooltip: 'Mein Konto',
+                                        onClick: (event) => setUserMenuAnchorEl(event.currentTarget as HTMLElement),
                                     },
                                 ]}
-                                tooltipPlacement="right"
+                                direction={minimizeDrawer ? 'column' : 'row'}
+                                tooltipPlacement={minimizeDrawer ? 'right' : 'bottom'}
                             />
-                        )}
+                        </Box>
+
+                        {/* Search */}
+                        <Box sx={{mb: 2}}>
+                            {!minimizeDrawer ? (
+                                <Button
+                                    startIcon={<SearchFilled />}
+                                    variant="outlined"
+                                    fullWidth
+                                    onClick={handleToggleSearchDialog}
+                                    color="inherit"
+                                    sx={{
+                                        justifyContent: 'flex-start',
+                                        textAlign: 'left',
+                                        background: 'rgba(255, 255, 255, 0.15)',
+                                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                                        fontWeight: 600,
+                                        fontSize: '1rem',
+                                        color: 'rgba(255, 255, 255, 0.8)',
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            borderColor: 'rgba(255, 255, 255, 0.25)',
+                                            color: 'rgba(255, 255, 255, 1)',
+                                        },
+                                    }}
+                                >
+                                    Suche
+                                </Button>
+                            ) : (
+                                <Actions
+                                    color="inherit"
+                                    direction="column"
+                                    actions={[
+                                        {
+                                            icon: <SearchFilled />,
+                                            tooltip: 'Suche',
+                                            onClick: handleToggleSearchDialog,
+                                        },
+                                    ]}
+                                    tooltipPlacement="right"
+                                />
+                            )}
+                        </Box>
                     </Box>
 
-                    {/* Navigation */}
-                    <Box sx={{flex: 1}}>
-                        {DrawerGroups.map((group, index) => (
-                            <DrawerGroup
-                                key={group.title || index}
-                                group={group}
-                                minimizeDrawer={minimizeDrawer}
-                            />
-                        ))}
-                    </Box>
-
-                    {/* Footer */}
-                    <Actions
-                        sx={{flex: 0, display: 'flex', justifyContent: 'right'}}
-                        color="inherit"
-                        direction={minimizeDrawer ? 'column' : 'row'}
-                        actions={[
-                            {
-                                tooltip: minimizeDrawer ? 'Maximieren' : 'Minimieren',
-                                icon: minimizeDrawer ? <Start /> : <KeyboardTabRtl />,
-                                onClick: handleToggleDrawer,
+                    <Box
+                        sx={{
+                            flexGrow: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            minHeight: 0,
+                            '& .simplebar-scrollbar:before': {
+                                backgroundColor: 'rgba(255,255,255,0.4)',
+                                left: '3px',
+                                right: '3px',
                             },
-                        ]}
-                        tooltipPlacement={minimizeDrawer ? 'right' : 'top'}
-                    />
+                        }}
+                    >
+                        <SimpleBar
+                            style={{
+                                flexGrow: 1,
+                                height: '100%',
+                                minHeight: 0,
+                                overflowX: 'hidden',
+                                padding: '0 14px 14px',
+                            }}
+                        >
+                            {/* Navigation */}
+                            {DrawerGroups.map((group, index) => (
+                                <DrawerGroup
+                                    key={group.title || index}
+                                    group={group}
+                                    minimizeDrawer={minimizeDrawer}
+                                />
+                            ))}
+                        </SimpleBar>
+                    </Box>
+
+                    <Box sx={{flexGrow: 1}}></Box>
+
+                    <Box sx={{display: 'flex', flexDirection: 'column', px: 1.75}}>
+                        {/* Footer */}
+                        <Divider sx={{borderColor: 'rgba(255, 255, 255, 0.1)', mx: -1.75, mb: 1.75}} />
+                        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                            {!minimizeDrawer && (
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    href="https://docs.gover.app"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    startIcon={<Description fontSize="small" />}
+                                    endIcon={<OpenInNew sx={{ fontSize: '1rem!important', opacity: 0.6 }} />}
+                                    sx={{
+                                        textTransform: 'none',
+                                        color: 'white',
+                                        backgroundColor: 'transparent',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255,255,255,0.1)',
+                                        },
+                                    }}
+                                >
+                                    Dokumentation
+                                </Button>
+                            )}
+                            <Actions
+                                sx={{flex: 0, display: 'flex', justifyContent: 'right'}}
+                                color="inherit"
+                                direction={minimizeDrawer ? 'column' : 'row'}
+                                actions={[
+                                    {
+                                        tooltip: minimizeDrawer ? 'Maximieren' : 'Minimieren',
+                                        icon: minimizeDrawer ? <Start /> : <KeyboardTabRtl />,
+                                        onClick: handleToggleDrawer,
+                                    },
+                                ]}
+                                tooltipPlacement={minimizeDrawer ? 'right' : 'top'}
+                            />
+                        </Box>
+                    </Box>
                 </Paper>
             </Box>
 
@@ -555,11 +611,6 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                         }
                     </ListItemIcon>
                     <ListItemText primary={item.label} />
-                    <Box className={'toggle-icon'} sx={{display: 'flex', alignItems: 'center'}}>
-                        {item.children &&
-                            (expanded ? <KeyboardArrowDown /> : <ChevronForward />)
-                        }
-                    </Box>
                     {item.chipContent != null && (
                         <Chip
                             label={item.chipContent}
@@ -587,6 +638,11 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                             }}
                         />
                     )}
+                    <Box className={'toggle-icon'} sx={{display: 'flex', alignItems: 'center'}}>
+                        {item.children &&
+                            (expanded ? <KeyboardArrowDown sx={{ml: 0.5}}/> : <ChevronForward sx={{ml: 0.5}} />)
+                        }
+                    </Box>
                 </ListItemButton>
             </ListItem>
             {item.children && expanded && (
@@ -598,7 +654,7 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                         py: 0,
                         my: 0,
                         '&::before': {
-                            top: '-4px',
+                            top: '-2px',
                             left: level * 30 + 19,
                             width: '2px',
                             content: '""',

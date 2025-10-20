@@ -34,8 +34,8 @@ export function DashboardProviderLinks(props: DashboardProviderLinksProps) {
                 }}
             >
                 <BoxLink
-                    link="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/home"
-                    text={'Über Gover\nHilfen, Anleitungen und FAQs'}
+                    link="https://docs.gover.digital"
+                    text={'Hilfen, Anleitungen und Häufig gestellte Fragen'}
                 />
             </Grid>
             {

@@ -64,7 +64,7 @@ export function DashboardHero(props: DashboardHeroProps) {
                     }}
                 >
                     <span style={{color: theme.palette.secondary.main}}>
-                        Online-Antrags-Platform
+                        Antragsmanagement
                     </span>
                     <br />
                     {setup.providerName}
@@ -122,7 +122,10 @@ export function DashboardHero(props: DashboardHeroProps) {
                 sx={{
                     flex: 1,
                     backgroundImage: `url(${HeroDecord})`,
-                    backgroundPosition: 'center',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'right center',
+                    m: 0,
+                    p: 0,
                 }}
             >
             </Box>
