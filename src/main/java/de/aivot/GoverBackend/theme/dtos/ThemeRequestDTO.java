@@ -19,43 +19,43 @@ public record ThemeRequestDTO(
         @Nonnull
         @NotNull(message = "Die Hauptfarbe darf nicht null sein.")
         @Length(min = 7, max = 7, message = "Die Hauptfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdef]{6}", message = "Die Hauptfarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Hauptfarbe muss eine gültige HEX-Farbe sein.")
         String main,
 
         @Nonnull
         @NotNull(message = "Die Haupt-Dunkel-Farbe darf nicht null sein.")
         @Length(min = 7, max = 7, message = "Die Haupt-Dunkel-Farbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdef]{6}", message = "Die Haupt-Dunkel-Farbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Haupt-Dunkel-Farbe muss eine gültige HEX-Farbe sein.")
         String mainDark,
 
         @Nonnull
         @NotNull(message = "Die Akzentfarbe darf nicht null sein.")
         @Length(min = 7, max = 7, message = "Die Akzentfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdef]{6}", message = "Die Akzentfarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Akzentfarbe muss eine gültige HEX-Farbe sein.")
         String accent,
 
         @Nonnull
         @NotNull(message = "Die Fehlerfarbe darf nicht null sein.")
         @Length(min = 7, max = 7, message = "Die Fehlerfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdef]{6}", message = "Die Fehlerfarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Fehlerfarbe muss eine gültige HEX-Farbe sein.")
         String error,
 
         @Nonnull
         @NotNull(message = "Die Warnfarbe darf nicht null sein.")
         @Length(min = 7, max = 7, message = "Die Warnfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdef]{6}", message = "Die Warnfarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Warnfarbe muss eine gültige HEX-Farbe sein.")
         String warning,
 
         @Nonnull
         @NotNull(message = "Die Infofarbe darf nicht null sein.")
         @Length(min = 7, max = 7, message = "Die Infofarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdef]{6}", message = "Die Infofarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Infofarbe muss eine gültige HEX-Farbe sein.")
         String info,
 
         @Nonnull
         @NotNull(message = "Die Erfolgsfarbe darf nicht null sein.")
         @Length(min = 7, max = 7, message = "Die Erfolgsfarbe muss eine gültige HEX-Farbe sein.")
-        @Pattern(regexp = "#[0-9abcdef]{6}", message = "Die Erfolgsfarbe muss eine gültige HEX-Farbe sein.")
+        @Pattern(regexp = "#[0-9abcdefABCDEF]{6}", message = "Die Erfolgsfarbe muss eine gültige HEX-Farbe sein.")
         String success,
 
         @Nullable
