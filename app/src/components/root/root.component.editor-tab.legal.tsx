@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Grid, Typography} from '@mui/material';
+import {Grid, Typography, Skeleton} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {type Department} from '../../modules/departments/models/department';
@@ -11,16 +11,19 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {Form as Application} from '../../models/entities/form';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {withDelay} from '../../utils/with-delay';
 
 export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, Application>) {
     const dispatch = useAppDispatch();
     const [departments, setDepartments] = useState<Department[]>([]);
 
     useEffect(() => {
-        new DepartmentsApiService()
-            .listAll({
+        withDelay(
+            new DepartmentsApiService().listAll({
                 ignoreMemberships: true,
-            })
+            }),
+            600,
+        )
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
                 console.error(err);
@@ -32,6 +35,10 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
         value: department.id.toString(),
         label: department.name,
     }));
+
+    if (departmentOptions.length === 0) {
+        return EditorSkeleton;
+    }
 
     return (
         <>
@@ -192,3 +199,102 @@ export function RootComponentEditorTabLegal(props: BaseEditorProps<RootElement, 
         </>
     );
 }
+
+const EditorSkeleton = (
+    <>
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={900}
+            height={48}
+        />
+
+        <Grid
+            container
+            columnSpacing={4}
+        >
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+        </Grid>
+
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={248}
+            height={200}
+        />
+
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Grid
+            container
+            columnSpacing={4}
+        >
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <Skeleton
+                    width="100%"
+                    height={80}
+                />
+            </Grid>
+        </Grid>
+    </>
+);

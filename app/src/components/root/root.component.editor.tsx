@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Grid, Typography} from '@mui/material';
+import {Box, Grid, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {SelectFieldComponent} from '../select-field/select-field-component';
@@ -22,14 +22,15 @@ import {downloadQrCode} from '../../utils/download-qrcode';
 import {FormType, FormTypeDescriptions, FormTypeLabels, FormTypes} from '../../modules/forms/enums/form-type';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {createCustomerPath} from '../../utils/url-path-utils';
+import {withDelay} from '../../utils/with-delay';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, Application>) {
     const dispatch = useAppDispatch();
     const api = useApi();
 
-    const [departments, setDepartments] = useState<SelectFieldComponentOption[]>([]);
-    const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
-    const [templateOptions, setTemplateOptions] = useState<SelectFieldComponentOption[]>([]);
+    const [departments, setDepartments] = useState<SelectFieldComponentOption[] | null>(null);
+    const [themes, setThemes] = useState<SelectFieldComponentOption[] | null>(null);
+    const [templateOptions, setTemplateOptions] = useState<SelectFieldComponentOption[] | null>(null);
 
     const handleDownloadQrCode = async (link: string, filename: string) => {
         try {
@@ -41,10 +42,10 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
     };
 
     useEffect(() => {
-        new DepartmentsApiService()
+        withDelay(new DepartmentsApiService()
             .listAll({
                 ignoreMemberships: true,
-            })
+            }), 600)
             .then((deps) => deps.content.map((department) => ({
                 value: department.id.toString(),
                 label: department.name,
@@ -55,8 +56,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 dispatch(showErrorSnackbar('Fehler beim Laden der Fachbereiche!'));
             });
 
-        new ThemesApiService(api)
-            .list(0, 999, undefined, undefined, {})
+        withDelay(new ThemesApiService(api)
+            .listAll(), 600)
             .then((themes) => themes.content.map((theme) => ({
                 value: theme.id.toString(),
                 label: theme.name,
@@ -67,8 +68,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 dispatch(showErrorSnackbar('Fehler beim Laden der Farbschemata!'));
             });
 
-        new AssetsApiService(api)
-            .list(0, 999, undefined, undefined, {contentType: 'text/html'})
+        withDelay(new AssetsApiService(api)
+            .listAll({contentType: 'text/html'}), 600)
             .then((assets) => assets.content.map((asset) => ({
                 value: asset.key,
                 label: asset.filename,
@@ -290,20 +291,30 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         lg: 4,
                     }}
                 >
-                    <SelectFieldComponent
-                        label="Entwickelnder Fachbereich"
-                        value={props.entity?.developingDepartmentId?.toString() ?? undefined}
-                        onChange={(val) => {
-                            props.onPatchEntity({
-                                developingDepartmentId: val != null ? parseInt(val) : undefined,
-                            });
-                        }}
-                        options={departments}
-                        required
-                        /*disabled={!props.editable}*/
-                        disabled
-                        hint="Dieser Fachbereich wurde bei der Erstellung des Formulars festgelegt."
-                    />
+                    {
+                        departments == null &&
+                        <Skeleton
+                            width="100%"
+                            height={80}
+                        />
+                    }
+                    {
+                        departments != null &&
+                        <SelectFieldComponent
+                            label="Entwickelnder Fachbereich"
+                            value={props.entity?.developingDepartmentId?.toString() ?? undefined}
+                            onChange={(val) => {
+                                props.onPatchEntity({
+                                    developingDepartmentId: val != null ? parseInt(val) : undefined,
+                                });
+                            }}
+                            options={departments}
+                            required
+                            /*disabled={!props.editable}*/
+                            disabled
+                            hint="Dieser Fachbereich wurde bei der Erstellung des Formulars festgelegt."
+                        />
+                    }
                 </Grid>
                 <Grid
                     size={{
@@ -311,17 +322,27 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         lg: 4,
                     }}
                 >
-                    <SelectFieldComponent
-                        label="Zuständiger Fachbereich"
-                        value={props.entity?.responsibleDepartmentId?.toString() ?? undefined}
-                        onChange={(val) => {
-                            props.onPatchEntity({
-                                responsibleDepartmentId: val != null ? parseInt(val) : undefined,
-                            });
-                        }}
-                        options={departments}
-                        disabled={!props.editable}
-                    />
+                    {
+                        departments == null &&
+                        <Skeleton
+                            width="100%"
+                            height={80}
+                        />
+                    }
+                    {
+                        departments != null &&
+                        <SelectFieldComponent
+                            label="Zuständiger Fachbereich"
+                            value={props.entity?.responsibleDepartmentId?.toString() ?? undefined}
+                            onChange={(val) => {
+                                props.onPatchEntity({
+                                    responsibleDepartmentId: val != null ? parseInt(val) : undefined,
+                                });
+                            }}
+                            options={departments}
+                            disabled={!props.editable}
+                        />
+                    }
                 </Grid>
                 <Grid
                     size={{
@@ -329,17 +350,27 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         lg: 4,
                     }}
                 >
-                    <SelectFieldComponent
-                        label="Bewirtschaftender Fachbereich"
-                        value={props.entity?.managingDepartmentId?.toString() ?? undefined}
-                        onChange={(val) => {
-                            props.onPatchEntity({
-                                managingDepartmentId: val != null ? parseInt(val) : undefined,
-                            });
-                        }}
-                        options={departments}
-                        disabled={!props.editable}
-                    />
+                    {
+                        departments == null &&
+                        <Skeleton
+                            width="100%"
+                            height={80}
+                        />
+                    }
+                    {
+                        departments != null &&
+                        <SelectFieldComponent
+                            label="Bewirtschaftender Fachbereich"
+                            value={props.entity?.managingDepartmentId?.toString() ?? undefined}
+                            onChange={(val) => {
+                                props.onPatchEntity({
+                                    managingDepartmentId: val != null ? parseInt(val) : undefined,
+                                });
+                            }}
+                            options={departments}
+                            disabled={!props.editable}
+                        />
+                    }
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
@@ -362,24 +393,34 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         display="flex"
                         alignItems="center"
                     >
-                        <SelectFieldComponent
-                            label="Farbschema (Visuelles Erscheinungsbild)"
-                            value={props.entity?.themeId?.toString() ?? undefined}
-                            onChange={(val) => {
-                                props.onPatchEntity({
-                                    themeId: val != null ? parseInt(val) : undefined,
-                                });
-                            }}
-                            options={themes}
-                            disabled={!props.editable}
-                        />
+                        {
+                            themes == null &&
+                            <Skeleton
+                                width="100%"
+                                height={80}
+                            />
+                        }
+                        {
+                            themes != null &&
+                            <SelectFieldComponent
+                                label="Farbschema (Visuelles Erscheinungsbild)"
+                                value={props.entity?.themeId?.toString() ?? undefined}
+                                onChange={(val) => {
+                                    props.onPatchEntity({
+                                        themeId: val != null ? parseInt(val) : undefined,
+                                    });
+                                }}
+                                options={themes}
+                                disabled={!props.editable}
+                            />
+                        }
                         <Hint
                             summary="Sie können ein abweichendes Farbschema für dieses Formular auswählen."
                             detailsTitle="Farbschema"
                             details={
                                 <>
                                     <p>
-                                       Sie können hier ein abweichendes Farbschema für dieses Formular auswählen.
+                                        Sie können hier ein abweichendes Farbschema für dieses Formular auswählen.
                                     </p>
                                     <p>
                                         Farbschemata werden immer nach absteigendem Prioritätsprinzip angewendet.
@@ -412,17 +453,27 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         display="flex"
                         alignItems="center"
                     >
-                        <SelectFieldComponent
-                            label="PDF-Vorlage"
-                            value={props.entity?.pdfTemplateKey ?? undefined}
-                            onChange={(val) => {
-                                props.onPatchEntity({
-                                    pdfTemplateKey: val,
-                                });
-                            }}
-                            options={templateOptions}
-                            disabled={!props.editable}
-                        />
+                        {
+                            templateOptions == null &&
+                            <Skeleton
+                                width="100%"
+                                height={80}
+                            />
+                        }
+                        {
+                            templateOptions != null &&
+                            <SelectFieldComponent
+                                label="PDF-Vorlage"
+                                value={props.entity?.pdfTemplateKey ?? undefined}
+                                onChange={(val) => {
+                                    props.onPatchEntity({
+                                        pdfTemplateKey: val,
+                                    });
+                                }}
+                                options={templateOptions}
+                                disabled={!props.editable}
+                            />
+                        }
 
                         <Hint
                             summary="Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten auswählen."
@@ -492,18 +543,27 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         xs: 12,
                         lg: 6,
                     }}
-                >
-                    <SelectFieldComponent
-                        label="Fachlicher Support"
-                        value={props.entity?.legalSupportDepartmentId?.toString() ?? undefined}
-                        onChange={(val) => {
-                            props.onPatchEntity({
-                                legalSupportDepartmentId: val != null ? parseInt(val) : undefined,
-                            });
-                        }}
-                        options={departments}
-                        disabled={!props.editable}
+                >{
+                    departments == null &&
+                    <Skeleton
+                        width="100%"
+                        height={80}
                     />
+                }
+                    {
+                        departments != null &&
+                        <SelectFieldComponent
+                            label="Fachlicher Support"
+                            value={props.entity?.legalSupportDepartmentId?.toString() ?? undefined}
+                            onChange={(val) => {
+                                props.onPatchEntity({
+                                    legalSupportDepartmentId: val != null ? parseInt(val) : undefined,
+                                });
+                            }}
+                            options={departments}
+                            disabled={!props.editable}
+                        />
+                    }
                 </Grid>
                 <Grid
                     size={{
@@ -511,17 +571,27 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         lg: 6,
                     }}
                 >
-                    <SelectFieldComponent
-                        label="Technischer Support"
-                        value={props.entity?.technicalSupportDepartmentId?.toString() ?? undefined}
-                        onChange={(val) => {
-                            props.onPatchEntity({
-                                technicalSupportDepartmentId: val != null ? parseInt(val) : undefined,
-                            });
-                        }}
-                        options={departments}
-                        disabled={!props.editable}
-                    />
+                    {
+                        departments == null &&
+                        <Skeleton
+                            width="100%"
+                            height={80}
+                        />
+                    }
+                    {
+                        departments != null &&
+                        <SelectFieldComponent
+                            label="Technischer Support"
+                            value={props.entity?.technicalSupportDepartmentId?.toString() ?? undefined}
+                            onChange={(val) => {
+                                props.onPatchEntity({
+                                    technicalSupportDepartmentId: val != null ? parseInt(val) : undefined,
+                                });
+                            }}
+                            options={departments}
+                            disabled={!props.editable}
+                        />
+                    }
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
