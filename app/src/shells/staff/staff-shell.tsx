@@ -38,6 +38,7 @@ export function StaffShell(props: StaffShellProps) {
     const setup = useAppSelector(selectSetup);
     const status = useAppSelector(selectStatus);
 
+    // Fetch the setup on mount to determine if the system is online, the theme, logo, etc.
     useEffect(() => {
         fetchSetup()
             .then((setup) => {
@@ -46,9 +47,17 @@ export function StaffShell(props: StaffShellProps) {
             .catch((err) => {
                 if (isApiError(err) && err.status >= 500) {
                     dispatch(setStatus(ShellStatus.Offline));
+                } else {
+                    console.error(err);
                 }
-                console.error(err);
             });
+    }, []);
+
+    // Fetch the auth state after the setup for a more consistent startup order.
+    useEffect(() => {
+        if (setup == null) {
+            return;
+        }
 
         authenticateWithOidcCode()
             .then((res) => {
@@ -61,11 +70,11 @@ export function StaffShell(props: StaffShellProps) {
                     dispatch(setStatus(ShellStatus.Login));
                 }
             });
-    }, []);
+    }, [setup]);
 
     if (status === ShellStatus.Offline) {
         return (
-            <ShellOffline/>
+            <ShellOffline />
         );
     }
 
