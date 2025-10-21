@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/react';
 import {createBrowserRouter, RouterProvider} from 'react-router-dom';
 import {StaffShell} from './staff-shell';
 import {AppProvider} from '../../providers/app-provider';
-import {store} from '../../store';
+import {store} from '../../store.staff';
 import {Provider as StoreProvide} from 'react-redux';
 import {StaffShellError} from './staff-shell-error';
 import {assetsRoutes} from '../../modules/assets/assets-routes';
