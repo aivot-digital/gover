@@ -14,9 +14,7 @@ import {SummaryAttachmentsTooLargeKey} from '../summary/summary.component.view';
 import {SubmitPaymentDataKey} from '../submit/submit.component.view';
 import {ProcessingDataLoaderComponentView} from '../processing-data-loader/processing-data-loader.component.view';
 import {CustomerInputService} from '../../services/customer-input-service';
-import {AppFooter} from '../app-footer/app-footer';
-import {AppMode} from '../../data/app-mode';
-import {AppHeader} from '../app-header/app-header';
+import {RootComponentFooter} from './root-component-footer';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
@@ -53,8 +51,8 @@ import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {IdentityData} from '../../modules/identity/models/identity-data';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
-import type {AnyElement} from '../../models/elements/any-element';
 import {addDerivationLogItems} from '../../slices/logging-slice';
+import {RootComponentHeader} from './root-component-header';
 
 type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
 
@@ -451,7 +449,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 console.log('Derivation result:', derivationResult);
                 console.log('Element data buffer:', elementDataBufferRef.current);
 
-                dispatch(addDerivationLogItems(derivationResult.logItems))
+                dispatch(addDerivationLogItems(derivationResult.logItems));
 
                 const mergedElementData = mergeDerivedElementDataWithLocal(
                     derivationResult.elementData,
@@ -612,13 +610,16 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
     return (
         <>
-            <AppHeader
-                mode={AppMode.Customer}
-                onDeleteFormData={() => {
-                    onElementDataChange({}, []);
-                    dispatch(setCurrentStep(0));
-                }}
-            />
+            {
+                form != null &&
+                <RootComponentHeader
+                    form={form}
+                    onDeleteFormData={() => {
+                        onElementDataChange({}, []);
+                        dispatch(setCurrentStep(0));
+                    }}
+                />
+            }
 
             {
                 form != null &&
@@ -797,9 +798,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 }
             </main>
 
-            <AppFooter
-                mode={AppMode.Customer}
-            />
+            {
+                form != null &&
+                <RootComponentFooter
+                    form={form}
+                />
+            }
 
             <Dialog
                 open={isLoading}

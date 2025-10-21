@@ -1,16 +1,41 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {Box, Skeleton} from '@mui/material';
 import {selectSetup} from '../../slices/shell-slice';
+import {createApiPath} from '../../utils/url-path-utils';
 
 interface LogoProps {
+    updated?: string | null | undefined;
+    src?: string;
     width?: number;
     height?: number;
 }
 
 export function Logo(props: LogoProps) {
+    const {
+        updated,
+        src,
+        width,
+        height,
+    } = props;
+
     const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
     const setup = useAppSelector(selectSetup);
+
+    const url = useMemo(() => {
+        let url = src ?? createApiPath('/api/public/system/logo/');
+
+        if (updated == null) {
+            return url;
+        }
+
+        const t = new Date(updated).getTime();
+
+        if (url.includes('?')) {
+            return `${url}&t=${t}`;
+        }
+        return `${url}?t=${t}`;
+    }, [src, updated]);
 
     if (imageStatus == 'failed') {
         return (
@@ -18,8 +43,8 @@ export function Logo(props: LogoProps) {
                 sx={{
                     display: 'inline-block',
                     width: '100%',
-                    maxWidth: props.width ?? 200,
-                    maxHeight: props.height ?? 100,
+                    maxWidth: width ?? 200,
+                    maxHeight: height ?? 100,
                 }}
             />
         );
@@ -40,19 +65,19 @@ export function Logo(props: LogoProps) {
                         left: 0,
                         display: 'inline-block',
                         width: '100%',
-                        maxWidth: props.width ?? 200,
-                        height: props.height ?? 100,
+                        maxWidth: width ?? 200,
+                        height: height ?? 100,
                     }}
                 />
             }
 
             <img
-                src="/api/public/system/logo/"
+                src={url}
                 alt={'Logo ' + setup?.providerName}
                 style={{
                     width: 'auto',
-                    maxWidth: props.width ?? 200,
-                    maxHeight: props.height ?? 100,
+                    maxWidth: width ?? 200,
+                    maxHeight: height ?? 100,
                 }}
                 onLoad={() => {
                     setImageStatus('present');

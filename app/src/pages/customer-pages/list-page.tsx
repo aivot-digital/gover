@@ -7,10 +7,8 @@ import {MetaElement} from '../../components/meta-element/meta-element';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {AppHeader} from '../../components/app-header/app-header';
 import {AppMode} from '../../data/app-mode';
 import {ListHeader} from '../../components/list-header/list-header';
-import {AppFooter} from '../../components/app-footer/app-footer';
 import {Introductory} from '../../components/introductory/introductory';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetStepper} from '../../slices/stepper-slice';
@@ -105,10 +103,9 @@ export function ListPage() {
                     titlePrefix={provider}
                 />
 
-                <AppHeader
-                    mode={AppMode.CustomerDisplay}
-                    onDeleteFormData={() => {}}
-                />
+                <Box>
+                    TODO: Replace HEADER
+                </Box>
 
                 <main role="main">
 
@@ -182,10 +179,6 @@ export function ListPage() {
                     </Box>
 
                 </main>
-
-                <AppFooter
-                    mode={AppMode.CustomerDisplay}
-                />
 
                 <PrivacyDialog
                     onHide={() => dispatch(showDialog(undefined))}

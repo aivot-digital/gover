@@ -1,10 +1,13 @@
 import {AuthService} from './auth-service';
 import {ApiError, createApiError} from '../models/api-error';
+import {createApiPath} from '../utils/url-path-utils';
+
+export type QueryParams = Record<string, string | number | boolean | undefined> | URLSearchParams;
 
 export interface RequestOptions {
     abort?: AbortSignal;
     headers?: Record<string, string>;
-    query?: Record<string, string | number | boolean | undefined> | URLSearchParams;
+    query?: QueryParams;
 }
 
 const DefaultUnauthorizedApiError: ApiError = {
@@ -23,9 +26,9 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'GET',
-            headers: combineHeaders(createDefaultHeaders(accessToken), options),
+            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
             signal: options?.abort,
         });
 
@@ -40,9 +43,9 @@ export class BaseApiService {
     }
 
     public async getUnauthenticated<T>(path: string, options?: RequestOptions): Promise<T> {
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'GET',
-            headers: combineHeaders({'Content-Type': 'application/json'}, options),
+            headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
             signal: options?.abort,
         });
 
@@ -59,9 +62,9 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'GET',
-            headers: combineHeaders(createDefaultHeaders(accessToken), options),
+            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
             signal: options?.abort,
         });
 
@@ -76,9 +79,9 @@ export class BaseApiService {
     }
 
     public async getBlobUnauthenticated(path: string, options?: RequestOptions): Promise<Blob> {
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'GET',
-            headers: combineHeaders({'Content-Type': 'application/json'}, options),
+            headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
             signal: options?.abort,
         });
 
@@ -95,9 +98,9 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'POST',
-            headers: combineHeaders(createDefaultHeaders(accessToken), options),
+            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
             signal: options?.abort,
             body: JSON.stringify(body),
         });
@@ -118,10 +121,10 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'POST',
             headers: {
-                ...combineHeaders(createDefaultHeaders(accessToken), options),
+                ...this.combineHeaders(this.createDefaultHeaders(accessToken), options),
                 'Content-Type': 'application/xml',
             },
             signal: options?.abort,
@@ -139,9 +142,9 @@ export class BaseApiService {
     }
 
     public async postUnauthenticated<T, R>(path: string, body: T, options?: RequestOptions): Promise<R> {
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'POST',
-            headers: combineHeaders({'Content-Type': 'application/json'}, options),
+            headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
             signal: options?.abort,
             body: JSON.stringify(body),
         });
@@ -159,9 +162,9 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'POST',
-            headers: combineHeaders({'Authorization': `Bearer ${accessToken}`}, options),
+            headers: this.combineHeaders({'Authorization': `Bearer ${accessToken}`}, options),
             signal: options?.abort,
             body: formData,
         });
@@ -177,9 +180,9 @@ export class BaseApiService {
     }
 
     public async postFormDataUnauthenticated<R>(path: string, formData: FormData, options?: RequestOptions): Promise<R> {
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'POST',
-            headers: combineHeaders({}, options),
+            headers: this.combineHeaders({}, options),
             signal: options?.abort,
             body: formData,
         });
@@ -197,9 +200,9 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'POST',
-            headers: combineHeaders({
+            headers: this.combineHeaders({
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
             }, options),
@@ -218,9 +221,9 @@ export class BaseApiService {
     }
 
     public async postFormUrlEncodedUnauthenticated<R>(path: string, formData: URLSearchParams, options?: RequestOptions): Promise<R> {
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'POST',
-            headers: combineHeaders({
+            headers: this.combineHeaders({
                 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
             }, options),
             signal: options?.abort,
@@ -240,9 +243,9 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'PUT',
-            headers: combineHeaders(createDefaultHeaders(accessToken), options),
+            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
             signal: options?.abort,
             body: JSON.stringify(body),
         });
@@ -263,9 +266,9 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(combineUrl(path, options), {
+        const response = await fetch(this.combineUrl(path, options), {
             method: 'DELETE',
-            headers: combineHeaders(createDefaultHeaders(accessToken), options),
+            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
             signal: options?.abort,
         });
 
@@ -276,47 +279,52 @@ export class BaseApiService {
             throw await createApiError(response);
         }
     }
-}
 
-function combineUrl(path: string, options?: RequestOptions): string {
-    if (options?.query == null) {
-        return path;
+    protected combineUrl(path: string, options?: RequestOptions): string {
+        return this.createPath(path, options?.query);
     }
 
-    let queryStr: string;
-    if (options.query instanceof URLSearchParams) {
-        queryStr = options.query.toString();
-    } else {
-        const params = new URLSearchParams();
-        for (const [key, value] of Object.entries(options.query)) {
-            if (value != null) {
-                params.append(key, String(value));
-            }
+    public createPath(path: string, queryParams?: QueryParams): string {
+        if (queryParams == null) {
+            return createApiPath(path);
         }
-        queryStr = params.toString();
+
+        let queryStr: string;
+        if (queryParams instanceof URLSearchParams) {
+            queryStr = queryParams.toString();
+        } else {
+            const params = new URLSearchParams();
+            for (const [key, value] of Object.entries(queryParams)) {
+                if (value != null) {
+                    params.append(key, String(value));
+                }
+            }
+            queryStr = params.toString();
+        }
+
+        if (queryStr.length === 0) {
+            return createApiPath(path);
+        }
+
+        return createApiPath(`${path}?${queryStr}`);
     }
 
-    if (queryStr.length === 0) {
-        return path;
+    protected combineHeaders(def: Record<string, any>, options?: RequestOptions): Record<string, string> {
+        if (options?.headers == null) {
+            return def;
+        }
+
+        return {
+            ...def,
+            ...options.headers,
+        };
     }
 
-    return `${path}?${queryStr}`;
-}
-
-function combineHeaders(def: Record<string, any>, options?: RequestOptions): Record<string, string> {
-    if (options?.headers == null) {
-        return def;
+    protected createDefaultHeaders(accessToken: string): Record<string, string> {
+        return {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        };
     }
-
-    return {
-        ...def,
-        ...options.headers,
-    };
 }
 
-function createDefaultHeaders(accessToken: string): Record<string, string> {
-    return {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-    };
-}

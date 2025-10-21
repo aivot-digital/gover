@@ -42,6 +42,7 @@ import RedoIcon from '@mui/icons-material/Redo';
 import {DeveloperTools} from '../../../../components/developer-tools/developer-tools';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {FormsApiService} from '../../forms-api-service';
+import {FormsApiService as FormsApiService2} from '../../forms-api-service-v2';
 import {enqueueSnackbar} from 'notistack';
 import {FormRevisionsDialog} from '../../dialogs/form-revisions-dialog';
 import {ElementTreeEntity} from '../../../../components/element-tree/element-tree-entity';
@@ -115,7 +116,6 @@ export function FormDetailsPage() {
     } = useAppSelector((state: RootState) => state.adminSettings);
 
     const loadedForm = useAppSelector(selectLoadedForm);
-    const systemThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const pastLoadedForm = useAppSelector(selectPastLoadedForm);
     const hasPastLoadedForm = useMemo(() => pastLoadedForm.length > 0, [pastLoadedForm]);
@@ -131,12 +131,9 @@ export function FormDetailsPage() {
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const [identityProviderInfos, setIdentityProviderInfos] = useState<IdentityProviderInfo[]>([]);
 
-    const [theme, setTheme] = useState<Theme>();
+    const formApiService = useMemo(() => new FormsApiService2(), []);
 
-    const [toolbarHeight, setToolbarHeight] = useState<number>(0);
-    const updateToolbarHeight = (height: number) => {
-        setToolbarHeight(height);
-    };
+    const [theme, setTheme] = useState<Theme>();
 
     // Cleanup lock state on unload
     useEffect(() => {
@@ -197,29 +194,16 @@ export function FormDetailsPage() {
             return;
         }
 
-        if (loadedForm.themeId != null && !isNaN(loadedForm.themeId)) {
-            new ThemesApiService(api)
-                .retrieve(loadedForm.themeId)
-                .then(setTheme)
-                .catch((err) => {
-                    console.error(err);
-                });
-            return;
-        }
-
-        if (parseInt(systemThemeId) === theme?.id) {
-            return;
-        }
-
-        if (systemThemeId != null && !isNaN(parseInt(systemThemeId))) {
-            new ThemesApiService(api)
-                .retrieve(parseInt(systemThemeId))
-                .then(setTheme)
-                .catch((err) => {
-                    console.error(err);
-                });
-        }
-    }, [loadedForm, systemThemeId]);
+        formApiService
+            .getFormTheme(loadedForm.slug, loadedForm.version)
+            .then((theme) => {
+                setTheme(theme);
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Das Farbeschema des Formulars konnte nicht geladen werden.'));
+            });
+    }, [loadedForm]);
 
     useEffect(() => {
         if (loadedForm == null) {

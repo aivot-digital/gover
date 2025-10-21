@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {Box, Grid, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
@@ -92,8 +92,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         value={props.entity?.internalTitle}
                         label="Interner Titel des Formulars"
@@ -109,9 +110,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                         required={true}
                         error={
                             !props.entity?.internalTitle || props.entity.internalTitle.length < 1
-                                ? "Der Titel muss mindestens 1 Zeichen lang sein."
+                                ? 'Der Titel muss mindestens 1 Zeichen lang sein.'
                                 : props.entity.internalTitle.length > 96
-                                    ? "Der Titel darf maximal 96 Zeichen lang sein."
+                                    ? 'Der Titel darf maximal 96 Zeichen lang sein.'
                                     : undefined
                         }
                     />
@@ -119,8 +120,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         value={props.element.tabTitle}
                         label="Titel des Formulars im Browser-Tab"
@@ -137,8 +139,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         value={props.entity.publicTitle}
                         label="Öffentlicher Titel & Überschrift des Formulars"
@@ -163,8 +166,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Allgemeiner Link des Formulars"
                         disabled
@@ -204,8 +208,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
 
                     <TextFieldComponent
                         label="Versionsspezifischer Link des Formulars"
@@ -246,8 +251,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Art des Formulars"
                         hint="Öffentliche Formulare werden auf der Übersichtsseite angezeigt und können von Bürger:innen ausgefüllt werden. Interne Formulare werden nicht auf der Übersichtsseite angezeigt, können aber über den Link geteilt werden."
@@ -271,7 +277,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 title="Für dieses Formular zuständige Fachbereiche"
                 variant="h5"
             >
-                Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge bearbeitet (falls abweichend).
+                Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge bearbeitet (falls
+                abweichend).
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -280,8 +287,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Entwickelnder Fachbereich"
                         value={props.entity?.developingDepartmentId?.toString() ?? undefined}
@@ -300,8 +308,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Zuständiger Fachbereich"
                         value={props.entity?.responsibleDepartmentId?.toString() ?? undefined}
@@ -317,8 +326,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Bewirtschaftender Fachbereich"
                         value={props.entity?.managingDepartmentId?.toString() ?? undefined}
@@ -345,25 +355,59 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
-                    <SelectFieldComponent
-                        label="Farbschema (Visuelles Erscheinungsbild)"
-                        value={props.entity?.themeId?.toString() ?? undefined}
-                        onChange={(val) => {
-                            props.onPatchEntity({
-                                themeId: val != null ? parseInt(val) : undefined,
-                            });
-                        }}
-                        options={themes}
-                        disabled={!props.editable}
-                    />
+                        lg: 6,
+                    }}
+                >
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                    >
+                        <SelectFieldComponent
+                            label="Farbschema (Visuelles Erscheinungsbild)"
+                            value={props.entity?.themeId?.toString() ?? undefined}
+                            onChange={(val) => {
+                                props.onPatchEntity({
+                                    themeId: val != null ? parseInt(val) : undefined,
+                                });
+                            }}
+                            options={themes}
+                            disabled={!props.editable}
+                        />
+                        <Hint
+                            summary="Sie können ein abweichendes Farbschema für dieses Formular auswählen."
+                            detailsTitle="Farbschema"
+                            details={
+                                <>
+                                    <p>
+                                       Sie können hier ein abweichendes Farbschema für dieses Formular auswählen.
+                                    </p>
+                                    <p>
+                                        Farbschemata werden immer nach absteigendem Prioritätsprinzip angewendet.
+                                        Das bedeutet, dass das Farbschema mit der niedrigsten Nummer in der folgenden Liste angewendet wird:
+
+                                        <ol>
+                                            <li>Das Farbschema des Formulars</li>
+                                            <li>Das Farbschema des zuständigen Fachbereichs</li>
+                                            <li>Das Farbschema des bewirtschaftenden Fachbereichs</li>
+                                            <li>Das Farbschema des entwickelnden Fachbereichs</li>
+                                            <li>Das globale Farbschema der Gover-Instanz</li>
+                                        </ol>
+                                    </p>
+                                    <p>
+                                        Das Farbschema setzt die Farben sowie die Logos des Formulars.
+                                    </p>
+                                </>
+                            }
+                            sx={{ml: 2}}
+                        />
+                    </Box>
                 </Grid>
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <Box
                         display="flex"
                         alignItems="center"
@@ -417,8 +461,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Antragsfristen"
                         multiline
@@ -445,8 +490,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Fachlicher Support"
                         value={props.entity?.legalSupportDepartmentId?.toString() ?? undefined}
@@ -462,8 +508,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Technischer Support"
                         value={props.entity?.technicalSupportDepartmentId?.toString() ?? undefined}
@@ -490,8 +537,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <RichTextEditorComponentView
                         hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
                         value={props.element.offlineSubmissionText ?? ''}

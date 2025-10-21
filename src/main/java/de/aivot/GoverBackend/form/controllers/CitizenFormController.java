@@ -154,7 +154,7 @@ public class CitizenFormController {
                                                   @Nonnull @PathVariable String slug,
                                                   @Nullable @RequestParam(value = "version", required = false) Integer version,
                                                   @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         var identityCache = identityId == null ? Optional.empty() : identityCacheRepository
                 .findById(identityId);
@@ -182,7 +182,7 @@ public class CitizenFormController {
     public MaxFileSizeDto getMaxFileSize(@Nullable @AuthenticationPrincipal Jwt jwt,
                                          @Nonnull @PathVariable String slug,
                                          @Nullable @RequestParam(value = "version", required = false) Integer version) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         MaxFileSizeDto maxFileSizeDto = new MaxFileSizeDto();
         maxFileSizeDto.setMaxFileSize(100);
@@ -221,7 +221,7 @@ public class CitizenFormController {
                                                          @Nonnull @PathVariable String slug,
                                                          @Nullable @RequestParam(value = "version", required = false) Integer version,
                                                          @Nonnull @RequestBody ElementData customerData) throws PaymentException, ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         if (formVersion.getPaymentProviderKey() == null) {
             return new FormCostCalculationResponseDTO(null, null, null);
@@ -266,7 +266,7 @@ public class CitizenFormController {
                                                          @Nonnull @PathVariable String slug,
                                                          @Nullable @RequestParam(value = "version", required = false) Integer version
     ) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         var identityProviderKeys = formVersion
                 .getIdentityProviders()
@@ -315,7 +315,7 @@ public class CitizenFormController {
                                             @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
                                             @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
                                             @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         var options = new ElementDerivationOptions()
                 .setSkipValuesForElementIds(skipValuesFor)
@@ -353,7 +353,7 @@ public class CitizenFormController {
                                      @Nonnull @PathVariable String slug,
                                      @Nullable @RequestParam(value = "version", required = false) Integer version
     ) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
         var theme = getFormTheme(formVersion);
         return ThemeResponseDTO.fromEntity(theme);
     }
@@ -364,7 +364,7 @@ public class CitizenFormController {
                         @Nullable @RequestParam(value = "version", required = false) Integer version,
                         @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
         var logoKey = getFormLogoKey(formVersion);
 
         String redirectUrl;
@@ -383,7 +383,7 @@ public class CitizenFormController {
                            @Nullable @RequestParam(value = "version", required = false) Integer version,
                            @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt);
+        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
         var faviconKey = getFormFaviconKey(formVersion);
 
         String redirectUrl;
@@ -407,13 +407,14 @@ public class CitizenFormController {
      */
     private FormVersionWithDetailsEntity getFormVersionWithDetailsEntity(@Nonnull String slug,
                                                                          @Nullable Integer version,
-                                                                         @Nullable @AuthenticationPrincipal Jwt jwt) throws ResponseException {
+                                                                         @Nullable @AuthenticationPrincipal Jwt jwt,
+                                                                         @Nonnull Boolean acceptUnauthenticated) throws ResponseException {
         var user = UserService
                 .fromJWT(jwt)
                 .orElse(null);
 
         FormVersionWithDetailsEntity formVersion;
-        if (user == null) {
+        if (user == null && !acceptUnauthenticated) {
             formVersion = formVersionWithDetailsService
                     .retrieve(FormVersionWithDetailsFilter
                             .create()
