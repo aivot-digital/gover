@@ -1,4 +1,4 @@
-import {Box, Grid, Paper, ThemeProvider, useTheme} from '@mui/material';
+import {Box, Paper, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {clearLoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loading-placeholder';
@@ -40,7 +40,6 @@ import {isAdmin} from '../../../../utils/is-admin';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {DeveloperTools} from '../../../../components/developer-tools/developer-tools';
-import {ThemesApiService} from '../../../themes/themes-api-service';
 import {FormsApiService} from '../../forms-api-service';
 import {FormsApiService as FormsApiService2} from '../../forms-api-service-v2';
 import {enqueueSnackbar} from 'notistack';
@@ -54,10 +53,8 @@ import {setIdentityId} from '../../../../slices/identity-slice';
 import {ElementData, ElementDerivationResponse} from '../../../../models/element-data';
 import {asFormRequestDTO, FormDetailsResponseDTO} from '../../dtos/form-details-response-dto';
 import {FormStatus} from '../../enums/form-status';
-import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {addDerivationLogItems} from '../../../../slices/logging-slice';
-import {RootState} from '../../../../store';
+import {RootState} from '../../../../store.staff';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
@@ -589,6 +586,26 @@ export function FormDetailsPage() {
                                     derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
                                     disableVisibility={disableVisibility}
                                 />
+
+                                <HelpDialog
+                                    onHide={() => dispatch(showDialog(undefined))}
+                                    open={metaDialog === HelpDialogId}
+                                />
+
+                                <PrivacyDialog
+                                    onHide={() => dispatch(showDialog(undefined))}
+                                    open={metaDialog === PrivacyDialogId}
+                                />
+
+                                <ImprintDialog
+                                    onHide={() => dispatch(showDialog(undefined))}
+                                    open={metaDialog === ImprintDialogId}
+                                />
+
+                                <AccessibilityDialog
+                                    onHide={() => dispatch(showDialog(undefined))}
+                                    open={metaDialog === AccessibilityDialogId}
+                                />
                             </ThemeProvider>
                         </Paper>
                     </Box>
@@ -624,27 +641,13 @@ export function FormDetailsPage() {
                         setShowAdminTools(false);
                     }}
                 />
+
                 <DeveloperTools
                     rootElement={loadedForm.rootElement}
                     elementData={elementData}
                     onElementDataChange={setElementData}
                 />
-                <HelpDialog
-                    onHide={() => dispatch(showDialog(undefined))}
-                    open={metaDialog === HelpDialogId}
-                />
-                <PrivacyDialog
-                    onHide={() => dispatch(showDialog(undefined))}
-                    open={metaDialog === PrivacyDialogId}
-                />
-                <ImprintDialog
-                    onHide={() => dispatch(showDialog(undefined))}
-                    open={metaDialog === ImprintDialogId}
-                />
-                <AccessibilityDialog
-                    onHide={() => dispatch(showDialog(undefined))}
-                    open={metaDialog === AccessibilityDialogId}
-                />
+
                 <FormRevisionsDialog
                     open={showRevisions}
                     onClose={() => setShowRevisions(false)}

@@ -134,4 +134,16 @@ export class FormsApiService extends BaseApiService {
             version: formVersion,
         });
     }
+
+    public listPublicAll(): Promise<FormCitizenListResponseDTO[]> {
+        return this
+            .getUnauthenticated<Page<FormCitizenListResponseDTO>>('/api/public/forms/', {
+                query: {
+                    page: 0,
+                    size: 999,
+                    sort: 'publicTitle,asc',
+                },
+            })
+            .then(({content}) => content);
+    }
 }

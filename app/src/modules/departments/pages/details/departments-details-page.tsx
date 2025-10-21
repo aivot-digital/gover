@@ -53,8 +53,8 @@ export function DepartmentsDetailsPage() {
                         isDisabled: (item) => !item?.id,
                     },
                 ]}
-                initializeItem={(api) => new DepartmentsApiService(api).initialize()}
-                fetchData={(api, id: number) => new DepartmentsApiService(api).retrieve(id)}
+                initializeItem={(api) => new DepartmentsApiService().initialize()}
+                fetchData={(api, id: number) => new DepartmentsApiService().retrieve(id)}
                 getTabTitle={(item: Department) => {
                     if (item.id === 0) {
                         return 'Neuer Fachbereich';

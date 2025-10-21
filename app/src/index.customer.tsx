@@ -1,28 +1,17 @@
 import React from 'react';
 import reportWebVitals from './reportWebVitals';
-import {Provider as StoreProvide} from 'react-redux';
-import {store} from './store';
 import * as Sentry from '@sentry/react';
 
 import './index.scss';
-import {CssBaseline, ThemeProvider} from '@mui/material';
-import {BaseTheme} from './theming/base-theme';
 import {createRoutesFromChildren, matchRoutes, useLocation, useNavigationType} from 'react-router-dom';
 import {createRoot} from 'react-dom/client';
-import {CustomerApp} from './apps/customer-app';
 import {isStringNotNullOrEmpty} from './utils/string-utils';
+import {CustomerShellRouter} from './shells/customer/customer-shell-router';
 
 
 const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);
-root.render(
-    <ThemeProvider theme={BaseTheme}>
-        <CssBaseline />
-        <StoreProvide store={store}>
-            <CustomerApp />
-        </StoreProvide>
-    </ThemeProvider>,
-);
+root.render(<CustomerShellRouter />);
 
 if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {
     Sentry.init({

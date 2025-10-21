@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {Box, Button, Dialog, DialogContent, FormControlLabel, FormGroup, FormHelperText, Grid, Switch, Typography} from '@mui/material';
-import {type AppDispatch, type RootState} from '../../store';
+import {type AppDispatch, type RootState} from '../../store.staff';
 import {type AdminSettingsState, setDevToolsTab, toggleAutoScrollForSteps, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AdminToolsDialogProps} from './admin-tools-dialog-props';

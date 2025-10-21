@@ -9,7 +9,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSetup, selectStatus, setSetup, setStatus, ShellStatus} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
-import {setSystemConfigs} from '../../slices/system-config-slice';
+import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
 import {Login} from '../../pages/staff-pages/login/login';
 import Box from '@mui/material/Box';
 import {ShellDrawer} from './components/shell-drawer';
@@ -43,6 +43,7 @@ export function StaffShell(props: StaffShellProps) {
         fetchSetup()
             .then((setup) => {
                 dispatch(setSetup(setup));
+                dispatch(setSystemConfigsFromMap(setup.publicConfigs));
             })
             .catch((err) => {
                 if (isApiError(err) && err.status >= 500) {

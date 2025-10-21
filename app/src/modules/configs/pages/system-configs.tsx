@@ -58,7 +58,7 @@ export function SystemConfigs() {
                 .listAll(),
             new SecretsApiService(api)
                 .listAll(),
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .listAll(),
         ])
             .then(([definitionResponse, configsResponse, themes, secrets, departments]) => {

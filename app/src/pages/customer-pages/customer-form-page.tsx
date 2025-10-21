@@ -1,7 +1,7 @@
 import {useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
-import {ThemeProvider, useTheme} from '@mui/material';
+import {Box, ThemeProvider, useTheme} from '@mui/material';
 import {createAppTheme} from '../../theming/themes';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../components/not-found-page/not-found-page';
@@ -20,6 +20,7 @@ import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
+import {FormsApiService as FormsApiServiceV2} from '../../modules/forms/forms-api-service-v2';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
 import {ElementData} from '../../models/element-data';
@@ -28,7 +29,7 @@ import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-detai
 
 export const DialogSearchParam = 'dialog';
 
-export function FormPage() {
+export function CustomerFormPage() {
     const baseTheme = useTheme();
     const api = useApi();
 
@@ -128,22 +129,29 @@ export function FormPage() {
             <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
+                        faviconUrl={new FormsApiServiceV2().getFormFaviconLink(form.slug, form.version)}
                         title={form.rootElement.tabTitle ?? form.rootElement.headline ?? ''}
                         titlePrefix={provider}
                     />
 
-                    <ViewDispatcherComponent
-                        rootElement={form.rootElement}
-                        allElements={allElements}
-                        element={form.rootElement}
-                        isBusy={false}
-                        isDeriving={false}
-                        mode="viewer"
-                        elementData={elementData}
-                        onElementDataChange={(data) => handleSetElementData(data)}
-                        derivationTriggerIdQueue={[]}
-                        disableVisibility={false}
-                    />
+                    <Box
+                        sx={{
+                            backgroundColor: 'white',
+                        }}
+                    >
+                        <ViewDispatcherComponent
+                            rootElement={form.rootElement}
+                            allElements={allElements}
+                            element={form.rootElement}
+                            isBusy={false}
+                            isDeriving={false}
+                            mode="viewer"
+                            elementData={elementData}
+                            onElementDataChange={(data) => handleSetElementData(data)}
+                            derivationTriggerIdQueue={[]}
+                            disableVisibility={false}
+                        />
+                    </Box>
 
                     <HelpDialog
                         onHide={() => dispatch(showDialog(undefined))}

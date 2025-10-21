@@ -1,17 +1,17 @@
 import React from 'react';
 import {type Route} from '../models/lib/route';
 import {NotFound} from '../pages/shared/not-found/not-found';
-import {FormPage} from "../pages/customer-pages/form-page";
-import {ListPage} from "../pages/customer-pages/list-page";
+import {CustomerFormPage} from "../pages/customer-pages/customer-form-page";
+import {CustomerListPage} from "../pages/customer-pages/customer-list-page";
 
 export const customerAppRoutes: Record<string, Route> = {
     listPage: {
         path: '/',
-        element: <ListPage/>,
+        element: <CustomerListPage/>,
     },
     formView: {
         path: '/:slug/:version?',
-        element: <FormPage/>,
+        element: <CustomerFormPage/>,
     },
     notFound: {
         path: '*',

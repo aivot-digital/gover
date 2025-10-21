@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Box, Container, IconButton, Menu, Tooltip, Typography, useTheme} from '@mui/material';
+import {Box, Container, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography, useTheme} from '@mui/material';
 import {showDialog} from '../../slices/app-slice';
 import {Logo} from '../logo/logo';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -10,7 +10,9 @@ import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import Balancer from 'react-wrap-balancer';
 import {FormDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
 import {FormsApiService} from '../../modules/forms/forms-api-service-v2';
-import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
+import DeleteForever from '@aivot/mui-material-symbols-400-outlined/dist/delete-forever/DeleteForever';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import {useConfirm} from '../../providers/confirm-provider';
 
 interface RootComponentHeaderProps {
     form: FormDetailsResponseDTO;
@@ -27,17 +29,11 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
 
     const theme = useTheme();
 
+    const showConfirm = useConfirm();
+
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement>();
 
     const formTitle = (form?.publicTitle ?? '');
-
-    const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
-        setMenuAnchorEl(event.currentTarget);
-    };
-
-    const handleCloseMenu = () => {
-        setMenuAnchorEl(undefined);
-    };
 
     const hasManualLineBreaks = formTitle.includes('\n');
 
@@ -108,7 +104,7 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
                             </Box>
                         </Box>
                         <Box
-                            component={'nav'}
+                            component="nav"
                             role="navigation"
                             sx={{
                                 [theme.breakpoints.down('md')]: {
@@ -149,11 +145,11 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
                             >
                                 <IconButton
                                     color="primary"
-                                    onClick={() => {
-                                        alert('Noch nicht implementiert');
+                                    onClick={(event) => {
+                                        setMenuAnchorEl(event.currentTarget);
                                     }}
                                 >
-                                    <Refresh
+                                    <MoreVert
                                         fontSize="large"
                                     />
                                 </IconButton>
@@ -166,8 +162,38 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
             <Menu
                 anchorEl={menuAnchorEl}
                 open={menuAnchorEl != null}
-                onClose={handleCloseMenu}
+                onClose={() => {
+                    setMenuAnchorEl(undefined);
+                }}
             >
+                <MenuItem
+                    onClick={() => {
+                        setMenuAnchorEl(undefined);
+                        showConfirm({
+                            title: 'Anlage abbrechen?',
+                            children: (
+                                <Typography>
+                                    Möchten Sie die Anlage eines neuen Formulars wirklich abbrechen? Bisher eingegebene Daten werden dabei verworfen.
+                                </Typography>
+                            ),
+                            confirmButtonText: 'Ja, Eingaben verwerfen',
+                            isDestructive: false,
+                            theme: theme,
+                        })
+                            .then((confirmed) => {
+                                if (confirmed) {
+                                    onDeleteFormData();
+                                }
+                            });
+                    }}
+                >
+                    <ListItemIcon>
+                        <DeleteForever />
+                    </ListItemIcon>
+                    <ListItemText>
+                        Alle Antragsdaten löschen
+                    </ListItemText>
+                </MenuItem>
             </Menu>
         </Box>
     );

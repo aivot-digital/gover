@@ -39,7 +39,6 @@ function cleanDocuments(documents: Array<string> | undefined | null) {
 }
 
 export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>) {
-    const api = useApi();
     const dispatch = useAppDispatch();
     const theme = useTheme();
 
@@ -70,7 +69,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         if (application != null) {
             if (application.responsibleDepartmentId != null) {
                 if (responsibleDepartment == null || responsibleDepartment.id !== application.responsibleDepartmentId) {
-                    new DepartmentsApiService(api)
+                    new DepartmentsApiService()
                         .retrievePublic(application.responsibleDepartmentId)
                         .then(setResponsibleDepartment)
                         .catch((err) => {
@@ -84,7 +83,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
             if (application.managingDepartmentId != null) {
                 if (managingDepartment == null || managingDepartment.id !== application.managingDepartmentId) {
-                    new DepartmentsApiService(api)
+                    new DepartmentsApiService()
                         .retrievePublic(application.managingDepartmentId)
                         .then(setManagingDepartment)
                         .catch((err) => {

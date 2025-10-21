@@ -41,8 +41,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, Applicat
     };
 
     useEffect(() => {
-        new DepartmentsApiService(api)
-            .list(0, 999, undefined, undefined, {
+        new DepartmentsApiService()
+            .listAll({
                 ignoreMemberships: true,
             })
             .then((deps) => deps.content.map((department) => ({

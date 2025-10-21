@@ -1,7 +1,5 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
-import type {AlertColor} from '@mui/material';
-import type {SystemSetupDTO} from '../modules/system/dtos/system-setup-dto';
-import type {RootState} from '../store';
+import type {RootState} from '../store.staff';
 
 interface EntityHistoryItem {
     link: string;
@@ -23,7 +21,7 @@ const entityHistorySlice = createSlice({
         addEntityHistoryItem(state, action: PayloadAction<EntityHistoryItem>) {
             state.history = [
                 action.payload,
-                ...state.history.filter(item => item.link !== action.payload.link)
+                ...state.history.filter(item => item.link !== action.payload.link),
             ];
             localStorage.setItem('history', JSON.stringify(state.history));
         },

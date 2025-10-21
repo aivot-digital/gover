@@ -99,8 +99,8 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
     useEffect(() => {
         if (user != null) {
-            new DepartmentsApiService(api)
-                .list(0, 999, undefined, undefined, {userId: user.id})
+            new DepartmentsApiService()
+                .listAll({userId: user.id})
                 .then(departments => setAvailableDepartments(departments.content));
         }
     }, [user]);
@@ -189,10 +189,10 @@ export function AddFormDialog(props: AddFormDialogProps) {
     const handleClose = async (_: any, reason: string): Promise<void> => {
         if (hasChangedSinceOpen && reason !== 'saveSuccess') {
             const confirmed = await showConfirm({
-                title: 'Anlage abbrechen?',
+                title: 'Möchten Sie die eingegebenen Antragsdaten wirklich löschen?',
                 children: (
                     <Typography>
-                        Möchten Sie die Anlage eines neuen Formulars wirklich abbrechen? Bisher eingegebene Daten werden dabei verworfen.
+                        Dieser Vorgang kann nicht rückgängig gemacht werden. Wenn Sie die Daten löschen, müssen Sie diese bei Bedarf erneut eingeben.
                     </Typography>
                 ),
                 confirmButtonText: 'Ja, Eingaben verwerfen',

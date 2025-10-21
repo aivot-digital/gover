@@ -59,7 +59,7 @@ export function DepartmentsListPage() {
                 searchLabel="Fachbereich suchen"
                 searchPlaceholder="Name des Fachbereichs eingeben…"
                 fetch={(options) => {
-                    return new DepartmentsApiService(options.api)
+                    return new DepartmentsApiService()
                         .list(
                             options.page,
                             options.size,

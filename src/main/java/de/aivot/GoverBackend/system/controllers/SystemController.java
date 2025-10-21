@@ -1,6 +1,9 @@
 package de.aivot.GoverBackend.system.controllers;
 
 import de.aivot.GoverBackend.asset.services.AssetService;
+import de.aivot.GoverBackend.config.dtos.SystemConfigRequestDto;
+import de.aivot.GoverBackend.config.dtos.SystemConfigResponseDto;
+import de.aivot.GoverBackend.config.filters.SystemConfigFilter;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.data.SystemConfigKey;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -14,6 +17,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,17 +30,15 @@ import java.util.List;
 public class SystemController {
     private final GoverConfig goverConfig;
     private final SystemConfigService systemConfigService;
-    private final ThemeService themeService;
     private final AssetService assetService;
     private final SystemService systemService;
 
     @Autowired
     public SystemController(
             GoverConfig goverConfig,
-            SystemConfigService systemConfigService, ThemeService themeService, AssetService assetService, SystemService systemService) {
+            SystemConfigService systemConfigService, AssetService assetService, SystemService systemService) {
         this.goverConfig = goverConfig;
         this.systemConfigService = systemConfigService;
-        this.themeService = themeService;
         this.assetService = assetService;
         this.systemService = systemService;
     }
@@ -82,15 +84,17 @@ public class SystemController {
     public SystemSetupDTO getSelectedTheme() throws ResponseException {
         var providerName = getProviderName();
         var systemTheme = getSystemTheme();
+        var publicConfigs = systemConfigService.getPublicConfigsAsMap();
 
         return new SystemSetupDTO(
                 providerName,
-                ThemeResponseDTO.fromEntity(systemTheme)
+                ThemeResponseDTO.fromEntity(systemTheme),
+                publicConfigs
         );
     }
 
     @Nullable
-    public String getProviderName() {
+    private String getProviderName() {
         String providerName;
         try {
             providerName = systemConfigService

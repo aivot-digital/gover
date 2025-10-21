@@ -1,0 +1,24 @@
+import {configureStore} from '@reduxjs/toolkit';
+import {appReducer} from './slices/app-slice';
+import {systemConfigReducer} from './slices/system-config-slice';
+import {stepperReducer} from './slices/stepper-slice';
+import {snackbarReducer} from './slices/snackbar-slice';
+import {loadingOverlayReducer} from './slices/loading-overlay-slice';
+import {identityReducer} from './slices/identity-slice';
+import {shellReducer} from './slices/shell-slice';
+import {authReducer} from './slices/auth-slice';
+import {adminSettingsReducer} from './slices/admin-settings-slice';
+
+export const store = configureStore({
+    reducer: {
+        auth: authReducer,
+        adminSettings: adminSettingsReducer,
+        identity: identityReducer,
+        app: appReducer,
+        systemConfig: systemConfigReducer,
+        stepper: stepperReducer,
+        snackbar: snackbarReducer,
+        shell: shellReducer,
+        loadingOverlay: loadingOverlayReducer,
+    },
+});
