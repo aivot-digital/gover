@@ -14,7 +14,6 @@ import {DepartmentsApiService} from '../../modules/departments/departments-api-s
 export const PrivacyDialogId = 'privacy';
 
 export function PrivacyDialog(props: PrivacyDialogProps) {
-    const api = useApi();
     const application = useSelector(selectLoadedForm);
 
     const [department, setDepartment] = useState<Department>();
@@ -26,7 +25,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
             application?.privacyDepartmentId != null &&
             (department == null || department.id !== application.privacyDepartmentId)
         ) {
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(application.privacyDepartmentId)
                 .then(setDepartment);
         } else if (
@@ -35,7 +34,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
             privacyDepartmentId != '' &&
             (department == null || department.id !== parseInt(privacyDepartmentId))
         ){
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(parseInt(privacyDepartmentId))
                 .then(setDepartment);
         }

@@ -3,7 +3,7 @@ import {AuthDataDto} from '../models/dtos/auth-data-dto';
 import {AuthData, AuthDataAccessToken, AuthDataRefreshToken} from '../models/dtos/auth-data';
 import {StorageScope, StorageService} from '../services/storage-service';
 import {StorageKey} from '../data/storage-key';
-import {AppDispatch, RootState} from '../store';
+import {AppDispatch, RootState} from '../store.staff';
 import {getUrlWithoutQuery} from '../utils/location-utils';
 
 

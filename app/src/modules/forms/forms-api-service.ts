@@ -67,6 +67,9 @@ export type FormIdentifier = {
     version: number;
 }
 
+/**
+ * @deprecated use FormsApiService from modules/forms/forms-api-service-v2.ts instead
+ */
 export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResponseDTO, FormCitizenListResponseDTO, FormDetailsResponseDTO, FormCitizenDetailsResponseDTO, FormIdentifier, FormFilters> {
     public constructor(api: Api) {
         super(api, 'forms/');

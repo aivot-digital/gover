@@ -1,7 +1,7 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import type {AlertColor} from '@mui/material';
 import type {SystemSetupDTO} from '../modules/system/dtos/system-setup-dto';
-import type {RootState} from '../store';
+import type {RootState} from '../store.staff';
 
 interface SnackbarMessage {
     key: string; // Einzigartiger Schlüssel für jede Nachricht

@@ -1,12 +1,14 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {useTheme} from '@mui/material';
+import {createApiPath} from '../../utils/url-path-utils';
 
 interface MetaElementProps {
+    faviconUrl?: string;
     title?: string;
     titlePrefix?: string;
 }
 
-export function MetaElement({title, titlePrefix}: MetaElementProps) {
+export function MetaElement({faviconUrl, title, titlePrefix}: MetaElementProps) {
     const theme = useTheme();
 
     useEffect(() => {
@@ -15,6 +17,10 @@ export function MetaElement({title, titlePrefix}: MetaElementProps) {
         root.style.setProperty('--gover-theme-primary-dark', theme.palette.primary.dark);
         root.style.setProperty('--gover-theme-secondary', theme.palette.secondary.main);
     }, [theme]);
+
+    const favicon = useMemo(() => {
+        return faviconUrl ?? createApiPath("/api/public/system/favicon/");
+    }, [faviconUrl])
 
     return (
         <>
@@ -56,7 +62,7 @@ export function MetaElement({title, titlePrefix}: MetaElementProps) {
 
             <link
                 rel="icon"
-                href="/api/public/system/favicon/"
+                href={favicon}
             />
         </>
     );

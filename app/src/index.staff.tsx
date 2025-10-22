@@ -1,7 +1,7 @@
 import React from 'react';
 import reportWebVitals from './reportWebVitals';
 import {Provider as StoreProvide} from 'react-redux';
-import {store} from './store';
+import {store} from './store.staff';
 import * as Sentry from '@sentry/react';
 
 import './index.scss';

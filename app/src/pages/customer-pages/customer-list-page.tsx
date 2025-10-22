@@ -1,53 +1,42 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
-import {Box, Container, List, ThemeProvider, useTheme} from '@mui/material';
-import {createAppTheme} from '../../theming/themes';
+import {Box, Container, List} from '@mui/material';
 import {NotFoundPage} from '../../components/not-found-page/not-found-page';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {AppHeader} from '../../components/app-header/app-header';
-import {AppMode} from '../../data/app-mode';
 import {ListHeader} from '../../components/list-header/list-header';
-import {AppFooter} from '../../components/app-footer/app-footer';
-import {Introductory} from '../../components/introductory/introductory';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetStepper} from '../../slices/stepper-slice';
 import {clearLoadedForm, showDialog} from '../../slices/app-slice';
 import {AlertComponent} from '../../components/alert/alert-component';
-import {useApi} from '../../hooks/use-api';
-import {Theme} from '../../modules/themes/models/theme';
-import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {EmptySearchDataListPlaceholder} from '../../components/empty-search-data-list-placeholder/empty-search-data-list-placeholder';
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
-import {ThemesApiService} from '../../modules/themes/themes-api-service';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
 import {setIdentityId} from '../../slices/identity-slice';
 import {PublicFormListItem} from '../../components/public-form-list-item/public-form-list-item';
+import {FormsApiService} from '../../modules/forms/forms-api-service-v2';
+import {CustomerListPageHeader} from './customer-list-page-header';
+import {CustomerListPageFooter} from './customer-list-page-footer';
 
-export function ListPage() {
-    const baseTheme = useTheme();
-    const api = useApi();
+export function CustomerListPage() {
     const dispatch = useAppDispatch();
+
     const [failedToLoad, setFailedToLoad] = useState(false);
     const [applications, setApplications] = useState<FormCitizenListResponseDTO[]>();
     const [search, setSearch] = useState('');
 
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const disableGoverListingPage = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.disableGoverListingPage));
-    const themeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
     const metaDialog = useAppSelector((state) => state.app.showDialog);
 
-    const [theme, setTheme] = useState<Theme>();
-
     useEffect(() => {
-        new FormsApiService(api)
+        new FormsApiService()
             .listPublicAll()
-            .then(forms => setApplications(forms.content))
+            .then(setApplications)
             .catch((err) => {
                 console.error(err);
                 setFailedToLoad(true);
@@ -58,37 +47,29 @@ export function ListPage() {
         dispatch(setIdentityId(undefined));
     }, []);
 
-    useEffect(() => {
-        if (themeId != null && isStringNotNullOrEmpty(themeId)) {
-            new ThemesApiService(api)
-                .retrievePublic(parseInt(themeId))
-                .then((theme) => {
-                    setTheme(theme);
-                })
-                .catch((err) => {
-                    console.error(err);
-                    setFailedToLoad(true);
-                });
-        }
-    }, [themeId]);
-
-    const _theme = useMemo(() => {
-        return createAppTheme(theme, baseTheme);
-    }, [theme, baseTheme]);
-
     if (failedToLoad) {
-        return <><MetaElement
-            title={'Seite nicht gefunden'}
-            titlePrefix={provider}
-        /><NotFoundPage /></>;
+        return (
+            <>
+                <MetaElement
+                    title={'Seite nicht gefunden'}
+                    titlePrefix={provider}
+                />
+                <NotFoundPage />
+            </>
+        );
     } else if (disableGoverListingPage == 'true') {
-        return <><MetaElement
-            title={'Online-Antrags-Management'}
-            titlePrefix={provider}
-        /><NotFoundPage
-            title={'Online-Antrags-Management von ' + provider}
-            msg={'Dieses System besitzt keine öffentliche Index-Seite. Bitte nutzen Sie die direkten Links zu den Formularen dieses Anbieters.'}
-        /></>;
+        return (
+            <>
+                <MetaElement
+                    title={'Online-Antrags-Management'}
+                    titlePrefix={provider}
+                />
+                <NotFoundPage
+                    title={'Online-Antrags-Management von ' + provider}
+                    msg={'Dieses System besitzt keine öffentliche Index-Seite. Bitte nutzen Sie die direkten Links zu den Formularen dieses Anbieters.'}
+                />
+            </>
+        );
     } else if (applications == null) {
         return <LoadingPlaceholder />;
     } else {
@@ -99,27 +80,22 @@ export function ListPage() {
         );
 
         return (
-            <ThemeProvider theme={_theme}>
+            <Box
+                sx={{
+                    backgroundColor: 'white',
+                }}
+            >
                 <MetaElement
                     title={'Online-Antrags-Management'}
                     titlePrefix={provider}
                 />
 
-                <AppHeader
-                    mode={AppMode.CustomerDisplay}
-                    onDeleteFormData={() => {}}
-                />
+                <CustomerListPageHeader />
 
                 <main role="main">
-
-                    <Introductory
-                        mode={AppMode.CustomerDisplay}
-                    />
-
                     <Box
-                        style={{
-                            backgroundColor: '#F3F3F3',
-                            minHeight: '50vh',
+                        sx={{
+                            minHeight: '75vh',
                         }}
                     >
                         <Container
@@ -181,11 +157,8 @@ export function ListPage() {
                         </Container>
                     </Box>
 
+                    <CustomerListPageFooter />
                 </main>
-
-                <AppFooter
-                    mode={AppMode.CustomerDisplay}
-                />
 
                 <PrivacyDialog
                     onHide={() => dispatch(showDialog(undefined))}
@@ -204,8 +177,7 @@ export function ListPage() {
                     open={metaDialog === AccessibilityDialogId}
                     isListingPage
                 />
-
-            </ThemeProvider>
+            </Box>
         );
     }
 }

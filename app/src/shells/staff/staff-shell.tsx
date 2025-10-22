@@ -9,7 +9,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSetup, selectStatus, setSetup, setStatus, ShellStatus} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
-import {setSystemConfigs} from '../../slices/system-config-slice';
+import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
 import {Login} from '../../pages/staff-pages/login/login';
 import Box from '@mui/material/Box';
 import {ShellDrawer} from './components/shell-drawer';
@@ -38,17 +38,27 @@ export function StaffShell(props: StaffShellProps) {
     const setup = useAppSelector(selectSetup);
     const status = useAppSelector(selectStatus);
 
+    // Fetch the setup on mount to determine if the system is online, the theme, logo, etc.
     useEffect(() => {
         fetchSetup()
             .then((setup) => {
                 dispatch(setSetup(setup));
+                dispatch(setSystemConfigsFromMap(setup.publicConfigs));
             })
             .catch((err) => {
                 if (isApiError(err) && err.status >= 500) {
                     dispatch(setStatus(ShellStatus.Offline));
+                } else {
+                    console.error(err);
                 }
-                console.error(err);
             });
+    }, []);
+
+    // Fetch the auth state after the setup for a more consistent startup order.
+    useEffect(() => {
+        if (setup == null) {
+            return;
+        }
 
         authenticateWithOidcCode()
             .then((res) => {
@@ -61,11 +71,11 @@ export function StaffShell(props: StaffShellProps) {
                     dispatch(setStatus(ShellStatus.Login));
                 }
             });
-    }, []);
+    }, [setup]);
 
     if (status === ShellStatus.Offline) {
         return (
-            <ShellOffline/>
+            <ShellOffline />
         );
     }
 

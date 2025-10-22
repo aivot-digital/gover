@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useReducer, useState} from 'react';
-import {Box, Button, Grid, IconButton, Typography} from '@mui/material';
+import {Box, Button, Grid, IconButton, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {Form, Form as Application, isForm} from '../../models/entities/form';
@@ -25,11 +25,12 @@ import {Link} from 'react-router-dom';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {CodeEditor} from '../code-editor/code-editor';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
+import {withDelay} from '../../utils/with-delay';
 
 interface PaymentPositionItemProps {
     allElements: ElementWithParents[];
@@ -500,6 +501,7 @@ function PaymentPositionItem(props: PaymentPositionItemProps) {
 
 export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement, Application>) {
     const api = useApi();
+    const dispatch = useAppDispatch();
 
     const [availablePaymentProviders, setAvailablePaymentProviders] = useState<Page<PaymentProviderResponseDTO>>();
     const selectedPaymentProvider = availablePaymentProviders?.content.find(
@@ -515,12 +517,16 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
     }, [props.entity]);
 
     useEffect(() => {
-        new PaymentProvidersApiService(api)
-            .listAllOrdered('name', 'ASC', {
-                isEnabled: true,
-            })
+        withDelay(
+            new PaymentProvidersApiService(api)
+                .listAllOrdered('name', 'ASC', {
+                    isEnabled: true,
+                }),
+            600,
+        )
             .then(setAvailablePaymentProviders)
             .catch(error => {
+                dispatch(showErrorSnackbar('Zahlungsdienstleister konnten nicht geladen werden'));
                 console.error('Failed to load payment providers', error);
             });
     }, [api]);
@@ -539,7 +545,11 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
         }
     };
 
-    if (availablePaymentProviders == null || availablePaymentProviders.size === 0) {
+    if (availablePaymentProviders == null) {
+        return EditorSkeleton;
+    }
+
+    if (availablePaymentProviders.size === 0) {
         return (
             <>
                 <ElementEditorSectionHeader
@@ -759,3 +769,23 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
         </>
     );
 }
+
+
+const EditorSkeleton = (
+    <>
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={900}
+            height={48}
+        />
+
+        <Skeleton
+            width={248}
+            height={200}
+        />
+    </>
+);

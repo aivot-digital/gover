@@ -1,5 +1,5 @@
 import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {RootState} from '../store';
+import {RootState} from '../store.staff';
 
 const initialState: {
     open?: Boolean;

@@ -19,14 +19,12 @@ import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {useUsersApi} from '../../../hooks/use-users-api';
 import {Api, useApi} from '../../../hooks/use-api';
 import {MetaElement} from '../../../components/meta-element/meta-element';
-import {AppHeader} from '../../../components/app-header/app-header';
 import {AppMode} from '../../../data/app-mode';
 import {Introductory} from '../../../components/introductory/introductory';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
 import {TableWrapper} from '../../../components/table-wrapper/table-wrapper';
 import {ProviderLinksGrid} from '../../../modules/provider-links/components/provider-links-grid';
-import {AppFooter} from '../../../components/app-footer/app-footer';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
@@ -258,12 +256,6 @@ export function SubmissionListPage() {
                 title={providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}
             />
 
-            <AppHeader
-                mode={AppMode.Staff}
-                onDeleteFormData={() => {
-                }}
-            />
-
             <Introductory
                 mode={AppMode.Staff}
             />
@@ -348,8 +340,6 @@ export function SubmissionListPage() {
             </Box>
 
             <ProviderLinksGrid />
-
-            <AppFooter mode={AppMode.Staff} />
 
             <Menu
                 id="filter-menu"

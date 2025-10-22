@@ -1,27 +1,24 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {
-    GenericDetailsPageContext,
-    GenericDetailsPageContextType
-} from '../../../../components/generic-details-page/generic-details-page-context';
+import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import {Department} from '../../models/department';
 import {DepartmentsApiService} from '../../departments-api-service';
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {RichTextEditorComponentView} from "../../../../components/richt-text-editor/rich-text-editor.component.view";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
+import {RichTextEditorComponentView} from '../../../../components/richt-text-editor/rich-text-editor.component.view';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {FormsApiService} from "../../../forms/forms-api-service";
-import {ConfirmDialog} from "../../../../dialogs/confirm-dialog/confirm-dialog";
-import {ConstraintDialog} from "../../../../dialogs/constraint-dialog/constraint-dialog";
-import {ConstraintLinkProps} from "../../../../dialogs/constraint-dialog/constraint-link-props";
-import * as yup from "yup";
-import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
+import {FormsApiService} from '../../../forms/forms-api-service';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
+import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
+import * as yup from 'yup';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
@@ -29,40 +26,40 @@ import {SelectFieldComponent} from '../../../../components/select-field/select-f
 export const DepartmentSchema = yup.object({
     name: yup.string()
         .trim()
-        .min(3, "Der Name des Fachbereichs muss mindestens 3 Zeichen lang sein.")
-        .max(96, "Der Name des Fachbereichs darf maximal 96 Zeichen lang sein.")
-        .required("Der Name des Fachbereichs ist ein Pflichtfeld."),
+        .min(3, 'Der Name des Fachbereichs muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name des Fachbereichs darf maximal 96 Zeichen lang sein.')
+        .required('Der Name des Fachbereichs ist ein Pflichtfeld.'),
     address: yup.string()
         .trim()
-        .min(3, "Die Adresse muss mindestens 3 Zeichen lang sein.")
-        .max(255, "Die Adresse darf maximal 255 Zeichen lang sein.")
-        .required("Die Adresse ist ein Pflichtfeld."),
+        .min(3, 'Die Adresse muss mindestens 3 Zeichen lang sein.')
+        .max(255, 'Die Adresse darf maximal 255 Zeichen lang sein.')
+        .required('Die Adresse ist ein Pflichtfeld.'),
     specialSupportAddress: yup.string()
         .trim()
-        .email("Bitte eine gültige E-Mail-Adresse eingeben.")
-        .max(255, "Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.")
-        .required("Die E-Mail-Adresse für fachliche Unterstützung ist ein Pflichtfeld."),
+        .email('Bitte eine gültige E-Mail-Adresse eingeben.')
+        .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
+        .required('Die E-Mail-Adresse für fachliche Unterstützung ist ein Pflichtfeld.'),
     technicalSupportAddress: yup.string()
         .trim()
-        .email("Bitte eine gültige E-Mail-Adresse eingeben.")
-        .max(255, "Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.")
-        .required("Die E-Mail-Adresse für technische Unterstützung ist ein Pflichtfeld."),
+        .email('Bitte eine gültige E-Mail-Adresse eingeben.')
+        .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
+        .required('Die E-Mail-Adresse für technische Unterstützung ist ein Pflichtfeld.'),
     imprint: yup.string()
         .trim()
-        .min(10, "Das Impressum muss mindestens 10 Zeichen lang sein.")
-        .required("Das Impressum ist ein Pflichtfeld."),
+        .min(10, 'Das Impressum muss mindestens 10 Zeichen lang sein.')
+        .required('Das Impressum ist ein Pflichtfeld.'),
     privacy: yup.string()
         .trim()
-        .min(10, "Die Datenschutzerklärung muss mindestens 10 Zeichen lang sein.")
-        .required("Die Datenschutzerklärung ist ein Pflichtfeld."),
+        .min(10, 'Die Datenschutzerklärung muss mindestens 10 Zeichen lang sein.')
+        .required('Die Datenschutzerklärung ist ein Pflichtfeld.'),
     accessibility: yup.string()
         .trim()
-        .min(10, "Die Barrierefreiheitserklärung muss mindestens 10 Zeichen lang sein.")
-        .required("Die Barrierefreiheitserklärung ist ein Pflichtfeld."),
+        .min(10, 'Die Barrierefreiheitserklärung muss mindestens 10 Zeichen lang sein.')
+        .required('Die Barrierefreiheitserklärung ist ein Pflichtfeld.'),
     departmentMail: yup.string()
         .optional()
         .nullable()
-        .test("valid-email-list", "Bitte eine oder mehrere gültige E-Mail-Adressen, durch Komma getrennt, eingeben.", (val) => {
+        .test('valid-email-list', 'Bitte eine oder mehrere gültige E-Mail-Adressen, durch Komma getrennt, eingeben.', (val) => {
             if (!val) return true;
             return val.split(',').every(email => /\S+@\S+\.\S+/.test(email.trim()));
         }),
@@ -90,7 +87,7 @@ export function DepartmentsDetailsPageIndex() {
         reset,
     } = useFormManager<Department>(item, DepartmentSchema as any);
 
-    const apiService = useMemo(() => new DepartmentsApiService(api), [api]);
+    const apiService = useMemo(() => new DepartmentsApiService(), []);
     const department = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
 
@@ -123,7 +120,7 @@ export function DepartmentsDetailsPageIndex() {
             const validationResult = validate();
 
             if (!validationResult) {
-                dispatch(showErrorSnackbar("Bitte überprüfen Sie Ihre Eingaben."));
+                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
                 return;
             }
 
@@ -140,7 +137,7 @@ export function DepartmentsDetailsPageIndex() {
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
-                            navigate(`/departments/${newDepartment.id}`, { replace: true });
+                            navigate(`/departments/${newDepartment.id}`, {replace: true});
                         }, 0);
                     })
                     .catch(err => {
@@ -176,28 +173,28 @@ export function DepartmentsDetailsPageIndex() {
         setIsBusy(true);
         try {
             const formsApi = new FormsApiService(api);
-            const developingForms = await formsApi.list(0, 999, undefined, undefined, { developingDepartmentId: department.id });
-            const managingForms = await formsApi.list(0, 999, undefined, undefined, { managingDepartmentId: department.id });
-            const responsibleForms = await formsApi.list(0, 999, undefined, undefined, { responsibleDepartmentId: department.id });
+            const developingForms = await formsApi.list(0, 999, undefined, undefined, {developingDepartmentId: department.id});
+            const managingForms = await formsApi.list(0, 999, undefined, undefined, {managingDepartmentId: department.id});
+            const responsibleForms = await formsApi.list(0, 999, undefined, undefined, {responsibleDepartmentId: department.id});
 
             const uniqueForms = Array.from(
                 new Map(
                     [...developingForms.content, ...managingForms.content, ...responsibleForms.content]
-                        .map(form => [form.id, form])
-                ).values()
+                        .map(form => [form.id, form]),
+                ).values(),
             );
 
             if (uniqueForms.length > 0) {
                 const maxVisibleLinks = 5;
                 let processedLinks = uniqueForms.slice(0, maxVisibleLinks).map(f => ({
                     label: f.internalTitle,
-                    to: `/forms/${f.id}`
+                    to: `/forms/${f.id}`,
                 }));
 
                 if (uniqueForms.length > maxVisibleLinks) {
                     processedLinks.push({
-                        label: "Weitere Formulare anzeigen…",
-                        to: `/departments/${department.id}/forms`
+                        label: 'Weitere Formulare anzeigen…',
+                        to: `/departments/${department.id}/forms`,
                     });
                 }
 
@@ -248,13 +245,14 @@ export function DepartmentsDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Name des Fachbereichs"
                         value={department.name}
-                        onChange={handleInputChange("name")}
-                        onBlur={handleInputBlur("name")}
+                        onChange={handleInputChange('name')}
+                        onBlur={handleInputBlur('name')}
                         required
                         maxCharacters={96}
                         minCharacters={3}
@@ -264,18 +262,20 @@ export function DepartmentsDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }} />
+                        lg: 6,
+                    }}
+                />
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Adresse des Fachbereichs"
                         value={department.address}
-                        onChange={handleInputChange("address")}
-                        onBlur={handleInputBlur("address")}
+                        onChange={handleInputChange('address')}
+                        onBlur={handleInputBlur('address')}
                         required
                         maxCharacters={255}
                         multiline
@@ -306,8 +306,9 @@ export function DepartmentsDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Farbschema des Fachbereichs"
                         value={department.themeId?.toString()}
@@ -320,7 +321,7 @@ export function DepartmentsDetailsPageIndex() {
                                 if (isNaN(intVal)) {
                                     handleInputChange('themeId')(null);
                                 } else {
-                                    handleInputChange("themeId")(intVal);
+                                    handleInputChange('themeId')(intVal);
                                 }
                             }
                         }}
@@ -354,14 +355,15 @@ export function DepartmentsDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Kontakt-E-Mail-Adresse fachliche Unterstützung"
                         type="email"
                         value={department.specialSupportAddress}
-                        onChange={handleInputChange("specialSupportAddress")}
-                        onBlur={handleInputBlur("specialSupportAddress")}
+                        onChange={handleInputChange('specialSupportAddress')}
+                        onBlur={handleInputBlur('specialSupportAddress')}
                         required
                         maxCharacters={255}
                         error={errors.specialSupportAddress}
@@ -370,14 +372,15 @@ export function DepartmentsDetailsPageIndex() {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Kontakt-E-Mail-Adresse technische Unterstützung"
                         type="email"
                         value={department.technicalSupportAddress}
-                        onChange={handleInputChange("technicalSupportAddress")}
-                        onBlur={handleInputBlur("technicalSupportAddress")}
+                        onChange={handleInputChange('technicalSupportAddress')}
+                        onBlur={handleInputBlur('technicalSupportAddress')}
                         required
                         maxCharacters={255}
                         error={errors.technicalSupportAddress}
@@ -397,7 +400,7 @@ export function DepartmentsDetailsPageIndex() {
                 <RichTextEditorComponentView
                     label="Impressum"
                     value={department.imprint}
-                    onChange={handleInputChange("imprint")}
+                    onChange={handleInputChange('imprint')}
                     required
                     error={errors.imprint}
                 />
@@ -406,7 +409,7 @@ export function DepartmentsDetailsPageIndex() {
                 <RichTextEditorComponentView
                     label="Datenschutzerklärung"
                     value={department.privacy}
-                    onChange={handleInputChange("privacy")}
+                    onChange={handleInputChange('privacy')}
                     required
                     error={errors.privacy}
                 />
@@ -415,7 +418,7 @@ export function DepartmentsDetailsPageIndex() {
                 <RichTextEditorComponentView
                     label="Barrierefreiheitserklärung"
                     value={department.accessibility}
-                    onChange={handleInputChange("accessibility")}
+                    onChange={handleInputChange('accessibility')}
                     required
                     error={errors.accessibility}
                 />
@@ -436,8 +439,8 @@ export function DepartmentsDetailsPageIndex() {
             <TextFieldComponent
                 label="Zentrale E-Mail-Adressen für Systembenachrichtigungen"
                 value={department.departmentMail ?? undefined}
-                onChange={handleInputChange("departmentMail")}
-                onBlur={handleInputBlur("departmentMail")}
+                onChange={handleInputChange('departmentMail')}
+                onBlur={handleInputBlur('departmentMail')}
                 maxCharacters={255}
                 error={errors.departmentMail}
                 hint="Sie können mehrere E-Mail-Adressen durch ein Komma getrennt eingeben."

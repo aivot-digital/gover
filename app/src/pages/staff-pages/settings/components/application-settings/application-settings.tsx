@@ -80,8 +80,8 @@ export function ApplicationSettings() {
     };
 
     useEffect(() => {
-        new DepartmentsApiService(api)
-            .list(0, 999, undefined, undefined, {})
+        new DepartmentsApiService()
+            .listAll()
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
                 console.error(err);

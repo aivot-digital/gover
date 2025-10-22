@@ -1,14 +1,19 @@
 package de.aivot.GoverBackend.system.dtos;
 
 import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
-import de.aivot.GoverBackend.theme.entities.ThemeEntity;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
+import java.util.Map;
 
 public record SystemSetupDTO(
         @Nullable
         String providerName,
 
         @Nullable
-        ThemeResponseDTO providerTheme
+        ThemeResponseDTO providerTheme,
+
+        @Nonnull
+        Map<String, Object> publicConfigs
 ) {
 }

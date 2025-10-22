@@ -7,14 +7,12 @@ import {useSelector} from 'react-redux';
 import {type HelpDialogProps} from './help-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
-import {useApi} from '../../hooks/use-api';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 
 export const HelpDialogId = 'help';
 
 export function HelpDialog(props: HelpDialogProps) {
-    const api = useApi();
     const application = useSelector(selectLoadedForm);
     const [technicalDepartment, setTechnicalDepartment] = useState<Department>();
     const [specialDepartment, setSpecialDepartment] = useState<Department>();
@@ -26,7 +24,7 @@ export function HelpDialog(props: HelpDialogProps) {
             application?.technicalSupportDepartmentId != null &&
             (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartmentId)
         ) {
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(application.technicalSupportDepartmentId)
                 .then(setTechnicalDepartment);
         }
@@ -35,7 +33,7 @@ export function HelpDialog(props: HelpDialogProps) {
             application?.legalSupportDepartmentId != null &&
             (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartmentId)
         ) {
-            new DepartmentsApiService(api)
+            new DepartmentsApiService()
                 .retrievePublic(application.legalSupportDepartmentId)
                 .then(setSpecialDepartment);
         }

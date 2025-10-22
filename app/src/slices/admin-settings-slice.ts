@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {RootState} from '../store';
+import {RootState} from '../store.staff';
 import {AnyElement} from '../models/elements/any-element';
 
 export interface AdminSettingsState {

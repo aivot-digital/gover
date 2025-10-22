@@ -1,9 +1,7 @@
 import {Box, Card, CardActionArea, CardContent, Container, Grid, Typography,} from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import {useNavigate} from 'react-router-dom';
-import {AppFooter} from '../../../components/app-footer/app-footer';
 import {MetaElement} from '../../../components/meta-element/meta-element';
-import {AppHeader} from '../../../components/app-header/app-header';
 import {AppMode} from '../../../data/app-mode';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
@@ -56,10 +54,6 @@ export function ModuleSelectPage() {
         <>
             <MetaElement
                 title={providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}
-            />
-            <AppHeader
-                mode={AppMode.Staff}
-                onDeleteFormData={() => {}}
             />
             <Introductory
                 mode={AppMode.Staff}
@@ -152,7 +146,9 @@ export function ModuleSelectPage() {
                 </Container>
             </Box>
             <ProviderLinksGrid/>
-            <AppFooter mode={AppMode.Staff}/>
+
+
+            TODO Footer
         </>
     );
 }

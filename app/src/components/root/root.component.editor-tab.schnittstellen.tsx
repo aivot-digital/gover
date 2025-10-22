@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {Alert, AlertTitle, Box, Paper, Skeleton, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, Grid, Paper, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {type Destination} from '../../modules/destination/models/destination';
@@ -28,6 +28,7 @@ import NotInterestedOutlinedIcon from '@mui/icons-material/NotInterestedOutlined
 import Tooltip from '@mui/material/Tooltip';
 import Chip from "@mui/material/Chip";
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {withDelay} from '../../utils/with-delay';
 
 export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<RootElement, Application>) {
     const api = useApi();
@@ -39,24 +40,28 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
     const [identityProviders, setIdentityProviders] = useState<IdentityProviderListDTO[]>();
 
     useEffect(() => {
-        new DestinationsApiService(api)
-            .listAllOrdered('name', 'ASC')
+        withDelay(new DestinationsApiService(api)
+            .listAllOrdered('name', 'ASC'), 600)
             .then(dests => setDestinations(dests.content))
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Die Liste der Schnittstellen konnte nicht geladen werden.'));
             });
 
-        new IdentityProvidersApiService(api)
+        withDelay(new IdentityProvidersApiService(api)
             .listAllOrdered('name', 'ASC', {
                 isEnabled: true,
-            })
+            }), 600)
             .then(providers => setIdentityProviders(providers.content))
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Die Liste der Identitätsanbieter konnte nicht geladen werden.'));
             });
     }, [api]);
+
+    if (destinations == null || identityProviders == null) {
+        return EditorSkeleton;
+    }
 
     return (
         <>
@@ -448,3 +453,53 @@ function IdentityProviderItem(props: IdentityProviderItemProps) {
         </Paper>
     );
 }
+
+
+const EditorSkeleton = (
+    <>
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={900}
+            height={48}
+        />
+
+        <Skeleton
+            width="100%"
+            height={80}
+        />
+
+        <Skeleton
+            width="100%"
+            height={200}
+        />
+
+        <Skeleton
+            width={200}
+            height={30}
+        />
+
+        <Skeleton
+            width={900}
+            height={48}
+        />
+
+        <Skeleton
+            width="100%"
+            height={100}
+        />
+
+        <Skeleton
+            width="100%"
+            height={100}
+        />
+
+        <Skeleton
+            width="100%"
+            height={100}
+        />
+    </>
+);

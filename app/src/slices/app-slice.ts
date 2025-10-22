@@ -1,5 +1,5 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
-import {type RootState} from '../store';
+import {type RootState} from '../store.staff';
 import {AnyElement} from '../models/elements/any-element';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../utils/flatten-elements';
 import {FormDetailsResponseDTO} from '../modules/forms/dtos/form-details-response-dto';

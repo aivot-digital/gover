@@ -171,7 +171,7 @@ export function FormsListPage() {
     }, [departments]);
 
     useEffect(() => {
-        new DepartmentsApiService(api)
+        new DepartmentsApiService()
             .listAll()
             .then((response) => {
                 setDepartments(response.content);

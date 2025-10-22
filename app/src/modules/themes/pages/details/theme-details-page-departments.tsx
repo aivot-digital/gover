@@ -57,7 +57,7 @@ export function ThemeDetailsPageDepartments() {
                 columnDefinitions={columns}
                 defaultFilter="dev"
                 fetch={(options) => {
-                    return new DepartmentsApiService(options.api)
+                    return new DepartmentsApiService()
                         .list(
                             options.page,
                             options.size,

@@ -1,6 +1,6 @@
 import {Grid, ThemeProvider, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {type RootState} from '../../../store';
+import {type RootState} from '../../../store.staff';
 import {clearLoadedForm, redoLoadedForm, selectFutureLoadedForm, selectLoadedForm, selectPastLoadedForm, showDialog, undoLoadedForm, updateLoadedForm} from '../../../slices/app-slice';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -283,7 +283,7 @@ export function FormEditPage() {
         })
             .then((newState) => {
                 setElementData(newState.elementData);
-                dispatch(addDerivationLogItems(newState.logItems))
+                dispatch(addDerivationLogItems(newState.logItems));
             })
             .finally(() => {
                 dispatch(hideLoadingOverlay());
