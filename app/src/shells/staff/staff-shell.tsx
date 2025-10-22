@@ -24,6 +24,7 @@ import {AuthService} from '../../services/auth-service';
 import {ShellSessionExpiredDialog} from './components/shell-session-expired-dialog';
 import {isApiError} from '../../models/api-error';
 import {ShellOffline} from './components/shell-offline';
+import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
 interface StaffShellProps {
     children?: ReactNode;
@@ -61,7 +62,7 @@ export function StaffShell(props: StaffShellProps) {
         }
 
         const search = new URLSearchParams(window.location.search);
-        if (search.get('logout') === 'true') {
+        if (isStringNotNullOrEmpty(search.get('logout'))) {
             new AuthService().logout();
 
             dispatch(setUser(undefined));
