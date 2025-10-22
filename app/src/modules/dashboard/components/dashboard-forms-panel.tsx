@@ -1,142 +1,255 @@
-import {Button, Card, CardContent, List, ListItem, ListItemButton, ListItemText, Skeleton, Typography} from '@mui/material';
-import {useEffect, useState} from 'react';
-import {FormListResponseDTO} from '../../forms/dtos/form-list-response-dto';
-import {useApi} from '../../../hooks/use-api';
-import {FormsApiService} from '../../forms/forms-api-service';
-import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
-import {Page} from '../../../models/dtos/page';
-import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import React, { useEffect, useState } from 'react';
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Divider,
+    List,
+    ListItem,
+    ListItemButton,
+    Skeleton,
+    Typography,
+} from '@mui/material';
+import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
+import { useApi } from '../../../hooks/use-api';
+import { withAsyncWrapper } from '../../../utils/with-async-wrapper';
+import { FormsApiService } from '../../forms/forms-api-service';
+import { FormListResponseDTO } from '../../forms/dtos/form-list-response-dto';
+import { Page } from '../../../models/dtos/page';
 import { Link } from 'react-router-dom';
-import {format} from 'date-fns';
-import {useCachedState} from '../../../hooks/use-cached-state';
+import { format } from 'date-fns';
+import { getFormStatus } from '../../forms/components/form-status-chip-group';
+import { useCachedState } from '../../../hooks/use-cached-state';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
-const fetchSize = 5;
+const fetchSize = 4;
 
 export function DashboardFormsPanel() {
-    const [latestForms, setLatestForms] = useCachedState<FormListResponseDTO[] | null>('dsahboard-forms', null);
-
+    const [forms, setForms] = useCachedState<FormListResponseDTO[] | null>('dashboard-forms', null);
+    const [loading, setLoading] = useState(true);
     const api = useApi();
 
     useEffect(() => {
         withAsyncWrapper<void, Page<FormListResponseDTO>>({
-            main: () => new FormsApiService(api)
-                .list(0, fetchSize, 'updated', 'DESC', {
+            main: () =>
+                new FormsApiService(api).list(0, fetchSize, 'updated', 'DESC', {
                     isDeveloper: true,
                     isCurrentlyDraftedVersion: true,
                 }),
-            desiredMinRuntime: 500,
-        })
-            .then((forms) => {
-                setLatestForms(forms.content);
-            });
+            desiredMinRuntime: 600,
+        }).then((page) => {
+            setForms(page.content);
+            setLoading(false);
+        });
     }, []);
 
+    const renderFormStatus = (form: FormListResponseDTO): string => {
+        const { isDrafted, isPublished, isRevoked } = getFormStatus(form);
+
+        if (isPublished) return 'Veröffentlicht';
+        if (isDrafted) return 'In Bearbeitung';
+        if (isRevoked) return 'Zurückgezogen';
+        return 'Unbekannter Status';
+    };
+
     return (
-        <Card
-            sx={{
-                height: '100%',
-            }}
-        >
+        <Card sx={{ height: '100%', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
             <CardContent>
-                <Typography
-                    variant="h5"
-                    component="h3"
-                >
+                <Typography variant="h5" component="h3" fontWeight={600}>
                     Online-Formulare
                 </Typography>
 
                 <Typography
-                    variant="body1"
-                    sx={{
-                        mt: 1,
-                        mb: 2,
-                    }}
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1, mb: 2, maxWidth: 400 }}
                 >
-                    Diese Formulare wurden zuletzt aktualisiert:
+                    Hier sehen Sie eine Übersicht der zuletzt bearbeiteten Formulare.
                 </Typography>
 
-                {
-                    latestForms == null &&
-                    <List
-                        dense={true}
-                        disablePadding={true}
-                    >
-                        {
-                            new Array(fetchSize).fill(0).map((_, index) => (
-                                <ListItem
-                                    key={'skel-' + index}
-                                    dense={true}
-                                    disablePadding={true}
-                                    disableGutters={true}
-                                >
-                                    <Skeleton
-                                        height="2rem"
-                                        width="100%"
-                                    />
-                                </ListItem>
-                            ))
-                        }
-                    </List>
-                }
+                <List disablePadding>
+                    {loading
+                        ? Array.from({ length: fetchSize }).map((_, i) => (
+                            <React.Fragment key={i}>
+                                <ListItem disablePadding>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            width: '100%',
+                                            gap: 2,
+                                            py: 2.5625,
+                                            px: 1,
+                                        }}
+                                    >
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Skeleton variant="text" height={20} width="70%" />
+                                            <Skeleton variant="text" height={14} width="50%" sx={{ mt: 0.5 }} />
+                                        </Box>
 
-                {
-                    latestForms != null &&
-                    latestForms.length === 0 &&
-                    <Typography
-                        variant="body2"
-                        color="textSecondary"
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                minWidth: 80,
+                                                justifyContent: 'flex-end',
+                                            }}
+                                        >
+                                            <Skeleton variant="circular" width={40} height={40} sx={{ opacity: 0.4 }} />
+                                        </Box>
+                                    </Box>
+                                </ListItem>
+                                {i < fetchSize - 1 && <Divider component="li" />}
+                            </React.Fragment>
+                        ))
+                        : forms?.length
+                            ? forms.map((form, index) => (
+                                <React.Fragment key={form.id}>
+                                    <ListItem disablePadding>
+                                        <ListItemButton
+                                            component={Link}
+                                            to={`/forms/${form.id}/${form.draftedVersion ?? form.publishedVersion ?? ''}`}
+                                            sx={{
+                                                py: 2,
+                                                px: 1,
+                                                borderRadius: 1,
+                                                '&:hover': { bgcolor: 'action.hover' },
+                                                '&.Mui-focusVisible': {
+                                                    outline: '2px solid',
+                                                    outlineColor: 'primary.main',
+                                                },
+                                            }}
+                                        >
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    width: '100%',
+                                                    gap: 2,
+                                                }}
+                                            >
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography
+                                                        variant="subtitle1"
+                                                        fontWeight={700}
+                                                        noWrap
+                                                        title={form.internalTitle}
+                                                        sx={{
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                            display: 'block',
+                                                        }}
+                                                    >
+                                                        {form.internalTitle}
+                                                    </Typography>
+
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                        fontSize="0.875rem"
+                                                        noWrap
+                                                    >
+                                                        {renderFormStatus(form)} &bull; Zuletzt bearbeitet am{' '}
+                                                        {format(new Date(form.updated), 'dd.MM.yyyy — HH:mm')} Uhr
+                                                    </Typography>
+                                                </Box>
+
+                                                <ChevronRight
+                                                    aria-hidden
+                                                    sx={{ fontSize: '3rem', color: 'rgba(0,0,0,.2)' }}
+                                                />
+                                            </Box>
+                                        </ListItemButton>
+                                    </ListItem>
+
+                                    {index < forms.length - 1 && <Divider component="li" />}
+                                </React.Fragment>
+                            ))
+                            : (
+                                <Box sx={{ position: 'relative' }}>
+                                    <List disablePadding>
+                                        {Array.from({ length: fetchSize }).map((_, i) => (
+                                            <React.Fragment key={i}>
+                                                <ListItem disablePadding>
+                                                    <Box
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            width: '100%',
+                                                            gap: 2,
+                                                            py: 2.5625,
+                                                            px: 1,
+                                                        }}
+                                                    >
+                                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                            <Skeleton
+                                                                variant="text"
+                                                                height={20}
+                                                                width="70%"
+                                                                animation={false}
+                                                            />
+                                                            <Skeleton
+                                                                variant="text"
+                                                                height={14}
+                                                                width="50%"
+                                                                sx={{ mt: 0.5 }}
+                                                                animation={false}
+                                                            />
+                                                        </Box>
+                                                        <Skeleton
+                                                            variant="circular"
+                                                            width={40}
+                                                            height={40}
+                                                            sx={{ opacity: 0.3 }}
+                                                            animation={false}
+                                                        />
+                                                    </Box>
+                                                </ListItem>
+                                                {i < fetchSize - 1 && <Divider component="li" />}
+                                            </React.Fragment>
+                                        ))}
+                                    </List>
+
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            bgcolor: 'rgba(255,255,255,0.6)',
+                                            textAlign: 'center',
+                                            px: 2,
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{ maxWidth: 320 }}
+                                        >
+                                            In den Organisationseinheiten, denen Sie angehören, sind (noch) keine Formulare vorhanden.
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            )}
+
+                    <Button
+                        variant="contained"
                         sx={{
                             mt: 2,
                         }}
+                        startIcon={ModuleIcons.forms}
+                        component={Link}
+                        to="/forms"
                     >
-                        Es sind noch keine Formulare vorhanden.
-                    </Typography>
-                }
-
-                {
-                    latestForms != null &&
-                    latestForms.length > 0 &&
-                    <List
-                        dense={true}
-                        disablePadding={true}
-                    >
-                        {
-                            latestForms.map((form) => (
-                                <ListItem
-                                    dense={true}
-                                    disablePadding={true}
-                                    disableGutters={true}
-                                    key={form.id}
-                                    sx={{
-                                        borderBottom: '1px solid #eee',
-                                    }}
-                                >
-                                    <ListItemButton
-                                        component={Link}
-                                        to={`/forms/${form.id}/${form.draftedVersion}`}
-                                    >
-                                        <ListItemText
-                                            primary={form.internalTitle}
-                                            secondary={`Zuletzt bearbeitet: ${format(new Date(form.updated), 'dd.MM.yyyy HH:mm')} Uhr`}
-                                        />
-                                    </ListItemButton>
-                                </ListItem>
-                            ))
-                        }
-                    </List>
-                }
-
-                <Button
-                    variant="contained"
-                    sx={{
-                        mt: 2,
-                    }}
-                    startIcon={ModuleIcons.forms}
-                    component={Link}
-                    to="/forms"
-                >
-                    Alle Formulare anzeigen
-                </Button>
+                        Formulare verwalten
+                    </Button>
+                </List>
             </CardContent>
         </Card>
     );
