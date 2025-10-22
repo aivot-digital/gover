@@ -37,6 +37,8 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
 
     const hasManualLineBreaks = formTitle.includes('\n');
 
+    const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+
     return (
         <Box
             component="header"
@@ -75,13 +77,14 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
                                 src={new FormsApiService().getFormLogoLink(form.slug, form.version)}
                                 width={200}
                                 height={100}
+                                onStatusChange={setLogoStatus}
                             />
 
                             <Box
                                 sx={{
-                                    ml: 4,
-                                    pl: 4,
-                                    borderLeft: '1px solid #E4E4E4',
+                                    ml: logoStatus !== 'failed' ? 4 : 0,
+                                    pl: logoStatus !== 'failed' ? 4 : 0,
+                                    borderLeft: logoStatus !== 'failed' ? '1px solid #E4E4E4' : 'none',
                                     [theme.breakpoints.down('md')]: {
                                         borderLeft: 'none',
                                         pl: 0,
