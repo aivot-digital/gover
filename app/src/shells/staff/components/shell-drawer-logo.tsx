@@ -7,10 +7,10 @@ interface ShellDrawerLogoProps extends React.SVGProps<SVGSVGElement> {
 const ShellDrawerLogo: React.FC<ShellDrawerLogoProps> = ({ minimize = false, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="138"
+        width={minimize ? 40 : 138}
         height="44"
         fill="none"
-        viewBox="0 0 138 44"
+        viewBox={minimize ? "0 0 40 44" : "0 0 138 44"}
         {...props}
     >
         <path

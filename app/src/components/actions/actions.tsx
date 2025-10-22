@@ -7,13 +7,13 @@ export function Actions(props: ActionsProps) {
     return (
         <Box
             sx={{
-                ...props.sx,
                 display: 'flex',
                 flexDirection: props.direction ?? 'row',
                 alignItems: 'center',
                 height: props.direction == null || props.direction === 'row' || props.direction === 'row-reverse' ? '100%' : undefined,
                 width: props.direction === 'column' || props.direction === 'column-reverse' ? '100%' : undefined,
                 gap: props.dense ? 1 : 2,
+                ...props.sx,
             }}
         >
             {
@@ -55,6 +55,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
         isFirst,
         isLast,
         tooltipPlacement,
+
     } = props;
 
     if (action === 'separator') {
@@ -86,6 +87,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
     const target = 'href' in action ? '_blank' : undefined;
     const onClick = 'onClick' in action ? action.onClick : undefined;
     const shouldDisable = action.ignoreBusy ? action.disabled : (action.disabled || isBusy);
+    const activeStyle = 'activeStyle' in action ? action.activeStyle : undefined;
 
     // Build the element for this action which will then be encapsulated in a tooltip
     let element;
@@ -96,6 +98,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
                 color={color}
                 sx={{
                     m: 0,
+                    ...(activeStyle != null ? activeStyle : {}),
                 }}
                 variant={action.variant}
                 onClick={onClick}
@@ -116,6 +119,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
                 color={color}
                 sx={{
                     m: 0,
+                    ...(activeStyle != null ? activeStyle : {}),
                 }}
                 onClick={onClick}
                 component={component}
