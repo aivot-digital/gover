@@ -1,4 +1,5 @@
 import {getUrlWithoutQuery} from '../utils/location-utils';
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../utils/string-utils';
 
 const TOKEN_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`;
 const AUTH_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth`;
@@ -22,17 +23,34 @@ interface OidcJWT {
     refresh_expires_in: number; // in seconds
 }
 
+const OidcCodeVerifierLength = 48;
+const OidcCodeVerifierLocalStorageKey = 'oidc_code_verifier';
+
 export class AuthService {
     /**
      * Get the login URL for redirecting the user to the OIDC provider.
      */
-    public getLoginUrl(): string {
+    public async getLoginUrl(): Promise<string> {
+        let oidcCodeVerifier = localStorage.getItem(OidcCodeVerifierLocalStorageKey);
+        if (oidcCodeVerifier == null || isStringNullOrEmpty(oidcCodeVerifier)) {
+            oidcCodeVerifier = createRandomString(OidcCodeVerifierLength);
+            localStorage.setItem(OidcCodeVerifierLocalStorageKey, oidcCodeVerifier);
+        }
+
+        const oidcCodeChallenge = await getSHA256BinaryValue(oidcCodeVerifier);
+
         const query = new URLSearchParams({
             client_id: AppConfig.oidc.client,
+            code_challenge_method: 'S256',
+            code_challenge: oidcCodeChallenge,
             response_type: 'code',
             scope: 'openid profile email',
             redirect_uri: getUrlWithoutQuery(),
         });
+
+        if (isStringNotNullOrEmpty(AppConfig.oidc.idp_hint)) {
+            query.append('kc_idp_hint', AppConfig.oidc.idp_hint);
+        }
 
         return `${AUTH_URL}?${query.toString()}`;
     }
@@ -160,7 +178,10 @@ export class AuthService {
      * @param signal Optional AbortSignal to cancel the request.
      */
     private async fetchJWT(authorizationCode: string, signal?: AbortSignal): Promise<OidcJWT | null> {
+        const oidcCodeVerifier = localStorage.getItem(OidcCodeVerifierLocalStorageKey) ?? '';
+
         const payload = new URLSearchParams({
+            code_verifier: oidcCodeVerifier,
             grant_type: 'authorization_code',
             client_id: AppConfig.oidc.client,
             code: authorizationCode,
@@ -179,6 +200,8 @@ export class AuthService {
         if (response.status !== 200) {
             return null;
         }
+
+        localStorage.removeItem(OidcCodeVerifierLocalStorageKey);
 
         return await response.json() as OidcJWT;
     }
@@ -281,12 +304,31 @@ export class AuthService {
     }
 }
 
+function createRandomString(length: number) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const randomArray = new Uint8Array(length);
+    crypto.getRandomValues(randomArray);
+    randomArray.forEach((number) => {
+        result += chars[number % chars.length];
+    });
+    return result;
+}
 
+async function getSHA256BinaryValue(input: string) {
+    const textEncoder = new TextEncoder();
+    const textAsBuffer = textEncoder.encode(input);
 
+    const hashBuffer = await crypto
+        .subtle
+        .digest('SHA-256', textAsBuffer);
 
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const binString = String.fromCodePoint(...hashArray);
+    const encodedHash = btoa(binString)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '')
 
-
-
-
-
-
+    return encodedHash;
+}

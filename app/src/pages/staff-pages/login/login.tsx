@@ -1,11 +1,18 @@
 import {Box, Button, Container, Paper, Typography} from '@mui/material';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import {Logo} from '../../../components/logo/logo';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {AuthService} from '../../../services/auth-service';
 
 export function Login() {
+    const [loginUrl, setLoginUrl] = useState<string>('');
+    useEffect(() => {
+        new AuthService()
+            .getLoginUrl()
+            .then(setLoginUrl);
+    }, []);
+
     return (
         <>
             <MetaElement
@@ -73,7 +80,7 @@ export function Login() {
                             />
                         }
                         sx={{mt: 4}}
-                        href={new AuthService().getLoginUrl()}
+                        href={loginUrl}
                     >
                         Zur Anmeldung über IDP
                     </Button>

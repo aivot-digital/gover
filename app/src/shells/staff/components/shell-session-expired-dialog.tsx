@@ -5,7 +5,15 @@ import {AuthService} from '../../../services/auth-service';
 
 export function ShellSessionExpiredDialog() {
     const authService = new AuthService();
+
     const [isAuthenticated, setIsAuthenticated] = useState(true);
+    const [loginUrl, setLoginUrl] = useState<string>('');
+
+    useEffect(() => {
+        authService
+            .getLoginUrl()
+            .then(setLoginUrl);
+    }, []);
 
     useEffect(() => {
         const intervalPointer = setInterval(() => {
@@ -38,7 +46,7 @@ export function ShellSessionExpiredDialog() {
                         <LoginOutlinedIcon />
                     }
                     component="a"
-                    href={authService.getLoginUrl()}
+                    href={loginUrl}
                 >
                     Erneut Anmelden
                 </Button>

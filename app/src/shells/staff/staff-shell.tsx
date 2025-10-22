@@ -70,6 +70,10 @@ export function StaffShell(props: StaffShellProps) {
                 } else {
                     dispatch(setStatus(ShellStatus.Login));
                 }
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(setStatus(ShellStatus.Login));
             });
     }, [setup]);
 
