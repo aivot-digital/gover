@@ -60,7 +60,18 @@ export function StaffShell(props: StaffShellProps) {
             return;
         }
 
-        authenticateWithOidcCode()
+        const search = new URLSearchParams(window.location.search);
+        if (search.get('logout') === 'true') {
+            new AuthService().logout();
+
+            dispatch(setUser(undefined));
+            dispatch(setMemberships([]));
+            dispatch(setStatus(ShellStatus.Login));
+
+            return;
+        }
+
+        authenticateWithOidcCode(search)
             .then((res) => {
                 if (res != null) {
                     dispatch(setUser(res.user));
@@ -141,7 +152,7 @@ async function fetchSetup(): Promise<SystemSetupDTO> {
         .fetchSetup();
 }
 
-async function authenticateWithOidcCode(): Promise<{
+async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<{
     user: User;
     memberships: DepartmentMembership[];
     configs: SystemConfigResponseDto[];
@@ -150,7 +161,6 @@ async function authenticateWithOidcCode(): Promise<{
     const apiService = new BaseApiService();
 
     if (!authService.isAuthenticated()) {
-        const searchParams = new URLSearchParams(window.location.search);
         const iss = searchParams.get('iss');
         const code = searchParams.get('code');
 
