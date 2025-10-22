@@ -1,12 +1,13 @@
 # -------------------------- Usage --------------------------
 # Start this with: docker compose -f ./docker-compose.yml up -d
 # -----------------------------------------------------------
+name: gover_dev_environment
 
 services:
 
   gover_database:
-    image: postgres:16.4-alpine3.20
-    restart: always
+    image: postgres:16.10-alpine3.22
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: gover
       POSTGRES_USER: gover
@@ -17,26 +18,26 @@ services:
     ports:
       - "5432:5432"
 
-  clamav:
-    image: clamav/clamav-debian:1.4.1
-    restart: always
+  antivirus:
+    image: clamav/clamav-debian:1.5.1
+    restart: unless-stopped
     ports:
       - "3310:3310"
 
-  redis:
-    image: redis:7.4.1-alpine3.20
-    restart: always
+  cache:
+    image: redis:8.2.2-alpine3.22
+    restart: unless-stopped
     ports:
       - "6379:6379"
 
-  gotenberg:
-    image: gotenberg/gotenberg:8
-    restart: always
+  pdf_printer:
+    image: gotenberg/gotenberg:8.24.0
+    restart: unless-stopped
+    network_mode: host
     environment:
       API_PORT: 9191
-    network_mode: host
 
-  minio:
+  s3_object_storage:
     image: minio/minio:RELEASE.2024-11-07T00-52-20Z
     restart: always
     command: server /data --console-address ":9001"
@@ -49,41 +50,23 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-  mailpit:
-    image: axllent/mailpit
-    restart: always
-    volumes:
-      - mailpit_data:/data
-    ports:
-      - "9025:8025"
-      - "2025:1025"
+  smtp:
+    image: axllent/mailpit:v1.27.10
+    restart: unless-stopped
     environment:
       MP_MAX_MESSAGES: 5000
       MP_DATABASE: /data/mailpit.db
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
-
-  lldap:
-    image: lldap/lldap:stable
-    restart: always
-    ports:
-      - "3890:3890"
-      - "6360:6360"
-      - "17170:17170"
     volumes:
-      - "lldap_data:/data"
-    environment:
-      - UID=1000
-      - GID=1000
-      - TZ=Europe/Berlin
-      - LLDAP_JWT_SECRET=faskn23hwex1oip0buo90x1w9biu1df3
-      - LLDAP_KEY_SEED=d3w1nb91wd7g1wx0hx1w91wx8x1w
-      - LLDAP_LDAP_BASE_DN=dc=aivot,dc=de
-      - LLDAP_LDAP_USER_PASS=adminpassword
+      - mailpit_data:/data
+    ports:
+      - "9025:8025"
+      - "2025:1025"
 
   keycloak_database:
-    image: postgres:16.4-alpine3.20
-    restart: always
+    image: postgres:16.10-alpine3.22
+    restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: keycloak
       POSTGRES_USER: keycloak
@@ -96,7 +79,7 @@ services:
 
   keycloak:
     image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.2.4.1
-    restart: always
+    restart: unless-stopped
     depends_on:
       - keycloak_database
     command: [ 'start-dev' ]
@@ -114,9 +97,29 @@ services:
       KC_DB_PASSWORD: keycloak
       KC_FEATURES: transient-users,update-email,hostname:v2
 
-  rabbitmq:
-    image: rabbitmq:4.1.1-management
-    restart: always
+  keycloak_setup:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:latest
+    restart: on-failure
+    depends_on:
+      - keycloak
+    environment:
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_USER: "admin"
+      KEYCLOAK_PASSWORD: "admin"
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: true
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: "120s"
+      SMTP_HOST: "smtp"
+      SMTP_PORT: "1025"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM: "mail"
+      SMTP_FROM_DISPLAY: "Mail Test"
+      HOSTNAME: "http://localhost:9595"
+      BACKEND_CLIENT_SECRET: "my-super-secret-key"
+
+  message_broker:
+    image: rabbitmq:4.1.4-management-alpine
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: adminpassword
@@ -126,7 +129,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
-  caddy:
+  reverse_proxy:
     image: caddy:2.10.0-alpine
     restart: always
     volumes:
@@ -139,5 +142,4 @@ volumes:
   keycloak_pg_data:
   minio_data:
   mailpit_data:
-  lldap_data:
   rabbitmq_data:
