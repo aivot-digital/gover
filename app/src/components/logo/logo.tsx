@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {Box, Skeleton} from '@mui/material';
 import {selectSetup} from '../../slices/shell-slice';
@@ -9,6 +9,7 @@ interface LogoProps {
     src?: string;
     width?: number;
     height?: number;
+    onStatusChange?: (status: 'loading' | 'failed' | 'present') => void;
 }
 
 export function Logo(props: LogoProps) {
@@ -21,6 +22,10 @@ export function Logo(props: LogoProps) {
 
     const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
     const setup = useAppSelector(selectSetup);
+
+    useEffect(() => {
+        props.onStatusChange?.(imageStatus);
+    }, [imageStatus]);
 
     const url = useMemo(() => {
         let url = src ?? createApiPath('/api/public/system/logo/');
@@ -37,16 +42,10 @@ export function Logo(props: LogoProps) {
         return `${url}?t=${t}`;
     }, [src, updated]);
 
-    if (imageStatus == 'failed') {
+    if (imageStatus === 'failed') {
+        // empty Box is required so that the space is reserved in the footer
         return (
-            <Box
-                sx={{
-                    display: 'inline-block',
-                    width: '100%',
-                    maxWidth: width ?? 200,
-                    maxHeight: height ?? 100,
-                }}
-            />
+            <Box/>
         );
     }
 
@@ -58,15 +57,12 @@ export function Logo(props: LogoProps) {
         >
             {
                 imageStatus === 'loading' &&
-                <Skeleton
+                <Box
                     sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
                         display: 'inline-block',
                         width: '100%',
                         maxWidth: width ?? 200,
-                        height: height ?? 100,
+                        maxHeight: height ?? 100,
                     }}
                 />
             }
