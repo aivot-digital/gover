@@ -37,6 +37,7 @@ import {SettingsSuggestOutlined} from '@mui/icons-material';
 import {UsersApiService} from '../../../modules/users/users-api-service';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 import {SubmissionWithMembershipResponseDTO} from '../../../modules/submissions/dtos/submission-with-membership-response-dto';
+import {AlertComponent} from '../../../components/alert/alert-component';
 
 type Submission = SubmissionWithMembershipResponseDTO & {
     assignee: User | undefined;
@@ -256,37 +257,22 @@ export function SubmissionListPage() {
                 title={providerName != null && providerName.length > 0 ? providerName : 'powered by Aivot'}
             />
 
-            <Introductory
-                mode={AppMode.Staff}
-            />
-
             <Box
                 sx={{
-                    backgroundColor: '#F3F3F3',
                     minHeight: '60vh',
                 }}
             >
                 <Box
                     sx={{
                         mb: 5,
-                        py: 4,
-                        mx: 1,
-                        [theme.breakpoints.up('md')]: {
-                            mx: 8,
-                        },
-                        [theme.breakpoints.up('lg')]: {
-                            mx: 12,
-                        },
-                        [theme.breakpoints.up('xl')]: {
-                            mx: 16,
-                        },
+                        py: 2,
+                        mx: 2,
                     }}
                 >
 
                     <Paper
                         sx={{
                             p: 4,
-                            mt: 4,
                         }}
                     >
                         {
@@ -335,11 +321,18 @@ export function SubmissionListPage() {
                                 ]}
                             />
                         }
+
+                        <AlertComponent
+                            title={"Veraltete Ansicht für Anträge"}
+                            text={'Das Konzept der Anträge wird in einer zukünftigen Version durch die flexibleren "Vorgänge" abgelöst. Bitte beachten Sie, dass einige Funktionen möglicherweise nicht mehr verfügbar sind oder anders funktionieren als gewohnt.'}
+                            color={"info"}
+                            sx={{mt: 4, display: 'inline-flex'}}
+                        />
                     </Paper>
+
                 </Box>
             </Box>
 
-            <ProviderLinksGrid />
 
             <Menu
                 id="filter-menu"
