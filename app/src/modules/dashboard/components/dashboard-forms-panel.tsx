@@ -20,13 +20,12 @@ import { Page } from '../../../models/dtos/page';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { getFormStatus } from '../../forms/components/form-status-chip-group';
-import { useCachedState } from '../../../hooks/use-cached-state';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 const fetchSize = 4;
 
 export function DashboardFormsPanel() {
-    const [forms, setForms] = useCachedState<FormListResponseDTO[] | null>('dashboard-forms', null);
+    const [forms, setForms] = useState<FormListResponseDTO[] | null>(null);
     const [loading, setLoading] = useState(true);
     const api = useApi();
 
@@ -69,7 +68,7 @@ export function DashboardFormsPanel() {
                 </Typography>
 
                 <List disablePadding>
-                    {loading && forms === null
+                    {loading
                         ? Array.from({ length: fetchSize }).map((_, i) => (
                             <React.Fragment key={i}>
                                 <ListItem disablePadding>

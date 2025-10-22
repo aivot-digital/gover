@@ -53,7 +53,7 @@ async function fetchStats(): Promise<StatItem[]> {
                     href: '/processes',
                 },
             ]);
-        }, 1200);
+        }, 1000);
     });
 }
 
