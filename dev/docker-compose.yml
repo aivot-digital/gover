@@ -98,7 +98,7 @@ services:
       KC_FEATURES: transient-users,update-email,hostname:v2
 
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:latest
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.5
     restart: on-failure
     depends_on:
       - keycloak
