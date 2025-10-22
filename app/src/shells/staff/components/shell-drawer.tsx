@@ -1,5 +1,5 @@
 import React, {ReactNode, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, createTheme, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Badge, Box, Button, Chip, createTheme, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -124,19 +124,20 @@ const DrawerGroups: DrawerGroup[] = [
                     {icon: ModuleIcons.settings, label: 'Allgemeine Einstellungen', to: '/settings/app'},
                     {icon: ModuleIcons.providerLinks, label: 'Links', to: '/provider-links'},
                     {icon: ModuleIcons.themes, label: 'Farbschemata', to: '/themes'},
+                    {
+                        icon: <PageInfo />,
+                        label: 'Dritte Test-Ebene',
+                        children: [
+                            {icon: ModuleIcons.departments, label: 'Test-Link 1'},
+                            {icon: ModuleIcons.users, label: 'Test-Link 2'},
+                        ],
+                    },
                     {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
                     {icon: ModuleIcons.identity, label: 'Nutzerkontenanbieter', to: '/identity-providers'},
                     {icon: ModuleIcons.secrets, label: 'Geheimnisse', to: '/secrets'},
                     {icon: <ForwardToInbox />, label: 'SMTP-Test', to: '/settings/smtp'},
                     {icon: <PageInfo />, label: 'Systemstatus', to: '/settings/status'},
-                    {
-                        icon: <PageInfo />,
-                        label: 'Dritte Ebene',
-                        children: [
-                            {icon: ModuleIcons.departments, label: 'Test 1'},
-                            {icon: ModuleIcons.users, label: 'Test 2'},
-                        ],
-                    },
+
                 ],
             },
         ],
@@ -189,7 +190,7 @@ export function ShellDrawer() {
                     MuiTooltip: {
                         styleOverrides: {
                             tooltip: {
-                                backgroundColor: 'rgba(255,255,255,0.90)',
+                                backgroundColor: 'rgba(255,255,255,1)',
                                 color: '#111',
                                 fontWeight: 500,
                                 fontSize: '0.8rem',
@@ -218,7 +219,7 @@ export function ShellDrawer() {
                         py: 1.5,
 
                         borderRadius: 0,
-                        width: minimizeDrawer ? '4rem' : '18rem',
+                        width: minimizeDrawer ? '4.25rem' : '16.25rem',
                         backgroundColor: 'primary.dark',
                         color: 'rgba(255, 255, 255, 0.8)',
                     }}
@@ -226,7 +227,7 @@ export function ShellDrawer() {
                 >
                     <Box sx={{display: 'flex', flexDirection: 'column', px: 1.75,}}>
                         {/* Header */}
-                        <Box sx={{display: 'flex', flexDirection: 'row', mb: 3}}>
+                        <Box sx={{display: 'flex', flexDirection: minimizeDrawer ? 'column' : 'row', mb: 3}}>
                             <Link
                                 to="/"
                                 title="Zurück zur Übersicht"
@@ -235,28 +236,13 @@ export function ShellDrawer() {
                                 <ShellDrawerLogo minimize={minimizeDrawer} />
                             </Link>
 
-                            <Actions
-                                sx={{ml: 'auto'}}
-                                color="inherit"
-                                dense
-                                actions={[
-                                    {
-                                        icon: <Notifications />, tooltip: 'Benachrichtigungen', onClick: () => {
-                                        },
-                                    },
-                                    {
-                                        icon: <ShellDrawerUserIcon />,
-                                        tooltip: 'Mein Konto',
-                                        onClick: (event) => setUserMenuAnchorEl(event.currentTarget as HTMLElement),
-                                    },
-                                ]}
-                                direction={minimizeDrawer ? 'column' : 'row'}
-                                tooltipPlacement={minimizeDrawer ? 'right' : 'bottom'}
-                            />
+                            {!minimizeDrawer && (
+                                <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} />
+                            )}
                         </Box>
 
                         {/* Search */}
-                        <Box sx={{mb: 2}}>
+                        <Box sx={{mb: minimizeDrawer ? 0 : 2}}>
                             {!minimizeDrawer ? (
                                 <Button
                                     startIcon={<SearchFilled />}
@@ -284,6 +270,20 @@ export function ShellDrawer() {
                                 </Button>
                             ) : (
                                 <Actions
+                                    sx={{
+                                        '& .MuiIconButton-root': {
+                                            borderRadius: 1,
+                                            background: 'rgba(255, 255, 255, 0.15)',
+                                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                                            color: 'rgba(255, 255, 255, 0.8)',
+                                        },
+                                        '& .MuiIconButton-root:hover': {
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            border: '1px solid rgba(255, 255, 255, 0.25)',
+                                            color: 'rgba(255, 255, 255, 1)',
+
+                                        },
+                                    }}
                                     color="inherit"
                                     direction="column"
                                     actions={[
@@ -337,7 +337,7 @@ export function ShellDrawer() {
                     <Box sx={{display: 'flex', flexDirection: 'column', px: 1.75}}>
                         {/* Footer */}
                         <Divider sx={{borderColor: 'rgba(255, 255, 255, 0.1)', mx: -1.75, mb: 1.75}} />
-                        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Box sx={{display: 'flex', flexDirection: minimizeDrawer ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'center'}}>
                             {!minimizeDrawer && (
                                 <Button
                                     variant="contained"
@@ -359,6 +359,12 @@ export function ShellDrawer() {
                                     Dokumentation
                                 </Button>
                             )}
+                            {minimizeDrawer && (
+                                <>
+                                    <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} />
+                                    <Box sx={{height: 10}}/>
+                                </>
+                            )}
                             <Actions
                                 sx={{flex: 0, display: 'flex', justifyContent: 'right'}}
                                 color="inherit"
@@ -378,6 +384,7 @@ export function ShellDrawer() {
             </Box>
 
             <ShellUserMenu
+                minimizeDrawer={minimizeDrawer}
                 anchorEl={userMenuAnchorEl}
                 onClose={() => setUserMenuAnchorEl(null)}
             />
@@ -404,6 +411,9 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [activeItem, setActiveItem] = useState<DrawerItem | null>(null);
 
+    const location = useLocation();
+    const pathname = location.pathname;
+
     const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, item: DrawerItem) => {
         if (!item.children) return;
         setActiveItem(item);
@@ -416,10 +426,34 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
     };
 
     if (minimizeDrawer) {
+        const actionActiveStyle = {
+            color: 'primary.dark',
+            backgroundColor: 'secondary.main',
+            '&.MuiIconButton-root:hover': {
+                color: 'primary.dark',
+                backgroundColor: 'secondary.main',
+            }
+        };
+
         return (
             <>
                 <Actions
-                    sx={{height: 'auto', mt: 4}}
+                    sx={{
+                        height: 'auto',
+                        mt: 4,
+                        '& .MuiIconButton-root': {
+                            borderRadius: 1,
+                        },
+                        '& .MuiIconButton-root:hover': {
+                            color: 'white',
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+
+                        },
+                        '& .Mui-disabled.MuiIconButton-root': {
+                            color: 'rgba(255, 255, 255, 0.8)!important',
+                            opacity: '0.5!important',
+                        },
+                    }}
                     color="inherit"
                     actions={group.items.map((item) =>
                         item.children == null
@@ -428,12 +462,14 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
                                 tooltip: item.label,
                                 to: item.to ?? '',
                                 disabled: item.disabled,
+                                activeStyle: isDrawerItemActive(item, pathname) ? actionActiveStyle : {},
                             }
                             : {
                                 icon: item.icon,
                                 tooltip: item.label,
                                 onClick: (e: any) => handleOpenMenu(e, item),
                                 disabled: item.disabled,
+                                activeStyle: isDrawerItemActive(item, pathname) ? actionActiveStyle : {},
                             },
                     )}
                     dense
@@ -497,24 +533,7 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
         else localStorage.removeItem(storageKey);
     }, [expanded, storageKey]);
 
-    const isActive = useMemo(() => {
-        if (item.to) {
-            if (item.to === '/') {
-                return pathname === '/';
-            }
-            return pathname.startsWith(item.to);
-        }
-
-        if (item.children) {
-            return item.children.some((c) => {
-                if (c.to === '/') return pathname === '/';
-                return c.to ? pathname.startsWith(c.to) : false;
-            });
-        }
-
-        return false;
-    }, [pathname, item]);
-
+    const isActive = useMemo(() => isDrawerItemActive(item, pathname), [pathname, item]);
 
     const handleClick = () => {
         if (item.children) setExpanded((e) => !e);
@@ -595,12 +614,18 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                                     left: 0,
                                     content: '""',
                                     position: 'absolute',
-                                    width: '13px',
-                                    height: '13px',
+                                    width: '14px',
+                                    height: '14px',
                                     backgroundColor: 'primary.light',
                                     transform: 'translate(calc(13px * -1), calc(13px * -0.4))',
                                     mask: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 14 14'%3E%3Cpath d='M1 1v4a8 8 0 0 0 8 8h4' stroke='%23efefef' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E\") 50% 50% / 100% no-repeat",
                                 },
+                            }
+                            : {}),
+                        ...(level > 1
+                            ? {
+                                // Fix positioning of the nested line connectors
+                                transform: 'translateX(-2px)',
                             }
                             : {}),
                     }}
@@ -790,3 +815,52 @@ function NestedMenuItem({
 }
 
 
+function ShellDrawerUserActions(props: {minimizeDrawer: boolean, setUserMenuAnchorEl: (el: HTMLElement) => void}) {
+    const {minimizeDrawer, setUserMenuAnchorEl} = props;
+    return (
+        <Actions
+            sx={{
+                ml: 'auto',
+                gap: minimizeDrawer ? 1 : 0.5,
+            }}
+            color="inherit"
+            dense
+            actions={[
+                {
+                    icon: <Badge
+                        color="secondary"
+                        variant="dot"
+                        overlap="circular"
+                        badgeContent=" "
+                        invisible={false}
+                        sx={{'& .MuiBadge-badge': {top: 5, right: 5, borderColor: 'primary.dark', borderWidth: 2, borderStyle: 'solid', transform: 'scale(1.5) translate(50%, -50%)'}}}
+                    >
+                        <Notifications />
+                    </Badge>, tooltip: 'Benachrichtigungen', onClick: () => {
+                    },
+                },
+                {
+                    icon: <ShellDrawerUserIcon />,
+                    tooltip: 'Mein Konto',
+                    onClick: (event) => setUserMenuAnchorEl(event.currentTarget as HTMLElement),
+                },
+            ]}
+            direction={minimizeDrawer ? 'column' : 'row'}
+            tooltipPlacement={minimizeDrawer ? 'right' : 'bottom'}
+        />
+    )
+}
+
+function isDrawerItemActive(item: DrawerItem, pathname: string): boolean {
+    if (item.to) {
+        if (item.to === '/') return pathname === '/';
+        return pathname.startsWith(item.to);
+    }
+
+    if (item.children) {
+        console.log(item.children, item.children.some((c) => isDrawerItemActive(c, pathname)));
+        return item.children.some((c) => isDrawerItemActive(c, pathname));
+    }
+
+    return false;
+}

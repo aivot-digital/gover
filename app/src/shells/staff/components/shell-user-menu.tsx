@@ -18,9 +18,10 @@ import OpenInNew from '@mui/icons-material/OpenInNew';
 interface ShellUserMenuProps {
     anchorEl: null | HTMLElement;
     onClose: () => void;
+    minimizeDrawer?: boolean;
 }
 
-export function ShellUserMenu({ anchorEl, onClose }: ShellUserMenuProps) {
+export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMenuProps) {
     const logout = useLogout();
     const user = useAppSelector(selectUser);
     const userName = useMemo(() => getFullName(user), [user]);
@@ -36,26 +37,39 @@ export function ShellUserMenu({ anchorEl, onClose }: ShellUserMenuProps) {
             anchorEl={anchorEl}
             open={open}
             onClose={onClose}
+            anchorOrigin={{
+                vertical: minimizeDrawer ? 'center' : 'bottom',
+                horizontal: minimizeDrawer ? 'right' : 'center',
+            }}
+            transformOrigin={{
+                vertical: minimizeDrawer ? 'center' : 'top',
+                horizontal: minimizeDrawer ? 'left' : 'center',
+            }}
             PaperProps={{
                 elevation: 6,
                 sx: {
                     mt: 1.5,
                     minWidth: 260,
                     overflow: 'visible',
-                    '&::before': {
-                        // arrow
-                        content: '""',
-                        display: 'block',
-                        position: 'absolute',
-                        top: 0,
-                        left: 18,
-                        width: 10,
-                        height: 10,
-                        bgcolor: 'rgba(255,255,255,0.98)',
-                        transform: 'translateY(-50%) rotate(45deg)',
-                        boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
-                        zIndex: 0,
-                    },
+                    ...(!minimizeDrawer
+                        ? {
+                            '&::before': {
+                                // arrow
+                                content: '""',
+                                display: 'block',
+                                position: 'absolute',
+                                top: 0,
+                                left: '50%',
+                                width: 10,
+                                height: 10,
+                                bgcolor: 'rgba(255,255,255,0.98)',
+                                transform: 'translateY(-50%) translateX(-5px) rotate(45deg)',
+                                boxShadow: '-1px -1px 2px rgba(0,0,0,0.1)',
+                                zIndex: 0,
+                            },
+                        }
+                        : {}),
+
                 },
             }}
         >
