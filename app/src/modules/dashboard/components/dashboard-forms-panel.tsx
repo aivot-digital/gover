@@ -69,7 +69,7 @@ export function DashboardFormsPanel() {
                 </Typography>
 
                 <List disablePadding>
-                    {loading
+                    {loading && forms === null
                         ? Array.from({ length: fetchSize }).map((_, i) => (
                             <React.Fragment key={i}>
                                 <ListItem disablePadding>
