@@ -12,14 +12,14 @@ interface DashboardHeroProps {
 
 const Links = [
     {
-        Icon: ArrowForward,
-        text: 'Zur Benutzereinführung der Gover-Plattform',
-        href: 'https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/erste-schritte/home',
+        Icon: NorthWest,
+        text: 'Neu in Gover 5: Einfacher. Schneller. Intelligenter. Jetzt die neuen Möglichkeiten für Prozesse entdecken.',
+        href: 'https://docs.gover.digital',
     },
     {
-        Icon: NorthWest,
-        text: 'Alles neu – was jetzt? Die neuen Arbeitsabläufe und Prozessschritte für Online-Formulare einfach erklärt',
-        href: 'https://wiki.teamaivot.de/dokumentation/gover/benutzerhandbuch/home',
+        Icon: ArrowForward,
+        text: 'Neu hier? Gover in kurzer Einführung kennenlernen.',
+        href: 'https://docs.gover.digital',
     },
 ];
 
@@ -28,7 +28,7 @@ export function DashboardHero(props: DashboardHeroProps) {
     const setup = useAppSelector(selectSetup);
 
     if (setup == null) {
-        return <Skeleton height="150px" />;
+        return <Skeleton height="395px" />;
     }
 
     return (
@@ -73,7 +73,7 @@ export function DashboardHero(props: DashboardHeroProps) {
                 <Divider
                     sx={{
                         my: 4,
-                        borderColor: (theme) => theme.palette.secondary.main,
+                        borderColor: 'rgba(255, 255, 255, 0.15)',
                     }}
                 />
 
