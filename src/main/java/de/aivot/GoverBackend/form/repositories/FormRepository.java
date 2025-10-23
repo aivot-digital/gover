@@ -8,4 +8,6 @@ public interface FormRepository extends JpaRepository<FormEntity, Integer>, JpaS
     boolean existsBySlug(String slug);
 
     boolean existsBySlugAndIdIsNot(String slug, Integer id);
+
+    Integer countAllByPublishedVersionIsNotNull();
 }

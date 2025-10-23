@@ -8,4 +8,6 @@ import java.util.Collection;
 
 public interface UserRepository extends JpaRepository<UserEntity, String>, JpaSpecificationExecutor<UserEntity> {
     Collection<UserEntity> findAllByDeletedInIdpIsFalse();
+
+    Integer countAllByDeletedInIdpIsFalseAndEnabledIsTrue();
 }
