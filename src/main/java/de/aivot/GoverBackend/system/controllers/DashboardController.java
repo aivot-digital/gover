@@ -49,7 +49,7 @@ public class DashboardController {
         return new DashboardStatsItemDTO(
                 "submissions",
                 "Vorgänge in Bearbeitung",
-                String.format("%d warten auf Bearbeitung", waitingSubmissions),
+                String.format("(%d warten auf Bearbeitung)", waitingSubmissions),
                 workingOnSubmissions,
                 "/submissions"
         );
