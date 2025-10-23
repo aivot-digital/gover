@@ -7,6 +7,8 @@ import {selectMinimizeDrawer, setMinimizeDrawer, setShowSearchDialog} from '../.
 import {ShellUserMenu} from './shell-user-menu';
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
+import {useHotkeys} from 'react-hotkeys-hook';
+import {formatShortcut} from '../../../utils/format-shortcut';
 
 import KeyboardTabRtl from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-tab-rtl/KeyboardTabRtl';
 import SearchFilled from '@aivot/mui-material-symbols-400-outlined/dist/search/SearchFilled';
@@ -153,6 +155,7 @@ export function ShellDrawer() {
     const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
+    const isMac = navigator.platform.toUpperCase().includes('MAC');
 
     // responsive auto-minimize
     useEffect(() => {
@@ -205,6 +208,16 @@ export function ShellDrawer() {
                 },
             }),
         [baseTheme],
+    );
+
+    const shortcutLabel = formatShortcut(['meta'], 'k');
+    useHotkeys(
+        'meta+k, ctrl+k',
+        (event) => {
+            event.preventDefault();
+            dispatch(setShowSearchDialog(true));
+        },
+        { enableOnFormTags: false }
     );
 
     return (
@@ -266,7 +279,27 @@ export function ShellDrawer() {
                                         },
                                     }}
                                 >
-                                    Suche
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                        <span>Suche</span>
+                                        <Box
+                                            sx={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 0.5,
+                                                px: 0.5,
+                                                py: 0,
+                                                borderRadius: 1,
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                background: 'rgba(255,255,255,.15)',
+                                                color: 'rgba(255,255,255,0.8)',
+                                                transform: 'translateX(7px) translateY(-1px)',
+                                            }}
+                                            title={"Tastenkürzel zum Öffnen der Suche (" + shortcutLabel + ")"}
+                                        >
+                                            {shortcutLabel}
+                                        </Box>
+                                    </Box>
                                 </Button>
                             ) : (
                                 <Actions

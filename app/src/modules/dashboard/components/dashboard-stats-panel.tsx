@@ -49,21 +49,23 @@ export function DashboardStatsPanel() {
             }}
         >
             <CardContent>
-                <Typography
+                <Box sx={{ pt: 0.5, px: 1 }}>
+                    <Typography
                     variant="h5"
                     component="h3"
                     fontWeight={600}
-                >
-                    Zahlen, Daten & Fakten
-                </Typography>
+                fontSize={'1.5rem'}>
+                        Zahlen, Daten & Fakten
+                    </Typography>
 
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{mt: 1, mb: 0.75, maxWidth: '400px'}}
-                >
-                    Behalten Sie Ihre Gover-Instanz im Blick und entdecken Sie spannende Metriken.
-                </Typography>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{mt: 1, mb: 0.75, maxWidth: '400px'}}
+                    >
+                        Behalten Sie Ihre Gover-Instanz im Blick und entdecken Sie spannende Metriken.
+                    </Typography>
+                </Box>
 
                 <List disablePadding>
                     {stats == null

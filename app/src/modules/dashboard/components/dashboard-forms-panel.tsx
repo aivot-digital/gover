@@ -55,17 +55,19 @@ export function DashboardFormsPanel() {
     return (
         <Card sx={{ height: '100%', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
             <CardContent>
-                <Typography variant="h5" component="h3" fontWeight={600}>
-                    Online-Formulare
-                </Typography>
+                <Box sx={{ pt: 0.5, px: 1 }}>
+                    <Typography variant="h5" component="h3" fontWeight={600} fontSize={'1.5rem'}>
+                        Online-Formulare
+                    </Typography>
 
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1, mb: 2, maxWidth: 400 }}
-                >
-                    Hier sehen Sie eine Übersicht der zuletzt bearbeiteten Formulare.
-                </Typography>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1, mb: 2, maxWidth: 400 }}
+                    >
+                        Hier sehen Sie eine Übersicht der zuletzt bearbeiteten Formulare.
+                    </Typography>
+                </Box>
 
                 <List disablePadding>
                     {loading
@@ -241,6 +243,7 @@ export function DashboardFormsPanel() {
                         variant="contained"
                         sx={{
                             mt: 2,
+                            mx: 1,
                         }}
                         startIcon={ModuleIcons.forms}
                         component={Link}
