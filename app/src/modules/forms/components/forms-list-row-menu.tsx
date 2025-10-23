@@ -1,5 +1,5 @@
 import React from 'react';
-import {ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {FormListResponseDTO} from '../dtos/form-list-response-dto';
 import {createCustomerPath} from '../../../utils/url-path-utils';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -9,6 +9,9 @@ import DeleteForever from '@aivot/mui-material-symbols-400-outlined/dist/delete-
 import ContentPaste from '@aivot/mui-material-symbols-400-outlined/dist/content-paste/ContentPaste';
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
 import QrCode2 from '@aivot/mui-material-symbols-400-outlined/dist/qr-code-2/QrCode2';
+import MoveItem from '@aivot/mui-material-symbols-400-outlined/dist/move-item/MoveItem';
+import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface FormsListRowMenuProps {
     anchorEl: HTMLElement | null;
@@ -72,7 +75,7 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                 }}
             >
                 <ListItemIcon>
-                    <MoveGroup />
+                    <MoveItem />
                 </ListItemIcon>
                 <ListItemText>
                     Formular an Fachbereich übertragen
@@ -94,12 +97,14 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                 onClick={handleDownloadQrCode}
             >
                 <ListItemIcon>
-                    <QrCode2 />
+                    <QrCode />
                 </ListItemIcon>
                 <ListItemText>
                     QR-Code mit Formularlink herunterladen
                 </ListItemText>
             </MenuItem>
+
+            <Divider/>
 
             <MenuItem
                 onClick={() => {
@@ -108,9 +113,11 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                 }}
             >
                 <ListItemIcon>
-                    <DeleteForever />
+                    <Delete color="error" />
                 </ListItemIcon>
-                <ListItemText>
+                <ListItemText sx={{
+                    color: "error.main"
+                }}>
                     Formular löschen
                 </ListItemText>
             </MenuItem>
