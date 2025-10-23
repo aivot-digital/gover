@@ -24,6 +24,7 @@ import SimpleBar from 'simplebar-react';
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
 import {AboutGoverDialog} from './about-gover-dialog';
+import {ShellNotificationsMenu} from './shell-notifications-menu';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -155,6 +156,7 @@ export function ShellDrawer() {
     const dispatch = useAppDispatch();
     const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [notificationsAnchorEl, setNotificationsAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
     const showAboutGoverDialog = useAppSelector(selectShowAboutGoverDialog) ?? false;
 
@@ -251,7 +253,7 @@ export function ShellDrawer() {
                             </Link>
 
                             {!minimizeDrawer && (
-                                <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} />
+                                <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} setNotificationsAnchorEl={setNotificationsAnchorEl} />
                             )}
                         </Box>
 
@@ -395,7 +397,7 @@ export function ShellDrawer() {
                             )}
                             {minimizeDrawer && (
                                 <>
-                                    <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} />
+                                    <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} setNotificationsAnchorEl={setNotificationsAnchorEl} />
                                     <Box sx={{height: 10}}/>
                                 </>
                             )}
@@ -416,6 +418,12 @@ export function ShellDrawer() {
                     </Box>
                 </Paper>
             </Box>
+
+            <ShellNotificationsMenu
+                minimizeDrawer={minimizeDrawer}
+                anchorEl={notificationsAnchorEl}
+                onClose={() => setNotificationsAnchorEl(null)}
+            />
 
             <ShellUserMenu
                 minimizeDrawer={minimizeDrawer}
@@ -854,8 +862,8 @@ function NestedMenuItem({
 }
 
 
-function ShellDrawerUserActions(props: {minimizeDrawer: boolean, setUserMenuAnchorEl: (el: HTMLElement) => void}) {
-    const {minimizeDrawer, setUserMenuAnchorEl} = props;
+function ShellDrawerUserActions(props: {minimizeDrawer: boolean, setUserMenuAnchorEl: (el: HTMLElement) => void, setNotificationsAnchorEl: (el: HTMLElement) => void}) {
+    const {minimizeDrawer, setUserMenuAnchorEl, setNotificationsAnchorEl} = props;
     return (
         <Actions
             sx={{
@@ -875,9 +883,10 @@ function ShellDrawerUserActions(props: {minimizeDrawer: boolean, setUserMenuAnch
                         sx={{'& .MuiBadge-badge': {top: 5, right: 5, borderColor: 'primary.dark', borderWidth: 2, borderStyle: 'solid', transform: 'scale(1.5) translate(50%, -50%)'}}}
                     >
                         <Notifications />
-                    </Badge>, tooltip: 'Benachrichtigungen', onClick: () => {
-                    },
-                },
+                    </Badge>,
+                    tooltip: 'Benachrichtigungen',
+                    onClick: (event) => setNotificationsAnchorEl(event.currentTarget as HTMLElement),
+            },
                 {
                     icon: <ShellDrawerUserIcon />,
                     tooltip: 'Mein Konto',

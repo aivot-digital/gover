@@ -44,11 +44,11 @@ export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMe
                 onClose={onClose}
                 anchorOrigin={{
                     vertical: minimizeDrawer ? 'center' : 'bottom',
-                    horizontal: minimizeDrawer ? 'right' : 'center',
+                    horizontal: minimizeDrawer ? 'right' : 'left',
                 }}
                 transformOrigin={{
                     vertical: minimizeDrawer ? 'center' : 'top',
-                    horizontal: minimizeDrawer ? 'left' : 'center',
+                    horizontal: minimizeDrawer ? 'left' : 'left',
                 }}
                 PaperProps={{
                     elevation: 6,
@@ -64,7 +64,7 @@ export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMe
                                     display: 'block',
                                     position: 'absolute',
                                     top: 0,
-                                    left: '50%',
+                                    left: 20,
                                     width: 10,
                                     height: 10,
                                     bgcolor: 'rgba(255,255,255,0.98)',
