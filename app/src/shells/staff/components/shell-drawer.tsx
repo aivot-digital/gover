@@ -3,7 +3,7 @@ import {Badge, Box, Button, Chip, createTheme, Divider, List, ListItem, ListItem
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {selectMinimizeDrawer, setMinimizeDrawer, setShowSearchDialog} from '../../../slices/shell-slice';
+import {selectMinimizeDrawer, selectShowAboutGoverDialog, setMinimizeDrawer, setShowAboutGoverDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {ShellUserMenu} from './shell-user-menu';
 import {ModuleIcons} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
@@ -23,6 +23,7 @@ import ShellDrawerUserIcon from './shell-drawer-user-icon';
 import SimpleBar from 'simplebar-react';
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
+import {AboutGoverDialog} from './about-gover-dialog';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -155,12 +156,12 @@ export function ShellDrawer() {
     const minimizeDrawer = useAppSelector(selectMinimizeDrawer) ?? false;
     const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [showBlockedMsg, setShowBlockedMsg] = useState(false);
-    const isMac = navigator.platform.toUpperCase().includes('MAC');
+    const showAboutGoverDialog = useAppSelector(selectShowAboutGoverDialog) ?? false;
 
     // responsive auto-minimize
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth < 1450) {
+            if (window.innerWidth < 1480) {
                 dispatch(setMinimizeDrawer(true));
             }
         };
@@ -427,6 +428,11 @@ export function ShellDrawer() {
                 autoHideDuration={3000}
                 onClose={() => setShowBlockedMsg(false)}
                 message="Menü kann nicht maximiert werden: Fenster/Bildschirm zu klein."
+            />
+
+            <AboutGoverDialog
+                open={showAboutGoverDialog}
+                onClose={() => dispatch(setShowAboutGoverDialog(false))}
             />
         </ThemeProvider>
     );

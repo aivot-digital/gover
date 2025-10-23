@@ -36,12 +36,14 @@ interface ShellState {
     setup?: SystemSetupDTO;
     minimizeDrawer: boolean;
     showSearchDialog: boolean;
+    showAboutGoverDialog: boolean;
 }
 
 const initialState: ShellState = {
     status: ShellStatus.Loading,
     minimizeDrawer: localStorage.getItem('minimizeDrawer') != null,
     showSearchDialog: false,
+    showAboutGoverDialog: false,
 };
 
 const shellSlice = createSlice({
@@ -65,6 +67,9 @@ const shellSlice = createSlice({
         setShowSearchDialog(state, action: PayloadAction<boolean>) {
             state.showSearchDialog = action.payload;
         },
+        setShowAboutGoverDialog(state, action: PayloadAction<boolean>) {
+            state.showAboutGoverDialog = action.payload;
+        },
         setLoadingMessage(state, action: PayloadAction<LoadingMessage | undefined>) {
             state.loading = action.payload;
         },
@@ -79,6 +84,7 @@ export const {
     setSetup,
     setMinimizeDrawer,
     setShowSearchDialog,
+    setShowAboutGoverDialog,
     setLoadingMessage,
     setErrorMessage,
 } = shellSlice.actions;
@@ -88,6 +94,7 @@ export const selectSetup = (state: RootState) => state.shell.setup;
 export const selectTheme = (state: RootState) => state.shell.setup?.providerTheme;
 export const selectMinimizeDrawer = (state: RootState) => state.shell.minimizeDrawer;
 export const selectShowSearchDialog = (state: RootState) => state.shell.showSearchDialog;
+export const selectShowAboutGoverDialog = (state: RootState) => state.shell.showAboutGoverDialog;
 export const selectLoadingMessage = (state: RootState) => state.shell.loading;
 export const selectErrorMessage = (state: RootState) => state.shell.error;
 
