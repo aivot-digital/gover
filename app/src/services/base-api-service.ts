@@ -324,6 +324,7 @@ export class BaseApiService {
         return {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
         };
     }
 }

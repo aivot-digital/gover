@@ -27,6 +27,7 @@ import {FormStatus} from './enums/form-status';
 import {BaseApiService} from '../../services/base-api-service';
 import {Theme} from '../themes/models/theme';
 import {createApiPath} from '../../utils/url-path-utils';
+import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 interface FormFilters {
     id: number;
@@ -63,16 +64,23 @@ interface FormFilters {
     isResponsible: boolean;
 }
 
-export type DerivationSkipIdentifier = string[] | ['ALL'];
-
 export type FormIdentifier = {
     id: number;
     version: number;
 }
 
-export class FormsApiService extends BaseApiService {
+export class FormsApiService extends BaseCrudApiService<FormRequestDTO, FormListResponseDTO, FormDetailsResponseDTO, FormRequestDTO, FormIdentifier, FormFilters> {
+    constructor() {
+        super('/api/forms/');
+    }
+
     public initialize(): FormDetailsResponseDTO {
-        return FormsApiService.initialize();
+        return FormsApiService
+            .initialize();
+    }
+
+    public buildPath(id: FormIdentifier): string {
+        return `${this.path}${id.id}/${id.version}/`;
     }
 
     public static initialize(): FormDetailsResponseDTO {
@@ -113,6 +121,14 @@ export class FormsApiService extends BaseApiService {
             published: null,
             revoked: null,
         };
+    }
+
+    public async retrieveLatest(formId: number): Promise<FormDetailsResponseDTO> {
+        return this.get<FormDetailsResponseDTO>(`/api/forms/${formId}/latest/`);
+    }
+
+    public async moveFormToDepartment(formId: number, departmentId: number): Promise<void> {
+        this.put<any, void>(`/api/forms/${formId}/move/?targetDepartmentId=${departmentId}`, {});
     }
 
     public getFormTheme(formSlug: string, formVersion?: number): Promise<Theme> {

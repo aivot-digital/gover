@@ -1,52 +1,62 @@
-import {GenericListPage} from '../../../../../components/generic-list-page/generic-list-page';
-import {PageWrapper} from '../../../../../components/page-wrapper/page-wrapper';
+import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Box, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
+import {Box} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import {FormListResponseDTO} from '../../../dtos/form-list-response-dto';
-import {FormsApiService} from '../../../forms-api-service';
+import {FormListResponseDTO} from '../../dtos/form-list-response-dto';
+import {FormsApiService} from '../../forms-api-service';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import React, {useEffect, useMemo, useState} from 'react';
-import {ImportApplicationDialog} from '../../../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
-import {FormDetailsResponseDTO} from '../../../dtos/form-details-response-dto';
+import {ImportApplicationDialog} from '../../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
+import {FormDetailsResponseDTO} from '../../dtos/form-details-response-dto';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
-import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snackbar-slice';
-import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
-import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
-import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
-import {createCustomerPath} from '../../../../../utils/url-path-utils';
-import {downloadQrCode} from '../../../../../utils/download-qrcode';
-import {useAppSelector} from '../../../../../hooks/use-app-selector';
-import {selectUser} from '../../../../../slices/user-slice';
-import {AddFormDialog} from '../../../dialogs/add-form-dialog';
-import {ExportApplicationDialog} from '../../../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
-import {downloadConfigFile} from '../../../../../utils/download-utils';
-import {useApi} from '../../../../../hooks/use-api';
-import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
-import {FormVersionsDialog} from '../../../dialogs/form-versions-dialog';
-import {DepartmentResponseDTO} from '../../../../departments/dtos/department-response-dto';
-import {DepartmentsApiService} from '../../../../departments/departments-api-service';
-import {CellContentWrapper} from '../../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../slices/user-slice';
+import {AddFormDialog} from '../../dialogs/add-form-dialog';
+import {ExportApplicationDialog} from '../../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
+import {downloadConfigFile} from '../../../../utils/download-utils';
+import {useApi} from '../../../../hooks/use-api';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {FormVersionsDialog} from '../../dialogs/form-versions-dialog';
+import {DepartmentResponseDTO} from '../../../departments/dtos/department-response-dto';
+import {DepartmentsApiService} from '../../../departments/departments-api-service';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
 import {format} from 'date-fns/format';
 import {GridColDef} from '@mui/x-data-grid';
-import {FormStatus} from '../../../enums/form-status';
-import UploadIcon from '@mui/icons-material/Upload';
-import {hideLoadingOverlay, showLoadingOverlay} from '../../../../../slices/loading-overlay-slice';
+import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 import {Link, useNavigate} from 'react-router-dom';
-import HistoryIcon from '@mui/icons-material/History';
-import {FormStatusChip} from '../../../components/form-status-chip';
-import {DeleteApplicationDialog} from '../../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
-import {FormsListPageHelp} from './components/forms-list-page-help';
-import {FormStatusChipGroup, getFormStatus} from '../../../components/form-status-chip-group';
+import {DeleteApplicationDialog} from '../../../../dialogs/application-dialogs/delete-application-dialog/delete-application-dialog';
+import {FormsListPageHelp} from '../../components/forms-list-page-help';
+import {FormStatusChipGroup, getFormStatus} from '../../components/form-status-chip-group';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
-import {useConfirm} from '../../../../../providers/confirm-provider';
+import {useConfirm} from '../../../../providers/confirm-provider';
 import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import {FormsListRowMenu} from '../../components/forms-list-row-menu';
+import {setLoadingMessage} from '../../../../slices/shell-slice';
+import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
+
+const availableFilter = [
+    {
+        label: 'Alle Formulare',
+        value: 'all',
+    },
+    {
+        label: 'Entwürfe',
+        value: 'drafted',
+    },
+    {
+        label: 'Veröffentlicht',
+        value: 'published',
+    },
+    {
+        label: 'Zurückgezogen',
+        value: 'revoked',
+    },
+];
 
 export function FormsListPage() {
     const dispatch = useAppDispatch();
@@ -63,6 +73,7 @@ export function FormsListPage() {
 
     const [departments, setDepartments] = useState<DepartmentResponseDTO[]>([]);
 
+    const [formToMove, setFormToMove] = useState<FormListResponseDTO>();
     const [formToDelete, setFormToDelete] = useState<FormListResponseDTO>();
 
     const [rowMenu, setRowMenu] = useState<{
@@ -101,7 +112,11 @@ export function FormsListPage() {
                                 variant="h5"
                                 sx={{mb: 0.5}}
                             >
-                                <Link style={{color: 'inherit', textDecoration: 'none'}} to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`} title={"Formular bearbeiten"}>
+                                <Link
+                                    style={{color: 'inherit', textDecoration: 'none'}}
+                                    to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
+                                    title={'Formular bearbeiten'}
+                                >
                                     {params.row.internalTitle}
                                 </Link>
                             </Typography>
@@ -232,11 +247,15 @@ export function FormsListPage() {
         setRowMenu(undefined);
     };
 
-    const handleDeleteForm = async (formId: number) => {
-        dispatch(showLoadingOverlay('Lösche Formular'));
+    const handleDeleteForm = async (form: FormListResponseDTO) => {
+        dispatch(setLoadingMessage({
+            message: 'Formular wird gelöscht',
+            blocking: true,
+            estimatedTime: 500,
+        }));
 
         new FormsApiService(api)
-            .destroyAll(formId)
+            .destroyAll(form.id)
             .then(() => {
                 window.location.reload();
             })
@@ -247,40 +266,6 @@ export function FormsListPage() {
             .finally(() => {
                 dispatch(hideLoadingOverlay());
             });
-    };
-
-    const handleFormLinkCopy = async () => {
-        if (rowMenu == null) {
-            return;
-        }
-
-        try {
-            await navigator
-                .clipboard
-                .writeText(createCustomerPath(rowMenu.form.slug));
-            dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert'));
-        } catch (err) {
-            console.error(err);
-            dispatch(showSuccessSnackbar('Formularlink konnte nicht kopiert werden'));
-        }
-
-        setRowMenu(undefined);
-    };
-
-    const handleDownloadQrCode = async () => {
-        if (rowMenu == null) {
-            return;
-        }
-
-        try {
-            await downloadQrCode(
-                createCustomerPath(rowMenu.form.slug),
-                `qr-code-${rowMenu?.form.slug}.png`,
-            );
-            dispatch(showSuccessSnackbar('QR-Code wurde als PNG heruntergeladen!'));
-        } catch {
-            dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
-        }
     };
 
     const handleExportForm = (form: FormListResponseDTO) => {
@@ -294,6 +279,23 @@ export function FormsListPage() {
             });
     };
 
+    const handleNewDraft = (item: FormListResponseDTO) => {
+        showConfirm({
+            title: 'Neue Arbeitsversion anlegen?',
+            confirmButtonText: 'Ja, Arbeitsversion anlegen',
+            children: (
+                <Box>
+                    Für dieses Formular existiert derzeit keine aktive Arbeitsversion.
+                    Möchten Sie eine neue Arbeitsversion für dieses Formular anlegen um diese zu bearbeiten?
+                </Box>
+            ),
+        }).then((confirmed) => {
+            if (confirmed) {
+                handleNewFormDraft(item.id, item.publishedVersion);
+            }
+        });
+    };
+
     return (
         <>
             <PageWrapper
@@ -303,24 +305,7 @@ export function FormsListPage() {
             >
                 <GenericListPage<FormListResponseDTO>
                     dynamicRowHeight={true}
-                    filters={[
-                        {
-                            label: 'Alle Formulare',
-                            value: 'all',
-                        },
-                        {
-                            label: 'Entwürfe',
-                            value: 'drafted',
-                        },
-                        {
-                            label: 'Veröffentlicht',
-                            value: 'published',
-                        },
-                        {
-                            label: 'Zurückgezogen',
-                            value: 'revoked',
-                        },
-                    ]}
+                    filters={availableFilter}
                     defaultFilter="all"
                     header={{
                         icon: <DescriptionOutlinedIcon />,
@@ -377,31 +362,14 @@ export function FormsListPage() {
                         },
                         {
                             icon: <NewWindow />,
-                            onClick: async (): Promise<void> => {
-                                const confirmed = await showConfirm({
-                                    title: 'Neue Arbeitsversion anlegen?',
-                                    confirmButtonText: 'Ja, Arbeitsversion anlegen',
-                                    children: (
-                                        <>
-                                            <Box>
-                                                Für dieses Formular existiert derzeit keine aktive Arbeitsversion. Möchten Sie eine neue Arbeitsversion für dieses Formular anlegen um diese zu bearbeiten?
-                                            </Box>
-                                        </>
-                                    ),
-                                });
-                                if(confirmed){
-                                    handleNewFormDraft(item.id, item.publishedVersion);
-                                }
-                            },
+                            onClick: () => handleNewDraft(item),
                             tooltip: 'Neue Arbeitsversion anlegen',
                             visible: item.draftedVersion == null,
                             disabled: item.publishedVersion == null && item.draftedVersion != null,
                         },
                         {
                             icon: <HomeStorage />,
-                            onClick: () => {
-                                setShowFormVersionsDialogFor(item);
-                            },
+                            onClick: () => setShowFormVersionsDialogFor(item),
                             tooltip: 'Versionen anzeigen',
                         },
                         {
@@ -413,12 +381,10 @@ export function FormsListPage() {
                         },
                         {
                             icon: <MoreVertOutlinedIcon />,
-                            onClick: (event) => {
-                                setRowMenu({
-                                    target: event.currentTarget as HTMLElement,
-                                    form: item,
-                                });
-                            },
+                            onClick: (event) => setRowMenu({
+                                target: event.currentTarget as HTMLElement,
+                                form: item,
+                            }),
                             tooltip: 'Optionen',
                         },
                     ]}
@@ -427,92 +393,20 @@ export function FormsListPage() {
                 />
             </PageWrapper>
 
-            <Menu
-                anchorEl={rowMenu?.target}
-                open={rowMenu != null}
-                onClose={() => {
-                    setRowMenu(undefined);
-                }}
-            >
-                <MenuItem
-                    onClick={handleFormClone}
-                    disabled={(
-                        rowMenu?.form.draftedVersion == null &&
-                        rowMenu?.form.publishedVersion == null
-                    )}
-                >
-                    <ListItemIcon>
-                        <FileCopyOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Formular duplizieren
-                    </ListItemText>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={handleFormLinkCopy}
-                    disabled={(
-                        rowMenu?.form.draftedVersion == null &&
-                        rowMenu?.form.publishedVersion == null
-                    )}
-                >
-                    <ListItemIcon>
-                        <ContentPasteOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Formularlink in Zwischenablage kopieren
-                    </ListItemText>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={handleDownloadQrCode}
-                    disabled={(
-                        rowMenu?.form.draftedVersion == null &&
-                        rowMenu?.form.publishedVersion == null
-                    )}
-                >
-                    <ListItemIcon>
-                        <QrCode2OutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        QR-Code mit Formularlink herunterladen
-                    </ListItemText>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={() => {
-                        setShowExportFormDialog(true);
-                    }}
-                    disabled={(
-                        rowMenu?.form.draftedVersion == null &&
-                        rowMenu?.form.publishedVersion == null
-                    )}
-                >
-                    <ListItemIcon>
-                        <ImportExportOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Formular exportieren
-                    </ListItemText>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={() => {
-                        if (rowMenu?.form != null) {
-                            setFormToDelete(rowMenu?.form);
-                        }
+            {
+                rowMenu != null &&
+                rowMenu.target != null &&
+                rowMenu.form != null &&
+                <FormsListRowMenu
+                    anchorEl={rowMenu.target}
+                    onClose={() => {
                         setRowMenu(undefined);
                     }}
-                    disabled={rowMenu?.form.publishedVersion != null}
-                >
-                    <ListItemIcon>
-                        <DeleteForeverOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Formular löschen
-                    </ListItemText>
-                </MenuItem>
-            </Menu>
+                    form={rowMenu.form}
+                    onMoveFormToDepartment={setFormToMove}
+                    onDeleteForm={setFormToDelete}
+                />
+            }
 
             {
                 newForm != null &&
@@ -567,14 +461,24 @@ export function FormsListPage() {
                 />
             }
 
+            {
+                formToMove != null &&
+                <MoveFormToDepartmentDialog
+                    formId={formToMove.id}
+                    onClose={() => {
+                        setFormToMove(undefined);
+                    }}
+                    onMoved={() => {
+                        window.location.reload();
+                    }}
+                />
+            }
+
             <DeleteApplicationDialog
                 form={formToDelete}
-                onDelete={() => {
-                    if (formToDelete == null) {
-                        return;
-                    }
-
-                    handleDeleteForm(formToDelete.id);
+                onDelete={(form) => {
+                    handleDeleteForm(form);
+                    setFormToDelete(undefined);
                 }}
                 onCancel={() => {
                     setFormToDelete(undefined);
