@@ -6,7 +6,7 @@ import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
 import {createAppTheme} from '../../../../theming/themes';
 import {NotFoundPage} from '../../../../components/not-found-page/not-found-page';
-import {resetAdminSettings, toggleComponentTree, toggleValidation, toggleVisibility} from '../../../../slices/admin-settings-slice';
+import {resetAdminSettings, selectDevToolsTab, toggleComponentTree, toggleValidation, toggleVisibility} from '../../../../slices/admin-settings-slice';
 import {AppToolbar} from '../../../../components/app-toolbar/app-toolbar';
 import {AdminToolsDialog} from '../../../../dialogs/admin-tools/admin-tools-dialog';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
@@ -58,6 +58,8 @@ import {RootState} from '../../../../store.staff';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
+import {Allotment} from 'allotment';
+import {useElementSize} from '../../../../utils/element-size';
 
 export const DialogSearchParam = 'dialog';
 
@@ -103,6 +105,7 @@ export function FormDetailsPage() {
 
     const [showAdminTools, setShowAdminTools] = useState(false);
     const [showRevisions, setShowRevisions] = useState(false);
+    const showDeveloperTools = useAppSelector(selectDevToolsTab);
 
     const [elementData, setElementData] = useState<ElementData>({});
 
@@ -131,6 +134,10 @@ export function FormDetailsPage() {
     const formApiService = useMemo(() => new FormsApiService2(), []);
 
     const [theme, setTheme] = useState<Theme>();
+
+    const {ref: containerRef, size: containerSize} = useElementSize<HTMLDivElement>();
+    const developerToolsMinHeight = 280;
+    const developerToolsMaxHeight = containerSize.height > 0 ? Math.max(developerToolsMinHeight, Math.floor(containerSize.height * 0.5)) : undefined;
 
     // Cleanup lock state on unload
     useEffect(() => {
@@ -477,162 +484,194 @@ export function FormDetailsPage() {
                 fullHeight={true}
             >
                 <Box
-                    sx={{
-                        height: '100vh',
-                        display: 'flex',
-                    }}
+                    ref={containerRef}
+                    sx={{height: '100vh', '--focus-border': (theme) => theme.palette.secondary.main}}
                 >
-                    {/* Working Area */}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            flex: 1,
-                            px: 2,
-                            py: 2,
-                        }}
-                    >
-                        <GenericPageHeader
-                            title={'Formular: ' + loadedForm.internalTitle}
-                            badge={{
-                                color: 'default',
-                                label: `Version ${loadedForm.version}`,
-                            }}
-                            icon={ModuleIcons.forms}
-                            actions={[
-                                {
-                                    tooltip: 'Änderung rückgängig machen',
-                                    icon: <UndoIcon />,
-                                    onClick: handleUndo,
-                                    disabled: !hasPastLoadedForm,
-                                    visible: loadedForm.status === FormStatus.Drafted,
-                                },
-                                {
-                                    tooltip: 'Änderung wiederherstellen',
-                                    icon: <RedoIcon />,
-                                    onClick: handleRedo,
-                                    disabled: !hasFutureLoadedForm,
-                                    visible: loadedForm.status === FormStatus.Drafted,
-                                },
-                                'separator',
-                                {
-                                    tooltip: 'Historie anzeigen',
-                                    icon: <AccessTimeIcon />,
-                                    onClick: () => {
-                                        setShowRevisions(true);
-                                    },
-                                    visible: canViewHistory,
-                                },
-                                {
-                                    tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
-                                    icon: disableValidation ? <DoneAllOutlinedIcon /> :
-                                        <RemoveDoneOutlinedIcon />,
-                                    onClick: () => {
-                                        dispatch(toggleValidation());
-                                    },
-                                },
-                                {
-                                    tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                                    icon: disableVisibility ? <VisibilityOutlinedIcon /> :
-                                        <VisibilityOffOutlinedIcon />,
-                                    onClick: () => {
-                                        dispatch(toggleVisibility());
-                                    },
-                                },
-                                'separator',
-                                {
-                                    tooltip: 'Admin-Werkzeuge öffnen',
-                                    icon: <HandymanOutlinedIcon />,
-                                    onClick: () => {
-                                        setShowAdminTools(true);
-                                    },
-                                },
-                                {
-                                    tooltip: hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
-                                    icon: hideComponentTree ? <DesktopWindowsOutlinedIcon /> :
-                                        <DesktopAccessDisabledOutlinedIcon />,
-                                    onClick: () => {
-                                        dispatch(toggleComponentTree());
-                                    },
-                                },
-                                {
-                                    tooltip: 'Formular als antragstellende Person öffnen (in neuem Tab)',
-                                    icon: <LaunchOutlinedIcon />,
-                                    href: `/${loadedForm.slug ?? ''}/${loadedForm.version ?? ''}`,
-                                },
-                            ]}
-                        />
+                    <Allotment vertical>
+                        <Allotment>
+                            <Allotment.Pane minSize={732}>
+                                {/* Working Area */}
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        height: '100%',
+                                        px: 2,
+                                        pt: 2,
+                                        overflow: 'hidden',
+                                    }}
+                                >
+                                    <GenericPageHeader
+                                        title={'Formular: ' + loadedForm.internalTitle}
+                                        badge={{
+                                            color: 'default',
+                                            label: `Version ${loadedForm.version}`,
+                                        }}
+                                        icon={ModuleIcons.forms}
+                                        actions={[
+                                            {
+                                                tooltip: 'Änderung rückgängig machen',
+                                                icon: <UndoIcon />,
+                                                onClick: handleUndo,
+                                                disabled: !hasPastLoadedForm,
+                                                visible: loadedForm.status === FormStatus.Drafted,
+                                            },
+                                            {
+                                                tooltip: 'Änderung wiederherstellen',
+                                                icon: <RedoIcon />,
+                                                onClick: handleRedo,
+                                                disabled: !hasFutureLoadedForm,
+                                                visible: loadedForm.status === FormStatus.Drafted,
+                                            },
+                                            'separator',
+                                            {
+                                                tooltip: 'Historie anzeigen',
+                                                icon: <AccessTimeIcon />,
+                                                onClick: () => {
+                                                    setShowRevisions(true);
+                                                },
+                                                visible: canViewHistory,
+                                            },
+                                            {
+                                                tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
+                                                icon: disableValidation ? <DoneAllOutlinedIcon /> :
+                                                    <RemoveDoneOutlinedIcon />,
+                                                onClick: () => {
+                                                    dispatch(toggleValidation());
+                                                },
+                                            },
+                                            {
+                                                tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
+                                                icon: disableVisibility ? <VisibilityOutlinedIcon /> :
+                                                    <VisibilityOffOutlinedIcon />,
+                                                onClick: () => {
+                                                    dispatch(toggleVisibility());
+                                                },
+                                            },
+                                            'separator',
+                                            {
+                                                tooltip: 'Admin-Werkzeuge öffnen',
+                                                icon: <HandymanOutlinedIcon />,
+                                                onClick: () => {
+                                                    setShowAdminTools(true);
+                                                },
+                                            },
+                                            {
+                                                tooltip: hideComponentTree ? 'Formularstruktur einblenden' : 'Formularstruktur ausblenden',
+                                                icon: hideComponentTree ? <DesktopWindowsOutlinedIcon /> :
+                                                    <DesktopAccessDisabledOutlinedIcon />,
+                                                onClick: () => {
+                                                    dispatch(toggleComponentTree());
+                                                },
+                                            },
+                                            {
+                                                tooltip: 'Formular als antragstellende Person öffnen (in neuem Tab)',
+                                                icon: <LaunchOutlinedIcon />,
+                                                href: `/${loadedForm.slug ?? ''}/${loadedForm.version ?? ''}`,
+                                            },
+                                        ]}
+                                    />
 
-                        <Paper
-                            sx={{
-                                overflowY: 'scroll',
-                                flex: 1,
-                                mt: 2,
-                            }}
-                            ref={scrollContainerRef}
-                        >
-                            <ThemeProvider theme={_theme}>
-                                <ViewDispatcherComponent
-                                    rootElement={loadedForm.rootElement}
-                                    allElements={allElements}
-                                    element={loadedForm.rootElement}
-                                    scrollContainerRef={scrollContainerRef}
-                                    isBusy={false}
-                                    isDeriving={false}
-                                    mode="editor"
-                                    elementData={elementData}
-                                    onElementDataChange={setElementData}
-                                    onElementBlur={undefined}
-                                    derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
-                                    disableVisibility={disableVisibility}
-                                />
+                                    <Paper
+                                        sx={{
+                                            overflowY: 'auto',
+                                            flex: 1,
+                                            mt: 2,
+                                            minHeight: 0,
+                                            borderTopLeftRadius: 10,
+                                            borderTopRightRadius: 10,
+                                        }}
+                                        ref={scrollContainerRef}
+                                    >
+                                        <ThemeProvider theme={_theme}>
+                                            <ViewDispatcherComponent
+                                                rootElement={loadedForm.rootElement}
+                                                allElements={allElements}
+                                                element={loadedForm.rootElement}
+                                                scrollContainerRef={scrollContainerRef}
+                                                isBusy={false}
+                                                isDeriving={false}
+                                                mode="editor"
+                                                elementData={elementData}
+                                                onElementDataChange={setElementData}
+                                                onElementBlur={undefined}
+                                                derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                                disableVisibility={disableVisibility}
+                                            />
 
-                                <HelpDialog
-                                    onHide={() => dispatch(showDialog(undefined))}
-                                    open={metaDialog === HelpDialogId}
-                                />
+                                            <HelpDialog
+                                                onHide={() => dispatch(showDialog(undefined))}
+                                                open={metaDialog === HelpDialogId}
+                                            />
 
-                                <PrivacyDialog
-                                    onHide={() => dispatch(showDialog(undefined))}
-                                    open={metaDialog === PrivacyDialogId}
-                                />
+                                            <PrivacyDialog
+                                                onHide={() => dispatch(showDialog(undefined))}
+                                                open={metaDialog === PrivacyDialogId}
+                                            />
 
-                                <ImprintDialog
-                                    onHide={() => dispatch(showDialog(undefined))}
-                                    open={metaDialog === ImprintDialogId}
-                                />
+                                            <ImprintDialog
+                                                onHide={() => dispatch(showDialog(undefined))}
+                                                open={metaDialog === ImprintDialogId}
+                                            />
 
-                                <AccessibilityDialog
-                                    onHide={() => dispatch(showDialog(undefined))}
-                                    open={metaDialog === AccessibilityDialogId}
-                                />
-                            </ThemeProvider>
-                        </Paper>
-                    </Box>
+                                            <AccessibilityDialog
+                                                onHide={() => dispatch(showDialog(undefined))}
+                                                open={metaDialog === AccessibilityDialogId}
+                                            />
+                                        </ThemeProvider>
+                                    </Paper>
+                                </Box>
+                            </Allotment.Pane>
+                            {/* Element Tree */}
+                            {
+                                !hideComponentTree &&
+                                (
+                                    <Allotment.Pane
+                                        minSize={480}
+                                        preferredSize={480}
+                                    >
+                                        <Paper
+                                            sx={{
+                                                px: 2,
+                                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                                borderLeft: '1px solid #E0E7E0',
+                                                borderRadius: 0,
+                                                position: 'relative',
+                                                height: '100%',
+                                                overflow: 'hidden',
+                                            }}
+                                        >
+                                            <ElementTree
+                                                entity={loadedForm}
+                                                onPatch={handlePatch}
+                                                editable={isEditable}
+                                                scope="application"
+                                                enabledIdentityProviderInfos={identityProviderInfos}
+                                            />
+                                        </Paper>
+                                    </Allotment.Pane>
+                                )}
 
-                    {/* Element Tree */}
-                    {
-                        !hideComponentTree &&
-                        <Paper
-                            sx={{
-                                px: 2,
-                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                borderLeft: '1px solid #E0E7E0',
-                                borderRadius: 0,
-                                position: 'relative',
-                                width: '24rem',
-                                height: '100vh',
-                            }}
-                        >
-                            <ElementTree
-                                entity={loadedForm}
-                                onPatch={handlePatch}
-                                editable={isEditable}
-                                scope="application"
-                                enabledIdentityProviderInfos={identityProviderInfos}
-                            />
-                        </Paper>
-                    }
+                        </Allotment>
+
+                        {showDeveloperTools !== undefined && (
+                            <Allotment.Pane
+                                minSize={developerToolsMinHeight}
+                                maxSize={developerToolsMaxHeight}
+                                preferredSize={420}
+                            >
+                                <Box sx={{height: '100%', overflow: 'auto'}}>
+                                    <DeveloperTools
+                                        rootElement={loadedForm.rootElement}
+                                        elementData={elementData}
+                                        onElementDataChange={setElementData}
+                                    />
+                                </Box>
+
+                            </Allotment.Pane>
+                        )}
+
+                    </Allotment>
                 </Box>
 
                 <AdminToolsDialog
@@ -640,12 +679,6 @@ export function FormDetailsPage() {
                     onClose={() => {
                         setShowAdminTools(false);
                     }}
-                />
-
-                <DeveloperTools
-                    rootElement={loadedForm.rootElement}
-                    elementData={elementData}
-                    onElementDataChange={setElementData}
                 />
 
                 <FormRevisionsDialog

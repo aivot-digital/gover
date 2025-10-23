@@ -1,5 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {Box, Button, Divider, Typography} from '@mui/material';
+import {Box, Button} from '@mui/material';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 import {type ElementTreeProps} from './element-tree-props';
@@ -14,7 +14,6 @@ import {isForm} from '../../models/entities/form';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import {type ElementTreeEntity} from './element-tree-entity';
-import {AppInfo} from '../../app-info';
 import {StepElement} from '../../models/elements/steps/step-element';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 
@@ -235,6 +234,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             endIcon={<AddCircleOutlineOutlinedIcon sx={{transform: 'translateY(-1px)'}} />}
                             sx={{
                                 mt: 4,
+                                mb: 3,
                             }}
                         >
                             {
@@ -244,41 +244,6 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             }
                         </Button>
                     }
-
-                    <Divider
-                        sx={{
-                            mt: 3,
-                            mb: 2,
-                            borderColor: '#16191F',
-                        }}
-                    />
-
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '20px',
-                        }}
-                    >
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                color: '#BFBFBF',
-                            }}
-                        >
-                            &copy; {new Date(AppInfo.date).getFullYear()} Aivot
-                        </Typography>
-
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                color: '#BFBFBF',
-                            }}
-                        >
-                            Gover Version {AppInfo.version}
-                        </Typography>
-                    </Box>
                 </Box>
             </Box>
 

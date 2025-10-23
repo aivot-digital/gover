@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react';
 
 import './index.scss';
 import "simplebar-react/dist/simplebar.min.css";
+import "allotment/dist/style.css";
 import {CssBaseline, ThemeProvider} from '@mui/material';
 import {BaseTheme} from './theming/base-theme';
 import {
