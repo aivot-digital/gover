@@ -86,7 +86,7 @@ public class DashboardController {
                 "processes",
                 "Modellierte Prozesse",
                 "werden von eingehenden Anträgen durchlaufen",
-                999,
+                54,
                 "/processes"
         );
     }

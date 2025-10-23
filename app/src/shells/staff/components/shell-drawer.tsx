@@ -59,12 +59,12 @@ const DrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.tasks,
                 label: 'Aufgaben',
                 disabled: true,
+                chipContent: 26,
             },
             {
                 icon: ModuleIcons.submissions,
                 label: 'Vorgänge',
                 to: '/submissions',
-                chipContent: 26,
             },
             {
                 icon: ModuleIcons.forms,

@@ -25,6 +25,7 @@ import {ShellSessionExpiredDialog} from './components/shell-session-expired-dial
 import {isApiError} from '../../models/api-error';
 import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
+import { ShellResolutionOverlay } from './components/shell-resolution-overlay';
 
 interface StaffShellProps {
     children?: ReactNode;
@@ -142,6 +143,7 @@ export function StaffShell(props: StaffShellProps) {
                     <ShellSessionEndWarnPopup />
                     <ShellSessionExpiredDialog />
                     <ShellSnackbarContainer />
+                    <ShellResolutionOverlay />
                 </>
             }
         </>
