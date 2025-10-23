@@ -18,19 +18,15 @@ class NoCodeGreaterThanOperatorTest {
         var data = ElementData.of("a", 5, "b", 3);
 
         // Test greater than
-        assertEquals(NoCodeDataType.Boolean, operator.performEvaluation(data, 5, 3).getDataType());
         assertEquals(Boolean.TRUE, operator.performEvaluation(data, 5, 3).getValue());
 
         // Test not greater than
-        assertEquals(NoCodeDataType.Boolean, operator.performEvaluation(data, 3, 5).getDataType());
         assertEquals(Boolean.FALSE, operator.performEvaluation(data, 3, 5).getValue());
 
         // Test equal values
-        assertEquals(NoCodeDataType.Boolean, operator.performEvaluation(data, 5, 5).getDataType());
         assertEquals(Boolean.FALSE, operator.performEvaluation(data, 5, 5).getValue());
 
         // Test null values
-        assertEquals(NoCodeDataType.Boolean, operator.evaluate(data, null, 5).getDataType());
         assertEquals(Boolean.TRUE, operator.evaluate(data, 5, null).getValue());
 
         // Test wrong argument count

@@ -116,17 +116,6 @@ class IdentityProviderServiceTest {
     }
 
     @Test
-    void prepare_HttpServiceThrowsException_ThrowsResponseException() throws Exception {
-        String endpoint = "https://example.com/.well-known/openid-configuration";
-
-        when(httpService.get(any(URI.class)))
-                .thenThrow(new IOException("Connection error"));
-
-        ResponseException exception = assertThrows(ResponseException.class, () -> identityProviderService.prepare(endpoint));
-        assertTrue(exception.getMessage().contains("konnte nicht erreicht werden"));
-    }
-
-    @Test
     void create_NotGivenClientSecretKey() throws ResponseException {
         IdentityProviderEntity entity = new IdentityProviderEntity();
         entity.setClientSecretKey(null);

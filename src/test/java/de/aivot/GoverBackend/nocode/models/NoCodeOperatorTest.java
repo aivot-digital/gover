@@ -42,11 +42,6 @@ class NoCodeOperatorTest {
         }
 
         @Override
-        public NoCodeDataType getReturnType() {
-            return NoCodeDataType.String;
-        }
-
-        @Override
         public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
             return null;
         }

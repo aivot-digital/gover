@@ -18,11 +18,9 @@ class NoCodeNotOperatorTest {
         var data = ElementData.of("a", true, "b", false);
 
         // Test true value
-        assertEquals(NoCodeDataType.Boolean, operator.evaluate(data, true).getDataType());
         assertEquals(Boolean.FALSE, operator.evaluate(data, true).getValue());
 
         // Test false value
-        assertEquals(NoCodeDataType.Boolean, operator.evaluate(data, false).getDataType());
         assertEquals(Boolean.TRUE, operator.evaluate(data, false).getValue());
 
         // Test null value

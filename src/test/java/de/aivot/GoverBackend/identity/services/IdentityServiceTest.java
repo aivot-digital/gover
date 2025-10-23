@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.identity.services;
 
+import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
@@ -185,7 +186,7 @@ class IdentityServiceTest {
     }
 
     @Test
-    void handleCallback_ShouldProcessCallbackSuccessfully() throws ResponseException, IOException, InterruptedException {
+    void handleCallback_ShouldProcessCallbackSuccessfully() throws ResponseException, IOException, InterruptedException, HttpConnectionException {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
@@ -255,7 +256,7 @@ class IdentityServiceTest {
     }
 
     @Test
-    void handleCallback_ShouldThrowException_WhenTokenRetrievalFails() throws ResponseException, IOException, InterruptedException {
+    void handleCallback_ShouldThrowException_WhenTokenRetrievalFails() throws ResponseException, IOException, InterruptedException, HttpConnectionException {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
@@ -286,7 +287,7 @@ class IdentityServiceTest {
     }
 
     @Test
-    void handleCallback_ShouldPerformLogoutSuccessfully() throws ResponseException, IOException, InterruptedException {
+    void handleCallback_ShouldPerformLogoutSuccessfully() throws ResponseException, IOException, InterruptedException, HttpConnectionException {
         UUID providerKey = UUID.randomUUID();
         String authorizationCode = "auth-code";
         URI callbackUrl = URI.create("https://example.com/callback");
