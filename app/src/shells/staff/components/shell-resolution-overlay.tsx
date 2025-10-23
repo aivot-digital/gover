@@ -70,11 +70,9 @@ export function ShellResolutionOverlay() {
                     Verfügung steht.
                 </Typography>
                 <Typography sx={{mb: 4}}>
-                    Diese Webanwendung erfordert mindestens <b>1280 × 720 Pixel</b>.
+                    Diese Webanwendung erfordert <b>mindestens 1280 × 720 Pixel</b>.
                     <br />
-                    Aktuell beträgt die Auflösung Ihres Fensters{' '}
-                    <b>{dims.w} × {dims.h}</b>
-                    Pixel.
+                    Aktuell beträgt die Auflösung Ihres Fensters nur {dims.w} × {dims.h} Pixel.
                     <br />
                     Bitte vergrößern Sie Ihr Fenster oder verwenden Sie ein Gerät mit höherer Auflösung,
                     z.&nbsp;B. einen Laptop oder Desktop-PC.
