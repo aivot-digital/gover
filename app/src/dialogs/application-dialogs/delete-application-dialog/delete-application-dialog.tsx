@@ -1,24 +1,14 @@
 import {type DeleteApplicationDialogProps} from './delete-application-dialog-props';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
-import React, { useEffect, useState } from 'react';
-import {
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    List, ListItem, ListItemIcon, ListItemText, Typography,
-} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, List, ListItem, ListItemIcon, ListItemText, Typography} from '@mui/material';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {useApi} from '../../../hooks/use-api';
-import {FormsApiService} from '../../../modules/forms/forms-api-service';
 import {SubmissionsApiService} from '../../../modules/submissions/submissions-api-service';
-import {SubmissionListResponseDTO} from '../../../modules/submissions/dtos/submission-list-response-dto';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {SubmissionWithMembershipResponseDTO} from '../../../modules/submissions/dtos/submission-with-membership-response-dto';
 
 export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
@@ -37,7 +27,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
 
         setIsBusy(true);
         new SubmissionsApiService(api)
-            .list(0, 999, undefined, undefined, {
+            .listAll({
                 notTestSubmission: true,
                 notArchived: true,
                 formId: props.form.id,
@@ -55,7 +45,10 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
     }, [props.form]);
 
     const handleDelete = (): void => {
-        props.onDelete();
+        if (props.form == null) {
+            return;
+        }
+        props.onDelete(props.form);
     };
 
     return (

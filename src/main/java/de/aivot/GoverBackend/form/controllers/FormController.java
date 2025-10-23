@@ -703,6 +703,49 @@ public class FormController {
         return FormDetailsResponseDTO.fromEntity(revokedForm);
     }
 
+    /**
+     * Move a form to another department.
+     *
+     * @param jwt    The authentication object.
+     * @param formId The id of the form.
+     * @param targetDepartmentId The id of the target department.
+     */
+    @PutMapping("{formId}/move/")
+    public void move(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer formId,
+            @Nonnull @RequestParam Integer targetDepartmentId
+    ) throws ResponseException {
+        // Extract staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Retrieve the form by its id
+        var form = formService
+                .retrieve(formId)
+                .orElseThrow(ResponseException::notFound);
+
+        // Check if the user has access to the department the form resides in
+        if (!user.getGlobalAdmin()) {
+            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
+                throw ResponseException.forbidden("User does not have access to the department.");
+            }
+
+            // TODO: Check user role
+        }
+
+        // Check if the form is locked by another user
+        checkFormLock(formId, user);
+
+        // Move the form to the target department
+        form.setDevelopingDepartmentId(targetDepartmentId);
+
+        // Create a revision for the form
+        formService.update(formId, form);
+    }
+
+
     @DeleteMapping("{formId}/")
     public void deleteAll(
             @Nullable @AuthenticationPrincipal Jwt jwt,

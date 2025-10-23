@@ -2,6 +2,6 @@ import {FormListResponseDTO} from '../../../modules/forms/dtos/form-list-respons
 
 export interface DeleteApplicationDialogProps {
     form?: FormListResponseDTO;
-    onDelete: () => void;
+    onDelete: (form: FormListResponseDTO) => void;
     onCancel: () => void;
 }
