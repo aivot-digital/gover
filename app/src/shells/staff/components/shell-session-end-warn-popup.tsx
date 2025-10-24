@@ -37,7 +37,7 @@ export function ShellSessionEndWarnPopup() {
         new AuthService().refresh();
     };
 
-    if (secondsUntilExpiration > expirationThresholdSeconds) {
+    if (secondsUntilExpiration <= 0 || secondsUntilExpiration > expirationThresholdSeconds) {
         return null;
     }
 
