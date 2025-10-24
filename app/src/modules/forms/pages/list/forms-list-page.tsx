@@ -446,12 +446,8 @@ export function FormsListPage() {
                     }}
                     onNewForm={handleFormClone}
                     onChange={() => {
-                        console.log('Change from versions dialog received');
                         if (listControlRef.current?.refresh != null) {
-                            console.log('Refreh ref exists, calling');
                             listControlRef.current.refresh();
-                        } else {
-                            console.log('No refresh ref');
                         }
                     }}
                 />
