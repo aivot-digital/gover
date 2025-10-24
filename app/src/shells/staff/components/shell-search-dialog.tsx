@@ -232,13 +232,18 @@ function SearchDialogListItem(props: ShellSearchDialogProps) {
                 slotProps={{
                     primary: {
                         sx: {
-                            whiteSpace: 'normal',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                         },
                     },
                 }}
             />
             <Chip
                 size="small"
+                sx={{
+                    ml: 1,
+                }}
                 label={OriginTableLabels[type] ?? 'Unbekannt'}
             />
         </ListItem>
