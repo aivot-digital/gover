@@ -37,6 +37,8 @@ import {ElementData, ElementDerivationResponse} from '../../../models/element-da
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {addDerivationLogItems} from '../../../slices/logging-slice';
+import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -107,7 +109,14 @@ export function PresetEditPage() {
 
         presetsApiService
             .retrieve(presetKey)
-            .then(setPreset)
+            .then((preset) => {
+                setPreset(preset);
+                dispatch(addEntityHistoryItem({
+                    type: ServerEntityType.Presets,
+                    link: `/presets/edit/${preset.key}/${versionNumber}`,
+                    title: preset.title,
+                }));
+            })
             .catch(() => {
                 setNetworkError({
                     title: 'Fehler beim Laden der Vorlage',

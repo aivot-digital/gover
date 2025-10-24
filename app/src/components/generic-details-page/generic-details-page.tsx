@@ -42,6 +42,10 @@ async function fetchData<ItemType, ID, AdditionalData>(api: Api, id: ID, props: 
 }
 
 export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericDetailsPageProps<ItemType, ID, AdditionalData>) {
+    const {
+        entityType,
+    } = props;
+
     const api = useApi();
     const params = useParams();
     const navigate = useNavigate();
@@ -109,11 +113,15 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         if (id === NEW_ID_INDICATOR) {
             return;
         }
+        if (entityType == null) {
+            return;
+        }
         dispatch(addEntityHistoryItem({
             link: location.pathname,
             title: headerTitle,
+            type: entityType,
         }));
-    }, [id, item, headerTitle]);
+    }, [id, entityType, item, headerTitle]);
 
     return (
         <>

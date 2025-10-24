@@ -6,6 +6,7 @@ import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
 import React from 'react';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function SecretsDetailsPage() {
     useAdminGuard();
@@ -66,6 +67,7 @@ export function SecretsDetailsPage() {
                     label: "Liste der Geheimnisse",
                     to: "/secrets",
                 }}
+                entityType={ServerEntityType.Secrets}
             />
         </PageWrapper>
     );

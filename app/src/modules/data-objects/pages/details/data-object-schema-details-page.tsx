@@ -10,6 +10,7 @@ import {useMemo, useRef} from 'react';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import {downloadObjectFile} from '../../../../utils/download-utils';
 import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function DataObjectSchemaDetailsPage() {
     useAdminGuard();
@@ -101,6 +102,7 @@ export function DataObjectSchemaDetailsPage() {
                     label: 'Liste der Datenobjektschemata',
                     to: '/data-objects',
                 }}
+                entityType={ServerEntityType.DataObjectSchemas}
             />
         </PageWrapper>
     );

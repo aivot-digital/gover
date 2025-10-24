@@ -60,6 +60,8 @@ import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
 import {Allotment} from 'allotment';
 import {useElementSize} from '../../../../utils/element-size';
+import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export const DialogSearchParam = 'dialog';
 
@@ -180,6 +182,11 @@ export function FormDetailsPage() {
                 .then((app) => {
                     CustomerInputService.cleanCustomerInput(app);
                     dispatch(updateLoadedForm(app));
+                    dispatch(addEntityHistoryItem({
+                        title: app.internalTitle,
+                        link: `/forms/${app.id}/${app.version}`,
+                        type: ServerEntityType.Forms,
+                    }));
                 })
                 .catch((err) => {
                     console.error(err);

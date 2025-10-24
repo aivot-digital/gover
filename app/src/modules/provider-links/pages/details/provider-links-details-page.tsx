@@ -6,6 +6,7 @@ import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
 import {ProviderLinksApiService} from '../../provider-links-api-service';
 import {ProviderLink} from '../../models/provider-link';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function ProviderLinksDetailsPage() {
     useAdminGuard();
@@ -67,6 +68,7 @@ export function ProviderLinksDetailsPage() {
                     label: "Liste der Links",
                     to: "/provider-links",
                 }}
+                entityType={ServerEntityType.ProviderLinks}
             />
         </PageWrapper>
     );

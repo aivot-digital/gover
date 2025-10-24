@@ -1,10 +1,9 @@
-import {Box, Dialog, DialogContent, List, ListItem, ListItemIcon, ListItemText, Skeleton, Typography} from '@mui/material';
+import {Box, Dialog, DialogContent, List, ListItem, ListItemIcon, ListItemText, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectShowSearchDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {useEffect, useState} from 'react';
-import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {SearchItemService} from '../../../modules/search/search-item-service';
 import {Page} from '../../../models/dtos/page';
 import {SearchItemResponseDto} from '../../../modules/search/dtos/search-item-response-dto';
@@ -17,6 +16,7 @@ import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../utils/string
 import Chip from '@mui/material/Chip';
 import {SearchInput} from '../../../components/search-input-2/search-input';
 import {selectEntityHistory} from '../../../slices/entity-history-slice';
+import {ServerEntityType} from '../data/server-entity-type';
 
 export function ShellSearchDialog() {
     const dispatch = useAppDispatch();
@@ -80,28 +80,14 @@ export function ShellSearchDialog() {
                         searchResults.content.length > 0 &&
                         <List>
                             {searchResults.content.map(item => (
-                                <ListItem
+                                <SearchDialogListItem
                                     key={item.id + item.originTable}
-                                    component={Link}
-                                    to={createSearchItemLink(item)}
-                                    onClick={handleClose}
-                                    dense={true}
-                                    sx={{
-                                        borderBottom: '1px solid #eee',
-                                    }}
-                                >
-                                    <ListItemIcon>
-                                        {OriginTableIcons[item.originTable] ?? <HelpClinic />}
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={item.label}
-                                        secondary={item.originTable === 'data_object_items' ? `Hinweis: Das Datenobjekt beinhaltet den Wert „${search}“` : null}
-                                    />
-                                    <Chip
-                                        size="small"
-                                        label={OriginTableLabels[item.originTable] ?? item.originTable}
-                                    />
-                                </ListItem>
+                                    id={item.id}
+                                    type={item.originTable}
+                                    link={createSearchItemLink(item)}
+                                    search={search}
+                                    label={item.label}
+                                />
                             ))}
                         </List>
                     }
@@ -138,22 +124,18 @@ export function ShellSearchDialog() {
                                 Kürzlich angesehene Objekte
                             </Typography>
                             <List>
-                                {entityHistory.map(item => (
-                                    <ListItem
-                                        key={item.link}
-                                        component={Link}
-                                        to={item.link}
-                                        onClick={handleClose}
-                                        dense={true}
-                                        sx={{
-                                            borderBottom: '1px solid #eee',
-                                        }}
-                                    >
-                                        <ListItemText
-                                            primary={item.title}
+                                {
+                                    entityHistory.map(item => (
+                                        <SearchDialogListItem
+                                            key={item.link}
+                                            id={item.title}
+                                            type={item.type}
+                                            link={item.link}
+                                            search={search}
+                                            label={item.title}
                                         />
-                                    </ListItem>
-                                ))}
+                                    ))
+                                }
                             </List>
                         </>
                     }
@@ -204,5 +186,61 @@ export function ShellSearchDialog() {
                 </Box>
             </DialogContent>
         </Dialog>
+    );
+}
+
+interface ShellSearchDialogProps {
+    search: string;
+    id: string;
+    type: ServerEntityType;
+    link: string;
+    label: string;
+}
+
+function SearchDialogListItem(props: ShellSearchDialogProps) {
+    const {
+        id,
+        type,
+        link,
+        search,
+        label,
+    } = props;
+
+    const dispatch = useAppDispatch();
+
+    const handleClose = () => {
+        dispatch(setShowSearchDialog(false));
+    };
+
+    return (
+        <ListItem
+            key={id + type}
+            component={Link}
+            to={link}
+            onClick={handleClose}
+            dense={true}
+            sx={{
+                borderBottom: '1px solid #eee',
+            }}
+        >
+            <ListItemIcon>
+                {OriginTableIcons[type] ?? <HelpClinic />}
+            </ListItemIcon>
+            <ListItemText
+                primary={label}
+                secondary={(isStringNotNullOrEmpty(search) && type === ServerEntityType.DataObjectItems) ? `Hinweis: Das Datenobjekt beinhaltet den Wert „${search}“` : null}
+                slotProps={{
+                    primary: {
+                        sx: {
+                            whiteSpace: 'normal',
+                        },
+                    },
+                }}
+            />
+            <Chip
+                size="small"
+                label={OriginTableLabels[type] ?? 'Unbekannt'}
+            />
+        </ListItem>
     );
 }

@@ -90,7 +90,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                         skipValuesForElementIds: [],
                     },
                 });
-            onElementDataChange(res);
+            onElementDataChange(res.elementData);
         } catch (error) {
             if (isApiError(error) && error.displayableToUser) {
                 dispatch(showErrorSnackbar(error.message));
