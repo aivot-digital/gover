@@ -1,13 +1,26 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
-import type {AlertColor} from '@mui/material';
 import type {SystemSetupDTO} from '../modules/system/dtos/system-setup-dto';
 import type {RootState} from '../store.staff';
+
+export enum SnackbarSeverity {
+    Info = 'info',
+    Success = 'success',
+    Warning = 'warning',
+    Error = 'error',
+}
+
+export enum SnackbarType {
+    AutoHiding = 'autoHiding',
+    Loading = 'loading',
+    Dismissable = 'dismissable',
+    Permanent = 'permanent',
+}
 
 interface SnackbarMessage {
     key: string; // Einzigartiger Schlüssel für jede Nachricht
     message: string;
-    severity: AlertColor;
-    duration?: number; // Dauer in Millisekunden, optional, if 0 then persistent
+    severity: SnackbarSeverity;
+    type: SnackbarType;
 }
 
 interface LoadingMessage {
@@ -31,7 +44,7 @@ export enum ShellStatus {
 
 interface ShellState {
     status: ShellStatus;
-    snackbars?: SnackbarMessage[];
+    snackbars: SnackbarMessage[];
     loading?: LoadingMessage;
     error?: ErrorMessage;
     setup?: SystemSetupDTO;
@@ -42,6 +55,7 @@ interface ShellState {
 
 const initialState: ShellState = {
     status: ShellStatus.Loading,
+    snackbars: [],
     minimizeDrawer: localStorage.getItem('minimizeDrawer') != null,
     showSearchDialog: false,
     showAboutGoverDialog: false,
@@ -78,11 +92,17 @@ const shellSlice = createSlice({
             state.error = action.payload;
         },
         addSnackbarMessage(state, action: PayloadAction<SnackbarMessage>) {
-            if (!state.snackbars) {
-                state.snackbars = [];
+            // If key exists, update the message, else add new
+            const existingIndex = state.snackbars.findIndex(msg => msg.key === action.payload.key);
+            if (existingIndex !== -1) {
+                state.snackbars[existingIndex] = action.payload;
+            } else {
+                state.snackbars.push(action.payload);
             }
-            state.snackbars.push(action.payload);
-        }
+        },
+        removeSnackbarMessage(state, action: PayloadAction<string>) {
+            state.snackbars = state.snackbars.filter(msg => msg.key !== action.payload);
+        },
     },
 });
 
@@ -95,6 +115,7 @@ export const {
     setLoadingMessage,
     setErrorMessage,
     addSnackbarMessage,
+    removeSnackbarMessage,
 } = shellSlice.actions;
 
 export const selectStatus = (state: RootState) => state.shell.status;
@@ -105,5 +126,6 @@ export const selectShowSearchDialog = (state: RootState) => state.shell.showSear
 export const selectShowAboutGoverDialog = (state: RootState) => state.shell.showAboutGoverDialog;
 export const selectLoadingMessage = (state: RootState) => state.shell.loading;
 export const selectErrorMessage = (state: RootState) => state.shell.error;
+export const selectSnackbarMessages = (state: RootState) => state.shell.snackbars;
 
 export const shellReducer = shellSlice.reducer;

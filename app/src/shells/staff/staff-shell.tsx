@@ -6,7 +6,7 @@ import {setMemberships, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {addSnackbarMessage, selectSetup, selectStatus, setSetup, setStatus, ShellStatus} from '../../slices/shell-slice';
+import {addSnackbarMessage, selectSetup, selectStatus, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
 import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
@@ -42,10 +42,10 @@ export function StaffShell(props: StaffShellProps) {
     useEffect(() => {
         window.addEventListener(API_EVENT_UNREACHABLE, function () {
             dispatch(addSnackbarMessage({
-                key: `api-unreachable}`,
-                duration: 0,
+                key: 'api-unreachable',
                 message: 'Die Verbindung zum Server wurde unterbrochen. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
-                severity: 'error',
+                severity: SnackbarSeverity.Error,
+                type: SnackbarType.Dismissable,
             }));
         });
     }, []);

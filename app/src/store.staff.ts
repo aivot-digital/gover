@@ -4,7 +4,6 @@ import {adminSettingsReducer} from './slices/admin-settings-slice';
 import {userReducer} from './slices/user-slice';
 import {systemConfigReducer} from './slices/system-config-slice';
 import {stepperReducer} from './slices/stepper-slice';
-import {snackbarReducer} from './slices/snackbar-slice';
 import {authReducer} from './slices/auth-slice';
 import {loadingOverlayReducer} from './slices/loading-overlay-slice';
 import {loggingReducer} from './slices/logging-slice';
@@ -23,7 +22,6 @@ export const store = configureStore({
         systemConfig: systemConfigReducer,
         stepper: stepperReducer,
         shell: shellReducer,
-        snackbar: snackbarReducer,
         loadingOverlay: loadingOverlayReducer,
         logging: loggingReducer,
     },

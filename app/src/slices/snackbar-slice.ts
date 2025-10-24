@@ -1,80 +1,36 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AlertColor } from '@mui/material';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from './shell-slice';
 
-interface SnackbarMessage {
-    key: string; // Einzigartiger Schlüssel für jede Nachricht
-    message: string;
-    severity: AlertColor;
-}
-
-interface SnackbarState {
-    messages: SnackbarMessage[];
-}
-
-const initialState: SnackbarState = {
-    messages: [],
+export const showSuccessSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message,
+        severity: SnackbarSeverity.Success,
+        type: SnackbarType.AutoHiding,
+    });
 };
 
-const snackbarSlice = createSlice({
-    name: 'snackbar',
-    initialState,
-    reducers: {
-        showSuccessSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'success',
-            });
-        },
-        showErrorSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'error',
-            });
-        },
-        showInfoSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'info',
-            });
-        },
-        showWarningSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'warning',
-            });
-        },
-        removeSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages = state.messages.filter(msg => msg.key !== action.payload);
-        },
-        showLoadingSnackbar: (state, action: PayloadAction<string>) => {
-            const key = 'loading-toast';
-            const alreadyExists = state.messages.find(msg => msg.key === key);
-            if (!alreadyExists) {
-                state.messages.unshift({
-                    key,
-                    message: action.payload,
-                    severity: 'info',
-                });
-            }
-        },
-        removeLoadingSnackbar: (state) => {
-            state.messages = state.messages.filter(msg => msg.key !== 'loading-toast');
-        },
-    },
-});
+export const showErrorSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message,
+        severity: SnackbarSeverity.Error,
+        type: SnackbarType.AutoHiding,
+    });
+}
 
-export const {
-    showSuccessSnackbar,
-    showErrorSnackbar,
-    showInfoSnackbar,
-    showWarningSnackbar,
-    removeSnackbar,
-    showLoadingSnackbar,
-    removeLoadingSnackbar,
-} = snackbarSlice.actions;
+export const LOADING_TOAST_SNACKBAR_KEY = 'loading-toast';
 
-export const snackbarReducer = snackbarSlice.reducer;
+export const showLoadingSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: LOADING_TOAST_SNACKBAR_KEY,
+        message: message,
+        severity: SnackbarSeverity.Info,
+        type: SnackbarType.Loading,
+    });
+}
+
+export const removeSnackbar = removeSnackbarMessage;
+
+export const removeLoadingSnackbar = () => {
+    return removeSnackbarMessage(LOADING_TOAST_SNACKBAR_KEY);
+}
