@@ -69,7 +69,7 @@ export function createAppTheme(appTheme: Theme | undefined, baseTheme: MuiTheme)
         success: {
             main: appTheme?.success ?? '#378550',
         },
-        mode: (appTheme?.name ?? '').startsWith('_') ? 'dark' : 'light',
+        mode: 'light',
         background: {
             default: "#F6F6F6"
         },
