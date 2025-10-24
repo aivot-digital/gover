@@ -1,5 +1,6 @@
 import {getUrlWithoutQuery} from '../utils/location-utils';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../utils/string-utils';
+import {dispatchApiUnreachableEvent, handleFetchError} from './base-api-service';
 
 const TOKEN_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`;
 const AUTH_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth`;
@@ -190,16 +191,25 @@ export class AuthService {
             redirect_uri: getUrlWithoutQuery(),
         });
 
-        const response = await fetch(TOKEN_URL, {
-            method: 'POST',
-            body: payload,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-            },
-            signal: signal ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
-        });
+        let response: Response;
+        try {
+            response = await fetch(TOKEN_URL, {
+                method: 'POST',
+                body: payload,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                },
+                signal: signal ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+            });
+        } catch(error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200) {
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
+            }
+
             return null;
         }
 
@@ -221,16 +231,25 @@ export class AuthService {
             refresh_token: jwt.refresh.token,
         });
 
-        const response = await fetch(TOKEN_URL, {
-            method: 'POST',
-            body: payload,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-            },
-            signal: signal ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
-        });
+        let response: Response;
+        try {
+            response = await fetch(TOKEN_URL, {
+                method: 'POST',
+                body: payload,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                },
+                signal: signal ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+            });
+        } catch(error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200) {
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
+            }
+
             return null;
         }
 

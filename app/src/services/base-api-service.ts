@@ -434,7 +434,10 @@ export class BaseApiService {
     }
 }
 
-function handleFetchError(error: any): Response {
+export function handleFetchError(error: any): Response {
+    console.log(error.message);
+    console.log(error.name);
+    console.log(JSON.stringify(error));
     if (error.name === 'TimeoutError') {
         const payload: ApiError = {
             status: 504,
@@ -450,9 +453,24 @@ function handleFetchError(error: any): Response {
         });
     }
 
+    if (error.name === 'TypeError') {
+        const payload: ApiError = {
+            status: 503,
+            details: null,
+            message: 'Der Server ist nicht erreichbar. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
+            displayableToUser: true,
+        };
+
+        return Response.json(payload, {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: {},
+        });
+    }
+
     throw error;
 }
 
-function dispatchApiUnreachableEvent(): void {
+export function dispatchApiUnreachableEvent(): void {
     window.dispatchEvent(new Event(API_EVENT_UNREACHABLE));
 }
