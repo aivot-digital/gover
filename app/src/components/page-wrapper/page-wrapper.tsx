@@ -1,17 +1,11 @@
 import {type PageWrapperProps} from './page-wrapper-props';
-import React, {type PropsWithChildren, useState} from 'react';
+import React, {type PropsWithChildren} from 'react';
 import {MetaElement} from '../meta-element/meta-element';
-import {AppToolbar} from '../app-toolbar/app-toolbar';
 import {Box, Container} from '@mui/material';
 import {AlertComponent} from '../alert/alert-component';
 import {LoadingWrapper} from '../loading-wrapper/loading-wrapper';
-import {isNewShellActive} from '../../shells/staff/is-new-shell-active';
 
 export function PageWrapper(props: PropsWithChildren<PageWrapperProps>) {
-    const [toolbarHeight, setToolbarHeight] = useState<number>(0);
-    const updateToolbarHeight = (height: number) => {
-        setToolbarHeight(height);
-    };
     return (
         <Box
             sx={{
@@ -21,21 +15,10 @@ export function PageWrapper(props: PropsWithChildren<PageWrapperProps>) {
             <LoadingWrapper isLoading={props.isLoading}>
                 <MetaElement title={props.title} />
 
-                {
-                    !isNewShellActive() &&
-                    <AppToolbar
-                        title={props.title}
-                        actions={props.toolbarActions}
-                        updateToolbarHeight={updateToolbarHeight}
-                    />
-                }
-
                 <Container
                     sx={{
-                        mt: isNewShellActive() ? undefined : 4,
-                        pt: isNewShellActive() ? (props.fullHeight ? undefined : 2) : undefined,
+                        pt: props.fullHeight ? undefined : 2,
                         pb: props.fullHeight ? undefined : 10,
-                        minHeight: isNewShellActive() ? undefined : 'calc(100vh - ' + toolbarHeight + 'px)',
                     }}
                     maxWidth={props.fullWidth ? false : 'lg'}
                     disableGutters={props.fullWidth}
