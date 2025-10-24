@@ -6,6 +6,7 @@ import {DepartmentsApiService} from '../../departments-api-service';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import {useAdminMembershipGuard} from '../../../../hooks/use-admin-membership-guard';
 import {useParams} from 'react-router-dom';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function DepartmentsDetailsPage() {
     const id = useParams().id;
@@ -71,6 +72,7 @@ export function DepartmentsDetailsPage() {
                     label: "Liste der Fachbereiche",
                     to: "/departments",
                 }}
+                entityType={ServerEntityType.Departments}
             />
         </PageWrapper>
     );

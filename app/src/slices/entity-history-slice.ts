@@ -1,7 +1,9 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import type {RootState} from '../store.staff';
+import {ServerEntityType} from '../shells/staff/data/server-entity-type';
 
 interface EntityHistoryItem {
+    type: ServerEntityType;
     link: string;
     title: string;
 }

@@ -1,34 +1,35 @@
 import {ReactNode} from 'react';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
-export const OriginTableLabels: Record<string, string> = {
-    'assets': 'Datei / Medieninhalt',
-    'departments': 'Fachbereich',
-    'data_object_items': 'Datenobjekt',
-    'data_object_schemas': 'Datenobjektschema',
-    'destinations': 'Schnittstelle',
-    'forms': 'Formular',
-    'identity_providers': 'Nutzerkontenanbieter',
-    'payment_providers': 'Zahlungsanbieter',
-    'presets': 'Vorlage',
-    'provider_links': 'Link',
-    'secrets': 'Geheimnis',
-    'submissions': 'Vorgang',
-    'themes': 'Farbschema',
+export const OriginTableLabels: Record<ServerEntityType, string> = {
+    [ServerEntityType.Assets]: 'Datei / Medieninhalt',
+    [ServerEntityType.Departments]: 'Fachbereich',
+    [ServerEntityType.DataObjectItems]: 'Datenobjekt',
+    [ServerEntityType.DataObjectSchemas]: 'Datenobjektschema',
+    [ServerEntityType.Destinations]: 'Schnittstelle',
+    [ServerEntityType.Forms]: 'Formular',
+    [ServerEntityType.IdentityProviders]: 'Nutzerkontenanbieter',
+    [ServerEntityType.PaymentProviders]: 'Zahlungsanbieter',
+    [ServerEntityType.Presets]: 'Vorlage',
+    [ServerEntityType.ProviderLinks]: 'Link',
+    [ServerEntityType.Secrets]: 'Geheimnis',
+    [ServerEntityType.Submissions]: 'Vorgang',
+    [ServerEntityType.Themes]: 'Farbschema',
 };
 
-export const OriginTableIcons: Record<string, ReactNode> = {
-    'assets': ModuleIcons.assets,
-    'data_object_items': ModuleIcons.dataObjects,
-    'data_object_schemas': ModuleIcons.dataObjects,
-    'departments': ModuleIcons.departments,
-    'destinations': ModuleIcons.destinations,
-    'forms': ModuleIcons.forms,
-    'identity_providers': ModuleIcons.identity,
-    'payment_providers': ModuleIcons.payment,
-    'presets': ModuleIcons.presets,
-    'provider_links': ModuleIcons.providerLinks,
-    'secrets': ModuleIcons.secrets,
-    'submissions': ModuleIcons.submissions,
-    'themes': ModuleIcons.themes,
+export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
+    [ServerEntityType.Assets]: ModuleIcons.assets,
+    [ServerEntityType.Departments]: ModuleIcons.dataObjects,
+    [ServerEntityType.DataObjectItems]: ModuleIcons.dataObjects,
+    [ServerEntityType.DataObjectSchemas]: ModuleIcons.departments,
+    [ServerEntityType.Destinations]: ModuleIcons.destinations,
+    [ServerEntityType.Forms]: ModuleIcons.forms,
+    [ServerEntityType.IdentityProviders]: ModuleIcons.identity,
+    [ServerEntityType.PaymentProviders]: ModuleIcons.payment,
+    [ServerEntityType.Presets]: ModuleIcons.presets,
+    [ServerEntityType.ProviderLinks]: ModuleIcons.providerLinks,
+    [ServerEntityType.Secrets]: ModuleIcons.secrets,
+    [ServerEntityType.Submissions]: ModuleIcons.submissions,
+    [ServerEntityType.Themes]: ModuleIcons.themes,
 };

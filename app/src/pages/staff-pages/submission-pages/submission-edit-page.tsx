@@ -31,6 +31,8 @@ import {ConfirmDialogV2} from '../../../dialogs/confirm-dialog/confirm-dialog-v2
 import {ConfirmDialogOptions} from '../../../hooks/use-confirm-dialog';
 import {isApiError} from '../../../models/api-error';
 import {clearLoadedForm} from '../../../slices/app-slice';
+import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export function SubmissionEditPage() {
     const api = useApi();
@@ -74,6 +76,11 @@ export function SubmissionEditPage() {
                 .retrieve(id)
                 .then((res) => {
                     setSubmission(res);
+                    dispatch(addEntityHistoryItem({
+                        type: ServerEntityType.Submissions,
+                        title: `Antrag ${res.fileNumber != null ? res.fileNumber : res.id}`,
+                        link: `/submissions/${res.id}`,
+                    }))
                 })
                 .catch((err) => {
                     console.error(err);

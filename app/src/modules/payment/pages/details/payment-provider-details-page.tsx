@@ -7,6 +7,7 @@ import {Api} from '../../../../hooks/use-api';
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import {useAdminGuard} from "../../../../hooks/use-admin-guard";
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function PaymentProviderDetailsPage() {
     useAdminGuard();
@@ -85,6 +86,7 @@ export function PaymentProviderDetailsPage() {
                         label: "Liste der Zahlungsdienstleister",
                         to: "/payment-providers",
                     }}
+                    entityType={ServerEntityType.PaymentProviders}
                 />
             </PageWrapper>
         </>

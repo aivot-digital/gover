@@ -5,7 +5,8 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
-import {IdentityProviderType} from "../../enums/identity-provider-type";
+import {IdentityProviderType} from '../../enums/identity-provider-type';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function IdentityProviderDetailsPage() {
     useAdminGuard();
@@ -115,6 +116,7 @@ export function IdentityProviderDetailsPage() {
                         to: '/identity-providers',
                     }}
                     idParam="key"
+                    entityType={ServerEntityType.IdentityProviders}
                 />
             </PageWrapper>
         </>

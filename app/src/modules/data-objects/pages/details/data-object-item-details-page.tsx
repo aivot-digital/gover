@@ -12,6 +12,7 @@ import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loa
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import {DataObjectItem} from '../../models/data-object-item';
 import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function DataObjectItemDetailsPage() {
     useAdminGuard();
@@ -106,6 +107,7 @@ export function DataObjectItemDetailsPage() {
                     label: 'Liste der Datenobjektschemata',
                     to: `/data-objects/${dataObjectSchema.key}/items`,
                 }}
+                entityType={ServerEntityType.DataObjectItems}
             />
         </PageWrapper>
     );

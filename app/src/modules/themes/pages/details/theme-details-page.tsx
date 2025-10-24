@@ -5,6 +5,7 @@ import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
 import {useAdminGuard} from '../../../../hooks/use-admin-guard';
+import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function ThemeDetailsPage() {
     useAdminGuard();
@@ -69,6 +70,7 @@ export function ThemeDetailsPage() {
                     label: "Liste der Farbschemata",
                     to: "/themes",
                 }}
+                entityType={ServerEntityType.Themes}
             />
         </PageWrapper>
     );
