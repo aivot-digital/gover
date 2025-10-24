@@ -26,13 +26,14 @@ public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEnt
     @Query(
             value = """
                         SELECT
-                            *, ts_rank(searchable_element, query) as rank
+                            word_similarity(search_text, :search) as sim,
+                            *
                         FROM
-                            search_items, to_tsquery('german', :search) query
+                            search_items
                         WHERE
-                            searchable_element @@ query
+                            word_similarity(search_text, :search) > 0.1
                         ORDER BY
-                            rank DESC;
+                            sim DESC;
                     """, nativeQuery = true
     )
     Page<SearchItemEntity> search(@Param("search") String search, Pageable pageable);
