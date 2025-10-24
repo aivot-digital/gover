@@ -139,6 +139,7 @@ const DrawerGroups: DrawerGroup[] = [
                     {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
                     {icon: ModuleIcons.identity, label: 'Nutzerkontenanbieter', to: '/identity-providers'},
                     {icon: ModuleIcons.secrets, label: 'Geheimnisse', to: '/secrets'},
+                    {icon: ModuleIcons.destinations, label: 'Schnittstellen', to: '/destinations'},
                     {icon: <ForwardToInbox />, label: 'SMTP-Test', to: '/settings/smtp'},
                     {icon: <PageInfo />, label: 'Systemstatus', to: '/settings/status'},
 
