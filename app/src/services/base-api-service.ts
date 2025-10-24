@@ -17,6 +17,9 @@ const DefaultUnauthorizedApiError: ApiError = {
     displayableToUser: true,
 };
 
+const DEFAULT_TIMEOUT = 1000 * 60; // 1 Minute
+export const API_EVENT_UNREACHABLE = 'api-event-unreachble';
+
 export class BaseApiService {
     private readonly auth = new AuthService();
 
@@ -26,15 +29,23 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'GET',
-            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
-            signal: options?.abort,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'GET',
+                headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -43,13 +54,22 @@ export class BaseApiService {
     }
 
     public async getUnauthenticated<T>(path: string, options?: RequestOptions): Promise<T> {
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'GET',
-            headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
-            signal: options?.abort,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'GET',
+                headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200) {
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
+            }
+
             throw await createApiError(response);
         }
 
@@ -62,15 +82,23 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'GET',
-            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
-            signal: options?.abort,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'GET',
+                headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -79,13 +107,21 @@ export class BaseApiService {
     }
 
     public async getBlobUnauthenticated(path: string, options?: RequestOptions): Promise<Blob> {
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'GET',
-            headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
-            signal: options?.abort,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'GET',
+                headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+            });
+        } catch (error: any) {
+            return handleFetchError(error).blob();
+        }
 
         if (response.status !== 200) {
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
+            }
             throw await createApiError(response);
         }
 
@@ -98,16 +134,24 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'POST',
-            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
-            signal: options?.abort,
-            body: JSON.stringify(body),
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'POST',
+                headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: JSON.stringify(body),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 201) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -121,19 +165,27 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'POST',
-            headers: {
-                ...this.combineHeaders(this.createDefaultHeaders(accessToken), options),
-                'Content-Type': 'application/xml',
-            },
-            signal: options?.abort,
-            body: body,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'POST',
+                headers: {
+                    ...this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                    'Content-Type': 'application/xml',
+                },
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: body,
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 201) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -142,14 +194,22 @@ export class BaseApiService {
     }
 
     public async postUnauthenticated<T, R>(path: string, body: T, options?: RequestOptions): Promise<R> {
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'POST',
-            headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
-            signal: options?.abort,
-            body: JSON.stringify(body),
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'POST',
+                headers: this.combineHeaders({'Content-Type': 'application/json'}, options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: JSON.stringify(body),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 201) {
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
+            }
             throw await createApiError(response);
         }
 
@@ -162,16 +222,24 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'POST',
-            headers: this.combineHeaders({'Authorization': `Bearer ${accessToken}`}, options),
-            signal: options?.abort,
-            body: formData,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'POST',
+                headers: this.combineHeaders({'Authorization': `Bearer ${accessToken}`}, options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: formData,
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 201) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -180,14 +248,22 @@ export class BaseApiService {
     }
 
     public async postFormDataUnauthenticated<R>(path: string, formData: FormData, options?: RequestOptions): Promise<R> {
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'POST',
-            headers: this.combineHeaders({}, options),
-            signal: options?.abort,
-            body: formData,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'POST',
+                headers: this.combineHeaders({}, options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: formData,
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 201) {
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
+            }
             throw await createApiError(response);
         }
 
@@ -200,19 +276,27 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'POST',
-            headers: this.combineHeaders({
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-            }, options),
-            signal: options?.abort,
-            body: formData.toString(),
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'POST',
+                headers: this.combineHeaders({
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                }, options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: formData.toString(),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 201) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -221,14 +305,19 @@ export class BaseApiService {
     }
 
     public async postFormUrlEncodedUnauthenticated<R>(path: string, formData: URLSearchParams, options?: RequestOptions): Promise<R> {
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'POST',
-            headers: this.combineHeaders({
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-            }, options),
-            signal: options?.abort,
-            body: formData.toString(),
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'POST',
+                headers: this.combineHeaders({
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                }, options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: formData.toString(),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 201) {
             throw await createApiError(response);
@@ -243,16 +332,24 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'PUT',
-            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
-            signal: options?.abort,
-            body: JSON.stringify(body),
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'PUT',
+                headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+                body: JSON.stringify(body),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -266,15 +363,23 @@ export class BaseApiService {
             throw DefaultUnauthorizedApiError;
         }
 
-        const response = await fetch(this.combineUrl(path, options), {
-            method: 'DELETE',
-            headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
-            signal: options?.abort,
-        });
+        let response: Response;
+        try {
+            response = await fetch(this.combineUrl(path, options), {
+                method: 'DELETE',
+                headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
+            });
+        } catch (error: any) {
+            response = handleFetchError(error);
+        }
 
         if (response.status !== 200 && response.status !== 204) {
             if (response.status === 401) {
                 this.auth.logout();
+            }
+            if (response.status > 500) {
+                dispatchApiUnreachableEvent();
             }
             throw await createApiError(response);
         }
@@ -329,3 +434,25 @@ export class BaseApiService {
     }
 }
 
+function handleFetchError(error: any): Response {
+    if (error.name === 'TimeoutError') {
+        const payload: ApiError = {
+            status: 504,
+            details: null,
+            message: 'Die Anfrage hat zu lange gedauert und wurde abgebrochen. Versuchen Sie es später erneut.',
+            displayableToUser: true,
+        };
+
+        return Response.json(payload, {
+            status: 504,
+            statusText: 'Gateway Timeout',
+            headers: {},
+        });
+    }
+
+    throw error;
+}
+
+function dispatchApiUnreachableEvent(): void {
+    window.dispatchEvent(new Event(API_EVENT_UNREACHABLE));
+}

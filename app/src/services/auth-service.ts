@@ -26,6 +26,8 @@ interface OidcJWT {
 const OidcCodeVerifierLength = 48;
 const OidcCodeVerifierLocalStorageKey = 'oidc_code_verifier';
 
+const DEFAULT_TIMEOUT = 5000; // 5 seconds
+
 export class AuthService {
     /**
      * Get the login URL for redirecting the user to the OIDC provider.
@@ -194,7 +196,7 @@ export class AuthService {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
             },
-            signal: signal,
+            signal: signal ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
         });
 
         if (response.status !== 200) {
@@ -225,7 +227,7 @@ export class AuthService {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
             },
-            signal: signal,
+            signal: signal ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
         });
 
         if (response.status !== 200) {

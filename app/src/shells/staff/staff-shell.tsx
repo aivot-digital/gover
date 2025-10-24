@@ -6,7 +6,7 @@ import {setMemberships, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectSetup, selectStatus, setSetup, setStatus, ShellStatus} from '../../slices/shell-slice';
+import {addSnackbarMessage, selectSetup, selectStatus, setSetup, setStatus, ShellStatus} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
 import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
@@ -16,7 +16,7 @@ import {ShellDrawer} from './components/shell-drawer';
 import {ShellProgress} from './components/shell-progress';
 import {ShellSearchDialog} from './components/shell-search-dialog';
 import {ShellSnackbarContainer} from './components/shell-snackbar-container';
-import {BaseApiService} from '../../services/base-api-service';
+import {API_EVENT_UNREACHABLE, BaseApiService} from '../../services/base-api-service';
 import {Outlet} from 'react-router-dom';
 import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popup';
 import {ShellLoader} from './components/shell-loader';
@@ -25,7 +25,7 @@ import {ShellSessionExpiredDialog} from './components/shell-session-expired-dial
 import {isApiError} from '../../models/api-error';
 import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
-import { ShellResolutionOverlay } from './components/shell-resolution-overlay';
+import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
 
 interface StaffShellProps {
     children?: ReactNode;
@@ -39,6 +39,17 @@ export function StaffShell(props: StaffShellProps) {
     const dispatch = useAppDispatch();
     const setup = useAppSelector(selectSetup);
     const status = useAppSelector(selectStatus);
+
+    useEffect(() => {
+        window.addEventListener(API_EVENT_UNREACHABLE, function () {
+            dispatch(addSnackbarMessage({
+                key: `api-unreachable}`,
+                duration: 0,
+                message: 'Die Verbindung zum Server wurde unterbrochen. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
+                severity: 'error',
+            }));
+        });
+    }, []);
 
     // Fetch the setup on mount to determine if the system is online, the theme, logo, etc.
     useEffect(() => {

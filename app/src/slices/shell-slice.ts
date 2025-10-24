@@ -7,6 +7,7 @@ interface SnackbarMessage {
     key: string; // Einzigartiger Schlüssel für jede Nachricht
     message: string;
     severity: AlertColor;
+    duration?: number; // Dauer in Millisekunden, optional, if 0 then persistent
 }
 
 interface LoadingMessage {
@@ -76,6 +77,12 @@ const shellSlice = createSlice({
         setErrorMessage(state, action: PayloadAction<ErrorMessage | undefined>) {
             state.error = action.payload;
         },
+        addSnackbarMessage(state, action: PayloadAction<SnackbarMessage>) {
+            if (!state.snackbars) {
+                state.snackbars = [];
+            }
+            state.snackbars.push(action.payload);
+        }
     },
 });
 
@@ -87,6 +94,7 @@ export const {
     setShowAboutGoverDialog,
     setLoadingMessage,
     setErrorMessage,
+    addSnackbarMessage,
 } = shellSlice.actions;
 
 export const selectStatus = (state: RootState) => state.shell.status;
