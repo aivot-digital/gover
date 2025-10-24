@@ -15,7 +15,6 @@ import Box from '@mui/material/Box';
 import {ShellDrawer} from './components/shell-drawer';
 import {ShellProgress} from './components/shell-progress';
 import {ShellSearchDialog} from './components/shell-search-dialog';
-import {ShellSnackbarContainer} from './components/shell-snackbar-container';
 import {API_EVENT_UNREACHABLE, BaseApiService} from '../../services/base-api-service';
 import {Outlet} from 'react-router-dom';
 import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popup';
@@ -153,7 +152,6 @@ export function StaffShell(props: StaffShellProps) {
                     <ShellSearchDialog />
                     <ShellSessionEndWarnPopup />
                     <ShellSessionExpiredDialog />
-                    <ShellSnackbarContainer />
                     <ShellResolutionOverlay />
                 </>
             }
