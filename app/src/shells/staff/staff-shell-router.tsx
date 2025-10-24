@@ -32,11 +32,7 @@ const router = sentryCreateBrowserRouter(
     [
         {
             element: <StaffShell />,
-            errorElement: (
-                <StaffShell>
-                    <StaffShellError />
-                </StaffShell>
-            ),
+            errorElement: <StaffShell />,
             children: [
                 {
                     index: true,

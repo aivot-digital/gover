@@ -5,9 +5,7 @@ import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loa
 import {useParams, useSearchParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
 import {createAppTheme} from '../../../../theming/themes';
-import {NotFoundPage} from '../../../../components/not-found-page/not-found-page';
 import {resetAdminSettings, selectDevToolsTab, toggleComponentTree, toggleValidation, toggleVisibility} from '../../../../slices/admin-settings-slice';
-import {AppToolbar} from '../../../../components/app-toolbar/app-toolbar';
 import {AdminToolsDialog} from '../../../../dialogs/admin-tools/admin-tools-dialog';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -62,6 +60,8 @@ import {Allotment} from 'allotment';
 import {useElementSize} from '../../../../utils/element-size';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {isApiError} from '../../../../models/api-error';
+import {setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 
 export const DialogSearchParam = 'dialog';
 
@@ -125,7 +125,6 @@ export function FormDetailsPage() {
     const futureLoadedForm = useAppSelector(selectFutureLoadedForm);
     const hasFutureLoadedForm = useMemo(() => futureLoadedForm.length > 0, [futureLoadedForm]);
 
-    const [failedToLoad, setFailedToLoad] = useState(false);
     const [lockState, setLockState] = useState<EntityLockDto & { user?: User }>();
 
     const user = useAppSelector(selectUser);
@@ -168,32 +167,61 @@ export function FormDetailsPage() {
     }, [metaDialogName]);
 
     useEffect(() => {
+        if (formId == null || formVersion == null) {
+            return;
+        }
+
         dispatch(clearLoadedForm());
         dispatch(resetAdminSettings());
         dispatch(setCurrentStep(0));
         dispatch(setIdentityId(undefined));
-        setFailedToLoad(false);
-        if (formId != null && formVersion != null) {
-            new FormsApiService(api)
-                .retrieve({
-                    id: formId,
-                    version: formVersion,
-                })
-                .then((app) => {
-                    CustomerInputService.cleanCustomerInput(app);
-                    dispatch(updateLoadedForm(app));
-                    dispatch(addEntityHistoryItem({
-                        title: app.internalTitle,
-                        link: `/forms/${app.id}/${app.version}`,
-                        type: ServerEntityType.Forms,
-                    }));
-                })
-                .catch((err) => {
-                    console.error(err);
-                    setFailedToLoad(true);
-                });
-            fetchLockState(formId);
-        }
+
+        dispatch(setLoadingMessage({
+            blocking: false,
+            message: 'Formular wird geladen',
+            estimatedTime: 2000,
+        }));
+
+        new FormsApiService(api)
+            .retrieve({
+                id: formId,
+                version: formVersion,
+            })
+            .then((app) => {
+                CustomerInputService.cleanCustomerInput(app);
+                dispatch(updateLoadedForm(app));
+                dispatch(addEntityHistoryItem({
+                    title: app.internalTitle,
+                    link: `/forms/${app.id}/${app.version}`,
+                    type: ServerEntityType.Forms,
+                }));
+            })
+            .catch((err) => {
+                if (isApiError(err)) {
+                    if (err.status === 403) {
+                        dispatch(setErrorMessage({
+                            status: 403,
+                            message: err.displayableToUser ? err.message : 'Sie verfügen nicht über die notwendigen Rechte, um dieses Formular anzuzeigen.',
+                        }));
+                    } else if (err.status === 404) {
+                        dispatch(setErrorMessage({
+                            status: 404,
+                            message: err.displayableToUser ? err.message : 'Das angeforderte Formular wurde nicht gefunden.',
+                        }));
+                    } else if (err.displayableToUser) {
+                        dispatch(showErrorSnackbar(err.message));
+                    } else {
+                        dispatch(showErrorSnackbar('Das Formular konnte nicht geladen werden.'));
+                    }
+                } else {
+                    dispatch(showErrorSnackbar('Das Formular konnte nicht geladen werden.'));
+                }
+                console.error(err);
+            })
+            .finally(() => {
+                dispatch(setLoadingMessage(undefined));
+            });
+        fetchLockState(formId);
     }, [formId, formVersion, dispatch]);
 
     useEffect(() => {
@@ -292,7 +320,6 @@ export function FormDetailsPage() {
             })
             .catch((err) => {
                 console.error(err);
-                setFailedToLoad(true);
             });
     }
 
@@ -385,17 +412,7 @@ export function FormDetailsPage() {
         }
     }, [lockState, enqueueSnackbar]);
 
-    if (Boolean(failedToLoad)) {
-        return (
-            <>
-                <AppToolbar
-                    title="Nicht gefunden"
-                />
-
-                <NotFoundPage />
-            </>
-        );
-    } else if (loadedForm == null) {
+    if (loadedForm == null) {
         return <LoadingPlaceholder />;
     } else {
         const allElements = flattenElements(loadedForm.rootElement);

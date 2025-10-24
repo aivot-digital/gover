@@ -1,4 +1,4 @@
-import {ReactNode, useEffect} from 'react';
+import {useEffect, useMemo} from 'react';
 import {User} from '../../modules/users/models/user';
 import {DepartmentMembership} from '../../modules/departments/models/department-membership';
 import {Page} from '../../models/dtos/page';
@@ -6,7 +6,7 @@ import {setMemberships, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {addSnackbarMessage, selectSetup, selectStatus, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
+import {addSnackbarMessage, ErrorMessage, selectErrorMessage, selectSetup, selectStatus, setErrorMessage, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
 import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
@@ -16,7 +16,7 @@ import {ShellDrawer} from './components/shell-drawer';
 import {ShellProgress} from './components/shell-progress';
 import {ShellSearchDialog} from './components/shell-search-dialog';
 import {API_EVENT_UNREACHABLE, BaseApiService} from '../../services/base-api-service';
-import {Outlet} from 'react-router-dom';
+import {Outlet, useLocation, useRouteError} from 'react-router-dom';
 import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popup';
 import {ShellLoader} from './components/shell-loader';
 import {AuthService} from '../../services/auth-service';
@@ -25,20 +25,18 @@ import {isApiError} from '../../models/api-error';
 import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
+import {StaffShellError} from './staff-shell-error';
 
-interface StaffShellProps {
-    children?: ReactNode;
-}
-
-export function StaffShell(props: StaffShellProps) {
-    const {
-        children,
-    } = props;
-
+export function StaffShell() {
+    const routerError = useRouteError();
     const dispatch = useAppDispatch();
     const setup = useAppSelector(selectSetup);
     const status = useAppSelector(selectStatus);
+    const appError = useAppSelector(selectErrorMessage);
 
+    const location = useLocation();
+
+    // Display a message if the API becomes unreachable.
     useEffect(() => {
         window.addEventListener(API_EVENT_UNREACHABLE, function () {
             dispatch(addSnackbarMessage({
@@ -100,6 +98,35 @@ export function StaffShell(props: StaffShellProps) {
             });
     }, [setup]);
 
+    const error: ErrorMessage | undefined = useMemo(() => {
+        if (routerError == null && appError == null) {
+            return undefined;
+        }
+
+        if (routerError != null && typeof routerError === 'object' && 'status' in routerError) {
+            return {
+                status: routerError.status as number,
+                message: undefined,
+            };
+        }
+
+        if (appError != null) {
+            return {
+                status: appError.status,
+                message: appError.message,
+            };
+        }
+
+        return {
+            status: 500,
+            message: undefined,
+        };
+    }, [routerError, appError]);
+
+    useEffect(() => {
+        dispatch(setErrorMessage(undefined));
+    }, [location]);
+
     if (status === ShellStatus.Offline) {
         return (
             <ShellOffline />
@@ -141,9 +168,12 @@ export function StaffShell(props: StaffShellProps) {
                         >
                             <ShellProgress />
 
-                            {children}
                             {
-                                children == null &&
+                                error != null &&
+                                <StaffShellError error={error} />
+                            }
+                            {
+                                error == null &&
                                 <Outlet />
                             }
                         </Box>

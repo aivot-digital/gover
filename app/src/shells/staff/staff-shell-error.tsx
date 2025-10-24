@@ -1,8 +1,7 @@
-import {Link, unstable_setDevServerHooks, useNavigate, useRouteError} from 'react-router-dom';
-import {PropsWithChildren, ReactNode, useMemo} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import {PropsWithChildren, ReactNode} from 'react';
 import {Box, Button, Typography} from '@mui/material';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectErrorMessage} from '../../slices/shell-slice';
+import {ErrorMessage} from '../../slices/shell-slice';
 import ScanDelete from '@aivot/mui-material-symbols-400-outlined/dist/scan-delete/ScanDelete';
 import {ModuleIcons} from './data/module-icons';
 import ArrowBack from '@aivot/mui-material-symbols-400-outlined/dist/arrow-back/ArrowBack';
@@ -10,33 +9,14 @@ import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refre
 import Warning from '@aivot/mui-material-symbols-400-outlined/dist/warning/Warning';
 import Block from '@aivot/mui-material-symbols-400-outlined/dist/block/Block';
 
-export function StaffShellError() {
-    const routerError = useRouteError();
-    const appError = useAppSelector(selectErrorMessage);
+interface StaffShellErrorProps {
+    error: ErrorMessage;
+}
 
-    const error: {
-        status: number;
-        message: string | undefined;
-    } = useMemo(() => {
-        if (routerError != null && typeof routerError === 'object' && 'status' in routerError) {
-            return {
-                status: routerError.status as number,
-                message: undefined,
-            };
-        }
-
-        if (appError != null) {
-            return {
-                status: appError.status,
-                message: appError.message,
-            };
-        }
-
-        return {
-            status: 500,
-            message: undefined,
-        };
-    }, [routerError, appError]);
+export function StaffShellError(props: StaffShellErrorProps) {
+    const {
+        error,
+    } = props;
 
     return (
         <Box

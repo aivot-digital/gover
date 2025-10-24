@@ -20,6 +20,7 @@ import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.enums.FormType;
+import de.aivot.GoverBackend.form.filters.FormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.filters.FormVersionWithMembershipFilter;
 import de.aivot.GoverBackend.form.models.FormPublishChecklistItem;
 import de.aivot.GoverBackend.form.services.*;
@@ -242,18 +243,26 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Create a form filter
-        var formSpec = FormVersionWithMembershipFilter
+        var formSpec = FormVersionWithDetailsFilter
                 .create()
                 .setId(formId)
                 .setVersion(formVersion)
-                .setUserId(user.getId())
                 .build();
 
         // Retrieve the form by its id
-        return formVersionWithMembershipService
+        var form = formVersionWithDetailsService
                 .retrieve(formSpec)
-                .map(FormDetailsResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
+
+        if (
+                departmentMembershipService.checkUserInDepartment(user, form.getDevelopingDepartmentId()) ||
+                departmentMembershipService.checkUserInDepartment(user, form.getManagingDepartmentId()) ||
+                departmentMembershipService.checkUserInDepartment(user, form.getResponsibleDepartmentId())
+        ) {
+            return FormDetailsResponseDTO.fromEntity(form);
+        } else {
+            throw ResponseException.forbidden("Sie haben keinen Zugriff auf das Formular, da Sie kein Mitglied des entwickelnden Fachbereichs sind.");
+        }
     }
 
     /**

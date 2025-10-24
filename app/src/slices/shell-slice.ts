@@ -29,7 +29,7 @@ interface LoadingMessage {
     blocking: boolean;
 }
 
-interface ErrorMessage {
+export interface ErrorMessage {
     status: number;
     message?: string;
 }
