@@ -509,7 +509,10 @@ export function FormDetailsPage() {
             >
                 <Box
                     ref={containerRef}
-                    sx={{height: '100vh', '--focus-border': (theme) => theme.palette.secondary.main}}
+                    sx={{
+                        height: '100vh',
+                        '--focus-border': (theme) => theme.palette.secondary.main,
+                    }}
                 >
                     <Allotment vertical>
                         <Allotment>
@@ -604,6 +607,8 @@ export function FormDetailsPage() {
                                             minHeight: 0,
                                             borderTopLeftRadius: 10,
                                             borderTopRightRadius: 10,
+                                            borderBottomLeftRadius: 0,
+                                            borderBottomRightRadius: 0,
                                         }}
                                         ref={scrollContainerRef}
                                     >

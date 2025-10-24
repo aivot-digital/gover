@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -39,11 +39,23 @@ import {useConfirm} from '../../../providers/confirm-provider';
 import {addDerivationLogItems} from '../../../slices/logging-slice';
 import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
+import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
+import {useElementSize} from '../../../utils/element-size';
+import {Allotment} from 'allotment';
+import {Paper} from '@mui/material';
+import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 export function PresetEditPage() {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
+
+    const {
+        ref: containerRef,
+        size: containerSize,
+    } = useElementSize<HTMLDivElement>();
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const [isBusy, setIsBusy] = useState(false);
     const [isDeriving, setIsDeriving] = useState(false);
@@ -401,93 +413,129 @@ export function PresetEditPage() {
     const allElements = flattenElements(presetVersion.rootElement);
 
     return (
-        <>
-            <MetaElement
-                title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
-            />
-            <AppToolbar
-                title={`${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
-                updateToolbarHeight={updateToolbarHeight}
-                actions={[
-                    {
-                        icon: <DriveFolderUploadOutlinedIcon />,
-                        tooltip: 'Neue Version anlegen',
-                        onClick: handleAddNewVersion,
-                    },
-                    {
-                        icon: <HistoryOutlinedIcon />,
-                        tooltip: 'Versionen anzeigen',
-                        onClick: () => {
-                            setShowPresetVersions(true);
-                        },
-                    },
-                    {
-                        icon: <DoneAllOutlinedIcon />,
-                        tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
-                        onClick: handleValidate,
-                        disabled: isBusy,
-                    },
-                ].concat(presetVersion.status != FormStatus.Published ? [
-                    {
-                        icon: <DeleteForeverOutlinedIcon />,
-                        tooltip: 'Version der Vorlage löschen',
-                        onClick: () => {
-                            setConfirmDelete(() => handleDelete);
-                        },
-                    },
-                ] : [])}
-            />
-            <Grid
-                container
+        <PageWrapper
+            title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+            fullWidth={true}
+            fullHeight={true}
+        >
+            <Box
+                ref={containerRef}
                 sx={{
-                    minHeight: 'calc(100vh - ' + toolbarHeight + 'px)',
+                    height: '100vh',
+                    '--focus-border': (theme) => theme.palette.secondary.main,
                 }}
             >
-                <Grid
-                    sx={{
-                        px: 2,
-                        boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                        height: 'calc(100vh - ' + toolbarHeight + 'px)',
-                        overflowY: 'scroll',
-                        borderRight: '1px solid #E0E7E0',
-                        position: 'relative',
-                    }}
-                    size={4}
-                >
-                    <ElementTree
-                        entity={presetVersion}
-                        onPatch={handlePatch}
-                        editable={presetVersion.status == FormStatus.Drafted}
-                        scope="preset"
-                        enabledIdentityProviderInfos={identityProviders}
-                    />
-                </Grid>
+                <Allotment vertical>
+                    <Allotment>
+                        <Allotment.Pane minSize={732}>
+                            {/* Working Area */}
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    height: '100%',
+                                    px: 2,
+                                    pt: 2,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <GenericPageHeader
+                                    title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+                                    badge={{
+                                        color: 'default',
+                                        label: `Version ${presetVersion.version}`,
+                                    }}
+                                    icon={ModuleIcons.presets}
+                                    actions={[
+                                        {
+                                            icon: <DriveFolderUploadOutlinedIcon />,
+                                            tooltip: 'Neue Version anlegen',
+                                            onClick: handleAddNewVersion,
+                                        },
+                                        {
+                                            icon: <HistoryOutlinedIcon />,
+                                            tooltip: 'Versionen anzeigen',
+                                            onClick: () => {
+                                                setShowPresetVersions(true);
+                                            },
+                                        },
+                                        {
+                                            icon: <DoneAllOutlinedIcon />,
+                                            tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
+                                            onClick: handleValidate,
+                                            disabled: isBusy,
+                                        },
+                                        {
+                                            icon: <DeleteForeverOutlinedIcon />,
+                                            tooltip: 'Version der Vorlage löschen',
+                                            onClick: () => {
+                                                setConfirmDelete(() => handleDelete);
+                                            },
+                                            visible: presetVersion.status != FormStatus.Published,
+                                        },
+                                    ]}
+                                />
 
-                <Grid
-                    sx={{
-                        height: 'calc(100vh - ' + toolbarHeight + 'px)',
-                        overflowY: 'scroll',
-                    }}
-                    size={8}
-                >
-                    <Container>
-                        <ViewDispatcherComponent
-                            rootElement={presetVersion.rootElement}
-                            allElements={allElements}
-                            element={presetVersion.rootElement}
-                            isBusy={isBusy}
-                            isDeriving={isDeriving}
-                            elementData={elementData}
-                            onElementDataChange={handleValueChange}
-                            onElementBlur={undefined}
-                            mode="editor"
-                            disableVisibility={false}
-                            derivationTriggerIdQueue={[]}
-                            scrollContainerRef={undefined}
-                        />
-                    </Container>
-                </Grid>
-            </Grid>
+                                <Paper
+                                    sx={{
+                                        overflowY: 'auto',
+                                        flex: 1,
+                                        mt: 2,
+                                        p: 4,
+                                        minHeight: 0,
+                                        borderTopLeftRadius: 10,
+                                        borderTopRightRadius: 10,
+                                        borderBottomLeftRadius: 0,
+                                        borderBottomRightRadius: 0,
+                                    }}
+                                >
+                                    <ViewDispatcherComponent
+                                        rootElement={presetVersion.rootElement}
+                                        allElements={allElements}
+                                        element={presetVersion.rootElement}
+                                        scrollContainerRef={scrollContainerRef}
+                                        isBusy={false}
+                                        isDeriving={false}
+                                        mode="editor"
+                                        elementData={elementData}
+                                        onElementDataChange={setElementData}
+                                        onElementBlur={undefined}
+                                        derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                        disableVisibility={false}
+                                    />
+                                </Paper>
+                            </Box>
+                        </Allotment.Pane>
+
+                        <Allotment.Pane
+                            minSize={480}
+                            preferredSize={480}
+                        >
+                            {/* Element Tree */}
+                            <Paper
+                                sx={{
+                                    px: 2,
+                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                    borderLeft: '1px solid #E0E7E0',
+                                    borderRadius: 0,
+                                    position: 'relative',
+                                    height: '100%',
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <ElementTree
+                                    entity={presetVersion}
+                                    onPatch={handlePatch}
+                                    editable={presetVersion.status == FormStatus.Drafted}
+                                    scope="preset"
+                                    enabledIdentityProviderInfos={identityProviders}
+                                />
+                            </Paper>
+                        </Allotment.Pane>
+                    </Allotment>
+                </Allotment>
+            </Box>
+
             <ConfirmDialog
                 title="Vorlage wirklich löschen"
                 onConfirm={confirmDelete}
@@ -499,6 +547,7 @@ export function PresetEditPage() {
                 Vorlage <strong>{preset.title}</strong> wirklich löschen wollen?
                 Diese Aktion kann nicht rückgängig gemacht werden.
             </ConfirmDialog>
+
             <VersionsPresetDialog
                 open={showPresetVersions}
                 onClose={() => {
@@ -506,7 +555,7 @@ export function PresetEditPage() {
                 }}
                 preset={preset}
             />
-        </>
+        </PageWrapper>
     );
 }
 
