@@ -51,7 +51,6 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private final IdentityProviderRepository identityProviderRepository;
     private final FormRepository formRepository;
     private final SubmissionWithMembershipRepository submissionWithMembershipRepository;
-    private final SystemConfigRepository systemConfigRepository;
     private final SystemService systemService;
 
     @Autowired
@@ -64,9 +63,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                               IdentityProviderRepository identityProviderRepository,
                               FormRepository formRepository,
                               SubmissionWithMembershipRepository submissionWithMembershipRepository,
-                              SystemConfigRepository systemConfigRepository,
-                              SystemService systemService,
-                              SystemService systemService1) {
+                              SystemService systemService) {
         this.repository = repository;
         this.destinationRepository = destinationRepository;
         this.departmentRepository = departmentRepository;
@@ -76,8 +73,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         this.identityProviderRepository = identityProviderRepository;
         this.formRepository = formRepository;
         this.submissionWithMembershipRepository = submissionWithMembershipRepository;
-        this.systemConfigRepository = systemConfigRepository;
-        this.systemService = systemService1;
+        this.systemService = systemService;
     }
 
     @Nonnull

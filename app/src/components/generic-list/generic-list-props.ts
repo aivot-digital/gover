@@ -1,4 +1,4 @@
-import {ReactNode} from 'react';
+import {ReactNode, RefObject} from 'react';
 import {BadgeProps, SxProps} from '@mui/material';
 import {GridColDef} from '@mui/x-data-grid';
 import {Api} from '../../hooks/use-api';
@@ -43,6 +43,12 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     onBusyChange?: (isBusy: boolean) => void;
 
     dynamicRowHeight?: boolean;
+
+    controlRef?: RefObject<ListControlRef | null>;
+}
+
+export type ListControlRef = {
+    refresh: () => void;
 }
 
 export type SortOrder = 'ASC' | 'DESC';

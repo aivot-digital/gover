@@ -8,7 +8,7 @@ import {FormsApiService} from '../../forms-api-service';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ImportApplicationDialog} from '../../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
 import {FormDetailsResponseDTO} from '../../dtos/form-details-response-dto';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
@@ -38,6 +38,7 @@ import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/
 import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
+import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
 
 const availableFilter = [
     {
@@ -65,6 +66,8 @@ export function FormsListPage() {
     const showConfirm = useConfirm();
 
     const user = useAppSelector(selectUser);
+
+    const listControlRef = useRef<ListControlRef>(null);
 
     const [newForm, setNewForm] = useState<FormDetailsResponseDTO | undefined>(undefined);
     const [showImportFormDialog, setShowImportFormDialog] = useState(false);
@@ -221,29 +224,11 @@ export function FormsListPage() {
             });
     };
 
-    const handleFormClone = async () => {
-        if (rowMenu == null) {
-            return;
-        }
-
-        let originalForm: FormDetailsResponseDTO;
-        try {
-            originalForm = await new FormsApiService(api)
-                .retrieve({
-                    id: rowMenu.form.id,
-                    version: rowMenu.form.draftedVersion ?? rowMenu.form.publishedVersion!,
-                });
-        } catch (err) {
-            console.error(err);
-            dispatch(showErrorSnackbar('Formular konnte nicht dupliziert werden'));
-            return;
-        }
-
-        const formToClone: FormDetailsResponseDTO = JSON.parse(JSON.stringify(originalForm));
+    const handleFormClone = async (form: FormDetailsResponseDTO) => {
+        const formToClone: FormDetailsResponseDTO = JSON.parse(JSON.stringify(form));
         formToClone.slug = '';
         formToClone.version = 0;
         setNewForm(formToClone);
-
         setRowMenu(undefined);
     };
 
@@ -304,6 +289,7 @@ export function FormsListPage() {
                 background
             >
                 <GenericListPage<FormListResponseDTO>
+                    controlRef={listControlRef}
                     dynamicRowHeight={true}
                     filters={availableFilter}
                     defaultFilter="all"
@@ -457,6 +443,16 @@ export function FormsListPage() {
                     }}
                     onNewDraft={(basis) => {
                         handleNewFormDraft(basis.id, basis.version);
+                    }}
+                    onNewForm={handleFormClone}
+                    onChange={() => {
+                        console.log('Change from versions dialog received');
+                        if (listControlRef.current?.refresh != null) {
+                            console.log('Refreh ref exists, calling');
+                            listControlRef.current.refresh();
+                        } else {
+                            console.log('No refresh ref');
+                        }
                     }}
                 />
             }

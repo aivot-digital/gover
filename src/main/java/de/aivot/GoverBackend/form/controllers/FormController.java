@@ -141,12 +141,7 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Check if the user has access to the department the form is being created in
-        if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, requestDTO.developingDepartmentId())) {
-                throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
-            }
-            // TODO: Check user role
-        }
+        checkUserHasAccessToForm(user, requestDTO.developingDepartmentId(), departmentMembershipService);
 
         // create the form
         var createdFormEntity = formService
@@ -285,15 +280,10 @@ public class FormController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Check if the user has access to the department the form resides in
-        if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, requestDTO.developingDepartmentId())) {
-                throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
-            }
-            // TODO: Check user role
-        }
+        checkUserHasAccessToForm(user, requestDTO.developingDepartmentId(), departmentMembershipService);
 
         // Check if the form is locked by another user
-        checkFormLock(formId, user);
+        checkFormLock(formId, user, formLockService);
 
         // Fetch the existing form
         var existingForm = formVersionWithDetailsService
@@ -368,14 +358,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user,
-                    form.getDevelopingDepartmentId())) {
-                throw ResponseException.forbidden(
-                        "Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
-            }
-            // TODO: Check user role
-        }
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         var latestVersion = formVersionService
                 .getLatestVersion(formId)
@@ -470,12 +453,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-                throw ResponseException.forbidden("Die Mitarbeiter:in hat keinen Zugriff auf den Fachbereich.");
-            }
-            // TODO: Check user role
-        }
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         if (form.getDraftedVersion() != null) {
             var currentDraftedVersionId = FormVersionEntityId
@@ -581,7 +559,7 @@ public class FormController {
         }
 
         // Check if the form is locked by another user
-        checkFormLock(formId, user);
+        checkFormLock(formId, user, formLockService);
 
         // Clone the form to preserve the original state
         var originalForm = form
@@ -652,15 +630,23 @@ public class FormController {
 
         // Check if the user has access to the department the form resides in
         if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-                throw ResponseException.forbidden("User does not have access to the department.");
-            }
+            var spec = DepartmentMembershipFilter
+                    .create()
+                    .setDepartmentId(form.getDevelopingDepartmentId())
+                    .setUserId(user.getId())
+                    .build();
 
-            // TODO: Check user role
+            var membership = departmentMembershipService
+                    .retrieve(spec)
+                    .orElseThrow(() -> ResponseException.forbidden("Die Mitarbeiter:in ist nicht Mitglied des Fachbereichs."));
+
+            if (!(membership.getRole() == UserRole.Admin || membership.getRole() == UserRole.Publisher)) {
+                throw ResponseException.forbidden("Die Mitarbeiter:in hat keine Berechtigung das Formular zu zurückzuziehen.");
+            }
         }
 
         // Check if the form is locked by another user
-        checkFormLock(formId, user);
+        checkFormLock(formId, user, formLockService);
 
         // Clone the form to preserve the original state
         var originalForm = form
@@ -706,8 +692,8 @@ public class FormController {
     /**
      * Move a form to another department.
      *
-     * @param jwt    The authentication object.
-     * @param formId The id of the form.
+     * @param jwt                The authentication object.
+     * @param formId             The id of the form.
      * @param targetDepartmentId The id of the target department.
      */
     @PutMapping("{formId}/move/")
@@ -727,16 +713,10 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-                throw ResponseException.forbidden("User does not have access to the department.");
-            }
-
-            // TODO: Check user role
-        }
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         // Check if the form is locked by another user
-        checkFormLock(formId, user);
+        checkFormLock(formId, user, formLockService);
 
         // Move the form to the target department
         form.setDevelopingDepartmentId(targetDepartmentId);
@@ -762,16 +742,10 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has access to the department the form resides in
-        if (!user.getGlobalAdmin()) {
-            if (departmentMembershipService.checkUserNotInDepartment(user, form.getDevelopingDepartmentId())) {
-                throw ResponseException.forbidden("User does not have access to the department.");
-            }
-
-            // TODO: Check user role
-        }
+        checkUserHasAccessToForm(user, form.getDevelopingDepartmentId(), departmentMembershipService);
 
         // Check if the form is locked by another user
-        checkFormLock(formId, user);
+        checkFormLock(formId, user, formLockService);
 
         // Delete the form
         var deletedForm = formService.delete(formId);
@@ -795,17 +769,29 @@ public class FormController {
         }
     }
 
-    /**
-     * Check if a form is locked by another user.
-     *
-     * @param id   The id of the form.
-     * @param user The user who wants to update the form.
-     */
-    private void checkFormLock(@Nonnull Integer id, UserEntity user) throws ResponseException {
-        var existingFormLock = formLockService.retrieve(id);
+    public static void checkUserHasAccessToForm(@Nonnull UserEntity user,
+                                                @Nonnull Integer developingDepartmentId,
+                                                @Nonnull DepartmentMembershipService departmentMembershipService) throws ResponseException {
+        // The user has access if they are a global admin
+        if (user.getGlobalAdmin()) {
+            return;
+        }
+
+        // The user has access if they are a member of the developing department
+        if (departmentMembershipService.checkUserInDepartment(user, developingDepartmentId)) {
+            return;
+        }
+
+        throw ResponseException.forbidden("Sie haben keinen Zugriff auf das Formular, da Sie kein Mitglied des entwickelnden Fachbereichs sind.");
+    }
+
+    public static void checkFormLock(@Nonnull Integer formId,
+                                     @Nonnull UserEntity accessingUser,
+                                     @Nonnull FormLockService formLockService) throws ResponseException {
+        var existingFormLock = formLockService.retrieve(formId);
         if (existingFormLock.isPresent()) {
             var formLockedByUserId = existingFormLock.get().getUserId();
-            if (!user.hasId(formLockedByUserId)) {
+            if (!accessingUser.hasId(formLockedByUserId)) {
                 throw ResponseException
                         .locked("Das Formular ist von einer anderen Mitarbeiter:in gesperrt.");
             }
