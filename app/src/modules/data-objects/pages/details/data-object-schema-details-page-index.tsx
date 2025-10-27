@@ -32,6 +32,8 @@ import {generateElementWithDefaultValues} from '../../../../utils/generate-eleme
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 
+const ID_FIELD_ID = '$id';
+
 const AllowedDisplayFieldTypes = [
     ElementType.Text,
     ElementType.Number,
@@ -79,7 +81,7 @@ const IdGenOptions = [
     },
     {
         label: 'Manuell festgelegt',
-        subLabel: 'Die ID wird manuell beim Anlegen eingetragen. Das Schema benötigt hierfür ein Pflichtfeld mit der Element-ID „$id“.',
+        subLabel: `Die ID wird manuell beim Anlegen eingetragen. Das Schema benötigt hierfür ein Pflichtfeld mit der Element-ID „${ID_FIELD_ID}“.`,
         value: ID_GEN_CUSTOM,
     },
     {
@@ -135,7 +137,7 @@ export function DataObjectSchemaDetailsPageIndex() {
 
         const elems = flattenElements(currentDataObject.schema, true);
         return elems
-            .filter(e => isAnyInputElement(e) && AllowedDisplayFieldTypes.includes(e.type))
+            .filter(e => isAnyInputElement(e) && AllowedDisplayFieldTypes.includes(e.type) && e.id !== ID_FIELD_ID)
             .map(e => ({
                 label: generateComponentTitle(e),
                 value: e.id,
@@ -323,7 +325,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     value={(currentDataObject.idGen !== ID_GEN_UUID && currentDataObject.idGen !== ID_GEN_SERIAL && currentDataObject.idGen !== ID_GEN_CUSTOM) ? '' : currentDataObject.idGen}
                     onChange={(val) => {
                         if (val === ID_GEN_CUSTOM) {
-                            const hasIdField = (currentDataObject?.schema.children ?? []).some(c => c.id === '$id');
+                            const hasIdField = (currentDataObject?.schema.children ?? []).some(c => c.id === ID_FIELD_ID);
                             if (!hasIdField) {
                                 handleInputPatch({
                                     idGen: ID_GEN_CUSTOM,
@@ -332,7 +334,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                                         children: [
                                             {
                                                 ...generateElementWithDefaultValues(ElementType.Text),
-                                                id: '$id',
+                                                id: ID_FIELD_ID,
                                                 name: 'ID',
                                                 label: 'ID',
                                                 hint: 'Eindeutige ID des Datenobjekts',
@@ -395,16 +397,19 @@ export function DataObjectSchemaDetailsPageIndex() {
                     ]}
                 />
 
-                <MultiCheckboxComponent
-                    label="Anzeigeattribute"
-                    hint="Die Werte dieser Felder bzw. Attribute werden in Listenansichten zur Identifizierung angezeigt."
-                    value={currentDataObject.displayFields ?? []}
-                    onChange={(val) => {
-                        handleInputChange('displayFields')(val ?? []);
-                    }}
-                    options={availableDisplayFields}
-                    displayInline
-                />
+                {
+                    availableDisplayFields.length > 0 &&
+                    <MultiCheckboxComponent
+                        label="Anzeigeattribute"
+                        hint="Die Werte dieser Felder bzw. Attribute werden in Listenansichten zur Identifizierung angezeigt."
+                        value={currentDataObject.displayFields ?? []}
+                        onChange={(val) => {
+                            handleInputChange('displayFields')(val ?? []);
+                        }}
+                        options={availableDisplayFields}
+                        displayInline
+                    />
+                }
             </Box>
 
             {
