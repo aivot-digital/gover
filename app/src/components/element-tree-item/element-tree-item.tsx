@@ -50,6 +50,25 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
         }
     }, [expandStatus]);
 
+    useEffect(() => {
+        // Check if the current edited element is a child of this element
+        function checkChildRecursively(element: AnyElement): boolean {
+            if (isAnyElementWithChildren(element)) {
+                if (element.children?.some((child) => child.id === currentEditedElementId)) {
+                    return true;
+                }
+                return element.children?.some((child) => checkChildRecursively(child)) ?? false;
+            }
+            return false;
+        }
+
+        if (currentEditedElementId && isLayoutElement && !expanded) {
+            if (checkChildRecursively(props.element)) {
+                setExpanded(true);
+            }
+        }
+    }, [currentEditedElementId]);
+
     const [{isDragging}, drag] = useDrag(() => ({
         item: element,
         type: element.type.toString(),
