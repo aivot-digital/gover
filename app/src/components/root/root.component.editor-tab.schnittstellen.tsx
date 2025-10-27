@@ -77,13 +77,8 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                     Wählen Sie eine Schnittstelle aus, an welche die Anträge von Gover übermittelt werden sollen.
                 </ElementEditorSectionHeader>
 
-                {
-                    destinations == null &&
-                    <Skeleton />
-                }
 
                 {
-                    destinations != null &&
                     destinations.length === 0 &&
                     <Alert
                         severity="info"
@@ -120,7 +115,6 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 }
 
                 {
-                    destinations != null &&
                     destinations.length > 0 &&
                     <SelectFieldComponent
                         label="Auswahl der Schnittstelle"
@@ -139,7 +133,6 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 }
 
                 {
-                    destinations != null &&
                     destinations.length > 0 &&
                     props.entity.destinationId == null &&
                     <AlertComponent
@@ -156,7 +149,6 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 }
 
                 {
-                    destinations != null &&
                     destinations.length > 0 &&
                     props.entity.destinationId != null &&
                     destinations.find((dest) => dest.id === props.entity.destinationId)?.type === DestinationType.Mail &&
@@ -195,12 +187,6 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 </ElementEditorSectionHeader>
 
                 {
-                    identityProviders == null &&
-                    <Skeleton />
-                }
-
-                {
-                    identityProviders != null &&
                     identityProviders.length === 0 &&
                     <Alert severity="info">
                         <AlertTitle>
@@ -226,7 +212,6 @@ export function RootComponentEditorTabSchnittstellen(props: BaseEditorProps<Root
                 }
 
                 {
-                    identityProviders != null &&
                     identityProviders.length > 0 &&
                     <Box>
                         <CheckboxFieldComponent
