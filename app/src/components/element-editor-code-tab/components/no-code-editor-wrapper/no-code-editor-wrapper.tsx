@@ -33,6 +33,8 @@ interface NoCodeEditorWrapperProps {
     label?: string;
 }
 
+const new_editor = localStorage.getItem('new_editor') != null;
+
 export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
     const {
         parents,
@@ -149,55 +151,41 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                 </Box>
             ) : (
                 <>
-                    <OperandEditor
-                        allElements={allElements}
-                        allOperators={operators}
-                        disabled={!editable}
-                        operand={noCode}
-                        onChange={(noCode) => {
-                            onChange(noCode);
-                        }}
-                        isTopLevelOperand={true}
-                        isLastOperand={true}
-                        parameter={{
-                            label: 'Ausdruck',
-                            description: props.hint ?? '',
-                            type: NoCodeDataType.Runtime,
-                            options: [],
-                        }}
-                    />
-
-                    <Divider sx={{
-                        my: 8,
-                    }}/>
-
-                    <NoCodeOperandEditor
-                        label="Sichtbarkeit"
-                        hint={{
-                            detailsTitle: 'Sichtbarkeit bestimmen',
-                            summary: 'Dieser Ausdruck wird verwendet, um die Sichtbarkeit des Elements zu steuern.',
-                            details: 'Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "true" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.',
-                        }}
-                        operand={noCode}
-                        onChange={onChange}
-                        allOperators={operators}
-                        allElements={allElements}
-                    />
-
-
-                    <Divider sx={{
-                        my: 8,
-                    }}/>
-
-                    <Typography variant="h5">
-                        Test Humanize
-                    </Typography>
+                    {
+                        !new_editor &&
+                        <OperandEditor
+                            allElements={allElements}
+                            allOperators={operators}
+                            disabled={!editable}
+                            operand={noCode}
+                            onChange={(noCode) => {
+                                onChange(noCode);
+                            }}
+                            isTopLevelOperand={true}
+                            isLastOperand={true}
+                            parameter={{
+                                label: 'Ausdruck',
+                                description: props.hint ?? '',
+                                type: NoCodeDataType.Runtime,
+                                options: [],
+                            }}
+                        />
+                    }
 
                     {
-                        noCode != null &&
-                        <Typography>
-                            Zeige das Element an, wenn: {humanizeNoCode(noCode, allElements, operators)}
-                        </Typography>
+                        new_editor &&
+                        <NoCodeOperandEditor
+                            label="Sichtbarkeit"
+                            hint={{
+                                detailsTitle: 'Sichtbarkeit bestimmen',
+                                summary: 'Dieser Ausdruck wird verwendet, um die Sichtbarkeit des Elements zu steuern.',
+                                details: 'Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "true" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.',
+                            }}
+                            operand={noCode}
+                            onChange={onChange}
+                            allOperators={operators}
+                            allElements={allElements}
+                        />
                     }
 
                     {
