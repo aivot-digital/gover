@@ -23,4 +23,5 @@ export interface ElementTreeItemProps<T extends AnyElement, E extends ElementTre
     disableDrag?: boolean;
     enabledIdentityProviderInfos: IdentityProviderInfo[];
     limitElementTypes?: ElementType[];
+    lockMessage?: string;
 }

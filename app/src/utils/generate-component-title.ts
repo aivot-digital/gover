@@ -17,7 +17,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
 
     switch (component.type) {
         case ElementType.Root:
-            return 'Formularstruktur';
+            return 'Formular';
         case ElementType.Step:
             return stringOrDefault(component.title, 'Unbenannter Abschnitt');
         case ElementType.Alert:

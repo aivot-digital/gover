@@ -18,4 +18,5 @@ export interface ElementEditorProps<T extends AnyElement, E extends ElementTreeE
     editable: boolean;
     scope: ElementTreeScope;
     rootEditor: boolean;
+    lockMessage?: string;
 }

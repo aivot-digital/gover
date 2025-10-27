@@ -18,6 +18,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
     const {
         element,
         isRootList,
+        lockMessage,
     } = props;
 
     const draggingTreeElement = useAppSelector(selectDraggingTreeElement);
@@ -155,6 +156,7 @@ export function ElementTreeItemList<T extends AnyElementWithChildren, E extends 
                                 scope={props.scope}
                                 enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                                 limitElementTypes={props.limitElementTypes}
+                                lockMessage={lockMessage}
                             />
                         </ElementTreeItemDropTarget>
                     ))

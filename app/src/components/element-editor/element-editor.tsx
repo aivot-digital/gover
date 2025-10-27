@@ -1,5 +1,5 @@
-import {Box, Drawer} from '@mui/material';
-import React, {useMemo, useState} from 'react';
+import {Box, Breadcrumbs, Drawer, Typography} from '@mui/material';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ElementEditorTabs} from '../element-editor-tabs/element-editor-tabs';
 import {ElementEditorContent} from '../element-editor-content/element-editor-content';
@@ -14,7 +14,11 @@ import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {useChangeBlocker} from '../../hooks/use-change-blocker';
 import {useConfirm} from '../../providers/confirm-provider';
 import {AppInfo} from '../../app-info';
-import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
+import {createElementEditorNavigationLink, useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
+import {generateComponentTitle} from '../../utils/generate-component-title';
+import {getElementNameForType} from '../../data/element-type/element-names';
+import {Link} from 'react-router-dom';
+import {addSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
 
 export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): React.ReactNode | null {
     const dispatch = useAppDispatch();
@@ -25,6 +29,11 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
         navigateToEditorTab,
     } = useElementEditorNavigation();
 
+    const {
+        open,
+        lockMessage,
+    } = props;
+
     const [updatedElement, setUpdatedElement] = useState<T>();
     const [updatedEntity, setUpdatedEntity] = useState<E>();
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
@@ -33,6 +42,17 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
     const currentState = useMemo(() => ({element: updatedElement ?? props.element, entity: updatedEntity ?? props.entity}), [updatedElement, updatedEntity, props.element, props.entity]);
 
     const changeBlocker = useChangeBlocker(initialState, currentState);
+
+    useEffect(() => {
+        if (open && lockMessage != null) {
+            dispatch(addSnackbarMessage({
+                key: 'element-editor-lock-message',
+                type: SnackbarType.Dismissable,
+                severity: SnackbarSeverity.Warning,
+                message: lockMessage,
+            }));
+        }
+    }, [open, lockMessage]);
 
     const handleSave = (): void => {
         let elementToSave: Partial<T> = {};
@@ -133,6 +153,46 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
                     flexDirection: 'column',
                 }}
             >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        px: 2,
+                        py: 1,
+                    }}
+                >
+                    <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            mr: 2,
+                        }}
+                    >
+                        {generateComponentTitle(props.element)} ({getElementNameForType(props.element.type)})
+                    </Typography>
+
+                    <Breadcrumbs
+                        sx={{
+                            ml: 'auto',
+                        }}
+                        maxItems={3}
+                    >
+                        {
+                            props
+                                .parents
+                                .map((element) => (
+                                    <Link
+                                        to={createElementEditorNavigationLink(element.id)}
+                                        replace={true}
+                                    >
+                                        {generateComponentTitle(element)}
+                                    </Link>
+                                ))
+                        }
+                    </Breadcrumbs>
+                </Box>
 
                 <ElementEditorTabs
                     component={updatedElement ?? props.element}

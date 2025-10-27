@@ -4,9 +4,14 @@ import {type AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {views as Views} from '../views';
 import {type BaseViewProps} from '../views/base-view';
+import IconButton from '@mui/material/IconButton';
 import {ElementErrorBoundary} from './element-error-boundary/element-error-boundary';
 import {type ElementData, type ElementDataObject} from '../models/element-data';
 import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
+import {useElementEditorNavigation} from '../hooks/use-element-editor-navigation';
+import {isAnyContentElement} from '../models/elements/form/content/any-content-element';
+import EditFilled from '@aivot/mui-material-symbols-400-outlined/dist/edit/EditFilled';
+import {isGroupLayout} from '../models/elements/form/layout/group-layout';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -168,6 +173,10 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         derivationTriggerIdQueue,
     ]);
 
+    const {
+        navigateToElementEditor,
+    } = useElementEditorNavigation();
+
     if (Component == null || !isVisible) {
         return null;
     }
@@ -179,12 +188,40 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             data-resolved-id={elementId /* TODO: Remove here and where referenced */}
             sx={{
                 position: 'relative',
+                '&:hover > .edit-btn': {
+                    display: mode === 'editor' ? 'block' : 'none',
+                },
             }}
             size={{
                 xs: 12,
                 md: ('weight' in element && element.weight != null) ? element.weight : 12,
             }}
         >
+            {
+                mode === 'editor' &&
+                (
+                    isAnyInputElement(element) ||
+                    isAnyContentElement(element)
+                ) &&
+                <IconButton
+                    className="edit-btn"
+                    onClick={() => {
+                        navigateToElementEditor(elementId);
+                    }}
+                    sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        zIndex: 10,
+                        display: 'none',
+                    }}
+                    size="small"
+                    color="primary"
+                >
+                    <EditFilled />
+                </IconButton>
+            }
+
             <ElementErrorBoundary viewProps={viewProps}>
                 <Component {...viewProps} />
             </ElementErrorBoundary>

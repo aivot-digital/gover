@@ -21,4 +21,5 @@ export interface ElementTreeItemListProps<T extends AnyElementWithChildren, E ex
     scope: ElementTreeScope;
     enabledIdentityProviderInfos: IdentityProviderInfo[];
     limitElementTypes?: ElementType[];
+    lockMessage?: string;
 }

@@ -22,6 +22,7 @@ import {DefaultTabs} from '../element-editor/default-tabs';
 export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntity>(props: ElementTreeItemProps<T, E>) {
     const {
         element,
+        lockMessage,
     } = props;
 
     const {
@@ -138,7 +139,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             <ElementTreeItemTitle
                 isExpanded={expanded}
                 onToggleExpanded={
-                    isLayoutElement && isNotStoreModule ?
+                    isLayoutElement ?
                         () => {
                             dispatch(setExpandElementTree(undefined));
                             setExpanded(!expanded);
@@ -157,17 +158,17 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
             {
                 expanded &&
                 isAnyElementWithChildren(props.element) &&
-                isNotStoreModule &&
                 <ElementTreeItemList
                     parents={props.parents}
                     entity={props.entity}
                     element={props.element}
                     onPatch={props.onPatch}
                     onMove={props.onMove}
-                    editable={props.editable}
+                    editable={props.editable && isNotStoreModule}
                     scope={props.scope}
                     enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                     limitElementTypes={props.limitElementTypes}
+                    lockMessage={isNotStoreModule ? undefined : 'Kind-Element von Store-Modulen können nicht bearbeitet werden.'}
                 />
             }
 
@@ -213,6 +214,7 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 editable={props.editable}
                 scope={props.scope}
                 rootEditor={false}
+                lockMessage={lockMessage}
             />
         </Box>
     );
