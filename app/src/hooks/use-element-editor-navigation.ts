@@ -33,15 +33,21 @@ export function useElementEditorNavigation() {
     }, [locationHash]);
 
     const navigateToEditorTab = useCallback((tab: string): void => {
-        navigate(`#${currentEditedElementId}/${tab}`);
+        navigate(`#${currentEditedElementId}/${tab}`, {
+            replace: true,
+        });
     }, [currentEditedElementId]);
 
     const navigateToElementEditor = useCallback((elementId: string, tab?: string): void => {
-        navigate(createElementEditorNavigationLink(elementId, tab));
+        navigate(createElementEditorNavigationLink(elementId, tab), {
+            replace: true,
+        });
     }, []);
 
     const closeElementEditor = useCallback((): void => {
-        navigate(`#`);
+        navigate(`#`, {
+            replace: true,
+        });
     }, []);
 
     return {
