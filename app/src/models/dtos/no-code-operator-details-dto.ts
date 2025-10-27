@@ -6,8 +6,10 @@ export interface NoCodeOperatorDetailsDTO {
     label: string;
     description: string;
     abstractDescription: string;
+    humanReadableTemplate: string | null;
+    tags: string[];
     parameters: NoCodeParameter[];
-    returnType: NoCodeDataType;
+    returnType: NoCodeDataType; // TODO
 }
 
 export interface NoCodeParameter {

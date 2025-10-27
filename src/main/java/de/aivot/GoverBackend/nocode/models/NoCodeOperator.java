@@ -6,8 +6,9 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -62,6 +63,19 @@ public abstract class NoCodeOperator {
      */
     public String[] getTags() {
         return new String[0];
+    }
+
+    /**
+     * Returns a human-readable template of the operator.
+     * This template will later be filled with the parameters of the operator to provide a better understanding of how the operator works.
+     * The template contains placeholders for the parameters of the operator.
+     * For example: "Add #0 to #1" where #0 and #1 are placeholders for the parameters.
+     *
+     * @return a human-readable template of the operator
+     */
+    @Nullable
+    public String getHumanReadableTemplate() {
+        return null;
     }
 
     /**

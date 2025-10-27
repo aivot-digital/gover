@@ -6,7 +6,7 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {flattenElementsWithParents} from '../../../../utils/flatten-elements';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {Alert, AlertTitle, Box, CircularProgress, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, CircularProgress, Typography, Divider} from '@mui/material';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {isNoCodeExpression, isNoCodeReference, NoCodeExpression, NoCodeOperand} from '../../../../models/functions/no-code-expression';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
@@ -19,6 +19,8 @@ import {StepElement} from '../../../../models/elements/steps/step-element';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ReplicatingContainerLayout} from '../../../../models/elements/form/layout/replicating-container-layout';
 import {NoCodeDataType} from '../../../../data/no-code-data-type';
+import {NoCodeOperandEditor} from '../../../../modules/nocode/components/no-code-operand-editor';
+import {humanizeNoCode} from '../../../../modules/nocode/utils/humanize-no-code';
 
 interface NoCodeEditorWrapperProps {
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
@@ -147,7 +149,6 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                 </Box>
             ) : (
                 <>
-
                     <OperandEditor
                         allElements={allElements}
                         allOperators={operators}
@@ -165,6 +166,39 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                             options: [],
                         }}
                     />
+
+                    <Divider sx={{
+                        my: 8,
+                    }}/>
+
+                    <NoCodeOperandEditor
+                        label="Sichtbarkeit"
+                        hint={{
+                            detailsTitle: 'Sichtbarkeit bestimmen',
+                            summary: 'Dieser Ausdruck wird verwendet, um die Sichtbarkeit des Elements zu steuern.',
+                            details: 'Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "true" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.',
+                        }}
+                        operand={noCode}
+                        onChange={onChange}
+                        allOperators={operators}
+                        allElements={allElements}
+                    />
+
+
+                    <Divider sx={{
+                        my: 8,
+                    }}/>
+
+                    <Typography variant="h5">
+                        Test Humanize
+                    </Typography>
+
+                    {
+                        noCode != null &&
+                        <Typography>
+                            Zeige das Element an, wenn: {humanizeNoCode(noCode, allElements, operators)}
+                        </Typography>
+                    }
 
                     {
                         testResult != null && (

@@ -20,6 +20,7 @@ export function SelectFieldComponent({
                                          startIcon,
                                          endAction,
                                          sx,
+                                         muiPassTroughProps,
                                      }: SelectFieldComponentProps) {
     const val = value ?? '';
 
@@ -52,6 +53,7 @@ export function SelectFieldComponent({
 
     return (
         <TextField
+            {...muiPassTroughProps}
             select
             fullWidth
             label={label + ((required ?? false) ? ' *' : '')}

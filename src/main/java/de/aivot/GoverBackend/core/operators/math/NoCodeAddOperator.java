@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 
@@ -24,6 +25,12 @@ public class NoCodeAddOperator extends NoCodeOperator {
     @Override
     public String getAbstract() {
         return "Addiert zwei Werte.";
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "Addiere #0 und #1";
     }
 
     @Override
