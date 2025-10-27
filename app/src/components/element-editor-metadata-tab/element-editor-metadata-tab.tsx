@@ -1,5 +1,5 @@
 import {Box, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 import {type ElementEditorMetadataTabProps} from './element-editor-metadata-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {ElementMetadata} from '../../models/elements/element-metadata';
@@ -20,11 +20,16 @@ import {BayernIdAttributes, BundIdAttributes, MukAttributes, ShIdAttributes} fro
 import {BayernIdAttribute, BundIdAttribute, MukAttribute, ShIdAttribute} from '../../modules/identity/constants/system-identity-provider-attributes';
 import {Page} from '../../models/dtos/page';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {ElementWithParents} from '../../utils/flatten-elements';
+import {AlertComponent} from '../alert/alert-component';
+import {generateComponentTitle} from '../../utils/generate-component-title';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
 
 export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
     const api = useApi();
 
     const {
+        allElements,
         entity: entity,
         elementModel: element,
     } = props;
@@ -69,6 +74,13 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                 .catch(console.error); // TODO: Handle error
         }
     }, [entity]);
+
+    const problems = useMemo(() => {
+        if (element == null || !isAnyInputElement(element)) {
+            return [];
+        }
+        return collectHttpMappingProblems(element, allElements);
+    }, [element, allElements]);
 
     const identityProviders: Array<IdentityProviderListDTO & {
         existingMetadataMapping: string | undefined;
@@ -130,7 +142,7 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                 >
                     <ElementEditorSectionHeader
                         title="Nutzerkonten"
-                        variant={"h5"}
+                        variant={'h5'}
                     />
 
                     {
@@ -180,7 +192,7 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
             >
                 <ElementEditorSectionHeader
                     title="Schnittstellen"
-                    variant={"h5"}
+                    variant="h5"
                 />
 
                 <TextFieldComponent
@@ -195,6 +207,26 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                     hint="Dieser Schlüssel wird statt der Feld-ID verwendet, wenn die Daten an eine HTTP-Schnittstelle gesendet werden."
                     disabled={!props.editable}
                 />
+
+                {
+                    problems.length > 0 &&
+                    <AlertComponent
+                        title="Warnungen zu Ihrem gewählten HTTP-Schnittstellenschlüssel"
+                        color="warning"
+                    >
+                        <ul>
+                            {
+                                problems.map((problem, index) => (
+                                    <li key={index}>
+                                        <Typography>
+                                            {problem}
+                                        </Typography>
+                                    </li>
+                                ))
+                            }
+                        </ul>
+                    </AlertComponent>
+                }
             </Box>
         </Box>
     );
@@ -228,4 +260,75 @@ function filterOptions(element: AnyInputElement, identityProvider: IdentityProvi
             subLabel: attribute.description,
             value: attribute.keyInData,
         }));
+}
+
+function collectHttpMappingProblems(element: AnyInputElement, allElements: ElementWithParents[]): ReactNode[] {
+    if (element.destinationKey == null || isStringNullOrEmpty(element.destinationKey)) {
+        return [];
+    }
+
+    const problems: ReactNode[] = [];
+
+    for (const ot of allElements) {
+        const {
+            element: otherElement,
+            parents: otherElementParents,
+        } = ot;
+
+        if (element.id === otherElement.id) {
+            continue;
+        }
+
+        if (!isAnyInputElement(otherElement)) {
+            continue;
+        }
+
+        if (otherElement.destinationKey == null || isStringNullOrEmpty(otherElement.destinationKey)) {
+            continue;
+        }
+
+        if (otherElement.destinationKey === element.destinationKey && element.destinationKey != null) {
+            const otherElementLabel = generateComponentTitle(element);
+            const otherElementPath = otherElementParents
+                .map(e => generateComponentTitle(e))
+                .join(' > ');
+
+            problems.push(
+                <>
+                    <Typography>
+                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> wird bereits von dem Formularelement <strong>„{otherElementPath} &gt; {otherElementLabel}”</strong> verwendet.
+                        Dies führt dazu, dass die Daten gegebenenfalls überschrieben werden. Stellen Sie sicher, dass dies ein beabsichtigtes Verhalten ist.
+                    </Typography>
+                </>,
+            );
+        }
+
+        if (otherElement.destinationKey.startsWith(element.destinationKey + '.') || element.destinationKey.startsWith(otherElement.destinationKey + '.')) {
+            const otherElementLabel = generateComponentTitle(element);
+            const otherElementPath = otherElementParents.map(e => generateComponentTitle(e)).join(' > ');
+
+            const otherElementWritesParent = otherElement
+                .destinationKey
+                .startsWith(element.destinationKey + '.');
+
+            problems.push(
+                <>
+                    <Typography gutterBottom>
+                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich mit dem HTTP-Schnittstellen-Schlüssel <strong>„{otherElement.destinationKey}”</strong> des
+                        Formularelements <strong>„{otherElementPath} &gt; {otherElementLabel}”</strong>.
+                        {
+                            otherElementWritesParent ?
+                                ' Das andere Element schreibt in ein Unterattribut des aktuellen Elements.' :
+                                ' Das aktuelle Element schreibt in ein Unterattribut des anderen Elements.'
+                        }
+                    </Typography>
+                    <Typography>
+                        Dies kann zu Problemen bei der Datenverarbeitung führen. Bitte passen Sie die Schlüssel an, um Überschneidungen zu vermeiden oder stellen Sie sicher, dass nicht beide Elemente gleichzeitig verwendet werden.
+                    </Typography>
+                </>,
+            );
+        }
+    }
+
+    return problems;
 }

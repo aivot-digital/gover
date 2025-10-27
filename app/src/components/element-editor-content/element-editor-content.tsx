@@ -193,6 +193,7 @@ export function ElementEditorContent<T extends AnyElement, E extends ElementTree
         case DefaultTabs.metadata:
             return (
                 <ElementEditorMetadataTab
+                    allElements={allElements}
                     elementModel={props.element}
                     onChange={props.onChange}
                     editable={props.editable}
