@@ -99,15 +99,14 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
         }
 
         showConfirm({
-            title: 'Als Entwurf verwenden',
+            title: 'Bestehenden Entwurf überschreiben?',
             children: (
                 <Typography>
-                    Dieses Formular hat bereits eine Version in Bearbeitung (Version {item.draftedVersion}).
-                    <br />
-                    Möchten Sie trotzdem eine neue Entwurf-Version auf Basis dieser Version erstellen?
-                    Bitte beachten Sie, die existierende Entwurf-Version wird mit dieser Version überschrieben.
+                    Für dieses Formular existiert bereits eine Arbeitsversion (Version {item.draftedVersion}).
+                    Möchten Sie dennoch einen neuen Entwurf auf Basis dieser Version erstellen?
+                    Die bestehende Arbeitsversion wird dabei überschrieben.
                 </Typography>
-            ),
+    ),
             isDestructive: false,
         }).then((confirmed) => {
             if (confirmed) {
@@ -334,7 +333,7 @@ function VersionListItem(props: VersionListItemProps) {
                         </Link>
                     </Typography>
                     {!revoked && (
-                        <Box sx={{ml: 'auto'}}>
+                        <Box sx={{ml: 'auto', mr: 0.5}}>
                             <FormStatusChip
                                 status={status}
                                 size="small"
@@ -420,7 +419,7 @@ function VersionListItemSkeleton() {
                     variant="text"
                     width={'35%'}
                     height={20}
-                    sx={{ mt: 0.5 }}
+                    sx={{ mt: 0.5, mr: 0.5}}
                 />
             </Box>
 
