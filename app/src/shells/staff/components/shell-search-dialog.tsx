@@ -1,5 +1,19 @@
-import {Box, Dialog, DialogContent, List, ListItem, ListItemIcon, ListItemText, Typography} from '@mui/material';
-import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {
+    Box,
+    CircularProgress,
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    IconButton,
+    InputBase,
+    List,
+    ListItem,
+    ListItemIcon,
+    ListItemText,
+    Paper,
+    Typography
+} from '@mui/material';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectShowSearchDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -11,12 +25,14 @@ import {createSearchItemLink} from '../../../modules/search/utils/create-search-
 import {OriginTableIcons, OriginTableLabels} from '../../../modules/search/data/origin-table';
 import HelpClinic from '@aivot/mui-material-symbols-400-outlined/dist/help-clinic/HelpClinic';
 import {Link} from 'react-router-dom';
-import {Loader} from '../../../components/loader/loader';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../utils/string-utils';
 import Chip from '@mui/material/Chip';
-import {SearchInput} from '../../../components/search-input-2/search-input';
 import {selectEntityHistory} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../data/server-entity-type';
+import Search from '@aivot/mui-material-symbols-400-outlined/dist/search/Search';
+import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
+import Lightbulb2 from '@aivot/mui-material-symbols-400-outlined/dist/lightbulb-2/Lightbulb2';
+import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 
 export function ShellSearchDialog() {
     const dispatch = useAppDispatch();
@@ -24,8 +40,14 @@ export function ShellSearchDialog() {
     const entityHistory = useAppSelector(selectEntityHistory);
 
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState(search);
     const [isBusy, setIsBusy] = useState(false);
     const [searchResults, setSearchResults] = useState<Page<SearchItemResponseDto>>();
+
+    useEffect(() => {
+        const t = window.setTimeout(() => setDebouncedSearch(search), 400);
+        return () => window.clearTimeout(t);
+    }, [search]);
 
     const handleClose = () => {
         setTimeout(() => {
@@ -35,154 +57,209 @@ export function ShellSearchDialog() {
     };
 
     useEffect(() => {
-        if (search.length === 0) {
+        if (debouncedSearch.length === 0) {
             setSearchResults(undefined);
+            setIsBusy(false);
             return;
         }
 
-        setIsBusy(true);
+        const ac = new AbortController();
+        let canceled = false;
 
-        new SearchItemService()
-            .getSearchItems(search)
-            .then(setSearchResults)
-            .finally(() => {
-                setIsBusy(false);
-            });
-    }, [search]);
+        withAsyncWrapper({
+            desiredMinRuntime: 400,
+            signal: ac.signal,
+            runtimeCallback: (running) => setIsBusy(running),
+            main: async (_before, signal) => {
+                return await new SearchItemService().getSearchItems(debouncedSearch);
+            },
+            after: async (res) => {
+                if (!canceled) setSearchResults(res);
+            }
+        }).catch((err) => {
+        });
+
+        return () => {
+            canceled = true;
+            ac.abort();
+        };
+    }, [debouncedSearch]);
+
+    const results = searchResults?.content ?? [];
+    const cappedResults = results.slice(0, 10);
+    const totalElements: number | undefined = (searchResults as any)?.totalElements;
+    const hasMoreResults =
+        (typeof totalElements === 'number' && totalElements > cappedResults.length) ||
+        results.length > cappedResults.length;
+
+    const historyCapped = entityHistory.slice(0, 10);
 
     return (
-        <Dialog
-            open={show}
-            onClose={handleClose}
-            fullWidth={true}
-            maxWidth="md"
-        >
-            <DialogTitleWithClose onClose={handleClose}>
-                Suche
-            </DialogTitleWithClose>
+        <Dialog open={show} onClose={handleClose} fullWidth={true} maxWidth="sm">
+            <DialogTitle sx={{py: 1}}>
+                <span style={{display: 'none'}}>Suche</span>
+            </DialogTitle>
             <DialogContent>
-                <SearchInput
-                    value={search}
-                    onChange={setSearch}
-                    placeholder="Suche"
-                    autoFocus={true}
-                />
+                <Paper
+                    elevation={0}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        pb: 1,
+                        mb: 2
+                    }}
+                >
+                    {isBusy ? (
+                        <Box
+                            sx={{
+                                width: '2.1875rem',
+                                height: '2.1875rem',
+                                display: 'flex',
+                                flexShrink: 0,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mr: 2
+                            }}
+                        >
+                            <CircularProgress size={28} thickness={4} sx={{color: 'primary.dark'}} />
+                        </Box>
+                    ) : (
+                        <Search sx={{color: 'primary.dark', mr: 2, fontSize: '2.1875rem'}} />
+                    )}
+                    <InputBase
+                        placeholder="Suche…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        fullWidth
+                        autoFocus
+                        sx={{
+                            fontSize: '1.5rem',
+                            color: 'text.primary'
+                        }}
+                    />
+                    <IconButton onClick={handleClose}>
+                        <Close />
+                    </IconButton>
+                </Paper>
 
                 <Box
                     sx={{
                         position: 'relative',
-                        minHeight: '32rem',
-                        maxHeight: '75vh',
+                        minHeight: '35rem',
+                        maxHeight: '40vh'
                     }}
                 >
-                    {
-                        searchResults != null &&
-                        searchResults.content.length > 0 &&
-                        <List>
-                            {searchResults.content.map(item => (
-                                <SearchDialogListItem
-                                    key={item.id + item.originTable}
-                                    id={item.id}
-                                    type={item.originTable}
-                                    link={createSearchItemLink(item)}
-                                    search={search}
-                                    label={item.label}
-                                />
-                            ))}
-                        </List>
-                    }
 
-                    {
-                        isStringNotNullOrEmpty(search) &&
-                        searchResults != null &&
-                        searchResults.content.length === 0 &&
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                width: '50%',
-                                textAlign: 'center',
-                            }}
-                        >
-                            Keine Ergebnisse gefunden. Probieren Sie es mit einem anderen Suchbegriff.
-                        </Typography>
-                    }
-
-                    {
-                        isStringNullOrEmpty(search) &&
-                        entityHistory.length > 0 &&
-                        <>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    mt: 2,
-                                }}
-                            >
-                                Kürzlich angesehene Objekte
-                            </Typography>
-                            <List>
-                                {
-                                    entityHistory.map(item => (
-                                        <SearchDialogListItem
-                                            key={item.link}
-                                            id={item.title}
-                                            type={item.type}
-                                            link={item.link}
-                                            search={search}
-                                            label={item.title}
-                                        />
-                                    ))
-                                }
-                            </List>
-                        </>
-                    }
-
-                    {
-                        isStringNullOrEmpty(search) &&
-                        entityHistory.length === 0 &&
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                width: '50%',
-                                textAlign: 'center',
-                            }}
-                        >
-                            Bitte geben Sie einen Suchbegriff ein.
-                        </Typography>
-                    }
-
-                    <Box
-                        sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            pointerEvents: 'none',
-                            display: isBusy ? 'block' : 'none',
-                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                            backdropFilter: 'blur(3px)',
-                        }}
-                    >
+                    {isStringNullOrEmpty(debouncedSearch) && (
                         <Box
                             sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1.5,
+                                px: 2,
+                                py: 1.25,
+                                mb: 3.5,
+                                borderRadius: 2,
+                                bgcolor: 'rgba(0,0,0,0.05)',
+                            }}
+                        >
+                            <Lightbulb2 sx={{color: 'text.secondary'}} />
+                            <Typography variant="body1" color="text.secondary">
+                                <strong>Tipp:</strong> Durchsuchen Sie schnell &amp; einfach Formulare, Prozesse und
+                                Vorgangsdaten mit unserer Komfort-Suchfunktion.
+                            </Typography>
+                        </Box>
+                    )}
+
+                    <Divider sx={{mx: -3}} />
+
+
+                    {/* Suchergebnisse */}
+                    {searchResults != null && results.length > 0 && (
+                        <>
+                            <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
+                                {cappedResults.map((item) => (
+                                    <SearchDialogListItem
+                                        key={item.id + item.originTable}
+                                        id={item.id}
+                                        type={item.originTable}
+                                        link={createSearchItemLink(item)}
+                                        search={debouncedSearch}
+                                        label={item.label}
+                                    />
+                                ))}
+                            </List>
+
+                            {hasMoreResults && totalElements && (
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{mt: 1, px: 0.5, textAlign: 'center'}}
+                                >
+                                    Es wurden {totalElements - 10} weitere Ergebnisse gefunden.<br/>
+                                    Bitte präzisieren Sie ggf. die verwendeten Suchbegriffe.
+                                </Typography>
+                            )}
+                        </>
+                    )}
+
+                    {/* Keine Ergebnisse */}
+                    {isStringNotNullOrEmpty(debouncedSearch) &&
+                        searchResults != null &&
+                        results.length === 0 && (
+                            <Typography
+                                variant="body1"
+                                sx={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    width: '50%',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                <b>Keine Ergebnisse gefunden.</b><br /> Bitte versuchen Sie es mit einem anderen Suchbegriff.
+                            </Typography>
+                        )}
+
+                    {/* Zuletzt verwendet */}
+                    {isStringNullOrEmpty(debouncedSearch) && entityHistory.length > 0 && (
+                        <>
+                            <Typography variant="h6" sx={{mt: 2.5}}>
+                                Zuletzt verwendet
+                            </Typography>
+                            <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
+                                {historyCapped.map((item) => (
+                                    <SearchDialogListItem
+                                        key={item.link}
+                                        id={item.title}
+                                        type={item.type}
+                                        link={item.link}
+                                        search={search}
+                                        label={item.title}
+                                    />
+                                ))}
+                            </List>
+                        </>
+                    )}
+
+                    {/* Empty State */}
+                    {isStringNullOrEmpty(search) && entityHistory.length === 0 && (
+                        <Typography
+                            variant="body1"
+                            sx={{
                                 position: 'absolute',
                                 top: '50%',
                                 left: '50%',
                                 transform: 'translate(-50%, -50%)',
                                 width: '50%',
+                                textAlign: 'center',
+                                color: 'text.secondary'
                             }}
                         >
-                            <Loader message="Suche Objekte" />
-                        </Box>
-                    </Box>
+                            Bitte geben Sie einen Suchbegriff ein, um nach Formularen, Prozessen oder Vorgangsdaten zu suchen.
+                        </Typography>
+                    )}
                 </Box>
             </DialogContent>
         </Dialog>
@@ -198,13 +275,7 @@ interface ShellSearchDialogProps {
 }
 
 function SearchDialogListItem(props: ShellSearchDialogProps) {
-    const {
-        id,
-        type,
-        link,
-        search,
-        label,
-    } = props;
+    const {id, type, link, search, label} = props;
 
     const dispatch = useAppDispatch();
 
@@ -221,31 +292,32 @@ function SearchDialogListItem(props: ShellSearchDialogProps) {
             dense={true}
             sx={{
                 borderBottom: '1px solid #eee',
+                px: 0.25,
+                color: 'inherit',
+                '&:hover': {backgroundColor: '#f9f9f9'}
             }}
         >
-            <ListItemIcon>
+            <ListItemIcon sx={{color: 'primary.dark', minWidth: '2.5rem', textAlign: 'center'}}>
                 {OriginTableIcons[type] ?? <HelpClinic />}
             </ListItemIcon>
             <ListItemText
                 primary={label}
-                secondary={(isStringNotNullOrEmpty(search) && type === ServerEntityType.DataObjectItems) ? `Hinweis: Das Datenobjekt beinhaltet den Wert „${search}“` : null}
+                secondary={
+                    isStringNotNullOrEmpty(search) && type === ServerEntityType.DataObjectItems
+                        ? `Hinweis: Das Datenobjekt beinhaltet den Wert „${search}“`
+                        : null
+                }
                 slotProps={{
                     primary: {
                         sx: {
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                        },
-                    },
+                            textOverflow: 'ellipsis'
+                        }
+                    }
                 }}
             />
-            <Chip
-                size="small"
-                sx={{
-                    ml: 1,
-                }}
-                label={OriginTableLabels[type] ?? 'Unbekannt'}
-            />
+            <Chip size="small" sx={{ml: 2}} label={OriginTableLabels[type] ?? 'Unbekannt'} />
         </ListItem>
     );
 }

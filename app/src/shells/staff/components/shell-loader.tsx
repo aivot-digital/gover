@@ -17,13 +17,14 @@ export function ShellLoader() {
                 variant="h5"
                 component="h1"
             >
-                Lade Gover…
+                Gover wird geladen…
             </Typography>
             <LinearProgress
                 variant="indeterminate"
                 sx={{
-                    mt: 1,
-                    width: '25%',
+                    mt: 2,
+                    width: '50%',
+                    maxWidth: '400px',
                 }}
             />
         </Box>
