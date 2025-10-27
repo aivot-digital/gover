@@ -1,7 +1,7 @@
 import React, {useEffect, useReducer, useState} from 'react';
 import {useDrag} from 'react-dnd';
 import {Box} from '@mui/material';
-import {setDraggingTreeElement, setExpandElementTree} from '../../slices/admin-settings-slice';
+import {selectUseTestMode, setDraggingTreeElement, setExpandElementTree} from '../../slices/admin-settings-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ElementTreeItemTitle} from '../element-tree-item-title/element-tree-item-title';
 import {ElementTreeItemList} from '../element-tree-item-list/element-tree-item-list';
@@ -16,17 +16,25 @@ import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isChildOf} from '../../utils/is-child-of';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
+import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
+import {DefaultTabs} from '../element-editor/default-tabs';
 
 export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntity>(props: ElementTreeItemProps<T, E>) {
     const {
         element,
     } = props;
 
+    const {
+        currentEditedElementId,
+        navigateToElementEditor,
+        closeElementEditor,
+    } = useElementEditorNavigation();
+
     const dispatch = useAppDispatch();
     const expandStatus = useAppSelector((state) => state.adminSettings.expandElementTree);
+    const testMode = useAppSelector(selectUseTestMode);
 
     const [expanded, setExpanded] = useState(false);
-    const [showEditor, toggleShowEditor] = useReducer((p) => !p, false);
     const [showAddDialog, toggleShowAddDialog] = useReducer((p) => !p, false);
 
     const isLayoutElement = isAnyElementWithChildren(props.element);
@@ -95,7 +103,6 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
         }
 
         props.onDelete();
-        toggleShowEditor();
     };
 
     if (isDragging) {
@@ -121,7 +128,9 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 }
                 element={props.element}
                 onShowAddDialog={isLayoutElement && isNotStoreModule ? toggleShowAddDialog : undefined}
-                onSelect={toggleShowEditor}
+                onSelect={() => {
+                    navigateToElementEditor(props.element.id, testMode ? DefaultTabs.test : DefaultTabs.properties);
+                }}
                 editable={props.editable}
                 enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
             />
@@ -153,39 +162,39 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 hidePresets={props.scope === 'data_modelling'}
             />
 
-            {
-                showEditor &&
-                <ElementEditor
-                    parents={props.parents}
-                    element={props.element}
-                    entity={props.entity}
-                    onSave={(updatedElement, updatedApplication) => {
-                        props.onPatch(updatedElement, updatedApplication);
-                        toggleShowEditor();
+            <ElementEditor
+                open={currentEditedElementId === props.element.id}
+                parents={props.parents}
+                element={props.element}
+                entity={props.entity}
+                onSave={(updatedElement, updatedApplication) => {
+                    props.onPatch(updatedElement, updatedApplication);
+                    closeElementEditor();
+                }}
+                onCancel={() => {
+                    closeElementEditor();
+                }}
+                onDelete={(
+                    props.element.type === ElementType.IntroductionStep ||
+                    props.element.type === ElementType.SummaryStep ||
+                    props.element.type === ElementType.SubmitStep
+                ) ?
+                    undefined :
+                    handleDeleteElement}
+                onClone={(
+                    props.element.type === ElementType.IntroductionStep ||
+                    props.element.type === ElementType.SummaryStep ||
+                    props.element.type === ElementType.SubmitStep
+                ) ?
+                    undefined :
+                    () => {
+                        props.onClone();
+                        closeElementEditor();
                     }}
-                    onCancel={toggleShowEditor}
-                    onDelete={(
-                        props.element.type === ElementType.IntroductionStep ||
-                        props.element.type === ElementType.SummaryStep ||
-                        props.element.type === ElementType.SubmitStep
-                    ) ?
-                        undefined :
-                        handleDeleteElement}
-                    onClone={(
-                        props.element.type === ElementType.IntroductionStep ||
-                        props.element.type === ElementType.SummaryStep ||
-                        props.element.type === ElementType.SubmitStep
-                    ) ?
-                        undefined :
-                        () => {
-                            props.onClone();
-                            toggleShowEditor();
-                        }}
-                    editable={props.editable}
-                    scope={props.scope}
-                    rootEditor={false}
-                />
-            }
+                editable={props.editable}
+                scope={props.scope}
+                rootEditor={false}
+            />
         </Box>
     );
 }

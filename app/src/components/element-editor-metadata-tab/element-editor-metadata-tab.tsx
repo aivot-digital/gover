@@ -24,6 +24,9 @@ import {ElementWithParents} from '../../utils/flatten-elements';
 import {AlertComponent} from '../alert/alert-component';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import { Link } from 'react-router-dom';
+import {DefaultTabs} from '../element-editor/default-tabs';
+import {createElementEditorNavigationLink} from '../../hooks/use-element-editor-navigation';
 
 export function ElementEditorMetadataTab<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorMetadataTabProps<T, E>) {
     const api = useApi();
@@ -296,7 +299,7 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
             problems.push(
                 <>
                     <Typography>
-                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> wird bereits von dem Formularelement <strong>„{otherElementPath} &gt; {otherElementLabel}”</strong> verwendet.
+                        Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> wird bereits von dem Formularelement <Link to={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementPath} &gt; {otherElementLabel}”</Link> verwendet.
                         Dies führt dazu, dass die Daten gegebenenfalls überschrieben werden. Stellen Sie sicher, dass dies ein beabsichtigtes Verhalten ist.
                     </Typography>
                 </>,
@@ -315,7 +318,7 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
                 <>
                     <Typography gutterBottom>
                         Der HTTP-Schnittstellen-Schlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich mit dem HTTP-Schnittstellen-Schlüssel <strong>„{otherElement.destinationKey}”</strong> des
-                        Formularelements <strong>„{otherElementPath} &gt; {otherElementLabel}”</strong>.
+                        Formularelements <Link to={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementPath} &gt; {otherElementLabel}”</Link>.
                         {
                             otherElementWritesParent ?
                                 ' Das andere Element schreibt in ein Unterattribut des aktuellen Elements.' :

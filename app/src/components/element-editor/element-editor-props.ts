@@ -7,6 +7,7 @@ import {type ElementTreeScope} from '../element-tree/element-tree-scope';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 
 export interface ElementEditorProps<T extends AnyElement, E extends ElementTreeEntity> {
+    open: boolean;
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
     entity: E;
     element: T;

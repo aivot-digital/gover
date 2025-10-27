@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Box, Divider, FormControlLabel, IconButton, Menu, MenuItem, Switch, Tooltip, Typography} from '@mui/material';
 import {
     selectTreeElementSearch,
@@ -414,24 +414,22 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                 </MenuItem>
             </Menu>
 
-            {
-                showEditor &&
-                <ElementEditor
-                    parents={[] /* Uppermost element so no parents here */}
-                    entity={props.entity}
-                    element={props.entity.rootElement as any /* TODO: Fix this any type */}
-                    onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
-                        setShowEditor(false);
-                        props.onPatch(updatedElement, updatedApplication);
-                    }}
-                    onCancel={() => {
-                        setShowEditor(false);
-                    }}
-                    editable={props.editable}
-                    scope={props.scope}
-                    rootEditor={true}
-                />
-            }
+            <ElementEditor
+                open={showEditor}
+                parents={[] /* Uppermost element so no parents here */}
+                entity={props.entity}
+                element={props.entity.rootElement as any /* TODO: Fix this any type */}
+                onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
+                    setShowEditor(false);
+                    props.onPatch(updatedElement, updatedApplication);
+                }}
+                onCancel={() => {
+                    setShowEditor(false);
+                }}
+                editable={props.editable}
+                scope={props.scope}
+                rootEditor={true}
+            />
         </>
     );
 }

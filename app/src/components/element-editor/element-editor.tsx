@@ -1,14 +1,10 @@
 import {Box, Drawer} from '@mui/material';
-import React, { useMemo, useState } from 'react';
-import {DefaultTabs} from './default-tabs';
+import React, {useMemo, useState} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectUseTestMode} from '../../slices/admin-settings-slice';
 import {ElementEditorTabs} from '../element-editor-tabs/element-editor-tabs';
 import {ElementEditorContent} from '../element-editor-content/element-editor-content';
 import {ElementEditorActions} from '../element-editor-actions/element-editor-actions';
 import {type ElementEditorProps} from './element-editor-props';
-
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {type AnyElement} from '../../models/elements/any-element';
 import {editors as Editors} from '../../editors';
@@ -18,16 +14,19 @@ import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {useChangeBlocker} from '../../hooks/use-change-blocker';
 import {useConfirm} from '../../providers/confirm-provider';
 import {AppInfo} from '../../app-info';
+import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 
 export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>(props: ElementEditorProps<T, E>): React.ReactNode | null {
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const testMode = useAppSelector(selectUseTestMode);
+    const {
+        currentEditorTab,
+        navigateToEditorTab,
+    } = useElementEditorNavigation();
 
     const [updatedElement, setUpdatedElement] = useState<T>();
     const [updatedEntity, setUpdatedEntity] = useState<E>();
-    const [currentTab, setCurrentTab] = useState(testMode ? DefaultTabs.test : DefaultTabs.properties);
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
     const initialState = useMemo(() => ({element: props.element, entity: props.entity}), [props.element, props.entity]);
@@ -59,7 +58,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
-        setCurrentTab(newTab);
+        navigateToEditorTab(newTab);
     };
 
     const handleShowPresetDialog = (): void => {
@@ -112,7 +111,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
     return (
         <Drawer
             anchor="right"
-            open={true}
+            open={props.open}
             PaperProps={{
                 sx: {
                     width: {
@@ -138,7 +137,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
                 <ElementEditorTabs
                     component={updatedElement ?? props.element}
                     additionalTabs={additionalTabs}
-                    currentTab={currentTab}
+                    currentTab={currentEditorTab}
                     onTabChange={handleSetCurrentTab}
                     scope={props.scope}
                     rootEditor={props.rootEditor}
@@ -156,7 +155,7 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
                         parents={props.parents}
                         element={updatedElement ?? props.element}
                         entity={updatedEntity ?? props.entity}
-                        currentTab={currentTab}
+                        currentTab={currentEditorTab}
                         additionalTabs={additionalTabs}
                         onChange={handleChange}
                         onChangeEntity={handleEntityChange}
