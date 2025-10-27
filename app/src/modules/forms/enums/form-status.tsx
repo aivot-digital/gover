@@ -3,6 +3,9 @@ import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 
 import {ReactElement} from 'react';
+import DraftOrders from '@aivot/mui-material-symbols-400-outlined/dist/draft-orders/DraftOrders';
+import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import Inventory2 from '@aivot/mui-material-symbols-400-outlined/dist/inventory-2/Inventory2';
 
 export enum FormStatus {
     Drafted = 0,
@@ -32,4 +35,10 @@ export const FormStatusIcons: Record<FormStatus, ReactElement> = {
     [FormStatus.Drafted]: <PersonOutlineOutlinedIcon />,
     [FormStatus.Published]: <RemoveRedEyeOutlinedIcon />,
     [FormStatus.Revoked]: <SwapHorizOutlinedIcon />,
+};
+
+export const FormVersionStatusIcons: Record<FormStatus, ReactElement> = {
+    [FormStatus.Drafted]: <DraftOrders />,
+    [FormStatus.Published]: ModuleIcons.forms,
+    [FormStatus.Revoked]: <Inventory2 />,
 };
