@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
@@ -65,9 +65,9 @@ export function ImprintDialog(props: ImprintDialogProps) {
                     </DialogContent>
             }
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Impressum schließen
                 </Button>

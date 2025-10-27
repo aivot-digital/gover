@@ -91,9 +91,9 @@ export function InfoDialog(props: InfoDialogProps & DialogProps) {
             </DialogContent>
 
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onClose}
-                    variant="contained"
                 >
                     Hinweis schließen
                 </Button>

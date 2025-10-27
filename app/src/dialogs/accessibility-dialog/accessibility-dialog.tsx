@@ -1,4 +1,4 @@
-import {Alert, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
@@ -66,9 +66,9 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                     </DialogContent>
             }
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Informationen schließen
                 </Button>
