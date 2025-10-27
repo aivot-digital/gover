@@ -35,19 +35,22 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
             open={anchorEl != null}
             onClose={onClose}
         >
-            <MenuItem
-                onClick={() => {
-                    onReuseFormVersionAsDraft(form);
-                    onClose();
-                }}
-            >
-                <ListItemIcon>
-                    <Edit />
-                </ListItemIcon>
-                <ListItemText>
-                    Als Entwurf verwenden
-                </ListItemText>
-            </MenuItem>
+            {
+                form.draftedVersion !== form.version &&
+                <MenuItem
+                    onClick={() => {
+                        onReuseFormVersionAsDraft(form);
+                        onClose();
+                    }}
+                >
+                    <ListItemIcon>
+                        <Edit />
+                    </ListItemIcon>
+                    <ListItemText>
+                        Als Entwurf verwenden
+                    </ListItemText>
+                </MenuItem>
+            }
 
             <MenuItem
                 onClick={() => {
