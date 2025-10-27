@@ -20,6 +20,7 @@ public record NoCodeOperatorDetailsDTO(
         String label,
         String description,
         String abstractDescription,
+        String humanReadableTemplate,
         String[] tags,
         NoCodeParameter[] parameters
 ) {
@@ -38,6 +39,7 @@ public record NoCodeOperatorDetailsDTO(
                         op.getLabel(),
                         op.getDescription(),
                         op.getAbstract(),
+                        op.getHumanReadableTemplate(),
                         op.getTags(),
                         op.getParameters()
                 ));

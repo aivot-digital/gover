@@ -29,6 +29,7 @@ export function Actions(props: ActionsProps) {
                             isFirst={index === 0}
                             isLast={index === ((props.actions?.length ?? 0) - 1)}
                             tooltipPlacement={props.tooltipPlacement ?? 'bottom'}
+                            size={props.size ?? 'small'}
                         />
                     ))
             }
@@ -44,6 +45,7 @@ interface ToolbarActionDispatcherProps {
     isFirst: boolean;
     isLast: boolean;
     tooltipPlacement: ActionTooltipPlacement;
+    size: 'small' | 'medium' | 'large';
 }
 
 function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
@@ -55,7 +57,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
         isFirst,
         isLast,
         tooltipPlacement,
-
+        size,
     } = props;
 
     if (action === 'separator') {
@@ -94,7 +96,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
     if (action.label != null) {
         element = (
             <Button
-                size="small"
+                size={size}
                 color={color}
                 sx={{
                     m: 0,
@@ -115,7 +117,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps) {
     } else {
         element = (
             <IconButton
-                size="small"
+                size={size}
                 color={color}
                 sx={{
                     m: 0,

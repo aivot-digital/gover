@@ -46,4 +46,5 @@ export interface ActionsProps {
     color?: ActionColor;
     direction?: ActionDirection;
     tooltipPlacement?: ActionTooltipPlacement;
+    size?: 'small' | 'medium' | 'large';
 }

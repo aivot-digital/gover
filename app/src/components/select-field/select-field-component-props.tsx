@@ -1,5 +1,5 @@
 import {SelectFieldComponentOption} from "./select-field-component-option";
-import {SxProps, Theme} from "@mui/material";
+import {SxProps, TextFieldProps, Theme} from '@mui/material';
 import {ReactNode} from 'react';
 
 export interface SelectFieldComponentProps {
@@ -18,6 +18,7 @@ export interface SelectFieldComponentProps {
     sx?: SxProps<Theme>;
     startIcon?: React.ReactNode;
     endAction?: EndAction | Array<EndAction>;
+    muiPassTroughProps?: TextFieldProps;
 }
 
 type EndAction = {

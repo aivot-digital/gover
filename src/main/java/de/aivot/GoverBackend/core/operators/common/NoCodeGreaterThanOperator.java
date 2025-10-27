@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import org.jetbrains.annotations.Nullable;
 
 public class NoCodeGreaterThanOperator extends NoCodeOperator {
     @Override
@@ -67,6 +68,12 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
                         "Der zweite zu vergleichende Wert."
                 ),
         };
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "#0 ist größer als #1";
     }
 
     @Override
