@@ -222,7 +222,6 @@ export function HelpDialog(props: HelpDialogProps) {
                         container
                         spacing={4}
                         sx={{
-                            mt: -3.6,
                             mb: 4,
                         }}
                     >
@@ -234,7 +233,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         >
                             <BoxLink
                                 link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.publicTitle}`}
-                                text={'Fachlicher Support\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
+                                text={'Fachlicher Support:\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
                             />
                         </Grid>
                         <Grid
@@ -245,7 +244,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         >
                             <BoxLink
                                 link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.publicTitle}`}
-                                text={'Technischer Support\nUnterstützung bei technischen Problemen und Fehlern'}
+                                text={'Technischer Support:\nUnterstützung bei technischen Problemen und Fehlern'}
                             />
                         </Grid>
                     </Grid>
@@ -278,9 +277,9 @@ export function HelpDialog(props: HelpDialogProps) {
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
+                <Box/>
                 <Button
                     onClick={props.onHide}
-                    variant="contained"
                 >
                     Hilfe schließen
                 </Button>

@@ -46,7 +46,7 @@ export function ShellResolutionOverlay() {
                 zIndex: 9999,
                 textAlign: 'center',
                 p: 3,
-                backgroundImage: 'url("/assets/images/blurred-application-bg.jpg")',
+                backgroundImage: 'url("/staff/assets/images/blurred-application-bg.jpg")',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}

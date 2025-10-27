@@ -40,7 +40,7 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
                 sx={{
                     position: "relative",
                     height: 280,
-                    backgroundImage: 'url("/assets/images/about-gover-bg.jpg")',
+                    backgroundImage: 'url("/staff/assets/images/about-gover-bg.jpg")',
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     display: "flex",
@@ -51,7 +51,7 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
             >
                 <Box
                     component="img"
-                    src="/assets/images/about-gover-logo.svg"
+                    src="/staff/assets/images/about-gover-logo.svg"
                     alt="Gover Logo"
                     sx={{ width: 250, height: "auto", zIndex: 2, mb: 3.5 }}
                 />
@@ -122,8 +122,6 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         startIcon={<OpenInNewIcon />}
-                        sx={{textTransform: 'none'}}
-                        disableElevation
                     >
                         Mehr erfahren
                     </Button>
@@ -143,8 +141,6 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         startIcon={<CodeIcon />}
-                        sx={{textTransform: 'none'}}
-                        disableElevation
                     >
                         Quellcode einsehen
                     </Button>
@@ -154,8 +150,6 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         startIcon={<ListAltIcon />}
-                        sx={{textTransform: 'none'}}
-                        disableElevation
                     >
                         Changelog ansehen
                     </Button>

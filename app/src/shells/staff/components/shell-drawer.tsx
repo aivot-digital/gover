@@ -190,10 +190,12 @@ export function ShellDrawer() {
             createTheme({
                 ...baseTheme,
                 palette: {
+                    ...baseTheme.palette,
                     primary: baseTheme.palette.primary,
                     secondary: baseTheme.palette.secondary,
                 },
                 components: {
+                    ...baseTheme.components,
                     MuiTooltip: {
                         styleOverrides: {
                             tooltip: {
