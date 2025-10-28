@@ -178,6 +178,14 @@ public class ResponseException extends Exception {
         return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", cause);
     }
 
+    public static ResponseException notAcceptable() {
+        return ResponseException.conflict("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+    }
+
+    public static ResponseException notAcceptable(String message) {
+        return new ResponseException(HttpStatus.NOT_ACCEPTABLE, "Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+    }
+
     // endregion
 
     // region Getter
