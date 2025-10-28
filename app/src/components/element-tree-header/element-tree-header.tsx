@@ -420,22 +420,25 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                 </MenuItem>
             </Menu>
 
-            <ElementEditor
-                open={currentEditedElementId === props.element.id}
-                parents={[] /* Uppermost element so no parents here */}
-                entity={props.entity}
-                element={props.entity.rootElement as any /* TODO: Fix this any type */}
-                onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
-                    closeElementEditor();
-                    props.onPatch(updatedElement, updatedApplication);
-                }}
-                onCancel={() => {
-                    closeElementEditor();
-                }}
-                editable={props.editable}
-                scope={props.scope}
-                rootEditor={true}
-            />
+            {
+                currentEditedElementId === props.element.id &&
+                <ElementEditor
+                    open={true}
+                    parents={[] /* Uppermost element so no parents here */}
+                    entity={props.entity}
+                    element={props.entity.rootElement as any /* TODO: Fix this any type */}
+                    onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
+                        closeElementEditor();
+                        props.onPatch(updatedElement, updatedApplication);
+                    }}
+                    onCancel={() => {
+                        closeElementEditor();
+                    }}
+                    editable={props.editable}
+                    scope={props.scope}
+                    rootEditor={true}
+                />
+            }
         </>
     );
 }

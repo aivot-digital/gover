@@ -182,40 +182,43 @@ export function ElementTreeItem<T extends AnyElement, E extends ElementTreeEntit
                 hidePresets={props.scope === 'data_modelling'}
             />
 
-            <ElementEditor
-                open={currentEditedElementId === props.element.id}
-                parents={props.parents}
-                element={props.element}
-                entity={props.entity}
-                onSave={(updatedElement, updatedApplication) => {
-                    props.onPatch(updatedElement, updatedApplication);
-                    closeElementEditor();
-                }}
-                onCancel={() => {
-                    closeElementEditor();
-                }}
-                onDelete={(
-                    props.element.type === ElementType.IntroductionStep ||
-                    props.element.type === ElementType.SummaryStep ||
-                    props.element.type === ElementType.SubmitStep
-                ) ?
-                    undefined :
-                    handleDeleteElement}
-                onClone={(
-                    props.element.type === ElementType.IntroductionStep ||
-                    props.element.type === ElementType.SummaryStep ||
-                    props.element.type === ElementType.SubmitStep
-                ) ?
-                    undefined :
-                    () => {
-                        props.onClone();
+            {
+                currentEditedElementId === props.element.id &&
+                <ElementEditor
+                    open={true}
+                    parents={props.parents}
+                    element={props.element}
+                    entity={props.entity}
+                    onSave={(updatedElement, updatedApplication) => {
+                        props.onPatch(updatedElement, updatedApplication);
                         closeElementEditor();
                     }}
-                editable={props.editable}
-                scope={props.scope}
-                rootEditor={false}
-                lockMessage={lockMessage}
-            />
+                    onCancel={() => {
+                        closeElementEditor();
+                    }}
+                    onDelete={(
+                        props.element.type === ElementType.IntroductionStep ||
+                        props.element.type === ElementType.SummaryStep ||
+                        props.element.type === ElementType.SubmitStep
+                    ) ?
+                        undefined :
+                        handleDeleteElement}
+                    onClone={(
+                        props.element.type === ElementType.IntroductionStep ||
+                        props.element.type === ElementType.SummaryStep ||
+                        props.element.type === ElementType.SubmitStep
+                    ) ?
+                        undefined :
+                        () => {
+                            props.onClone();
+                            closeElementEditor();
+                        }}
+                    editable={props.editable}
+                    scope={props.scope}
+                    rootEditor={false}
+                    lockMessage={lockMessage}
+                />
+            }
         </Box>
     );
 }
