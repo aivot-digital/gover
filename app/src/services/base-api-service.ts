@@ -8,6 +8,7 @@ export interface RequestOptions {
     abort?: AbortSignal;
     headers?: Record<string, string>;
     query?: QueryParams;
+    doNotHandleStatusCodes?: boolean;
 }
 
 const DefaultUnauthorizedApiError: ApiError = {
@@ -40,7 +41,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200) {
+        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }
@@ -65,7 +66,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200) {
+        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
             if (response.status > 500) {
                 dispatchApiUnreachableEvent();
             }
@@ -93,7 +94,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200) {
+        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }
@@ -118,7 +119,7 @@ export class BaseApiService {
             return handleFetchError(error).blob();
         }
 
-        if (response.status !== 200) {
+        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
             if (response.status > 500) {
                 dispatchApiUnreachableEvent();
             }
@@ -146,7 +147,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201) {
+        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }
@@ -180,7 +181,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201) {
+        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }
@@ -206,7 +207,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201) {
+        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
             if (response.status > 500) {
                 dispatchApiUnreachableEvent();
             }
@@ -234,7 +235,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201) {
+        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }
@@ -260,7 +261,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201) {
+        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
             if (response.status > 500) {
                 dispatchApiUnreachableEvent();
             }
@@ -291,7 +292,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201) {
+        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }
@@ -319,7 +320,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201) {
+        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
             throw await createApiError(response);
         }
 
@@ -344,7 +345,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200) {
+        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }
@@ -374,7 +375,7 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 204) {
+        if (response.status !== 200 && response.status !== 204 && options?.doNotHandleStatusCodes !== true) {
             if (response.status === 401) {
                 this.auth.logout();
             }

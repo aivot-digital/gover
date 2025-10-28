@@ -5,8 +5,6 @@ import {HealthData, HealthDataComponents, Status} from '../../../../../models/dt
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
-import {useApi} from '../../../../../hooks/use-api';
-import {useSystemApi} from '../../../../../hooks/use-system-api';
 import {AppInfo} from '../../../../../app-info';
 import {StatusTable} from '../../../../../components/status-table/status-table';
 import {StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
@@ -18,14 +16,14 @@ import {downloadTextFile} from '../../../../../utils/download-utils';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {ServiceProviderApiService} from '../../../../../services/service-provider-api-service';
 import {ServiceProviderDTO} from '../../../../../models/dtos/service-provider-dto';
+import {SystemApiService} from '../../../../../modules/system/system-api-service';
 
 export function SystemInformation() {
-    const api = useApi();
     const [health, setHealth] = useState<HealthData | 'error'>();
     const [serviceProviders, setServiceProviders] = useState<ServiceProviderDTO[]>([]);
 
     useEffect(() => {
-        useSystemApi(api)
+        new SystemApiService()
             .getHealth()
             .then(setHealth)
             .catch((err) => {
@@ -37,7 +35,7 @@ export function SystemInformation() {
                 }
             });
 
-        new ServiceProviderApiService(api)
+        new ServiceProviderApiService()
             .getServiceProviders()
             .then(setServiceProviders);
     }, []);
@@ -229,7 +227,7 @@ export function SystemInformation() {
                     sx={{mt: 2.5}}
                     startIcon={<FileDownloadOutlinedIcon />}
                     onClick={() => {
-                        useSystemApi(api)
+                        new SystemApiService()
                             .getHttpExchanges()
                             .then((exchanges) => {
                                 const lines: string[] = [
@@ -272,8 +270,9 @@ export function SystemInformation() {
                             size={{
                                 xs: 12,
                                 sm: 6,
-                                md: 4
-                            }}>
+                                md: 4,
+                            }}
+                        >
                             <Card
                                 variant="outlined"
                                 sx={{display: 'flex', flexDirection: 'column', height: '100%'}}

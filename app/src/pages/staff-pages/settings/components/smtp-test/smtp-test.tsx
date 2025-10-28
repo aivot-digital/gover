@@ -1,11 +1,9 @@
-import React, { type FormEvent, useState } from 'react';
+import React, {type FormEvent, useState} from 'react';
 import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
-import {useApi} from "../../../../../hooks/use-api";
-import {useSystemApi} from "../../../../../hooks/use-system-api";
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import {SystemApiService} from '../../../../../modules/system/system-api-service';
 
 export function SmtpTest() {
-    const api = useApi();
     const [targetEmail, setTargetEmail] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [emailTestResult, setEmailTestResult] = useState<true | string>();
@@ -16,7 +14,7 @@ export function SmtpTest() {
         setIsSending(true);
         setEmailTestResult(undefined);
 
-        useSystemApi(api)
+        new SystemApiService()
             .testSmtp(targetEmail)
             .then((res) => {
                 if (res.result != null) {
