@@ -32,14 +32,31 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
     const {
         open,
         lockMessage,
+        element,
+        entity,
     } = props;
 
     const [updatedElement, setUpdatedElement] = useState<T>();
     const [updatedEntity, setUpdatedEntity] = useState<E>();
     const [showCreatePresetDialog, setShowCreatePresetDialog] = useState(false);
 
-    const initialState = useMemo(() => ({element: props.element, entity: props.entity}), [props.element, props.entity]);
-    const currentState = useMemo(() => ({element: updatedElement ?? props.element, entity: updatedEntity ?? props.entity}), [updatedElement, updatedEntity, props.element, props.entity]);
+    // Reset the updated states when opening the editor
+    useEffect(() => {
+        if (open) {
+            setUpdatedElement(undefined);
+            setUpdatedEntity(undefined);
+        }
+    }, [open]);
+
+    const initialState = useMemo(() => ({
+        element: element,
+        entity: entity,
+    }), [element, entity]);
+
+    const currentState = useMemo(() => ({
+        element: updatedElement ?? element,
+        entity: updatedEntity ?? entity,
+    }), [updatedElement, updatedEntity, element, entity]);
 
     const changeBlocker = useChangeBlocker(initialState, currentState);
 

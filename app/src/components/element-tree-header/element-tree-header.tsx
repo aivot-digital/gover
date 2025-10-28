@@ -36,6 +36,7 @@ import {isStringNullOrEmpty} from '../../utils/string-utils';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import {Actions} from '../actions/actions';
+import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 
 const StyledBox = styled(Box)({
     position: 'relative',
@@ -66,13 +67,18 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
 
     const theme = useTheme();
 
+    const {
+        currentEditedElementId,
+        navigateToElementEditor,
+        closeElementEditor,
+    } = useElementEditorNavigation();
+
     const testMode = useAppSelector(selectUseTestMode);
     const useIdsInComponentTree = useAppSelector(selectUseIdsInComponentTree);
     const warnDuplicateIds = useAppSelector(selectWarnDuplicateIds);
     const allElements = useAppSelector(selectAllElements);
     const searchResult = useAppSelector(selectTreeElementSearch);
 
-    const [showEditor, setShowEditor] = useState(false);
     const [cTMenuAnchorEl, setCTMenuAnchorEl] = useState<null | HTMLElement>(null);
 
     const [search, setSearch] = useState<string>();
@@ -288,7 +294,7 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
                             <IconButton
                                 size="small"
                                 onClick={() => {
-                                    setShowEditor(true);
+                                    navigateToElementEditor(props.element.id);
                                 }}
                                 sx={{
                                     marginRight: '7px',
@@ -415,16 +421,16 @@ export function ElementTreeHeader<T extends RootElement | GroupLayout, E extends
             </Menu>
 
             <ElementEditor
-                open={showEditor}
+                open={currentEditedElementId === props.element.id}
                 parents={[] /* Uppermost element so no parents here */}
                 entity={props.entity}
                 element={props.entity.rootElement as any /* TODO: Fix this any type */}
                 onSave={(updatedElement: Partial<T>, updatedApplication: Partial<E>) => {
-                    setShowEditor(false);
+                    closeElementEditor();
                     props.onPatch(updatedElement, updatedApplication);
                 }}
                 onCancel={() => {
-                    setShowEditor(false);
+                    closeElementEditor();
                 }}
                 editable={props.editable}
                 scope={props.scope}

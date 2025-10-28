@@ -19,6 +19,7 @@ export function deepEquals(obj1: any, obj2: any): boolean {
     }
 
     if (obj1 == null || obj2 == null || typeof obj1 !== 'object' || typeof obj2 !== 'object') {
+        console.log('type mismatch', obj1, obj2);
         return false;
     }
 
