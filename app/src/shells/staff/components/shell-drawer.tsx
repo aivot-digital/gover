@@ -909,7 +909,6 @@ function isDrawerItemActive(item: DrawerItem, pathname: string): boolean {
     }
 
     if (item.children) {
-        console.log(item.children, item.children.some((c) => isDrawerItemActive(c, pathname)));
         return item.children.some((c) => isDrawerItemActive(c, pathname));
     }
 
