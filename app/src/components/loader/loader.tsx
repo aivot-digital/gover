@@ -1,7 +1,12 @@
 import {Box, LinearProgress, Typography, useTheme} from '@mui/material';
 import React, {ReactNode} from 'react';
 
-export function Loader({message}: { message?: string | ReactNode }) {
+interface LoaderProps {
+    message?: string | ReactNode;
+    value?: number;
+}
+
+export function Loader({message, value}: LoaderProps) {
     const theme = useTheme();
 
     return (
@@ -24,7 +29,7 @@ export function Loader({message}: { message?: string | ReactNode }) {
                     {message ? message : 'Daten werden geladen'}…
                 </Typography>
                 <svg
-                    id={"gover-decal-loader"}
+                    id={'gover-decal-loader'}
                     height={32}
                     style={{flexShrink: 0}}
                     viewBox="0 0 460 110"
@@ -63,10 +68,12 @@ export function Loader({message}: { message?: string | ReactNode }) {
                             d="M40.3775 3.56515C46.3319 0.144951 53.6681 0.144949 59.6225 3.56515L90.3775 21.2307C96.332 24.6509 100 30.9717 100 37.8121V73.1431C100 79.9835 96.332 86.3043 90.3775 89.7245L59.6225 107.39C53.6681 110.81 46.3319 110.81 40.3775 107.39L9.62251 89.7245C3.66808 86.3043 0 79.9835 0 73.1431V37.8121C0 30.9717 3.66808 24.6509 9.62251 21.2307L40.3775 3.56515Z"
                             fill={theme.palette.primary.main}
                         />
-                        <circle cx={50}
-                                cy={55}
-                                r={14}
-                                fill="#FFFFFF"/>
+                        <circle
+                            cx={50}
+                            cy={55}
+                            r={14}
+                            fill="#FFFFFF"
+                        />
                     </g>
                     <g>
                         <path
@@ -96,7 +103,10 @@ export function Loader({message}: { message?: string | ReactNode }) {
                     </g>
                 </svg>
             </Box>
-            <LinearProgress sx={{mt: 2}}/>
+            <LinearProgress
+                sx={{mt: 2}}
+                value={value}
+            />
         </>
     );
 }

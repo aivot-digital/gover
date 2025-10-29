@@ -5,7 +5,6 @@ import {userReducer} from './slices/user-slice';
 import {systemConfigReducer} from './slices/system-config-slice';
 import {stepperReducer} from './slices/stepper-slice';
 import {authReducer} from './slices/auth-slice';
-import {loadingOverlayReducer} from './slices/loading-overlay-slice';
 import {loggingReducer} from './slices/logging-slice';
 import {identityReducer} from './slices/identity-slice';
 import {shellReducer} from './slices/shell-slice';
@@ -22,7 +21,6 @@ export const store = configureStore({
         systemConfig: systemConfigReducer,
         stepper: stepperReducer,
         shell: shellReducer,
-        loadingOverlay: loadingOverlayReducer,
         logging: loggingReducer,
     },
     devTools: process.env.NODE_ENV !== 'production',

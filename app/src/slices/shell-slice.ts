@@ -29,6 +29,8 @@ interface LoadingMessage {
     blocking: boolean;
 }
 
+export type ShellLoadingMessage = LoadingMessage;
+
 export interface ErrorMessage {
     status: number;
     message?: string;
@@ -45,6 +47,7 @@ export enum ShellStatus {
 interface ShellState {
     status: ShellStatus;
     snackbars: SnackbarMessage[];
+    lastLoadingStartedAt?: number;
     loading?: LoadingMessage;
     error?: ErrorMessage;
     setup?: SystemSetupDTO;
@@ -87,6 +90,11 @@ const shellSlice = createSlice({
         },
         setLoadingMessage(state, action: PayloadAction<LoadingMessage | undefined>) {
             state.loading = action.payload;
+            if (action.payload != null) {
+                state.lastLoadingStartedAt = new Date().getTime();
+            } else {
+                state.lastLoadingStartedAt = undefined;
+            }
         },
         setErrorMessage(state, action: PayloadAction<ErrorMessage | undefined>) {
             state.error = action.payload;

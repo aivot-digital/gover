@@ -2,7 +2,6 @@ import {configureStore} from '@reduxjs/toolkit';
 import {appReducer} from './slices/app-slice';
 import {systemConfigReducer} from './slices/system-config-slice';
 import {stepperReducer} from './slices/stepper-slice';
-import {loadingOverlayReducer} from './slices/loading-overlay-slice';
 import {identityReducer} from './slices/identity-slice';
 import {shellReducer} from './slices/shell-slice';
 import {authReducer} from './slices/auth-slice';
@@ -17,6 +16,5 @@ export const store = configureStore({
         systemConfig: systemConfigReducer,
         stepper: stepperReducer,
         shell: shellReducer,
-        loadingOverlay: loadingOverlayReducer,
     },
 });

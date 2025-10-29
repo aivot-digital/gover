@@ -30,6 +30,8 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
+    const [isLoading, setIsLoading] = useState(true);
+
     const [checklist, setChecklist] = useState<FormPublishChecklistItem[] | null>(null);
     const memberships = useAppSelector(selectMemberships);
 
@@ -212,22 +214,14 @@ export function ApplicationInternalPublishTab<T extends RootElement, E extends A
                             px: 2,
                             py: 1,
                         }}>
-                            <Skeleton
-                                width="100%"
-                                height={60}
-                            />
-                            <Skeleton
-                                width="100%"
-                                height={60}
-                            />
-                            <Skeleton
-                                width="100%"
-                                height={60}
-                            />
-                            <Skeleton
-                                width="100%"
-                                height={60}
-                            />
+                            {
+                                new Array(8).fill(null).map((_, idx) => (
+                                    <Skeleton
+                                        width="100%"
+                                        height={50}
+                                    />
+                                ))
+                            }
                         </Box>
                     }
                     {
