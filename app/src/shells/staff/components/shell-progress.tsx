@@ -42,10 +42,11 @@ export function ShellProgress() {
     const [progress, setProgress] = useState(0);
     const checkProgressIntervalRef = useRef<NodeJS.Timeout>(null);
     useEffect(() => {
+        if (checkProgressIntervalRef.current != null) {
+            clearInterval(checkProgressIntervalRef.current);
+        }
+
         if (buffer != null) {
-            if (checkProgressIntervalRef.current != null) {
-                clearInterval(checkProgressIntervalRef.current);
-            }
             checkProgressIntervalRef.current = setInterval(() => {
                 const now = new Date().getTime();
                 const passed = now - buffer.started;

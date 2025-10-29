@@ -27,6 +27,24 @@ export function Dashboard() {
                     title="Übersicht"
                     actions={[
                         {
+                            icon: <Logout />,
+                            tooltip: 'Test Shell Progress',
+                            onClick: () => {
+                                dispatch(setLoadingMessage({
+                                    message: 'Lade Daten...',
+                                    estimatedTime: 10000,
+                                    blocking: false,
+                                }));
+                            },
+                        },
+                        {
+                            icon: <Logout />,
+                            tooltip: 'Remove Shell Progress Test',
+                            onClick: () => {
+                                dispatch(setLoadingMessage(undefined));
+                            },
+                        },
+                        {
                             icon: ModuleIcons.settings,
                             tooltip: 'Einstellungen',
                             to: '/settings/app',
@@ -36,17 +54,6 @@ export function Dashboard() {
                             icon: <Logout />,
                             tooltip: 'Abmelden',
                             onClick: logout,
-                        },
-                        {
-                            icon: <Logout />,
-                            tooltip: 'Test',
-                            onClick: () => {
-                                dispatch(setLoadingMessage({
-                                    message: 'Lade Daten...',
-                                    estimatedTime: 4000,
-                                    blocking: false,
-                                }));
-                            },
                         },
                     ]}
                 />
