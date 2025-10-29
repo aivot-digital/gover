@@ -9,12 +9,10 @@ import {useLogout} from '../../hooks/use-logout';
 import {DashboardHero} from './components/dashboard-hero';
 import {DashboardProviderLinks} from './components/dashboard-provider-links';
 import {DashboardFormsPanel} from './components/dashboard-forms-panel';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {setLoadingMessage} from '../../slices/shell-slice';
 
 export function Dashboard() {
     const logout = useLogout();
-    const dispatch = useAppDispatch();
+
     return (
         <PageWrapper
             title="Übersicht"
@@ -26,24 +24,6 @@ export function Dashboard() {
                     icon={ModuleIcons.dashboard}
                     title="Übersicht"
                     actions={[
-                        {
-                            icon: <Logout />,
-                            tooltip: 'Test Shell Progress',
-                            onClick: () => {
-                                dispatch(setLoadingMessage({
-                                    message: 'Lade Daten...',
-                                    estimatedTime: 10000,
-                                    blocking: false,
-                                }));
-                            },
-                        },
-                        {
-                            icon: <Logout />,
-                            tooltip: 'Remove Shell Progress Test',
-                            onClick: () => {
-                                dispatch(setLoadingMessage(undefined));
-                            },
-                        },
                         {
                             icon: ModuleIcons.settings,
                             tooltip: 'Einstellungen',

@@ -23,6 +23,7 @@ import {themesRoutes} from '../../modules/themes/themes-routes';
 import {Dashboard} from '../../modules/dashboard/dashboard';
 import {configsRoutes} from '../../modules/configs/configs-routes';
 import {UnderConstructionPage} from '../../pages/shared/under-construction-page';
+import {Testinghall} from '../../modules/testinghall/testinghall';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -58,6 +59,10 @@ const router = sentryCreateBrowserRouter(
                 {
                     path: '/processes',
                     element: <UnderConstructionPage />,
+                },
+                {
+                    path: '/testinghall',
+                    element: <Testinghall />,
                 },
             ],
         },
