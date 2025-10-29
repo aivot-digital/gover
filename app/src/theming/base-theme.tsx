@@ -5,6 +5,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
+import type {} from '@mui/x-data-grid/themeAugmentation';
 
 const fontStackHeadlines = ['"Public Sans"',
     '-apple-system',
@@ -202,10 +203,10 @@ export const BaseTheme = createTheme({
             },
             defaultProps: {
                 iconMapping: {
-                    error: <ErrorOutlineOutlinedIcon/>,
-                    info: <InfoOutlinedIcon/>,
-                    success: <CheckCircleOutlinedIcon/>,
-                    warning: <ReportOutlinedIcon/>,
+                    error: <ErrorOutlineOutlinedIcon />,
+                    info: <InfoOutlinedIcon />,
+                    success: <CheckCircleOutlinedIcon />,
+                    warning: <ReportOutlinedIcon />,
                 },
             },
         },
@@ -271,6 +272,24 @@ export const BaseTheme = createTheme({
                 root: {
                     textTransform: 'none',
                     fontSize: '0.9375rem',
+                },
+            },
+        },
+        MuiDataGrid: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: 'white !important',
+                },
+                columnHeader: {
+                    backgroundColor: 'white !important',
+                },
+                row: {
+                    '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                    },
+                    '& .MuiDataGrid-cell:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                    },
                 },
             },
         },

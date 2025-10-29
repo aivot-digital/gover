@@ -48,10 +48,11 @@ const FormSchema = yup.object({
         .required('Bitte geben Sie ein URL-Element an'),
 });
 
-export interface AddFormDialogProps extends DialogProps {
+export interface AddFormDialogProps {
     basis: FormDetailsResponseDTO;
     onClose: () => void;
     onSave: (form: FormDetailsResponseDTO) => void;
+    open: boolean;
 }
 
 export function AddFormDialog(props: AddFormDialogProps) {
@@ -59,7 +60,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
         basis,
         onClose,
         onSave,
-        ...passTroughProps
+        open,
     } = props;
 
     const api = useApi();
@@ -210,7 +211,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
 
     return (
         <Dialog
-            {...passTroughProps}
+            open={open}
             fullWidth
             onClose={handleClose}
             maxWidth="lg"
