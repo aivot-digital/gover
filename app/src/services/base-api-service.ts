@@ -41,12 +41,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -66,9 +68,11 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
 
             throw await createApiError(response);
@@ -94,12 +98,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -119,9 +125,11 @@ export class BaseApiService {
             return handleFetchError(error).blob();
         }
 
-        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -147,12 +155,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200 && response.status !== 201) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -181,12 +191,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200 && response.status !== 201) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -207,9 +219,11 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200 && response.status !== 201) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -235,12 +249,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200 && response.status !== 201) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -261,9 +277,11 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200 && response.status !== 201) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -292,12 +310,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200 && response.status !== 201) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -320,7 +340,12 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 201 && options?.doNotHandleStatusCodes !== true) {
+        if (response.status !== 200 && response.status !== 201) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
+            }
             throw await createApiError(response);
         }
 
@@ -345,12 +370,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }
@@ -375,12 +402,14 @@ export class BaseApiService {
             response = handleFetchError(error);
         }
 
-        if (response.status !== 200 && response.status !== 204 && options?.doNotHandleStatusCodes !== true) {
-            if (response.status === 401) {
-                this.auth.logout();
-            }
-            if (response.status > 500) {
-                dispatchApiUnreachableEvent();
+        if (response.status !== 200 && response.status !== 204) {
+            if (options?.doNotHandleStatusCodes !== true) {
+                if (response.status === 401) {
+                    this.auth.logout();
+                }
+                if (response.status > 500) {
+                    dispatchApiUnreachableEvent();
+                }
             }
             throw await createApiError(response);
         }

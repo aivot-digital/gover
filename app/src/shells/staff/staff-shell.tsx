@@ -58,6 +58,8 @@ export function StaffShell() {
             .catch((err) => {
                 if (isApiError(err) && err.status >= 500) {
                     dispatch(setStatus(ShellStatus.Offline));
+                } else if ('status' in err && err.status >= 500) {
+                    dispatch(setStatus(ShellStatus.Offline));
                 } else {
                     console.error(err);
                 }
