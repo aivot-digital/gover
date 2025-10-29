@@ -4,14 +4,14 @@ import {GenericDetailsPage} from '../../../../components/generic-details-page/ge
 import {Department} from '../../models/department';
 import {DepartmentsApiService} from '../../departments-api-service';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
-import {useAdminMembershipGuard} from '../../../../hooks/use-admin-membership-guard';
-import {useParams} from 'react-router-dom';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectMemberships, selectUser} from '../../../../slices/user-slice';
+import {isAdmin, isDepartmentAdmin} from '../../../../utils/is-admin';
 
 export function DepartmentsDetailsPage() {
-    const id = useParams().id;
-
-    useAdminMembershipGuard((id === 'new' || id == null) ? 0 : parseInt(id));
+    const user = useAppSelector(selectUser);
+    const memberships = useAppSelector(selectMemberships);
 
     return (
         <PageWrapper
@@ -20,6 +20,9 @@ export function DepartmentsDetailsPage() {
             background
         >
             <GenericDetailsPage<Department, number, undefined>
+                isEditable={(item) => (
+                    isAdmin(user) || isDepartmentAdmin(memberships, item?.id)
+                )}
                 header={{
                     icon: <BusinessOutlinedIcon />,
                     title: 'Fachbereich bearbeiten',
@@ -29,9 +32,10 @@ export function DepartmentsDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z. B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
+                                    Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
+                                    B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
                                 </Typography>
-                                <Typography sx={{ mt: 2 }}>
+                                <Typography sx={{mt: 2}}>
                                     Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb des Fachbereichs definiert.
                                 </Typography>
                             </>
@@ -64,13 +68,17 @@ export function DepartmentsDetailsPage() {
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) return "Fachbereich nicht gefunden";
-                    if (isNewItem) return "Neuen Fachbereich anlegen";
-                    return `Fachbereich: ${item?.name ?? "Unbenannt"}`;
+                    if (notFound) {
+                        return 'Fachbereich nicht gefunden';
+                    }
+                    if (isNewItem) {
+                        return 'Neuen Fachbereich anlegen';
+                    }
+                    return `Fachbereich: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: "Liste der Fachbereiche",
-                    to: "/departments",
+                    label: 'Liste der Fachbereiche',
+                    to: '/departments',
                 }}
                 entityType={ServerEntityType.Departments}
             />

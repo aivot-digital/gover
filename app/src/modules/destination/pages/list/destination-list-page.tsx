@@ -9,12 +9,9 @@ import {DestinationType, DestinationTypeIcons} from '../../../../data/destinatio
 import {Destination} from '../../models/destination';
 import {DestinationsApiService} from '../../destinations-api-service';
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function DestinationListPage() {
-    useAdminGuard();
-
     return (
         <PageWrapper
             title="Schnittstellen"

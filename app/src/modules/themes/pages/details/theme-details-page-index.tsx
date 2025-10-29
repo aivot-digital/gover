@@ -4,9 +4,6 @@ import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../..
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {Link, useNavigate, useParams} from 'react-router-dom';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {isAdmin} from '../../../../utils/is-admin';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
@@ -31,6 +28,7 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ImageSelector} from '../../../assets/components/image-selector';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -43,8 +41,6 @@ export const ThemeSchema = yup.object({
 export function ThemeDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
 
     const api = useApi();
     const {
@@ -52,6 +48,7 @@ export function ThemeDetailsPageIndex() {
         setItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Theme, undefined>;
 
     const {
@@ -211,7 +208,8 @@ export function ThemeDetailsPageIndex() {
                         maxCharacters={96}
                         minCharacters={3}
                         error={errors.name}
-                        hint={'Eine interne Bezeichnung für Mitarbeiter:innen.'}
+                        hint="Eine interne Bezeichnung für Mitarbeiter:innen."
+                        disabled={!isEditable}
                     />
                 </Grid>
 
@@ -230,6 +228,7 @@ export function ThemeDetailsPageIndex() {
                         size={{
                             aspectRatio: 2, // Default aspect ratio of a logo is 2:1. See logo.tsx
                         }}
+                        disabled={!isEditable}
                     />
                 </Grid>
 
@@ -249,6 +248,7 @@ export function ThemeDetailsPageIndex() {
                             width: '8rem',
                             height: '8rem',
                         }}
+                        disabled={!isEditable}
                     />
                 </Grid>
             </Grid>
@@ -295,12 +295,14 @@ export function ThemeDetailsPageIndex() {
                     contrastColor={'#EEF2EE'}
                     contrastColorLabel={'hellgrau'}
                     onChange={handleInputChange('main')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Primärfarbe (Dunkel)"
                     value={theme?.mainDark}
                     onChange={handleInputChange('mainDark')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
@@ -309,6 +311,7 @@ export function ThemeDetailsPageIndex() {
                     contrastColor={theme?.mainDark}
                     contrastColorLabel={'Primär/dunkel'}
                     onChange={handleInputChange('accent')}
+                    disabled={!isEditable}
                 />
             </Grid>
             <Divider
@@ -325,24 +328,28 @@ export function ThemeDetailsPageIndex() {
                     label="Fehlerfarbe"
                     value={theme?.error}
                     onChange={handleInputChange('error')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Warnungsfarbe"
                     value={theme?.warning}
                     onChange={handleInputChange('warning')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Informationsfarbe"
                     value={theme?.info}
                     onChange={handleInputChange('info')}
+                    disabled={!isEditable}
                 />
 
                 <ColorPicker
                     label="Erfolgsfarbe"
                     value={theme?.success}
                     onChange={handleInputChange('success')}
+                    disabled={!isEditable}
                 />
             </Grid>
             <Alert
@@ -357,56 +364,56 @@ export function ThemeDetailsPageIndex() {
                     Hierbei gilt der Kontrast von der gewählten Farbe zur Vorder- (i.d.R. Text) oder Hintergrundfarbe.
                 </Typography>
             </Alert>
-            {
-                userIsAdmin &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 4,
-                        gap: 2,
-                    }}
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 4,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged || !isEditable}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
+                    Speichern
+                </Button>
+
+                {
+                    theme.id !== 0 &&
                     <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
+                        onClick={() => {
+                            reset();
+                        }}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        color="error"
                     >
-                        Speichern
+                        Zurücksetzen
                     </Button>
+                }
 
-                    {
-                        theme.id !== 0 &&
-                        <Button
-                            onClick={() => {
-                                reset();
-                            }}
-                            disabled={isBusy || hasNotChanged}
-                            color="error"
-                        >
-                            Zurücksetzen
-                        </Button>
-                    }
+                {
+                    theme.id !== 0 &&
+                    <Button
+                        variant={'outlined'}
+                        onClick={checkAndHandleDelete}
+                        disabled={isBusy || !isEditable}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
+            </Box>
 
-                    {
-                        theme.id !== 0 &&
-                        <Button
-                            variant={'outlined'}
-                            onClick={checkAndHandleDelete}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-                </Box>
-            }
             {changeBlocker.dialog}
+
             <ConfirmDialog
                 title="Fachbereich löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
@@ -419,6 +426,7 @@ export function ThemeDetailsPageIndex() {
                     Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
+
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
@@ -648,12 +656,14 @@ function ColorPicker({
                          onChange,
                          contrastColor,
                          contrastColorLabel,
+                         disabled,
                      }: {
     label: string;
     value?: string;
     onChange: (val: string) => void;
     contrastColor?: string;
     contrastColorLabel?: string;
+    disabled?: boolean;
 }) {
     return (
         <Grid
@@ -690,6 +700,9 @@ function ColorPicker({
             <SketchPicker
                 color={value}
                 onChange={(color) => {
+                    if (disabled) {
+                        return;
+                    }
                     onChange(color.hex);
                 }}
                 disableAlpha={true}

@@ -1,5 +1,4 @@
 import React from 'react';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {Typography} from '@mui/material';
@@ -11,9 +10,11 @@ import {ProviderLink} from '../../models/provider-link';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 export function ProviderLinksListPage() {
-    useAdminGuard();
+    const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
@@ -25,14 +26,14 @@ export function ProviderLinksListPage() {
                 header={{
                     icon: <InsertLinkOutlinedIcon />,
                     title: 'Links',
-                    actions: [
+                    actions: userIsAdmin ? [
                         {
                             label: 'Neuer Link',
                             icon: <AddOutlinedIcon />,
                             to: '/provider-links/new',
                             variant: 'contained',
                         },
-                    ],
+                    ] : undefined,
                     helpDialog: {
                         title: 'Hilfe zu Links',
                         tooltip: 'Hilfe anzeigen',
@@ -95,9 +96,9 @@ export function ProviderLinksListPage() {
                 rowActionsCount={2}
                 rowActions={(item: ProviderLink) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward/>,
                         to: `/provider-links/${item.id}`,
-                        tooltip: 'Link bearbeiten',
+                        tooltip: userIsAdmin ? 'Link bearbeiten' : 'Link anzeigen',
                     },
                     {
                         icon: <OpenInNewOutlinedIcon />,

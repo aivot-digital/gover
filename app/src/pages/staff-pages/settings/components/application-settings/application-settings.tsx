@@ -1,5 +1,5 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
-import React, { type FormEvent, useEffect, useState } from 'react';
+import React, {type FormEvent, useEffect, useState} from 'react';
 import {selectSystemConfig, setSystemConfigs, type SystemConfigMap} from '../../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
@@ -9,16 +9,39 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../../slices/snac
 import {SelectFieldComponent} from '../../../../../components/select-field/select-field-component';
 import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
 import {useApi} from '../../../../../hooks/use-api';
-import type {Department} from "../../../../../modules/departments/models/department";
-import {CheckboxFieldComponent} from "../../../../../components/checkbox-field/checkbox-field-component";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
+import type {Department} from '../../../../../modules/departments/models/department';
+import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {DepartmentsApiService} from '../../../../../modules/departments/departments-api-service';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
+import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
     const api = useApi();
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+    });
+
+    useEffect(() => {
+        if (hasAccess) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'application-settings-no-access',
+            message: 'Sie haben keine Berechtigung, die Anwendungseinstellungen zu bearbeiten.',
+            type: SnackbarType.Dismissable,
+            severity: SnackbarSeverity.Warning,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('application-settings-no-access'));
+        };
+    }, [hasAccess]);
 
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
@@ -26,11 +49,11 @@ export function ApplicationSettings() {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
 
-    const hasNotChanged = Object.keys(editedConfig).length === 0;//shallowEquals(config, editedConfig);
+    const hasNotChanged = Object.keys(editedConfig).length === 0;
 
     useEffect(() => {
         new ThemesApiService(api)
-            .list(0, 999, undefined, undefined, {})
+            .listAll()
             .then((themes) => {
                 setThemes(themes.content.map((theme) => ({
                     value: theme.id.toString(),
@@ -40,12 +63,6 @@ export function ApplicationSettings() {
             .catch((err) => {
                 console.error(err);
                 dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
-            });
-
-        new SystemConfigsApiService(api)
-            .listDefinitions()
-            .then((definitions) => {
-                // TODO: do something with definitions
             });
     }, []);
 
@@ -63,7 +80,7 @@ export function ApplicationSettings() {
 
             const updatePromises = updatedConfigs
                 .map(config => {
-                    return new SystemConfigsApiService(api).update(config.key, {value: config.value})
+                    return new SystemConfigsApiService(api).update(config.key, {value: config.value});
                 });
 
             Promise.all(updatePromises)
@@ -120,6 +137,7 @@ export function ApplicationSettings() {
                     });
                 }}
                 required
+                disabled={!hasAccess}
             />
             {
                 themes.length > 0 &&
@@ -139,7 +157,8 @@ export function ApplicationSettings() {
                             mb: 1.6,
                         }}
                     >
-                        Sie können ein eigenes Farbschema für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten Formulare).
+                        Sie können ein eigenes Farbschema für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten
+                        Formulare).
                     </Typography>
 
                     <SelectFieldComponent
@@ -152,6 +171,7 @@ export function ApplicationSettings() {
                                 [SystemConfigKeys.system.theme]: val ?? '',
                             });
                         }}
+                        disabled={!hasAccess}
                     />
                 </>
             }
@@ -182,6 +202,7 @@ export function ApplicationSettings() {
                         [SystemConfigKeys.gover.storeKey]: val ?? '',
                     });
                 }}
+                disabled={!hasAccess}
             />
             <Typography
                 variant="h6"
@@ -207,8 +228,9 @@ export function ApplicationSettings() {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Text für das Impressum"
                         value={editedConfig[SystemConfigKeys.provider.listingPage.imprintDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.imprintDepartmentId]}
@@ -219,14 +241,16 @@ export function ApplicationSettings() {
                             });
                         }}
                         options={departmentOptions}
+                        disabled={!hasAccess}
                     />
 
                 </Grid>
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Text für die Datenschutzerklärung"
                         value={editedConfig[SystemConfigKeys.provider.listingPage.privacyDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.privacyDepartmentId]}
@@ -237,13 +261,15 @@ export function ApplicationSettings() {
                             });
                         }}
                         options={departmentOptions}
+                        disabled={!hasAccess}
                     />
                 </Grid>
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4
-                    }}>
+                        lg: 4,
+                    }}
+                >
                     <SelectFieldComponent
                         label="Text für die Erklärung der Barrierefreiheit"
                         value={editedConfig[SystemConfigKeys.provider.listingPage.accessibilityDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.accessibilityDepartmentId]}
@@ -254,12 +280,13 @@ export function ApplicationSettings() {
                             });
                         }}
                         options={departmentOptions}
+                        disabled={!hasAccess}
                     />
                 </Grid>
             </Grid>
             <Typography
                 variant="caption"
-                color={"text.secondary"}
+                color={'text.secondary'}
             >
                 Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </Typography>
@@ -273,6 +300,7 @@ export function ApplicationSettings() {
                     });
                 }}
                 hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                disabled={!hasAccess}
             />
             <Typography
                 variant="subtitle1"
@@ -308,6 +336,7 @@ export function ApplicationSettings() {
                                 [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
                             });
                         }}
+                        disabled={!hasAccess}
                     />
                 </Box>
             }
@@ -321,6 +350,7 @@ export function ApplicationSettings() {
                     });
                 }}
                 hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                disabled={!hasAccess}
             />
             <Box
                 sx={{
@@ -329,7 +359,7 @@ export function ApplicationSettings() {
             >
                 <Button
                     type="submit"
-                    disabled={hasNotChanged}
+                    disabled={hasNotChanged || !hasAccess}
                     color="primary"
                     variant="contained"
                     startIcon={<SaveOutlinedIcon
@@ -347,7 +377,7 @@ export function ApplicationSettings() {
                     }}
                     type="button"
                     color="error"
-                    disabled={hasNotChanged}
+                    disabled={hasNotChanged || !hasAccess}
                     onClick={() => {
                         setEditedConfig({});
                     }}

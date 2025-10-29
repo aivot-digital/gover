@@ -11,6 +11,8 @@ import {type User} from '../../../../../models/entities/user';
 import {type DepartmentMembershipResponseDTO} from '../../../../departments/dtos/department-membership-response-dto';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../../components/generic-details-page/generic-details-page-context';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
+import {useUserIsAdmin} from '../../../../../hooks/use-admin-guard';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 const columns: Array<GridColDef<DepartmentMembershipResponseDTO>> = [
     {
@@ -38,6 +40,8 @@ export function UserDetailsPageDepartmentMemberships() {
     const {
         item,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
+
+    const userIsAdmin = useUserIsAdmin();
 
     const user = item;
 
@@ -83,9 +87,9 @@ export function UserDetailsPageDepartmentMemberships() {
                 loadingPlaceholder="Lade Fachbereiche…"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
                 rowActions={(item: DepartmentMembershipResponseDTO) => [{
-                    icon: <EditOutlined />,
+                    icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
                     to: `/departments/${item.departmentId}`,
-                    tooltip: 'Fachbereich bearbeiten',
+                    tooltip: userIsAdmin ? 'Fachbereich bearbeiten' : 'Fachbereich anzeigen',
                 }]}
                 preSearchElements={[]}
             />

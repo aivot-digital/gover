@@ -4,11 +4,11 @@ import {GenericDetailsPage} from '../../../../components/generic-details-page/ge
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 
 export function ThemeDetailsPage() {
-    useAdminGuard();
+    const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
@@ -17,6 +17,7 @@ export function ThemeDetailsPage() {
             background
         >
             <GenericDetailsPage<Theme, number, undefined>
+                isEditable={() => userIsAdmin}
                 header={{
                     icon: <PaletteOutlinedIcon />,
                     title: 'Farbschema bearbeiten',
@@ -62,13 +63,13 @@ export function ThemeDetailsPage() {
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) return "Farbschema nicht gefunden";
-                    if (isNewItem) return "Neues Farbschema anlegen";
-                    return `Farbschema: ${item?.name ?? "Unbenannt"}`;
+                    if (notFound) return 'Farbschema nicht gefunden';
+                    if (isNewItem) return 'Neues Farbschema anlegen';
+                    return `Farbschema: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: "Liste der Farbschemata",
-                    to: "/themes",
+                    label: 'Liste der Farbschemata',
+                    to: '/themes',
                 }}
                 entityType={ServerEntityType.Themes}
             />

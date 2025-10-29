@@ -39,6 +39,7 @@ export function DepartmentsDetailsPageMembers() {
 
     const {
         item,
+        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, undefined>;
 
     const [showSelectNewMemberDialog, setShowSelectNewMemberDialog] = useState(false);
@@ -253,7 +254,8 @@ export function DepartmentsDetailsPageMembers() {
                 getRowIdentifier={(item) => item.id.toString()}
                 searchLabel="Mitarbeiter:in suchen"
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
-                rowActions={(membershipItem) => [
+                rowActionsCount={isEditable ? 2 : 0}
+                rowActions={isEditable ? (membershipItem) => [
                     {
                         icon: <EditOutlinedIcon />,
                         onClick: () => {
@@ -318,13 +320,13 @@ export function DepartmentsDetailsPageMembers() {
                         },
                         tooltip: 'Mitarbeiter:in entfernen',
                     },
-                ]}
+                ] : undefined}
                 defaultSortField="userId"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
-                preSearchElements={[
+                preSearchElements={isEditable ? [
                     <Button
                         variant="contained"
                         startIcon={<AddOutlinedIcon />}
@@ -332,7 +334,7 @@ export function DepartmentsDetailsPageMembers() {
                     >
                         Mitarbeiter:in hinzufügen
                     </Button>,
-                ]}
+                ] : []}
             />
 
             <ConfirmDialogV2

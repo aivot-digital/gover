@@ -5,12 +5,9 @@ import {Destination} from '../../models/destination';
 import DataObjectOutlinedIcon from '@mui/icons-material/DataObjectOutlined';
 import {DestinationsApiService} from '../../destinations-api-service';
 import React from 'react';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 
 export function DestinationDetailsPage() {
-    useAdminGuard();
-
     return (
         <PageWrapper
             title="Schnittstelle bearbeiten"

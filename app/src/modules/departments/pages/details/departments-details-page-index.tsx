@@ -22,6 +22,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 
 export const DepartmentSchema = yup.object({
     name: yup.string()
@@ -75,7 +76,25 @@ export function DepartmentsDetailsPageIndex() {
         setItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, undefined>;
+
+    useEffect(() => {
+        if (isEditable) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            severity: SnackbarSeverity.Warning,
+            type: SnackbarType.Dismissable,
+            message: 'Sie haben keine Berechtigung, diesen Fachbereich zu bearbeiten.',
+            key: 'no-edit-permission-department',
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('no-edit-permission-department'));
+        }
+    }, [isEditable]);
 
     const {
         currentItem,
@@ -231,11 +250,19 @@ export function DepartmentsDetailsPageIndex() {
         <Box>
             <Typography
                 variant="h5"
-                sx={{mt: 1.5, mb: 1}}
+                sx={{
+                    mt: 1.5,
+                    mb: 1,
+                }}
             >
                 Öffentliche Informationen des Fachbereichs
             </Typography>
-            <Typography sx={{mb: 2, maxWidth: 900}}>
+            <Typography
+                sx={{
+                    mb: 2,
+                    maxWidth: 900,
+                }}
+            >
                 Hinterlegen Sie grundsätzliche Informationen über diesen Fachbereich. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
             </Typography>
             <Grid
@@ -257,6 +284,7 @@ export function DepartmentsDetailsPageIndex() {
                         maxCharacters={96}
                         minCharacters={3}
                         error={errors.name}
+                        disabled={!isEditable}
                     />
                 </Grid>
                 <Grid
@@ -281,6 +309,7 @@ export function DepartmentsDetailsPageIndex() {
                         multiline
                         rows={3}
                         error={errors.address}
+                        disabled={!isEditable}
                     />
                 </Grid>
             </Grid>
@@ -331,6 +360,7 @@ export function DepartmentsDetailsPageIndex() {
                             label: theme.name,
                             value: theme.id.toString(),
                         }))}
+                        disabled={!isEditable}
                     />
                 </Grid>
             </Grid>
@@ -367,6 +397,7 @@ export function DepartmentsDetailsPageIndex() {
                         required
                         maxCharacters={255}
                         error={errors.specialSupportAddress}
+                        disabled={!isEditable}
                     />
                 </Grid>
                 <Grid
@@ -384,6 +415,7 @@ export function DepartmentsDetailsPageIndex() {
                         required
                         maxCharacters={255}
                         error={errors.technicalSupportAddress}
+                        disabled={!isEditable}
                     />
                 </Grid>
             </Grid>
@@ -403,6 +435,7 @@ export function DepartmentsDetailsPageIndex() {
                     onChange={handleInputChange('imprint')}
                     required
                     error={errors.imprint}
+                    disabled={!isEditable}
                 />
             </Box>
             <Box sx={{mb: 3}}>
@@ -412,6 +445,7 @@ export function DepartmentsDetailsPageIndex() {
                     onChange={handleInputChange('privacy')}
                     required
                     error={errors.privacy}
+                    disabled={!isEditable}
                 />
             </Box>
             <Box sx={{mb: 3}}>
@@ -421,6 +455,7 @@ export function DepartmentsDetailsPageIndex() {
                     onChange={handleInputChange('accessibility')}
                     required
                     error={errors.accessibility}
+                    disabled={!isEditable}
                 />
             </Box>
             <Typography
@@ -444,6 +479,7 @@ export function DepartmentsDetailsPageIndex() {
                 maxCharacters={255}
                 error={errors.departmentMail}
                 hint="Sie können mehrere E-Mail-Adressen durch ein Komma getrennt eingeben."
+                disabled={!isEditable}
             />
             <Box
                 sx={{
@@ -454,7 +490,7 @@ export function DepartmentsDetailsPageIndex() {
             >
                 <Button
                     onClick={handleSave}
-                    disabled={isBusy || hasNotChanged}
+                    disabled={isBusy || hasNotChanged || !isEditable}
                     variant="contained"
                     color="primary"
                     startIcon={<SaveOutlinedIcon />}
@@ -468,7 +504,7 @@ export function DepartmentsDetailsPageIndex() {
                         onClick={() => {
                             reset();
                         }}
-                        disabled={isBusy || hasNotChanged}
+                        disabled={isBusy || hasNotChanged || !isEditable}
                         color="error"
                     >
                         Zurücksetzen
@@ -478,9 +514,9 @@ export function DepartmentsDetailsPageIndex() {
                 {
                     department.id !== 0 &&
                     <Button
-                        variant={'outlined'}
+                        variant="outlined"
                         onClick={checkAndHandleDelete}
-                        disabled={isBusy}
+                        disabled={isBusy || !isEditable}
                         color="error"
                         sx={{
                             marginLeft: 'auto',
@@ -491,7 +527,9 @@ export function DepartmentsDetailsPageIndex() {
                     </Button>
                 }
             </Box>
+
             {changeBlocker.dialog}
+
             <ConfirmDialog
                 title="Fachbereich löschen"
                 onCancel={() => setConfirmDeleteAction(undefined)}
@@ -504,6 +542,7 @@ export function DepartmentsDetailsPageIndex() {
                     Möchten Sie diesen Fachbereich wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
+
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}

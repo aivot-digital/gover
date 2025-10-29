@@ -16,6 +16,7 @@ interface ImageSelectorProps {
     };
     value: string | null;
     onChange: (value: string) => void;
+    disabled?: boolean;
 }
 
 export function ImageSelector(props: ImageSelectorProps) {
@@ -26,6 +27,7 @@ export function ImageSelector(props: ImageSelectorProps) {
         size,
         value,
         onChange,
+        disabled,
     } = props;
 
     const [showSelectAssetDialog, setShowSelectAssetDialog] = useState(false);
@@ -59,20 +61,23 @@ export function ImageSelector(props: ImageSelectorProps) {
                     borderRadius: '0.5rem',
                 }}
             >
-                <Fab
-                    sx={{
-                        position: 'absolute',
-                        bottom: '0.5rem',
-                        right: '0.5rem',
-                    }}
-                    color="inherit"
-                    size="small"
-                    onClick={() => {
-                        setShowSelectAssetDialog(true);
-                    }}
-                >
-                    <Edit />
-                </Fab>
+                {
+                    disabled !== true &&
+                    <Fab
+                        sx={{
+                            position: 'absolute',
+                            bottom: '0.5rem',
+                            right: '0.5rem',
+                        }}
+                        color="inherit"
+                        size="small"
+                        onClick={() => {
+                            setShowSelectAssetDialog(true);
+                        }}
+                    >
+                        <Edit />
+                    </Fab>
+                }
             </Box>
 
 

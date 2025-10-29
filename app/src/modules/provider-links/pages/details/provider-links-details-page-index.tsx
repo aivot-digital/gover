@@ -1,42 +1,38 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {isAdmin} from '../../../../utils/is-admin';
 import {ProviderLinksApiService} from '../../provider-links-api-service';
 import {ProviderLink} from '../../models/provider-link';
-import {useFormManager} from "../../../../hooks/use-form-manager";
-import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
-import {showErrorSnackbar, showSuccessSnackbar} from "../../../../slices/snackbar-slice";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import {ConfirmDialog} from "../../../../dialogs/confirm-dialog/confirm-dialog";
-import * as yup from "yup";
-import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
+import {useFormManager} from '../../../../hooks/use-form-manager';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import * as yup from 'yup';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 
 export const ProviderLinkSchema = yup.object({
     text: yup.string()
         .trim()
-        .min(3, "Der Linktext muss mindestens 3 Zeichen lang sein.")
-        .max(255, "Der Linktext darf maximal 255 Zeichen lang sein.")
-        .required("Der Linktext ist ein Pflichtfeld."),
+        .min(3, 'Der Linktext muss mindestens 3 Zeichen lang sein.')
+        .max(255, 'Der Linktext darf maximal 255 Zeichen lang sein.')
+        .required('Der Linktext ist ein Pflichtfeld.'),
     link: yup.string()
         .trim()
-        .url("Bitte eine gültige URL eingeben.")
-        .max(500, "Der Link darf maximal 500 Zeichen lang sein.")
-        .required("Der Link ist ein Pflichtfeld."),
+        .url('Bitte eine gültige URL eingeben.')
+        .max(500, 'Der Link darf maximal 500 Zeichen lang sein.')
+        .required('Der Link ist ein Pflichtfeld.'),
 });
 
 export function ProviderLinksDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
 
     const api = useApi();
     const {
@@ -44,7 +40,25 @@ export function ProviderLinksDetailsPageIndex() {
         setItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext);
+
+    useEffect(() => {
+        if (isEditable) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'provider-links-no-access',
+            message: 'Sie haben keine Berechtigung, Links zu bearbeiten.',
+            type: SnackbarType.Dismissable,
+            severity: SnackbarSeverity.Warning,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('provider-links-no-access'));
+        };
+    }, [isEditable]);
 
     const {
         currentItem,
@@ -74,7 +88,7 @@ export function ProviderLinksDetailsPageIndex() {
             const validationResult = validate();
 
             if (!validationResult) {
-                dispatch(showErrorSnackbar("Bitte überprüfen Sie Ihre Eingaben."));
+                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
                 return;
             }
 
@@ -91,7 +105,7 @@ export function ProviderLinksDetailsPageIndex() {
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
-                            navigate(`/provider-links/${newProviderLink.id}`, { replace: true });
+                            navigate(`/provider-links/${newProviderLink.id}`, {replace: true});
                         }, 0);
                     })
                     .catch(err => {
@@ -149,10 +163,10 @@ export function ProviderLinksDetailsPageIndex() {
                 value={link.text}
                 multiline={true}
                 rows={2}
-                onChange={handleInputChange("text")}
-                onBlur={handleInputBlur("text")}
+                onChange={handleInputChange('text')}
+                onBlur={handleInputBlur('text')}
                 error={errors.text}
-                disabled={isBusy || !userIsAdmin}
+                disabled={isBusy || !isEditable}
                 sx={{
                     marginTop: 0,
                 }}
@@ -161,61 +175,58 @@ export function ProviderLinksDetailsPageIndex() {
             <TextFieldComponent
                 label="Link *"
                 value={link.link}
-                onChange={handleInputChange("link")}
-                onBlur={handleInputBlur("link")}
+                onChange={handleInputChange('link')}
+                onBlur={handleInputBlur('link')}
                 error={errors.link}
-                disabled={isBusy || !userIsAdmin}
+                disabled={isBusy || !isEditable}
             />
 
-            {
-                userIsAdmin &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 2,
-                        gap: 2,
-                    }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 2,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged || !isEditable}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
+                    Speichern
+                </Button>
+
+                {
+                    link.id !== 0 &&
                     <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
+                        onClick={() => {
+                            reset();
+                        }}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        color="error"
                     >
-                        Speichern
+                        Zurücksetzen
                     </Button>
+                }
 
-                    {
-                        link.id !== 0 &&
-                        <Button
-                            onClick={() => {
-                                reset();
-                            }}
-                            disabled={isBusy || hasNotChanged}
-                            color="error"
-                        >
-                            Zurücksetzen
-                        </Button>
-                    }
-
-                    {
-                        link.id !== 0 &&
-                        <Button
-                            variant={'outlined'}
-                            onClick={() => setShowConfirmDialog(true)}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-                </Box>
-            }
+                {
+                    link.id !== 0 &&
+                    <Button
+                        variant={'outlined'}
+                        onClick={() => setShowConfirmDialog(true)}
+                        disabled={isBusy || !isEditable}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
+            </Box>
 
             {changeBlocker.dialog}
 

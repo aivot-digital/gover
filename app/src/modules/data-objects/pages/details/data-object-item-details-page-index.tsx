@@ -7,9 +7,6 @@ import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../..
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate, useParams} from 'react-router-dom';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {isAdmin} from '../../../../utils/is-admin';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
@@ -28,12 +25,16 @@ import Grid from '@mui/material/Grid';
 import {format as formatDateTime} from 'date-fns/format';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const dataObjectKey = useParams().schemaKey;
     const api = useApi();
@@ -315,44 +316,42 @@ export function DataObjectItemDetailsPageIndex() {
                         handleInputChange('data')(changedElementData);
                     }
                 }}
+                disabled={!hasAccess}
             />
 
-            {
-                userIsAdmin &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 2,
-                        gap: 2,
-                    }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 2,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged || !hasAccess}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
-                    <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
-                    >
-                        Speichern
-                    </Button>
+                    Speichern
+                </Button>
 
-                    {
-                        !isNewItem &&
-                        <Button
-                            variant="outlined"
-                            onClick={handleDelete}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-                </Box>
-            }
+                {
+                    !isNewItem &&
+                    <Button
+                        variant="outlined"
+                        onClick={handleDelete}
+                        disabled={isBusy || !hasAccess}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
+            </Box>
 
             {changeBlocker.dialog}
 

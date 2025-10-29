@@ -1,49 +1,45 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {isAdmin} from '../../../../utils/is-admin';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {useFormManager} from "../../../../hooks/use-form-manager";
-import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
-import {showErrorSnackbar, showSuccessSnackbar} from "../../../../slices/snackbar-slice";
-import ContentPasteOutlinedIcon from "@mui/icons-material/ContentPasteOutlined";
-import {ConfirmDialog} from "../../../../dialogs/confirm-dialog/confirm-dialog";
-import {AlertComponent} from "../../../../components/alert/alert-component";
-import * as yup from "yup";
-import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {useFormManager} from '../../../../hooks/use-form-manager';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
+import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {AlertComponent} from '../../../../components/alert/alert-component';
+import * as yup from 'yup';
+import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 
 export const SecretSchema = yup.object({
     name: yup.string()
         .trim()
-        .min(3, "Der Name muss mindestens 3 Zeichen lang sein.")
-        .max(64, "Der Name darf maximal 64 Zeichen lang sein.")
-        .required("Der Name ist ein Pflichtfeld."),
+        .min(3, 'Der Name muss mindestens 3 Zeichen lang sein.')
+        .max(64, 'Der Name darf maximal 64 Zeichen lang sein.')
+        .required('Der Name ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
-        .min(3, "Die Beschreibung muss mindestens 3 Zeichen lang sein.")
-        .max(255, "Die Beschreibung darf maximal 255 Zeichen lang sein.")
-        .required("Die Beschreibung ist ein Pflichtfeld."),
+        .min(3, 'Die Beschreibung muss mindestens 3 Zeichen lang sein.')
+        .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
+        .required('Die Beschreibung ist ein Pflichtfeld.'),
     value: yup.string()
         .trim()
-        .min(1, "Der Wert darf nicht leer sein.")
-        .required("Der Wert ist ein Pflichtfeld."),
+        .min(1, 'Der Wert darf nicht leer sein.')
+        .required('Der Wert ist ein Pflichtfeld.'),
 });
 
 export function SecretsDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
 
     const api = useApi();
     const {
@@ -51,7 +47,25 @@ export function SecretsDetailsPageIndex() {
         setItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext(GenericDetailsPageContext);
+
+    useEffect(() => {
+        if (isEditable) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'access-denied-secrets-details',
+            message: 'Sie haben keine Berechtigung, dieses Geheimnis zu bearbeiten.',
+            severity: SnackbarSeverity.Warning,
+            type: SnackbarType.Dismissable,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('access-denied-secrets-details'));
+        };
+    }, [isEditable]);
 
     const {
         currentItem,
@@ -81,7 +95,7 @@ export function SecretsDetailsPageIndex() {
             const validationResult = validate();
 
             if (!validationResult) {
-                dispatch(showErrorSnackbar("Bitte überprüfen Sie Ihre Eingaben."));
+                dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
                 return;
             }
 
@@ -98,7 +112,7 @@ export function SecretsDetailsPageIndex() {
 
                         // use setTimeout instead of useEffect to prevent unnecessary rerender
                         setTimeout(() => {
-                            navigate(`/secrets/${newSecret.key}`, { replace: true });
+                            navigate(`/secrets/${newSecret.key}`, {replace: true});
                         }, 0);
                     })
                     .catch(err => {
@@ -156,8 +170,8 @@ export function SecretsDetailsPageIndex() {
                 <TextFieldComponent
                     label="Schlüssel"
                     value={secret.key}
-                    onChange={handleInputChange("key")}
-                    onBlur={handleInputBlur("key")}
+                    onChange={handleInputChange('key')}
+                    onBlur={handleInputBlur('key')}
                     disabled={true}
                     sx={{
                         marginTop: 0,
@@ -179,7 +193,7 @@ export function SecretsDetailsPageIndex() {
                                             dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
                                         });
                                 },
-                            }
+                            },
                         ]
                     }
                 />
@@ -189,9 +203,9 @@ export function SecretsDetailsPageIndex() {
                 label="Name"
                 required
                 value={secret.name}
-                onChange={handleInputChange("name")}
-                onBlur={handleInputBlur("name")}
-                disabled={isBusy || !userIsAdmin}
+                onChange={handleInputChange('name')}
+                onBlur={handleInputBlur('name')}
+                disabled={isBusy || !isEditable}
                 error={errors.name}
                 minCharacters={3}
                 maxCharacters={64}
@@ -201,77 +215,71 @@ export function SecretsDetailsPageIndex() {
                 label="Beschreibung"
                 required
                 value={secret.description}
-                onChange={handleInputChange("description")}
-                onBlur={handleInputBlur("description")}
+                onChange={handleInputChange('description')}
+                onBlur={handleInputBlur('description')}
                 multiline={true}
-                disabled={isBusy || !userIsAdmin}
+                disabled={isBusy || !isEditable}
                 error={errors.description}
                 minCharacters={3}
                 maxCharacters={255}
             />
 
-            {
-                userIsAdmin &&
-                <TextFieldComponent
-                    label="Wert"
-                    required
-                    value={secret.value}
-                    onChange={handleInputChange("value")}
-                    onBlur={handleInputBlur("value")}
-                    disabled={isBusy}
-                    error={errors.value}
-                />
-            }
+            <TextFieldComponent
+                label="Wert"
+                required
+                value={secret.value}
+                onChange={handleInputChange('value')}
+                onBlur={handleInputBlur('value')}
+                disabled={isBusy || !isEditable}
+                error={errors.value}
+            />
 
-            {
-                userIsAdmin &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 2,
-                        gap: 2,
-                    }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 2,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged || !isEditable}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
+                    Speichern
+                </Button>
+
+                {
+                    isStringNotNullOrEmpty(secret.key) &&
                     <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
+                        onClick={() => {
+                            reset();
+                        }}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        color="error"
                     >
-                        Speichern
+                        Zurücksetzen
                     </Button>
+                }
 
-                    {
-                        isStringNotNullOrEmpty(secret.key) &&
-                        <Button
-                            onClick={() => {
-                                reset();
-                            }}
-                            disabled={isBusy || hasNotChanged}
-                            color="error"
-                        >
-                            Zurücksetzen
-                        </Button>
-                    }
-
-                    {
-                        isStringNotNullOrEmpty(secret.key) &&
-                        <Button
-                            variant={'outlined'}
-                            onClick={() => setShowConfirmDialog(true)}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-                </Box>
-            }
+                {
+                    isStringNotNullOrEmpty(secret.key) &&
+                    <Button
+                        variant="outlined"
+                        onClick={() => setShowConfirmDialog(true)}
+                        disabled={isBusy || !isEditable}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
+            </Box>
 
             {changeBlocker.dialog}
 
@@ -286,8 +294,9 @@ export function SecretsDetailsPageIndex() {
                 <Typography>
                     Möchten Sie dieses Geheimnis wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
-                <AlertComponent color={"warning"}>
-                    Vergewissern Sie sich, dass dieses Geheimnis nicht mehr benötigt wird, bevor Sie fortfahren. Wir können nicht prüfen, ob es noch an Stellen wie Low-Code-Funktionen oder Konfigurationen von Zahlungsdienstleistern verwendet wird.
+                <AlertComponent color={'warning'}>
+                    Vergewissern Sie sich, dass dieses Geheimnis nicht mehr benötigt wird, bevor Sie fortfahren. Wir können nicht prüfen, ob es noch an Stellen wie Low-Code-Funktionen oder Konfigurationen von Zahlungsdienstleistern
+                    verwendet wird.
                 </AlertComponent>
             </ConfirmDialog>
         </Box>

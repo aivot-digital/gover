@@ -12,13 +12,16 @@ import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-d
 import Chip from "@mui/material/Chip";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import {CellLink} from "../../../../components/cell-link/cell-link";
-import {useAdminGuard} from "../../../../hooks/use-admin-guard";
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard, useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 
 export function PaymentProvidersListPage() {
-    useAdminGuard();
     const api = useApi();
     const apiService = useMemo(() => new PaymentProvidersApiService(api), [api]);
+
+    const isUserAdmin = useUserIsAdmin();
 
     const [definitions, setDefinitions] = useState<PaymentProviderDefinitionResponseDTO[]>([]);
 
@@ -38,16 +41,16 @@ export function PaymentProvidersListPage() {
             >
                 <GenericListPage<PaymentProviderResponseDTO>
                     header={{
-                        icon: <PaymentOutlinedIcon />,
+                        icon: ModuleIcons.payment,
                         title: 'Zahlungsdienstleister',
-                        actions: [
+                        actions: isUserAdmin ? [
                             {
                                 label: 'Neuer Zahlungsdienstleister',
                                 icon: <AddOutlinedIcon />,
                                 to: '/payment-providers/new',
                                 variant: 'contained',
                             },
-                        ],
+                        ] : undefined,
                         helpDialog: {
                             title: 'Hilfe zu Zahlungsdienstleistern',
                             tooltip: 'Hilfe anzeigen',
@@ -80,7 +83,7 @@ export function PaymentProvidersListPage() {
                         {
                             field: 'icon',
                             headerName: '',
-                            renderCell: () => <CellContentWrapper><PaymentOutlinedIcon /></CellContentWrapper>,
+                            renderCell: () => <CellContentWrapper>{ModuleIcons.payment}</CellContentWrapper>,
                             disableColumnMenu: true,
                             width: 24,
                             sortable: false,
@@ -138,9 +141,9 @@ export function PaymentProvidersListPage() {
                     rowActionsCount={2}
                     rowActions={(item: PaymentProviderResponseDTO) => [
                         {
-                            icon: <EditOutlined />,
+                            icon: isUserAdmin ? <EditOutlined /> : <ArrowForward/>,
                             to: `/payment-providers/${item.key}`,
-                            tooltip: 'Konfiguration bearbeiten',
+                            tooltip: isUserAdmin ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
                         },
                         {
                             icon: <ScienceOutlinedIcon />,

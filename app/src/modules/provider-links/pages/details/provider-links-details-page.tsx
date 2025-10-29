@@ -5,11 +5,11 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
 import {ProviderLinksApiService} from '../../provider-links-api-service';
 import {ProviderLink} from '../../models/provider-link';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 
 export function ProviderLinksDetailsPage() {
-    useAdminGuard();
+    const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
@@ -18,6 +18,7 @@ export function ProviderLinksDetailsPage() {
             background
         >
             <GenericDetailsPage<ProviderLink, number, undefined>
+                isEditable={() => userIsAdmin}
                 header={{
                     icon: <InsertLinkOutlinedIcon />,
                     title: 'Link bearbeiten',

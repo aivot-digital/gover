@@ -11,12 +11,14 @@ import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 export function SecretsListPage() {
-    useAdminGuard();
     const dispatch = useAppDispatch();
+
+    const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
@@ -28,14 +30,14 @@ export function SecretsListPage() {
                 header={{
                     icon: <KeyOutlinedIcon />,
                     title: 'Geheimnisse',
-                    actions: [
+                    actions: userIsAdmin ? [
                         {
                             label: 'Neues Geheimnis',
                             icon: <AddOutlinedIcon />,
                             to: '/secrets/new',
                             variant: 'contained',
                         },
-                    ],
+                    ] : undefined,
                     helpDialog: {
                         title: 'Hilfe zu Geheimnissen',
                         tooltip: 'Hilfe anzeigen',
@@ -104,9 +106,9 @@ export function SecretsListPage() {
                 rowActionsCount={2}
                 rowActions={(item: SecretEntityResponseDTO) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward/>,
                         to: `/secrets/${item.key}`,
-                        tooltip: 'Geheimnis bearbeiten',
+                        tooltip: userIsAdmin ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen',
                     },
                     {
                         icon: <ContentPasteOutlinedIcon />,

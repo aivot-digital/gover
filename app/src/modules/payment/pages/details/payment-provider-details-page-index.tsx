@@ -5,9 +5,6 @@ import {TextFieldComponent} from '../../../../components/text-field/text-field-c
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {isAdmin} from '../../../../utils/is-admin';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {ViewDispatcherComponent} from '../../../../components/view-dispatcher.component';
@@ -32,6 +29,7 @@ import {goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 
 export const _PaymentProviderSchema = {
     name: yup.string()
@@ -56,8 +54,6 @@ export const _PaymentProviderSchema = {
 export function PaymentProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
     const showConfirm = useConfirm();
 
     const api = useApi();
@@ -73,7 +69,25 @@ export function PaymentProviderDetailsPageIndex() {
         isBusy,
         setIsBusy,
         setAdditionalData,
+        isEditable,
     } = useContext<GenericDetailsPageContextType<PaymentProviderResponseDTO, PaymentProviderAdditionalData>>(GenericDetailsPageContext);
+
+    useEffect(() => {
+        if (isEditable) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'payment-provider-no-access',
+            message: 'Sie haben keine Berechtigung, diesen Zahlungsdienstleister zu bearbeiten.',
+            severity: SnackbarSeverity.Warning,
+            type: SnackbarType.Dismissable,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('payment-provider-no-access'));
+        }
+    }, [isEditable]);
 
     const {
         currentItem: paymentProvider,
@@ -315,7 +329,7 @@ export function PaymentProviderDetailsPageIndex() {
                 value={paymentProvider.name}
                 onChange={handleInputChange('name')}
                 onBlur={handleInputBlur('name')}
-                disabled={isBusy || !userIsAdmin}
+                disabled={isBusy || !isEditable}
                 error={errors.name}
                 hint="Dient der internen Identifizierung des Zahlungsdienstleisters."
             />
@@ -327,7 +341,7 @@ export function PaymentProviderDetailsPageIndex() {
                 onChange={handleInputChange('description')}
                 onBlur={handleInputBlur('description')}
                 multiline={true}
-                disabled={isBusy || !userIsAdmin}
+                disabled={isBusy || !isEditable}
                 error={errors.description}
                 hint="Interne Beschreibung des Zahlungsdienstleisters zur besseren Identifizierbarkeit. Sichtbar nur für Mitarbeiter:innen."
             />
@@ -339,7 +353,7 @@ export function PaymentProviderDetailsPageIndex() {
                     rootElement={definition.configLayout}
                     allElements={flattenElements(definition.configLayout)}
                     element={definition.configLayout}
-                    isBusy={isBusy}
+                    isBusy={isBusy || !isEditable}
                     isDeriving={false}
                     elementData={paymentProvider.config}
                     onElementDataChange={handleInputChange('config')}
@@ -358,7 +372,7 @@ export function PaymentProviderDetailsPageIndex() {
                 variant="switch"
                 error={errors.isEnabled}
                 hint="Gibt an, ob diese Konfiguration aktiviert ist. Bei temporären technischen Problemen o.Ä. kann der Dienstleister deaktiviert werden, ohne die Konfiguration zu verlieren."
-                disabled={isBusy}
+                disabled={isBusy || !isEditable}
             />
 
             <CheckboxFieldComponent
@@ -367,90 +381,75 @@ export function PaymentProviderDetailsPageIndex() {
                 onChange={handleInputChange('isTestProvider')}
                 variant="switch"
                 error={errors.isTestProvider}
+                disabled={isBusy || !isEditable}
                 hint="Gibt an, ob diese Konfiguration für eine Testinstanz bestimmt ist. Das System verhindert den Einsatz von Testkonfigurationen in der Live-Umgebung, um Fehlkonfigurationen zu vermeiden."
             />
 
-            {
-                userIsAdmin &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 2,
-                        gap: 2,
-                    }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 2,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged || !isEditable}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
+                    Speichern
+                </Button>
+
+                <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                     <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
+                        onClick={handleRefreshDefinitions}
+                        disabled={isBusy || !isEditable}
                     >
-                        Speichern
+                        Auswahllisten neu laden <HelpIconOutlined
+                        fontSize="small"
+                        sx={{ml: 1}}
+                    />
                     </Button>
+                </Tooltip>
 
-                    {/*
-                        isStringNotNullOrEmpty(paymentProvider.key) &&
-                        <Button
-                            onClick={() => {
-                                reset();
-                            }}
-                            disabled={isBusy || hasNotChanged}
-                            color="error"
-                        >
-                            Zurücksetzen
-                        </Button>
-                    */}
+                {
+                    isStringNotNullOrEmpty(paymentProvider.key) &&
+                    item != null &&
+                    !item.isEnabled &&
+                    <Button
+                        variant={'outlined'}
+                        onClick={checkAndHandleDelete}
+                        disabled={isBusy || !isEditable}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
 
-                    <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
-                        <Button
-                            onClick={handleRefreshDefinitions}
-                            disabled={isBusy}
-                        >
-                            Auswahllisten neu laden <HelpIconOutlined
-                            fontSize="small"
-                            sx={{ml: 1}}
-                        />
-                        </Button>
+                {
+                    isStringNotNullOrEmpty(paymentProvider.key) &&
+                    item != null &&
+                    item.isEnabled &&
+                    <Tooltip title="Zum Löschen muss der Zahlungsdienstleister zuerst deaktiviert und gespeichert werden.">
+                        <Box sx={{ml: 'auto'}}>
+                            <Button
+                                variant="outlined"
+                                disabled={true}
+                                color="error"
+                                startIcon={<DeleteOutlinedIcon />}
+                            >
+                                Löschen
+                            </Button>
+                        </Box>
                     </Tooltip>
-
-                    {
-                        isStringNotNullOrEmpty(paymentProvider.key) &&
-                        item != null &&
-                        !item.isEnabled &&
-                        <Button
-                            variant={'outlined'}
-                            onClick={checkAndHandleDelete}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-
-                    {
-                        isStringNotNullOrEmpty(paymentProvider.key) &&
-                        item != null &&
-                        item.isEnabled &&
-                        <Tooltip title="Zum Löschen muss der Zahlungsdienstleister zuerst deaktiviert und gespeichert werden.">
-                            <Box sx={{ml: 'auto'}}>
-                                <Button
-                                    variant="outlined"
-                                    disabled={true}
-                                    color="error"
-                                    startIcon={<DeleteOutlinedIcon />}
-                                >
-                                    Löschen
-                                </Button>
-                            </Box>
-                        </Tooltip>
-                    }
-                </Box>
-            }
+                }
+            </Box>
 
             {changeBlocker.dialog}
 

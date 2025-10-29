@@ -19,6 +19,7 @@ import {ConstraintLinkProps} from '../../../../../dialogs/constraint-dialog/cons
 import {ConfirmDialog} from '../../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintDialog} from '../../../../../dialogs/constraint-dialog/constraint-dialog';
 import {resolveUserName} from '../../../utils/resolve-user-name';
+import {useUserIsAdmin} from '../../../../../hooks/use-admin-guard';
 
 export function UserDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -28,6 +29,8 @@ export function UserDetailsPageIndex() {
     const {
         item: user,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
+
+    const userIsAdmin = useUserIsAdmin();
 
     const [isBusy, setIsBusy] = useState(false);
 
@@ -227,6 +230,7 @@ export function UserDetailsPageIndex() {
                     }}
                 >
                     {
+                        userIsAdmin &&
                         !user.deletedInIdp &&
                         <Button
                             target="_blank"

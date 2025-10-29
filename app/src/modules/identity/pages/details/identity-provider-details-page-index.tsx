@@ -32,11 +32,12 @@ import {IdentityAdditionalParameter} from '../../models/identity-additional-para
 import {IdentityAttributeMapping} from '../../models/identity-attribute-mapping';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {IdentityProviderIcon} from '../../components/identity-provider-icon/identity-provider-icon';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -158,12 +159,29 @@ function getIndexedFieldError(
 }
 
 export function IdentityProviderDetailsPageIndex() {
-    useAdminGuard();
-
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const api = useApi();
     const showConfirm = useConfirm();
+
+    const userIsAdmin = useUserIsAdmin();
+
+    useEffect(() => {
+        if (userIsAdmin) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'access-denied-identity-provider-details',
+            message: 'Nur globale Administrator:innen können Nutzerkontenanbieter verwalten.',
+            type: SnackbarType.Dismissable,
+            severity: SnackbarSeverity.Warning,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('access-denied-identity-provider-details'));
+        };
+    }, []);
 
     const [assets, setAssets] = useState<Asset[]>();
     const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
@@ -225,8 +243,8 @@ export function IdentityProviderDetailsPageIndex() {
     }, [api]);
 
     const inputsDisabled = useMemo(() => (
-        isBusy || identityProvider == null
-    ), [isBusy, identityProvider]);
+        isBusy || identityProvider == null || !userIsAdmin
+    ), [isBusy, identityProvider, userIsAdmin]);
 
     if (identityProvider == null || assets == null || secrets == null) {
         return (
@@ -956,6 +974,7 @@ export function IdentityProviderDetailsPageIndex() {
 
                 {
                     !isSystemProvider &&
+                    !inputsDisabled &&
                     <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Dateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                         <Button
                             onClick={handleRefreshRelatedEntities}

@@ -44,6 +44,7 @@ async function fetchData<ItemType, ID, AdditionalData>(api: Api, id: ID, props: 
 export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericDetailsPageProps<ItemType, ID, AdditionalData>) {
     const {
         entityType,
+        isEditable,
     } = props;
 
     const api = useApi();
@@ -229,6 +230,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                         setAdditionalData: setAdditionalData,
                                         isBusy: isBusy,
                                         setIsBusy: setIsBusy,
+                                        isEditable: isEditable != null ? isEditable(item) : true,
                                     }}
                                 >
                                     <Outlet />

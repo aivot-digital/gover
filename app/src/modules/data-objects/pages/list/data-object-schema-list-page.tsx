@@ -3,30 +3,22 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {useMemo} from 'react';
-import {isAdmin} from '../../../../utils/is-admin';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {DataObjectSchema} from '../../models/data-object-schema';
-import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
-import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import {uploadObjectFile} from '../../../../utils/download-utils';
 import {useNavigate} from 'react-router-dom';
 import {v4 as uuid4} from 'uuid';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 export function DataObjectSchemaListPage() {
-    useAdminGuard();
-
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+    const userIsAdmin = useUserIsAdmin();
 
     const handleImport = () => {
         uploadObjectFile<DataObjectSchema>('application/json')
@@ -53,10 +45,9 @@ export function DataObjectSchemaListPage() {
                     header={{
                         icon: <FolderData />,
                         title: 'Datenmodelle',
-                        actions: [
+                        actions: userIsAdmin ? [
                             {
                                 icon: <CloudUploadOutlinedIcon />,
-                                disabled: !userIsAdmin,
                                 onClick: handleImport,
                                 variant: 'outlined',
                                 label: 'Modell importieren',
@@ -64,25 +55,27 @@ export function DataObjectSchemaListPage() {
                             {
                                 label: 'Neues Datenmodell',
                                 icon: <AddOutlinedIcon />,
-                                disabled: !userIsAdmin,
-                                tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
                                 to: '/data-models/new',
                                 variant: 'contained',
-                            }
-                        ],
+                            },
+                        ] : undefined,
                         helpDialog: {
                             title: 'Hilfe zu Datenmodellen',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
                                     <Typography>
-                                        Ein Datenmodell beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen sie haben, welche Standardwerte gelten und wie Werte geprüft werden. Es sorgt dafür, dass Daten aus Formularen, Workflows und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
+                                        Ein Datenmodell beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen sie haben, welche Standardwerte gelten und wie Werte geprüft werden.
+                                        Es sorgt dafür, dass Daten aus Formularen, Workflows und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
                                     </Typography>
-                                    <Typography sx={{ mt: 2 }}>
-                                        Dazu können auch verschachtelte Objekte, Pflichtangaben, Wertebereiche oder Muster sowie Beschreibungen, Labels und optionale Sichtbarkeitsregeln gehören. Dasselbe Datenmodell kann in mehreren Prozessen und Komponenten wiederverwendet werden, sodass überall dieselbe Definition gilt. Bei der Ausgestaltung empfiehlt es sich, sprechende und langlebige Feldnamen zu verwenden, Weiterentwicklungen kompatibel vorzunehmen (zum Beispiel Felder hinzufügen statt umzubenennen oder zu entfernen) und Validierungen deutlich zu setzen.
+                                    <Typography sx={{mt: 2}}>
+                                        Dazu können auch verschachtelte Objekte, Pflichtangaben, Wertebereiche oder Muster sowie Beschreibungen, Labels und optionale Sichtbarkeitsregeln gehören. Dasselbe Datenmodell kann in mehreren
+                                        Prozessen und Komponenten wiederverwendet werden, sodass überall dieselbe Definition gilt. Bei der Ausgestaltung empfiehlt es sich, sprechende und langlebige Feldnamen zu verwenden,
+                                        Weiterentwicklungen kompatibel vorzunehmen (zum Beispiel Felder hinzufügen statt umzubenennen oder zu entfernen) und Validierungen deutlich zu setzen.
                                     </Typography>
-                                    <Typography sx={{ mt: 2 }}>
-                                        Bei der Beziehung zwischen Datenmodell und Datenobjekt gilt: Das Datenmodell definiert die Form und das Datenobjekt füllt diese Form mit konkreten Werten. Änderungen am Datenmodell beeinflussen, wie neue oder geänderte Datenobjekte geprüft und gespeichert werden.
+                                    <Typography sx={{mt: 2}}>
+                                        Bei der Beziehung zwischen Datenmodell und Datenobjekt gilt: Das Datenmodell definiert die Form und das Datenobjekt füllt diese Form mit konkreten Werten. Änderungen am Datenmodell beeinflussen, wie
+                                        neue oder geänderte Datenobjekte geprüft und gespeichert werden.
                                     </Typography>
                                 </>
                             ),
@@ -136,9 +129,9 @@ export function DataObjectSchemaListPage() {
                     rowActionsCount={2}
                     rowActions={(item: DataObjectSchema) => [
                         {
-                            icon: <EditOutlined />,
+                            icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
                             to: `/data-models/${item.key}`,
-                            tooltip: 'Datenmodell bearbeiten',
+                            tooltip: userIsAdmin ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                         {
                             icon: <DataObject />,

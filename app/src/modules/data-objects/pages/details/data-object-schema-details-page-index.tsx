@@ -4,9 +4,6 @@ import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../..
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {isAdmin} from '../../../../utils/is-admin';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
@@ -31,6 +28,7 @@ import {isApiError} from '../../../../models/api-error';
 import {generateElementWithDefaultValues} from '../../../../utils/generate-element-with-default-values';
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 
 const ID_FIELD_ID = '$id';
 
@@ -94,8 +92,9 @@ const IdGenOptions = [
 export function DataObjectSchemaDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+    });
 
     const location = useLocation();
 
@@ -266,7 +265,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 value={currentDataObject.key}
                 onChange={handleInputChange('key')}
                 onBlur={handleInputBlur('key')}
-                disabled={!isNewItem || isBusy || !userIsAdmin}
+                disabled={!isNewItem || isBusy || !hasAccess}
                 error={errors.key}
                 maxCharacters={64}
                 minCharacters={3}
@@ -283,7 +282,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 value={currentDataObject.name}
                 onChange={handleInputChange('name')}
                 onBlur={handleInputBlur('name')}
-                disabled={isBusy || !userIsAdmin}
+                disabled={isBusy || !hasAccess}
                 error={errors.name}
                 minCharacters={3}
                 maxCharacters={255}
@@ -297,7 +296,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 onChange={handleInputChange('description')}
                 onBlur={handleInputBlur('description')}
                 multiline={true}
-                disabled={isBusy || !userIsAdmin}
+                disabled={isBusy || !hasAccess}
                 error={errors.description}
                 minCharacters={10}
                 maxCharacters={500}
@@ -350,7 +349,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         }
                     }}
                     options={IdGenOptions}
-                    disabled={isBusy || !userIsAdmin || !isNewItem}
+                    disabled={isBusy || !hasAccess || !isNewItem}
                 />
             }
 
@@ -364,7 +363,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     value={currentDataObject.idGen}
                     onChange={handleInputChange('idGen')}
                     onBlur={handleInputBlur('idGen')}
-                    disabled={isBusy || !userIsAdmin || !isNewItem}
+                    disabled={isBusy || !hasAccess || !isNewItem}
                     error={errors.idGen}
                     minCharacters={3}
                     maxCharacters={64}
@@ -412,42 +411,39 @@ export function DataObjectSchemaDetailsPageIndex() {
                 }
             </Box>
 
-            {
-                userIsAdmin &&
-                <Box
-                    sx={{
-                        display: 'flex',
-                        marginTop: 2,
-                        gap: 2,
-                    }}
+            <Box
+                sx={{
+                    display: 'flex',
+                    marginTop: 2,
+                    gap: 2,
+                }}
+            >
+                <Button
+                    onClick={handleSave}
+                    disabled={isBusy || hasNotChanged || !hasAccess}
+                    variant="contained"
+                    color="primary"
+                    startIcon={<SaveOutlinedIcon />}
                 >
-                    <Button
-                        onClick={handleSave}
-                        disabled={isBusy || hasNotChanged}
-                        variant="contained"
-                        color="primary"
-                        startIcon={<SaveOutlinedIcon />}
-                    >
-                        Speichern
-                    </Button>
+                    Speichern
+                </Button>
 
-                    {
-                        !isNewItem &&
-                        <Button
-                            variant="outlined"
-                            onClick={handleDelete}
-                            disabled={isBusy}
-                            color="error"
-                            sx={{
-                                marginLeft: 'auto',
-                            }}
-                            startIcon={<DeleteOutlinedIcon />}
-                        >
-                            Löschen
-                        </Button>
-                    }
-                </Box>
-            }
+                {
+                    !isNewItem &&
+                    <Button
+                        variant="outlined"
+                        onClick={handleDelete}
+                        disabled={isBusy || !hasAccess}
+                        color="error"
+                        sx={{
+                            marginLeft: 'auto',
+                        }}
+                        startIcon={<DeleteOutlinedIcon />}
+                    >
+                        Löschen
+                    </Button>
+                }
+            </Box>
 
             {changeBlocker.dialog}
         </Box>

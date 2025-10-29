@@ -9,3 +9,9 @@ export const UserRoleLabels: Record<UserRole, string> = {
     [UserRole.Publisher]: 'Veröffentlicher:in',
     [UserRole.Editor]: 'Bearbeiter:in',
 };
+
+export const UserRoleIdentifier: Record<UserRole, string> = {
+    [UserRole.Admin]: 'Admin',
+    [UserRole.Publisher]: 'Publisher',
+    [UserRole.Editor]: 'Editor',
+};

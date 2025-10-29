@@ -4,15 +4,16 @@ import {Link, Typography} from '@mui/material';
 import {EditOutlined, MailOutlined, PeopleOutlined, PersonOutlined} from '@mui/icons-material';
 import React from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
-import {useAdminGuard} from '../../../../../hooks/use-admin-guard';
+import {useAccessGuard, useUserIsAdmin} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
 import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import {CellContentWrapper} from '../../../../../components/cell-content-wrapper/cell-content-wrapper';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 export function UserListPage() {
-    useAdminGuard();
+    const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
@@ -39,14 +40,14 @@ export function UserListPage() {
                 header={{
                     icon: <PeopleOutlined />,
                     title: 'Mitarbeiter:innen',
-                    actions: [
+                    actions: userIsAdmin ? [
                         {
                             label: 'Mitarbeiter:innen verwalten',
                             icon: <ManageAccountsOutlinedIcon />,
                             href: `${AppConfig.oidc.hostname}/admin/${AppConfig.oidc.realm}/console/#/${AppConfig.oidc.realm}/users`,
                             variant: 'contained',
                         },
-                    ],
+                    ] : undefined,
                     helpDialog: {
                         title: 'Hilfe zu Mitarbeiter:innen',
                         tooltip: 'Hilfe anzeigen',
@@ -172,9 +173,9 @@ export function UserListPage() {
                 rowActionsCount={2}
                 rowActions={(item: User) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
                         to: `/users/${item.id}`,
-                        tooltip: 'Mitarbeiter:in bearbeiten',
+                        tooltip: userIsAdmin ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
                     },
                     {
                         icon: <MailOutlined />,

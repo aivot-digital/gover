@@ -3,10 +3,6 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box, Typography} from '@mui/material';
 import {DescriptionOutlined, EditOutlined} from '@mui/icons-material';
-import {useSelector} from 'react-redux';
-import {selectUser} from '../../../../slices/user-slice';
-import {useMemo} from 'react';
-import {isAdmin} from '../../../../utils/is-admin';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
@@ -15,8 +11,9 @@ import Chip from '@mui/material/Chip';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
-import {useAdminGuard} from '../../../../hooks/use-admin-guard';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard, useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 const activeThemeChip = (
     <Chip
@@ -32,11 +29,9 @@ const activeThemeChip = (
 );
 
 export function ThemeListPage() {
-    useAdminGuard();
-
-    const user = useSelector(selectUser);
-    const userIsAdmin = useMemo(() => isAdmin(user), [user]);
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
+
+    const userIsAdmin = useUserIsAdmin();
 
     return (
         <PageWrapper
@@ -48,16 +43,14 @@ export function ThemeListPage() {
                 header={{
                     icon: <PaletteOutlinedIcon />,
                     title: 'Farbschemata',
-                    actions: [
+                    actions: userIsAdmin ? [
                         {
                             label: 'Neues Farbschema',
                             icon: <AddOutlinedIcon />,
-                            disabled: !userIsAdmin,
-                            tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
                             to: '/themes/new',
                             variant: 'contained',
                         },
-                    ],
+                    ] : undefined,
                     helpDialog: {
                         title: 'Hilfe zu Farbschemata',
                         tooltip: 'Hilfe anzeigen',
@@ -167,9 +160,9 @@ export function ThemeListPage() {
                 rowActionsCount={2}
                 rowActions={(item: Theme) => [
                     {
-                        icon: <EditOutlined />,
+                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward/>,
                         to: `/themes/${item.id}`,
-                        tooltip: 'Farbschema bearbeiten',
+                        tooltip: userIsAdmin ? 'Farbschema bearbeiten' : 'Farbschema ansehen',
                     },
                     {
                         icon: <DescriptionOutlined />,
