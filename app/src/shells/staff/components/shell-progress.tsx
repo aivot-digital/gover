@@ -39,7 +39,6 @@ export function ShellProgress() {
         }
     }, [loadingMessage]);
 
-
     const [progress, setProgress] = useState(0);
     const checkProgressIntervalRef = useRef<NodeJS.Timeout>(null);
     useEffect(() => {
@@ -73,23 +72,27 @@ export function ShellProgress() {
             <LoadingOverlay
                 isLoading={true}
                 message={loadingMessage.message}
-                value={progress * 100}
+                progresValue={progress * 100}
+                progresVariant={progress < MAX_PROGRESS ? 'determinate' : 'indeterminate'}
             />
         );
     }
 
     return (
-        <LinearProgress
-            sx={{
-                position: 'sticky',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '0.25rem',
-                zIndex: (theme) => theme.zIndex.drawer + 2,
-            }}
-            color="secondary"
-            value={progress * 100}
-        />
+        <>
+            <LinearProgress
+                sx={{
+                    position: 'sticky',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '0.25rem',
+                    zIndex: (theme) => theme.zIndex.drawer + 2,
+                }}
+                color="secondary"
+                value={progress * 100}
+                variant={progress < MAX_PROGRESS ? 'determinate' : 'indeterminate'}
+            />
+        </>
     );
 }

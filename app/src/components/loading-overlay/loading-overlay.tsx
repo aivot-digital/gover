@@ -2,7 +2,20 @@ import {Backdrop, Container, Paper} from '@mui/material';
 import React from 'react';
 import {Loader} from '../loader/loader';
 
-export function LoadingOverlay({message, isLoading, value}: { message?: string, isLoading?: boolean, value?: number }) {
+interface LoadingOverlayProps {
+    message?: string;
+    isLoading?: boolean;
+    progresValue?: number;
+    progresVariant?: 'determinate' | 'indeterminate';
+}
+
+export function LoadingOverlay(props: LoadingOverlayProps) {
+    const {
+        message,
+        isLoading,
+        progresValue,
+        progresVariant,
+    } = props;
     return (
         <Backdrop
             open={isLoading ? isLoading : false}
@@ -14,7 +27,8 @@ export function LoadingOverlay({message, isLoading, value}: { message?: string, 
                 <Paper sx={{p: 4}}>
                     <Loader
                         message={message}
-                        value={value}
+                        progresValue={progresValue}
+                        progresVariant={progresVariant}
                     />
                 </Paper>
             </Container>

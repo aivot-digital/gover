@@ -3,11 +3,18 @@ import React, {ReactNode} from 'react';
 
 interface LoaderProps {
     message?: string | ReactNode;
-    value?: number;
+    progresValue?: number;
+    progresVariant?: 'determinate' | 'indeterminate';
 }
 
-export function Loader({message, value}: LoaderProps) {
+export function Loader(props: LoaderProps) {
     const theme = useTheme();
+
+    const {
+        message,
+        progresValue,
+        progresVariant,
+    } = props;
 
     return (
         <>
@@ -105,7 +112,8 @@ export function Loader({message, value}: LoaderProps) {
             </Box>
             <LinearProgress
                 sx={{mt: 2}}
-                value={value}
+                value={progresValue}
+                variant={progresVariant}
             />
         </>
     );
