@@ -26,7 +26,6 @@ import {Link} from 'react-router-dom';
 import {Actions} from '../../../components/actions/actions';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
-import {FormEditor} from '../dtos/form-editor';
 import {FormsApiService} from '../forms-api-service-v2';
 
 interface FormVersionsDialogProps {
@@ -306,21 +305,15 @@ function VersionListItem(props: VersionListItemProps) {
 
         switch (status) {
             case FormStatus.Drafted:
-                return `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannt'}`;
+                return `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
             case FormStatus.Published:
-                return `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannt'}`;
+                return `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
             case FormStatus.Revoked:
-                return `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannt'}`;
+                return `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannte Nutzer:in'}`;
             default:
                 return '';
         }
     }, [status, updated, revoked, published, editorFullName]);
-
-    const label = revoked
-        ? 'Version'
-        : published
-            ? 'Veröffentlichte Version'
-            : 'Arbeitsversion';
 
     return (
         <ListItem
@@ -343,7 +336,7 @@ function VersionListItem(props: VersionListItemProps) {
                             to={`/forms/${id}/${version}`}
                             title={'Formular bearbeiten'}
                         >
-                            {label} {version}
+                            Version {version}
                         </Link>
                     </Typography>
                     {!revoked && (
@@ -351,7 +344,7 @@ function VersionListItem(props: VersionListItemProps) {
                             <FormStatusChip
                                 status={status}
                                 size="small"
-                                variant="outlined"
+                                variant="soft"
                             />
                         </Box>
                     )}

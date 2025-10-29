@@ -40,9 +40,9 @@ import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
 import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
-import {isApiError} from '../../../../models/api-error';
-import {FormEditor} from '../../dtos/form-editor';
 import {Page} from '../../../../models/dtos/page';
+import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 const availableFilter = [
     {
@@ -72,7 +72,7 @@ const columns: GridColDef<FormListEntry>[] = [
     {
         field: 'icon',
         headerName: '',
-        renderCell: () => <CellContentWrapper><DescriptionOutlinedIcon /></CellContentWrapper>,
+        renderCell: () => <CellContentWrapper sx={{alignItems: 'start', py: 2,}}><DescriptionOutlinedIcon /></CellContentWrapper>,
         disableColumnMenu: true,
         width: 24,
         sortable: false,
@@ -96,7 +96,10 @@ const columns: GridColDef<FormListEntry>[] = [
                 >
                     <Typography
                         variant="h5"
-                        sx={{mb: 0.5}}
+                        sx={{
+                            mb: 0.5,
+                            fontSize: '1rem',
+                        }}
                     >
                         <Link
                             style={{
@@ -122,15 +125,11 @@ const columns: GridColDef<FormListEntry>[] = [
                         {
                             isPublished ?
                                 <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
-                                <span>Noch nicht veröffentlicht</span>
+                                <span>{isRevoked ? 'Zurückgezogen' : 'Noch nicht veröffentlicht'}</span>
                         }
                         {
                             isDrafted &&
                             <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
-                        }
-                        {
-                            isRevoked &&
-                            <span> &bull; Zurückgezogen</span>
                         }
                     </Typography>
 
@@ -161,11 +160,11 @@ const columns: GridColDef<FormListEntry>[] = [
                     flexDirection: 'column',
                 }}
             >
-                <Typography>
+                <Typography sx={{fontSize: '0.875rem'}}>
                     {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
                 </Typography>
-                <Typography color="textSecondary">
-                    {params.row.lastEditorName ?? 'Unbekannt'}
+                <Typography color="textSecondary" sx={{fontSize: '0.875rem'}}>
+                    {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
                 </Typography>
             </Box>
         ),
@@ -275,12 +274,12 @@ export function FormsListPage() {
 
     const handleNewDraft = (item: FormListResponseDTO) => {
         showConfirm({
-            title: 'Neue Arbeitsversion anlegen?',
-            confirmButtonText: 'Ja, Arbeitsversion anlegen',
+            title: 'Neuen Entwurf anlegen?',
+            confirmButtonText: 'Ja, Entwurf anlegen',
             children: (
                 <Box>
-                    Für dieses Formular existiert derzeit keine aktive Arbeitsversion.
-                    Möchten Sie eine neue Arbeitsversion für dieses Formular anlegen um diese zu bearbeiten?
+                    Für dieses Formular existiert derzeit kein aktiver Entwurf.
+                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für dieses Formular anlegen um diesen zu bearbeiten?
                 </Box>
             ),
         }).then((confirmed) => {
@@ -373,15 +372,21 @@ export function FormsListPage() {
                     rowActionsCount={4}
                     rowActions={(item: FormListEntry) => [
                         {
-                            icon: <EditOutlined />,
+                            icon: <Edit />,
                             to: `/forms/${item.id}/${item.draftedVersion}`,
                             tooltip: 'Formular bearbeiten',
                             visible: item.draftedVersion != null,
                         },
                         {
+                            icon: <Visibility />,
+                            to: `/forms/${item.id}`,
+                            tooltip: 'Formular ansehen',
+                            visible: item.draftedVersion === null,
+                        },
+                        {
                             icon: <NewWindow />,
                             onClick: () => handleNewDraft(item),
-                            tooltip: 'Neue Arbeitsversion anlegen',
+                            tooltip: 'Neuen Entwurf anlegen',
                             visible: item.draftedVersion == null,
                             disabled: item.publishedVersion == null && item.draftedVersion != null,
                         },
@@ -389,13 +394,6 @@ export function FormsListPage() {
                             icon: <HomeStorage />,
                             onClick: () => setShowFormVersionsDialogFor(item),
                             tooltip: 'Versionen anzeigen',
-                        },
-                        {
-                            icon: <OpenInNewOutlinedIcon />,
-                            href: `/${item.slug}`,
-                            tooltip: 'Veröffentlichtes Formular öffnen (neuer Tab)',
-                            target: '_blank',
-                            visible: item.publishedVersion != null,
                         },
                         {
                             icon: <MoreVertOutlinedIcon />,

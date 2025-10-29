@@ -23,7 +23,6 @@ export function ReplicationContainerSummary(props: BaseSummaryProps<ReplicatingC
         children,
     } = model;
 
-
     const values = (value ?? []) as ElementData[];
 
     const theme = useTheme();

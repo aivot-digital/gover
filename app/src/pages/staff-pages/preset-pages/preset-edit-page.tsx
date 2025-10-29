@@ -45,6 +45,9 @@ import {Allotment} from 'allotment';
 import {Paper} from '@mui/material';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
+import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
+import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -212,13 +215,13 @@ export function PresetEditPage() {
         }
 
         const conf = await showConfirm({
-            title: 'Neue Version anlegen',
+            title: 'Neuen Entwurf anlegen',
             children: (
                 <Typography>
-                    Möchten Sie wirklich eine neue Version der Vorlage {preset.title} anlegen?
+                    Möchten Sie wirklich eine neuen Entwurf (Arbeitsversion) der Vorlage {preset.title} anlegen?
                 </Typography>
             ),
-            confirmButtonText: 'Ja, neue Version anlegen',
+            confirmButtonText: 'Ja, Entwurf anlegen',
             isDestructive: false,
         });
 
@@ -249,7 +252,7 @@ export function PresetEditPage() {
                     setPresetVersion(createdVersion);
                     setNetworkError(undefined);
                 } else {
-                    dispatch(showSuccessSnackbar('Neue Vorlagen-Version (' + createdVersion.version + ') wurde erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neue Version (' + createdVersion.version + ') wurde erfolgreich angelegt.'));
                     navigate(`/presets/edit/${preset.key}/${createdVersion.version}`, {replace: true});
                 }
             })
@@ -414,7 +417,7 @@ export function PresetEditPage() {
 
     return (
         <PageWrapper
-            title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+            title={`Vorlage - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
             fullWidth={true}
             fullHeight={true}
         >
@@ -440,7 +443,7 @@ export function PresetEditPage() {
                                 }}
                             >
                                 <GenericPageHeader
-                                    title={`Vorlagen-Editor - ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+                                    title={`Vorlage: ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
                                     badge={{
                                         color: 'default',
                                         label: `Version ${presetVersion.version}`,
@@ -448,12 +451,12 @@ export function PresetEditPage() {
                                     icon={ModuleIcons.presets}
                                     actions={[
                                         {
-                                            icon: <DriveFolderUploadOutlinedIcon />,
-                                            tooltip: 'Neue Version anlegen',
+                                            icon: <NewWindow />,
+                                            tooltip: 'Neuen Entwurf anlegen',
                                             onClick: handleAddNewVersion,
                                         },
                                         {
-                                            icon: <HistoryOutlinedIcon />,
+                                            icon: <HomeStorage />,
                                             tooltip: 'Versionen anzeigen',
                                             onClick: () => {
                                                 setShowPresetVersions(true);
@@ -466,7 +469,7 @@ export function PresetEditPage() {
                                             disabled: isBusy,
                                         },
                                         {
-                                            icon: <DeleteForeverOutlinedIcon />,
+                                            icon: <Delete color={'error'}/>,
                                             tooltip: 'Version der Vorlage löschen',
                                             onClick: () => {
                                                 setConfirmDelete(() => handleDelete);

@@ -12,6 +12,8 @@ import QrCode2 from '@aivot/mui-material-symbols-400-outlined/dist/qr-code-2/QrC
 import MoveItem from '@aivot/mui-material-symbols-400-outlined/dist/move-item/MoveItem';
 import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
+import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 
 interface FormsListRowMenuProps {
     anchorEl: HTMLElement | null;
@@ -62,25 +64,30 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
         onClose();
     };
 
+    const handleExternalLink = (url: string) => {
+        window.open(url, '_blank');
+        onClose();
+    };
+
     return (
         <Menu
             anchorEl={anchorEl}
             open={anchorEl != null}
             onClose={onClose}
         >
-            <MenuItem
-                onClick={() => {
-                    onMoveFormToDepartment(form);
-                    onClose();
-                }}
-            >
-                <ListItemIcon>
-                    <MoveItem />
-                </ListItemIcon>
-                <ListItemText>
-                    Formular an Fachbereich übertragen
-                </ListItemText>
-            </MenuItem>
+            {form.publishedVersion != null &&
+                <MenuItem
+                    onClick={() => handleExternalLink(form.slug)}
+                >
+                    <ListItemIcon>
+                        <OpenInNew />
+                    </ListItemIcon>
+                    <ListItemText>
+                        Veröffentlichtes Formular öffnen (neuer Tab)
+                    </ListItemText>
+                </MenuItem>
+            }
+
 
             <MenuItem
                 onClick={handleFormLinkCopy}
@@ -101,6 +108,22 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                 </ListItemIcon>
                 <ListItemText>
                     QR-Code mit Formularlink herunterladen
+                </ListItemText>
+            </MenuItem>
+
+            <Divider/>
+
+            <MenuItem
+                onClick={() => {
+                    onMoveFormToDepartment(form);
+                    onClose();
+                }}
+            >
+                <ListItemIcon>
+                    <MoveItem />
+                </ListItemIcon>
+                <ListItemText>
+                    Formular an Fachbereich übertragen
                 </ListItemText>
             </MenuItem>
 

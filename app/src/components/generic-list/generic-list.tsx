@@ -329,6 +329,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                             sx={{
                                 justifyContent: 'end',
                             }}
+                            dense
                         />
                     );
                 },

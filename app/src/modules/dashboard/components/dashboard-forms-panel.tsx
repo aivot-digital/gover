@@ -47,7 +47,7 @@ export function DashboardFormsPanel() {
         const { isDrafted, isPublished, isRevoked } = getFormStatus(form);
 
         if (isPublished) return 'Veröffentlicht';
-        if (isDrafted) return 'In Bearbeitung';
+        if (isDrafted) return 'Entwurf';
         if (isRevoked) return 'Zurückgezogen';
         return 'Unbekannter Status';
     };

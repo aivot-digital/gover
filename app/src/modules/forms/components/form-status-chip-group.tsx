@@ -44,30 +44,36 @@ export function FormStatusChipGroup(props: FormStatusChipGroupProps) {
             }}
         >
             {
-                isPublished &&
-                <FormStatusChip
-                    status={FormStatus.Published}
-                    size="small"
-                    variant="outlined"
-                />
+                isDrafted &&
+                <Box>
+                    <FormStatusChip
+                        status={FormStatus.Drafted}
+                        size="small"
+                        variant="soft"
+                    />
+                </Box>
             }
 
             {
-                isDrafted &&
-                <FormStatusChip
-                    status={FormStatus.Drafted}
-                    size="small"
-                    variant="outlined"
-                />
+                isPublished &&
+                <Box>
+                    <FormStatusChip
+                        status={FormStatus.Published}
+                        size="small"
+                        variant="soft"
+                    />
+                </Box>
             }
 
             {
                 isRevoked &&
-                <FormStatusChip
-                    status={FormStatus.Revoked}
-                    size="small"
-                    variant="outlined"
-                />
+                <Box>
+                    <FormStatusChip
+                        status={FormStatus.Revoked}
+                        size="small"
+                        variant="soft"
+                    />
+                </Box>
             }
         </Box>
     );

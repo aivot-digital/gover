@@ -16,6 +16,8 @@ import {GridColDef} from '@mui/x-data-grid';
 import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {useNavigate} from 'react-router-dom';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
+import {DestinationTypeIcons} from '../../../data/destination-type';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 const columns: Array<GridColDef<Preset>> = [
     {
@@ -41,12 +43,18 @@ const columns: Array<GridColDef<Preset>> = [
     },
     {
         field: 'draftedVersion',
-        headerName: 'Arbeits-Version',
+        headerName: 'Entwurf',
+        renderCell: (params) => {
+            return (<CellContentWrapper>{params.row.draftedVersion ? `Version ${params.row.draftedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Kein Entwurf vorhanden</Typography>)}</CellContentWrapper>);
+        },
         flex: 1,
     },
     {
         field: 'publishedVersion',
         headerName: 'Veröffentlichte Version',
+        renderCell: (params) => {
+            return (<CellContentWrapper>{params.row.publishedVersion ? `Version ${params.row.publishedVersion}` : (<Typography color={'text.secondary'} sx={{fontStyle: 'italic'}}>Keine Version veröffentlicht</Typography>)}</CellContentWrapper>);
+        },
         flex: 1,
     },
 ];
@@ -122,6 +130,13 @@ export function PresetListPage() {
                         icon: <EditOutlined />,
                         to: `/presets/edit/${item.key}/${item.draftedVersion}`,
                         tooltip: 'Vorlage bearbeiten',
+                        visible: item.draftedVersion != null,
+                    },
+                    {
+                        icon: <Visibility />,
+                        to: `/presets/edit/${item.key}/${item.publishedVersion}`,
+                        tooltip: 'Vorlage ansehen',
+                        visible: item.draftedVersion === null && item.publishedVersion != null,
                     },
                 ]}
                 defaultSortField="title"
