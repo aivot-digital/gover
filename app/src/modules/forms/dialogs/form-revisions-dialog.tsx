@@ -74,7 +74,7 @@ async function fetchRevisions(form: Form, api: Api, lastPage: Page<Revision> | u
     const users: Record<string, User | undefined> = {};
     for (const uid of userIdSet) {
         try {
-            users[uid] = await new UsersApiService(api).retrieve(uid);
+            users[uid] = await new UsersApiService().retrieve(uid);
         } catch (err) {
             console.error(err);
             users[uid] = undefined;

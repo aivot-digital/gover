@@ -14,7 +14,6 @@ interface SelectUserDialogProps {
 }
 
 export function SelectUserDialog(props: SelectUserDialogProps) {
-    const api = useApi();
     const [users, setUsers] = useState<User[]>([]);
 
     const {
@@ -25,13 +24,13 @@ export function SelectUserDialog(props: SelectUserDialogProps) {
     } = props;
 
     useEffect(() => {
-        new UsersApiService(api)
+        new UsersApiService()
             .listAll({
                 disabledInIdp: false,
                 deletedInIdp: false,
             })
             .then((data) => setUsers(data.content));
-    }, [api]);
+    }, []);
 
     const excludedUsers = useMemo(() => {
         if (idsToExclude == null || idsToExclude.length === 0) {

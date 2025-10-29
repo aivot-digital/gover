@@ -80,7 +80,7 @@ export function AssetDetailsPageIndex() {
         }
 
         if(asset?.uploaderId){
-            new UsersApiService(api)
+            new UsersApiService()
                 .retrieve(item.uploaderId)
                 .then(setUploader);
         }

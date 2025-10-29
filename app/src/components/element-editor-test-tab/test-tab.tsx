@@ -142,11 +142,10 @@ export function TestTab<T extends AnyElement>(props: TestTabProps<T>) {
 }
 
 function TestProtocol(protocol: TestProtocolModel): React.ReactNode | null {
-    const api = useApi();
     const [user, setUser] = useState<User>();
 
     useEffect(() => {
-        new UsersApiService(api)
+        new UsersApiService()
             .retrieve(protocol.userId)
             .then(setUser)
             .catch((err) => {

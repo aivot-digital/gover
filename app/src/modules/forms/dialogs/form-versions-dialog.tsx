@@ -26,6 +26,8 @@ import {Link} from 'react-router-dom';
 import {Actions} from '../../../components/actions/actions';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {FormEditor} from '../dtos/form-editor';
+import {FormsApiService} from '../forms-api-service-v2';
 
 interface FormVersionsDialogProps {
     formId: number;
@@ -33,6 +35,10 @@ interface FormVersionsDialogProps {
     onNewDraft: (basis: FormDetailsResponseDTO) => void;
     onNewForm: (basis: FormDetailsResponseDTO) => void;
     onChange?: (formId: number) => void;
+}
+
+interface FormVersionWithEditor extends FormDetailsResponseDTO {
+    editorFullName?: string;
 }
 
 export function FormVersionsDialog(props: FormVersionsDialogProps) {
@@ -49,7 +55,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
     const showConfirm = useConfirm();
 
     const [isLoading, setIsLoading] = useState(false);
-    const [versions, setVersions] = useState<FormDetailsResponseDTO[]>([]);
+    const [versions, setVersions] = useState<FormVersionWithEditor[]>([]);
 
     const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [moreMenuForm, setMoreMenuForm] = useState<FormDetailsResponseDTO | null>(null);
@@ -64,20 +70,27 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
     useEffect(() => {
         setIsLoading(true);
 
+        const formsApi = new FormsApiService();
         const formVersionsApi = new FormVersionApiService(formId);
 
         withDelay(
-            formVersionsApi.listAllOrdered(
-                'version',
-                'DESC',
-                {
-                    formId: formId,
-                },
-            ),
+            Promise.all([
+                formsApi.listEditorsForForm(formId),
+                formVersionsApi.listAllOrdered(
+                    'version',
+                    'DESC',
+                    {
+                        formId: formId,
+                    },
+                ),
+            ]),
             500,
         )
-            .then(forms => {
-                setVersions(forms.content);
+            .then(([editors, {content: versions}]) => {
+                setVersions(versions.map(v => ({
+                    ...v,
+                    editorFullName: editors.find(e => e.formVersion === v.version)?.fullName,
+                })));
             })
             .catch(error => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -264,7 +277,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
 }
 
 interface VersionListItemProps {
-    item: FormDetailsResponseDTO;
+    item: FormVersionWithEditor;
     onMoreClick: (target: HTMLButtonElement, item: FormDetailsResponseDTO) => void;
 }
 
@@ -282,6 +295,7 @@ function VersionListItem(props: VersionListItemProps) {
         published,
         revoked,
         id,
+        editorFullName,
     } = item;
 
     const subtext = useMemo(() => {
@@ -292,15 +306,15 @@ function VersionListItem(props: VersionListItemProps) {
 
         switch (status) {
             case FormStatus.Drafted:
-                return `Zuletzt bearbeitet: ${_format(updated)}`;
+                return `Zuletzt bearbeitet: ${_format(updated)}\nBearbeitet von: ${editorFullName ?? 'Unbekannt'}`;
             case FormStatus.Published:
-                return `Veröffentlicht am: ${_format(published)}`;
+                return `Veröffentlicht am: ${_format(published)}\nVeröffentlicht von: ${editorFullName ?? 'Unbekannt'}`;
             case FormStatus.Revoked:
-                return `Zurückgezogen am: ${_format(revoked)}`;
+                return `Zurückgezogen am: ${_format(revoked)}\nZurückgezogen von: ${editorFullName ?? 'Unbekannt'}`;
             default:
                 return '';
         }
-    }, [status, updated, revoked, published]);
+    }, [status, updated, revoked, published, editorFullName]);
 
     const label = revoked
         ? 'Version'

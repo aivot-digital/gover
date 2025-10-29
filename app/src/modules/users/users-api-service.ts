@@ -1,6 +1,5 @@
-import {CrudApiService} from '../../services/crud-api-service';
-import {Api} from '../../hooks/use-api';
 import {User} from './models/user';
+import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 export interface UserFilter {
     name: string;
@@ -8,9 +7,9 @@ export interface UserFilter {
     disabledInIdp: boolean;
 }
 
-export class UsersApiService extends CrudApiService<User, User, User, User, User, string, UserFilter> {
-    public constructor(api: Api) {
-        super(api, 'users/');
+export class UsersApiService extends BaseCrudApiService<User, User, User, User, string, UserFilter> {
+    public constructor() {
+        super('/api/users/');
     }
 
     public async retrieve(id: string): Promise<User> {

@@ -175,7 +175,7 @@ export function UserDetailsPageIndex() {
         if (!user.id) return;
 
         setIsBusy(true);
-        new UsersApiService(api)
+        new UsersApiService()
             .destroy(user.id)
             .then(() => {
                 navigate('/users', {

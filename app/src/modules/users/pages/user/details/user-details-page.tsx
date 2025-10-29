@@ -50,8 +50,8 @@ export function UserDetailsPage() {
                         isDisabled: (item) => !item?.id,
                     },
                 ]}
-                initializeItem={(api) => new UsersApiService(api).initialize()}
-                fetchData={(api, id: number) => new UsersApiService(api).retrieve(String(id))}
+                initializeItem={(api) => new UsersApiService().initialize()}
+                fetchData={(api, id: number) => new UsersApiService().retrieve(String(id))}
                 getTabTitle={(item: User) => {
                     return stringOrDefault(item.fullName, 'Kein Name hinterlegt');
                 }}

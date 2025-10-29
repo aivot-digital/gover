@@ -75,7 +75,7 @@ async function fetchSubmissions(api: Api, user: User, includePaymentPending: boo
     return submissions.map(sub => ({
         ...sub,
         destination: destinations.find(dest => dest.id === sub.destinationId),
-        assignee: sub.assigneeId != null ? (assignees.find(assignee => assignee.id === sub.assigneeId) ?? new UsersApiService(api).initialize()) : undefined,
+        assignee: sub.assigneeId != null ? (assignees.find(assignee => assignee.id === sub.assigneeId) ?? new UsersApiService().initialize()) : undefined,
     }));
 }
 

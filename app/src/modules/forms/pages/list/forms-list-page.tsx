@@ -5,6 +5,7 @@ import {Box} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
 import {FormListResponseDTO} from '../../dtos/form-list-response-dto';
 import {FormsApiService} from '../../forms-api-service';
+import {FormsApiService as FormsApiServiceV2} from '../../forms-api-service-v2';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -39,6 +40,9 @@ import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
 import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {isApiError} from '../../../../models/api-error';
+import {FormEditor} from '../../dtos/form-editor';
+import {Page} from '../../../../models/dtos/page';
 
 const availableFilter = [
     {
@@ -59,6 +63,123 @@ const availableFilter = [
     },
 ];
 
+interface FormListEntry extends FormListResponseDTO {
+    developingDepartmentName?: string;
+    lastEditorName?: string;
+}
+
+const columns: GridColDef<FormListEntry>[] = [
+    {
+        field: 'icon',
+        headerName: '',
+        renderCell: () => <CellContentWrapper><DescriptionOutlinedIcon /></CellContentWrapper>,
+        disableColumnMenu: true,
+        width: 24,
+        sortable: false,
+    },
+    {
+        field: 'internalTitle',
+        headerName: 'Formular',
+        flex: 2,
+        renderCell: (params) => {
+            const {
+                isDrafted,
+                isPublished,
+                isRevoked,
+            } = getFormStatus(params.row);
+
+            return (
+                <Box
+                    sx={{
+                        py: 2,
+                    }}
+                >
+                    <Typography
+                        variant="h5"
+                        sx={{mb: 0.5}}
+                    >
+                        <Link
+                            style={{
+                                color: 'inherit',
+                                textDecoration: 'none',
+                            }}
+                            to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
+                            title="Formular bearbeiten"
+                        >
+                            {params.row.internalTitle}
+                        </Link>
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            mt: -0.75,
+                            fontSize: '0.875rem',
+                            lineHeight: '1.5rem',
+                        }}
+                        color="textSecondary"
+                    >
+                        {
+                            isPublished ?
+                                <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
+                                <span>Noch nicht veröffentlicht</span>
+                        }
+                        {
+                            isDrafted &&
+                            <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
+                        }
+                        {
+                            isRevoked &&
+                            <span> &bull; Zurückgezogen</span>
+                        }
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            mt: -0.75,
+                            fontSize: '0.875rem',
+                            lineHeight: '1.5rem',
+                        }}
+                        color="textSecondary"
+                    >
+                        Entwickelt von: {params.row.developingDepartmentName ?? 'Unbekannt'}
+                    </Typography>
+                </Box>
+            );
+        },
+    },
+    {
+        field: 'updated',
+        headerName: 'Zuletzt bearbeitet',
+        flex: 1,
+        renderCell: (params) => (
+            <Box
+                sx={{
+                    py: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
+            >
+                <Typography>
+                    {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
+                </Typography>
+                <Typography color="textSecondary">
+                    {params.row.lastEditorName ?? 'Unbekannt'}
+                </Typography>
+            </Box>
+        ),
+    },
+    {
+        field: 'publishedVersion',
+        headerName: 'Status',
+        flex: 0.75,
+        renderCell: (params) => (
+            <FormStatusChipGroup form={params.row} />
+        ),
+    },
+];
+
 export function FormsListPage() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -74,7 +195,7 @@ export function FormsListPage() {
     const [showExportFormDialog, setShowExportFormDialog] = useState(false);
     const [showFormVersionsDialogFor, setShowFormVersionsDialogFor] = useState<FormListResponseDTO | undefined>();
 
-    const [departments, setDepartments] = useState<DepartmentResponseDTO[]>([]);
+    const [departmentsBuffer, setDepartmentsBuffer] = useState<DepartmentResponseDTO[]>([]);
 
     const [formToMove, setFormToMove] = useState<FormListResponseDTO>();
     const [formToDelete, setFormToDelete] = useState<FormListResponseDTO>();
@@ -83,118 +204,6 @@ export function FormsListPage() {
         target: HTMLElement;
         form: FormListResponseDTO;
     } | undefined>(undefined);
-
-    const columns: GridColDef[] = useMemo(() => {
-        return [
-            {
-                field: 'icon',
-                headerName: '',
-                renderCell: () => <CellContentWrapper><DescriptionOutlinedIcon /></CellContentWrapper>,
-                disableColumnMenu: true,
-                width: 24,
-                sortable: false,
-            },
-            {
-                field: 'internalTitle',
-                headerName: 'Formular',
-                flex: 2,
-                renderCell: (params) => {
-                    const {
-                        isDrafted,
-                        isPublished,
-                        isRevoked,
-                    } = getFormStatus(params.row);
-
-                    return (
-                        <Box
-                            sx={{
-                                py: 2,
-                            }}
-                        >
-                            <Typography
-                                variant="h5"
-                                sx={{mb: 0.5}}
-                            >
-                                <Link
-                                    style={{color: 'inherit', textDecoration: 'none'}}
-                                    to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
-                                    title={'Formular bearbeiten'}
-                                >
-                                    {params.row.internalTitle}
-                                </Link>
-                            </Typography>
-
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    mt: -0.75,
-                                    fontSize: '0.875rem',
-                                    lineHeight: '1.5rem',
-                                }}
-                                color={'text.secondary'}
-                            >
-                                {
-                                    isPublished ?
-                                        <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
-                                        <span>Noch nicht veröffentlicht</span>
-                                }
-                                {
-                                    isDrafted &&
-                                    <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
-                                }
-                                {
-                                    isRevoked &&
-                                    <span> &bull; Zurückgezogen</span>
-                                }
-                            </Typography>
-
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    mt: -0.75,
-                                    fontSize: '0.875rem',
-                                    lineHeight: '1.5rem',
-                                }}
-                                color={'text.secondary'}
-                            >
-                                Entwickelt von: {departments.find(dep => dep.id === params.row.developingDepartmentId)?.name}
-                            </Typography>
-                        </Box>
-                    );
-                },
-            },
-            {
-                field: 'updated',
-                headerName: 'Zuletzt bearbeitet',
-                flex: 1,
-                renderCell: (params) => (
-                    <Box
-                        sx={{
-                            py: 2,
-                        }}
-                    >
-                        {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
-                    </Box>
-                ),
-            },
-            {
-                field: 'publishedVersion',
-                headerName: 'Status',
-                flex: 0.75,
-                renderCell: (params) => (
-                    <FormStatusChipGroup form={params.row} />
-                ),
-            },
-        ];
-    }, [departments]);
-
-    useEffect(() => {
-        new DepartmentsApiService()
-            .listAll()
-            .then((response) => {
-                setDepartments(response.content);
-            });
-    }, [api]);
 
     const handleNewFormDraft = (formId: number, formVersion: number | undefined | null) => {
         dispatch(showLoadingOverlay('Neuer Entwurf wird erstellt…'));
@@ -288,7 +297,7 @@ export function FormsListPage() {
                 fullWidth
                 background
             >
-                <GenericListPage<FormListResponseDTO>
+                <GenericListPage<FormListEntry>
                     controlRef={listControlRef}
                     dynamicRowHeight={true}
                     filters={availableFilter}
@@ -323,9 +332,16 @@ export function FormsListPage() {
                     }}
                     searchLabel="Formular suchen"
                     searchPlaceholder="Titel des Formulars eingeben…"
-                    fetch={(options) => {
-                        return new FormsApiService(options.api)
-                            .list(options.page, options.size, options.sort, options.order, {
+                    fetch={async (options) => {
+                        let deps: DepartmentResponseDTO[] = departmentsBuffer;
+                        if (deps.length === 0) {
+                            deps = (await new DepartmentsApiService()
+                                .listAll()).content;
+                            setDepartmentsBuffer(deps);
+                        }
+
+                        const formsPage = await new FormsApiServiceV2()
+                            .list(options.page, options.size, options.sort as any, options.order, {
                                 internalTitle: options.search,
                                 isDeveloper: true,
                                 userId: user?.id,
@@ -333,13 +349,29 @@ export function FormsListPage() {
                                 isDrafted: options.filter === 'drafted',
                                 isRevoked: options.filter === 'revoked',
                             });
+
+                        const formIds = formsPage.content.map(form => form.id);
+
+                        const editorsList = await new FormsApiServiceV2()
+                            .listEditorsForForms(formIds);
+
+                        const extendedFormsPage: Page<FormListEntry> = {
+                            ...formsPage,
+                            content: formsPage.content.map(form => ({
+                                ...form,
+                                developingDepartmentName: deps.find(dep => dep.id === form.developingDepartmentId)?.name,
+                                lastEditorName: editorsList.find(editor => editor.formId === form.id)?.fullName,
+                            })),
+                        };
+
+                        return extendedFormsPage;
                     }}
                     columnDefinitions={columns}
                     getRowIdentifier={row => row.id.toString()}
                     noDataPlaceholder="Keine Formulare vorhanden"
                     noSearchResultsPlaceholder="Keine Formulare gefunden"
                     rowActionsCount={4}
-                    rowActions={(item: FormListResponseDTO) => [
+                    rowActions={(item: FormListEntry) => [
                         {
                             icon: <EditOutlined />,
                             to: `/forms/${item.id}/${item.draftedVersion}`,

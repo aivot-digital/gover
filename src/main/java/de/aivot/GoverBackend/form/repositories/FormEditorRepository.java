@@ -1,21 +1,13 @@
 package de.aivot.GoverBackend.form.repositories;
 
 import de.aivot.GoverBackend.form.entities.FormEditorEntity;
-import de.aivot.GoverBackend.form.entities.FormEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface FormRepository extends JpaRepository<FormEntity, Integer>, JpaSpecificationExecutor<FormEntity> {
-    boolean existsBySlug(String slug);
-
-    boolean existsBySlugAndIdIsNot(String slug, Integer id);
-
-    Integer countAllByPublishedVersionIsNotNull();
-
+public interface FormEditorRepository extends Repository<FormEditorEntity, Integer> {
     @Query(value = """
                 select distinct on (form_id) form_id, form_version, full_name, timestamp
                 from form_revisions

@@ -86,7 +86,7 @@ export function UserListPage() {
                             break;
                     }
 
-                    return new UsersApiService(options.api)
+                    return new UsersApiService()
                         .list(
                             options.page,
                             options.size,
