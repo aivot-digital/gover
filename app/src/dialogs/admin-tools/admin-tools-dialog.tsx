@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {Box, Button, Dialog, DialogContent, FormControlLabel, FormGroup, FormHelperText, Grid, Switch, Typography} from '@mui/material';
 import {type AppDispatch, type RootState} from '../../store.staff';
-import {type AdminSettingsState, setDevToolsTab, toggleAutoScrollForSteps, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
+import {type AdminSettingsState, setDevToolsTab, toggleAutoScrollForSteps, toggleElementContextMenu, toggleValidation, toggleVisibility} from '../../slices/admin-settings-slice';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AdminToolsDialogProps} from './admin-tools-dialog-props';
 import {selectLoadedForm} from '../../slices/app-slice';
@@ -42,6 +42,12 @@ const switches: Array<{
         hint: 'Deaktivieren Sie das automatische Scrollen um die aktuelle Scroll-Position im Formular beizubehalten',
         onToggle: (dispatch) => dispatch(toggleAutoScrollForSteps()),
         isActive: (settings) => !settings.disableAutoScrollForSteps,
+    },
+    {
+        label: 'Element-Kontextmenü',
+        hint: 'Das Element-Kontextmenü zeigt einen Button mit Menü an jedem Element an, mit dem Sie Kontextoptionen zu diesem Element erreichen. Sie können diesen Button z.B. für Demonstrationen oder Testläufe deaktivieren.',
+        onToggle: (dispatch) => dispatch(toggleElementContextMenu()),
+        isActive: (settings) => !settings.disableElementContextMenu,
     },
 ];
 

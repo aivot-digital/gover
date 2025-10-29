@@ -307,11 +307,10 @@ export function FormsListPage() {
                         actions: [
                             {
                                 icon: <CloudUploadOutlinedIcon />,
-                                tooltip: 'Formular importieren',
                                 onClick: () => {
                                     setShowImportFormDialog(true);
                                 },
-                                variant: 'outlined',
+                                variant: 'text',
                                 label: 'Importieren',
                             },
                             {

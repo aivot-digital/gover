@@ -101,7 +101,7 @@ export function DataObjectItemListPage() {
                         {
                             icon: <FolderData />,
                             to: `/data-models/${dataObjectSchema.key}`,
-                            variant: 'outlined',
+                            variant: 'text',
                             label: userIsAdmin ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                         {
@@ -157,7 +157,7 @@ export function DataObjectItemListPage() {
                     {
                         icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
                         to: `/data-objects/${item.schemaKey}/${item.id}`,
-                        tooltip: userIsAdmin ? 'Datenobjekte bearbeiten' : 'Datenobjekte anzeigen',
+                        tooltip: userIsAdmin ? 'Datenobjekt bearbeiten' : 'Datenobjekte anzeigen',
                     },
                     {
                         icon: ModuleIcons.dataModels,

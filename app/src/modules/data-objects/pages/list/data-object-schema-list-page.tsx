@@ -49,8 +49,8 @@ export function DataObjectSchemaListPage() {
                             {
                                 icon: <CloudUploadOutlinedIcon />,
                                 onClick: handleImport,
-                                variant: 'outlined',
-                                label: 'Modell importieren',
+                                variant: 'text',
+                                label: 'Importieren',
                             },
                             {
                                 label: 'Neues Datenmodell',

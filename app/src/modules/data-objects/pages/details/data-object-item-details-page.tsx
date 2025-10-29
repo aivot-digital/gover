@@ -75,7 +75,7 @@ export function DataObjectItemDetailsPage() {
                         {
                             icon: <FolderData />,
                             to: `/data-models/${dataObjectSchema.key}`,
-                            variant: 'outlined',
+                            variant: 'text',
                             label: 'Datenmodell bearbeiten',
                         },
                     ],

@@ -66,8 +66,8 @@ export function DataObjectSchemaDetailsPage() {
                         {
                             icon: <CloudDownloadOutlinedIcon />,
                             onClick: handleExport,
-                            variant: 'outlined',
-                            label: 'Modell exportieren',
+                            variant: 'text',
+                            label: 'Exportieren',
                             visible: userIsAdmin,
                         },
                         {

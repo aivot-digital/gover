@@ -12,6 +12,7 @@ export interface AdminSettingsState {
     expandElementTree: undefined | 'expanded' | 'collapsed';
     warnDuplicateIds: boolean;
     disableAutoScrollForSteps: boolean;
+    disableElementContextMenu: boolean;
     treeElementSearch?: {
         foundIds: string[];
         currentLookupIndex: number;
@@ -29,6 +30,7 @@ const initialState: AdminSettingsState = {
     expandElementTree: undefined,
     warnDuplicateIds: false,
     disableAutoScrollForSteps: false,
+    disableElementContextMenu: false,
     treeElementSearch: undefined,
     devToolsTab: undefined,
 };
@@ -60,6 +62,9 @@ const adminSettingsSlice = createSlice({
         },
         toggleAutoScrollForSteps: (state) => {
             state.disableAutoScrollForSteps = !state.disableAutoScrollForSteps;
+        },
+        toggleElementContextMenu: (state) => {
+            state.disableElementContextMenu = !state.disableElementContextMenu;
         },
         setTreeElementSearch: (state, action: PayloadAction<string[] | undefined>) => {
             state.treeElementSearch = action.payload != null ? {
@@ -95,6 +100,7 @@ export const {
     setDraggingTreeElement,
     toggleWarnDuplicateIds,
     toggleAutoScrollForSteps,
+    toggleElementContextMenu,
     resetAdminSettings,
     setTreeElementSearch,
     setElementTreeSearchLookupIndex,
@@ -109,6 +115,7 @@ export const selectIsDraggingTreeElement = (state: RootState) => state.adminSett
 export const selectDraggingTreeElement = (state: RootState) => state.adminSettings.draggingTreeElement;
 export const selectWarnDuplicateIds = (state: RootState) => state.adminSettings.warnDuplicateIds;
 export const selectDisableAutoScrollForSteps = (state: RootState) => state.adminSettings.disableAutoScrollForSteps;
+export const selectDisableElementContextMenu = (state: RootState) => state.adminSettings.disableElementContextMenu;
 export const selectTreeElementSearch = (state: RootState) => state.adminSettings.treeElementSearch;
 export const selectDevToolsTab = (state: RootState) => state.adminSettings.devToolsTab;
 

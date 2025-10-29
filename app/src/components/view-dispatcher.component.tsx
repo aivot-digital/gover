@@ -1,4 +1,4 @@
-import React, {ComponentType, useCallback, useMemo} from 'react';
+import React, {ComponentType, useCallback, useMemo, useState} from 'react';
 import Grid from '@mui/material/Grid';
 import {type AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
@@ -10,8 +10,14 @@ import {type ElementData, type ElementDataObject} from '../models/element-data';
 import {resolveErrors, resolveOverride, resolvePrefill, resolveValueForResolvedOverride, resolveVisibility} from '../utils/element-data-utils';
 import {useElementEditorNavigation} from '../hooks/use-element-editor-navigation';
 import {isAnyContentElement} from '../models/elements/form/content/any-content-element';
-import EditFilled from '@aivot/mui-material-symbols-400-outlined/dist/edit/EditFilled';
-import {isGroupLayout} from '../models/elements/form/layout/group-layout';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
+import {ContentPaste, Edit} from '@mui/icons-material';
+import {showErrorSnackbar, showSuccessSnackbar} from '../slices/snackbar-slice';
+import {useAppDispatch} from '../hooks/use-app-dispatch';
+import {useAppSelector} from '../hooks/use-app-selector';
+import {selectDisableElementContextMenu} from '../slices/admin-settings-slice';
+import {generateComponentTitle} from '../utils/generate-component-title';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -32,6 +38,8 @@ interface DispatcherComponentProps<T extends AnyElement> {
 }
 
 export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherComponentProps<T>) {
+    const disableElementContextMenu = useAppSelector(selectDisableElementContextMenu);
+
     const {
         rootElement,
         element: initialElement,
@@ -188,8 +196,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             data-resolved-id={elementId /* TODO: Remove here and where referenced */}
             sx={{
                 position: 'relative',
-                '&:hover > .edit-btn': {
-                    display: mode === 'editor' ? 'block' : 'none',
+                '&:hover > .editor-element-context-menu, &:hover > .editor-element-context-menu-cutout': {
+                    display: mode === 'editor' && !disableElementContextMenu ? 'block' : 'none',
                 },
             }}
             size={{
@@ -203,23 +211,12 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
                     isAnyInputElement(element) ||
                     isAnyContentElement(element)
                 ) &&
-                <IconButton
-                    className="edit-btn"
-                    onClick={() => {
-                        navigateToElementEditor(elementId);
-                    }}
-                    sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        zIndex: 10,
-                        display: 'none',
-                    }}
-                    size="small"
-                    color="primary"
-                >
-                    <EditFilled />
-                </IconButton>
+                <>
+                    <ContextMenuButton
+                        element={element}
+                        onEdit={() => navigateToElementEditor(elementId)}
+                    />
+                </>
             }
 
             <ElementErrorBoundary viewProps={viewProps}>
@@ -228,3 +225,153 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         </Grid>
     );
 }
+
+function ContextMenuButton({
+                               element,
+                               onEdit,
+                           }: {
+    element: AnyElement;
+    onEdit: () => void;
+}) {
+    const dispatch = useAppDispatch();
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleCopyId = async () => {
+        navigator.clipboard.writeText(element.id ?? '')
+            .then(() => {
+                dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
+            })
+            .catch((error) => {
+                console.error('Failed to copy ID', error);
+                dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
+            });
+
+        handleMenuClose();
+    };
+
+    const elementTitle = generateComponentTitle(element);
+
+    return (
+        <>
+            <Box
+                className="editor-element-context-menu-cutout"
+                sx={{
+                    position: 'absolute',
+                    top: 6,
+                    right: -13,
+                    zIndex: 9,
+                    display: 'none',
+                    height: 24,
+                    width: 24,
+                    backgroundColor: 'rgb(255,255,255)',
+                    borderRadius: '50%',
+                    transform: 'scale(1.25)',
+                }}
+            />
+            <IconButton
+                className="editor-element-context-menu"
+                onClick={handleMenuOpen}
+                size="small"
+                color="primary"
+                sx={{
+                    position: 'absolute',
+                    top: 6,
+                    right: -13,
+                    zIndex: 10,
+                    display: 'none',
+                    p: 0.25,
+                    height: 24,
+                    width: 24,
+                    lineHeight: '24px',
+                    backgroundColor: 'rgba(0,0,0,.05)',
+                }}
+            >
+                <MoreVert sx={{fontSize: '1.25rem'}} />
+            </IconButton>
+
+            <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleMenuClose}
+                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
+                transformOrigin={{vertical: 'top', horizontal: 'right'}}
+            >
+                <Box
+                    sx={{
+                        px: 2,
+                        pt: .25,
+                        pb: 0.75,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 0.25,
+                    }}
+                >
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            fontWeight: 600,
+                            color: '#111',
+                            lineHeight: 1.2,
+                            maxWidth: 200,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'block',
+                        }}
+                        title={elementTitle}
+                    >
+                        {elementTitle}
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: 'rgba(0,0,0,0.5)',
+                            fontWeight: 500,
+                            mb: '-2px',
+                            maxWidth: 200,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'block',
+                        }}
+                        title={element.id}
+                    >
+                        ID: {element.id}
+                    </Typography>
+                </Box>
+
+                <Divider sx={{my: 1}} />
+
+                <MenuItem
+                    onClick={() => {
+                        onEdit();
+                        handleMenuClose();
+                    }}
+                >
+                    <ListItemIcon>
+                        <Edit fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary="Bearbeiten" />
+                </MenuItem>
+
+                <MenuItem onClick={handleCopyId}>
+                    <ListItemIcon>
+                        <ContentPaste fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary="Element-ID kopieren" />
+                </MenuItem>
+            </Menu>
+        </>
+    );
+}
+
