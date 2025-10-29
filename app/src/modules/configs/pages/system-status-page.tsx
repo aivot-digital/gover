@@ -4,6 +4,7 @@ import {GenericPageHeader} from '../../../components/generic-page-header/generic
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {Paper} from '@mui/material';
 import {SystemInformation} from '../../../pages/staff-pages/settings/components/system-information/system-information';
+import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
 
 export function SystemStatusPage() {
     return (
@@ -14,7 +15,7 @@ export function SystemStatusPage() {
         >
             <GenericPageHeader
                 title="Systemstatus"
-                icon={ModuleIcons.configs}
+                icon={<ReadinessScore/>}
             />
 
             <Paper

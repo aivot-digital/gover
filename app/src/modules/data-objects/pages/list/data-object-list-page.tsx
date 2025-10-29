@@ -18,10 +18,10 @@ import {uploadObjectFile} from '../../../../utils/download-utils';
 import {useNavigate} from 'react-router-dom';
 import {v4 as uuid4} from 'uuid';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 
-export function DataObjectSchemaListPage() {
+export function DataObjectListPage() {
     useAdminGuard();
 
     const navigate = useNavigate();
@@ -45,44 +45,27 @@ export function DataObjectSchemaListPage() {
     return (
         <>
             <PageWrapper
-                title="Datenmodelle"
+                title="Datenobjekte"
                 fullWidth
                 background
             >
                 <GenericListPage<DataObjectSchema>
                     header={{
-                        icon: <FolderData />,
-                        title: 'Datenmodelle',
-                        actions: [
-                            {
-                                icon: <CloudUploadOutlinedIcon />,
-                                disabled: !userIsAdmin,
-                                onClick: handleImport,
-                                variant: 'outlined',
-                                label: 'Modell importieren',
-                            },
-                            {
-                                label: 'Neues Datenmodell',
-                                icon: <AddOutlinedIcon />,
-                                disabled: !userIsAdmin,
-                                tooltip: userIsAdmin ? undefined : 'Sie müssen globale Administrator:in sein, um diese Aktion durchführen zu können.',
-                                to: '/data-models/new',
-                                variant: 'contained',
-                            }
-                        ],
+                        icon: <DataObject />,
+                        title: 'Datenobjekte',
                         helpDialog: {
-                            title: 'Hilfe zu Datenmodellen',
+                            title: 'Hilfe zu Datenobjekten',
                             tooltip: 'Hilfe anzeigen',
                             content: (
                                 <>
                                     <Typography>
-                                        Ein Datenmodell beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen sie haben, welche Standardwerte gelten und wie Werte geprüft werden. Es sorgt dafür, dass Daten aus Formularen, Workflows und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
+                                        Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells. Es enthält die tatsächlichen Werte zu den im Datenmodell definierten Feldern und bildet damit die „laufenden“ Fachinformationen im System ab. Datenobjekte fließen durch Prozesse, Komponenten und Schnittstellen. Ihre Struktur, Datentypen und Prüfregeln ergeben sich immer aus dem verknüpften Datenmodell.
                                     </Typography>
                                     <Typography sx={{ mt: 2 }}>
-                                        Dazu können auch verschachtelte Objekte, Pflichtangaben, Wertebereiche oder Muster sowie Beschreibungen, Labels und optionale Sichtbarkeitsregeln gehören. Dasselbe Datenmodell kann in mehreren Prozessen und Komponenten wiederverwendet werden, sodass überall dieselbe Definition gilt. Bei der Ausgestaltung empfiehlt es sich, sprechende und langlebige Feldnamen zu verwenden, Weiterentwicklungen kompatibel vorzunehmen (zum Beispiel Felder hinzufügen statt umzubenennen oder zu entfernen) und Validierungen deutlich zu setzen.
+                                        Typischerweise enthält ein Datenobjekt Werte für Text, Zahlen, Datums- oder Wahrheitsfelder sowie gegebenenfalls verschachtelte Strukturen. Neben den Nutzdaten können Metadaten wie Erstell- und Änderungszeitpunkte, Quelle oder Status sowie Referenzen auf andere Objekte vorhanden sein. Beim Anlegen werden Standardwerte aus dem Datenmodell übernommen; Validierungen stellen sicher, dass nur erlaubte, vollständige und konsistente Inhalte gespeichert werden. Änderungen an der Struktur erfolgen nicht am Datenobjekt selbst, sondern am zugrunde liegenden Datenmodell, das dann die Prüfung neuer oder geänderter Objekte steuert.
                                     </Typography>
                                     <Typography sx={{ mt: 2 }}>
-                                        Bei der Beziehung zwischen Datenmodell und Datenobjekt gilt: Das Datenmodell definiert die Form und das Datenobjekt füllt diese Form mit konkreten Werten. Änderungen am Datenmodell beeinflussen, wie neue oder geänderte Datenobjekte geprüft und gespeichert werden.
+                                        Ein einfaches Beispiel: Das Datenmodell „Bauvorhaben“ definiert Felder und Regeln, und das Datenobjekt „Erweiterungsbau Grundschule #2025-123“ füllt diese Felder mit konkreten Angaben.
                                     </Typography>
                                 </>
                             ),
@@ -113,12 +96,12 @@ export function DataObjectSchemaListPage() {
                         },
                         {
                             field: 'name',
-                            headerName: 'Name',
+                            headerName: 'Name des Datenmodells',
                             flex: 1,
                             renderCell: (params) => (
                                 <CellLink
-                                    to={`/data-models/${params.row.key}`}
-                                    title="Datenmodell bearbeiten"
+                                    to={`/data-objects/${params.row.key}`}
+                                    title="Datenobjekt bearbeiten"
                                 >
                                     {String(params.value)}
                                 </CellLink>
@@ -136,14 +119,14 @@ export function DataObjectSchemaListPage() {
                     rowActionsCount={2}
                     rowActions={(item: DataObjectSchema) => [
                         {
-                            icon: <EditOutlined />,
-                            to: `/data-models/${item.key}`,
-                            tooltip: 'Datenmodell bearbeiten',
-                        },
-                        {
                             icon: <DataObject />,
                             to: `/data-objects/${item.key}`,
                             tooltip: 'Datenobjekte zu diesem Modell anzeigen',
+                        },
+                        {
+                            icon: <EditOutlined />,
+                            to: `/data-models/${item.key}`,
+                            tooltip: 'Datenmodell bearbeiten',
                         },
                     ]}
                     defaultSortField="name"

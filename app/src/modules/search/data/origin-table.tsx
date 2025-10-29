@@ -6,7 +6,7 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.Assets]: 'Datei / Medieninhalt',
     [ServerEntityType.Departments]: 'Fachbereich',
     [ServerEntityType.DataObjectItems]: 'Datenobjekt',
-    [ServerEntityType.DataObjectSchemas]: 'Datenobjektschema',
+    [ServerEntityType.DataObjectSchemas]: 'Datenmodell',
     [ServerEntityType.Destinations]: 'Schnittstelle',
     [ServerEntityType.Forms]: 'Formular',
     [ServerEntityType.IdentityProviders]: 'Nutzerkontenanbieter',

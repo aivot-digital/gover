@@ -25,6 +25,8 @@ import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new
 import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
 import {AboutGoverDialog} from './about-gover-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
+import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
+import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
 
 /* -----------------------------
  * Types & Navigation Structure
@@ -81,7 +83,7 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.dataObjects,
                 label: 'Datenobjekte',
-                disabled: true,
+                to: '/data-objects',
             },
         ],
     },
@@ -119,29 +121,27 @@ const DrawerGroups: DrawerGroup[] = [
             {
                 icon: ModuleIcons.dataModels,
                 label: 'Datenmodelle',
-                to: '/data-objects',
+                to: '/data-models',
             },
             {
                 icon: ModuleIcons.settings,
                 label: 'Konfiguration',
                 children: [
                     {icon: ModuleIcons.settings, label: 'Allgemeine Einstellungen', to: '/settings/app'},
-                    {icon: ModuleIcons.providerLinks, label: 'Links', to: '/provider-links'},
-                    {icon: ModuleIcons.themes, label: 'Farbschemata', to: '/themes'},
+                    {icon: <ReadinessScore />, label: 'Systeminformationen', to: '/settings/status'},
+                    {icon: ModuleIcons.themes, label: 'Erscheinungsbild', to: '/themes'},
                     {
-                        icon: <PageInfo />,
-                        label: 'Dritte Test-Ebene',
+                        icon: <Api />,
+                        label: 'Anbindungen',
                         children: [
-                            {icon: ModuleIcons.departments, label: 'Test-Link 1'},
-                            {icon: ModuleIcons.users, label: 'Test-Link 2'},
+                            {icon: ModuleIcons.identity, label: 'Identitätsanbieter', to: '/identity-providers'},
+                            {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
                         ],
                     },
-                    {icon: ModuleIcons.identity, label: 'Identitätsanbieter', to: '/identity-providers'},
-                    {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
-                    {icon: ModuleIcons.secrets, label: 'Geheimnisse', to: '/secrets'},
-                    {icon: ModuleIcons.destinations, label: 'Schnittstellen', to: '/destinations'},
-                    {icon: <ForwardToInbox />, label: 'SMTP-Test', to: '/settings/smtp'},
-                    {icon: <PageInfo />, label: 'Systemstatus', to: '/settings/status'},
+                    {icon: ModuleIcons.secrets, label: 'Systemvariablen', to: '/secrets'},
+                    {icon: <ForwardToInbox />, label: 'SMTP-Test (legacy)', to: '/settings/smtp'},
+                    {icon: ModuleIcons.providerLinks, label: 'Links (legacy)', to: '/provider-links'},
+                    {icon: ModuleIcons.destinations, label: 'Schnittstellen (legacy)', to: '/destinations'},
 
                 ],
             },

@@ -13,6 +13,8 @@ import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import {DataObjectItem} from '../../models/data-object-item';
 import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 
 export function DataObjectItemDetailsPage() {
     useAdminGuard();
@@ -45,41 +47,43 @@ export function DataObjectItemDetailsPage() {
 
     return (
         <PageWrapper
-            title={`Datenobjekt bearbeiten (${dataObjectSchema.name})`}
+            title={`Datenobjekt bearbeiten: ${dataObjectSchema.name}`}
             fullWidth
             background
         >
             <GenericDetailsPage<DataObjectItem, string, void>
                 header={{
-                    icon: <CategoryOutlinedIcon />,
-                    title: `Datenobjekt bearbeiten (${dataObjectSchema.name})`,
+                    icon: <DataObject />,
+                    title: `Datenobjekt bearbeiten: ${dataObjectSchema.name}`,
                     helpDialog: {
                         title: 'Hilfe zu Datenobjekten',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
-                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells in Gover: Es enthält die tatsächlichen Werte zu den im Schema definierten Feldern. Datenobjekte werden in Prozessen, Komponenten und Schnittstellen weiterverarbeitet und stellen damit die „laufenden“ Fachinformationen dar. Sie sind stets an ein Schema gebunden, das Struktur, Datentypen und Prüfregeln vorgibt.
+                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells. Es enthält die tatsächlichen Werte zu den im Datenmodell definierten Feldern und bildet damit die „laufenden“ Fachinformationen im System ab. Datenobjekte fließen durch Prozesse, Komponenten und Schnittstellen. Ihre Struktur, Datentypen und Prüfregeln ergeben sich immer aus dem verknüpften Datenmodell.
                                 </Typography>
                                 <Typography sx={{ mt: 2 }}>
-                                    Typischerweise umfasst ein Datenobjekt Werte für Text-, Zahlen-, Datums- oder Wahrheitsfelder sowie ggf. verschachtelte Strukturen. Neben Nutzdaten können Metadaten enthalten sein, etwa Erstell- und Änderungszeitpunkte, Quelle/Ersteller:in, Status oder Referenzen auf verknüpfte Objekte. Standardwerte aus dem Schema werden beim Anlegen übernommen und Validierungen sorgen dafür, dass nur erlaubte, vollständige und konsistente Inhalte gespeichert werden.
+                                    Typischerweise enthält ein Datenobjekt Werte für Text, Zahlen, Datums- oder Wahrheitsfelder sowie gegebenenfalls verschachtelte Strukturen. Neben den Nutzdaten können Metadaten wie Erstell- und Änderungszeitpunkte, Quelle oder Status sowie Referenzen auf andere Objekte vorhanden sein. Beim Anlegen werden Standardwerte aus dem Datenmodell übernommen; Validierungen stellen sicher, dass nur erlaubte, vollständige und konsistente Inhalte gespeichert werden. Änderungen an der Struktur erfolgen nicht am Datenobjekt selbst, sondern am zugrunde liegenden Datenmodell, das dann die Prüfung neuer oder geänderter Objekte steuert.
+                                </Typography>
+                                <Typography sx={{ mt: 2 }}>
+                                    Ein einfaches Beispiel: Das Datenmodell „Bauvorhaben“ definiert Felder und Regeln, und das Datenobjekt „Erweiterungsbau Grundschule #2025-123“ füllt diese Felder mit konkreten Angaben.
                                 </Typography>
                             </>
                         ),
                     },
                     actions: [
                         {
-                            icon: <DataArrayOutlinedIcon />,
-                            tooltip: 'Datenobjektschema bearbeiten',
-                            to: `/data-objects/${dataObjectSchema.key}`,
+                            icon: <FolderData />,
+                            to: `/data-models/${dataObjectSchema.key}`,
                             variant: 'outlined',
-                            label: 'Datenobjektschema bearbeiten',
+                            label: 'Datenmodell bearbeiten',
                         },
                     ],
                 }}
                 tabs={[
                     {
-                        path: `/data-objects/${dataObjectSchema.key}/items/:id`,
+                        path: `/data-objects/${dataObjectSchema.key}/:id`,
                         label: 'Allgemeine Angaben',
                     },
                 ]}
@@ -104,7 +108,7 @@ export function DataObjectItemDetailsPage() {
                     return `Datenobjekt: ${item?.id ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: 'Liste der Datenobjektschemata',
+                    label: 'Liste der Datenmodelle',
                     to: `/data-objects/${dataObjectSchema.key}/items`,
                 }}
                 entityType={ServerEntityType.DataObjectItems}

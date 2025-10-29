@@ -164,7 +164,7 @@ export function DataObjectItemDetailsPageIndex() {
 
                     // use setTimeout instead of useEffect to prevent unnecessary rerender
                     setTimeout(() => {
-                        navigate(`/data-objects/${newDataObjectItem.schemaKey}/items/${encodeURIComponent(newDataObjectItem.id)}`, {replace: true});
+                        navigate(`/data-objects/${newDataObjectItem.schemaKey}/${encodeURIComponent(newDataObjectItem.id)}`, {replace: true});
                     }, 0);
                 })
                 .catch(err => {
@@ -205,7 +205,7 @@ export function DataObjectItemDetailsPageIndex() {
 
     const handleDelete = () => {
         showConfirmDeleteDialog({
-            title: 'Datenobjektschema löschen',
+            title: 'Datenobjekt löschen',
             state: {},
             onRender: (state, updateState) => {
                 return (
@@ -226,7 +226,7 @@ export function DataObjectItemDetailsPageIndex() {
                     .destroy(originalDataObjectItem.id)
                     .then(() => {
                         reset(); // prevent change blocker by resetting unsaved changes
-                        navigate(`/data-objects/${dataObjectKey}/items/`, {
+                        navigate(`/data-objects/${dataObjectKey}/`, {
                             replace: true,
                         });
                         dispatch(showSuccessSnackbar('Das Datenobjekt wurde erfolgreich gelöscht.'));
@@ -265,7 +265,7 @@ export function DataObjectItemDetailsPageIndex() {
                             value={currentDataObjectItem.id}
                             onChange={handleInputChange('id')}
                             disabled={true}
-                            hint="Dient dem Zugriff durch auf die Objekte dieses Datenobjektschemas. Der Schlüssel muss eindeutig sein und darf nur alphanumerische Zeichen und Unterstriche (_) enthalten. Der Schlüssel darf nicht mit einer Zahl beginnen. Der Schlüssel kann nicht geändert werden, nachdem das Datenobjektschema erstellt wurde."
+                            hint="Dient dem Zugriff auf dieses Datenobjekt. Der Schlüssel muss eindeutig sein und darf nur alphanumerische Zeichen und Unterstriche (_) enthalten. Der Schlüssel darf nicht mit einer Zahl beginnen. Der Schlüssel kann nicht geändert werden, nachdem das Datenobjekt erstellt wurde."
                         />
                     </Grid>
 

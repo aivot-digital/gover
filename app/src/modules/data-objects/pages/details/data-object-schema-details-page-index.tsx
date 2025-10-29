@@ -48,20 +48,20 @@ const AllowedDisplayFieldTypes = [
 export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'schema' | 'created' | 'updated' | 'displayFields'>> = yup.object({
     key: yup.string()
         .trim()
-        .min(3, 'Der Schlüssel des Datenobjektschemas muss mindestens 3 Zeichen lang sein.')
-        .max(64, 'Der Schlüssel des Datenobjektschemas darf maximal 64 Zeichen lang sein.')
+        .min(3, 'Der Schlüssel des Datenmodells muss mindestens 3 Zeichen lang sein.')
+        .max(64, 'Der Schlüssel des Datenmodells darf maximal 64 Zeichen lang sein.')
         .matches(/^[a-zA-Z][a-zA-Z0-9_]{2,}$/, 'Der Schlüssel darf nur alphanumerische Zeichen und Unterstriche (_) enthalten und muss mit einem Buchstaben beginnen.')
-        .required('Der Schlüssel des Datenobjektschemas ist ein Pflichtfeld.'),
+        .required('Der Schlüssel des Datenmodells ist ein Pflichtfeld.'),
     name: yup.string()
         .trim()
-        .min(3, 'Der Name des Datenobjektschemas muss mindestens 3 Zeichen lang sein.')
-        .max(96, 'Der Name des Datenobjektschemas darf maximal 255 Zeichen lang sein.')
-        .required('Der Name des Datenobjektschemas ist ein Pflichtfeld.'),
+        .min(3, 'Der Name des Datenmodells muss mindestens 3 Zeichen lang sein.')
+        .max(96, 'Der Name des Datenmodells darf maximal 255 Zeichen lang sein.')
+        .required('Der Name des Datenmodells ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
-        .required('Die Beschreibung des Datenobjektschemas ist ein Pflichtfeld.'),
+        .required('Die Beschreibung des Datenmodells ist ein Pflichtfeld.'),
     idGen: yup.string()
         .trim()
         .max(64, 'Die ID Formatvorlage darf maximal 64 Zeichen lang sein.')
@@ -175,11 +175,11 @@ export function DataObjectSchemaDetailsPageIndex() {
                     setItem(newDataObjectSchema);
                     reset();
 
-                    dispatch(showSuccessSnackbar('Neues Datenobjektschema erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neues Datenmodell erfolgreich angelegt.'));
 
                     // use setTimeout instead of useEffect to prevent unnecessary rerender
                     setTimeout(() => {
-                        navigate(`/data-objects/${newDataObjectSchema.key}`, {replace: true});
+                        navigate(`/data-models/${newDataObjectSchema.key}`, {replace: true});
                     }, 0);
                 })
                 .catch(err => {
@@ -200,7 +200,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     setItem(updatedDataObjectSchema);
                     reset();
 
-                    dispatch(showSuccessSnackbar('Änderungen am Datenobjektschema erfolgreich gespeichert.'));
+                    dispatch(showSuccessSnackbar('Änderungen am Datenmodell erfolgreich gespeichert.'));
                 })
                 .catch(err => {
                     console.error(err);
@@ -222,15 +222,15 @@ export function DataObjectSchemaDetailsPageIndex() {
         }
 
         confirm({
-            title: 'Datenobjektschema löschen',
+            title: 'Datenmodell löschen',
             children: (
                 <Typography>
-                    Möchten Sie das Datenobjektschema wirklich löschen?
-                    Alle Datenobjekte, die diesem Schema zugeordnet sind, werden ebenfalls gelöscht.
+                    Möchten Sie das Datenmodell wirklich löschen?
+                    Alle Datenobjekte, die diesem Modell zugeordnet sind, werden ebenfalls gelöscht.
                     Dieser Vorgang kann nicht rückgängig gemacht werden.
                 </Typography>
             ),
-            confirmButtonText: 'Datenobjektschema endgültig löschen',
+            confirmButtonText: 'Datenmodell endgültig löschen',
             confirmationText: originalDataObject.key,
             isDestructive: true,
         })
@@ -245,14 +245,14 @@ export function DataObjectSchemaDetailsPageIndex() {
                     .destroy(originalDataObject.key)
                     .then(() => {
                         reset(); // prevent change blocker by resetting unsaved changes
-                        navigate('/data-objects', {
+                        navigate('/data-models', {
                             replace: true,
                         });
-                        dispatch(showSuccessSnackbar('Das Datenobjektschema wurde erfolgreich gelöscht.'));
+                        dispatch(showSuccessSnackbar('Das Datenmodell wurde erfolgreich gelöscht.'));
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Beim Löschen des Datenobjektschemas ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
+                        dispatch(showErrorSnackbar('Beim Löschen des Datenmodells ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
                         setIsBusy(false);
                     });
             });
@@ -270,7 +270,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 error={errors.key}
                 maxCharacters={64}
                 minCharacters={3}
-                hint="Dient dem Zugriff durch auf die Objekte dieses Datenobjektschemas. Der Schlüssel muss eindeutig sein und darf nur alphanumerische Zeichen und Unterstriche (_) enthalten. Der Schlüssel darf nicht mit einer Zahl beginnen. Der Schlüssel kann nicht geändert werden, nachdem das Datenobjektschema erstellt wurde."
+                hint="Dient dem Zugriff auf die Objekte dieses Datenmodells. Der Schlüssel muss eindeutig sein und darf nur alphanumerische Zeichen und Unterstriche (_) enthalten. Der Schlüssel darf nicht mit einer Zahl beginnen. Der Schlüssel kann nicht geändert werden, nachdem das Datenmodell erstellt wurde."
                 pattern={{
                     regex: '^[a-z_][a-z0-9_]+$',
                     message: 'Der Schlüssel darf nur kleine alphanumerische Zeichen und Unterstriche (_) enthalten und darf nicht mit einer Zahl beginnen.',
@@ -287,7 +287,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 error={errors.name}
                 minCharacters={3}
                 maxCharacters={255}
-                hint="Name des Datenobjektschemas zur internen Identifizierung."
+                hint="Name des Datenmodells zur internen Identifizierung."
             />
 
             <TextFieldComponent
@@ -301,7 +301,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 error={errors.description}
                 minCharacters={10}
                 maxCharacters={500}
-                hint="Beschreibung des Datenobjektschemas zum besseren Verständnis."
+                hint="Beschreibung des Datenmodells zum besseren Verständnis."
             />
 
 
@@ -374,8 +374,8 @@ export function DataObjectSchemaDetailsPageIndex() {
 
             <Box sx={{my: 3}}>
                 <ElementTreeTree<GroupLayout>
-                    label="Datenobjektschema"
-                    hint="Das Datenobjektschema beschreibt die Struktur der Daten, die in diesem Datenobjekt gespeichert werden. Es definiert die Felder und deren Typen."
+                    label="Datenschema"
+                    hint="Das Datenschema beschreibt die Struktur der Daten, die in den Datenobjekten gespeichert werden. Es definiert die Felder und deren Typen."
                     entity={currentDataObject.schema as any}
                     value={currentDataObject.schema}
                     onChange={handleInputChange('schema')}
