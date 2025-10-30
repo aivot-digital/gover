@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {ElementWithParents} from '../../utils/flatten-elements';
-import {generateComponentTitle} from '../../utils/generate-component-title';
+import {generateComponentPath, generateComponentTitle} from '../../utils/generate-component-title';
 import {AnyElement} from '../../models/elements/any-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {SearchBaseDialog} from '../search-base-dialog/search-base-dialog';
@@ -35,7 +35,7 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                 $: element,
                 title: generateComponentTitle(element),
                 id: element.id,
-                pathTitles: parents.map(e => generateComponentTitle(e)).join(' > '),
+                pathTitles: generateComponentPath(parents),
                 pathIds: parents.map(e => e.id),
             }));
     }, [allElements]);

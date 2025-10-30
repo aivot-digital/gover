@@ -174,11 +174,11 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                     {
                         new_editor &&
                         <NoCodeOperandEditor
-                            label="Sichtbarkeit"
-                            hint={{
-                                detailsTitle: 'Sichtbarkeit bestimmen',
-                                summary: 'Dieser Ausdruck wird verwendet, um die Sichtbarkeit des Elements zu steuern.',
-                                details: 'Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "true" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.',
+                            parameter={{
+                                label: 'Sichtbarkeit',
+                                description: 'Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "true" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.',
+                                type: NoCodeDataType.Boolean,
+                                options: [],
                             }}
                             operand={noCode}
                             onChange={onChange}

@@ -49,3 +49,9 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
             return stringOrDefault(defaultElementDescriptor, 'Unbekanntes Element');
     }
 }
+
+export function generateComponentPath(components: AnyElement[]): string {
+    return components
+        .map((c) => generateComponentTitle(c))
+        .join(' › ');
+}

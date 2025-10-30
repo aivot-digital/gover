@@ -3,8 +3,10 @@ import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import {de} from 'date-fns/locale/de';
 import {DateFieldComponentProps} from './date-field-component-props';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import type {Locale} from 'date-fns';
+import {InputAdornment} from '@mui/material';
+import {renderIconButton} from '../text-field/text-field-component';
 
 const deLocale = de as unknown as Locale;
 
@@ -45,6 +47,9 @@ export function DateFieldComponent({
                                        sx,
                                        bufferInputUntilBlur,
                                        debounce,
+                                       muiPassTroughProps,
+                                       startIcon,
+                                       endAction,
                                    }: DateFieldComponentProps) {
     const dateValue = value != null ? new Date(value) : null;
     const [localValue, setLocalValue] = useState<Date | null>(dateValue);
@@ -148,10 +153,22 @@ export function DateFieldComponent({
             helperText: helper,
             autoComplete: autocomplete,
             InputLabelProps: {
-                title: computedLabel
+                title: computedLabel,
             },
             onInput: () => setLastInputWasTyping(true),
             onBlur: handleBlur,
+            InputProps: {
+                startAdornment: startIcon && (
+                    <InputAdornment position="start">{startIcon}</InputAdornment>
+                ),
+                endAdornment: endAction && (
+                    <InputAdornment position="end">
+                        {Array.isArray(endAction)
+                            ? endAction.map(renderIconButton)
+                            : renderIconButton(endAction)}
+                    </InputAdornment>
+                ),
+            }
         },
         actionBar: {
             actions: ['accept', 'cancel', 'clear'],
@@ -186,9 +203,9 @@ export function DateFieldComponent({
                 slotProps={slotProps}
                 sx={{
                     ...sx,
-                    "& .MuiPickersInputBase-root": {
-                        backgroundColor: (busy || disabled) ? "#F8F8F8" : undefined,
-                        cursor: (busy || disabled) ? "not-allowed" : undefined,
+                    '& .MuiPickersInputBase-root': {
+                        backgroundColor: (busy || disabled) ? '#F8F8F8' : undefined,
+                        cursor: (busy || disabled) ? 'not-allowed' : undefined,
                     },
                 }}
                 readOnly={busy}

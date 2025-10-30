@@ -3,6 +3,7 @@ import {IconButton, InputAdornment, MenuItem, TextField, Typography} from '@mui/
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
+import {renderIconButton} from '../text-field/text-field-component';
 
 export function SelectFieldComponent({
                                          label,
@@ -121,19 +122,3 @@ export function SelectFieldComponent({
         </TextField>
     );
 }
-
-const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
-    action.tooltip ? (
-        <Tooltip
-            key={key}
-            title={action.tooltip}
-        >
-            <IconButton onClick={action.onClick}>{action.icon}</IconButton>
-        </Tooltip>
-    ) : (
-        <IconButton
-            key={key}
-            onClick={action.onClick}
-        >{action.icon}</IconButton>
-    )
-);

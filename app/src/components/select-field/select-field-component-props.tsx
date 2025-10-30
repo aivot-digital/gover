@@ -1,6 +1,6 @@
 import {SelectFieldComponentOption} from './select-field-component-option';
 import {SxProps, TextFieldProps, Theme} from '@mui/material';
-import {ReactNode} from 'react';
+import {EndAction} from '../text-field/text-field-component-props';
 
 export interface SelectFieldComponentProps {
     label: string;
@@ -20,9 +20,3 @@ export interface SelectFieldComponentProps {
     endAction?: EndAction | Array<EndAction>;
     muiPassTroughProps?: TextFieldProps;
 }
-
-type EndAction = {
-    icon: ReactNode;
-    tooltip?: string;
-    onClick: () => void;
-};

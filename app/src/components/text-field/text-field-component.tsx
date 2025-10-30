@@ -251,3 +251,19 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         />
     );
 }
+
+export const renderIconButton = (action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) => (
+    action.tooltip ? (
+        <Tooltip
+            key={key}
+            title={action.tooltip}
+        >
+            <IconButton onClick={action.onClick}>{action.icon}</IconButton>
+        </Tooltip>
+    ) : (
+        <IconButton
+            key={key}
+            onClick={action.onClick}
+        >{action.icon}</IconButton>
+    )
+);

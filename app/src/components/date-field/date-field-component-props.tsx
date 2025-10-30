@@ -1,5 +1,8 @@
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
-import {SxProps, Theme} from '@mui/material';
+import {SxProps, TextFieldProps, Theme} from '@mui/material';
+import {ReactNode} from 'react';
+import {EndAction} from '../text-field/text-field-component-props';
+import {DateFieldProps} from '@mui/x-date-pickers';
 
 export interface DateFieldComponentProps {
     label: string;
@@ -18,4 +21,7 @@ export interface DateFieldComponentProps {
     sx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;
+    endAction?: EndAction | Array<EndAction>;
+    startIcon?: ReactNode;
+    muiPassTroughProps?: DateFieldProps;
 }
