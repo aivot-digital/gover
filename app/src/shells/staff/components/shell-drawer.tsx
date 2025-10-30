@@ -381,7 +381,7 @@ export function ShellDrawer() {
                                 <Button
                                     variant="contained"
                                     size="small"
-                                    href="https://docs.gover.app"
+                                    href="https://docs.gover.digital"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     startIcon={<Description fontSize="small" />}
