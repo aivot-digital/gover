@@ -1,5 +1,5 @@
 import {Box, Button, Checkbox, FormControlLabel, Typography} from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {format, parseISO} from 'date-fns';
 import {getFullName, type User} from '../../models/entities/user';
@@ -9,8 +9,6 @@ import {type TestTabProps} from './test-tab-props';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type TestProtocol as TestProtocolModel} from '../../models/lib/test-protocol';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
-import {useApi} from '../../hooks/use-api';
-import {useUsersApi} from '../../hooks/use-users-api';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {hasUntestedChild} from '../../utils/has-untested-child';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';

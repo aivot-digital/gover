@@ -1,13 +1,12 @@
 import Editor, {loader, Monaco} from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import {editor} from 'monaco-editor';
 import {Box, Typography} from '@mui/material';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
 import {AlertComponent} from '../alert/alert-component';
-
-import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import {JavascriptApiService} from '../../modules/javascript/javascript-api-service';

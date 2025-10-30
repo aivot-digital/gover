@@ -16,7 +16,6 @@ import {GridColDef} from '@mui/x-data-grid';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {ElementToMuiDataGridType} from '../../../../data/element-type/element-to-mui-data-grid-type';
 import {DataObjectItem} from '../../models/data-object-item';
-import DataArrayOutlinedIcon from '@mui/icons-material/DataArrayOutlined';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {ElementType} from '../../../../data/element-type/element-type';

@@ -16,7 +16,6 @@ import {GridColDef} from '@mui/x-data-grid';
 import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {useNavigate} from 'react-router-dom';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
-import {DestinationTypeIcons} from '../../../data/destination-type';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 const columns: Array<GridColDef<Preset>> = [

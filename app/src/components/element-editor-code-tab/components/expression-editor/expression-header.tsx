@@ -8,7 +8,6 @@ import SwitchAccessShortcutAddIcon from '@mui/icons-material/SwitchAccessShortcu
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import React from 'react';
 import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
-import {Hint} from '../../../hint/hint';
 
 interface ExpressionHeaderProps {
     expression: NoCodeExpression;

@@ -1,5 +1,5 @@
-import {DateFieldComponentModelMode} from "../../models/elements/form/input/date-field-element";
-import {SxProps, Theme} from "@mui/material";
+import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
+import {SxProps, Theme} from '@mui/material';
 
 export interface DateFieldComponentProps {
     label: string;

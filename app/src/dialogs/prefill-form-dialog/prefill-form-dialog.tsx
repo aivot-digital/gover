@@ -30,7 +30,6 @@ import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ElementData} from '../../models/element-data';
-import {isForm} from '../../models/entities/form';
 
 interface PrefillFormDialogProps {
     open: boolean;

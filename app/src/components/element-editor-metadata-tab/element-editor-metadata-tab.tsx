@@ -24,7 +24,7 @@ import {ElementWithParents} from '../../utils/flatten-elements';
 import {AlertComponent} from '../alert/alert-component';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
-import { Link } from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import {DefaultTabs} from '../element-editor/default-tabs';
 import {createElementEditorNavigationLink} from '../../hooks/use-element-editor-navigation';
 

@@ -2,7 +2,7 @@ import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography} f
 import React, {useEffect, useState} from 'react';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {AuthService} from '../../../services/auth-service';
-import { Link } from 'react-router-dom';
+import {Link} from 'react-router-dom';
 
 export function ShellSessionExpiredDialog() {
     const authService = new AuthService();

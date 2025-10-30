@@ -1,17 +1,9 @@
-import {
-    Dialog,
-    Box,
-    Typography,
-    Button,
-    Stack,
-    IconButton,
-    useTheme,
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import CodeIcon from "@mui/icons-material/Code";
-import ListAltIcon from "@mui/icons-material/ListAlt";
-import React from "react";
+import {Box, Button, Dialog, IconButton, Stack, Typography, useTheme} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CodeIcon from '@mui/icons-material/Code';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import React from 'react';
 import {AppInfo} from '../../../app-info';
 
 interface AboutGoverDialogProps {

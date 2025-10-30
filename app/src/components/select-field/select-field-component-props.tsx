@@ -1,4 +1,4 @@
-import {SelectFieldComponentOption} from "./select-field-component-option";
+import {SelectFieldComponentOption} from './select-field-component-option';
 import {SxProps, TextFieldProps, Theme} from '@mui/material';
 import {ReactNode} from 'react';
 

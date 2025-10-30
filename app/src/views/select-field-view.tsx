@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, {useMemo} from 'react';
 import {type BaseViewProps} from './base-view';
 import {type SelectFieldElement, type SelectFieldElementOption} from '../models/elements/form/input/select-field-element';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';

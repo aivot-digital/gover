@@ -1,6 +1,6 @@
 import {Box, DialogContent, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Tooltip, Typography, useTheme} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {type StoreListModule} from '../../models/entities/store-list-module';
 import {GoverStoreService} from '../../services/gover-store.service';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';

@@ -1,4 +1,4 @@
-import {Box, Paper, Typography} from '@mui/material';
+import {Box, Typography} from '@mui/material';
 import {UnderConstructionIllustration} from '../../illustrations/under-construction-illustration';
 
 export function UnderConstructionPage() {

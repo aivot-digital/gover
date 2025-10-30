@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {Box, Skeleton} from '@mui/material';
+import {Box} from '@mui/material';
 import {selectSetup} from '../../slices/shell-slice';
 import {createApiPath} from '../../utils/url-path-utils';
 

@@ -1,13 +1,13 @@
-import {SelectAssetDialogProps} from "./select-asset-dialog-props";
-import {Box, Dialog, DialogContent, List, ListItem, ListItemButton, ListItemText} from "@mui/material";
-import {PropsWithChildren, useEffect, useState} from "react";
-import {DialogTitleWithClose} from "../../components/dialog-title-with-close/dialog-title-with-close";
-import {SearchInput} from "../../components/search-input/search-input";
-import {AlertComponent} from "../../components/alert/alert-component";
-import {Link} from "react-router-dom";
-import {useApi} from "../../hooks/use-api";
-import {Asset} from "../../modules/assets/models/asset";
-import {filterItems} from "../../utils/filter-items";
+import {SelectAssetDialogProps} from './select-asset-dialog-props';
+import {Box, Dialog, DialogContent, List, ListItem, ListItemButton, ListItemText} from '@mui/material';
+import {PropsWithChildren, useEffect, useState} from 'react';
+import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
+import {SearchInput} from '../../components/search-input/search-input';
+import {AlertComponent} from '../../components/alert/alert-component';
+import {Link} from 'react-router-dom';
+import {useApi} from '../../hooks/use-api';
+import {Asset} from '../../modules/assets/models/asset';
+import {filterItems} from '../../utils/filter-items';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 
 export function SelectAssetDialog(props: PropsWithChildren<SelectAssetDialogProps>) {

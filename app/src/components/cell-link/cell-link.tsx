@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import { ReactNode } from "react";
-import {Box} from "@mui/material";
+import {Link} from 'react-router-dom';
+import {ReactNode} from 'react';
+import {Box} from '@mui/material';
 
 interface CellLinkProps {
     to: string;

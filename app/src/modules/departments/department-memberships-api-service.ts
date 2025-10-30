@@ -1,5 +1,4 @@
 import {CrudApiService} from '../../services/crud-api-service';
-import {DepartmentMembership} from './models/department-membership';
 import {UserRole} from '../../data/user-role';
 import {Api} from '../../hooks/use-api';
 import {DepartmentMembershipResponseDTO} from './dtos/department-membership-response-dto';

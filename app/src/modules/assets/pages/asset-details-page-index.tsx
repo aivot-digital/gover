@@ -1,9 +1,6 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {type FormEvent, useContext, useEffect, useMemo, useState} from 'react';
-import {
-    GenericDetailsPageContext,
-    GenericDetailsPageContextType,
-} from '../../../components/generic-details-page/generic-details-page-context';
+import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {useApi} from '../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
@@ -28,9 +25,9 @@ import {User} from '../../users/models/user';
 import {UsersApiService} from '../../users/users-api-service';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
 import {format} from 'date-fns';
-import {StatusTable} from "../../../components/status-table/status-table";
-import {BadgeOutlined} from "@mui/icons-material";
-import {getFileTypeIcon} from "../../../utils/file-type-icon";
+import {StatusTable} from '../../../components/status-table/status-table';
+import {BadgeOutlined} from '@mui/icons-material';
+import {getFileTypeIcon} from '../../../utils/file-type-icon';
 
 export const AssetSchema = yup.object({
     filename: yup.string()

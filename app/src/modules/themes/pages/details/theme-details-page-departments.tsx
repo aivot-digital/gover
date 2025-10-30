@@ -1,7 +1,6 @@
 import React, {useContext} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
-import {FormsApiService} from '../../../forms/forms-api-service';
 import {GridColDef} from '@mui/x-data-grid';
 import {EditOutlined} from '@mui/icons-material';
 import {Box, Typography} from '@mui/material';

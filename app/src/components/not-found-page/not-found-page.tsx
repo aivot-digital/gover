@@ -1,4 +1,4 @@
-import React, { PropsWithChildren } from 'react';
+import React, {PropsWithChildren} from 'react';
 import {Alert, AlertTitle, Box, Container, Typography} from '@mui/material';
 
 interface NotFoundPageProps {

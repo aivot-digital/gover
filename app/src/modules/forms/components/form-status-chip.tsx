@@ -1,6 +1,6 @@
-import { alpha, useTheme } from '@mui/material/styles';
+import {alpha, useTheme} from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
-import { FormStatus, FormStatusColors, FormStatusIcons, FormStatusLabels } from '../enums/form-status';
+import {FormStatus, FormStatusColors, FormStatusIcons, FormStatusLabels} from '../enums/form-status';
 
 interface FormStatusChipProps {
     status: FormStatus;

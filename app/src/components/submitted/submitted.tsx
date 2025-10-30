@@ -1,5 +1,5 @@
 import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm, showDialog} from '../../slices/app-slice';

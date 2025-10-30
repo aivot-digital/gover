@@ -1,19 +1,4 @@
-import {
-    Box,
-    CircularProgress,
-    Dialog,
-    DialogContent,
-    DialogTitle,
-    Divider,
-    IconButton,
-    InputBase,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Paper,
-    Typography
-} from '@mui/material';
+import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Paper, Typography} from '@mui/material';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectShowSearchDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';

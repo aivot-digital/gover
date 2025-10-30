@@ -1,12 +1,12 @@
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { useAppSelector } from '../../../hooks/use-app-selector';
-import { selectUser } from '../../../slices/user-slice';
-import { Divider, Box, Typography, ListItemIcon } from '@mui/material';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectUser} from '../../../slices/user-slice';
+import {Box, Divider, ListItemIcon, Typography} from '@mui/material';
 import {useMemo} from 'react';
-import { getFullName } from '../../../models/entities/user';
-import { Link } from 'react-router-dom';
-import { useLogout } from '../../../hooks/use-logout';
+import {getFullName} from '../../../models/entities/user';
+import {Link} from 'react-router-dom';
+import {useLogout} from '../../../hooks/use-logout';
 
 import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';

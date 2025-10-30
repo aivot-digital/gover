@@ -1,5 +1,5 @@
 import {IconButtonProps} from './icon-button-props';
-import {Tooltip, IconButton as MuiIconButton, Badge} from '@mui/material';
+import {Badge, IconButton as MuiIconButton, Tooltip} from '@mui/material';
 import {PropsWithChildren} from 'react';
 
 export function IconButton(props: PropsWithChildren<IconButtonProps>) {

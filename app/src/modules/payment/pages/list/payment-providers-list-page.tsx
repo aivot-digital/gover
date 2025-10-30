@@ -6,14 +6,13 @@ import {EditOutlined} from '@mui/icons-material';
 import {useApi} from '../../../../hooks/use-api';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {useEffect, useMemo, useState} from 'react';
-import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
-import Chip from "@mui/material/Chip";
-import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
-import {CellLink} from "../../../../components/cell-link/cell-link";
+import Chip from '@mui/material/Chip';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard, useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 

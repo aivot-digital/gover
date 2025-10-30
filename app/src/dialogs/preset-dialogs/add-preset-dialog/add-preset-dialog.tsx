@@ -9,7 +9,7 @@ import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {type AddPresetDialogProps} from './add-preset-dialog-props';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
-import {type Preset, PresetCreateReqeustDTO} from '../../../models/entities/preset';
+import {PresetCreateReqeustDTO} from '../../../models/entities/preset';
 import {ElementType} from '../../../data/element-type/element-type';
 import {useApi} from '../../../hooks/use-api';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';

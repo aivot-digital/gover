@@ -8,7 +8,7 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
 const eligibleEntities: CheckboxTreeOption[] = [

@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Grid, Skeleton, Typography} from '@mui/material';
+import {Box, Grid, Skeleton} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {SelectFieldComponent} from '../select-field/select-field-component';

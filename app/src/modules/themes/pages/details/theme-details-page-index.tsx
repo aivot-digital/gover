@@ -28,7 +28,6 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ImageSelector} from '../../../assets/components/image-selector';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 
 export const ThemeSchema = yup.object({
     name: yup.string()

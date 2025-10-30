@@ -1,7 +1,7 @@
-import {useState, useEffect, useCallback, useMemo} from 'react';
-import { useBlocker, Blocker } from 'react-router-dom';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {Blocker, useBlocker} from 'react-router-dom';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
-import {ConfirmDialog} from "../dialogs/confirm-dialog/confirm-dialog";
+import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
 
 export function useChangeBlocker(
     original: any,

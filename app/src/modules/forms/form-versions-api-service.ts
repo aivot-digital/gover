@@ -1,5 +1,4 @@
 import {FormType} from './enums/form-type';
-import {FormListResponseDTO} from './dtos/form-list-response-dto';
 import {FormDetailsResponseDTO} from './dtos/form-details-response-dto';
 import {FormRequestDTO} from './dtos/form-request-dto';
 import {BaseCrudApiService} from '../../services/base-crud-api-service';

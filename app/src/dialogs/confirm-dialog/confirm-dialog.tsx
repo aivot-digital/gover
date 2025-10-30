@@ -1,7 +1,6 @@
-import {useState} from 'react';
-import {Button, Dialog, DialogActions, DialogContent, TextField, Typography} from '@mui/material';
+import {PropsWithChildren, useState} from 'react';
+import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {PropsWithChildren} from 'react';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
 

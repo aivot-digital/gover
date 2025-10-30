@@ -1,15 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-    Box,
-    Card,
-    CardContent,
-    Divider,
-    List,
-    ListItem,
-    ListItemButton,
-    Skeleton,
-    Typography,
-} from '@mui/material';
+import {Box, Card, CardContent, Divider, List, ListItem, ListItemButton, Skeleton, Typography} from '@mui/material';
 import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
 import {Link} from 'react-router-dom';
 import {DashboardApiService} from '../dashboard-api-service';

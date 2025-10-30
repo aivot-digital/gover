@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {Alert, AlertTitle, Box, Grid, Paper, Skeleton, Typography} from '@mui/material';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Alert, AlertTitle, Box, Paper, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {type Destination} from '../../modules/destination/models/destination';
@@ -26,7 +26,7 @@ import {IdentityProviderLink} from '../../modules/identity/models/identity-provi
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import NotInterestedOutlinedIcon from '@mui/icons-material/NotInterestedOutlined';
 import Tooltip from '@mui/material/Tooltip';
-import Chip from "@mui/material/Chip";
+import Chip from '@mui/material/Chip';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {withDelay} from '../../utils/with-delay';
 

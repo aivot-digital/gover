@@ -1,5 +1,5 @@
 import {ElementType} from './element-type';
-import { HtmlAutofillAttributeOptions } from '../html-autofill-attribute-options';
+import {HtmlAutofillAttributeOptions} from '../html-autofill-attribute-options';
 
 export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.Root]: [],

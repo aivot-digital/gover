@@ -1,4 +1,4 @@
-import {Link, unstable_setDevServerHooks, useNavigate, useRouteError} from 'react-router-dom';
+import {Link, useNavigate, useRouteError} from 'react-router-dom';
 import {PropsWithChildren, ReactNode, useMemo} from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import {useAppSelector} from '../../hooks/use-app-selector';

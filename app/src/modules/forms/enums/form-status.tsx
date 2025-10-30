@@ -1,14 +1,9 @@
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
-import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
-
 import {ReactElement} from 'react';
 import DraftOrders from '@aivot/mui-material-symbols-400-outlined/dist/draft-orders/DraftOrders';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import Inventory2 from '@aivot/mui-material-symbols-400-outlined/dist/inventory-2/Inventory2';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Unpublished from '@aivot/mui-material-symbols-400-outlined/dist/unpublished/Unpublished';
-import PublishedWithChanges from '@aivot/mui-material-symbols-400-outlined/dist/published-with-changes/PublishedWithChanges';
 import CheckCircle from '@aivot/mui-material-symbols-400-outlined/dist/check-circle/CheckCircle';
 
 export enum FormStatus {

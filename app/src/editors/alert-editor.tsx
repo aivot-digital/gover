@@ -5,7 +5,7 @@ import {type BaseEditor} from './base-editor';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
-import {RichTextEditorComponentView} from "../components/richt-text-editor/rich-text-editor.component.view";
+import {RichTextEditorComponentView} from '../components/richt-text-editor/rich-text-editor.component.view';
 
 const colors = [
     ['success', 'Erfolg'],

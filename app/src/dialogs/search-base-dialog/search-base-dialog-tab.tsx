@@ -1,4 +1,4 @@
-import {Box, Button, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText, Typography, useTheme} from '@mui/material';
+import {Box, Button, Grid, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
 import {SearchInput} from '../../components/search-input-2/search-input';

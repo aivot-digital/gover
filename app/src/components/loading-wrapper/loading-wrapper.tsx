@@ -1,4 +1,4 @@
-import React, { type PropsWithChildren } from 'react';
+import React, {type PropsWithChildren} from 'react';
 import {type LoadingWrapperProps} from './loading-wrapper-props';
 import {Backdrop, CircularProgress} from '@mui/material';
 

@@ -1,4 +1,4 @@
-import {Action, ActionColor, ActionDirection, ActionsProps, ActionTooltipPlacement} from './actions-props';
+import {Action, ActionColor, ActionsProps, ActionTooltipPlacement} from './actions-props';
 import {Box, Button, IconButton, Tooltip} from '@mui/material';
 import React from 'react';
 import {Link} from 'react-router-dom';

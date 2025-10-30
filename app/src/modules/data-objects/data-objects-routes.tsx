@@ -6,7 +6,7 @@ import {DataObjectSchemaDetailsPageIndex} from './pages/details/data-object-sche
 import {DataObjectItemListPage} from './pages/list/data-object-item-list-page';
 import {DataObjectItemDetailsPage} from './pages/details/data-object-item-details-page';
 import {DataObjectItemDetailsPageIndex} from './pages/details/data-object-item-details-page-index';
-import { DataObjectListPage } from './pages/list/data-object-list-page';
+import {DataObjectListPage} from './pages/list/data-object-list-page';
 
 export const dataObjectsRoutes: RouteObject[] = [
     {

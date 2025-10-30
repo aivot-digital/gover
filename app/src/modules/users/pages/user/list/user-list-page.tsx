@@ -4,7 +4,7 @@ import {Link, Typography} from '@mui/material';
 import {EditOutlined, MailOutlined, PeopleOutlined, PersonOutlined} from '@mui/icons-material';
 import React from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
-import {useAccessGuard, useUserIsAdmin} from '../../../../../hooks/use-admin-guard';
+import {useUserIsAdmin} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
 import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';

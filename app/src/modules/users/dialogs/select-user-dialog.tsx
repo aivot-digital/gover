@@ -1,7 +1,6 @@
 import {SearchBaseDialog} from '../../../dialogs/search-base-dialog/search-base-dialog';
 import {User} from '../models/user';
 import {useEffect, useMemo, useState} from 'react';
-import {useApi} from '../../../hooks/use-api';
 import {UsersApiService} from '../users-api-service';
 import {resolveUserName} from '../utils/resolve-user-name';
 import {SearchBaseDialogTabProps} from '../../../dialogs/search-base-dialog/search-base-dialog-tab-props';

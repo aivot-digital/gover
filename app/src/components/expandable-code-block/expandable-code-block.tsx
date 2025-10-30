@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Box, Button } from '@mui/material';
+import React, {useMemo, useState} from 'react';
+import {Box, Button} from '@mui/material';
 
 function syntaxHighlight(jsonString: string): React.ReactNode[] {
     const json = jsonString

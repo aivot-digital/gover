@@ -1,6 +1,6 @@
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import React, {useEffect, useState} from 'react';
-import {Button, Dialog, DialogActions, DialogContent, Typography, Skeleton} from '@mui/material';
+import {Button, Dialog, DialogActions, DialogContent, Skeleton, Typography} from '@mui/material';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {DepartmentResponseDTO} from '../../departments/dtos/department-response-dto';
 import {DepartmentsApiService} from '../../departments/departments-api-service';

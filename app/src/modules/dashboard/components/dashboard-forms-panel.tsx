@@ -1,25 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Divider,
-    List,
-    ListItem,
-    ListItemButton,
-    Skeleton,
-    Typography,
-} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import {Box, Button, Card, CardContent, Divider, List, ListItem, ListItemButton, Skeleton, Typography} from '@mui/material';
 import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
-import { useApi } from '../../../hooks/use-api';
-import { withAsyncWrapper } from '../../../utils/with-async-wrapper';
-import { FormsApiService } from '../../forms/forms-api-service';
-import { FormListResponseDTO } from '../../forms/dtos/form-list-response-dto';
-import { Page } from '../../../models/dtos/page';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { getFormStatus } from '../../forms/components/form-status-chip-group';
+import {useApi} from '../../../hooks/use-api';
+import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {FormsApiService} from '../../forms/forms-api-service';
+import {FormListResponseDTO} from '../../forms/dtos/form-list-response-dto';
+import {Page} from '../../../models/dtos/page';
+import {Link} from 'react-router-dom';
+import {format} from 'date-fns';
+import {getFormStatus} from '../../forms/components/form-status-chip-group';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 
 const fetchSize = 4;

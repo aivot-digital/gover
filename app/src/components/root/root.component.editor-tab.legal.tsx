@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Grid, Typography, Skeleton} from '@mui/material';
+import {Grid, Skeleton, Typography} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type RootElement} from '../../models/elements/root-element';
 import {type Department} from '../../modules/departments/models/department';

@@ -3,11 +3,10 @@ import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {isRootElement} from '../models/elements/root-element';
 import {generateComponentTitle} from './generate-component-title';
-import {ElementWithParents, flattenElements, flattenElementsWithParents} from './flatten-elements';
+import {ElementWithParents, flattenElementsWithParents} from './flatten-elements';
 import {getElementNameForType} from '../data/element-type/element-names';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
-
 
 
 export function createLowCodeContextType(rootElement: AnyElement) {

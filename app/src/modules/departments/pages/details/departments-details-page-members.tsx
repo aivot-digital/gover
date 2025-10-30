@@ -19,7 +19,7 @@ import {resolveUserName} from '../../../users/utils/resolve-user-name';
 import {User} from '../../../users/models/user';
 import {Department} from '../../models/department';
 import {DepartmentMembershipResponseDTO} from '../../dtos/department-membership-response-dto';
-import Chip from "@mui/material/Chip";
+import Chip from '@mui/material/Chip';
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();

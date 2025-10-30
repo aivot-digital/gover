@@ -11,7 +11,7 @@ import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {PaymentProviderTestDataResponseDTO} from '../../dtos/payment-provider-test-data-response-dto';
 import {PaymentProviderTestDataRequestDTO} from '../../dtos/payment-provider-test-data-request-dto';
 import {useValidationErrors} from '../../../../hooks/use-validation-errors';
-import {useChangeBlocker} from "../../../../hooks/use-change-blocker";
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 
 export function PaymentProviderDetailsPageTest() {
     const api = useApi();

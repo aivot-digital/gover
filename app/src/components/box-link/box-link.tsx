@@ -1,7 +1,7 @@
 import React from 'react';
 import {type BoxLinkProps} from './box-link-props';
 import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
-import { Box, Link } from '@mui/material';
+import {Box, Link} from '@mui/material';
 import Balancer from 'react-wrap-balancer';
 
 export function BoxLink(props: BoxLinkProps) {

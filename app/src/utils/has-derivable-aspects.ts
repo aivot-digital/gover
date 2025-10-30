@@ -2,7 +2,7 @@ import {AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty} from './string-utils';
 import {AnyInputElement, isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {JavascriptCode} from '../models/functions/javascript-code';
-import {NoCodeExpression, NoCodeOperand, ValidationExpressionWrapper} from '../models/functions/no-code-expression';
+import {NoCodeOperand, ValidationExpressionWrapper} from '../models/functions/no-code-expression';
 import {ConditionSet} from '../models/functions/conditions/condition-set';
 
 export function hasDerivableAspects(element: AnyElement, ignoreValidationCode: boolean = true): boolean {

@@ -16,7 +16,6 @@ import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import {useApi} from '../../hooks/use-api';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormPublishChecklistItem} from '../../modules/forms/dtos/form-publish-checklist-item';
-import {Loader} from '../loader/loader';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../slices/loading-overlay-slice';
 import {useConfirm} from '../../providers/confirm-provider';
 import {FormType} from '../../modules/forms/enums/form-type';

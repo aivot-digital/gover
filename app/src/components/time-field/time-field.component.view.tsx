@@ -1,8 +1,8 @@
 import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
 import {useCallback, useMemo} from 'react';
-import {BaseViewProps} from "../../views/base-view";
+import {BaseViewProps} from '../../views/base-view';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
-import {TimeFieldComponent} from "./time-field-component";
+import {TimeFieldComponent} from './time-field-component';
 
 export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, string>) {
     const {

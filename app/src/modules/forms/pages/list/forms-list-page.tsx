@@ -2,14 +2,12 @@ import {GenericListPage} from '../../../../components/generic-list-page/generic-
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box} from '@mui/material';
-import {EditOutlined} from '@mui/icons-material';
 import {FormListResponseDTO} from '../../dtos/form-list-response-dto';
 import {FormsApiService} from '../../forms-api-service';
 import {FormsApiService as FormsApiServiceV2} from '../../forms-api-service-v2';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {ImportApplicationDialog} from '../../../../dialogs/application-dialogs/import-application-dialog/import-application-dialog';
 import {FormDetailsResponseDTO} from '../../dtos/form-details-response-dto';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';

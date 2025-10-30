@@ -1,5 +1,5 @@
-import React from "react";
-import { Alert, AlertTitle, Typography } from "@mui/material";
+import React from 'react';
+import {Alert, AlertTitle, Typography} from '@mui/material';
 
 export function MailProcessingNotice() {
     return (

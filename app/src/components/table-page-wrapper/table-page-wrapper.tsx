@@ -1,4 +1,4 @@
-import React, { type PropsWithChildren } from 'react';
+import React, {type PropsWithChildren} from 'react';
 import {type TablePageWrapperProps} from './table-page-wrapper-props';
 import {PageWrapper} from '../page-wrapper/page-wrapper';
 import {type GridValidRowModel} from '@mui/x-data-grid';

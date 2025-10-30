@@ -1,4 +1,4 @@
-import type {DialogProps} from "@mui/material/Dialog";
+import type {DialogProps} from '@mui/material/Dialog';
 
 export interface ExportApplicationDialogProps  extends DialogProps{
     open: boolean;

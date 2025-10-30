@@ -5,7 +5,6 @@ import {StaffShell} from './staff-shell';
 import {AppProvider} from '../../providers/app-provider';
 import {store} from '../../store.staff';
 import {Provider as StoreProvide} from 'react-redux';
-import {StaffShellError} from './staff-shell-error';
 import {assetsRoutes} from '../../modules/assets/assets-routes';
 import {formsRoutes} from '../../modules/forms/forms-routes';
 import {departmentsRoutes} from '../../modules/departments/departments-routes';

@@ -1,9 +1,8 @@
 import {OperatorInfoProps} from './operator-info-props';
 import ReactMarkdown from 'react-markdown';
-import {StatusTable} from '../status-table/status-table';
 import {NoCodeDataTypeLabels} from '../../data/no-code-data-type';
 import React from 'react';
-import {Table, TableBody, TableCell, TableContainer, TableRow, Typography} from '@mui/material';
+import {Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';
 import {Collapse} from '../collapse/collapse';
 
 export function OperatorInfo(props: OperatorInfoProps) {

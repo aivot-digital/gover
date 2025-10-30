@@ -6,7 +6,7 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {flattenElementsWithParents} from '../../../../utils/flatten-elements';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {Alert, AlertTitle, Box, CircularProgress, Typography, Divider} from '@mui/material';
+import {Alert, AlertTitle, Box, CircularProgress, Typography} from '@mui/material';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {isNoCodeExpression, isNoCodeReference, NoCodeExpression, NoCodeOperand} from '../../../../models/functions/no-code-expression';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
@@ -20,7 +20,6 @@ import {GroupLayout} from '../../../../models/elements/form/layout/group-layout'
 import {ReplicatingContainerLayout} from '../../../../models/elements/form/layout/replicating-container-layout';
 import {NoCodeDataType} from '../../../../data/no-code-data-type';
 import {NoCodeOperandEditor} from '../../../../modules/nocode/components/no-code-operand-editor';
-import {humanizeNoCode} from '../../../../modules/nocode/utils/humanize-no-code';
 
 interface NoCodeEditorWrapperProps {
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;

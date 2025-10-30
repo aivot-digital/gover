@@ -1,9 +1,9 @@
-import React, { type FormEvent, type PropsWithChildren, useState } from 'react';
+import React, {type FormEvent, type PropsWithChildren, useState} from 'react';
 import {type FormPageWrapperProps} from './form-page-wrapper-props';
 import {PageWrapper} from '../page-wrapper/page-wrapper';
 import {Box, Button, Tab, Tabs} from '@mui/material';
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
-import DeleteForeverOutlinedIcon from "@mui/icons-material/DeleteForeverOutlined";
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>) {
     const {

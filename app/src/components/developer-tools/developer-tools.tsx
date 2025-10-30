@@ -15,7 +15,6 @@ import {format} from 'date-fns';
 import {downloadObjectFile} from '../../utils/download-utils';
 import {LogLevel, selectLogLevel, selectLogs, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
-import {DragHandleOutlined} from '@mui/icons-material';
 import {ElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDataDebugger} from './tabs/element-data-debugger';

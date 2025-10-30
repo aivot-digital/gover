@@ -1,14 +1,13 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type Department} from '../../modules/departments/models/department';
 import {useSelector} from 'react-redux';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {type PrivacyDialogProps} from './privacy-dialog-props';
-import {useApi} from "../../hooks/use-api";
-import {useAppSelector} from "../../hooks/use-app-selector";
-import {selectSystemConfigValue} from "../../slices/system-config-slice";
-import {SystemConfigKeys} from "../../data/system-config-keys";
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
 import {DepartmentsApiService} from '../../modules/departments/departments-api-service';
 
 export const PrivacyDialogId = 'privacy';

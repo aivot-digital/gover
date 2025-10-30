@@ -12,7 +12,6 @@ import {Department} from '../../departments/models/department';
 import {useFormManager} from '../../../hooks/use-form-manager';
 import {FormDetailsResponseDTO} from '../dtos/form-details-response-dto';
 import * as yup from 'yup';
-import type {DialogProps} from '@mui/material/esm/Dialog';
 import {FormsApiService} from '../forms-api-service';
 import {FormRequestDTO} from '../dtos/form-request-dto';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';

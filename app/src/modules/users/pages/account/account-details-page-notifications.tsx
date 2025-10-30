@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import {useApi} from '../../../../hooks/use-api';
 import {selectUser} from '../../../../slices/user-slice';
-import {Box, Divider, FormControlLabel, Grid, Skeleton, Switch, Typography} from "@mui/material";
-import {useAppDispatch} from "../../../../hooks/use-app-dispatch";
-import {useAppSelector} from "../../../../hooks/use-app-selector";
-import {UserConfigDefinition, UserConfigsApiService} from "../../../../services/user-configs-api-service";
-import {showErrorSnackbar, showSuccessSnackbar} from "../../../../slices/snackbar-slice";
+import {Box, Divider, FormControlLabel, Grid, Skeleton, Switch, Typography} from '@mui/material';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {UserConfigDefinition, UserConfigsApiService} from '../../../../services/user-configs-api-service';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 
 export function AccountDetailsPageNotifications() {
     const dispatch = useAppDispatch();

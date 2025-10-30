@@ -1,6 +1,6 @@
 import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
-import {PresetCreateReqeustDTO, Preset} from "../../models/entities/preset";
+import {Preset, PresetCreateReqeustDTO} from '../../models/entities/preset';
 import {ElementData, ElementDerivationResponse} from '../../models/element-data';
 
 interface PresetFilter {

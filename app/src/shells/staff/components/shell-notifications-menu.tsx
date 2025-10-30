@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-    Box,
-    Divider,
-    List,
-    ListItem,
-    Menu,
-    Skeleton,
-    Typography,
-} from '@mui/material';
+import {Box, Divider, List, ListItem, Menu, Skeleton, Typography} from '@mui/material';
 
 interface ShellNotificationsMenuProps {
     anchorEl: null | HTMLElement;

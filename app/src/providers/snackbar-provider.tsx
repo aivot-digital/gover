@@ -3,7 +3,7 @@ import {closeSnackbar, SnackbarKey, SnackbarProvider as NotistackProvider, useSn
 import {useAppSelector} from '../hooks/use-app-selector';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {removeSnackbar} from '../slices/snackbar-slice';
-import {Alert, GlobalStyles, CircularProgress, Fade} from '@mui/material';
+import {Alert, CircularProgress, Fade, GlobalStyles} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
 

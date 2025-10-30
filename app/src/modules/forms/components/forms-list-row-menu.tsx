@@ -5,14 +5,10 @@ import {createCustomerPath} from '../../../utils/url-path-utils';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {downloadQrCode} from '../../../utils/download-qrcode';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import DeleteForever from '@aivot/mui-material-symbols-400-outlined/dist/delete-forever/DeleteForever';
 import ContentPaste from '@aivot/mui-material-symbols-400-outlined/dist/content-paste/ContentPaste';
-import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
-import QrCode2 from '@aivot/mui-material-symbols-400-outlined/dist/qr-code-2/QrCode2';
 import MoveItem from '@aivot/mui-material-symbols-400-outlined/dist/move-item/MoveItem';
 import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 
 interface FormsListRowMenuProps {

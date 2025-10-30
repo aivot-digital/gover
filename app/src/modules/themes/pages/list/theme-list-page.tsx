@@ -12,7 +12,7 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard, useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 const activeThemeChip = (

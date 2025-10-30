@@ -1,7 +1,7 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Box, Stack, Typography} from '@mui/material';
+import {Stack, Typography} from '@mui/material';
 import {DownloadOutlined, EditOutlined} from '@mui/icons-material';
 import React from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';

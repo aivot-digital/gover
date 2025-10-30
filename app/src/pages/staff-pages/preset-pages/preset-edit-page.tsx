@@ -1,14 +1,11 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams} from 'react-router-dom';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
-import {MetaElement} from '../../../components/meta-element/meta-element';
 import {AppToolbar} from '../../../components/app-toolbar/app-toolbar';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -16,11 +13,8 @@ import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar, showSucce
 import {ElementTree} from '../../../components/element-tree/element-tree';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
-import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import {type PresetVersion} from '../../../models/entities/preset-version';
-import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUploadOutlined';
 import {VersionsPresetDialog} from '../../../dialogs/preset-dialogs/versions-preset-dialog/versions-preset-dialog';
 import {determinePresetVersionDescriptor} from '../../../utils/determine-preset-version-descriptor';
 import {useApi} from '../../../hooks/use-api';

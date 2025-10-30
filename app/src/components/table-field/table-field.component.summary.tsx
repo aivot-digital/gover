@@ -1,17 +1,7 @@
-import {
-    Grid,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
-    useTheme
-} from '@mui/material';
+import {Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useTheme} from '@mui/material';
 import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
-import {BaseSummaryProps} from "../../summaries/base-summary";
+import {BaseSummaryProps} from '../../summaries/base-summary';
 
 // TODO: Value Type
 export function TableFieldComponentSummary(props: BaseSummaryProps<TableFieldElement, any>) {

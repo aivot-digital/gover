@@ -7,8 +7,8 @@ import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, usePara
 import {GenericDetailsPageContext} from './generic-details-page-context';
 import {ApiError} from '../../models/api-error';
 import NotFoundIllustration from './resource-not-found-illustration.svg?react';
-import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
+import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
+import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBulletedOutlined';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {addEntityHistoryItem} from '../../slices/entity-history-slice';
 

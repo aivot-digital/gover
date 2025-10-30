@@ -1,6 +1,6 @@
 import {Box, Button, FormHelperText, FormLabel} from '@mui/material';
 import {TableFieldElement} from '../../models/elements/form/input/table-field-element';
-import {DataGrid, GridColDef, GridPaginationModel, GridRenderCellParams, GridRowId, GridRowModel, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridPaginationModel, GridRenderCellParams, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
 import React, {useMemo, useState} from 'react';
 import {formatNumStringToGermanNum} from '../../utils/format-german-numbers';
 import {BaseViewProps} from '../../views/base-view';

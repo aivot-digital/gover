@@ -9,8 +9,8 @@ import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBullet
 import FormatListNumberedOutlinedIcon from '@mui/icons-material/FormatListNumberedOutlined';
 import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
 import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
-import {OverridableComponent} from "@mui/material/OverridableComponent";
-import {usePrompt} from "../providers/prompt-provider";
+import {OverridableComponent} from '@mui/material/OverridableComponent';
+import {usePrompt} from '../providers/prompt-provider';
 
 export function RichTextEditorMenuComponentView({editor}: {editor: Editor | null}) {
     const showPrompt = usePrompt();
