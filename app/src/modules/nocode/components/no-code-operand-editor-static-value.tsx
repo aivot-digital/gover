@@ -21,6 +21,11 @@ interface NoCodeOperandEditorStaticValueProps {
     onAddEnclosingExpression: () => void;
 }
 
+export const BOOL_DEFAULT_OPTIONS: NoCodeParameterOption[] = [
+    {label: 'Wahr', value: 'true'},
+    {label: 'Falsch', value: 'false'},
+];
+
 export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     const {
         options: originalOptions,
@@ -36,10 +41,7 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
         }
 
         if (desiredType === NoCodeDataType.Boolean) {
-            return [
-                {label: 'Wahr', value: 'true'},
-                {label: 'Falsch', value: 'false'},
-            ];
+            return BOOL_DEFAULT_OPTIONS;
         }
 
         return undefined;

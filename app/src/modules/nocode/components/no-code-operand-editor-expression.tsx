@@ -4,7 +4,7 @@ import {isNoCodeExpression, isNoCodeReference, isNoCodeStaticValue, NoCodeExpres
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {useMemo, useState} from 'react';
-import {NoCodeOperatorDetailsDTO, NoCodeParameter} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeOperatorDetailsDTO, NoCodeParameter, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import {NoCodeOperandEditor} from './no-code-operand-editor';
@@ -17,6 +17,8 @@ import {OperatorInfoDialog} from '../../../dialogs/operator-info-dialog/operator
 import {ReorderDialog} from '../../../dialogs/reorder-dialog/reorder-dialog';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
+import {ElementType} from '../../../data/element-type/element-type';
+import {BOOL_DEFAULT_OPTIONS} from './no-code-operand-editor-static-value';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -78,16 +80,50 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         parameters,
     } = operator;
 
+    const parameterOptionOverrides: NoCodeParameterOption[] = useMemo(() => {
+        const options: NoCodeParameterOption[] = [];
+
+        for (const op of operands) {
+            if (!isNoCodeReference(op)) {
+                continue;
+            }
+
+            const element = allElements
+                .find(el => el.element.id === op.elementId)?.element;
+
+            if (element == null) {
+                continue;
+            }
+
+            switch (element.type) {
+                case ElementType.Checkbox:
+                    options.push(...BOOL_DEFAULT_OPTIONS);
+                    break;
+                case ElementType.Radio:
+                case ElementType.Select:
+                    if (element.options != null) {
+                        options.push(...element.options);
+                    }
+                    break;
+            }
+        }
+
+        return options;
+    }, [operands, allElements]);
+
     const leadingParameter: ResolvedParameter | undefined = useMemo(() => {
         if (parameters.length >= 2) {
             return {
-                parameter: parameters[0],
+                parameter: {
+                    ...parameters[0],
+                    options: parameterOptionOverrides.length > 0 ? parameterOptionOverrides : parameters[0].options,
+                },
                 operand: operands[0],
             };
         }
 
         return undefined;
-    }, [parameters, operands]);
+    }, [parameters, operands, parameterOptionOverrides]);
 
     const trailingParameters: ResolvedParameter[] = useMemo(() => {
         const hasLeadingParameter = leadingParameter != null;
@@ -95,11 +131,13 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         return parameters
             .slice(hasLeadingParameter ? 1 : 0)
             .map((p, index) => ({
-                parameter: p,
+                parameter: {
+                    ...p,
+                    options: parameterOptionOverrides.length > 0 ? parameterOptionOverrides : p.options,
+                },
                 operand: operands[index + (hasLeadingParameter ? 1 : 0)],
             }));
-    }, [parameters, operands, leadingParameter]);
-
+    }, [parameters, operands, leadingParameter, parameterOptionOverrides]);
 
     const combinedParameters = useMemo(() => {
         if (leadingParameter != null) {
