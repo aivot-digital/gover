@@ -3,8 +3,6 @@ package de.aivot.GoverBackend.utils;
 
 import jakarta.annotation.Nullable;
 
-import java.util.Random;
-
 public class StringUtils {
     public static String truncate(String string, int length) {
         if (string.length() > length) {

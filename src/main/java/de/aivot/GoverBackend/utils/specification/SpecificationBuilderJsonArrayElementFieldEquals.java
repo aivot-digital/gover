@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.utils.specification;
 import jakarta.persistence.criteria.*;
 
 import javax.annotation.Nonnull;
-import java.util.List;
 
 public record SpecificationBuilderJsonArrayElementFieldEquals<T>(
         @Nonnull String field,

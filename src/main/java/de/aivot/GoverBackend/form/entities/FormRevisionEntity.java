@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.form.entities;
 import de.aivot.GoverBackend.models.lib.DiffItem;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 

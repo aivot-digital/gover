@@ -6,7 +6,6 @@ import org.springframework.data.redis.core.RedisHash;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 @RedisHash(value = "CacheUser", timeToLive = 30) // Expire after 30 seconds
 public class UserCacheEntity implements Serializable {

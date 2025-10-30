@@ -4,7 +4,9 @@ import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
-import de.aivot.GoverBackend.nocode.models.*;
+import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
+import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
+import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 
 import java.util.regex.Pattern;
 

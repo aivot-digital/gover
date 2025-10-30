@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.core.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -172,7 +172,8 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
         var endpointID = getEndpointID(paymentProviderEntity, config);
         var normalizedPaymentTransactionUrl = getNormalizedPaymentTransactionUrl(paymentProviderEntity, config);
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
 
         String body;
         try {
@@ -286,7 +287,8 @@ public class ePayBLPaymentProviderDefinition implements PaymentProviderDefinitio
 
         XBezahldienstePaymentTransaction updatedTransaction;
         try {
-            updatedTransaction = new ObjectMapper()
+            updatedTransaction = ObjectMapperFactory
+                    .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
             client.close();

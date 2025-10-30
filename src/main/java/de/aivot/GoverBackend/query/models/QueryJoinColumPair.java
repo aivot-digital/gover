@@ -5,7 +5,6 @@ import de.aivot.GoverBackend.query.utils.QueryPartMatcher;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nullable;
 
-import java.util.List;
 import java.util.Objects;
 
 public class QueryJoinColumPair implements QueryPart {

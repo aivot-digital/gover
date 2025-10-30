@@ -6,7 +6,6 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
 import javax.annotation.Nonnull;
-import java.util.Collection;
 
 public record SpecificationBuilderEquals<T>(
         @Nonnull String field,

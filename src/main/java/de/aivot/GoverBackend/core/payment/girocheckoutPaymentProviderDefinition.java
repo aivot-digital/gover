@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.core.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
@@ -10,6 +9,7 @@ import de.aivot.GoverBackend.core.payment.models.GiroPayCallbackResponse;
 import de.aivot.GoverBackend.core.payment.models.GiroPayPaymentRequest;
 import de.aivot.GoverBackend.core.payment.models.GiroPaymentStartResponse;
 import de.aivot.GoverBackend.core.services.HttpService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -181,7 +181,8 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
             );
         }
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
 
         GiroPaymentStartResponse transaction;
         try {
@@ -222,7 +223,8 @@ public class girocheckoutPaymentProviderDefinition implements PaymentProviderDef
             @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
-        ObjectMapper objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
         var callbackResponse = objectMapper
                 .convertValue(callbackData, GiroPayCallbackResponse.class);
 

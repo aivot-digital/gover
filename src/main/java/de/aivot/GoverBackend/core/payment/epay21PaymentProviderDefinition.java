@@ -1,11 +1,10 @@
 package de.aivot.GoverBackend.core.payment;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -162,8 +161,8 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         var paymentTransactionUrl = (String) config.get("paymentTransactionUrl").getValue();
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
-        var objectMapper = new ObjectMapper()
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
 
         paymentRequest.setRequestor(null);
         for (var item : paymentRequest.getItems()) {
@@ -259,7 +258,8 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
 
         XBezahldienstePaymentTransaction updatedTransaction = null;
         try {
-            updatedTransaction = new ObjectMapper()
+            updatedTransaction = ObjectMapperFactory
+                    .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());

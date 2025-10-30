@@ -7,7 +7,6 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nullable;
 
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 public class QueryColumn implements QueryPart {
     @Nullable

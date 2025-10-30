@@ -1,13 +1,10 @@
 package de.aivot.GoverBackend.mail.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.department.services.DepartmentService;
 import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
-import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.form.services.FormService;
 import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;

@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.core.configs;
 import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.data.SystemConfigKey;
-import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 

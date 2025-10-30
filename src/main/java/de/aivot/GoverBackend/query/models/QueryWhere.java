@@ -4,10 +4,8 @@ import de.aivot.GoverBackend.query.enums.QueryWhereOperator;
 import de.aivot.GoverBackend.query.exceptions.QueryValidationException;
 import de.aivot.GoverBackend.query.utils.QueryPartMatcher;
 import de.aivot.GoverBackend.utils.StringUtils;
-import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import java.util.List;
 import java.util.Objects;
 
 public class QueryWhere implements QueryPart {

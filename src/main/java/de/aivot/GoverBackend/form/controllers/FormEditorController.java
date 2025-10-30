@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.form.controllers;
 
 import de.aivot.GoverBackend.form.entities.FormEditorEntity;
-import de.aivot.GoverBackend.form.repositories.FormEditorRepository;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;

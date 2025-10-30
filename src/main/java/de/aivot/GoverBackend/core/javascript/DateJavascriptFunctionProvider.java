@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.core.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.stereotype.Service;

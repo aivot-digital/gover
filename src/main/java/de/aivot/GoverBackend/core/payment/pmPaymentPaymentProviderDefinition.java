@@ -1,10 +1,10 @@
 package de.aivot.GoverBackend.core.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioFieldOption;
@@ -170,7 +170,8 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
         var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
 
         String body;
         try {
@@ -258,7 +259,8 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
 
         XBezahldienstePaymentTransaction updatedTransaction = null;
         try {
-            updatedTransaction = new ObjectMapper()
+            updatedTransaction = ObjectMapperFactory
+                    .getInstance()
                     .readValue(response.body(), XBezahldienstePaymentTransaction.class);
         } catch (JsonProcessingException e) {
             throw new PaymentException(e, "Failed to deserialize payment transaction for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
@@ -319,7 +321,9 @@ public class pmPaymentPaymentProviderDefinition implements PaymentProviderDefini
             throw new PaymentHttpRequestException(response.statusCode(), paymentProviderEntity, formData.replaceAll("client_secret=.*", "client_secret=***"), response.body());
         }
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory
+                .getInstance();
+
         String token;
         try {
             token = objectMapper

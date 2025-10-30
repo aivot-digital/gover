@@ -1,8 +1,6 @@
 package de.aivot.GoverBackend.form.services;
 
 import de.aivot.GoverBackend.asset.repositories.AssetRepository;
-import de.aivot.GoverBackend.config.repositories.SystemConfigRepository;
-import de.aivot.GoverBackend.data.SystemConfigKey;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
@@ -23,7 +21,6 @@ import de.aivot.GoverBackend.submission.repositories.SubmissionWithMembershipRep
 import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.repositories.ThemeRepository;
-import de.aivot.GoverBackend.theme.services.ThemeService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;

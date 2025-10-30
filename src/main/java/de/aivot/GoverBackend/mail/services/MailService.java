@@ -16,7 +16,6 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
 import de.aivot.GoverBackend.services.TemplateLoaderService;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
-import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;

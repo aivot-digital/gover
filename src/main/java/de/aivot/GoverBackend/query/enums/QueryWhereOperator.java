@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.query.enums;
 
-import de.aivot.GoverBackend.query.exceptions.QueryValidationException;
 import jakarta.annotation.Nullable;
 
 public enum QueryWhereOperator {
