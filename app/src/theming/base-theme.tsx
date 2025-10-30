@@ -280,14 +280,8 @@ export const BaseTheme = createTheme({
                 root: {
                     backgroundColor: 'white !important',
                 },
-                columnHeader: {
-                    backgroundColor: 'white !important',
-                },
                 row: {
                     '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                    },
-                    '& .MuiDataGrid-cell:hover': {
                         backgroundColor: 'rgba(0, 0, 0, 0.02)',
                     },
                 },

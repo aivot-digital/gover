@@ -193,6 +193,14 @@ export function ElementEditor<T extends AnyElement, E extends ElementTreeEntity>
                     <Breadcrumbs
                         sx={{
                             ml: 'auto',
+                            color: 'text.secondary',
+                            '& a': {
+                                color: 'text.secondary',
+                                textDecoration: 'none',
+                                '&:hover': {
+                                    textDecoration: 'underline',
+                                },
+                            },
                         }}
                         maxItems={3}
                     >
