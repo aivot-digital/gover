@@ -117,8 +117,7 @@ export function AccountDetailsPageNotifications() {
                                         </Grid>
                                         <Grid sx={{ display: 'flex', justifyContent: 'flex-end' }} size={4}>
                                             {options.map(({ label: optionLabel, value }) => (
-                                                // Do not show "In-App" option until it's correctly implemented
-                                                (optionLabel != "In-App" && <FormControlLabel
+                                                <FormControlLabel
                                                     key={value}
                                                     control={
                                                         <Switch
@@ -128,7 +127,7 @@ export function AccountDetailsPageNotifications() {
                                                     }
                                                     label={optionLabel}
                                                     sx={{ml: 1}}
-                                                />)
+                                                />
                                             ))}
                                         </Grid>
                                     </Grid>
