@@ -39,7 +39,7 @@ export function StaffShellError(props: StaffShellErrorProps) {
                     error != null &&
                     error.status === 403 &&
                     <ErrorDetails
-                        icon={<Block />}
+                        icon={<Block sx={{fontSize: '3rem'}} />}
                         title="Zugriff verweigert (Fehler 403)"
                         actionBack={false}
                         actionReload={false}
@@ -54,7 +54,7 @@ export function StaffShellError(props: StaffShellErrorProps) {
                     error != null &&
                     error.status === 404 &&
                     <ErrorDetails
-                        icon={<ScanDelete />}
+                        icon={<ScanDelete sx={{fontSize: '3rem'}} />}
                         title="Seite nicht gefunden (Fehler 404)"
                         actionBack={true}
                         actionReload={false}
@@ -70,7 +70,7 @@ export function StaffShellError(props: StaffShellErrorProps) {
                     error.status !== 403 &&
                     error.status !== 404 &&
                     <ErrorDetails
-                        icon={<Warning />}
+                        icon={<Warning sx={{fontSize: '3rem'}} />}
                         title={`Beim Laden ist ein Fehler aufgetreten. (Fehler ${error.status})`}
                         actionBack={false}
                         actionReload={true}
@@ -108,12 +108,12 @@ function ErrorDetails(props: PropsWithChildren<ErrorDetailsProps>) {
 
     return (
         <>
-            <Box>
+            <Box sx={{mb: 0.5}}>
                 {icon}
             </Box>
 
             <Typography
-                variant="h3"
+                variant="h2"
                 component="h1"
             >
                 {title}
@@ -123,13 +123,13 @@ function ErrorDetails(props: PropsWithChildren<ErrorDetailsProps>) {
                 sx={{
                     mt: 2,
                 }}
-                variant="body1"
+                variant="body2"
             >
                 {children}
             </Typography>
             <Box
                 sx={{
-                    mt: 2,
+                    mt: 3.5,
                     display: 'flex',
                     gap: 2,
                     justifyContent: 'center',

@@ -167,6 +167,7 @@ export function SystemInformation() {
                 cardSx={{
                     mt: 3,
                 }}
+                sx={{mt: 0}}
                 cardVariant="outlined"
                 items={systemInformationItems}
             />
