@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.Map;
@@ -66,7 +65,7 @@ public class HttpService {
     }
 
     @Nonnull
-    public HttpResponse<String> post(@Nonnull URI uri, @Nonnull String body, @Nullable HttpServiceHeaders headers) throws  HttpConnectionException {
+    public HttpResponse<String> post(@Nonnull URI uri, @Nonnull String body, @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
         String responseBody;
         try {
             responseBody = httpClient
@@ -125,26 +124,25 @@ public class HttpService {
     // region HTTP-Post Multipart
 
     @Nonnull
-    public HttpResponse<InputStream> postMultipart(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body)  throws HttpConnectionException {
+    public HttpResponse<byte[]> postMultipart(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body) throws HttpConnectionException {
         return postMultipart(uri, body, null);
     }
 
     @Nonnull
-    public HttpResponse<InputStream> postMultipart(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body, @Nullable HttpServiceHeaders headers)  throws HttpConnectionException {
-        InputStream responseBody;
+    public HttpResponse<byte[]> postMultipart(@Nonnull URI uri, @Nonnull MultipartUtils.MultipartBodyPublisher body, @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
+        byte[] responseBody;
         try {
             responseBody = httpClient
                     .post()
                     .uri(uri)
-                    .body(body)
+                    .body(body.build())
                     .headers(_headers -> {
                         if (headers != null) {
                             headers.forEach(_headers::add);
                         }
                     })
-                    .header("Content-Type", HttpServiceHeaders.MULTIPART_FORM_DATA + "; boundary=" + body.getBoundary())
                     .retrieve()
-                    .body(InputStream.class);
+                    .body(byte[].class);
         } catch (RestClientResponseException e) {
             return new HttpResponseImpl<>(
                     e.getStatusCode().value(),

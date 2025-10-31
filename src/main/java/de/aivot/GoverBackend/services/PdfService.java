@@ -36,7 +36,6 @@ import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
@@ -192,8 +191,7 @@ public class PdfService {
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
-        var boundary = "----GotenbergBoundary";
-        var multipart = new MultipartUtils.MultipartBodyPublisher(boundary)
+        var multipart = new MultipartUtils.MultipartBodyPublisher()
                 .addPart("files", "index.html", template)
                 .addPart("files", "header.html", headerTemplate)
                 .addPart("files", "footer.html", footerTemplate)
@@ -205,7 +203,7 @@ public class PdfService {
 
         var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
 
-        HttpResponse<InputStream> response;
+        HttpResponse<byte[]> response;
         try {
             response = httpService.postMultipart(convertUri, multipart);
         } catch (HttpConnectionException e) {
@@ -216,11 +214,7 @@ public class PdfService {
             throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
         }
 
-        var body = response.body();
-        byte[] bytes = body.readAllBytes();
-        body.close();
-
-        return bytes;
+        return response.body();
     }
 
     private String loadContentTemplate(FormVersionWithDetailsEntity form, Map<String, Object> dto) {
