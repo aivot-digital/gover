@@ -21,10 +21,11 @@ export function DashboardFormsPanel() {
     useEffect(() => {
         withAsyncWrapper<void, Page<FormListResponseDTO>>({
             main: () =>
-                new FormsApiService(api).list(0, fetchSize, 'updated', 'DESC', {
-                    isDeveloper: true,
-                    isCurrentlyDraftedVersion: true,
-                }),
+                new FormsApiService(api)
+                    .list(0, fetchSize, 'updated', 'DESC', {
+                        isDeveloper: true,
+                        isCurrentlyDraftedVersion: true,
+                    }),
             desiredMinRuntime: 600,
         }).then((page) => {
             setForms(page.content);
@@ -33,7 +34,7 @@ export function DashboardFormsPanel() {
     }, []);
 
     const renderFormStatus = (form: FormListResponseDTO): string => {
-        const { isDrafted, isPublished, isRevoked } = getFormStatus(form);
+        const {isDrafted, isPublished, isRevoked} = getFormStatus(form);
 
         if (isPublished) return 'Veröffentlicht';
         if (isDrafted) return 'Entwurf';
@@ -42,17 +43,22 @@ export function DashboardFormsPanel() {
     };
 
     return (
-        <Card sx={{ height: '100%', borderRadius: 2, position: 'relative', overflow: 'hidden' }}>
+        <Card sx={{height: '100%', borderRadius: 2, position: 'relative', overflow: 'hidden'}}>
             <CardContent>
-                <Box sx={{ pt: 0.5, px: 1 }}>
-                    <Typography variant="h5" component="h3" fontWeight={600} fontSize={'1.5rem'}>
+                <Box sx={{pt: 0.5, px: 1}}>
+                    <Typography
+                        variant="h5"
+                        component="h3"
+                        fontWeight={600}
+                        fontSize={'1.5rem'}
+                    >
                         Online-Formulare
                     </Typography>
 
                     <Typography
                         variant="body2"
                         color="text.secondary"
-                        sx={{ mt: 1, mb: 2, maxWidth: 400 }}
+                        sx={{mt: 1, mb: 2, maxWidth: 400}}
                     >
                         Hier sehen Sie eine Übersicht der zuletzt bearbeiteten Formulare.
                     </Typography>
@@ -60,7 +66,7 @@ export function DashboardFormsPanel() {
 
                 <List disablePadding>
                     {loading
-                        ? Array.from({ length: fetchSize }).map((_, i) => (
+                        ? Array.from({length: fetchSize}).map((_, i) => (
                             <React.Fragment key={i}>
                                 <ListItem disablePadding>
                                     <Box
@@ -74,9 +80,18 @@ export function DashboardFormsPanel() {
                                             px: 1,
                                         }}
                                     >
-                                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                                            <Skeleton variant="text" height={20} width="70%" />
-                                            <Skeleton variant="text" height={14} width="50%" sx={{ mt: 0.5 }} />
+                                        <Box sx={{flex: 1, minWidth: 0}}>
+                                            <Skeleton
+                                                variant="text"
+                                                height={20}
+                                                width="70%"
+                                            />
+                                            <Skeleton
+                                                variant="text"
+                                                height={14}
+                                                width="50%"
+                                                sx={{mt: 0.5}}
+                                            />
                                         </Box>
 
                                         <Box
@@ -87,7 +102,12 @@ export function DashboardFormsPanel() {
                                                 justifyContent: 'flex-end',
                                             }}
                                         >
-                                            <Skeleton variant="circular" width={40} height={40} sx={{ opacity: 0.4 }} />
+                                            <Skeleton
+                                                variant="circular"
+                                                width={40}
+                                                height={40}
+                                                sx={{opacity: 0.4}}
+                                            />
                                         </Box>
                                     </Box>
                                 </ListItem>
@@ -105,7 +125,7 @@ export function DashboardFormsPanel() {
                                                 py: 2,
                                                 px: 1,
                                                 borderRadius: 1,
-                                                '&:hover': { bgcolor: 'action.hover' },
+                                                '&:hover': {bgcolor: 'action.hover'},
                                                 '&.Mui-focusVisible': {
                                                     outline: '2px solid',
                                                     outlineColor: 'primary.main',
@@ -121,7 +141,7 @@ export function DashboardFormsPanel() {
                                                     gap: 2,
                                                 }}
                                             >
-                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                <Box sx={{flex: 1, minWidth: 0}}>
                                                     <Typography
                                                         variant="subtitle1"
                                                         fontWeight={700}
@@ -150,7 +170,7 @@ export function DashboardFormsPanel() {
 
                                                 <ChevronRight
                                                     aria-hidden
-                                                    sx={{ fontSize: '3rem', color: 'rgba(0,0,0,.2)' }}
+                                                    sx={{fontSize: '3rem', color: 'rgba(0,0,0,.2)'}}
                                                 />
                                             </Box>
                                         </ListItemButton>
@@ -160,9 +180,9 @@ export function DashboardFormsPanel() {
                                 </React.Fragment>
                             ))
                             : (
-                                <Box sx={{ position: 'relative' }}>
+                                <Box sx={{position: 'relative'}}>
                                     <List disablePadding>
-                                        {Array.from({ length: fetchSize }).map((_, i) => (
+                                        {Array.from({length: fetchSize}).map((_, i) => (
                                             <React.Fragment key={i}>
                                                 <ListItem disablePadding>
                                                     <Box
@@ -176,7 +196,7 @@ export function DashboardFormsPanel() {
                                                             px: 1,
                                                         }}
                                                     >
-                                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                        <Box sx={{flex: 1, minWidth: 0}}>
                                                             <Skeleton
                                                                 variant="text"
                                                                 height={20}
@@ -187,7 +207,7 @@ export function DashboardFormsPanel() {
                                                                 variant="text"
                                                                 height={14}
                                                                 width="50%"
-                                                                sx={{ mt: 0.5 }}
+                                                                sx={{mt: 0.5}}
                                                                 animation={false}
                                                             />
                                                         </Box>
@@ -195,7 +215,7 @@ export function DashboardFormsPanel() {
                                                             variant="circular"
                                                             width={40}
                                                             height={40}
-                                                            sx={{ opacity: 0.3 }}
+                                                            sx={{opacity: 0.3}}
                                                             animation={false}
                                                         />
                                                     </Box>
@@ -220,7 +240,7 @@ export function DashboardFormsPanel() {
                                         <Typography
                                             variant="body2"
                                             color="text.secondary"
-                                            sx={{ maxWidth: 320 }}
+                                            sx={{maxWidth: 320}}
                                         >
                                             In den Organisationseinheiten, denen Sie angehören, sind (noch) keine Formulare vorhanden.
                                         </Typography>

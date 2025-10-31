@@ -75,39 +75,39 @@ function baseApiServiceAsApi(): Api {
         isAuthenticated: auth.isAuthenticated(),
         get: async <T>(url: string, options?: ApiOptions): Promise<T> => {
             return await api
-                .get<T>(createApiPath(`/api/${url}`), apiOptionsToRequestOptions(options));
+                .get<T>(`/api/${url}`, apiOptionsToRequestOptions(options));
         },
         getPublic: async <T>(url: string, options?: ApiOptions): Promise<T> => {
             return await api
-                .get<T>(createApiPath(`/api/public/${url}`), apiOptionsToRequestOptions(options));
+                .get<T>(`/api/public/${url}`, apiOptionsToRequestOptions(options));
         },
         getBlob: async (url: string, options?: ApiOptions): Promise<Blob> => {
             return await api
-                .getBlob(createApiPath(`/api/${url}`), apiOptionsToRequestOptions(options));
+                .getBlob(`/api/${url}`, apiOptionsToRequestOptions(options));
         },
         post: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
             return await api
-                .post(createApiPath(`/api/${url}`), data, apiOptionsToRequestOptions(options));
+                .post(`/api/${url}`, data, apiOptionsToRequestOptions(options));
         },
         postXML: async <T>(url: string, data: ArrayBuffer | string, options?: ApiOptions): Promise<T> => {
             return await api
-                .postXml(createApiPath(`/api/${url}`), data, apiOptionsToRequestOptions(options));
+                .postXml(`/api/${url}`, data, apiOptionsToRequestOptions(options));
         },
         postFormData: async <T>(url: string, data: FormData, options?: ApiOptions): Promise<T> => {
             return await api
-                .postFormData(createApiPath(`/api/${url}`), data, apiOptionsToRequestOptions(options));
+                .postFormData(`/api/${url}`, data, apiOptionsToRequestOptions(options));
         },
         postFormUrlEncoded: async <T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T> => {
             return await api
-                .postFormUrlEncoded(createApiPath(`/api/${url}`), new URLSearchParams(data), apiOptionsToRequestOptions(options));
+                .postFormUrlEncoded(`/api/${url}`, new URLSearchParams(data), apiOptionsToRequestOptions(options));
         },
         put: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
             return await api
-                .put(createApiPath(`/api/${url}`), data, apiOptionsToRequestOptions(options));
+                .put(`/api/${url}`, data, apiOptionsToRequestOptions(options));
         },
         destroy: async <T>(url: string, options?: ApiOptions): Promise<void> => {
             return await api
-                .delete(createApiPath(`/api/${url}`), apiOptionsToRequestOptions(options));
+                .delete(`/api/${url}`, apiOptionsToRequestOptions(options));
         },
     };
 }
