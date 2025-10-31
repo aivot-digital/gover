@@ -225,8 +225,8 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     }, [api, currentFilter, sortModel, defaultFilter, search, defaultSortField, fetchFunc, paginationModel.page]);
 
     // Fetch data on dependency changes
+    // This is a duplicate of handleRefresh to combat outdated data in the closure
     useEffect(() => {
-        /*
         setIsBusy(true);
 
         if (abortControllerRef.current) {
@@ -272,10 +272,6 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     setIsBusy(false);
                 }
             });
-
-         */
-
-        handleRefresh();
     }, [api, currentFilter, sortModel, paginationModel, search]);
 
     useEffect(() => {
