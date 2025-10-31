@@ -227,9 +227,8 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                         <List  sx={{'& .MuiDivider-root:last-of-type': {display: 'none'}}}>
                             {
                                 versions.map(ver => (
-                                    <>
+                                    <React.Fragment key={ver.version}>
                                         <VersionListItem
-                                            key={ver.version}
                                             item={ver}
                                             onMoreClick={(target, item) => {
                                                 setMoreMenuAnchorEl(target);
@@ -237,7 +236,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                                             }}
                                         />
                                         <Divider sx={{my: 1.5}}/>
-                                    </>
+                                    </React.Fragment>
                                 ))
                             }
                         </List>
