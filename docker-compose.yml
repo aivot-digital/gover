@@ -118,7 +118,7 @@ services:
 
 
   keycloak_sidecar:
-    image: "ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.5"
+    image: "ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.6"
     restart: on-failure
     depends_on:
       - keycloak
