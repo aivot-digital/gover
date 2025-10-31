@@ -8,5 +8,4 @@ export interface PageWrapperProps extends LoadingWrapperProps {
     fullWidth?: boolean;
     fullHeight?: boolean;
     background?: boolean;
-    toolbarActions?: AppToolbarAction[];
 }

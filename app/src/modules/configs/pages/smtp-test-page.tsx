@@ -10,7 +10,6 @@ export function SmtpTestPage() {
         <PageWrapper
             title="SMTP-Test"
             background={true}
-            toolbarActions={[]}
         >
             <GenericPageHeader
                 title="SMTP-Test"

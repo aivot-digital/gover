@@ -10,7 +10,6 @@ export function CommonSettingsPage() {
         <PageWrapper
             title="Allgemeine Einstellungen"
             background={true}
-            toolbarActions={[]}
         >
             <GenericPageHeader
                 title="Allgemeine Einstellungen"

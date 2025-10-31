@@ -10,7 +10,6 @@ export function SystemStatusPage() {
         <PageWrapper
             title="Systemstatus"
             background={true}
-            toolbarActions={[]}
         >
             <GenericPageHeader
                 title="Systemstatus"
