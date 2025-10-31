@@ -116,13 +116,29 @@ services:
       - "traefik.http.routers.keycloak.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
       - "traefik.http.routers.keycloak.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
 
+
   keycloak_sidecar:
-    image: ""
+    image: "ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.5"
     restart: on-failure
     depends_on:
       - keycloak
+    environment:
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_USER: "{{ KEYCLOAK_ADMIN_USERNAME }}" # Setzen Sie den initialen Benutzernamen für den Keycloak-Admin. Passen Sie diesen Benutzernamen unbedingt an.
+      KEYCLOAK_PASSWORD: "{{ KEYCLOAK_ADMIN_PASSWORD }}" # Setzen Sie das initiale Passwort für den Keycloak-Admin. Passen Sie dieses Passwort unbedingt an.
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: true
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: "120s"
+      SMTP_HOST: "{{ SMTP_HOST }}" # Setzen Sie den Hostnamen des Mail-Servers. Passen Sie diesen Hostnamen unbedingt an.
+      SMTP_PORT: "{{ SMTP_PORT }}" # Setzen Sie den Port des Mail-Servers. Passen Sie diesen Port unbedingt an.
+      SMTP_USERNAME: "{{ SMTP_USERNAME }}" # Setzen Sie den Benutzernamen für den Mail-Server. Passen Sie diesen Benutzernamen unbedingt an.
+      SMTP_PASSWORD: "{{ SMTP_PASSWORD }}" # Setzen Sie das Passwort für den Mail-Server. Passen Sie dieses Passwort unbedingt an.
+      SMTP_FROM: "{{ MAIL_SENDER_ADDRESS }}@{{ HOSTNAME }}" # Setzen Sie die Absenderadresse für E-Mails. Passen Sie diese Absenderadresse unbedingt an.
+      SMTP_FROM_DISPLAY: "{{ MAIL_SENDER_NAME }}" # Setzen Sie den Anzeigenamen für die Absenderadresse. Passen Sie diesen Anzeigenamen unbedingt an.
+      HOSTNAME: "https://{{ HOSTNAME }}" # Setzen Sie den Hostnamen unter dem Gover erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
+      BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Wählen Sie ein sicheres Geheimnis mit mindestens 16 Zeichen.
     networks:
       - keycloak_config_network
+
 
   gover:
     image: ghcr.io/aivot-digital/gover:4.5.3
@@ -174,7 +190,7 @@ services:
 
       GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
       GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
-      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Das Geheimnis können Sie dem Backend-Client in Keycloak entnehmen.
+      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: "{{ KEYCLOAK_BACKEND_CLIENT_SECRET }}" # Setzen Sie das Geheimnis für den Backend-Client in Keycloak. Passen Sie dieses Geheimnis unbedingt an. Wählen Sie ein sicheres Geheimnis mit mindestens 16 Zeichen.
       GOVER_KEYCLOAK_OIDC_HOSTNAME: "https://{{ HOSTNAME }}/idp" # Setzen Sie den Hostnamen unter dem Keycloak erreichbar ist. Passen Sie diesen Hostnamen unbedingt an.
       GOVER_KEYCLOAK_OIDC_REALM: staff
 
@@ -261,5 +277,6 @@ volumes:
 # Definiert die Netzwerke für die Services.
 networks:
   keycloak:
+  keycloak_config_network:
   gover:
   common:
