@@ -118,7 +118,7 @@ export function ThemeDetailsPageIndex() {
                         setItem(updatedTheme);
                         reset();
 
-                        dispatch(showSuccessSnackbar('Änderungen an Farbschema erfolgreich gespeichert.'));
+                        dispatch(showSuccessSnackbar('Änderungen am Farbschema erfolgreich gespeichert.'));
                     })
                     .catch(err => {
                         console.error(err);
