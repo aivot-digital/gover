@@ -146,7 +146,6 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
         if (item.status === FormStatus.Drafted && item.versionCount < 2) {
             showConfirm({
                 title: 'Formular-Version löschen',
-                confirmButtonText: 'Ok',
                 hideCancelButton: true,
                 children: (
                     <Typography>
