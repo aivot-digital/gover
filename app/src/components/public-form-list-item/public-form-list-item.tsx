@@ -19,6 +19,7 @@ export function PublicFormListItem(props: PublicFormListItemProps) {
             >
                 <DescriptionOutlinedIcon
                     fontSize="large"
+                    sx={{color: 'primary.dark'}}
                 />
             </Box>
             <Box
