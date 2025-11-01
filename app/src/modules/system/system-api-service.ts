@@ -29,7 +29,7 @@ export class SystemApiService extends BaseApiService {
     }
 
     public getFileExtensions(): Promise<string[]> {
-        return this.get<string[]>('system/file-extensions');
+        return this.get<string[]>('/api/public/system/file-extensions/');
     }
 
     public async testSmtp(email: string)  {
