@@ -24,7 +24,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @RestController
-@RequestMapping("/api/forms/{formId}/versions/")
 public class FormVersionController {
     private final FormVersionWithMembershipService formVersionWithMembershipService;
     private final FormVersionService formVersionService;
@@ -41,7 +40,28 @@ public class FormVersionController {
         this.formLockService = formLockService;
     }
 
-    @GetMapping("")
+    @GetMapping("/api/form-versions/")
+    public Page<FormDetailsResponseDTO> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PageableDefault Pageable pageable,
+            @Nonnull @Valid FormVersionWithMembershipFilter filter
+    ) throws ResponseException {
+        // Check if the user is a staff user
+        var user = UserService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Check if the user is not a global admin
+        if (filter.getUserId() == null) {
+            filter.setUserId(user.getId());
+        }
+
+        return formVersionWithMembershipService
+                .list(pageable, filter)
+                .map(FormDetailsResponseDTO::fromEntity);
+    }
+
+    @GetMapping("/api/forms/{formId}/versions/")
     public Page<FormDetailsResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
@@ -71,7 +91,7 @@ public class FormVersionController {
                 .map(FormDetailsResponseDTO::fromEntity);
     }
 
-    @DeleteMapping("{versionId}/")
+    @DeleteMapping("/api/forms/{formId}/versions/{versionId}/")
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer formId,
