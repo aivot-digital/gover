@@ -42,13 +42,13 @@ export function DataObjectSchemaDetailsPage() {
                     icon: <FolderData />,
                     title: 'Datenmodell bearbeiten',
                     helpDialog: {
-                        title: 'Hilfe zu Datenmodelle',
+                        title: 'Hilfe zu Datenmodellen',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
                                     Ein Datenmodell beschreibt die Struktur eines Datenobjekts in Gover und legt fest, welche Datenfelder existieren, welche Datentypen sie haben, welche Standardwerte gelten und wie Werte geprüft werden. Es
-                                    sorgt dafür, dass Daten aus Formularen, Workflows und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
+                                    sorgt dafür, dass Daten aus Formularen, Prozessen und Schnittstellen konsistent, valide und eindeutig interpretierbar sind.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Dazu können auch verschachtelte Objekte, Pflichtangaben, Wertebereiche oder Muster sowie Beschreibungen, Labels und optionale Sichtbarkeitsregeln gehören. Dasselbe Datenmodell kann in mehreren Prozessen

@@ -43,7 +43,7 @@ public class SecurityConfiguration {
 
                 .authorizeHttpRequests(
                         requests -> requests
-                                .requestMatchers("/api/public/actuator/httpexchanges").authenticated()
+                                .requestMatchers("/api/public/actuator/httpexchanges/").authenticated()
                                 .requestMatchers("/api/public/**").permitAll()
                                 .anyRequest().authenticated()
                 )
