@@ -171,6 +171,7 @@ const columns: GridColDef<FormListEntry>[] = [
         field: 'publishedVersion',
         headerName: 'Status',
         flex: 0.75,
+        sortable: false,
         renderCell: (params) => (
             <FormStatusChipGroup form={params.row} />
         ),
