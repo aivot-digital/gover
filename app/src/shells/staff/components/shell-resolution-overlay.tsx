@@ -79,7 +79,9 @@ export function ShellResolutionOverlay() {
                 </Typography>
                 <Button
                     variant="contained"
-                    onClick={() => window.location.reload()} // Todo: link to Gover docs page
+                    href="https://docs.gover.digital"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     startIcon={<OpenInNew />}
                     color="inherit"
                 >
