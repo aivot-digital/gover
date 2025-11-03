@@ -78,8 +78,13 @@ function baseApiServiceAsApi(): Api {
                 .get<T>(`/api/${url}`, apiOptionsToRequestOptions(options));
         },
         getPublic: async <T>(url: string, options?: ApiOptions): Promise<T> => {
-            return await api
-                .get<T>(`/api/public/${url}`, apiOptionsToRequestOptions(options));
+            try {
+                return await api
+                    .get<T>(`/api/public/${url}`, apiOptionsToRequestOptions(options));
+            } catch (err) {
+                return await api
+                    .getUnauthenticated<T>(`/api/public/${url}`, apiOptionsToRequestOptions(options));
+            }
         },
         getBlob: async (url: string, options?: ApiOptions): Promise<Blob> => {
             return await api
