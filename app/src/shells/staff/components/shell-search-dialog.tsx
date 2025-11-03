@@ -1,4 +1,4 @@
-import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Paper, Typography} from '@mui/material';
+import {Box, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, InputBase, List, ListItem, ListItemIcon, ListItemText, Pagination, Paper, Typography} from '@mui/material';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectShowSearchDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -27,8 +27,11 @@ export function ShellSearchDialog() {
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState(search);
     const [isBusy, setIsBusy] = useState(false);
-    const [searchResults, setSearchResults] = useState<Page<SearchItemResponseDto>>();
+    const [searchResults, setSearchResults] = useState<Page<SearchItemResponseDto> | undefined>(undefined);
+    const [page, setPage] = useState(0);
+    const [size] = useState(12);
 
+    // debounce input
     useEffect(() => {
         const t = window.setTimeout(() => setDebouncedSearch(search), 400);
         return () => window.clearTimeout(t);
@@ -37,6 +40,7 @@ export function ShellSearchDialog() {
     const handleClose = () => {
         setTimeout(() => {
             setSearch('');
+            setPage(0);
         }, 250);
         dispatch(setShowSearchDialog(false));
     };
@@ -56,31 +60,41 @@ export function ShellSearchDialog() {
             signal: ac.signal,
             runtimeCallback: (running) => setIsBusy(running),
             main: async (_before, signal) => {
-                return await new SearchItemService().getSearchItems(debouncedSearch);
+                return await new SearchItemService().getSearchItems(
+                    debouncedSearch,
+                    page,
+                    size,
+                );
             },
             after: async (res) => {
                 if (!canceled) setSearchResults(res);
-            }
-        }).catch((err) => {
+            },
+        }).catch(() => {
         });
 
         return () => {
             canceled = true;
             ac.abort();
         };
-    }, [debouncedSearch]);
+    }, [debouncedSearch, page]);
 
     const results = searchResults?.content ?? [];
-    const cappedResults = results.slice(0, 10);
-    const totalElements: number | undefined = (searchResults as any)?.totalElements;
-    const hasMoreResults =
-        (typeof totalElements === 'number' && totalElements > cappedResults.length) ||
-        results.length > cappedResults.length;
-
+    const totalElements = searchResults?.totalElements ?? 0;
+    const totalPages = searchResults?.totalPages ?? 0;
     const historyCapped = entityHistory.slice(0, 10);
 
+    const handlePageChange = (_event: React.ChangeEvent<unknown>, newPage: number) => {
+        // convert page number because MUI is 1 based and SpringBoot is 0 based
+        setPage(newPage - 1);
+    };
+
     return (
-        <Dialog open={show} onClose={handleClose} fullWidth={true} maxWidth="sm">
+        <Dialog
+            open={show}
+            onClose={handleClose}
+            fullWidth={true}
+            maxWidth="sm"
+        >
             <DialogTitle sx={{py: 1}}>
                 <span style={{display: 'none'}}>Suche</span>
             </DialogTitle>
@@ -91,7 +105,7 @@ export function ShellSearchDialog() {
                         display: 'flex',
                         alignItems: 'center',
                         pb: 1,
-                        mb: 2
+                        mb: 2,
                     }}
                 >
                     {isBusy ? (
@@ -103,10 +117,14 @@ export function ShellSearchDialog() {
                                 flexShrink: 0,
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                mr: 2
+                                mr: 2,
                             }}
                         >
-                            <CircularProgress size={28} thickness={4} sx={{color: 'primary.dark'}} />
+                            <CircularProgress
+                                size={28}
+                                thickness={4}
+                                sx={{color: 'primary.dark'}}
+                            />
                         </Box>
                     ) : (
                         <Search sx={{color: 'primary.dark', mr: 2, fontSize: '2.1875rem'}} />
@@ -119,7 +137,7 @@ export function ShellSearchDialog() {
                         autoFocus
                         sx={{
                             fontSize: '1.5rem',
-                            color: 'text.primary'
+                            color: 'text.primary',
                         }}
                     />
                     <IconButton onClick={handleClose}>
@@ -131,7 +149,7 @@ export function ShellSearchDialog() {
                     sx={{
                         position: 'relative',
                         minHeight: '35rem',
-                        maxHeight: '40vh'
+                        maxHeight: '40vh',
                     }}
                 >
 
@@ -149,8 +167,12 @@ export function ShellSearchDialog() {
                             }}
                         >
                             <Lightbulb2 sx={{color: 'text.secondary'}} />
-                            <Typography variant="body1" color="text.secondary">
-                                <strong>Tipp:</strong> Durchsuchen Sie schnell &amp; einfach Formulare, Prozesse und
+                            <Typography
+                                variant="body1"
+                                color="text.secondary"
+                            >
+                                <strong>Tipp:</strong>{' '}
+                                Durchsuchen Sie schnell &amp; einfach Formulare, Prozesse und
                                 Vorgangsdaten mit unserer Komfort-Suchfunktion.
                             </Typography>
                         </Box>
@@ -158,35 +180,59 @@ export function ShellSearchDialog() {
 
                     <Divider sx={{mx: -3}} />
 
-
                     {/* Suchergebnisse */}
-                    {searchResults != null && results.length > 0 && (
+                    {searchResults && results.length > 0 && (
                         <>
-                            <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
-                                {cappedResults.map((item) => (
-                                    <SearchDialogListItem
-                                        key={item.id + item.originTable}
-                                        id={item.id}
-                                        type={item.originTable}
-                                        link={createSearchItemLink(item)}
-                                        search={debouncedSearch}
-                                        label={item.label}
-                                    />
-                                ))}
-                            </List>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                minHeight: '35rem'
+                            }}>
+                                <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
+                                    {results.map((item) => (
+                                        <SearchDialogListItem
+                                            key={item.id + item.originTable}
+                                            id={item.id}
+                                            type={item.originTable}
+                                            link={createSearchItemLink(item)}
+                                            search={debouncedSearch}
+                                            label={item.label}
+                                        />
+                                    ))}
+                                </List>
 
-                            {hasMoreResults && totalElements && (
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{mt: 1, px: 0.5, textAlign: 'center'}}
+                                {/* Pagination + Trefferanzahl */}
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}
                                 >
-                                    Es wurden {totalElements - 10} weitere Ergebnisse gefunden.<br/>
-                                    Bitte präzisieren Sie ggf. die verwendeten Suchbegriffe.
-                                </Typography>
-                            )}
+                                    {totalElements > 0 && (
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{mt: 2, mb: 1, fontSize: '0.875rem'}}
+                                        >
+                                            Ergebnisse {`${page * size + 1}–${Math.min((page + 1) * size, totalElements)} von ${totalElements}`}
+                                        </Typography>
+                                    )}
+                                    <Pagination
+                                        count={totalPages}
+                                        page={page + 1}
+                                        color="primary"
+                                        size="small"
+                                        onChange={handlePageChange}
+                                        sx={{mt: 2, mb: 1}}
+                                    />
+                                </Box>
+                            </Box>
                         </>
                     )}
+
 
                     {/* Keine Ergebnisse */}
                     {isStringNotNullOrEmpty(debouncedSearch) &&
@@ -200,17 +246,22 @@ export function ShellSearchDialog() {
                                     left: '50%',
                                     transform: 'translate(-50%, -50%)',
                                     width: '50%',
-                                    textAlign: 'center'
+                                    textAlign: 'center',
                                 }}
                             >
-                                <b>Keine Ergebnisse gefunden.</b><br /> Bitte versuchen Sie es mit einem anderen Suchbegriff.
+                                <b>Keine Ergebnisse gefunden.</b>
+                                <br />
+                                Bitte versuchen Sie es mit einem anderen Suchbegriff.
                             </Typography>
                         )}
 
                     {/* Zuletzt verwendet */}
                     {isStringNullOrEmpty(debouncedSearch) && entityHistory.length > 0 && (
                         <>
-                            <Typography variant="h6" sx={{mt: 2.5}}>
+                            <Typography
+                                variant="h6"
+                                sx={{mt: 2.5}}
+                            >
                                 Zuletzt verwendet
                             </Typography>
                             <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
@@ -220,7 +271,7 @@ export function ShellSearchDialog() {
                                         id={item.title}
                                         type={item.type}
                                         link={item.link}
-                                        search={search}
+                                        search={debouncedSearch}
                                         label={item.title}
                                     />
                                 ))}
@@ -239,7 +290,7 @@ export function ShellSearchDialog() {
                                 transform: 'translate(-50%, -50%)',
                                 width: '50%',
                                 textAlign: 'center',
-                                color: 'text.secondary'
+                                color: 'text.secondary',
                             }}
                         >
                             Bitte geben Sie einen Suchbegriff ein, um nach Formularen, Prozessen oder Vorgangsdaten zu suchen.
@@ -279,7 +330,7 @@ function SearchDialogListItem(props: ShellSearchDialogProps) {
                 borderBottom: '1px solid #eee',
                 px: 0.25,
                 color: 'inherit',
-                '&:hover': {backgroundColor: '#f9f9f9'}
+                '&:hover': {backgroundColor: '#f9f9f9'},
             }}
         >
             <ListItemIcon sx={{color: 'primary.dark', minWidth: '2.5rem', textAlign: 'center'}}>
@@ -297,12 +348,16 @@ function SearchDialogListItem(props: ShellSearchDialogProps) {
                         sx: {
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                        }
-                    }
+                            textOverflow: 'ellipsis',
+                        },
+                    },
                 }}
             />
-            <Chip size="small" sx={{ml: 2}} label={OriginTableLabels[type] ?? 'Unbekannt'} />
+            <Chip
+                size="small"
+                sx={{ml: 2}}
+                label={OriginTableLabels[type] ?? 'Unbekannt'}
+            />
         </ListItem>
     );
 }
