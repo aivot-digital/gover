@@ -291,7 +291,7 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
         }
 
         if (otherElement.destinationKey === element.destinationKey && element.destinationKey != null) {
-            const otherElementLabel = generateComponentTitle(element);
+            const otherElementLabel = generateComponentTitle(otherElement);
             const otherElementPath = otherElementParents
                 .map(e => generateComponentTitle(e))
                 .join(' > ');
