@@ -22,7 +22,7 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
         case 'payment_providers':
             return '/payment-providers/' + id;
         case 'presets':
-            return `/presets/${idParts[0]}/${idParts[1]}`;
+            return `/presets/edit/${idParts[0]}/${idParts[1]}`;
         case 'provider_links':
             return '/provider-links/' + id;
         case 'secrets':
