@@ -23,10 +23,11 @@ export function ShellOffline() {
             <Paper
                 sx={{
                     p: 5,
+                    pb: 7,
                     maxWidth: '30rem',
                 }}
             >
-                <CloudOff sx={{ fontSize: 64, mb: 2, color: 'primary' }} />
+                <CloudOff sx={{ fontSize: 64, mb: 1, color: 'primary.main' }} />
                 <Typography variant="h2" sx={{ mb: 2 }} fontWeight={600}>
                     Verbindung unterbrochen
                 </Typography>
@@ -40,7 +41,7 @@ export function ShellOffline() {
                     variant="contained"
                     startIcon={<Refresh />}
                     color="inherit"
-                    sx={{ mt: 3 }}
+                    sx={{ mt: 4 }}
                 >
                     Erneut versuchen
                 </Button>
