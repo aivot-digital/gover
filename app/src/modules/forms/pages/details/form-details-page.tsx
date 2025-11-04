@@ -39,7 +39,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {DeveloperTools} from '../../../../components/developer-tools/developer-tools';
 import {FormsApiService} from '../../forms-api-service';
-import {FormsApiService as FormsApiService2} from '../../forms-api-service-v2';
+import {FormsApiService as FormsApiServiceV2} from '../../forms-api-service-v2';
 import {enqueueSnackbar} from 'notistack';
 import {FormRevisionsDialog} from '../../dialogs/form-revisions-dialog';
 import {ElementTreeEntity} from '../../../../components/element-tree/element-tree-entity';
@@ -132,7 +132,7 @@ export function FormDetailsPage() {
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const [identityProviderInfos, setIdentityProviderInfos] = useState<IdentityProviderInfo[]>([]);
 
-    const formApiService = useMemo(() => new FormsApiService2(), []);
+    const formApiService = useMemo(() => new FormsApiServiceV2(), []);
 
     const [theme, setTheme] = useState<Theme>();
 
@@ -269,7 +269,7 @@ export function FormDetailsPage() {
         withAsyncWrapper<any, ElementDerivationResponse>({
             desiredMinRuntime: 600,
             main: () => {
-                return new FormsApiService(api)
+                return formApiService
                     .determineFormState(
                         loadedForm.slug,
                         loadedForm.version,
@@ -336,7 +336,7 @@ export function FormDetailsPage() {
                 version: formVersion,
             }, pastLoadedForm[pastLoadedForm.length - 1])
             .then((loadedForm) => {
-                new FormsApiService(api)
+                formApiService
                     .determineFormState(
                         loadedForm.slug,
                         loadedForm.version,
@@ -375,7 +375,7 @@ export function FormDetailsPage() {
                 version: formVersion,
             }, futureLoadedForm[futureLoadedForm.length - 1])
             .then((loadedForm) => {
-                new FormsApiService(api)
+                formApiService
                     .determineFormState(
                         loadedForm.slug,
                         loadedForm.version,
@@ -476,7 +476,7 @@ export function FormDetailsPage() {
 
                     try {
                         console.log('Determening Form State');
-                        const newState = await apiService
+                        const newState = await formApiService
                             .determineFormState(
                                 loadedForm.slug,
                                 loadedForm.version,

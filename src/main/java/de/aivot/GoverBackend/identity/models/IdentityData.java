@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.identity.models;
 
 import de.aivot.GoverBackend.identity.cache.entities.IdentityCacheEntity;
-
 import jakarta.annotation.Nonnull;
 
 import java.io.Serializable;
@@ -10,7 +9,7 @@ import java.util.UUID;
 
 public record IdentityData(
         @Nonnull
-        String identityId,
+        UUID identityId,
         @Nonnull
         UUID providerKey,
         @Nonnull
@@ -18,14 +17,14 @@ public record IdentityData(
         @Nonnull
         Map<String, String> attributes
 ) implements Serializable {
-    public static IdentityData from(@Nonnull String identityId, @Nonnull IdentityCacheEntity entity) {
+    public static IdentityData from(@Nonnull IdentityCacheEntity entity) {
         var uuid = UUID.fromString(entity.getProviderKey());
 
         return new IdentityData(
-                identityId,
+                entity.getSessionId(),
                 uuid,
                 entity.getMetadataIdentifier(),
-                entity.getIdentityData()
+                entity.getIdentityData() != null ? entity.getIdentityData() : Map.of()
         );
     }
 }

@@ -707,6 +707,23 @@ export function IdentityProviderDetailsPageIndex() {
                         disabled={inputsDisabled || isSystemProvider}
                     />
                 </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        md: 6
+                    }}>
+                    <CheckboxFieldComponent
+                        label="PKCE S256 (Proof Key for Code Exchange) verwenden"
+                        value={identityProvider.pkceMethod === 'S256'}
+                        onChange={(value) => {
+                            handleInputChange('pkceMethod')(value ? 'S256' : null);
+                        }}
+                        variant="switch"
+                        error={errors.pkceMethod}
+                        hint="Gibt an, ob bei der Authorisierung das PKCE-Verfahren mit dem S256-Hashalgorithmus verwendet werden soll. Dies erhöht die Sicherheit bei der Authorisierung, insbesondere bei öffentlichen Clients."
+                        disabled={inputsDisabled || isSystemProvider}
+                    />
+                </Grid>
 
                 <Grid size={12}>
                     <Typography

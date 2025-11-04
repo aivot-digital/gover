@@ -30,6 +30,7 @@ import {Api, useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {FormsApiService} from '../../modules/forms/forms-api-service';
+import {FormsApiService as FormsApiServiceV2} from '../../modules/forms/forms-api-service-v2';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {SubmissionStatus} from '../../modules/submissions/enums/submission-status';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
@@ -39,7 +40,7 @@ import {StepElement} from '../../models/elements/steps/step-element';
 import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
-import {ElementData, ElementDataObject, newElementDataObject} from '../../models/element-data';
+import {ElementData, ElementDataObject, isElementData, newElementDataObject} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
@@ -256,7 +257,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
         // Check if submit step
         else if (currentStep === (totalStepCount - 1)) {
-            const formsApiService = new FormsApiService(api);
+            const formsApiService = new FormsApiServiceV2();
 
             setIsSubmitting(true);
 
@@ -281,7 +282,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     }, submitElementData, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
-                    if (isApiError(error) && error.details != null && typeof error.details === 'object') {
+                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && isElementData(error.details)) {
                         onElementDataChange(error.details as ElementData, []);
                     } else {
                         switch (error.status) {
@@ -425,7 +426,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         try {
             const derivationResult = await withAsyncWrapper({
                 desiredMinRuntime: 600,
-                main: () => new FormsApiService(api).determineFormState(
+                main: () => new FormsApiServiceV2().determineFormState(
                     form.slug,
                     form.version,
                     elementData,

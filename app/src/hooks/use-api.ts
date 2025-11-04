@@ -6,7 +6,6 @@ import {clearAuthData, selectAuthData, setAuthData} from '../slices/auth-slice';
 import {isApiError} from '../models/api-error';
 import {ApiOptions, ApiService} from '../services/api-service';
 import {Api} from '@mui/icons-material';
-import {createApiPath} from '../utils/url-path-utils';
 import {BaseApiService, RequestOptions} from '../services/base-api-service';
 import {AuthService} from '../services/auth-service';
 
@@ -78,13 +77,11 @@ function baseApiServiceAsApi(): Api {
                 .get<T>(`/api/${url}`, apiOptionsToRequestOptions(options));
         },
         getPublic: async <T>(url: string, options?: ApiOptions): Promise<T> => {
-            try {
-                return await api
-                    .get<T>(`/api/public/${url}`, apiOptionsToRequestOptions(options));
-            } catch (err) {
-                return await api
-                    .getUnauthenticated<T>(`/api/public/${url}`, apiOptionsToRequestOptions(options));
-            }
+            return await api
+                .get<T>(`/api/public/${url}`, {
+                    ...apiOptionsToRequestOptions(options),
+                    skipAuthCheck: true,
+                });
         },
         getBlob: async (url: string, options?: ApiOptions): Promise<Blob> => {
             return await api
@@ -92,7 +89,10 @@ function baseApiServiceAsApi(): Api {
         },
         post: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
             return await api
-                .post(`/api/${url}`, data, apiOptionsToRequestOptions(options));
+                .post(`/api/${url}`, data, {
+                    ...apiOptionsToRequestOptions(options),
+                    skipAuthCheck: true,
+                });
         },
         postXML: async <T>(url: string, data: ArrayBuffer | string, options?: ApiOptions): Promise<T> => {
             return await api

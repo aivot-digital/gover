@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.models.IdentityAttributeMapping;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ public record IdentityProviderListDTO(
         @Nonnull UUID key,
         @Nonnull String metadataIdentifier,
         @Nonnull IdentityProviderType type,
+        @Nullable String pkceMethod,
         @Nonnull String name,
         @Nonnull String description,
         @Nonnull List<IdentityAttributeMapping> attributes,
@@ -23,6 +25,7 @@ public record IdentityProviderListDTO(
                 entity.getKey(),
                 entity.getMetadataIdentifier(),
                 entity.getType(),
+                entity.getPkceMethod(),
                 entity.getName(),
                 entity.getDescription(),
                 entity.getAttributes(),

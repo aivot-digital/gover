@@ -67,43 +67,45 @@ const SnackbarConsumer = () => {
                 persist: type !== SnackbarType.AutoHiding,
                 preventDuplicate: true,
                 content: (key) => {
-                    return (<Alert
-                        onClose={
-                            (
-                                type === SnackbarType.Loading ||
-                                type == SnackbarType.Permanent
-                            ) ?
-                                undefined
-                                : () => {
-                                    closeSnackbar(key);
-                                    dispatch(removeSnackbar(key as string));
-                                    displayedMessages.current.delete(key);
-                                }
-                        }
-                        severity={severity}
-                        icon={type === SnackbarType.Loading ? <CircularProgress size={22} /> : undefined}
-                        sx={{
-                            width: '100%',
-                            maxWidth: 460,
-                            backgroundColor: 'white',
-                            fontSize: '0.9375rem',
-                            borderRadius: '6px',
-                            padding: '6px 14px',
-                            position: 'relative',
-                            wordBreak: 'keep-all',
-                            hyphens: 'manual',
-                            boxShadow: 'rgba(2, 6, 12, 0.31) 0px 0px 1px 0px, rgba(2, 6, 12, 0.25) 0px 6px 12px -4px',
-                            borderLeft: type !== SnackbarType.Loading ? `4px solid ${
-                                severity === 'error' ? theme.palette.error.light :
-                                    severity === 'warning' ? theme.palette.warning.light :
-                                        severity === 'info' ? theme.palette.info.light :
-                                            severity === 'success' ? theme.palette.success.light :
-                                                theme.palette.grey[400]
-                            }` : `4px solid ${theme.palette.grey[400]}`,
-                        }}
-                    >
-                        {formattedMessage}
-                    </Alert>);
+                    return (
+                        <Alert
+                            onClose={
+                                (
+                                    type === SnackbarType.Loading ||
+                                    type == SnackbarType.Permanent
+                                ) ?
+                                    undefined
+                                    : () => {
+                                        closeSnackbar(key);
+                                        dispatch(removeSnackbar(key as string));
+                                        displayedMessages.current.delete(key);
+                                    }
+                            }
+                            severity={severity}
+                            icon={type === SnackbarType.Loading ? <CircularProgress size={22} /> : undefined}
+                            sx={{
+                                width: '100%',
+                                maxWidth: 460,
+                                backgroundColor: 'white',
+                                fontSize: '0.9375rem',
+                                borderRadius: '6px',
+                                padding: '6px 14px',
+                                position: 'relative',
+                                wordBreak: 'keep-all',
+                                hyphens: 'manual',
+                                boxShadow: 'rgba(2, 6, 12, 0.31) 0px 0px 1px 0px, rgba(2, 6, 12, 0.25) 0px 6px 12px -4px',
+                                borderLeft: type !== SnackbarType.Loading ? `4px solid ${
+                                    severity === 'error' ? theme.palette.error.light :
+                                        severity === 'warning' ? theme.palette.warning.light :
+                                            severity === 'info' ? theme.palette.info.light :
+                                                severity === 'success' ? theme.palette.success.light :
+                                                    theme.palette.grey[400]
+                                }` : `4px solid ${theme.palette.grey[400]}`,
+                            }}
+                        >
+                            {formattedMessage}
+                        </Alert>
+                    );
                 },
             });
 

@@ -153,7 +153,7 @@ public class CitizenFormController {
     public FormCitizenDetailsResponseDTO retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
                                                   @Nonnull @PathVariable String slug,
                                                   @Nullable @RequestParam(value = "version", required = false) Integer version,
-                                                  @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId) throws ResponseException {
+                                                  @Nullable @RequestHeader(value = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId) throws ResponseException {
         var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, false);
 
         var identityCache = identityId == null ? Optional.empty() : identityCacheRepository

@@ -15,6 +15,9 @@ public final class IdentityQueryParameterConstants {
     public static final String AUTH_ENDPOINT_SCOPE = "scope";
     public static final String AUTH_ENDPOINT_STATE = "state";
 
+    public static final String AUTH_ENDPOINT_CODE_CHALLENGE = "code_challenge";
+    public static final String AUTH_ENDPOINT_CODE_CHALLENGE_METHOD = "code_challenge_method";
+
     public static final String REMOTE_AUTH_STATE = "state";
     public static final String REMOTE_AUTH_AUTHORIZATION_CODE = "code";
     public static final String REMOTE_AUTH_ERROR = "error";

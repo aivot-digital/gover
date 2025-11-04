@@ -149,7 +149,7 @@ public class SubmitController {
             @PathVariable Integer formVersion,
             @RequestParam(value = "inputs", required = true) String inputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId
     ) throws ResponseException {
         // Fetch form
         var form = formVersionWithDetailsRepository
@@ -411,7 +411,7 @@ public class SubmitController {
 
         // Create the identity value
         var identityValue = new IdentityData(
-                identityCacheEntity.getId(),
+                identityCacheEntity.getSessionId(),
                 UUID.fromString(identityCacheEntity.getProviderKey()),
                 identityCacheEntity.getMetadataIdentifier(),
                 identityCacheEntity.getIdentityData()
@@ -556,8 +556,8 @@ public class SubmitController {
         return form.map(submission::hasExternalAccessExpired).orElse(true);
     }
 
-    private Optional<IdentityCacheEntity> extractIdp(String identityId) {
-        if (StringUtils.isNullOrEmpty(identityId)) {
+    private Optional<IdentityCacheEntity> extractIdp(@Nullable UUID identityId) {
+        if (identityId == null) {
             return Optional.empty();
         }
         return identityCacheRepository.findById(identityId);

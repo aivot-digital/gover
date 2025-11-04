@@ -727,11 +727,28 @@ public class FormController {
         // Check if the form is locked by another user
         checkFormLock(formId, user, formLockService);
 
+        // Store the previous department id
+        var previousDepartmentId = form.getDevelopingDepartmentId();
+
         // Move the form to the target department
         form.setDevelopingDepartmentId(targetDepartmentId);
 
         // Create a revision for the form
         formService.update(formId, form);
+
+        // Get a list of all versions of the form
+        var allVersions = formVersionWithDetailsService
+                .list(FormVersionWithDetailsFilter.create().setFormId(formId));
+
+        // Create a revision for each version of the form with the previous department id
+        for (var version : allVersions) {
+            var original = version
+                    .clone()
+                    .setDevelopingDepartmentId(previousDepartmentId);
+
+            formRevisionService
+                    .create(user, version, original);
+        }
     }
 
 

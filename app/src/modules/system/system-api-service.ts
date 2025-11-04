@@ -5,8 +5,9 @@ import {HttpExchanges} from '../../models/dtos/http-exchange';
 
 export class SystemApiService extends BaseApiService {
     public fetchSetup(): Promise<SystemSetupDTO> {
-        return this.getUnauthenticated<SystemSetupDTO>('/api/public/system/setup/', {
+        return this.get<SystemSetupDTO>('/api/public/system/setup/', {
             doNotHandleStatusCodes: true,
+            skipAuthCheck: true,
         });
     }
 

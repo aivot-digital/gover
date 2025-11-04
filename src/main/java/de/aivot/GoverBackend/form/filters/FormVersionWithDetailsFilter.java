@@ -46,7 +46,7 @@ public class FormVersionWithDetailsFilter implements Filter<FormVersionWithDetai
         return SpecificationBuilder
                 .create(FormVersionWithDetailsEntity.class)
                 .withEquals("id", id)
-                .withContains("slug", slug)
+                .withEquals("slug", slug)
                 .withContains("internalTitle", internalTitle)
                 .withContains("publicTitle", publicTitle)
                 .withEquals("developingDepartmentId", developingDepartmentId)

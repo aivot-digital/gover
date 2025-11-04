@@ -11,4 +11,5 @@ export interface IdentityProviderDetailsDTO extends IdentityProviderListDTO {
     clientSecretKey?: string | null;
     defaultScopes: string[];
     additionalParams: IdentityAdditionalParameter[];
+    pkceMethod?: 'S256' | null;
 }

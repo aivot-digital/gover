@@ -38,9 +38,9 @@ public class IdentityController {
         this.identityService = identityService;
     }
 
-    @GetMapping("{key}/start/")
+    @GetMapping("{providerKey}/start/")
     public void start(
-            @Nonnull @PathVariable UUID key,
+            @Nonnull @PathVariable UUID providerKey,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ADDITIONAL_SCOPES, required = false) List<String> additionalScopes,
             @Nonnull HttpServletRequest request,
@@ -48,8 +48,7 @@ public class IdentityController {
     ) throws ResponseException, IOException {
         var redirectUrl = identityService
                 .createRedirectURL(
-                        key,
-                        createCallbackURI(key),
+                        providerKey,
                         origin,
                         additionalScopes
                 );
@@ -58,9 +57,10 @@ public class IdentityController {
                 .sendRedirect(redirectUrl.toString());
     }
 
-    @GetMapping("{key}/callback/")
+    @GetMapping("{providerKey}/callback/{identitySessionId}/")
     public void callback(
-            @Nonnull @PathVariable UUID key,
+            @Nonnull @PathVariable UUID providerKey,
+            @Nonnull @PathVariable UUID identitySessionId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_STATE) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
@@ -80,9 +80,9 @@ public class IdentityController {
 
         var redirectUrl = identityService
                 .handleCallback(
-                        key,
+                        providerKey,
+                        identitySessionId,
                         authorizationCode,
-                        createCallbackURI(key),
                         origin
                 );
 
@@ -91,33 +91,19 @@ public class IdentityController {
 
     @GetMapping("get/")
     public IdentityData get(
-            @Nullable @RequestHeader(name = IDENTITY_HEADER_NAME, required = true) String identityId
+            @Nullable @RequestHeader(name = IDENTITY_HEADER_NAME, required = true) UUID identitySessionId
     ) throws ResponseException {
-        if (identityId == null) {
+        if (identitySessionId == null) {
             throw ResponseException
                     .unauthorized("Sie haben sich bisher nicht angemeldet.");
         }
 
         var identityCacheEntity = identityCacheRepository
-                .findById(identityId)
+                .findById(identitySessionId)
                 .orElseThrow(() -> ResponseException
                         .unauthorized("Sie haben sich bisher nicht angemeldet."));
 
         return IdentityData
-                .from(identityId, identityCacheEntity);
+                .from(identityCacheEntity);
     }
-
-    // region Utility methods
-
-    @Nonnull
-    private URI createCallbackURI(
-            @Nonnull UUID key
-    ) {
-        var callbackUrl = goverConfig
-                .createUrl("/api/public/identity/" + key + "/callback/");
-        return URI
-                .create(callbackUrl);
-    }
-
-    // endregion
 }
