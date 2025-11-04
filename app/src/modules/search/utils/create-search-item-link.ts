@@ -10,9 +10,9 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
         case 'departments':
             return `/departments/${id}`;
         case 'data_object_items':
-            return `/data-objects/${idParts[0]}/items/${idParts[1]}`;
+            return `/data-objects/${idParts[0]}/${idParts[1]}`;
         case 'data_object_schemas':
-            return `/data-objects/${id}`;
+            return `/data-models/${id}`;
         case 'destinations':
             return '/destinations/' + id;
         case 'forms':
