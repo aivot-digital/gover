@@ -340,7 +340,7 @@ function SearchDialogListItem(props: ShellSearchDialogProps) {
                 primary={label}
                 secondary={
                     isStringNotNullOrEmpty(search) && type === ServerEntityType.DataObjectItems
-                        ? `Hinweis: Das Datenobjekt beinhaltet den Wert „${search}“`
+                        ? `Das Datenobjekt beinhaltet den Wert „${search}“`
                         : null
                 }
                 slotProps={{
