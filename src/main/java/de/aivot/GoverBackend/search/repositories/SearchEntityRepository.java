@@ -31,7 +31,7 @@ public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEnt
                         FROM
                             search_items
                         WHERE
-                            word_similarity(search_text, :search) > 0.1
+                            word_similarity(search_text, :search) > 0.05
                         ORDER BY
                             sim DESC;
                     """, nativeQuery = true
