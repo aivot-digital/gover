@@ -303,7 +303,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                     id={element.id}
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Schutz vor automatisierten Einreichungen
                 </Typography>

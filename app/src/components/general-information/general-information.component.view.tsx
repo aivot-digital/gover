@@ -140,7 +140,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Zuständige Stelle
                 </Typography>
@@ -165,7 +164,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Bewirtschaftende Stelle
                 </Typography>
@@ -236,7 +234,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Antragsfristen
                 </Typography>
@@ -258,7 +255,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Gebühren dieses Antrages
                 </Typography>
@@ -336,7 +332,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <Typography
                 component="h4"
                 variant="h5"
-                color="primary"
                 sx={{
                     mt: 4,
                 }}

@@ -51,7 +51,6 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
             <Typography
                 component="h3"
                 variant="h5"
-                color="primary"
                 sx={{mt: 6}}
             >
                 Bestätigung der Datenprüfung
