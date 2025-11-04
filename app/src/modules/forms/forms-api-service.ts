@@ -159,24 +159,6 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         return await this.api.get<Form>(`forms/${formId.id}/${formId.version}/revisions/rollback/${revisionId}/`, options);
     }
 
-    public async determineFormState(slug: string, version: number, customerInput: CustomerInput, filter: {
-        skipErrorsFor: DerivationSkipIdentifier,
-        skipVisibilitiesFor: DerivationSkipIdentifier,
-        skipValuesFor: DerivationSkipIdentifier,
-        skipOverridesFor: DerivationSkipIdentifier,
-    }): Promise<ElementDerivationResponse> {
-        return await this.api.post<ElementDerivationResponse>(
-            `public/forms/${slug}/derive`,
-            customerInput,
-            {
-                queryParams: {
-                    ...filter,
-                    version: version,
-                },
-            },
-        );
-    }
-
     public async calculateCosts(slug: string, version: number, customerInput: CustomerInput): Promise<FormCostCalculationResponseDTO> {
         return await this.api.post<FormCostCalculationResponseDTO>(`public/forms/${slug}/costs/`, customerInput, {queryParams: {version: version}});
     }
@@ -257,21 +239,6 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
         return await this.api.getPublic(`forms/${slug}/identity-providers/?${version != null ? `version=${version}` : ''}`);
     }
 
-    public retrieveBySlugAndVersion(slug: string, version: string | undefined, identityId: string | undefined) {
-        const apiOptions: ApiOptions | undefined = identityId != null ? {
-            requestOptions: {
-                headers: {
-                    [IdentityIdHeader]: identityId,
-                },
-            },
-        } : undefined;
-
-        if (version == null) {
-            return this.api.getPublic<FormCitizenDetailsResponseDTO>(`forms/${slug}/`, apiOptions);
-        }
-        return this.api.getPublic<FormCitizenDetailsResponseDTO>(`forms/${slug}/?version=${version}`, apiOptions);
-    }
-
     public latestAsNewVersion(id: number): Promise<FormDetailsResponseDTO> {
         return this.api.put<FormDetailsResponseDTO>(`forms/${id}/latest/as-new-version/`, {});
     }
@@ -298,9 +265,5 @@ export class FormsApiService extends CrudApiService<FormRequestDTO, FormListResp
 
     public xdfTransform(value: string | ArrayBuffer): Promise<FormDetailsResponseDTO> {
         return this.api.postXML<FormDetailsResponseDTO>('xdf/v2/transform/', value);
-    }
-
-    public retrieveLatest(formId: number): Promise<FormDetailsResponseDTO> {
-        return this.api.get<FormDetailsResponseDTO>(`forms/${formId}/latest/`);
     }
 }

@@ -40,6 +40,8 @@ export class DepartmentsApiService extends BaseCrudApiService<DepartmentRequestD
     }
 
     public retrievePublic(id: number): Promise<DepartmentResponseDTO> {
-        return this.get<DepartmentResponseDTO>(`api/public/departments/${id}/`, {});
+        return this.get<DepartmentResponseDTO>(`api/public/departments/${id}/`, {
+            skipAuthCheck: true,
+        });
     }
 }

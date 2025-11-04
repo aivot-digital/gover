@@ -21,12 +21,14 @@ import {PublicFormListItem} from '../../components/public-form-list-item/public-
 import {FormsApiService} from '../../modules/forms/forms-api-service-v2';
 import {CustomerListPageHeader} from './customer-list-page-header';
 import {CustomerListPageFooter} from './customer-list-page-footer';
+import {isApiError} from '../../models/api-error';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
 
 export function CustomerListPage() {
     const dispatch = useAppDispatch();
 
     const [failedToLoad, setFailedToLoad] = useState(false);
-    const [applications, setApplications] = useState<FormCitizenListResponseDTO[]>();
+    const [forms, setForms] = useState<FormCitizenListResponseDTO[]>();
     const [search, setSearch] = useState('');
 
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -36,10 +38,16 @@ export function CustomerListPage() {
     useEffect(() => {
         new FormsApiService()
             .listPublicAll()
-            .then(setApplications)
+            .then(setForms)
             .catch((err) => {
-                console.error(err);
+                if (isApiError(err) && err.displayableToUser) {
+                    dispatch(showErrorSnackbar(err.message));
+                } else {
+                    dispatch(showErrorSnackbar('Beim Laden der Formulare ist ein unbekannter Fehler aufgetreten.'));
+                }
+
                 setFailedToLoad(true);
+                console.error(err);
             });
 
         dispatch(resetStepper());
@@ -70,10 +78,10 @@ export function CustomerListPage() {
                 />
             </>
         );
-    } else if (applications == null) {
+    } else if (forms == null) {
         return <LoadingPlaceholder />;
     } else {
-        const filteredApplications = applications.filter((app) => app
+        const filteredApplications = forms.filter((app) => app
             .title
             .toLowerCase()
             .includes(search.toLowerCase()),
@@ -134,7 +142,7 @@ export function CustomerListPage() {
                                             ))
                                         }
                                         {
-                                            applications.length === 0 &&
+                                            forms.length === 0 &&
                                             filteredApplications.length === 0 &&
                                             <AlertComponent
                                                 color="info"
@@ -145,7 +153,7 @@ export function CustomerListPage() {
                                             </AlertComponent>
                                         }
                                         {
-                                            applications.length > 0 &&
+                                            forms.length > 0 &&
                                             filteredApplications.length === 0 &&
                                             <EmptySearchDataListPlaceholder
                                                 helperText="Es gibt keine Formulare, die Ihrer Suche entsprechen…"

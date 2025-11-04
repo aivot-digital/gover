@@ -5,7 +5,6 @@ import {CustomerShell} from './customer-shell';
 import {AppProvider} from '../../providers/app-provider';
 import {store} from '../../store.customer';
 import {Provider as StoreProvide} from 'react-redux';
-import {CustomerShellError} from './customer-shell-error';
 import {CustomerListPage} from '../../pages/customer-pages/customer-list-page';
 import {CustomerFormPage} from '../../pages/customer-pages/customer-form-page';
 
@@ -17,11 +16,7 @@ const router = sentryCreateBrowserRouter(
     [
         {
             element: <CustomerShell />,
-            errorElement: (
-                <CustomerShell>
-                    <CustomerShellError />
-                </CustomerShell>
-            ),
+            errorElement: <CustomerShell />,
             children: [
                 {
                     index: true,

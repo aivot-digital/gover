@@ -1,6 +1,7 @@
 import {getUrlWithoutQuery} from '../utils/location-utils';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../utils/string-utils';
 import {dispatchApiUnreachableEvent, handleFetchError} from './base-api-service';
+import {ApiError} from '../models/api-error';
 
 const TOKEN_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/token`;
 const AUTH_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth`;
@@ -28,6 +29,13 @@ const OidcCodeVerifierLength = 48;
 const OidcCodeVerifierLocalStorageKey = 'oidc_code_verifier';
 
 const DEFAULT_TIMEOUT = 5000; // 5 seconds
+
+const DefaultUnauthorizedApiError: ApiError = {
+    status: 401,
+    message: 'Sie sind nicht angemeldet',
+    details: null,
+    displayableToUser: true,
+};
 
 export class AuthService {
     /**
@@ -87,11 +95,15 @@ export class AuthService {
      * Returns null if no valid token is available.
      *
      * @param signal Optional AbortSignal to cancel the request.
+     * @param throwUnauthorizedException If true, throws an ApiError if the user is unauthorized.
      */
-    public async getAccessToken(signal?: AbortSignal): Promise<string | null> {
-        // Get the stored JWT from local storage^
+    public async getAccessToken(signal: AbortSignal | undefined | null, throwUnauthorizedException: boolean = true): Promise<string | null> {
+        // Get the stored JWT from local storage
         const storedJwt = this.getLocalStorageJWT();
         if (storedJwt == null) {
+            if (throwUnauthorizedException) {
+                throw DefaultUnauthorizedApiError;
+            }
             return null;
         }
 
@@ -102,6 +114,9 @@ export class AuthService {
 
         // If the refresh token is expired, return null
         if (this.isTokenExpired(storedJwt.refresh)) {
+            if (throwUnauthorizedException) {
+                throw DefaultUnauthorizedApiError;
+            }
             return null;
         }
 
@@ -111,6 +126,9 @@ export class AuthService {
         // If refreshing failed, clear the stored JWT and return null
         if (refreshedOidcJwt == null) {
             this.setLocalStorageJWT(null);
+            if (throwUnauthorizedException) {
+                throw DefaultUnauthorizedApiError;
+            }
             return null;
         }
 
@@ -224,7 +242,7 @@ export class AuthService {
      * @param jwt The current JWT containing the refresh token.
      * @param signal Optional AbortSignal to cancel the request.
      */
-    private async refreshJWT(jwt: JWT, signal?: AbortSignal): Promise<OidcJWT | null> {
+    private async refreshJWT(jwt: JWT, signal: AbortSignal | undefined | null): Promise<OidcJWT | null> {
         const payload = new URLSearchParams({
             grant_type: 'refresh_token',
             client_id: AppConfig.oidc.client,

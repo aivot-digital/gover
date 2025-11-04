@@ -18,14 +18,14 @@ import {Theme} from '../../modules/themes/models/theme';
 import {useApi} from '../../hooks/use-api';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {ThemesApiService} from '../../modules/themes/themes-api-service';
-import {FormsApiService} from '../../modules/forms/forms-api-service';
 import {FormsApiService as FormsApiServiceV2} from '../../modules/forms/forms-api-service-v2';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
 import {ElementData} from '../../models/element-data';
 import {CustomerInputService} from '../../services/customer-input-service';
 import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-details-response-dto';
+import {setErrorMessage} from '../../slices/shell-slice';
+import {isApiError} from '../../models/api-error';
 
 export const DialogSearchParam = 'dialog';
 
@@ -43,8 +43,7 @@ export function CustomerFormPage() {
 
     const dispatch = useAppDispatch();
     const form = useAppSelector(selectLoadedForm);
-    const systemThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
-    const [failedToLoad, setFailedToLoad] = useState(false);
+
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const identityId = useAppSelector(selectIdentityId);
@@ -71,54 +70,51 @@ export function CustomerFormPage() {
             return;
         }
 
-        setFailedToLoad(false);
-        new FormsApiService(api)
+        new FormsApiServiceV2()
             .retrieveBySlugAndVersion(slug, version, identityId)
             .then((application) => {
                 const form = formCitizenDetailsResponseDTO(application);
                 dispatch(updateLoadedForm(form));
             })
             .catch(err => {
-                console.error(err);
-                setFailedToLoad(true);
+                if (err.status === 404) {
+                    dispatch(setErrorMessage({
+                        status: 404,
+                        message: 'Das angeforderte Formular wurde nicht gefunden.',
+                    }));
+                } else if (isApiError(err) && err.displayableToUser) {
+                    dispatch(setErrorMessage({
+                        status: err.status,
+                        message: err.message,
+                    }));
+                } else {
+                    dispatch(setErrorMessage({
+                        status: 500,
+                        message: 'Beim Laden des Formulars ist ein unbekannter Fehler aufgetreten.',
+                    }));
+                    console.error(err);
+                }
             });
     }, [slug, api, identityId]);
 
     useEffect(() => {
-        if (form != null && form.themeId != null) {
-            new ThemesApiService(api)
-                .retrievePublic(form.themeId)
-                .then(setTheme)
-                .catch((err) => {
-                    console.error(err);
-                });
+        if (slug == null) {
+            return;
         }
 
-        if (systemThemeId != null) {
-            new ThemesApiService(api)
-                .retrievePublic(parseInt(systemThemeId))
-                .then(setTheme)
-                .catch((err) => {
-                    console.error(err);
-                });
-        }
-    }, [form, systemThemeId]);
+        new FormsApiServiceV2()
+            .getFormTheme(slug, version)
+            .then(setTheme)
+            .catch(() => {
+                // Ignore theme loading errors
+            });
+    }, [slug, version]);
 
     const _theme = useMemo(() => {
         return createAppTheme(theme, baseTheme);
     }, [theme, baseTheme]);
 
-    if (failedToLoad) {
-        return (
-            <>
-                <MetaElement
-                    title="Seite nicht gefunden"
-                    titlePrefix={provider}
-                />
-                <NotFoundPage />
-            </>
-        );
-    } else if (form == null) {
+    if (form == null) {
         return (
             <LoadingPlaceholder />
         );
