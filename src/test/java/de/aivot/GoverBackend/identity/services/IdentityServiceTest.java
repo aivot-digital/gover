@@ -234,7 +234,7 @@ class IdentityServiceTest {
         )).thenReturn(mockUserInfoResponse);
 
         IdentityCacheEntity savedEntity = new IdentityCacheEntity()
-                .setId(UUID.randomUUID().toString())
+                .setSessionId(UUID.randomUUID())
                 .setIdentityData(Map.of("name", "John Doe", "email", "john.doe@example.com"))
                 .setProviderKey(providerKey.toString());
 

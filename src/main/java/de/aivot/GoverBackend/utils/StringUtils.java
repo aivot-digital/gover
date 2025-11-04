@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.utils;
 
 import jakarta.annotation.Nullable;
 
+import java.util.Random;
+
 public class StringUtils {
     public static String truncate(String string, int length) {
         if (string.length() > length) {
@@ -73,4 +75,14 @@ public class StringUtils {
         return slug;
     }
 
+    private static final String RANDOM_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    public static String randomString(int length) {
+        var result = new StringBuilder();
+        var random = new Random();
+        for (int i = 0; i < length; i++) {
+            result.append(RANDOM_CHARACTERS.charAt(random.nextInt(RANDOM_CHARACTERS.length())));
+        }
+        return result.toString();
+    }
 }

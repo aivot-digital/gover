@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.system.properties.CORSProperties;
+import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +25,26 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service for handling identity provider authentication flows, including
+ * redirect URL construction, callback handling, token exchange, user info retrieval,
+ * and logout. Integrates with caching, configuration, and secret management.
+ *
+ * <p>
+ * This service supports OAuth2/OpenID Connect flows for external identity providers,
+ * manages PKCE, validates origins, and ensures secure handling of authentication data.
+ * </p>
+ */
 @Service
 public class IdentityService {
     private static final Logger logger = LoggerFactory.getLogger(IdentityService.class);
@@ -42,6 +55,9 @@ public class IdentityService {
     public static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
     public static final String AUTHORIZATION_HEADER_KEY = "Authorization";
 
+    private static final int PKCE_CODE_VERIFIER_LENGTH = 48;
+    private static final String PKCE_METHOD_S256 = "S256";
+
     private final GoverConfig goverConfig;
     private final CORSProperties corsProperties;
     private final SecretService secretService;
@@ -50,13 +66,12 @@ public class IdentityService {
     private final IdentityCacheRepository identityCacheRepository;
 
     @Autowired
-    public IdentityService(
-            GoverConfig goverConfig, CORSProperties corsProperties,
-            SecretService secretService,
-            HttpService httpService,
-            IdentityProviderService identityProviderService,
-            IdentityCacheRepository identityCacheRepository
-    ) {
+    public IdentityService(GoverConfig goverConfig,
+                           CORSProperties corsProperties,
+                           SecretService secretService,
+                           HttpService httpService,
+                           IdentityProviderService identityProviderService,
+                           IdentityCacheRepository identityCacheRepository) {
         this.goverConfig = goverConfig;
         this.corsProperties = corsProperties;
         this.secretService = secretService;
@@ -73,7 +88,6 @@ public class IdentityService {
      * redirect URI, and scopes. It also validates the referer and combines default and additional scopes.</p>
      *
      * @param providerKey      The key of the identity provider. Can be <code>null</code>.
-     * @param callbackBaseUrl  The base URL for the callback endpoint. Must not be <code>null</code>.
      * @param origin           The referer of the request, typically from the "Referer" header. Can be <code>null</code>.
      * @param additionalScopes A list of additional scopes to include in the request. Can be <code>null</code>.
      * @return A {@link URI} representing the constructed redirect URL.
@@ -83,15 +97,27 @@ public class IdentityService {
     @Nonnull
     public URI createRedirectURL(
             @Nullable UUID providerKey,
-            @Nonnull URI callbackBaseUrl,
             @Nullable String origin,
             @Nullable List<String> additionalScopes
     ) throws ResponseException {
         var provider = getIdentityProviderEntity(providerKey);
+
+        // Create a new cache entity
+        var identity = new IdentityCacheEntity(
+                UUID.randomUUID(),
+                null,
+                provider.getKey().toString(),
+                provider.getMetadataIdentifier(),
+                null
+        );
+
         var resolvedReferer = resolveOrigin(origin);
         var combinedScopes = getCombinedScopes(provider, additionalScopes);
 
         var resolvedAuthorizationUri = resolveRelativeOrAbsoluteURL(provider.getAuthorizationEndpoint());
+
+        // Create the callback URI
+        var callbackUri = createCallbackUri(provider, identity);
 
         // Create the redirect URL
         var builder = UriComponentsBuilder
@@ -100,7 +126,7 @@ public class IdentityService {
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_CLIENT_ID, provider.getClientId())
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_RESPONSE_TYPE, DEFAULT_RESPONSE_TYPE)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_LOGIN, DEFAULT_LOGIN_VALUE)
-                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_REDIRECT_URI, callbackBaseUrl)
+                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_REDIRECT_URI, callbackUri)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_SCOPE, combinedScopes)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_STATE, resolvedReferer.toString());
 
@@ -108,6 +134,47 @@ public class IdentityService {
         provider
                 .getAdditionalParams()
                 .forEach(qp -> builder.queryParam(qp.getKey(), qp.getValue()));
+
+        // Handle PKCE if configured
+        if (provider.getPkceMethod() != null) {
+            switch (provider.getPkceMethod()) {
+                case PKCE_METHOD_S256 -> {
+                    var codeVerifier = StringUtils.randomString(PKCE_CODE_VERIFIER_LENGTH);
+
+                    MessageDigest digest;
+                    try {
+                        digest = MessageDigest.getInstance("SHA-256");
+                    } catch (NoSuchAlgorithmException e) {
+                        throw ResponseException.internalServerError(
+                                e,
+                                "Der SHA-256 Algorithmus wird nicht unterstützt."
+                        );
+                    }
+                    byte[] encodedhash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
+
+                    identity.setCodeVerifier(codeVerifier);
+
+                    builder.queryParam(
+                            IdentityQueryParameterConstants.AUTH_ENDPOINT_CODE_CHALLENGE_METHOD,
+                            PKCE_METHOD_S256
+                    );
+                    builder.queryParam(
+                            IdentityQueryParameterConstants.AUTH_ENDPOINT_CODE_CHALLENGE,
+                            Base64.getUrlEncoder().withoutPadding().encodeToString(encodedhash)
+                    );
+                }
+                default -> {
+                    throw ResponseException.internalServerError(
+                            "Die PKCE-Methode %s des Nutzerkontenanbieters %s (%s) wird nicht unterstützt.",
+                            provider.getPkceMethod(),
+                            provider.getName(),
+                            provider.getKey()
+                    );
+                }
+            }
+        }
+
+        identityCacheRepository.save(identity);
 
         return builder
                 .build()
@@ -123,7 +190,6 @@ public class IdentityService {
      *
      * @param providerKey       The key of the identity provider. Can be <code>null</code>.
      * @param authorizationCode The authorization code received from the identity provider. Must not be <code>null</code>.
-     * @param callbackBaseUrl   The callback URL used during the authorization process. Must not be <code>null</code>.
      * @return The {@link IdentityCacheEntity} containing the cached identity data.
      * @throws ResponseException If the authorization code is missing, the identity provider is invalid or not enabled,
      *                           the token cannot be retrieved, user information cannot be fetched, or logout fails.
@@ -131,8 +197,8 @@ public class IdentityService {
     @Nonnull
     public String handleCallback(
             @Nullable UUID providerKey,
+            @Nonnull UUID identitySessionId,
             @Nullable String authorizationCode,
-            @Nonnull URI callbackBaseUrl,
             @Nonnull String origin
     ) throws ResponseException {
         if (authorizationCode == null) {
@@ -141,11 +207,17 @@ public class IdentityService {
         }
 
         var provider = getIdentityProviderEntity(providerKey);
+        var identity = identityCacheRepository
+                .findById(identitySessionId)
+                .orElseThrow(() -> ResponseException
+                        .badRequest("Die Identitätssitzung existiert nicht.")
+                );
 
         var authToken = fetchAuthToken(
                 provider,
                 authorizationCode,
-                callbackBaseUrl
+                createCallbackUri(provider, identity),
+                identity.getCodeVerifier()
         );
 
         var userInfo = fetchUserInfo(
@@ -158,20 +230,14 @@ public class IdentityService {
                 authToken
         );
 
-
-        var identityEntity = new IdentityCacheEntity()
-                .setId(UUID.randomUUID().toString())
-                .setIdentityData(userInfo)
-                .setMetadataIdentifier(provider.getMetadataIdentifier())
-                .setProviderKey(provider.getKey().toString());
-
-        identityEntity = identityCacheRepository
-                .save(identityEntity);
+        identity.setIdentityData(userInfo);
+        identityCacheRepository
+                .save(identity);
 
         return UriComponentsBuilder
                 .fromUriString(origin)
                 .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.Success.getKey())
-                .queryParam(IdentityQueryParameterConstants.RESULT_IDENTITY_ID, identityEntity.getId())
+                .queryParam(IdentityQueryParameterConstants.RESULT_IDENTITY_ID, identity.getSessionId())
                 .build()
                 .toString();
     }
@@ -400,13 +466,18 @@ public class IdentityService {
     private IdentityAuthTokenData fetchAuthToken(
             @Nonnull IdentityProviderEntity provider,
             @Nonnull String code,
-            @Nonnull URI callbackUrl
+            @Nonnull String callbackUrl,
+            @Nullable String codeVerifier
     ) throws ResponseException {
         var body = new HashMap<String, String>();
         body.put(IdentityBodyParameterConstants.TOKEN_ENDPOINT_GRANT_TYPE, GRANT_TYPE_AUTHORIZATION_CODE);
         body.put(IdentityBodyParameterConstants.TOKEN_ENDPOINT_CLIENT_ID, provider.getClientId());
         body.put(IdentityBodyParameterConstants.TOKEN_ENDPOINT_CODE, code);
-        body.put(IdentityBodyParameterConstants.TOKEN_ENDPOINT_REDIRECT_URI, callbackUrl.toString());
+        body.put(IdentityBodyParameterConstants.TOKEN_ENDPOINT_REDIRECT_URI, callbackUrl);
+
+        if (codeVerifier != null) {
+            body.put(IdentityBodyParameterConstants.TOKEN_ENDPOINT_CODE_VERIFIER, codeVerifier);
+        }
 
         getClientSecret(provider)
                 .ifPresent(secret -> body.put(IdentityBodyParameterConstants.TOKEN_ENDPOINT_CLIENT_SECRET, secret));
@@ -587,7 +658,7 @@ public class IdentityService {
                     );
         }
 
-        if (response.statusCode() != 204) {
+        if (response.statusCode() >= 400) {
             throw ResponseException
                     .internalServerError(
                             "Ungültiger Status-Code beim Logout für Nutzerkontenanbieter %s (%s): %d",
@@ -641,6 +712,11 @@ public class IdentityService {
 
         return Optional
                 .of(decryptedSecret);
+    }
+
+    private String createCallbackUri(@Nonnull IdentityProviderEntity provider, @Nonnull IdentityCacheEntity cacheEntity) {
+        return goverConfig
+                .createUrl("/api/public/identity/" + provider.getKey() +"/callback/" + cacheEntity.getSessionId() + "/");
     }
 
     // endregion

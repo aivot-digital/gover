@@ -31,7 +31,6 @@ class IdentityProviderServiceTest {
     private SecretRepository secretRepository;
     private AssetRepository assetRepository;
     private HttpService httpService;
-    private FormRepository formRepository;
     private FormVersionRepository formVersionRepository;
 
     @BeforeEach
@@ -40,14 +39,12 @@ class IdentityProviderServiceTest {
         identityProviderRepository = mock(IdentityProviderRepository.class);
         secretRepository = mock(SecretRepository.class);
         assetRepository = mock(AssetRepository.class);
-        formRepository = mock(FormRepository.class);
         formVersionRepository = mock(FormVersionRepository.class);
 
         identityProviderService = new IdentityProviderService(
                 identityProviderRepository,
                 secretRepository,
                 assetRepository,
-                formRepository,
                 httpService,
                 formVersionRepository
         );

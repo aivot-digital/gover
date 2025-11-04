@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
 import de.aivot.GoverBackend.identity.models.IdentityAdditionalParameter;
 import de.aivot.GoverBackend.identity.models.IdentityAttributeMapping;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -61,7 +62,9 @@ public record IdentityProviderRequestDTO(
         Boolean isEnabled,
         @Nonnull
         @NotNull(message = "Der Teststatus des Nutzerkontenanbieters ist erforderlich.")
-        Boolean isTestProvider
+        Boolean isTestProvider,
+        @Nullable
+        String pkceMethod
 ) {
     @Nonnull
     public IdentityProviderEntity toEntity() {
@@ -82,6 +85,7 @@ public record IdentityProviderRequestDTO(
                 .setDefaultScopes(defaultScopes)
                 .setAdditionalParams(additionalParams)
                 .setIsEnabled(isEnabled)
-                .setIsTestProvider(isTestProvider);
+                .setIsTestProvider(isTestProvider)
+                .setPkceMethod(pkceMethod);
     }
 }
