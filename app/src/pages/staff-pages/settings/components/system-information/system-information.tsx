@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Card, CardContent, CardHeader, CircularProgress, Grid, Typography} from '@mui/material';
+import {Box, Button, CircularProgress, Typography} from '@mui/material';
 import {format} from 'date-fns';
 import {HealthData, HealthDataComponents, Status} from '../../../../../models/dtos/health-data';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -14,13 +14,10 @@ import EventIcon from '@mui/icons-material/Event';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {downloadTextFile} from '../../../../../utils/download-utils';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import {ServiceProviderApiService} from '../../../../../services/service-provider-api-service';
-import {ServiceProviderDTO} from '../../../../../models/dtos/service-provider-dto';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 
 export function SystemInformation() {
     const [health, setHealth] = useState<HealthData | 'error'>();
-    const [serviceProviders, setServiceProviders] = useState<ServiceProviderDTO[]>([]);
 
     useEffect(() => {
         new SystemApiService()
@@ -34,10 +31,6 @@ export function SystemInformation() {
                     setHealth('error');
                 }
             });
-
-        new ServiceProviderApiService()
-            .getServiceProviders()
-            .then(setServiceProviders);
     }, []);
 
     const getStatus = (key: keyof HealthDataComponents): Status => {
@@ -244,58 +237,6 @@ export function SystemInformation() {
                 >
                     HTTP-Austausch herunterladen (CSV)
                 </Button>
-            </Box>
-            <Box
-                sx={{
-                    mt: 4,
-                }}
-            >
-                <Typography
-                    variant="subtitle1"
-                    component="h2"
-                >
-                    Gover-Erweiterungen
-                </Typography>
-
-                <Typography sx={{mb: 3}}>
-                    Hier finden Sie Informationen zu den Erweiterungen, die auf Ihrer Gover-Instanz verfügbar sind.
-                </Typography>
-
-                <Grid
-                    container
-                    spacing={3}
-                >
-                    {serviceProviders.map((serviceProvider) => (
-                        <Grid
-                            key={serviceProvider.packageName}
-                            size={{
-                                xs: 12,
-                                sm: 6,
-                                md: 4,
-                            }}
-                        >
-                            <Card
-                                variant="outlined"
-                                sx={{display: 'flex', flexDirection: 'column', height: '100%'}}
-                            >
-                                <CardHeader
-                                    title={serviceProvider.label}
-                                    subheader={serviceProvider.packageName}
-                                    titleTypographyProps={{variant: 'h6'}}
-                                    subheaderTypographyProps={{variant: 'body2', color: 'text.secondary', fontSize: '0.875rem'}}
-                                />
-                                <CardContent sx={{flexGrow: 1}}>
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        {serviceProvider.description}
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
             </Box>
         </>
     );

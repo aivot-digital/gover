@@ -2,18 +2,18 @@ import React from 'react';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {Paper} from '@mui/material';
-import {SystemInformation} from '../../../pages/staff-pages/settings/components/system-information/system-information';
-import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
+import Extension from '@aivot/mui-material-symbols-400-outlined/dist/extension/Extension';
+import {Extensions} from '../../../pages/staff-pages/settings/components/extensions/extensions';
 
-export function SystemStatusPage() {
+export function ExtensionsPage() {
     return (
         <PageWrapper
-            title="Systeminformationen"
+            title="Erweiterungen"
             background={true}
         >
             <GenericPageHeader
-                title="Systeminformationen"
-                icon={<ReadinessScore/>}
+                title="Erweiterungen"
+                icon={<Extension/>}
             />
 
             <Paper
@@ -22,7 +22,7 @@ export function SystemStatusPage() {
                     padding: 2,
                 }}
             >
-                <SystemInformation />
+                <Extensions />
             </Paper>
         </PageWrapper>
     );

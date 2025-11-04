@@ -99,7 +99,6 @@ const DrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.marketplace,
                 label: 'Marktplatz',
                 disabled: true,
-                chipContent: 'NEU',
                 children: [
                     {icon: ModuleIcons.departments, label: 'Durchsuchen'},
                 ],
@@ -130,6 +129,7 @@ const DrawerGroups: DrawerGroup[] = [
                     {icon: ModuleIcons.settings, label: 'Allgemeine Einstellungen', to: '/settings/app'},
                     {icon: <ReadinessScore />, label: 'Systeminformationen', to: '/settings/status'},
                     {icon: ModuleIcons.themes, label: 'Erscheinungsbild', to: '/themes'},
+                    {icon: ModuleIcons.secrets, label: 'Systemvariablen', to: '/secrets'},
                     {
                         icon: <Api />,
                         label: 'Anbindungen',
@@ -138,7 +138,7 @@ const DrawerGroups: DrawerGroup[] = [
                             {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
                         ],
                     },
-                    {icon: ModuleIcons.secrets, label: 'Systemvariablen', to: '/secrets'},
+                    {icon: ModuleIcons.extensions, label: 'Erweiterungen', to: '/settings/extensions'},
                     {icon: <ForwardToInbox />, label: 'SMTP-Test (legacy)', to: '/settings/smtp'},
                     {icon: ModuleIcons.providerLinks, label: 'Links (legacy)', to: '/provider-links'},
                     {icon: ModuleIcons.destinations, label: 'Schnittstellen (legacy)', to: '/destinations'},

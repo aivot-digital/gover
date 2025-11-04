@@ -19,6 +19,7 @@ import Extension from '@aivot/mui-material-symbols-400-outlined/dist/extension/E
 import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 import TaskAlt from '@aivot/mui-material-symbols-400-outlined/dist/task-alt/TaskAlt';
 import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
+import Storefront from '@aivot/mui-material-symbols-400-outlined/dist/storefront/Storefront';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -39,7 +40,8 @@ export const ModuleIcons = {
     themes: <Palette />,
     users: <Group />,
     settings: <Settings />,
-    marketplace: <Extension />,
+    marketplace: <Storefront />,
     processes: <Route />,
     tasks: <TaskAlt />,
+    extensions: <Extension />
 };

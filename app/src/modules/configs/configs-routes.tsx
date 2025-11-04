@@ -3,6 +3,7 @@ import React from 'react';
 import {CommonSettingsPage} from './pages/common-settings-page';
 import {SmtpTestPage} from './pages/smtp-test-page';
 import {SystemStatusPage} from './pages/system-status-page';
+import {ExtensionsPage} from './pages/extensions-page';
 
 export const configsRoutes: RouteObject[] = [
     {
@@ -16,5 +17,9 @@ export const configsRoutes: RouteObject[] = [
     {
         path: '/settings/status',
         element: <SystemStatusPage />,
+    },
+    {
+        path: '/settings/extensions',
+        element: <ExtensionsPage />,
     },
 ];
