@@ -5,11 +5,12 @@ import {Page} from '../../models/dtos/page';
 export const DEFAULT_SEARCH_SIZE = 16;
 
 export class SearchItemService extends BaseApiService {
-    getSearchItems(search: string): Promise<Page<SearchItemResponseDto>> {
+    getSearchItems(search: string, page = 0, size= DEFAULT_SEARCH_SIZE): Promise<Page<SearchItemResponseDto>> {
         return this.get<Page<SearchItemResponseDto>>('/api/search/', {
             query: new URLSearchParams({
                 search: search,
-                size: DEFAULT_SEARCH_SIZE.toString(),
+                page: page.toString(),
+                size: size.toString(),
             }),
         });
     }
