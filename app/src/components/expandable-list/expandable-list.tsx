@@ -76,7 +76,6 @@ export const ExpandableList = <T,>({
                 <Typography
                     component="h3"
                     variant="h5"
-                    color="primary"
                 >
                     {title}
                 </Typography>

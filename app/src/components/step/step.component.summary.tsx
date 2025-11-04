@@ -51,7 +51,6 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
                 <Typography
                     component="h3"
                     variant="h5"
-                    color="primary"
                 >
                     <Icon
                         sx={{

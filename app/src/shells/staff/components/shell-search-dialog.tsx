@@ -198,6 +198,7 @@ export function ShellSearchDialog() {
                                             link={createSearchItemLink(item)}
                                             search={debouncedSearch}
                                             label={item.label}
+                                            handleClose={handleClose}
                                         />
                                     ))}
                                 </List>
@@ -273,6 +274,7 @@ export function ShellSearchDialog() {
                                         link={item.link}
                                         search={debouncedSearch}
                                         label={item.title}
+                                        handleClose={handleClose}
                                     />
                                 ))}
                             </List>
@@ -308,16 +310,11 @@ interface ShellSearchDialogProps {
     type: ServerEntityType;
     link: string;
     label: string;
+    handleClose: () => void;
 }
 
 function SearchDialogListItem(props: ShellSearchDialogProps) {
-    const {id, type, link, search, label} = props;
-
-    const dispatch = useAppDispatch();
-
-    const handleClose = () => {
-        dispatch(setShowSearchDialog(false));
-    };
+    const {id, type, link, search, label, handleClose} = props;
 
     return (
         <ListItem

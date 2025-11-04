@@ -10,6 +10,8 @@ import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {SubmissionWithMembershipResponseDTO} from '../../../modules/submissions/dtos/submission-with-membership-response-dto';
+import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
+import FolderShared from '@aivot/mui-material-symbols-400-outlined/dist/folder-shared/FolderShared';
 
 export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
     const api = useApi();
@@ -62,15 +64,15 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                 {
                     ((submissions?.length ?? 0) > 0 || props.form?.publishedVersion != null) &&
                     <>
-                        <DialogContentText>
+                        <Typography>
                             Bitte klären Sie die folgenden Punkte, bevor Sie das Formular <strong>{props.form?.internalTitle}</strong> löschen können:
-                        </DialogContentText>
+                        </Typography>
                         <List dense>
                             {
                                 (submissions?.length ?? 0) > 0 &&
-                                <ListItem sx={{alignItems: 'start', color: 'text.secondary'}}>
+                                <ListItem sx={{alignItems: 'start'}}>
                                     <ListItemIcon sx={{paddingTop: .4, minWidth: 40}}>
-                                        <FolderSharedOutlinedIcon />
+                                        <FolderShared />
                                     </ListItemIcon>
                                     <ListItemText>
                                         <strong>Offene Anträge:</strong> <br/>Es sind noch offene Anträge ({submissions?.length ?? 0}) für dieses Formular vorhanden.
@@ -80,9 +82,9 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                             }
                             {
                                 props.form?.publishedVersion != null &&
-                                <ListItem sx={{alignItems: 'start', color: 'text.secondary'}}>
+                                <ListItem sx={{alignItems: 'start'}}>
                                     <ListItemIcon sx={{paddingTop: .4, minWidth: 40}}>
-                                        <DescriptionOutlinedIcon />
+                                        <Description />
                                     </ListItemIcon>
                                     <ListItemText>
                                         <strong>Veröffentlichungsstatus:</strong> <br/>Dieses Formular ist noch veröffentlicht. Bitte ziehen Sie es zuerst zurück und
@@ -97,15 +99,15 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                 {
                     submissions?.length === 0 && props.form?.publishedVersion == null &&
                     <>
-                        <DialogContentText>
+                        <Typography>
                             Sind Sie sicher, dass Sie das
                             Formular <strong>{props.form?.internalTitle}</strong> wirklich
                             löschen wollen? Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
                             Es werden alle Anträge, die für diese Formularversion eingegangen sind, gelöscht.
-                        </DialogContentText>
+                        </Typography>
 
 
-                        <DialogContentText
+                        <Typography
                             sx={{
                                 mt: 2,
                             }}
@@ -114,7 +116,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                             <Typography component="pre" variant="body2" sx={{ fontFamily: "monospace", fontSize: 14, fontWeight: "bold", backgroundColor: "#f0f0f0", py: .5, px: 1, borderRadius: 2, mt: 1 }}>
                                 {props.form?.internalTitle}
                             </Typography>
-                        </DialogContentText>
+                        </Typography>
 
                         <TextFieldComponent
                             sx={{mt: 3}}
@@ -125,7 +127,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                     </>
                 }
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ justifyContent: 'flex-start' }}>
                 <Button
                     onClick={handleDelete}
                     disabled={isBusy || formTitle !== props.form?.internalTitle}
@@ -133,7 +135,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                     variant="contained"
                     startIcon={<DeleteOutlinedIcon />}
                 >
-                    Ja, endgültig löschen
+                    Formular endgültig löschen
                 </Button>
                 <Button
                     onClick={() => {
@@ -141,6 +143,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
                         props.onCancel();
                     }}
                     disabled={isBusy}
+                    variant="outlined"
                 >
                     Abbrechen
                 </Button>
