@@ -71,7 +71,7 @@ export function SystemInformation() {
 
     const getStatusLabel = (key: keyof HealthDataComponents) => {
         if (health == null) {
-            return null;
+            return <Typography fontStyle={'italic'} color={'text.secondary'}>Status wird geladen…</Typography>;
         }
 
         const status = getStatus(key);
