@@ -194,11 +194,11 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             </Typography>
 
                             {
-                                (element.disabled !== true) &&
                                 (minRequiredSets === 0 || valueIndex >= minRequiredSets) &&
                                 <Box
                                     sx={{
                                         ml: 'auto',
+                                        cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,
                                     }}
                                 >
                                     <Button
@@ -259,27 +259,26 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     </Box>
                 ))
             }
-            {
-                (element.disabled !== true) &&
-                <div>
-                    <Button
-                        startIcon={<AddCircleOutlineOutlinedIcon
-                            sx={{marginTop: '-2px'}}
-                        />}
-                        sx={{
-                            mt: 2,
-                            mb: 3,
-                        }}
-                        onClick={handleAdd}
-                        variant={'outlined'}
-                        disabled={isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets)}
-                    >
-                        {
-                            stringOrDefault(element.addLabel, 'Datensatz hinzufügen')
-                        }
-                    </Button>
-                </div>
-            }
+            <Box
+                sx={{cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,}}
+            >
+                <Button
+                    startIcon={<AddCircleOutlineOutlinedIcon
+                        sx={{marginTop: '-2px'}}
+                    />}
+                    sx={{
+                        mt: 2,
+                        mb: 3,
+                    }}
+                    onClick={handleAdd}
+                    variant={'outlined'}
+                    disabled={isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets)}
+                >
+                    {
+                        stringOrDefault(element.addLabel, 'Datensatz hinzufügen')
+                    }
+                </Button>
+            </Box>
             <ConfirmDialog
                 title="Möchten Sie diesen Datensatz wirklich löschen?"
                 onConfirm={confirmDelete}
