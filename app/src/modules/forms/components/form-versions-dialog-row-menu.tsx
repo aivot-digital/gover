@@ -11,10 +11,10 @@ interface FormVersionsDialogRowMenuProps {
     onClose: () => void;
     form: FormDetailsResponseDTO;
 
-    onReuseFormVersionAsDraft: (form: FormDetailsResponseDTO) => void;
-    onReuseFormVersionAsNewForm: (form: FormDetailsResponseDTO) => void;
-    onExportFormVersion: (form: FormDetailsResponseDTO) => void;
-    onDeleteFormVersion: (form: FormDetailsResponseDTO) => void;
+    onReuseFormVersionAsDraft: (version: number) => void;
+    onReuseFormVersionAsNewForm: (version: number) => void;
+    onExportFormVersion: (version: number) => void;
+    onDeleteFormVersion: (version: number) => void;
 }
 
 export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps) {
@@ -39,7 +39,7 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
                 form.draftedVersion !== form.version &&
                 <MenuItem
                     onClick={() => {
-                        onReuseFormVersionAsDraft(form);
+                        onReuseFormVersionAsDraft(form.version);
                         onClose();
                     }}
                 >
@@ -54,7 +54,7 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
 
             <MenuItem
                 onClick={() => {
-                    onReuseFormVersionAsNewForm(form);
+                    onReuseFormVersionAsNewForm(form.version);
                     onClose();
                 }}
             >
@@ -68,7 +68,7 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
 
             <MenuItem
                 onClick={() => {
-                    onExportFormVersion(form);
+                    onExportFormVersion(form.version);
                     onClose();
                 }}
             >
@@ -89,7 +89,7 @@ export function FormVersionsDialogRowMenu(props: FormVersionsDialogRowMenuProps)
                 form.draftedVersion === form.version &&
                 <MenuItem
                     onClick={() => {
-                        onDeleteFormVersion(form);
+                        onDeleteFormVersion(form.version);
                         onClose();
                     }}
                 >

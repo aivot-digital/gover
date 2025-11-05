@@ -21,12 +21,13 @@ import {useConfirm} from '../../../providers/confirm-provider';
 import {FormVersionsDialogRowMenu} from '../components/form-versions-dialog-row-menu';
 import {FormVersionApiService} from '../form-versions-api-service';
 import {withDelay} from '../../../utils/with-delay';
-import {isApiError} from '../../../models/api-error';
+import {ApiError, isApiError} from '../../../models/api-error';
 import {Link} from 'react-router-dom';
 import {Actions} from '../../../components/actions/actions';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {FormsApiService} from '../forms-api-service-v2';
+import {LoadingOverlay} from '../../../components/loading-overlay/loading-overlay';
 
 interface FormVersionsDialogProps {
     formId: number;
@@ -54,6 +55,8 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
     const showConfirm = useConfirm();
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isBusy, setIsBusy] = useState(false);
+
     const [versions, setVersions] = useState<FormVersionWithEditor[]>([]);
 
     const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLElement | null>(null);
@@ -66,51 +69,87 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
 
     const [versionToExport, setVersionToExport] = useState<FormDetailsResponseDTO | null>(null);
 
-    useEffect(() => {
-        setIsLoading(true);
-
+    async function loadVersions(): Promise<void> {
         const formsApi = new FormsApiService();
         const formVersionsApi = new FormVersionApiService(formId);
 
-        withDelay(
-            Promise.all([
-                formsApi.listEditorsForForm(formId),
-                formVersionsApi.listAllOrdered(
-                    'version',
-                    'DESC',
-                    {
-                        formId: formId,
-                    },
-                ),
-            ]),
-            500,
-        )
-            .then(([editors, {content: versions}]) => {
-                setVersions(versions.map(v => ({
-                    ...v,
-                    editorFullName: editors.find(e => e.formVersion === v.version)?.fullName,
-                })));
-            })
-            .catch(error => {
-                if (isApiError(error) && error.displayableToUser) {
-                    dispatch(showErrorSnackbar(error.message));
-                } else {
-                    dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Versionen'));
-                }
+        try {
+            const [editors, formVersionsPage] = await Promise
+                .all([
+                    formsApi.listEditorsForForm(formId),
+                    formVersionsApi.listAllOrdered(
+                        'version',
+                        'DESC',
+                        {
+                            formId: formId,
+                        }),
+                ]);
+            const versionsWithEditors = formVersionsPage
+                .content
+                .map((version) => ({
+                    ...version,
+                    editorFullName: editors.find(e => e.formVersion === version.version)?.fullName,
+                }));
+            setVersions(versionsWithEditors);
+        } catch (error) {
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(error.message));
+            } else {
                 console.error(error);
-            })
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Versionen'));
+            }
+        }
+    }
+
+    async function loadVersion(version: number): Promise<FormVersionWithEditor> {
+        setIsBusy(true);
+        await withDelay(loadVersions(), 500);
+        setIsBusy(false);
+
+        const item = versions
+            .find(v => v.version === version);
+
+        if (!item) {
+            const error: ApiError = {
+                status: 404,
+                message: 'Die ausgewählte Formular-Version wurde nicht gefunden.',
+                details: null,
+                displayableToUser: true,
+            };
+            throw error;
+        }
+
+        return item;
+    }
+
+    useEffect(() => {
+        setIsLoading(true);
+        withDelay(loadVersions(), 600)
             .finally(() => {
                 setIsLoading(false);
             });
     }, [formId]);
 
-    const handleUseAsNewDraft = (item: FormDetailsResponseDTO) => {
+    async function handleUseAsNewDraft(version: number): Promise<void> {
+        let item: FormVersionWithEditor;
+        try {
+            item = await loadVersion(version);
+        } catch (error) {
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(error.message));
+            } else {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+            }
+            return;
+        }
+
         if (item.draftedVersion == null) {
             onNewDraft(item);
             return;
         }
 
-        showConfirm({
+        const confirmed = await showConfirm({
             title: 'Bestehenden Entwurf überschreiben?',
             children: (
                 <Typography>
@@ -118,26 +157,67 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     Möchten Sie dennoch einen neuen Entwurf auf Basis dieser Version erstellen?
                     Die bestehende Arbeitsversion wird dabei überschrieben.
                 </Typography>
-    ),
+            ),
             isDestructive: false,
-        }).then((confirmed) => {
-            if (confirmed) {
-                onNewDraft(item);
-            }
         });
-    };
 
-    const handleUseAsNewForm = (item: FormDetailsResponseDTO) => {
+        if (confirmed) {
+            onNewDraft(item);
+        }
+    }
+
+    async function handleUseAsNewForm(version: number): Promise<void> {
+        let item: FormVersionWithEditor;
+        try {
+            item = await loadVersion(version);
+        } catch (error) {
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(error.message));
+            } else {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+            }
+            return;
+        }
+
         onNewForm(item);
-        handleCloseMoreMenu();
-    };
 
-    const handleExportFormVersion = (item: FormDetailsResponseDTO) => {
+        handleCloseMoreMenu();
+    }
+
+    async function handleExportFormVersion(version: number): Promise<void> {
+        let item: FormVersionWithEditor;
+        try {
+            item = await loadVersion(version);
+        } catch (error) {
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(error.message));
+            } else {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+            }
+            return;
+        }
+
         setVersionToExport(item);
-        handleCloseMoreMenu();
-    };
 
-    const handleDeleteFormVersion = (item: FormDetailsResponseDTO) => {
+        handleCloseMoreMenu();
+    }
+
+    async function handleDeleteFormVersion(version: number): Promise<void> {
+        let item: FormVersionWithEditor;
+        try {
+            item = await loadVersion(version);
+        } catch (error) {
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(error.message));
+            } else {
+                console.error(error);
+                dispatch(showErrorSnackbar('Fehler beim Laden der Formular-Version'));
+            }
+            return;
+        }
+
         if (item.publishedVersion === item.version) {
             dispatch(showErrorSnackbar('Die veröffentlichte Version kann nicht gelöscht werden.'));
             return;
@@ -174,9 +254,10 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
 
                 const formVersionsApi = new FormVersionApiService(formId);
 
-                formVersionsApi.destroy(item.version)
+                formVersionsApi
+                    .destroy(item.version)
                     .then(() => {
-                        setVersions((prev) => prev.filter(v => v.version !== item.version));
+                        loadVersions();
                         handleCloseMoreMenu();
                         if (onChange) {
                             onChange(formId);
@@ -191,7 +272,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                         console.error(error);
                     });
             });
-    };
+    }
 
     return (
         <>
@@ -204,18 +285,23 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     Versionen dieses Formulars
                 </DialogTitleWithClose>
                 <DialogContent>
+                    <LoadingOverlay
+                        isLoading={isBusy}
+                        message="Liste der Versionen wird aktualisiert"
+                    />
+
                     {
                         isLoading && (
                             <List
                                 role="status"
                                 aria-live="polite"
                                 aria-busy="true"
-                                sx={{ '& .MuiDivider-root:last-of-type': { display: 'none' } }}
+                                sx={{'& .MuiDivider-root:last-of-type': {display: 'none'}}}
                             >
-                                {Array.from({ length: 4 }).map((_, i) => (
+                                {Array.from({length: 4}).map((_, i) => (
                                     <React.Fragment key={i}>
                                         <VersionListItemSkeleton />
-                                        <Divider sx={{ my: 1.5 }} />
+                                        <Divider sx={{my: 1.5}} />
                                     </React.Fragment>
                                 ))}
                             </List>
@@ -223,7 +309,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                     }
                     {
                         !isLoading &&
-                        <List  sx={{'& .MuiDivider-root:last-of-type': {display: 'none'}}}>
+                        <List sx={{'& .MuiDivider-root:last-of-type': {display: 'none'}}}>
                             {
                                 versions.map(ver => (
                                     <React.Fragment key={ver.version}>
@@ -234,7 +320,7 @@ export function FormVersionsDialog(props: FormVersionsDialogProps) {
                                                 setMoreMenuForm(item);
                                             }}
                                         />
-                                        <Divider sx={{my: 1.5}}/>
+                                        <Divider sx={{my: 1.5}} />
                                     </React.Fragment>
                                 ))
                             }
@@ -390,7 +476,6 @@ function VersionListItem(props: VersionListItemProps) {
 }
 
 function VersionListItemSkeleton() {
-
     return (
         <ListItem
             sx={{
@@ -399,23 +484,28 @@ function VersionListItemSkeleton() {
                 alignItems: 'start',
             }}
         >
-            <Box sx={{ width: 24, textAlign: 'center', mr: 2 }}>
-                <Skeleton variant="circular" width={24} height={24} sx={{mt: 0.5}}/>
+            <Box sx={{width: 24, textAlign: 'center', mr: 2}}>
+                <Skeleton
+                    variant="circular"
+                    width={24}
+                    height={24}
+                    sx={{mt: 0.5}}
+                />
             </Box>
 
-            <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'nowrap' }}>
+            <Box sx={{flex: '1 1 auto', minWidth: 0}}>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'nowrap'}}>
                     <Skeleton
                         variant="text"
                         width={'40%'}
                         height={28}
                     />
-                    <Box sx={{ ml: 'auto' }}>
+                    <Box sx={{ml: 'auto'}}>
                         <Skeleton
                             variant="rectangular"
                             width={92}
                             height={24}
-                            sx={{ borderRadius: 999 }}
+                            sx={{borderRadius: 999}}
                         />
                     </Box>
                 </Box>
@@ -424,13 +514,21 @@ function VersionListItemSkeleton() {
                     variant="text"
                     width={'35%'}
                     height={20}
-                    sx={{ mt: 0.5, mr: 0.5}}
+                    sx={{mt: 0.5, mr: 0.5}}
                 />
             </Box>
 
-            <Box sx={{ ml: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-                <Skeleton variant="circular" width={28} height={28} />
-                <Skeleton variant="circular" width={28} height={28} />
+            <Box sx={{ml: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0}}>
+                <Skeleton
+                    variant="circular"
+                    width={28}
+                    height={28}
+                />
+                <Skeleton
+                    variant="circular"
+                    width={28}
+                    height={28}
+                />
             </Box>
         </ListItem>
     );
