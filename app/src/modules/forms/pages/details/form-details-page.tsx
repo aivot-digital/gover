@@ -240,7 +240,7 @@ export function FormDetailsPage() {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Das Farbeschema des Formulars konnte nicht geladen werden.'));
+                dispatch(showErrorSnackbar('Das Farbschema des Formulars konnte nicht geladen werden.'));
             });
     }, [loadedForm]);
 
