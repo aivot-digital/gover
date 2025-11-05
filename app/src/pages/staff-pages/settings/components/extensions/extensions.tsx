@@ -22,7 +22,7 @@ export function Extensions() {
             </Typography>
 
             <Typography sx={{mb: 3}}>
-                Hier finden Sie weitere Informationen zu den Erweiterungen, die auf Ihrer Gover-Instanz verfügbar sind.
+                Hier finden Sie weitere Informationen zu den Erweiterungen, die auf Ihrer Gover-Instanz installiert und verfügbar sind.
             </Typography>
 
             <Grid

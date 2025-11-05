@@ -423,7 +423,7 @@ function VersionListItem(props: VersionListItemProps) {
                             Version {version}
                         </Link>
                     </Typography>
-                    {!revoked && (
+                    {(status === FormStatus.Drafted || status === FormStatus.Published) && (
                         <Box sx={{ml: 'auto', mr: 0.5}}>
                             <FormStatusChip
                                 status={status}
