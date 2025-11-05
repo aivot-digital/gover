@@ -32,8 +32,8 @@ const columns: Array<GridColDef<Preset>> = [
         headerName: 'Titel',
         renderCell: (params) => (
             <CellLink
-                to={`/presets/edit/${params.id}/${params.row.draftedVersion}`}
-                title={`Vorlage bearbeiten`}
+                to={`/presets/edit/${params.id}/${params.row.draftedVersion ?? params.row.publishedVersion}`}
+                title="Vorlage bearbeiten"
             >
                 {String(params.value)}
             </CellLink>
