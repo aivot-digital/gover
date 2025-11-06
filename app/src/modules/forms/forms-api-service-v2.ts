@@ -252,4 +252,8 @@ export class FormsApiService extends BaseCrudApiService<FormRequestDTO, FormList
             skipAuthCheck: true,
         });
     }
+
+    public async destroyAll(formId: number): Promise<void> {
+        return await this.delete(`/api/forms/${formId}/`);
+    }
 }

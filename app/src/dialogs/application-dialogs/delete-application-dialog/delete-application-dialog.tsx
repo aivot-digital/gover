@@ -50,6 +50,7 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
         if (props.form == null) {
             return;
         }
+        setFormTitle(undefined);
         props.onDelete(props.form);
     };
 

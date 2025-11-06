@@ -246,10 +246,12 @@ export function FormsListPage() {
             estimatedTime: 500,
         }));
 
-        new FormsApiService(api)
+        new FormsApiServiceV2()
             .destroyAll(form.id)
             .then(() => {
-                window.location.reload();
+                if (listControlRef.current != null) {
+                    listControlRef.current.refresh()
+                }
             })
             .catch((err) => {
                 console.error(err);
