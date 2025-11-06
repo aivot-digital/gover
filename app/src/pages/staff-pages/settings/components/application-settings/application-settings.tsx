@@ -1,6 +1,6 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import React, {type FormEvent, useEffect, useState} from 'react';
-import {selectSystemConfig, setSystemConfigs, type SystemConfigMap} from '../../../../../slices/system-config-slice';
+import {selectSystemConfig, setSystemConfigs, setSystemConfigsFromMap, type SystemConfigMap} from '../../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
@@ -16,7 +16,15 @@ import {DepartmentsApiService} from '../../../../../modules/departments/departme
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
+import {addSnackbarMessage, removeSnackbarMessage, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
+import {isApiError} from '../../../../../models/api-error';
+import {SystemSetupDTO} from '../../../../../modules/system/dtos/system-setup-dto';
+import {SystemApiService} from '../../../../../modules/system/system-api-service';
+
+async function fetchSetup(): Promise<SystemSetupDTO> {
+    return new SystemApiService()
+        .fetchSetup();
+}
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
@@ -86,8 +94,32 @@ export function ApplicationSettings() {
             Promise.all(updatePromises)
                 .then((configs) => {
                     dispatch(showSuccessSnackbar('Einstellungen erfolgreich gespeichert'));
+                    dispatch(setSystemConfigs(configs));
+
+                    const newThemeId =
+                        editedConfig[SystemConfigKeys.system.theme] ??
+                        config[SystemConfigKeys.system.theme];
+
+                    const oldThemeId = config[SystemConfigKeys.system.theme];
+
+                    if (newThemeId && newThemeId !== oldThemeId) {
+                        // refetch system setup including theme information
+                        fetchSetup()
+                            .then((setup) => {
+                                dispatch(setSetup(setup));
+                            })
+                            .catch((err) => {
+                                if (isApiError(err) && err.status >= 500) {
+                                    dispatch(setStatus(ShellStatus.Offline));
+                                } else if ('status' in err && err.status >= 500) {
+                                    dispatch(setStatus(ShellStatus.Offline));
+                                } else {
+                                    console.error(err);
+                                }
+                            });
+                    }
+
                     setEditedConfig({});
-                    return dispatch(setSystemConfigs(configs));
                 })
                 .catch((err) => {
                     console.error(err);
