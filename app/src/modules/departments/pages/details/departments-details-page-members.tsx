@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {DepartmentMembershipFilters, DepartmentMembershipsApiService} from '../../department-memberships-api-service';
 import {GenericList} from '../../../../components/generic-list/generic-list';
@@ -20,6 +20,10 @@ import {User} from '../../../users/models/user';
 import {Department} from '../../models/department';
 import {DepartmentMembershipResponseDTO} from '../../dtos/department-membership-response-dto';
 import Chip from '@mui/material/Chip';
+import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {isApiError} from '../../../../models/api-error';
+import {setLoadingMessage} from '../../../../slices/shell-slice';
+import {withDelay} from '../../../../utils/with-delay';
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -41,6 +45,8 @@ export function DepartmentsDetailsPageMembers() {
         item,
         isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Department, undefined>;
+
+    const listControlRef = useRef<ListControlRef | null>(null);
 
     const [showSelectNewMemberDialog, setShowSelectNewMemberDialog] = useState(false);
 
@@ -68,18 +74,37 @@ export function DepartmentsDetailsPageMembers() {
             return;
         }
 
+        dispatch(setLoadingMessage({
+            message: 'Mitgliedschaft wird angelegt',
+            estimatedTime: 2000,
+            blocking: true,
+        }));
+
+        withDelay(
         new DepartmentMembershipsApiService(api)
             .create({
                 userId: selectedUser.id,
                 departmentId: item.id,
                 role: selectedUserRole,
-            })
+            }),
+            2000,
+        )
             .then(() => {
-                location.reload();
+                if (listControlRef.current != null) {
+                    listControlRef.current.refresh();
+                }
             })
             .catch((error) => {
-                console.error(error);
-                dispatch(showErrorSnackbar('Mitgliedschaft konnte nicht angelegt werden'));
+                if (isApiError(error) && error.displayableToUser) {
+                    dispatch(showErrorSnackbar(error.message));
+                } else {
+                    console.error(error);
+                    dispatch(showErrorSnackbar('Mitgliedschaft konnte nicht angelegt werden'));
+                }
+            })
+            .finally(() => {
+                hideDepartmentMembershipConfirmDialog();
+                dispatch(setLoadingMessage(undefined));
             });
     };
 
@@ -100,14 +125,32 @@ export function DepartmentsDetailsPageMembers() {
             ),
             onCancel: () => hideConfirmDeleteDialog(),
             onConfirm: () => {
-                new DepartmentMembershipsApiService(api)
-                    .destroy(membership.id)
+                dispatch(setLoadingMessage({
+                    message: 'Mitgliedschaft wird beendet',
+                    estimatedTime: 2000,
+                    blocking: true,
+                }));
+                withDelay(
+                    new DepartmentMembershipsApiService(api)
+                        .destroy(membership.id),
+                    2000,
+                )
                     .then(() => {
-                        location.reload();
+                        if (listControlRef.current != null) {
+                            listControlRef.current.refresh();
+                        }
                     })
                     .catch((error) => {
-                        console.error(error);
-                        dispatch(showErrorSnackbar('Mitgliedschaft konnte nicht beendet werden'));
+                        if (isApiError(error) && error.displayableToUser) {
+                            dispatch(showErrorSnackbar(error.message));
+                        } else {
+                            console.error(error);
+                            dispatch(showErrorSnackbar('Mitgliedschaft konnte nicht beendet werden'));
+                        }
+                    })
+                    .finally(() => {
+                        hideConfirmDeleteDialog();
+                        dispatch(setLoadingMessage(undefined));
                     });
             },
         });
@@ -117,17 +160,36 @@ export function DepartmentsDetailsPageMembers() {
         selectedMembership: DepartmentMembership,
         selectedUserRole: UserRole,
     ): void => {
-        new DepartmentMembershipsApiService(api)
-            .update(selectedMembership!.id, {
-                ...selectedMembership,
-                role: selectedUserRole,
-            })
+        dispatch(setLoadingMessage({
+            message: 'Mitgliedschaft wird aktualisiert',
+            estimatedTime: 2000,
+            blocking: true,
+        }));
+
+        withDelay(
+            new DepartmentMembershipsApiService(api)
+                .update(selectedMembership!.id, {
+                    ...selectedMembership,
+                    role: selectedUserRole,
+                }),
+            2000,
+        )
             .then(() => {
-                location.reload();
+                if (listControlRef.current != null) {
+                    listControlRef.current.refresh();
+                }
             })
             .catch((error) => {
-                console.error(error);
-                dispatch(showErrorSnackbar('Mitgliedschaft konnte nicht aktualisiert werden'));
+                if (isApiError(error) && error.displayableToUser) {
+                    dispatch(showErrorSnackbar(error.message));
+                } else {
+                    console.error(error);
+                    dispatch(showErrorSnackbar('Mitgliedschaft konnte nicht aktualisiert werden'));
+                }
+            })
+            .finally(() => {
+                hideDepartmentMembershipConfirmDialog();
+                dispatch(setLoadingMessage(undefined));
             });
     };
 
@@ -149,6 +211,7 @@ export function DepartmentsDetailsPageMembers() {
             </Typography>
 
             <GenericList<DepartmentMembershipResponseDTO>
+                controlRef={listControlRef}
                 filters={[
                     {
                         label: 'Aktiv',
