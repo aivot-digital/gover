@@ -62,11 +62,20 @@ export function AssetDetailsPageIndex() {
 
     const apiService = useMemo(() => new AssetsApiService(api), [api]);
     const asset = currentItem;
-    const changeBlocker = useChangeBlocker(item, currentItem);
     const [file, setFile] = useState<File[]>();
     const [uploadError, setUploadError] = useState<string>();
 
-    const uploadChangeBlocker = useChangeBlocker(undefined, file);
+    const combinedEditedState = {
+        ...currentItem,
+        file,
+    };
+
+    const combinedOriginalState = {
+        ...item,
+        file: file ?? undefined,
+    };
+
+    const changeBlocker = useChangeBlocker(combinedOriginalState, combinedEditedState);
 
     const [confirmDeleteAction, setConfirmDeleteAction] = useState<(() => void) | undefined>(undefined);
 
@@ -217,8 +226,6 @@ export function AssetDetailsPageIndex() {
                         required={true}
                         error={uploadError}
                     />
-
-                    {uploadChangeBlocker.dialog}
                 </>
             }
             {
