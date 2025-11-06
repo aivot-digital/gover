@@ -73,6 +73,7 @@ export function RootComponentHeader(props: RootComponentHeaderProps) {
                             }}
                         >
                             <Logo
+                                key={'logo-' + (form.themeId ?? 'default')}
                                 updated={form.updated}
                                 src={new FormsApiService().getFormLogoLink(form.slug, form.version)}
                                 width={200}
