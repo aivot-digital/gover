@@ -12,13 +12,16 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function SecretsListPage() {
     const dispatch = useAppDispatch();
 
-    const userIsAdmin = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -30,14 +33,15 @@ export function SecretsListPage() {
                 header={{
                     icon: <KeyOutlinedIcon />,
                     title: 'Geheimnisse',
-                    actions: userIsAdmin ? [
+                    actions: [
                         {
                             label: 'Neues Geheimnis',
                             icon: <AddOutlinedIcon />,
                             to: '/secrets/new',
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
-                    ] : undefined,
+                    ],
                     helpDialog: {
                         title: 'Hilfe zu Geheimnissen',
                         tooltip: 'Hilfe anzeigen',
@@ -88,7 +92,7 @@ export function SecretsListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/secrets/${params.id}`}
-                                title={`Geheimnis bearbeiten`}
+                                title={hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -106,9 +110,9 @@ export function SecretsListPage() {
                 rowActionsCount={2}
                 rowActions={(item: SecretEntityResponseDTO) => [
                     {
-                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward/>,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                         to: `/secrets/${item.key}`,
-                        tooltip: userIsAdmin ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen',
+                        tooltip: hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen',
                     },
                     {
                         icon: <ContentPasteOutlinedIcon />,

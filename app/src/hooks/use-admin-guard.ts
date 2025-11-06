@@ -82,7 +82,7 @@ export function useAccessGuard(options: Options): boolean {
             } else if (messageType === 'snackbar') {
                 dispatch(addSnackbarMessage({
                     key: AccessDeniedSnackbarKey,
-                    message: 'Dieser Bereich kann nur von Administrator:innen bearbeitet werden.',
+                    message: 'Dieser Bereich kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
                     type: SnackbarType.Dismissable,
                     severity: SnackbarSeverity.Warning,
                 }));

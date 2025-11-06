@@ -10,11 +10,14 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {IdentityProviderListDTO} from '../../models/identity-provider-list-dto';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function IdentityProvidersListPage() {
-    const hasAccess = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <>
@@ -27,14 +30,15 @@ export function IdentityProvidersListPage() {
                     header={{
                         icon: <BadgeOutlinedIcon />,
                         title: 'Nutzerkontenanbieter',
-                        actions: hasAccess ? [
+                        actions: [
                             {
                                 label: 'Neuer Nutzerkontenanbieter',
                                 icon: <AddOutlinedIcon />,
                                 to: '/identity-providers/new',
                                 variant: 'contained',
+                                disabled: !hasAccess,
                             },
-                        ] : undefined,
+                        ],
                         helpDialog: {
                             title: 'Hilfe zu Nutzerkontenanbietern',
                             tooltip: 'Hilfe anzeigen',
@@ -128,7 +132,7 @@ export function IdentityProvidersListPage() {
                             renderCell: (params) => (
                                 <CellLink
                                     to={`/identity-providers/${params.id}`}
-                                    title={`Konfiguration bearbeiten`}
+                                    title={hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                                 >
                                     {String(params.value)}
                                     {params.row.isTestProvider && <Chip
@@ -176,7 +180,7 @@ export function IdentityProvidersListPage() {
                     rowActionsCount={2}
                     rowActions={(item: IdentityProviderListDTO) => [
                         {
-                            icon: hasAccess ? <EditOutlined /> : <ArrowForward />,
+                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
                             to: `/identity-providers/${item.key}`,
                             tooltip: hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
                         },

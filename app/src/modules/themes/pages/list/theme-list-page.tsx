@@ -12,8 +12,8 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 const activeThemeChip = (
     <Chip
@@ -31,7 +31,10 @@ const activeThemeChip = (
 export function ThemeListPage() {
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
-    const userIsAdmin = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -43,14 +46,15 @@ export function ThemeListPage() {
                 header={{
                     icon: <PaletteOutlinedIcon />,
                     title: 'Farbschemata',
-                    actions: userIsAdmin ? [
+                    actions: [
                         {
                             label: 'Neues Farbschema',
                             icon: <AddOutlinedIcon />,
                             to: '/themes/new',
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
-                    ] : undefined,
+                    ],
                     helpDialog: {
                         title: 'Hilfe zu Farbschemata',
                         tooltip: 'Hilfe anzeigen',
@@ -97,7 +101,7 @@ export function ThemeListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/themes/${params.id}`}
-                                title={`Farbschema bearbeiten`}
+                                title={hasAccess ? 'Farbschema bearbeiten' : 'Farbschema ansehen'}
                             >
                                 {String(params.value)}
                                 {params.row.id === Number(appThemeId) && activeThemeChip}
@@ -160,9 +164,9 @@ export function ThemeListPage() {
                 rowActionsCount={2}
                 rowActions={(item: Theme) => [
                     {
-                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward/>,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                         to: `/themes/${item.id}`,
-                        tooltip: userIsAdmin ? 'Farbschema bearbeiten' : 'Farbschema ansehen',
+                        tooltip: hasAccess ? 'Farbschema bearbeiten' : 'Farbschema ansehen',
                     },
                     {
                         icon: <DescriptionOutlined />,

@@ -41,7 +41,7 @@ export function ApplicationSettings() {
 
         dispatch(addSnackbarMessage({
             key: 'application-settings-no-access',
-            message: 'Sie haben keine Berechtigung, die Anwendungseinstellungen zu bearbeiten.',
+            message: 'Die Anwendungseinstellungen können nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             type: SnackbarType.Dismissable,
             severity: SnackbarSeverity.Warning,
         }));
@@ -102,7 +102,9 @@ export function ApplicationSettings() {
 
                     const oldThemeId = config[SystemConfigKeys.system.theme];
 
-                    if (newThemeId && newThemeId !== oldThemeId) {
+                    console.log("theme", {newThemeId, oldThemeId});
+
+                    if (newThemeId != null && newThemeId !== oldThemeId) {
                         // refetch system setup including theme information
                         fetchSetup()
                             .then((setup) => {

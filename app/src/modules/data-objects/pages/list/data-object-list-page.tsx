@@ -8,11 +8,14 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import {DataObjectSchema} from '../../models/data-object-schema';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function DataObjectListPage() {
-    const userIsAdmin = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <>
@@ -77,7 +80,7 @@ export function DataObjectListPage() {
                             renderCell: (params) => (
                                 <CellLink
                                     to={`/data-objects/${params.row.key}`}
-                                    title="Datenobjekt bearbeiten"
+                                    title={hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen'}
                                 >
                                     {String(params.value)}
                                 </CellLink>
@@ -100,9 +103,9 @@ export function DataObjectListPage() {
                             tooltip: 'Datenobjekte zu diesem Modell anzeigen',
                         },
                         {
-                            icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
+                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
                             to: `/data-models/${item.key}`,
-                            tooltip: userIsAdmin ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+                            tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                     ]}
                     defaultSortField="name"

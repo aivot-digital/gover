@@ -79,7 +79,7 @@ export function PaymentProviderDetailsPageIndex() {
 
         dispatch(addSnackbarMessage({
             key: 'payment-provider-no-access',
-            message: 'Sie haben keine Berechtigung, diesen Zahlungsdienstleister zu bearbeiten.',
+            message: 'Dieser Zahlungsdienstleister kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));

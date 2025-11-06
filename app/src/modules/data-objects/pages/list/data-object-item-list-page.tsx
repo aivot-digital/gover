@@ -23,14 +23,18 @@ import {format} from 'date-fns/format';
 import {parseISO} from 'date-fns/parseISO';
 import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function DataObjectItemListPage() {
     const api = useApi();
     const schemaKey = useParams().schemaKey;
-    const userIsAdmin = useUserIsAdmin();
+
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const [dataObjectSchema, setDataObjectSchema] = useState<DataObjectSchema>();
 
@@ -70,7 +74,7 @@ export function DataObjectItemListPage() {
                 renderCell: (params) => (
                     <CellLink
                         to={`/data-objects/${dataObjectSchema.key}/${params.id}`}
-                        title="Datenobjekt bearbeiten"
+                        title={hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen'}
                     >
                         {String(params.value)}
                     </CellLink>
@@ -101,14 +105,14 @@ export function DataObjectItemListPage() {
                             icon: <FolderData />,
                             to: `/data-models/${dataObjectSchema.key}`,
                             variant: 'text',
-                            label: userIsAdmin ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+                            label: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                         {
                             label: 'Neues Datenobjekt',
                             icon: <AddOutlinedIcon />,
                             to: `/data-objects/${dataObjectSchema.key}/new`,
                             variant: 'contained',
-                            visible: userIsAdmin,
+                            visible: hasAccess,
                         },
                     ],
                     helpDialog: {
@@ -154,14 +158,14 @@ export function DataObjectItemListPage() {
                 rowActionsCount={2}
                 rowActions={(item: DataObjectItem) => [
                     {
-                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility />,
                         to: `/data-objects/${item.schemaKey}/${item.id}`,
-                        tooltip: userIsAdmin ? 'Datenobjekt bearbeiten' : 'Datenobjekte anzeigen',
+                        tooltip: hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekte anzeigen',
                     },
                     {
                         icon: ModuleIcons.dataModels,
                         to: `/data-models/${item.schemaKey}`,
-                        tooltip: userIsAdmin ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+                        tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                     },
                 ]}
                 defaultSortField="id"

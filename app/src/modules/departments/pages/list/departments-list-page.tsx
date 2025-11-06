@@ -7,14 +7,18 @@ import {DepartmentsApiService} from '../../departments-api-service';
 import {Department} from '../../models/department';
 import {selectUser} from '../../../../slices/user-slice';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
-import {isAdmin} from '../../../../utils/is-admin';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 export function DepartmentsListPage() {
     const user = useAppSelector(selectUser);
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -32,7 +36,7 @@ export function DepartmentsListPage() {
                             icon: <AddOutlinedIcon />,
                             to: '/departments/new',
                             variant: 'contained',
-                            visible: isAdmin(user),
+                            disabled: !hasAccess,
                         },
                     ],
                     helpDialog: {
@@ -62,7 +66,7 @@ export function DepartmentsListPage() {
                             options.order,
                             {
                                 departmentName: options.search,
-                                userId: isAdmin(user) ? undefined : user?.id,
+                                userId: hasAccess ? undefined : user?.id,
                             },
                         );
                 }}
@@ -82,7 +86,7 @@ export function DepartmentsListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/departments/${params.id}`}
-                                title={`Fachbereich bearbeiten`}
+                                title={hasAccess ? 'Fachbereich bearbeiten' : 'Fachbereich ansehen'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -100,14 +104,14 @@ export function DepartmentsListPage() {
                 rowActionsCount={3}
                 rowActions={(item: Department) => [
                     {
-                        icon: isAdmin(user) ? <EditOutlined /> : <ArrowForward />,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility />,
                         to: `/departments/${item.id}`,
-                        tooltip: isAdmin(user) ? 'Fachbereich bearbeiten' : 'Fachbereich ansehen',
+                        tooltip: hasAccess ? 'Fachbereich bearbeiten' : 'Fachbereich ansehen',
                     },
                     {
                         icon: <GroupOutlined />,
                         to: `/departments/${item.id}/members`,
-                        tooltip: isAdmin(user) ? 'Mitarbeiter:innen verwalten' : 'Mitarbeiter:innen ansehen',
+                        tooltip: hasAccess ? 'Mitarbeiter:innen verwalten' : 'Mitarbeiter:innen ansehen',
                     },
                     {
                         icon: <DescriptionOutlined />,

@@ -11,8 +11,8 @@ import {type User} from '../../../../../models/entities/user';
 import {type DepartmentMembershipResponseDTO} from '../../../../departments/dtos/department-membership-response-dto';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../../components/generic-details-page/generic-details-page-context';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
-import {useUserIsAdmin} from '../../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 const columns: Array<GridColDef<DepartmentMembershipResponseDTO>> = [
     {
@@ -41,7 +41,10 @@ export function UserDetailsPageDepartmentMemberships() {
         item,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
 
-    const userIsAdmin = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const user = item;
 
@@ -87,9 +90,9 @@ export function UserDetailsPageDepartmentMemberships() {
                 loadingPlaceholder="Lade Fachbereiche…"
                 noSearchResultsPlaceholder="Keine Fachbereiche gefunden"
                 rowActions={(item: DepartmentMembershipResponseDTO) => [{
-                    icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
+                    icon: hasAccess ? <EditOutlined /> : <Visibility />,
                     to: `/departments/${item.departmentId}`,
-                    tooltip: userIsAdmin ? 'Fachbereich bearbeiten' : 'Fachbereich anzeigen',
+                    tooltip: hasAccess ? 'Fachbereich bearbeiten' : 'Fachbereich anzeigen',
                 }]}
                 preSearchElements={[]}
             />

@@ -57,7 +57,7 @@ export function SecretsDetailsPageIndex() {
 
         dispatch(addSnackbarMessage({
             key: 'access-denied-secrets-details',
-            message: 'Sie haben keine Berechtigung, dieses Geheimnis zu bearbeiten.',
+            message: 'Dieses Geheimnis kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));

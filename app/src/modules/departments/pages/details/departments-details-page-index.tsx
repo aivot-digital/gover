@@ -87,7 +87,7 @@ export function DepartmentsDetailsPageIndex() {
         dispatch(addSnackbarMessage({
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
-            message: 'Sie haben keine Berechtigung, diesen Fachbereich zu bearbeiten.',
+            message: 'Dieser Fachbereich kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             key: 'no-edit-permission-department',
         }));
 

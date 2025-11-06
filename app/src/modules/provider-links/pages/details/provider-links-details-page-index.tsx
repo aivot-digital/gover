@@ -50,7 +50,7 @@ export function ProviderLinksDetailsPageIndex() {
 
         dispatch(addSnackbarMessage({
             key: 'provider-links-no-access',
-            message: 'Sie haben keine Berechtigung, Links zu bearbeiten.',
+            message: 'Die Links können nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             type: SnackbarType.Dismissable,
             severity: SnackbarSeverity.Warning,
         }));

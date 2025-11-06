@@ -10,11 +10,14 @@ import {ProviderLink} from '../../models/provider-link';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function ProviderLinksListPage() {
-    const userIsAdmin = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     return (
         <PageWrapper
@@ -26,14 +29,15 @@ export function ProviderLinksListPage() {
                 header={{
                     icon: <InsertLinkOutlinedIcon />,
                     title: 'Links',
-                    actions: userIsAdmin ? [
+                    actions: [
                         {
                             label: 'Neuer Link',
                             icon: <AddOutlinedIcon />,
                             to: '/provider-links/new',
                             variant: 'contained',
+                            disabled: !hasAccess,
                         },
-                    ] : undefined,
+                    ],
                     helpDialog: {
                         title: 'Hilfe zu Links',
                         tooltip: 'Hilfe anzeigen',
@@ -78,7 +82,7 @@ export function ProviderLinksListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/provider-links/${params.id}`}
-                                title={`Link bearbeiten`}
+                                title={hasAccess ? 'Link bearbeiten' : 'Link anzeigen'}
                             >
                                 {String(params.value)}
                             </CellLink>
@@ -96,9 +100,9 @@ export function ProviderLinksListPage() {
                 rowActionsCount={2}
                 rowActions={(item: ProviderLink) => [
                     {
-                        icon: userIsAdmin ? <EditOutlined /> : <ArrowForward/>,
+                        icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                         to: `/provider-links/${item.id}`,
-                        tooltip: userIsAdmin ? 'Link bearbeiten' : 'Link anzeigen',
+                        tooltip: hasAccess ? 'Link bearbeiten' : 'Link anzeigen',
                     },
                     {
                         icon: <OpenInNewOutlinedIcon />,

@@ -12,15 +12,18 @@ import Chip from '@mui/material/Chip';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function PaymentProvidersListPage() {
     const api = useApi();
     const apiService = useMemo(() => new PaymentProvidersApiService(api), [api]);
 
-    const isUserAdmin = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const [definitions, setDefinitions] = useState<PaymentProviderDefinitionResponseDTO[]>([]);
 
@@ -42,14 +45,15 @@ export function PaymentProvidersListPage() {
                     header={{
                         icon: ModuleIcons.payment,
                         title: 'Zahlungsdienstleister',
-                        actions: isUserAdmin ? [
+                        actions: [
                             {
                                 label: 'Neuer Zahlungsdienstleister',
                                 icon: <AddOutlinedIcon />,
                                 to: '/payment-providers/new',
                                 variant: 'contained',
+                                disabled: !hasAccess,
                             },
-                        ] : undefined,
+                        ],
                         helpDialog: {
                             title: 'Hilfe zu Zahlungsdienstleistern',
                             tooltip: 'Hilfe anzeigen',
@@ -94,7 +98,7 @@ export function PaymentProvidersListPage() {
                             renderCell: (params) => (
                                 <CellLink
                                     to={`/payment-providers/${params.id}`}
-                                    title={`Konfiguration bearbeiten`}
+                                    title={hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                                 >
                                     {String(params.value)}
                                 </CellLink>
@@ -140,9 +144,9 @@ export function PaymentProvidersListPage() {
                     rowActionsCount={2}
                     rowActions={(item: PaymentProviderResponseDTO) => [
                         {
-                            icon: isUserAdmin ? <EditOutlined /> : <ArrowForward/>,
+                            icon: hasAccess ? <EditOutlined /> : <Visibility/>,
                             to: `/payment-providers/${item.key}`,
-                            tooltip: isUserAdmin ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
+                            tooltip: hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
                         },
                         {
                             icon: <ScienceOutlinedIcon />,

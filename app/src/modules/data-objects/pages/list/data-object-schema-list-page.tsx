@@ -13,12 +13,15 @@ import {v4 as uuid4} from 'uuid';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export function DataObjectSchemaListPage() {
     const navigate = useNavigate();
-    const userIsAdmin = useUserIsAdmin();
+    const hasAccess = useAccessGuard({
+        onlyGlobalAdmin: true,
+        messageType: 'snackbar',
+    });
 
     const handleImport = () => {
         uploadObjectFile<DataObjectSchema>('application/json')
@@ -45,20 +48,22 @@ export function DataObjectSchemaListPage() {
                     header={{
                         icon: <FolderData />,
                         title: 'Datenmodelle',
-                        actions: userIsAdmin ? [
+                        actions: [
                             {
                                 icon: <CloudUploadOutlinedIcon />,
                                 onClick: handleImport,
                                 variant: 'text',
                                 label: 'Importieren',
+                                disabled: !hasAccess,
                             },
                             {
                                 label: 'Neues Datenmodell',
                                 icon: <AddOutlinedIcon />,
                                 to: '/data-models/new',
                                 variant: 'contained',
+                                disabled: !hasAccess,
                             },
-                        ] : undefined,
+                        ],
                         helpDialog: {
                             title: 'Hilfe zu Datenmodellen',
                             tooltip: 'Hilfe anzeigen',
@@ -111,7 +116,7 @@ export function DataObjectSchemaListPage() {
                             renderCell: (params) => (
                                 <CellLink
                                     to={`/data-models/${params.row.key}`}
-                                    title="Datenmodell bearbeiten"
+                                    title={hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen'}
                                 >
                                     {String(params.value)}
                                 </CellLink>
@@ -129,9 +134,9 @@ export function DataObjectSchemaListPage() {
                     rowActionsCount={2}
                     rowActions={(item: DataObjectSchema) => [
                         {
-                            icon: userIsAdmin ? <EditOutlined /> : <ArrowForward />,
+                            icon: hasAccess ? <EditOutlined /> : <Visibility />,
                             to: `/data-models/${item.key}`,
-                            tooltip: userIsAdmin ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+                            tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                         {
                             icon: <DataObject />,
