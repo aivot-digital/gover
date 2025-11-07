@@ -691,9 +691,27 @@ export function FormDetailsPage() {
                             >
                                 <Box sx={{height: '100%', overflow: 'auto'}}>
                                     <DeveloperTools
+                                        dataLabel={loadedForm.internalTitle}
                                         rootElement={loadedForm.rootElement}
                                         elementData={elementData}
-                                        onElementDataChange={setElementData}
+                                        onElementDataChange={(elementData) => {
+                                            formApiService
+                                                .determineFormState(
+                                                    loadedForm.slug,
+                                                    loadedForm.version,
+                                                    elementData,
+                                                    {
+                                                        skipErrorsFor: ['ALL'],
+                                                        skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                                                        skipValuesFor: [],
+                                                        skipOverridesFor: [],
+                                                    },
+                                                )
+                                                .then((state) => {
+                                                    setElementData(state.elementData);
+                                                    dispatch(addDerivationLogItems(state.logItems));
+                                                });
+                                        }}
                                     />
                                 </Box>
 

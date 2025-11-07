@@ -11,15 +11,12 @@ import {Action} from '../actions/actions-props';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
-import {format} from 'date-fns';
-import {downloadObjectFile} from '../../utils/download-utils';
-import {LogLevel, selectLogLevel, selectLogs, setLogLevel} from '../../slices/logging-slice';
+import {LogLevel, selectLogLevel, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
 import {ElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDataDebugger} from './tabs/element-data-debugger';
 import {selectLoadedForm} from '../../slices/app-slice';
-import {cleanElementData} from '../../utils/element-data-utils';
 import {LogView} from './tabs/log-view';
 
 interface TabContentProps {
@@ -54,6 +51,7 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
 }
 
 interface DeveloperToolsProps {
+    dataLabel: string;
     rootElement: AnyElement;
     elementData: ElementData;
     onElementDataChange: (data: ElementData) => void;
@@ -61,6 +59,7 @@ interface DeveloperToolsProps {
 
 export function DeveloperTools(props: DeveloperToolsProps) {
     const {
+        dataLabel,
         rootElement,
         elementData,
         onElementDataChange,
@@ -71,15 +70,8 @@ export function DeveloperTools(props: DeveloperToolsProps) {
     const tab = useAppSelector(selectDevToolsTab);
 
     const currentLogLevel = useAppSelector(selectLogLevel);
-    const logs = useAppSelector(selectLogs(currentLogLevel));
 
     const [isCollapsed, setIsCollapsed] = useState(false);
-
-    const handleExport = (): void => {
-        const filename = `nutzereingaben-${form?.slug}_${format(new Date(), 'dd-MM-yyyy')}.json`;
-        const input = cleanElementData(rootElement, elementData);
-        downloadObjectFile(filename, input);
-    };
 
     if (tab === undefined) {
         return null;
@@ -156,11 +148,10 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     index={0}
                 >
                     <ElementDataDebugger
+                        dataLabel={dataLabel}
                         rootElement={rootElement}
                         elementData={elementData}
-                        onLoadElementData={loadedData => {
-                            onElementDataChange(loadedData);
-                        }}
+                        onLoadElementData={onElementDataChange}
                     />
                 </TabContent>
 

@@ -1,5 +1,5 @@
 import {AnyElement} from '../../../models/elements/any-element';
-import {ElementData} from '../../../models/element-data';
+import {ElementData, ElementDataObject} from '../../../models/element-data';
 import {Box} from '@mui/material';
 import React, {useMemo, useState} from 'react';
 import {Actions} from '../../actions/actions';
@@ -11,9 +11,10 @@ import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ExpandableCodeBlock} from '../../expandable-code-block/expandable-code-block';
 import {SearchInput} from '../../search-input-2/search-input';
-import {filterElementData, walkElementData} from '../../../utils/element-data-utils';
+import {filterElementData, mapElementData, walkElementData} from '../../../utils/element-data-utils';
 
 interface ElementDataDebuggerProps {
+    dataLabel: string;
     rootElement: AnyElement;
     elementData: ElementData;
     onLoadElementData: (elementData: ElementData) => void;
@@ -21,6 +22,7 @@ interface ElementDataDebuggerProps {
 
 export function ElementDataDebugger(props: ElementDataDebuggerProps) {
     const {
+        dataLabel,
         rootElement,
         elementData,
         onLoadElementData,
@@ -30,8 +32,24 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
     const [elementIdSearch, setElementIdSearch] = useState<string>('');
 
     const handleExport = (): void => {
-        const filename = `element_daten_${format(new Date(), 'dd-MM-yyyy')}.json`;
-        downloadObjectFile(filename, elementData);
+        const cleanedElementData = mapElementData(rootElement, elementData, (elem, value) => {
+            if (value == null) {
+                return null;
+            }
+
+            const ed: ElementDataObject = {
+                ...value,
+                computedErrors: null,
+                computedOverride: null,
+                computedValue: null,
+            };
+
+            return ed;
+        });
+
+
+        const filename = `${dataLabel} ${format(new Date(), 'dd-MM-yyyy')}.json`;
+        downloadObjectFile(filename, cleanedElementData);
     };
 
     const handleUpload = (): void => {
@@ -70,7 +88,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
             return elementData;
         }
 
-       return filterElementData(rootElement, elementData, (e) => e.id.toLowerCase().includes(search))
+        return filterElementData(rootElement, elementData, (e) => e.id.toLowerCase().includes(search));
     }, [rootElement, elementData, elementIdSearch]);
 
     const jsonString = useMemo(() => {
