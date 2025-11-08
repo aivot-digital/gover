@@ -1,5 +1,5 @@
 import React from 'react';
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
+import {Divider, Link, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import {FormListResponseDTO} from '../dtos/form-list-response-dto';
 import {createCustomerPath} from '../../../utils/url-path-utils';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -73,7 +73,10 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
         >
             {form.publishedVersion != null &&
                 <MenuItem
-                    onClick={() => handleExternalLink(form.slug)}
+                    component={Link}
+                    href={createCustomerPath(form.slug)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                 >
                     <ListItemIcon>
                         <OpenInNew />
