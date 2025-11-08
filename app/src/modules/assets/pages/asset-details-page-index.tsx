@@ -68,11 +68,13 @@ export function AssetDetailsPageIndex() {
     const combinedEditedState = {
         ...currentItem,
         file,
+        hasFileSelected: !!file?.length,
     };
 
     const combinedOriginalState = {
         ...item,
         file: file ?? undefined,
+        hasFileSelected: false,
     };
 
     const changeBlocker = useChangeBlocker(combinedOriginalState, combinedEditedState);
