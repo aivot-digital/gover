@@ -17,7 +17,6 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentMissingDataException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.payment.models.XBezahldiensteRequestor;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +33,7 @@ import java.util.*;
 @Component
 public class epay21PaymentProviderDefinition implements PaymentProviderDefinition {
     private final static String ORIGINATOR_ID_FIELD = "originatorId";
-    private final static String ENDPOINT_ID_FIELD = "endpointId";
+    private final static String ENDPOINT_ID_FIELD = "endpoiƒntId";
     private final static String PASSWORD_SECRET_KEY_FIELD = "passwordSecretKey";
     private final static String USERNAME_FIELD = "username";
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
