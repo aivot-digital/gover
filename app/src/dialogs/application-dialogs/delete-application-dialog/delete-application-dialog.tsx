@@ -12,6 +12,7 @@ import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {SubmissionWithMembershipResponseDTO} from '../../../modules/submissions/dtos/submission-with-membership-response-dto';
 import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
 import FolderShared from '@aivot/mui-material-symbols-400-outlined/dist/folder-shared/FolderShared';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 
 export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
     const api = useApi();
@@ -58,9 +59,14 @@ export function DeleteApplicationDialog(props: DeleteApplicationDialogProps) {
         <Dialog
             open={props.form != null}
         >
-            <DialogTitle>
+            <DialogTitleWithClose
+                onClose={() => {
+                    setFormTitle(undefined);
+                    props.onCancel();
+                }}
+            >
                 Formular löschen
-            </DialogTitle>
+            </DialogTitleWithClose>
             <DialogContent tabIndex={0}>
                 {
                     ((submissions?.length ?? 0) > 0 || props.form?.publishedVersion != null) &&
