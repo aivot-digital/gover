@@ -86,7 +86,7 @@ export function DestinationDetailsPageForms() {
                             },
                         );
                 }}
-                getRowIdentifier={(item) => item.id.toString()}
+                getRowIdentifier={(item) => `${item.id}_${item.version}`}
                 searchLabel="Formular suchen"
                 searchPlaceholder="Titel des Formulars eingeben…"
                 defaultSortField="internalTitle"
