@@ -192,7 +192,7 @@ export function ShellSearchDialog() {
                                 <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
                                     {results.map((item) => (
                                         <SearchDialogListItem
-                                            key={item.id + item.originTable}
+                                            key={`${item.originTable}-${item.id}-${page}`}
                                             id={item.id}
                                             type={item.originTable}
                                             link={createSearchItemLink(item)}
