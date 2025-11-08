@@ -190,9 +190,9 @@ export function ShellSearchDialog() {
                                 minHeight: '35rem'
                             }}>
                                 <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
-                                    {results.map((item) => (
+                                    {results.map((item, idx) => (
                                         <SearchDialogListItem
-                                            key={`${item.originTable}-${item.id}-${page}`}
+                                            key={`${page}-${item.originTable}-${item.id}-${idx}`}
                                             id={item.id}
                                             type={item.originTable}
                                             link={createSearchItemLink(item)}
@@ -266,9 +266,9 @@ export function ShellSearchDialog() {
                                 Zuletzt verwendet
                             </Typography>
                             <List sx={{'& .MuiListItem-root:last-of-type': {borderBottom: 'none'}}}>
-                                {historyCapped.map((item) => (
+                                {historyCapped.map((item, idx) => (
                                     <SearchDialogListItem
-                                        key={item.link}
+                                        key={`${item.type}-${item.link}-${idx}`}
                                         id={item.title}
                                         type={item.type}
                                         link={item.link}
@@ -314,11 +314,10 @@ interface ShellSearchDialogProps {
 }
 
 function SearchDialogListItem(props: ShellSearchDialogProps) {
-    const {id, type, link, search, label, handleClose} = props;
+    const {type, link, search, label, handleClose} = props;
 
     return (
         <ListItem
-            key={id + type}
             component={Link}
             to={link}
             onClick={handleClose}
