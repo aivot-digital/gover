@@ -307,7 +307,7 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
         }
 
         if (otherElement.destinationKey.startsWith(element.destinationKey + '.') || element.destinationKey.startsWith(otherElement.destinationKey + '.')) {
-            const otherElementLabel = generateComponentTitle(element);
+            const otherElementLabel = generateComponentTitle(otherElement);
             const otherElementPath = otherElementParents.map(e => generateComponentTitle(e)).join(' > ');
 
             const otherElementWritesParent = otherElement
