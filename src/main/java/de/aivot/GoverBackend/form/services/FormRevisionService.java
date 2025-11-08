@@ -33,9 +33,9 @@ public class FormRevisionService {
     }
 
     @Nonnull
-    public Page<FormRevisionEntity> list(@Nonnull Integer formId, @Nonnull Pageable pageable) {
+    public Page<FormRevisionEntity> list(@Nonnull Integer formId, @Nonnull Integer formVersion, @Nonnull Pageable pageable) {
         return formRevisionRepository
-                .getAllByFormIdOrderByTimestampDesc(formId, pageable);
+                .getAllByFormIdAndFormVersionOrderByTimestampDesc(formId, formVersion, pageable);
     }
 
     public void create(
@@ -99,7 +99,7 @@ public class FormRevisionService {
 
     public FormVersionWithDetailsEntity rollback(FormVersionWithDetailsEntity form, BigInteger revisionId) throws ResponseException {
         var firstRevision = formRevisionRepository
-                .getFirstByFormIdOrderByTimestampAsc(form.getId())
+                .getFirstByFormIdAndFormVersionOrderByTimestampAsc(form.getId(), form.getVersion())
                 .orElseThrow(ResponseException::notFound);
 
         var targetRevisionToRollBackTo = formRevisionRepository
@@ -111,7 +111,7 @@ public class FormRevisionService {
         }
 
         var succeedingRevisionsToRollBack = formRevisionRepository
-                .getAllByFormIdAndTimestampIsAfterOrderByTimestampDesc(form.getId(), targetRevisionToRollBackTo.getTimestamp());
+                .getAllByFormIdAndFormVersionAndTimestampIsAfterOrderByTimestampDesc(form.getId(), form.getVersion(), targetRevisionToRollBackTo.getTimestamp());
 
         succeedingRevisionsToRollBack.add(targetRevisionToRollBackTo);
 

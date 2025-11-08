@@ -11,9 +11,9 @@ import java.util.Collection;
 import java.util.Optional;
 
 public interface FormRevisionRepository extends JpaRepository<FormRevisionEntity, BigInteger> {
-    Optional<FormRevisionEntity> getFirstByFormIdOrderByTimestampAsc(Integer formId);
+    Optional<FormRevisionEntity> getFirstByFormIdAndFormVersionOrderByTimestampAsc(Integer formId, Integer formVersion);
 
-    Page<FormRevisionEntity> getAllByFormIdOrderByTimestampDesc(Integer formId, Pageable pageable);
+    Collection<FormRevisionEntity> getAllByFormIdAndFormVersionAndTimestampIsAfterOrderByTimestampDesc(Integer id, Integer FormVersion, LocalDateTime timestamp);
 
-    Collection<FormRevisionEntity> getAllByFormIdAndTimestampIsAfterOrderByTimestampDesc(Integer id, LocalDateTime timestamp);
+    Page<FormRevisionEntity> getAllByFormIdAndFormVersionOrderByTimestampDesc(Integer formId, Integer FormVersion, Pageable pageable);
 }
