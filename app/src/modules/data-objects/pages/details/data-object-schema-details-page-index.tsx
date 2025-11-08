@@ -94,6 +94,7 @@ export function DataObjectSchemaDetailsPageIndex() {
     const navigate = useNavigate();
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
+        messageType: 'snackbar',
     });
 
     const location = useLocation();
