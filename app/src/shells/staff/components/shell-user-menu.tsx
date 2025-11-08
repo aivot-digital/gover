@@ -141,7 +141,7 @@ export function ShellUserMenu({ anchorEl, onClose, minimizeDrawer }: ShellUserMe
                     <ListItemIcon>
                         <InfoOutlined fontSize="small" />
                     </ListItemIcon>
-                    <Typography variant="body1">Über Gover v{AppInfo.version === '@buildVersion' ? '5.x (DEV)' : 'v'+AppInfo.version}</Typography>
+                    <Typography variant="body1">Über Gover v{AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}</Typography>
                 </MenuItem>
 
                 <Divider sx={{ my: 1 }} />

@@ -83,7 +83,7 @@ export function AboutGoverDialog({ open, onClose }: AboutGoverDialogProps) {
 
             <Box sx={{ p: 4, textAlign: "center" }}>
                 <Typography variant="h2" fontWeight={600} sx={{ mb: 2 }}>
-                    Über Gover Version {AppInfo.version === '@buildVersion' ? '5.x (DEV)' : 'v'+AppInfo.version}
+                    Über Gover Version {AppInfo.version === '@buildVersion' ? '5.x (DEV)' : AppInfo.version}
                 </Typography>
 
                 <Typography
