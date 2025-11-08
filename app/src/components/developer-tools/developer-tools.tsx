@@ -1,4 +1,4 @@
-import React, {PropsWithChildren, useState} from 'react';
+import React, {PropsWithChildren} from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Tab from '@mui/material/Tab';
@@ -8,8 +8,6 @@ import {selectDevToolsTab, setDevToolsTab} from '../../slices/admin-settings-sli
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {Actions} from '../actions/actions';
 import {Action} from '../actions/actions-props';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CloseIcon from '@mui/icons-material/Close';
 import {LogLevel, selectLogLevel, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
@@ -71,8 +69,6 @@ export function DeveloperTools(props: DeveloperToolsProps) {
 
     const currentLogLevel = useAppSelector(selectLogLevel);
 
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
     if (tab === undefined) {
         return null;
     }
@@ -117,11 +113,6 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     }}
                     actions={[
                         {
-                            tooltip: 'Einklappen',
-                            icon: isCollapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />,
-                            onClick: () => setIsCollapsed(!isCollapsed),
-                        },
-                        {
                             tooltip: 'Schließen',
                             icon: <CloseIcon color="error" />,
                             onClick: () => {
@@ -137,9 +128,8 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     overflowY: 'scroll',
                     overflowX: 'scroll',
                     width: '100%',
-                    height: isCollapsed ? 0 : `100%`,
-                    transition: isCollapsed ? 'height 0.3s ease-in-out' : 'none',
-                    padding: isCollapsed ? 0 : 2,
+                    height: `100%`,
+                    padding: 2,
                 }}
             >
 
