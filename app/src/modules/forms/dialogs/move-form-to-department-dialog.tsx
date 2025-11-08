@@ -54,8 +54,8 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
                 }),
             600,
         )
-            .then((page) => {
-                setDepartments(page.content);
+            .then(({content}) => {
+                setDepartments(content);
             })
             .catch((err) => {
                 if (isApiError(err) && err.displayableToUser) {
@@ -172,10 +172,14 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
                             const valNumber = val != null ? parseInt(val.toString(), 10) : null;
                             setTargetDepartmentId(valNumber);
                         }}
-                        options={departments.map(dep => ({
-                            label: dep.name,
-                            value: dep.id.toString(),
-                        }))}
+                        options={
+                            departments
+                                .filter(dep => dep.id !== form.developingDepartmentId)
+                                .map(dep => ({
+                                    label: dep.name,
+                                    value: dep.id.toString(),
+                                }))
+                        }
                     />
                 </DialogContent>
             }
