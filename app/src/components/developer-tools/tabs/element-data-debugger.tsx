@@ -20,6 +20,18 @@ interface ElementDataDebuggerProps {
     onLoadElementData: (elementData: ElementData) => void;
 }
 
+function cleanElementDataObject(elem: AnyElement, value: ElementDataObject | null | undefined, path: (number | AnyElement)[]): ElementDataObject | null | undefined {
+    if (value == null) {
+        return null;
+    }
+    return {
+        ...value,
+        computedErrors: null,
+        computedValue: null,
+        computedOverride: null,
+    };
+}
+
 export function ElementDataDebugger(props: ElementDataDebuggerProps) {
     const {
         dataLabel,
@@ -32,21 +44,11 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
     const [elementIdSearch, setElementIdSearch] = useState<string>('');
 
     const handleExport = (): void => {
-        const cleanedElementData = mapElementData(rootElement, elementData, (elem, value) => {
-            if (value == null) {
-                return null;
-            }
-
-            const ed: ElementDataObject = {
-                ...value,
-                computedErrors: null,
-                computedOverride: null,
-                computedValue: null,
-            };
-
-            return ed;
-        });
-
+        const cleanedElementData = mapElementData(
+            rootElement,
+            elementData,
+            cleanElementDataObject,
+        );
 
         const filename = `${dataLabel} ${format(new Date(), 'dd-MM-yyyy')}.json`;
         downloadObjectFile(filename, cleanedElementData);
@@ -70,7 +72,13 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
                         return;
                     }
 
-                    onLoadElementData(res);
+                    const cleanedElementData = mapElementData(
+                        rootElement,
+                        elementData,
+                        cleanElementDataObject,
+                    );
+
+                    onLoadElementData(cleanedElementData);
                 }
             })
             .catch((err) => {
