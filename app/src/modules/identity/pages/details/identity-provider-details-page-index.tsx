@@ -173,7 +173,7 @@ export function IdentityProviderDetailsPageIndex() {
 
         dispatch(addSnackbarMessage({
             key: 'access-denied-identity-provider-details',
-            message: 'Nur globale Administrator:innen können Nutzerkontenanbieter verwalten.',
+            message: 'Dieser Nutzerkontenanbieter kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             type: SnackbarType.Dismissable,
             severity: SnackbarSeverity.Warning,
         }));

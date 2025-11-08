@@ -1,5 +1,5 @@
 import {Alert, AlertTitle, Box, Button, Divider, Grid, Typography} from '@mui/material';
-import React, {useContext, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
@@ -28,6 +28,8 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ImageSelector} from '../../../assets/components/image-selector';
+import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -40,6 +42,24 @@ export const ThemeSchema = yup.object({
 export function ThemeDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const userIsAdmin = useUserIsAdmin();
+
+    useEffect(() => {
+        if (userIsAdmin) {
+            return;
+        }
+
+        dispatch(addSnackbarMessage({
+            key: 'access-denied-theme-details',
+            message: 'Dieses Farbschema kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
+            type: SnackbarType.Dismissable,
+            severity: SnackbarSeverity.Warning,
+        }));
+
+        return () => {
+            dispatch(removeSnackbarMessage('access-denied-theme-details'));
+        };
+    }, []);
 
     const api = useApi();
     const {

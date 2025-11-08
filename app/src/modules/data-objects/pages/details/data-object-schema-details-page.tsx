@@ -73,7 +73,7 @@ export function DataObjectSchemaDetailsPage() {
                         {
                             label: 'Datenobjekte anzeigen',
                             to: `/data-objects/${schemaKey}`,
-                            variant: 'outlined',
+                            variant: 'text',
                             icon: <DataObject />,
                         },
                     ],

@@ -112,7 +112,8 @@ export function DataObjectItemListPage() {
                             icon: <AddOutlinedIcon />,
                             to: `/data-objects/${dataObjectSchema.key}/new`,
                             variant: 'contained',
-                            visible: hasAccess,
+                            disabled: !hasAccess,
+                            tooltip: !hasAccess ? 'Sie haben keine Berechtigung zum Anlegen von Datenobjekten' : undefined,
                         },
                     ],
                     helpDialog: {
