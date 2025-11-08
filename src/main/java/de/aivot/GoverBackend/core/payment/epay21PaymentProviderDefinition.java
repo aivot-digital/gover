@@ -247,7 +247,7 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
                 .newBuilder(URI.create(paymentPath))
                 .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
                 .headers("Accept", ContentType.APPLICATION_JSON.getType())
-                .headers("Authorization", "Bearer " + auth)
+                .headers("Authorization", "Basic " + auth)
                 .GET()
                 .build();
 
