@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.elements.models.form.input.TextField;
 import de.aivot.GoverBackend.elements.models.form.input.TextPattern;
 import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
 import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
@@ -277,6 +278,12 @@ public class epay21PaymentProviderDefinition implements PaymentProviderDefinitio
         }
 
         client.close();
+
+        if (updatedTransaction.getPaymentInformation().getStatus() != XBezahldienstStatus.INITIAL) {
+            updatedTransaction
+                    .getPaymentInformation()
+                    .setTransactionRedirectUrl(null);
+        }
 
         return updatedTransaction;
     }
