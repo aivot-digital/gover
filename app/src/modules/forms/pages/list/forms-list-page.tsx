@@ -13,7 +13,7 @@ import {FormDetailsResponseDTO} from '../../dtos/form-details-response-dto';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectUser} from '../../../../slices/user-slice';
+import {selectMemberships, selectUser} from '../../../../slices/user-slice';
 import {AddFormDialog} from '../../dialogs/add-form-dialog';
 import {ExportApplicationDialog} from '../../../../dialogs/application-dialogs/export-application-dialog/export-application-dialog';
 import {downloadConfigFile} from '../../../../utils/download-utils';
@@ -70,7 +70,7 @@ const columns: GridColDef<FormListEntry>[] = [
     {
         field: 'icon',
         headerName: '',
-        renderCell: () => <CellContentWrapper sx={{alignItems: 'start', py: 2,}}><DescriptionOutlinedIcon /></CellContentWrapper>,
+        renderCell: () => <CellContentWrapper sx={{alignItems: 'start', py: 2}}><DescriptionOutlinedIcon /></CellContentWrapper>,
         disableColumnMenu: true,
         width: 24,
         sortable: false,
@@ -161,7 +161,10 @@ const columns: GridColDef<FormListEntry>[] = [
                 <Typography sx={{fontSize: '0.875rem'}}>
                     {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
                 </Typography>
-                <Typography color="textSecondary" sx={{fontSize: '0.875rem'}}>
+                <Typography
+                    color="textSecondary"
+                    sx={{fontSize: '0.875rem'}}
+                >
                     {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
                 </Typography>
             </Box>
@@ -185,6 +188,7 @@ export function FormsListPage() {
     const showConfirm = useConfirm();
 
     const user = useAppSelector(selectUser);
+    const memberships = useAppSelector(selectMemberships);
 
     const listControlRef = useRef<ListControlRef>(null);
 
@@ -250,7 +254,7 @@ export function FormsListPage() {
             .destroyAll(form.id)
             .then(() => {
                 if (listControlRef.current != null) {
-                    listControlRef.current.refresh()
+                    listControlRef.current.refresh();
                 }
             })
             .catch((err) => {
@@ -367,7 +371,42 @@ export function FormsListPage() {
                     }}
                     columnDefinitions={columns}
                     getRowIdentifier={row => row.id.toString()}
-                    noDataPlaceholder="Keine Formulare vorhanden"
+                    noDataPlaceholder={
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                p: 4,
+                            }}
+                        >
+                            {
+                                (memberships == null ||
+                                    memberships.length === 0) &&
+                                <>
+                                    <Typography
+                                        variant="h5"
+                                        component="h2"
+                                    >
+                                        Noch keinem Fachbereich zugeordnet
+                                    </Typography>
+                                    <Typography>
+                                        Eine Administrator:in muss Sie noch einem Fachbereich zuordnen und Ihnen eine Rolle
+                                        zuweisen.
+                                        Erst dann können Sie mit der Entwicklung von Formularen loslegen.
+                                    </Typography>
+                                </>
+                            }
+                            {
+                                memberships != null &&
+                                memberships.length > 0 &&
+                                <Typography>
+                                    Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!
+                                </Typography>
+                            }
+                        </Box>
+                    }
                     noSearchResultsPlaceholder="Keine Formulare gefunden"
                     rowActionsCount={4}
                     rowActions={(item: FormListEntry) => [

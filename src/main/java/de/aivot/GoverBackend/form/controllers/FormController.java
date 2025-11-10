@@ -255,6 +255,7 @@ public class FormController {
                 .orElseThrow(ResponseException::notFound);
 
         if (
+                user.getGlobalAdmin() ||
                 departmentMembershipService.checkUserInDepartment(user, form.getDevelopingDepartmentId()) ||
                 departmentMembershipService.checkUserInDepartment(user, form.getManagingDepartmentId()) ||
                 departmentMembershipService.checkUserInDepartment(user, form.getResponsibleDepartmentId())
@@ -402,6 +403,8 @@ public class FormController {
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     new RootElement(),
                     LocalDateTime.now(),
                     LocalDateTime.now(),
@@ -416,6 +419,8 @@ public class FormController {
                 FormStatus.Drafted,
                 latestVersion.getPublicTitle(),
                 latestVersion.getType(),
+                latestVersion.getManagingDepartmentId(),
+                latestVersion.getResponsibleDepartmentId(),
                 latestVersion.getLegalSupportDepartmentId(),
                 latestVersion.getTechnicalSupportDepartmentId(),
                 latestVersion.getImprintDepartmentId(),
@@ -478,6 +483,8 @@ public class FormController {
                 FormStatus.Drafted,
                 form.getPublicTitle(),
                 form.getType(),
+                form.getManagingDepartmentId(),
+                form.getResponsibleDepartmentId(),
                 form.getLegalSupportDepartmentId(),
                 form.getTechnicalSupportDepartmentId(),
                 form.getImprintDepartmentId(),

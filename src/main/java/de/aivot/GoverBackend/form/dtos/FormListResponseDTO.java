@@ -18,10 +18,6 @@ public record FormListResponseDTO(
         String internalTitle,
         @Nonnull
         Integer developingDepartmentId,
-        @Nullable
-        Integer managingDepartmentId,
-        @Nullable
-        Integer responsibleDepartmentId,
         @Nonnull
         LocalDateTime created,
         @Nonnull
@@ -39,8 +35,6 @@ public record FormListResponseDTO(
                 form.getSlug(),
                 form.getInternalTitle(),
                 form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
@@ -55,8 +49,6 @@ public record FormListResponseDTO(
                 form.getSlug(),
                 form.getInternalTitle(),
                 form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
@@ -71,8 +63,6 @@ public record FormListResponseDTO(
                 form.getSlug(),
                 form.getInternalTitle(),
                 form.getDevelopingDepartmentId(),
-                form.getManagingDepartmentId(),
-                form.getResponsibleDepartmentId(),
                 form.getCreated(),
                 form.getUpdated(),
                 form.getPublishedVersion(),
@@ -87,8 +77,6 @@ public record FormListResponseDTO(
                 formWithMembershipEntity.getSlug(),
                 formWithMembershipEntity.getInternalTitle(),
                 formWithMembershipEntity.getDevelopingDepartmentId(),
-                formWithMembershipEntity.getManagingDepartmentId(),
-                formWithMembershipEntity.getResponsibleDepartmentId(),
                 formWithMembershipEntity.getCreated(),
                 formWithMembershipEntity.getUpdated(),
                 formWithMembershipEntity.getPublishedVersion(),

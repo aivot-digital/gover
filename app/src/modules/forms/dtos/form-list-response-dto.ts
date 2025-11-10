@@ -3,8 +3,6 @@ export interface FormListResponseDTO {
     slug: string;
     internalTitle: string;
     developingDepartmentId: number;
-    managingDepartmentId: number;
-    responsibleDepartmentId: number;
     created: string;
     updated: string;
     publishedVersion: number;
