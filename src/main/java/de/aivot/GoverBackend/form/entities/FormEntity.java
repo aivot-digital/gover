@@ -25,10 +25,6 @@ public class FormEntity {
     private String internalTitle;
 
     @Nonnull
-    @Column(columnDefinition = "text")
-    private String publicTitle;
-
-    @Nonnull
     private Integer developingDepartmentId;
 
     @Nullable
@@ -64,7 +60,6 @@ public class FormEntity {
     public FormEntity(@Nonnull Integer id,
                       @Nonnull String slug,
                       @Nonnull String internalTitle,
-                      @Nonnull String publicTitle,
                       @Nonnull Integer developingDepartmentId,
                       @Nullable Integer managingDepartmentId,
                       @Nullable Integer responsibleDepartmentId,
@@ -76,7 +71,6 @@ public class FormEntity {
         this.id = id;
         this.slug = slug;
         this.internalTitle = internalTitle;
-        this.publicTitle = publicTitle;
         this.developingDepartmentId = developingDepartmentId;
         this.managingDepartmentId = managingDepartmentId;
         this.responsibleDepartmentId = responsibleDepartmentId;
@@ -92,7 +86,6 @@ public class FormEntity {
                 formVersionWithDetailsEntity.getId(),
                 formVersionWithDetailsEntity.getSlug(),
                 formVersionWithDetailsEntity.getInternalTitle(),
-                formVersionWithDetailsEntity.getPublicTitle(),
                 formVersionWithDetailsEntity.getDevelopingDepartmentId(),
                 formVersionWithDetailsEntity.getManagingDepartmentId(),
                 formVersionWithDetailsEntity.getResponsibleDepartmentId(),
@@ -128,7 +121,7 @@ public class FormEntity {
         if (object == null || getClass() != object.getClass()) return false;
 
         FormEntity that = (FormEntity) object;
-        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && publicTitle.equals(that.publicTitle) && developingDepartmentId.equals(that.developingDepartmentId) && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount);
+        return id.equals(that.id) && slug.equals(that.slug) && internalTitle.equals(that.internalTitle) && developingDepartmentId.equals(that.developingDepartmentId) && Objects.equals(managingDepartmentId, that.managingDepartmentId) && Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(publishedVersion, that.publishedVersion) && Objects.equals(draftedVersion, that.draftedVersion) && versionCount.equals(that.versionCount);
     }
 
     @Override
@@ -136,7 +129,6 @@ public class FormEntity {
         int result = id.hashCode();
         result = 31 * result + slug.hashCode();
         result = 31 * result + internalTitle.hashCode();
-        result = 31 * result + publicTitle.hashCode();
         result = 31 * result + developingDepartmentId.hashCode();
         result = 31 * result + Objects.hashCode(managingDepartmentId);
         result = 31 * result + Objects.hashCode(responsibleDepartmentId);
@@ -180,16 +172,6 @@ public class FormEntity {
 
     public FormEntity setInternalTitle(@Nonnull String title) {
         this.internalTitle = title;
-        return this;
-    }
-
-    @Nonnull
-    public String getPublicTitle() {
-        return publicTitle;
-    }
-
-    public FormEntity setPublicTitle(@Nonnull String publicTitle) {
-        this.publicTitle = publicTitle;
         return this;
     }
 

@@ -12,7 +12,6 @@ public class FormWithMembershipEntity {
     private Integer id;
     private String slug;
     private String internalTitle;
-    private String publicTitle;
     private Integer developingDepartmentId;
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
@@ -63,15 +62,6 @@ public class FormWithMembershipEntity {
 
     public FormWithMembershipEntity setInternalTitle(String internalTitle) {
         this.internalTitle = internalTitle;
-        return this;
-    }
-
-    public String getPublicTitle() {
-        return publicTitle;
-    }
-
-    public FormWithMembershipEntity setPublicTitle(String publicTitle) {
-        this.publicTitle = publicTitle;
         return this;
     }
 

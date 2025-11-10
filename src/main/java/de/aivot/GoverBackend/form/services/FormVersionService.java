@@ -166,6 +166,7 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         var cleanedEntity = cleanRelatedData(existingEntity, entity);
 
         var updatedExistingEntity = existingEntity
+                .setPublicTitle(entity.getPublicTitle())
                 .setType(cleanedEntity.getType())
                 .setLegalSupportDepartmentId(cleanedEntity.getLegalSupportDepartmentId())
                 .setTechnicalSupportDepartmentId(cleanedEntity.getTechnicalSupportDepartmentId())

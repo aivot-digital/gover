@@ -85,7 +85,6 @@ public class FormService implements EntityService<FormEntity, Integer> {
 
         existingForm.setSlug(updatedForm.getSlug());
         existingForm.setInternalTitle(cleanedForm.getInternalTitle().strip());
-        existingForm.setPublicTitle(cleanedForm.getPublicTitle());
 
         existingForm.setDevelopingDepartmentId(cleanedForm.getDevelopingDepartmentId());
         existingForm.setManagingDepartmentId(cleanedForm.getManagingDepartmentId());

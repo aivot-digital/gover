@@ -27,6 +27,10 @@ public class FormVersionEntity {
     @Nonnull
     private Integer formId;
 
+    @Nonnull
+    @Column(columnDefinition = "text")
+    private String publicTitle;
+
     @Id
     @Nonnull
     @Column(columnDefinition = "int2")
@@ -128,6 +132,7 @@ public class FormVersionEntity {
     public FormVersionEntity(@Nonnull Integer formId,
                              @Nonnull Integer version,
                              @Nonnull FormStatus status,
+                             @Nonnull String publicTitle,
                              @Nonnull FormType type,
                              @Nullable Integer legalSupportDepartmentId,
                              @Nullable Integer technicalSupportDepartmentId,
@@ -153,6 +158,7 @@ public class FormVersionEntity {
         this.formId = formId;
         this.version = version;
         this.status = status;
+        this.publicTitle = publicTitle;
         this.type = type;
         this.legalSupportDepartmentId = legalSupportDepartmentId;
         this.technicalSupportDepartmentId = technicalSupportDepartmentId;
@@ -182,6 +188,7 @@ public class FormVersionEntity {
                 formVersionWithDetailsEntity.getId(),
                 formVersionWithDetailsEntity.getVersion(),
                 formVersionWithDetailsEntity.getStatus(),
+                formVersionWithDetailsEntity.getPublicTitle(),
                 formVersionWithDetailsEntity.getType(),
                 formVersionWithDetailsEntity.getLegalSupportDepartmentId(),
                 formVersionWithDetailsEntity.getTechnicalSupportDepartmentId(),
@@ -227,16 +234,17 @@ public class FormVersionEntity {
     // region Equals & HashCode
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
 
-        FormVersionEntity that = (FormVersionEntity) object;
-        return formId.equals(that.formId) && version.equals(that.version)&& status == that.status && type == that.type && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) && Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) && Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && Objects.equals(paymentProducts, that.paymentProducts) && Objects.equals(identityProviders, that.identityProviders) && Objects.equals(identityVerificationRequired, that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
+        FormVersionEntity that = (FormVersionEntity) o;
+        return formId.equals(that.formId) && publicTitle.equals(that.publicTitle) && version.equals(that.version) && status == that.status && type == that.type && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) && Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) && Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) && Objects.equals(destinationId, that.destinationId) && Objects.equals(customerAccessHours, that.customerAccessHours) && Objects.equals(submissionRetentionWeeks, that.submissionRetentionWeeks) && Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey) && Objects.equals(paymentProviderKey, that.paymentProviderKey) && Objects.equals(paymentPurpose, that.paymentPurpose) && Objects.equals(paymentDescription, that.paymentDescription) && Objects.equals(paymentProducts, that.paymentProducts) && Objects.equals(identityProviders, that.identityProviders) && Objects.equals(identityVerificationRequired, that.identityVerificationRequired) && rootElement.equals(that.rootElement) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(published, that.published) && Objects.equals(revoked, that.revoked);
     }
 
     @Override
     public int hashCode() {
         int result = formId.hashCode();
+        result = 31 * result + publicTitle.hashCode();
         result = 31 * result + version.hashCode();
         result = 31 * result + status.hashCode();
         result = 31 * result + type.hashCode();
@@ -264,7 +272,6 @@ public class FormVersionEntity {
         return result;
     }
 
-
     // endregion
 
     // region Getters & Setters
@@ -276,6 +283,16 @@ public class FormVersionEntity {
 
     public FormVersionEntity setFormId(@Nonnull Integer formId) {
         this.formId = formId;
+        return this;
+    }
+
+    @Nonnull
+    public String getPublicTitle() {
+        return publicTitle;
+    }
+
+    public FormVersionEntity setPublicTitle(@Nonnull String publicTitle) {
+        this.publicTitle = publicTitle;
         return this;
     }
 

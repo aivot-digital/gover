@@ -17,8 +17,6 @@ public record FormListResponseDTO(
         @Nonnull
         String internalTitle,
         @Nonnull
-        String publicTitle,
-        @Nonnull
         Integer developingDepartmentId,
         @Nullable
         Integer managingDepartmentId,
@@ -40,7 +38,6 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
@@ -57,7 +54,6 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
@@ -74,7 +70,6 @@ public record FormListResponseDTO(
                 form.getId(),
                 form.getSlug(),
                 form.getInternalTitle(),
-                form.getPublicTitle(),
                 form.getDevelopingDepartmentId(),
                 form.getManagingDepartmentId(),
                 form.getResponsibleDepartmentId(),
@@ -91,7 +86,6 @@ public record FormListResponseDTO(
                 formWithMembershipEntity.getId(),
                 formWithMembershipEntity.getSlug(),
                 formWithMembershipEntity.getInternalTitle(),
-                formWithMembershipEntity.getPublicTitle(),
                 formWithMembershipEntity.getDevelopingDepartmentId(),
                 formWithMembershipEntity.getManagingDepartmentId(),
                 formWithMembershipEntity.getResponsibleDepartmentId(),
