@@ -491,7 +491,10 @@ export function FormsListPage() {
                         setFormToMove(undefined);
                     }}
                     onMoved={() => {
-                        window.location.reload();
+                        setFormToMove(undefined);
+                        if (listControlRef.current != null) {
+                            listControlRef.current.refresh();
+                        }
                     }}
                 />
             }
