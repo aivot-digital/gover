@@ -74,7 +74,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
 
                     const cleanedElementData = mapElementData(
                         rootElement,
-                        elementData,
+                        res,
                         cleanElementDataObject,
                     );
 

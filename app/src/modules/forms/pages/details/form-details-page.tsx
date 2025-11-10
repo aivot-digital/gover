@@ -62,6 +62,7 @@ import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {isApiError} from '../../../../models/api-error';
 import {setErrorMessage, setLoadingMessage} from '../../../../slices/shell-slice';
+import {withDelay} from '../../../../utils/with-delay';
 
 export const DialogSearchParam = 'dialog';
 
@@ -689,27 +690,42 @@ export function FormDetailsPage() {
                                 maxSize={developerToolsMaxHeight}
                                 preferredSize={420}
                             >
-                                <Box sx={{height: '100%', overflow: 'auto'}}>
+                                <Box
+                                    sx={{
+                                        height: '100%',
+                                        overflow: 'auto',
+                                    }}
+                                >
                                     <DeveloperTools
                                         dataLabel={loadedForm.internalTitle}
                                         rootElement={loadedForm.rootElement}
                                         elementData={elementData}
                                         onElementDataChange={(elementData) => {
-                                            formApiService
-                                                .determineFormState(
-                                                    loadedForm.slug,
-                                                    loadedForm.version,
-                                                    elementData,
-                                                    {
-                                                        skipErrorsFor: ['ALL'],
-                                                        skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
-                                                        skipValuesFor: [],
-                                                        skipOverridesFor: [],
-                                                    },
-                                                )
+                                            dispatch(setLoadingMessage({
+                                                message: 'Element-Daten werden importiert',
+                                                blocking: true,
+                                                estimatedTime: 500,
+                                            }));
+
+                                            withDelay(
+                                                formApiService
+                                                    .determineFormState(
+                                                        loadedForm.slug,
+                                                        loadedForm.version,
+                                                        elementData,
+                                                        {
+                                                            skipErrorsFor: ['ALL'],
+                                                            skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
+                                                            skipValuesFor: [],
+                                                            skipOverridesFor: [],
+                                                        },
+                                                    ), 500)
                                                 .then((state) => {
                                                     setElementData(state.elementData);
                                                     dispatch(addDerivationLogItems(state.logItems));
+                                                })
+                                                .finally(() => {
+                                                    dispatch(setLoadingMessage(undefined));
                                                 });
                                         }}
                                     />
