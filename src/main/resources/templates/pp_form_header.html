@@ -2,6 +2,6 @@
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
 
 <div style="width: 100%; display: flex; align-items: flex-start; padding: 0 18px; color: #626262;">
-    <span style="font-size: 10px;" th:if="${ base.isCitizenPrint() }" th:text="${ form.getPublicTitle() }"></span>
-    <span style="font-size: 10px;" th:unless="${ base.isCitizenPrint() }" th:text="${ form.getInternalTitle() }"></span>
+    <span style="font-size: 10px;" th:if="${ base.isCitizenPrint }" th:text="${ form.publicTitle }"></span>
+    <span style="font-size: 10px;" th:unless="${ base.isCitizenPrint }" th:text="${ form.internalTitle }"></span>
 </div>

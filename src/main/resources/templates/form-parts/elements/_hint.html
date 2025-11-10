@@ -1,0 +1,9 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.BaseInputElement"*/-->
+
+<div
+        class="hint"
+        th:fragment="hint"
+        th:if="${ base.isBlankPrint && not #strings.isEmpty(element.hint) }"
+        th:text="${ element.hint }"
+></div>

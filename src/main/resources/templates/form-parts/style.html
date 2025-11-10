@@ -1,0 +1,391 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+
+<style th:fragment="style">
+    /* Public Sans webfonts */
+
+    /* public-sans-regular - latin */
+    @font-face {
+        font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+        font-family: 'Public Sans';
+        font-style: normal;
+        font-weight: 400;
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-regular.eot')})]'); /* IE9 Compat Modes */
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-regular.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-regular.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-regular.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-regular.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-regular.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+    }
+
+    /* public-sans-italic - latin */
+    @font-face {
+        font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+        font-family: 'Public Sans';
+        font-style: italic;
+        font-weight: 400;
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-italic.eot')})]'); /* IE9 Compat Modes */
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-italic.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-italic.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-italic.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-italic.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-italic.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+    }
+
+    /* public-sans-700 - latin */
+    @font-face {
+        font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+        font-family: 'Public Sans';
+        font-style: normal;
+        font-weight: 700;
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700.eot')})]'); /* IE9 Compat Modes */
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+    }
+
+    /* public-sans-700italic - latin */
+    @font-face {
+        font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+        font-family: 'Public Sans';
+        font-style: italic;
+        font-weight: 700;
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700italic.eot')})]'); /* IE9 Compat Modes */
+        src: url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700italic.eot?#iefix')})]') format('embedded-opentype'), /* IE6-IE8 */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700italic.woff2')})]') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700italic.woff')})]') format('woff'), /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+, iOS 5+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700italic.ttf')})]') format('truetype'), /* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+    url('[(${base.config.createUrl('/assets/fonts/public-sans/public-sans-v14-latin-700italic.svg#PublicSans')})]') format('svg'); /* Legacy iOS */
+    }
+
+    @page {
+        margin-top: 80px;
+        margin-bottom: 60px;
+        margin-left: 75px; /* 95px ≈ 25mm für Abheftung wären besser, sehen aber extrem aus */
+        margin-right: 50px;
+    }
+
+    html {
+        font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-size: 12px;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    h2 {
+        font-size: 1.625rem;
+        margin-top: 1.75rem;
+        margin-bottom: 1rem;
+    }
+
+    h3 {
+        font-size: 1.375rem;
+        margin-top: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    h4 {
+        font-size: 1.25rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    a {
+        color: inherit;
+    }
+
+    #briefkopf {
+        display: flex;
+        align-items: center;
+        margin-bottom: 3rem;
+    }
+
+    #logo {
+        margin-left: auto;
+    }
+
+    #logo img {
+        max-height: 100px;
+        max-width: 200px;
+    }
+
+    .alert-title p {
+        margin-top: 0.25rem;
+        padding-top: 0;
+    }
+
+    .step {
+        margin-bottom: 1rem;
+    }
+
+    .richtext {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .input-element {
+        break-inside: avoid;
+    }
+
+    .input-element.replicating-element,
+    .input-element.table-element {
+        break-inside: unset;
+    }
+
+    .input-element .input {
+        border: 1px solid #949494;
+        /*background-color: red;*/
+        width: 100%;
+        padding: 0.25rem 0.5rem;
+        margin-bottom: -1px;
+    }
+
+    .input-element .input .label {
+        font-size: 0.85rem;
+    }
+
+    .input-element .input .content {
+        display: flex;
+        align-items: baseline;
+        min-height: 1.5rem;
+        margin-top: 0.25rem;
+    }
+
+    .input-element.replicating-element {
+        margin: 0.75rem 0 1.5rem;
+        /*border: 1px solid #949494;
+        padding: 0.25rem 0.5rem;
+        margin-bottom: -1px;*/
+    }
+
+    .input-element.replicating-element > .label {
+        margin-bottom: 0.5rem;
+        font-size: 1.125rem;
+    }
+
+    .input-element.replicating-element > .content {
+        border-left: 1px solid #949494;
+        padding:  0.25rem 0 0.25rem 1rem;
+    }
+
+    .input-element.replicating-element > .content .child > h4 {
+        font-size: 1rem;
+    }
+
+    .input-element.replicating-element > .content .child {
+        margin-bottom: 0.5rem;
+    }
+
+    .input-element.checkbox-element .input,
+    .input-element.select-element .input,
+    .input-element.radio-element .input,
+    .input-element.multi-checkbox-element .input {
+        display: flex;
+        align-items: center;
+    }
+
+    .input-element.checkbox-element .input .label {
+        margin-left: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .input-element.select-element .input .label,
+    .input-element.radio-element .input .label,
+    .input-element.multi-checkbox-element .input .label {
+        margin-bottom: 0.5rem;
+    }
+
+    .input-element.number-element .input .content .suffix,
+    .input-element.date-element .input .content .suffix,
+    .input-element.time-element .input .content .suffix {
+        margin-left: auto;
+        font-size: 0.85rem;
+    }
+
+    .input-element.select-element .input,
+    .input-element.radio-element .input,
+    .input-element.multi-checkbox-element .input {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .input-element.select-element .input ul,
+    .input-element.radio-element .input ul,
+    .input-element.multi-checkbox-element .input ul {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        gap: 0.5rem;
+    }
+
+    .input-element.select-element .input ul li,
+    .input-element.radio-element .input ul li,
+    .input-element.multi-checkbox-element .input ul li {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+    }
+
+    .input-element.table-element {
+        break-inside: avoid;
+        margin: 0.75rem 0 1.5rem;
+        /*border: 1px solid #949494;
+        margin-bottom: -1px;
+        padding-top: 0.5rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;*/
+    }
+
+    .input-element.table-element .input {
+    }
+
+    .input-element.table-element .label {
+        margin-bottom: 0.5rem;
+    }
+
+    .input-element.table-element .table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        margin-bottom: 0.5rem;
+    }
+
+    .input-element.table-element .table .table-header-cell {
+        text-align: left;
+        font-weight: normal;
+        font-size: 0.85rem;
+        border: 1px solid #949494;
+        border-bottom-with: 2px;
+        padding: 0.5rem 0.25rem 0.25rem 0.25rem;
+    }
+
+    .input-element.table-element .table .table-value-cell {
+        border: 1px solid #949494;
+        padding: 0.25rem;
+        height: 2.75rem;
+    }
+
+    .input-element.table-element .table .table-header-cell.number,
+    .input-element.table-element .table .table-value-cell.number {
+        text-align: right;
+    }
+
+    .input-element.file-upload-element .file-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .input-element .hint-wrapper:has(.hint) {
+        border-left: 1px solid #949494;
+        border-bottom: 1px solid #949494;
+        color: #727272;
+        margin-bottom: -1px;
+        padding: 0.25rem 0.5rem 0.55rem 0.5rem;
+    }
+
+    .input-element.replicating-element > .hint-wrapper:has(.hint),
+    .input-element.table-element > .hint-wrapper:has(.hint){
+        padding-left: 0;
+        padding-right: 0;
+        margin-bottom: 0;
+        border-left: 0;
+        border-bottom: 0;
+    }
+
+    .input-element .hint {
+        font-size: 0.85rem;
+        display: inline;
+    }
+
+    .input-element .hint::after {
+        content: "|";
+        color: #949494;
+        margin-left: 0.25rem;
+        margin-right: 0.25rem;
+    }
+
+    .input-element .hint:last-of-type::after {
+        content: "";
+        display: none;
+    }
+
+    .checked::before {
+        content: '\2611';
+        font-size: 1.5rem;
+        line-height: 1rem;
+    }
+
+    .unchecked::before {
+        content: '\2610';
+        font-size: 1.5rem;
+        line-height: 1rem;
+    }
+
+    .page-break-before {
+        break-before: page;
+    }
+
+    .avoid-break-inside {
+        break-inside: avoid;
+    }
+
+    a::after {
+        content: " (" attr(href) ") ";
+    }
+
+    a.do-not-print-link::after {
+        content: none;
+    }
+
+    .signature-container {
+        display: flex;
+        margin-top: 4em;
+        border-top: 1px solid #949494;
+    }
+
+    .signature-container div {
+        flex: 1;
+    }
+
+    .content-without-margin-on-childs {
+        & p:first-child {
+            margin-top: 0
+        }
+
+        & p:last-child {
+            margin-bottom: 0
+        }
+    }
+</style>

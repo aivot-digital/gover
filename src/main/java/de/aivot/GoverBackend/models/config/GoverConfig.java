@@ -8,6 +8,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -41,6 +42,7 @@ public class GoverConfig {
 
         var resolvedParts = Arrays
                 .stream(parts)
+                .filter(Objects::nonNull)
                 .map(Object::toString)
                 .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8))
                 .collect(Collectors.joining("/"));

@@ -1,0 +1,19 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.form.input.TextField"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div th:fragment="headline">
+    <h3
+
+            th:text="${element.uppercase != null && element.uppercase} ? ${#strings.toUpperCase(element.content)} : ${element.content}"
+            th:if="${element.small == null || !element.small}"
+    >
+        Großes Überschriftenelement
+    </h3>
+    <h4
+            th:text="${element.uppercase != null && element.uppercase} ? ${#strings.toUpperCase(element.content)} : ${element.content}"
+            th:if="${element.small != null && element.small}"
+    >
+        Kleines Überschriftenelement
+    </h4>
+</div>

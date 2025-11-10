@@ -1,0 +1,32 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.DepartmentEntity"*/-->
+
+<header
+        id="briefkopf"
+        th:fragment="briefkopf"
+>
+    <div id="anschrift">
+        <p>
+            <!-- Der Name des Betreibers wird aus dem Basis-Kontext abgeleitet -->
+            <strong><span th:text="${ base.providerName }">Name der Kommune</span></strong>
+            <br />
+
+            <!-- Der Name des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet -->
+            <span th:text="${ department.name }">Name des zuständigen Fachbereichs</span>
+            <br />
+
+            <!-- Der Adresse des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet.
+            Über das #strings.replace Util werden alle Zeilenumbrüche mit dem HTML-Tag <br /> ersetzt -->
+            <span th:utext="${ #strings.replace(department.address, '\n', '&lt;br /&gt;') }">Adresse des Fachbereichs</span>
+        </p>
+    </div>
+
+    <div id="logo">
+        <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->
+        <img
+                th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName)}"
+                th:alt="${ 'Logo ' + base.providerName }"
+                style="height: 100px; width: auto;"
+        />
+    </div>
+</header>

@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.services.pdf.QrCodeDialect;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
@@ -19,7 +20,7 @@ public class TemplateLoaderService {
             Map<String, Object> templateData,
             TemplateMode mode
     ) {
-        var templateEngine = new TemplateEngine();
+        var templateEngine = new SpringTemplateEngine();
         templateEngine.addDialect(new Java8TimeDialect());
         templateEngine.addDialect(new NumberFormatDialect());
         templateEngine.addDialect(new QrCodeDialect());

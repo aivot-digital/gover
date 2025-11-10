@@ -1,0 +1,42 @@
+<div class="input-element file-upload-element">
+    <div class="input">
+        <div
+                class="label"
+                th:if="${base.isBlankPrint()}"
+        >
+            <span th:if="${child.element.required != null && child.element.required}">Folgende Anlage ist verpflichtend anzuhängen:</span>
+            <span th:unless="${child.element.required != null && child.element.required}">Folgende Anlage kann optional angehangen werden:</span>
+            <strong th:text="${child.element.label}"></strong>
+        </div>
+
+        <div
+                class="label"
+                th:unless="${base.isBlankPrint()}"
+        >
+            <strong th:text="${child.element.label}"></strong>
+        </div>
+
+        <div class="content">
+            <ul
+                    class="file-list"
+                    th:if="${child.hasValue && not child.value().isEmpty()}"
+            >
+                <li th:each="file, iterStat : ${child.value}">
+                    <span th:text="${file.name} + (${iterStat.last} ? '' : ', ')"></span>
+                </li>
+            </ul>
+
+            <span th:unless="${(child.hasValue && not child.value().isEmpty()) || base.isBlankPrint()}">Keine Anlagen hinzugefügt</span>
+
+            <div th:if="${base.isBlankPrint()}">
+                <span class="unchecked"></span>
+                <span>Die Anlage ist angehangen</span>
+                <span th:if="${child.element.required != null && child.element.required}">(Pflichtangabe)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="hint-wrapper">
+        <div th:insert="./form-parts/elements/_hint.html"></div>
+    </div>
+</div>

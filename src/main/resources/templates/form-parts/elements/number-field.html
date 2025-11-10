@@ -1,0 +1,30 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.form.input.NumberField"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div
+        th:fragment="number-field"
+        class="input-element number-element"
+>
+    <div class="input">
+        <div class="label">
+            <strong th:text="${ element.label }"></strong>
+            <span th:if="${ base.isBlankPrint && element.required != null && element.required }">(Pflichtangabe)</span>
+        </div>
+
+        <div class="content">
+                                                <span
+                                                        th:if="${ base.isNotBlankPrint }"
+                                                        th:text="${ element.toDisplayValue(value) }"
+                                                ></span>
+            <span
+                    class="suffix"
+                    th:text="${ element.suffix }"
+            ></span>
+        </div>
+    </div>
+
+    <div class="hint-wrapper">
+        <div th:insert="./form-parts/elements/_hint.html"></div>
+    </div>
+</div>
