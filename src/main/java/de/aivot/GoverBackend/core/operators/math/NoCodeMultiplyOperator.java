@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.math.BigDecimal;
 
@@ -58,19 +59,22 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Number,
-                        "Faktor 1",
-                        "Der erste zu multiplizierende Wert."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Faktor 2",
-                        "Der zweite zu multiplizierende Wert."
-                ),
-        };
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Faktor 1",
+                                "Der erste zu multiplizierende Wert."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Faktor 2",
+                                "Der zweite zu multiplizierende Wert."
+                        )
+                )
+        );
     }
 
     @Override

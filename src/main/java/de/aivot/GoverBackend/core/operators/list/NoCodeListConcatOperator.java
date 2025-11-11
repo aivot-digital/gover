@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.util.ArrayList;
 
@@ -52,19 +53,22 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.List,
-                        "Liste 1",
-                        "Die erste Liste, die zusammengefügt werden soll."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.List,
-                        "Liste 2",
-                        "Die zweite Liste, die zusammengefügt werden soll."
-                ),
-        };
+                        new NoCodeParameter(
+                                NoCodeDataType.List,
+                                "Liste 1",
+                                "Die erste Liste, die zusammengefügt werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.List,
+                                "Liste 2",
+                                "Die zweite Liste, die zusammengefügt werden soll."
+                        )
+                )
+        );
     }
 
     @Override

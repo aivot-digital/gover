@@ -261,11 +261,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                                         label="Bedingung"
                                                         hint="Hier kann eine Bedingung definiert werden, die bestimmt, ob das Element valide ist."
                                                         parents={props.parents}
-                                                        noCode={noCode ?? {
-                                                            type: 'NoCodeExpression',
-                                                            operatorIdentifier: '',
-                                                            operands: [],
-                                                        }}
+                                                        noCode={noCode}
                                                         onChange={(noCode) => {
                                                             const updatedValidationExpressions = [
                                                                 ...(validation.noCodeList ?? []),
@@ -295,11 +291,7 @@ export function ValidationCodeTab(props: ValidationCodeTabProps) {
                                         noCodeList: [
                                             ...(validation.noCodeList ?? []),
                                             {
-                                                noCode: {
-                                                    type: 'NoCodeExpression',
-                                                    operatorIdentifier: '',
-                                                    operands: [],
-                                                },
+                                                noCode: null,
                                                 message: '',
                                             },
                                         ],

@@ -97,7 +97,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
                                 }}
                             >
                                 {
-                                    operator.parameters.map((parameter, index, all) => {
+                                    operator.signatures[0].parameters.map((parameter, index, all) => {
                                         const operand: NoCodeOperand | undefined | null = (props.expression.operands ?? [])[index];
                                         return (
                                             <OperandEditor

@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.math.BigDecimal;
 
@@ -59,14 +60,17 @@ public class NoCodeListSumOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.List,
-                        "Liste",
-                        "Die Liste der numerischen Werte, deren Summe berechnet werden soll."
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Number,
+                        new NoCodeParameter(
+                                NoCodeDataType.List,
+                                "Liste",
+                                "Die Liste der numerischen Werte, deren Summe berechnet werden soll."
+                        )
+                )
+        );
     }
 
     @Override

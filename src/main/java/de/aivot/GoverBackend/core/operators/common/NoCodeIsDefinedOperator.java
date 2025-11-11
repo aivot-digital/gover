@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeIsDefinedOperator extends NoCodeOperator {
     @Override
@@ -54,14 +55,17 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Runtime,
-                        "Wert",
-                        "Der zu überprüfende Wert."
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Boolean,
+                        new NoCodeParameter(
+                                NoCodeDataType.Runtime,
+                                "Wert",
+                                "Der zu überprüfende Wert."
+                        )
+                )
+        );
     }
 
     @Override

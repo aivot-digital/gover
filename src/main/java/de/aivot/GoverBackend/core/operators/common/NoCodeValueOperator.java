@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeValueOperator extends NoCodeOperator {
     @Override
@@ -44,16 +45,19 @@ public class NoCodeValueOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.String,
-                        "Ziel",
-                        "Die ID des Elementes, dessen Wert zurückgegeben werden soll."
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Runtime,
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Ziel",
+                                "Die ID des Elementes, dessen Wert zurückgegeben werden soll."
+                        )
+                )
+        );
     }
-    
+
     @Override
     public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
         return new NoCodeResult(args[0]);

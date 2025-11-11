@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -81,9 +82,9 @@ public abstract class NoCodeOperator {
     /**
      * Returns the list of parameters that the operator expects.
      *
-     * @return the list of parameters that the operator expects
+     * @return the array of parameters that the operator expects
      */
-    public abstract NoCodeParameter[] getParameters();
+    public abstract NoCodeSignatur[] getSignatures();
 
     @Nonnull
     public NoCodeResult evaluate(ElementData data, Object... args) throws NoCodeException {
@@ -95,11 +96,19 @@ public abstract class NoCodeOperator {
             throw new NullPointerException("Arguments are null. Needs to be at least an empty array");
         }
 
-        var expectedParametersLength = getParameters().length;
         var actualParametersLength = args.length;
+        var someMatch = false;
+        for (var signature : getSignatures()) {
+            var expectedParametersLength = signature.parameters().length;
+            if (actualParametersLength == expectedParametersLength) {
+                someMatch = true;
+                break;
+            }
+        }
 
-        if (actualParametersLength != expectedParametersLength) {
-            throw new NoCodeWrongArgumentCountException(expectedParametersLength, actualParametersLength);
+
+        if (!someMatch) {
+            throw new NoCodeWrongArgumentCountException(getSignatures()[0].parameters().length, actualParametersLength);
         }
 
         return performEvaluation(data, args);

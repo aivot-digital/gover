@@ -1,5 +1,12 @@
 package de.aivot.GoverBackend.nocode.models;
 
 
-public record NoCodeParameter(int type, String label, String description, NoCodeParameterOption... options) {
+import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
+
+public record NoCodeParameter(
+        NoCodeDataType type,
+        String label,
+        String description,
+        NoCodeParameterOption... options
+) {
 }

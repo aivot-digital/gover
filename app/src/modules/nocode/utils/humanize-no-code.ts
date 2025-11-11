@@ -33,7 +33,7 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
         if (operator.humanReadableTemplate != null) {
             let template = operator.humanReadableTemplate;
 
-            operator.parameters.forEach((param, index) => {
+            operator.signatures[0].parameters.forEach((param, index) => {
                 const placeholder = `#${index}`;
                 const insert = parameterHumanized[index] ?? `„${param.label}”`;
                 template = template.replaceAll(placeholder, insert);

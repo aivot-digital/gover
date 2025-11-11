@@ -40,6 +40,9 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         noCode,
         onChange,
         editable,
+        hint,
+        label,
+        desiredReturnType,
     } = props;
 
     const api = useApi();
@@ -175,9 +178,9 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                         new_editor &&
                         <NoCodeOperandEditor
                             parameter={{
-                                label: 'Sichtbarkeit',
-                                description: 'Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "true" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.',
-                                type: NoCodeDataType.Boolean,
+                                label: label ?? '',
+                                description: hint ?? '',
+                                type: desiredReturnType,
                                 options: [],
                             }}
                             operand={noCode}
@@ -207,6 +210,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                     }
 
                     {
+                        false &&
                         referencedElements.length > 0 &&
                         <Collapse
                             label="Testdaten"

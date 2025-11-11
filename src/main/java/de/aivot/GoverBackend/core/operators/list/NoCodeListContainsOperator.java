@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.util.Objects;
 
@@ -60,19 +61,22 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Runtime,
-                        "Liste",
-                        "Eine Liste von Werten, in der gesucht werden soll."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Runtime,
-                        "Wert",
-                        "Der Wert, nach dem in der Liste gesucht werden soll."
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Number,
+                        new NoCodeParameter(
+                                NoCodeDataType.Runtime,
+                                "Liste",
+                                "Eine Liste von Werten, in der gesucht werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Runtime,
+                                "Wert",
+                                "Der Wert, nach dem in der Liste gesucht werden soll."
+                        )
+                )
+        );
     }
 
     @Override

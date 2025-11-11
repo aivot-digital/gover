@@ -45,7 +45,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
                                 </TableCell>
                                 <TableCell>
                                     <ul>
-                                        {props.operator.parameters.map((parameter, i) => (
+                                        {props.operator.signatures[0].parameters.map((parameter, i) => (
                                             <li key={i}>
                                                 {parameter.label}: {NoCodeDataTypeLabels[parameter.type]}
                                             </li>
@@ -59,7 +59,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
                                     Rückgabewert
                                 </TableCell>
                                 <TableCell>
-                                    {NoCodeDataTypeLabels[props.operator.returnType]}
+                                    {NoCodeDataTypeLabels[props.operator.signatures[0].returnType]}
                                 </TableCell>
                             </TableRow>
                         </TableBody>

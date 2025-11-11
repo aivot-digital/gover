@@ -8,8 +8,12 @@ export interface NoCodeOperatorDetailsDTO {
     abstractDescription: string;
     humanReadableTemplate: string | null;
     tags: string[];
+    signatures: NoCodeSignature[];
+}
+
+export interface NoCodeSignature {
+    returnType: NoCodeDataType;
     parameters: NoCodeParameter[];
-    returnType: NoCodeDataType; // TODO
 }
 
 export interface NoCodeParameter {

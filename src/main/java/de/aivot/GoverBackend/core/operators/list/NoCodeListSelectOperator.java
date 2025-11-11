@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeListSelectOperator extends NoCodeOperator {
     @Override
@@ -57,19 +58,22 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.List,
-                        "Liste",
-                        "Die Liste oder Tabelle, aus der die Werte extrahiert werden sollen."
-                ),
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Runtime,
-                        "Feld",
-                        "Das Feld (Spalte), dessen Werte extrahiert werden sollen."
-                ),
-        };
+                        new NoCodeParameter(
+                                NoCodeDataType.List,
+                                "Liste",
+                                "Die Liste oder Tabelle, aus der die Werte extrahiert werden sollen."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Feld",
+                                "Das Feld (Spalte), dessen Werte extrahiert werden sollen."
+                        )
+                )
+        );
     }
 
     @Override

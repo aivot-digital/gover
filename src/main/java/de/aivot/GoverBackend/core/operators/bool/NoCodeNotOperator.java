@@ -3,10 +3,7 @@ package de.aivot.GoverBackend.core.operators.bool;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
-import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameterOption;
-import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.*;
 
 public class NoCodeNotOperator extends NoCodeOperator {
     @Override
@@ -53,16 +50,19 @@ public class NoCodeNotOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Boolean,
-                        "Bedingung",
-                        "Die zu überprüfende Bedingung.",
-                        new NoCodeParameterOption("Wahr", "true"),
-                        new NoCodeParameterOption("Falsch", "false")
-                ),
-        };
+                        new NoCodeParameter(
+                                NoCodeDataType.Boolean,
+                                "Bedingung",
+                                "Die zu überprüfende Bedingung.",
+                                new NoCodeParameterOption("Wahr", "true"),
+                                new NoCodeParameterOption("Falsch", "false")
+                        )
+                )
+        );
     }
 
     @Override

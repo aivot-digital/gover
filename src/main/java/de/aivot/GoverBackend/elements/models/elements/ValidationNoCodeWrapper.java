@@ -3,9 +3,10 @@ package de.aivot.GoverBackend.elements.models.elements;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class ValidationNoCodeWrapper {
+public class ValidationNoCodeWrapper implements Serializable {
     @Nullable
     private NoCodeOperand noCode;
     @Nullable

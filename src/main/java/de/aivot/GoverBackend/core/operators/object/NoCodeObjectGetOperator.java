@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeObjectGetOperator extends NoCodeOperator {
     @Override
@@ -54,19 +55,22 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Object,
-                        "Objekt",
-                        "Das Objekt, aus dem ein Element abgerufen werden soll."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.String,
-                        "Feldbezeichner",
-                        "Der Bezeichner des Feldes, das abgerufen werden soll."
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Runtime,
+                        new NoCodeParameter(
+                                NoCodeDataType.Object,
+                                "Objekt",
+                                "Das Objekt, aus dem ein Element abgerufen werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Feldbezeichner",
+                                "Der Bezeichner des Feldes, das abgerufen werden soll."
+                        )
+                )
+        );
     }
 
     @Override

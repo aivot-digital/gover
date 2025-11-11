@@ -187,6 +187,9 @@ export function VisibilityCodeTab(props: VisibilityCodeTabProps) {
                             }}
                             editable={props.editable}
                             desiredReturnType={NoCodeDataType.Runtime}
+
+                            label="Sichtbarkeit"
+                            hint='Der Ausdruck muss einen Wahrheitswert (Boolean) zurückgeben. Wenn der Ausdruck "Wahr" ergibt, wird das Element angezeigt; andernfalls wird es ausgeblendet.'
                         />
                     )
                 }

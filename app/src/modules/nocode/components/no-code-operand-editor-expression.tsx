@@ -66,19 +66,13 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
             .find((op) => op.identifier === operatorIdentifier);
     }, [allOperators, operatorIdentifier]);
 
-    if (operator == null) {
-        return (
-            <Typography
-                color="error"
-            >
-                Ungültiger Ausdruckstyp ausgewählt.
-            </Typography>
-        );
-    }
 
-    const {
-        parameters,
-    } = operator;
+    const parameters = useMemo(() => {
+        if (operator == null) {
+            return [];
+        }
+        return operator.signatures[0].parameters;
+    }, [operator])
 
     const parameterOptionOverrides: NoCodeParameterOption[] = useMemo(() => {
         const options: NoCodeParameterOption[] = [];
@@ -101,6 +95,11 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                     break;
                 case ElementType.Radio:
                 case ElementType.Select:
+                    if (element.options != null) {
+                        options.push(...element.options);
+                    }
+                    break;
+                case ElementType.MultiCheckbox:
                     if (element.options != null) {
                         options.push(...element.options);
                     }
@@ -146,6 +145,26 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
             return trailingParameters;
         }
     }, [leadingParameter, trailingParameters]);
+
+    if (operator == null) {
+        return (
+            <SelectOperatorDialog
+                open={true}
+                operators={allOperators}
+                onSelect={(op) => {
+                    onChange({
+                        type: 'NoCodeExpression',
+                        operatorIdentifier: op.identifier,
+                        operands: [],
+                    });
+                }}
+                onClose={() => {
+                    onChange(undefined);
+                }}
+                desiredReturnType={NoCodeDataType.Runtime}
+            />
+        );
+    }
 
     return (
         <>

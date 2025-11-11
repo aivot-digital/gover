@@ -3,10 +3,7 @@ package de.aivot.GoverBackend.core.operators.date;
 import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
-import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
-import de.aivot.GoverBackend.nocode.models.NoCodeParameterOption;
-import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.*;
 
 public class NoCodeAddToDateOperator extends NoCodeOperator {
     public static final String DAYS_UNIT = "tage";
@@ -61,28 +58,31 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Date,
-                        "Datum",
-                        "Das Ausgangsdatum, zu dem Tage, Wochen, Monate oder Jahre hinzugefügt werden sollen."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Anzahl",
-                        "Die Anzahl der Tage, Wochen, Monate oder Jahre, die zum Datum hinzugefügt werden sollen."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.String,
-                        "Einheit",
-                        "Die Einheit der hinzuzufügenden Zeitspanne (Tage, Wochen, Monate, Jahre).",
-                        new NoCodeParameterOption("Tage", DAYS_UNIT),
-                        new NoCodeParameterOption("Wochen", WEEKS_UNIT),
-                        new NoCodeParameterOption("Monate", MONTHS_UNIT),
-                        new NoCodeParameterOption("Jahre", YEARS_UNIT)
-                ),
-        };
+                        new NoCodeParameter(
+                                NoCodeDataType.Date,
+                                "Datum",
+                                "Das Ausgangsdatum, zu dem Tage, Wochen, Monate oder Jahre hinzugefügt werden sollen."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Anzahl",
+                                "Die Anzahl der Tage, Wochen, Monate oder Jahre, die zum Datum hinzugefügt werden sollen."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Einheit",
+                                "Die Einheit der hinzuzufügenden Zeitspanne (Tage, Wochen, Monate, Jahre).",
+                                new NoCodeParameterOption("Tage", DAYS_UNIT),
+                                new NoCodeParameterOption("Wochen", WEEKS_UNIT),
+                                new NoCodeParameterOption("Monate", MONTHS_UNIT),
+                                new NoCodeParameterOption("Jahre", YEARS_UNIT)
+                        )
+                )
+        );
     }
 
     @Override

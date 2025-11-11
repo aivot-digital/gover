@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -65,19 +66,22 @@ public class NoCodeAddOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Number,
-                        "Summand 1",
-                        "Der erste Wert, der addiert werden soll."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Summand 2",
-                        "Der zweite Wert, der addiert werden soll."
-                ),
-        };
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Summand 1",
+                                "Der erste Wert, der addiert werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Summand 2",
+                                "Der zweite Wert, der addiert werden soll."
+                        )
+                )
+        );
     }
 
     @Override

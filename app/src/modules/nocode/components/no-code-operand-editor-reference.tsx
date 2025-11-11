@@ -9,7 +9,6 @@ import DatabaseSearch from '@aivot/mui-material-symbols-400-outlined/dist/databa
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {SelectElementDialog} from '../../../dialogs/select-element-dialog/select-element-dialog';
 import {useMemo, useState} from 'react';
-import {AnyElement} from '../../../models/elements/any-element';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {NoCodeDataTypeMap} from '../data/no-code-data-type-map';
 

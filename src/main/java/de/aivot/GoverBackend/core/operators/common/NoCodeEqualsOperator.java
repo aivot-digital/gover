@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.util.Objects;
 
@@ -56,19 +57,22 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.Runtime,
-                        "Wert 1",
-                        "Der erste Wert, der mit dem zweiten Wert verglichen werden soll."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Runtime,
-                        "Wert 2",
-                        "Der zweite Wert, der mit dem ersten Wert verglichen werden soll."
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Boolean,
+                        new NoCodeParameter(
+                                NoCodeDataType.Runtime,
+                                "Wert 1",
+                                "Der erste Wert, der mit dem zweiten Wert verglichen werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Runtime,
+                                "Wert 2",
+                                "Der zweite Wert, der mit dem ersten Wert verglichen werden soll."
+                        )
+                )
+        );
     }
 
     @Override

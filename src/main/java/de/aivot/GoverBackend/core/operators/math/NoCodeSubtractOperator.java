@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 public class NoCodeSubtractOperator extends NoCodeOperator {
     @Override
@@ -56,19 +57,22 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
                         NoCodeDataType.Number,
-                        "Minuend",
-                        "Der Wert, von dem subtrahiert wird."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.Number,
-                        "Subtrahend",
-                        "Der Wert, der subtrahiert wird."
-                ),
-        };
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Minuend",
+                                "Der Wert, von dem subtrahiert wird."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Subtrahend",
+                                "Der Wert, der subtrahiert wird."
+                        )
+                )
+        );
     }
 
     @Override

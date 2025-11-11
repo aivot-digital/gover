@@ -141,6 +141,8 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
                             }}
                             editable={props.editable}
                             desiredReturnType={NoCodeDataTypeMap[element.type]}
+                            label="Dynamischer Wert"
+                            hint="Der Ausdruck muss den Wert für das Element zurückliefern."
                         />
                     )
                 }

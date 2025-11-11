@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
+import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 
 import java.util.List;
 
@@ -58,19 +59,22 @@ public class NoCodeSplitOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeParameter[] getParameters() {
-        return new NoCodeParameter[]{
-                new NoCodeParameter(
-                        NoCodeDataType.String,
-                        "Text",
-                        "Der Text, der aufgeteilt werden soll."
-                ),
-                new NoCodeParameter(
-                        NoCodeDataType.String,
-                        "Separator",
-                        "Das Zeichen oder die Zeichenfolge, anhand derer der Text aufgeteilt werden soll."
-                ),
-        };
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.List,
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Text",
+                                "Der Text, der aufgeteilt werden soll."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.String,
+                                "Separator",
+                                "Das Zeichen oder die Zeichenfolge, anhand derer der Text aufgeteilt werden soll."
+                        )
+                )
+        );
     }
 
     @Override
