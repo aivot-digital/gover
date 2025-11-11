@@ -34,7 +34,7 @@ class NoCodeEvaluationServiceTest {
 
         assertEquals(true, res.getValue());
 
-        context.putInputValue("a", ElementType.Checkbox,true);
+        context.putInputValue("a", ElementType.Checkbox, true);
         context.putInputValue("b", ElementType.Checkbox, false);
         context.putInputValue("c", ElementType.Checkbox, true);
 
@@ -114,11 +114,14 @@ class NoCodeEvaluationServiceTest {
             }
 
             @Override
-            public NoCodeParameter[] getParameters() {
-                return new NoCodeParameter[]{
-                        new NoCodeParameter(NoCodeDataType.Boolean, "a", ""),
-                        new NoCodeParameter(NoCodeDataType.Boolean, "b", ""),
-                };
+            public NoCodeSignatur[] getSignatures() {
+                return NoCodeSignatur.of(
+                        NoCodeSignatur.of(
+                                NoCodeDataType.Boolean,
+                                new NoCodeParameter(NoCodeDataType.Boolean, "a", ""),
+                                new NoCodeParameter(NoCodeDataType.Boolean, "b", "")
+                        )
+                );
             }
 
             @Override

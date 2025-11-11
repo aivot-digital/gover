@@ -37,8 +37,8 @@ class NoCodeOperatorTest {
         }
 
         @Override
-        public NoCodeParameter[] getParameters() {
-            return new NoCodeParameter[0];
+        public NoCodeSignatur[] getSignatures() {
+            return NoCodeSignatur.of();
         }
 
         @Override
