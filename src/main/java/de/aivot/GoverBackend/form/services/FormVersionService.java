@@ -168,6 +168,8 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
         var updatedExistingEntity = existingEntity
                 .setPublicTitle(entity.getPublicTitle())
                 .setType(cleanedEntity.getType())
+                .setManagingDepartmentId(cleanedEntity.getManagingDepartmentId())
+                .setResponsibleDepartmentId(cleanedEntity.getResponsibleDepartmentId())
                 .setLegalSupportDepartmentId(cleanedEntity.getLegalSupportDepartmentId())
                 .setTechnicalSupportDepartmentId(cleanedEntity.getTechnicalSupportDepartmentId())
                 .setImprintDepartmentId(cleanedEntity.getImprintDepartmentId())
@@ -216,7 +218,11 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
     private FormVersionEntity cleanRelatedData(@Nullable FormVersionEntity prev, @Nonnull FormVersionEntity updated) throws ResponseException {
         checkAndReset(prev, updated, destinationRepository, FormVersionEntity::getDestinationId, updated::setDestinationId);
 
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getManagingDepartmentId, updated::setManagingDepartmentId);
+        checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getResponsibleDepartmentId, updated::setResponsibleDepartmentId);
+
         checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getLegalSupportDepartmentId, updated::setLegalSupportDepartmentId);
+
         checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getTechnicalSupportDepartmentId, updated::setTechnicalSupportDepartmentId);
 
         checkAndReset(prev, updated, departmentRepository, FormVersionEntity::getImprintDepartmentId, updated::setImprintDepartmentId);
