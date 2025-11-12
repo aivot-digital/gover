@@ -16,7 +16,7 @@ import {ContentPaste, Edit} from '@mui/icons-material';
 import {showErrorSnackbar, showSuccessSnackbar} from '../slices/snackbar-slice';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {useAppSelector} from '../hooks/use-app-selector';
-import {selectDisableElementContextMenu} from '../slices/admin-settings-slice';
+import {selectDisableElementContextMenu, setComponentTree} from '../slices/admin-settings-slice';
 import {generateComponentTitle} from '../utils/generate-component-title';
 
 interface DispatcherComponentProps<T extends AnyElement> {
@@ -181,9 +181,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         derivationTriggerIdQueue,
     ]);
 
-    const {
-        navigateToElementEditor,
-    } = useElementEditorNavigation();
+
 
     if (Component == null || !isVisible) {
         return null;
@@ -214,7 +212,6 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
                 <>
                     <ContextMenuButton
                         element={element}
-                        onEdit={() => navigateToElementEditor(elementId)}
                     />
                 </>
             }
@@ -226,16 +223,22 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     );
 }
 
-function ContextMenuButton({
-                               element,
-                               onEdit,
-                           }: {
+interface ContextMenuButtonProps {
     element: AnyElement;
-    onEdit: () => void;
-}) {
+}
+
+function ContextMenuButton(props: ContextMenuButtonProps) {
+    const {
+        element,
+    } = props;
+
     const dispatch = useAppDispatch();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
+
+    const {
+        navigateToElementEditor,
+    } = useElementEditorNavigation();
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         event.stopPropagation();
@@ -244,6 +247,11 @@ function ContextMenuButton({
 
     const handleMenuClose = () => {
         setAnchorEl(null);
+    };
+
+    const handleEdit = () => {
+        dispatch(setComponentTree(true));
+        navigateToElementEditor(element.id);
     };
 
     const handleCopyId = async () => {
@@ -354,7 +362,7 @@ function ContextMenuButton({
 
                 <MenuItem
                     onClick={() => {
-                        onEdit();
+                        handleEdit();
                         handleMenuClose();
                     }}
                 >

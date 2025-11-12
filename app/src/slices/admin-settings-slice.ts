@@ -51,6 +51,9 @@ const adminSettingsSlice = createSlice({
         toggleComponentTree: (state) => {
             state.hideComponentTree = !state.hideComponentTree;
         },
+        setComponentTree: (state, payload: PayloadAction<boolean>) => {
+            state.hideComponentTree = !payload.payload;
+        },
         toggleTestMode: (state) => {
             state.useTestMode = !state.useTestMode;
         },
@@ -96,6 +99,7 @@ export const {
     toggleValidation,
     toggleIdsInComponentTree,
     toggleComponentTree,
+    setComponentTree,
     toggleTestMode,
     setDraggingTreeElement,
     toggleWarnDuplicateIds,
