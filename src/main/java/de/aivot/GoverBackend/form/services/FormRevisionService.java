@@ -26,6 +26,12 @@ public class FormRevisionService {
     private final FormService formService;
     private final FormVersionService formVersionService;
 
+    private static final String[] IGNORED_FIELDS = new String[] {
+            "created",
+            "updated",
+            "internalTitle",
+    };
+
     public FormRevisionService(FormRevisionRepository formRevisionRepository, FormService formService, FormVersionService formVersionService) {
         this.formRevisionRepository = formRevisionRepository;
         this.formService = formService;
@@ -55,6 +61,11 @@ public class FormRevisionService {
             @Nonnull FormVersionWithDetailsEntity createdForm
     ) {
         var formJson = new JSONObject(createdForm);
+        for (String field : IGNORED_FIELDS) {
+            formJson.remove(field);
+            formJson.remove(field);
+        }
+
         var formMap = formJson.toMap();
 
         var diff = new DiffItem("/", null, formMap);
@@ -78,8 +89,10 @@ public class FormRevisionService {
         var existingFormJson = new JSONObject(existingForm);
 
         // Ignore the updated field
-        updatedFormJson.remove("updated");
-        existingFormJson.remove("updated");
+        for (String field : IGNORED_FIELDS) {
+            updatedFormJson.remove(field);
+            existingFormJson.remove(field);
+        }
 
         var changes = DiffService.createDiff(existingFormJson, updatedFormJson);
 
