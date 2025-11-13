@@ -197,8 +197,6 @@ export function FormsListPage() {
     const [showExportFormDialog, setShowExportFormDialog] = useState(false);
     const [showFormVersionsDialogFor, setShowFormVersionsDialogFor] = useState<FormListResponseDTO | undefined>();
 
-    const [departmentsBuffer, setDepartmentsBuffer] = useState<DepartmentResponseDTO[]>([]);
-
     const [formToMove, setFormToMove] = useState<FormListResponseDTO>();
     const [formToDelete, setFormToDelete] = useState<FormListResponseDTO>();
 
@@ -336,12 +334,7 @@ export function FormsListPage() {
                     searchLabel="Formular suchen"
                     searchPlaceholder="Titel des Formulars eingeben…"
                     fetch={async (options) => {
-                        let deps: DepartmentResponseDTO[] = departmentsBuffer;
-                        if (deps.length === 0) {
-                            deps = (await new DepartmentsApiService()
-                                .listAll()).content;
-                            setDepartmentsBuffer(deps);
-                        }
+                        const deps = (await new DepartmentsApiService().listAll()).content;
 
                         const formsPage = await new FormsApiServiceV2()
                             .list(options.page, options.size, options.sort as any, options.order, {
@@ -370,7 +363,7 @@ export function FormsListPage() {
                         return extendedFormsPage;
                     }}
                     columnDefinitions={columns}
-                    getRowIdentifier={row => `${row.id}_${row.developingDepartmentId}`}
+                    getRowIdentifier={row => row.id.toString()}
                     noDataPlaceholder={
                         <Box
                             sx={{
