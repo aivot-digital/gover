@@ -30,6 +30,7 @@ public class FormRevisionService {
             "created",
             "updated",
             "internalTitle",
+            "relevantDepartmentId"
     };
 
     public FormRevisionService(FormRevisionRepository formRevisionRepository, FormService formService, FormVersionService formVersionService) {
