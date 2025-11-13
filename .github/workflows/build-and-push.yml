@@ -22,7 +22,8 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
   IS_BETA_RELEASE: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'next') }}
   IS_ALPHA_RELEASE: ${{ github.event_name == 'pull_request' && !(github.base_ref == 'main' || github.base_ref == 'next') }}
-  IS_RELEASE: ${{ github.event_name == 'push' }}
+  IS_RELEASE: ${{ github.event_name == 'push' && github.base_ref == 'main' }}
+  IS_NEXT: ${{ github.event_name == 'push' && github.base_ref == 'next' }}
 
 jobs:
   testBackend:
